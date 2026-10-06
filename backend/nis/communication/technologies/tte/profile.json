@@ -1,0 +1,3435 @@
+{
+  "id": "tte",
+  "label": "Time-Triggered Ethernet",
+  "domain": "generic_networking",
+  "layer": "INDUSTRY_PROFILE",
+  "transport_unit": "FRAME",
+  "payload_element_types": [
+    "FIELD",
+    "RAW_DATA"
+  ],
+  "hardware_interface": "explicit_tte_tt_rc_be_sync_and_phy",
+  "hardware_capability_aliases": [
+    "ethernet_port"
+  ],
+  "default_stack": [
+    "tte"
+  ],
+  "stack_variants": [
+    [
+      "tte"
+    ],
+    [
+      "ethernet",
+      "tte"
+    ]
+  ],
+  "default_bitrate": null,
+  "rate_model": {
+    "type": "EXPLICIT_TTE_TRAFFIC_SCHEDULE_AND_PHY",
+    "fields": []
+  },
+  "local_timing_schema": [],
+  "parameter_schema": {
+    "payload_bytes": {
+      "label": "Payload",
+      "category": "physical",
+      "scope": "message",
+      "type": "number",
+      "description": "Actual serializeddataset/applicationbytes, separate actualEthernetframe/PHY/IFG andTT/RC/BE path. No globalTTE1Gbit/s or1500byte limit.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://saemobilus.sae.org/standards/as6802a-time-triggered-ethernet",
+      "source_revision": "SAE AS6802A publisherpublicabstract14February2023: networkfault-tolerantsynchronization anddispatch; node-memory/CPUpartitioning andcompleteapplicationarchitecture notcovered. Fulllicensedstandardnotreviewed.",
+      "integer": true
+    },
+    "cycle_ms": {
+      "label": "Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "Standardperiode fuer zyklische Nachrichten.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "minimum_cycle_time_ms": {
+      "label": "Minimum Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "deadline_ms": {
+      "label": "Deadline",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "timeout_ms": {
+      "label": "Timeout",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_latency_ms": {
+      "label": "Maximum Latency",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "jitter_ms": {
+      "label": "Jitter Budget",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "freshness_ms": {
+      "label": "Data Freshness",
+      "category": "timing",
+      "scope": "signal",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "source_processing_delay_ms": {
+      "label": "Source Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_processing_delay_ms": {
+      "label": "Target Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "propagation_delay_ms": {
+      "label": "Propagation",
+      "category": "timing",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.01,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_bus_load_percent": {
+      "label": "Ziel-Buslast",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "Zielwert fuer die aus Routing, Payload, Zyklus und Bitrate berechnete Buslast.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "peak_factor": {
+      "label": "Peak Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.15,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_factor": {
+      "label": "Burst Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.5,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_window_ms": {
+      "label": "Burst Window",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "warning_threshold": {
+      "label": "Load Warning",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "critical_threshold": {
+      "label": "Load Critical",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 75,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "overload_threshold": {
+      "label": "Load Overload",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 90,
+      "unit": "%",
+      "min": 1,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "queue_size": {
+      "label": "Queue Size",
+      "category": "qos",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 256,
+      "unit": "Frames",
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "queue_policy": {
+      "label": "Queue Policy",
+      "category": "qos",
+      "scope": "network",
+      "type": "select",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": "FIFO",
+      "options": [
+        "FIFO",
+        "PRIORITY",
+        "STRICT_PRIORITY",
+        "WEIGHTED_PRIORITY",
+        "WRR",
+        "ROUND_ROBIN",
+        "TIME_TRIGGERED",
+        "TAS",
+        "CBS",
+        "CUSTOM"
+      ],
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "qos_priority": {
+      "label": "Default Priority",
+      "category": "qos",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 3,
+      "min": 0,
+      "max": 7,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "traffic_class": {
+      "label": "Traffic Class",
+      "category": "qos",
+      "scope": "route",
+      "type": "select",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": "BEST_EFFORT",
+      "options": [
+        "BEST_EFFORT",
+        "CONTROL",
+        "REALTIME",
+        "SAFETY_CRITICAL"
+      ],
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "packet_loss_probability": {
+      "label": "Packet Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "frame_loss_probability": {
+      "label": "Frame Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "bit_error_rate": {
+      "label": "Bit Error Rate",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "corruption_probability": {
+      "label": "Corruption",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duplicate_probability": {
+      "label": "Duplication",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "reordering_probability": {
+      "label": "Reordering",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "required_reliability": {
+      "label": "Required Reliability",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.999,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_offset_ms": {
+      "label": "Clock Offset",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_drift_ppm": {
+      "label": "Clock Drift",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 20,
+      "unit": "ppm",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_precision_ms": {
+      "label": "Sync Precision",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_interval_ms": {
+      "label": "Sync Interval",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1000,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_sync_error_ms": {
+      "label": "Maximum Sync Error",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_delay_ms": {
+      "label": "Gateway Processing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.2,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_queue_delay_ms": {
+      "label": "Gateway Queueing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "protocol_conversion_delay_ms": {
+      "label": "Protocol Conversion",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duration_s": {
+      "label": "Simulation Duration",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 1,
+      "unit": "s",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "seed": {
+      "label": "Random Seed",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 42,
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "max_events": {
+      "label": "Maximum Events",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 100000,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "dropout_probability": {
+      "label": "Failure Injection Dropout",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "tt_review_profile": {
+      "type": "select",
+      "description": "Selected publicdescriptions/devicebaseline versus separatelyqualifiedactualedition.",
+      "source": "https://saemobilus.sae.org/standards/as6802a-time-triggered-ethernet",
+      "source_revision": "SAE AS6802A publisherpublicabstract14February2023: networkfault-tolerantsynchronization anddispatch; node-memory/CPUpartitioning andcompleteapplicationarchitecture notcovered. Fulllicensedstandardnotreviewed.",
+      "options": [
+        "PUBLIC_REFERENCE",
+        "REGISTERED_ACTUAL"
+      ],
+      "label": "tt review profile",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "tt_proposal_mode": {
+      "type": "select",
+      "description": "Source proposals distinct commissionedvalues.",
+      "source": "https://saemobilus.sae.org/standards/as6802a-time-triggered-ethernet",
+      "source_revision": "SAE AS6802A publisherpublicabstract14February2023: networkfault-tolerantsynchronization anddispatch; node-memory/CPUpartitioning andcompleteapplicationarchitecture notcovered. Fulllicensedstandardnotreviewed.",
+      "options": [
+        "SOURCE_BASELINE",
+        "ACTUAL_CONFIG"
+      ],
+      "label": "tt proposal mode",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "tt_device_profile": {
+      "type": "select",
+      "description": "Actual identifieddevice, no productlimitsapplied toallTTE.",
+      "source": "https://indico.esa.int/event/148/attachments/985/1175/brochure_final.pdf",
+      "source_revision": "TTTech ADCSS2016 exhibitor sheet actualPDFpage32: EndSystemControllerSpace3channels10/100/1000M,RGMII vsRMII,128send/256receiveVL/8partitions/1024send2048receiveCOMports. Edition/product-specific maxima.",
+      "options": [
+        "TTTECH_CONTROLLER_SPACE_2016",
+        "TTTECH_PMC_2026",
+        "REGISTERED_ACTUAL"
+      ],
+      "label": "tt device profile",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      }
+    },
+    "tt_phy_interface": {
+      "type": "select",
+      "description": "ActualRGMII/RMII orindependentlyqualifiedlinkinterface.",
+      "source": "https://indico.esa.int/event/148/attachments/985/1175/brochure_final.pdf",
+      "source_revision": "TTTech ADCSS2016 exhibitor sheet actualPDFpage32: EndSystemControllerSpace3channels10/100/1000M,RGMII vsRMII,128send/256receiveVL/8partitions/1024send2048receiveCOMports. Edition/product-specific maxima.",
+      "options": [
+        "RGMII",
+        "RMII",
+        "REGISTERED_ACTUAL"
+      ],
+      "label": "tt phy interface",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      }
+    },
+    "tt_traffic_class": {
+      "type": "select",
+      "description": "Actual TTscheduled, RCboundedrate, BEasynchronous semantics.",
+      "source": "https://indico.esa.int/event/22/contributions/2011/attachments/1698/1990/6.ADCSS_2013_-_Implementation_aspects_of_TTEthernet_Interfaces_P-FLPP-HO_-_1108586_-_RSE_-_1_-_1.pdf",
+      "source_revision": "RUAG ADCSS23October2013 presentation actualslides4-5: TT/RC/BE, commonglobaltime/perhopVLschedule, switchgatekeepers,PCF/latencycorrection.",
+      "options": [
+        "TT",
+        "RC",
+        "BE"
+      ],
+      "label": "tt traffic class",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "tt_sync_role": {
+      "type": "select",
+      "description": "Actualrole is distinct physicalend-system/switchclass.",
+      "source": "https://ntrs.nasa.gov/api/citations/20120003666/downloads/20120003666.pdf",
+      "source_revision": "NASA/CR2012-217554 March2012 selectedsections2/3.2: cluster/equalintegrationcycles, scheduledperlinknonoverlap, SM/CM/SC rolesnotnecessarilyfixeddeviceclass, precision/permanence andexplicitfaultassumptions. Researchanalysis not fullcurrentstandard.",
+      "options": [
+        "SM",
+        "CM",
+        "SC",
+        "NONE"
+      ],
+      "label": "tt sync role",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      }
+    },
+    "tt_pcf_type": {
+      "type": "select",
+      "description": "Actual startup/synchronizationmessage type, notapplicationTTdataset.",
+      "source": "https://ntrs.nasa.gov/api/citations/20120014302/downloads/20120014302.pdf",
+      "source_revision": "NASA/CR2012-217764 publicstartupmodel report selectedsection2:roles/priorityfilter/CSCAIN/cliquerecovery. Example6SM6CM10integrationcycles not defaults or generalfaultproof.",
+      "options": [
+        "CS",
+        "CA",
+        "IN"
+      ],
+      "label": "tt pcf type",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      }
+    },
+    "tt_fault_profile": {
+      "type": "select",
+      "description": "Actual assumptions ofselectedanalysis/safetycase, notgeneraldualByzantineclaim.",
+      "source": "https://ntrs.nasa.gov/api/citations/20120003666/downloads/20120003666.pdf",
+      "source_revision": "NASA/CR2012-217554 March2012 selectedsections2/3.2: cluster/equalintegrationcycles, scheduledperlinknonoverlap, SM/CM/SC rolesnotnecessarilyfixeddeviceclass, precision/permanence andexplicitfaultassumptions. Researchanalysis not fullcurrentstandard.",
+      "options": [
+        "SINGLE_BYZANTINE_OR_OMISSION",
+        "DUAL_OMISSION",
+        "REGISTERED_ACTUAL"
+      ],
+      "label": "tt fault profile",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      }
+    },
+    "tt_sync_state": {
+      "type": "select",
+      "description": "Actual assessed synchronizationstatus, not a claimedcompletewire-stateencoding.",
+      "source": "https://ntrs.nasa.gov/api/citations/20120003666/downloads/20120003666.pdf",
+      "source_revision": "NASA/CR2012-217554 March2012 selectedsections2/3.2: cluster/equalintegrationcycles, scheduledperlinknonoverlap, SM/CM/SC rolesnotnecessarilyfixeddeviceclass, precision/permanence andexplicitfaultassumptions. Researchanalysis not fullcurrentstandard.",
+      "options": [
+        "SYNCHRONIZED",
+        "INTEGRATING",
+        "UNSYNCHRONIZED",
+        "UNKNOWN"
+      ],
+      "label": "tt sync state",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      }
+    },
+    "tt_rc_profile": {
+      "type": "select",
+      "description": "Actual registeredrate-constrainedprotocol/codec path, independent TTtime schedule.",
+      "source": "https://indico.esa.int/event/22/contributions/2011/attachments/1698/1990/6.ADCSS_2013_-_Implementation_aspects_of_TTEthernet_Interfaces_P-FLPP-HO_-_1108586_-_RSE_-_1_-_1.pdf",
+      "source_revision": "RUAG ADCSS23October2013 presentation actualslides4-5: TT/RC/BE, commonglobaltime/perhopVLschedule, switchgatekeepers,PCF/latencycorrection.",
+      "options": [
+        "ARINC664P7_BOUND_ACTUAL",
+        "REGISTERED_ACTUAL"
+      ],
+      "label": "tt rc profile",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      }
+    },
+    "tt_outcome": {
+      "type": "select",
+      "description": "Actual correlatedconsumercurrentdata outcome.",
+      "source": "https://saemobilus.sae.org/standards/as6802a-time-triggered-ethernet",
+      "source_revision": "SAE AS6802A publisherpublicabstract14February2023: networkfault-tolerantsynchronization anddispatch; node-memory/CPUpartitioning andcompleteapplicationarchitecture notcovered. Fulllicensedstandardnotreviewed.",
+      "options": [
+        "ACCEPTED",
+        "STALE",
+        "ERROR",
+        "UNKNOWN"
+      ],
+      "label": "tt outcome",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      }
+    },
+    "tt_link_bps": {
+      "type": "number",
+      "description": "Actual perhopphysicalrate; knownproductratesare conditional, notAS6802globalminimum.",
+      "source": "https://indico.esa.int/event/148/attachments/985/1175/brochure_final.pdf",
+      "source_revision": "TTTech ADCSS2016 exhibitor sheet actualPDFpage32: EndSystemControllerSpace3channels10/100/1000M,RGMII vsRMII,128send/256receiveVL/8partitions/1024send2048receiveCOMports. Edition/product-specific maxima.",
+      "min": 1,
+      "unit": "bit/s",
+      "integer": true,
+      "label": "tt link bps",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "tt_review_profile": "PUBLIC_REFERENCE",
+            "tt_proposal_mode": "SOURCE_BASELINE",
+            "tt_device_profile": "TTTECH_CONTROLLER_SPACE_2016"
+          },
+          "value": 10000000,
+          "source": "https://indico.esa.int/event/148/attachments/985/1175/brochure_final.pdf",
+          "source_revision": "TTTech ADCSS2016 exhibitor sheet actualPDFpage32: EndSystemControllerSpace3channels10/100/1000M,RGMII vsRMII,128send/256receiveVL/8partitions/1024send2048receiveCOMports. Edition/product-specific maxima."
+        },
+        {
+          "when": {
+            "tt_review_profile": "PUBLIC_REFERENCE",
+            "tt_proposal_mode": "SOURCE_BASELINE",
+            "tt_device_profile": "TTTECH_PMC_2026"
+          },
+          "value": 100000000,
+          "source": "https://tttech.com/aerospace/products/end-systems/tte-end-system-lab-space-pmc",
+          "source_revision": "TTTech TTEEndSystemLabSpacePMC publicproductpage captured2October2026:3channels100/1000M fullDuplex, TT/RC/BE. Product not all TTEdevices."
+        }
+      ],
+      "schema_when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      }
+    },
+    "tt_channels": {
+      "type": "number",
+      "description": "Actualdevicecommunicationchannels, notallindependentautomatically.",
+      "source": "https://tttech.com/aerospace/products/end-systems/tte-end-system-lab-space-pmc",
+      "source_revision": "TTTech TTEEndSystemLabSpacePMC publicproductpage captured2October2026:3channels100/1000M fullDuplex, TT/RC/BE. Product not all TTEdevices.",
+      "min": 1,
+      "integer": true,
+      "label": "tt channels",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      }
+    },
+    "tt_send_vls": {
+      "type": "number",
+      "description": "Actual configuredsendvirtual-link count.",
+      "source": "https://indico.esa.int/event/148/attachments/985/1175/brochure_final.pdf",
+      "source_revision": "TTTech ADCSS2016 exhibitor sheet actualPDFpage32: EndSystemControllerSpace3channels10/100/1000M,RGMII vsRMII,128send/256receiveVL/8partitions/1024send2048receiveCOMports. Edition/product-specific maxima.",
+      "min": 0,
+      "integer": true,
+      "label": "tt send vls",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      }
+    },
+    "tt_receive_vls": {
+      "type": "number",
+      "description": "Actual configuredreceivevirtual-link count.",
+      "source": "https://indico.esa.int/event/148/attachments/985/1175/brochure_final.pdf",
+      "source_revision": "TTTech ADCSS2016 exhibitor sheet actualPDFpage32: EndSystemControllerSpace3channels10/100/1000M,RGMII vsRMII,128send/256receiveVL/8partitions/1024send2048receiveCOMports. Edition/product-specific maxima.",
+      "min": 0,
+      "integer": true,
+      "label": "tt receive vls",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      }
+    },
+    "tt_partitions": {
+      "type": "number",
+      "description": "Actual memorypartitionsdevice-capability, notapplicationCPU safetyproof.",
+      "source": "https://indico.esa.int/event/148/attachments/985/1175/brochure_final.pdf",
+      "source_revision": "TTTech ADCSS2016 exhibitor sheet actualPDFpage32: EndSystemControllerSpace3channels10/100/1000M,RGMII vsRMII,128send/256receiveVL/8partitions/1024send2048receiveCOMports. Edition/product-specific maxima.",
+      "min": 0,
+      "integer": true,
+      "label": "tt partitions",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      }
+    },
+    "tt_send_com_ports": {
+      "type": "number",
+      "description": "Actual configuredsendcommunicationports.",
+      "source": "https://indico.esa.int/event/148/attachments/985/1175/brochure_final.pdf",
+      "source_revision": "TTTech ADCSS2016 exhibitor sheet actualPDFpage32: EndSystemControllerSpace3channels10/100/1000M,RGMII vsRMII,128send/256receiveVL/8partitions/1024send2048receiveCOMports. Edition/product-specific maxima.",
+      "min": 0,
+      "integer": true,
+      "label": "tt send com ports",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      }
+    },
+    "tt_receive_com_ports": {
+      "type": "number",
+      "description": "Actual configuredreceivecommunicationports.",
+      "source": "https://indico.esa.int/event/148/attachments/985/1175/brochure_final.pdf",
+      "source_revision": "TTTech ADCSS2016 exhibitor sheet actualPDFpage32: EndSystemControllerSpace3channels10/100/1000M,RGMII vsRMII,128send/256receiveVL/8partitions/1024send2048receiveCOMports. Edition/product-specific maxima.",
+      "min": 0,
+      "integer": true,
+      "label": "tt receive com ports",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      }
+    },
+    "tt_frame_bytes": {
+      "type": "number",
+      "description": "Actual completeEthernetframebytes, notapplicationpayloadonly.",
+      "source": "https://saemobilus.sae.org/standards/as6802a-time-triggered-ethernet",
+      "source_revision": "SAE AS6802A publisherpublicabstract14February2023: networkfault-tolerantsynchronization anddispatch; node-memory/CPUpartitioning andcompleteapplicationarchitecture notcovered. Fulllicensedstandardnotreviewed.",
+      "min": 0,
+      "unit": "byte",
+      "integer": true,
+      "label": "tt frame bytes",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      }
+    },
+    "tt_wire_bytes": {
+      "type": "number",
+      "description": "Actual completeoccupiedframe/PHY/IFGbytes underqualifiedactualPHYmodel.",
+      "source": "https://saemobilus.sae.org/standards/as6802a-time-triggered-ethernet",
+      "source_revision": "SAE AS6802A publisherpublicabstract14February2023: networkfault-tolerantsynchronization anddispatch; node-memory/CPUpartitioning andcompleteapplicationarchitecture notcovered. Fulllicensedstandardnotreviewed.",
+      "min": 0,
+      "unit": "byte",
+      "integer": true,
+      "label": "tt wire bytes",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      }
+    },
+    "tt_serialization_us": {
+      "type": "number",
+      "description": "Actual wholewirebytes8/rate, notfullE2Elatency.",
+      "source": "https://saemobilus.sae.org/standards/as6802a-time-triggered-ethernet",
+      "source_revision": "SAE AS6802A publisherpublicabstract14February2023: networkfault-tolerantsynchronization anddispatch; node-memory/CPUpartitioning andcompleteapplicationarchitecture notcovered. Fulllicensedstandardnotreviewed.",
+      "min": 0,
+      "unit": "us",
+      "integer": false,
+      "label": "tt serialization us",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      }
+    },
+    "tt_peer_frame_max": {
+      "type": "number",
+      "description": "Actual qualifiedpeer/MACmaximumframe, notglobalTTE1500.",
+      "source": "https://saemobilus.sae.org/standards/as6802a-time-triggered-ethernet",
+      "source_revision": "SAE AS6802A publisherpublicabstract14February2023: networkfault-tolerantsynchronization anddispatch; node-memory/CPUpartitioning andcompleteapplicationarchitecture notcovered. Fulllicensedstandardnotreviewed.",
+      "min": 0,
+      "unit": "byte",
+      "integer": true,
+      "label": "tt peer frame max",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      }
+    },
+    "tt_integration_us": {
+      "type": "number",
+      "description": "Actual configuredequalnominalintegrationperiod, no universal5ms/10ms.",
+      "source": "https://ntrs.nasa.gov/api/citations/20120003666/downloads/20120003666.pdf",
+      "source_revision": "NASA/CR2012-217554 March2012 selectedsections2/3.2: cluster/equalintegrationcycles, scheduledperlinknonoverlap, SM/CM/SC rolesnotnecessarilyfixeddeviceclass, precision/permanence andexplicitfaultassumptions. Researchanalysis not fullcurrentstandard.",
+      "min": 0,
+      "unit": "us",
+      "integer": false,
+      "label": "tt integration us",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      }
+    },
+    "tt_integration_cycles": {
+      "type": "number",
+      "description": "Actual countwithinclusterperiod, examplesnotdefault10.",
+      "source": "https://ntrs.nasa.gov/api/citations/20120003666/downloads/20120003666.pdf",
+      "source_revision": "NASA/CR2012-217554 March2012 selectedsections2/3.2: cluster/equalintegrationcycles, scheduledperlinknonoverlap, SM/CM/SC rolesnotnecessarilyfixeddeviceclass, precision/permanence andexplicitfaultassumptions. Researchanalysis not fullcurrentstandard.",
+      "min": 1,
+      "integer": true,
+      "label": "tt integration cycles",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      }
+    },
+    "tt_cluster_us": {
+      "type": "number",
+      "description": "Actual completeclusterperiod=integration*cycles.",
+      "source": "https://ntrs.nasa.gov/api/citations/20120003666/downloads/20120003666.pdf",
+      "source_revision": "NASA/CR2012-217554 March2012 selectedsections2/3.2: cluster/equalintegrationcycles, scheduledperlinknonoverlap, SM/CM/SC rolesnotnecessarilyfixeddeviceclass, precision/permanence andexplicitfaultassumptions. Researchanalysis not fullcurrentstandard.",
+      "min": 0,
+      "unit": "us",
+      "integer": false,
+      "label": "tt cluster us",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      }
+    },
+    "tt_period_us": {
+      "type": "number",
+      "description": "Actual particularTTdatasetperiod, distinctintegrationperiod.",
+      "source": "https://indico.esa.int/event/22/contributions/2011/attachments/1698/1990/6.ADCSS_2013_-_Implementation_aspects_of_TTEthernet_Interfaces_P-FLPP-HO_-_1108586_-_RSE_-_1_-_1.pdf",
+      "source_revision": "RUAG ADCSS23October2013 presentation actualslides4-5: TT/RC/BE, commonglobaltime/perhopVLschedule, switchgatekeepers,PCF/latencycorrection.",
+      "min": 0,
+      "unit": "us",
+      "integer": false,
+      "label": "tt period us",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      }
+    },
+    "tt_phase_us": {
+      "type": "number",
+      "description": "Actual periodicdispatchphasefromscheduleorigin.",
+      "source": "https://indico.esa.int/event/22/contributions/2011/attachments/1698/1990/6.ADCSS_2013_-_Implementation_aspects_of_TTEthernet_Interfaces_P-FLPP-HO_-_1108586_-_RSE_-_1_-_1.pdf",
+      "source_revision": "RUAG ADCSS23October2013 presentation actualslides4-5: TT/RC/BE, commonglobaltime/perhopVLschedule, switchgatekeepers,PCF/latencycorrection.",
+      "min": 0,
+      "unit": "us",
+      "integer": false,
+      "label": "tt phase us",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      }
+    },
+    "tt_offset_us": {
+      "type": "number",
+      "description": "Actual perhopTT transmissionoffsetwithincluster.",
+      "source": "https://ntrs.nasa.gov/api/citations/20120003666/downloads/20120003666.pdf",
+      "source_revision": "NASA/CR2012-217554 March2012 selectedsections2/3.2: cluster/equalintegrationcycles, scheduledperlinknonoverlap, SM/CM/SC rolesnotnecessarilyfixeddeviceclass, precision/permanence andexplicitfaultassumptions. Researchanalysis not fullcurrentstandard.",
+      "min": 0,
+      "unit": "us",
+      "integer": false,
+      "label": "tt offset us",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      }
+    },
+    "tt_slot_end_us": {
+      "type": "number",
+      "description": "Actual correspondingperhopintervalendwithincluster.",
+      "source": "https://ntrs.nasa.gov/api/citations/20120003666/downloads/20120003666.pdf",
+      "source_revision": "NASA/CR2012-217554 March2012 selectedsections2/3.2: cluster/equalintegrationcycles, scheduledperlinknonoverlap, SM/CM/SC rolesnotnecessarilyfixeddeviceclass, precision/permanence andexplicitfaultassumptions. Researchanalysis not fullcurrentstandard.",
+      "min": 0,
+      "unit": "us",
+      "integer": false,
+      "label": "tt slot end us",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      }
+    },
+    "tt_guard_us": {
+      "type": "number",
+      "description": "Actual precision/drift/interferenceguardenvelope fromqualifiedschedule.",
+      "source": "https://ntrs.nasa.gov/api/citations/20120003666/downloads/20120003666.pdf",
+      "source_revision": "NASA/CR2012-217554 March2012 selectedsections2/3.2: cluster/equalintegrationcycles, scheduledperlinknonoverlap, SM/CM/SC rolesnotnecessarilyfixeddeviceclass, precision/permanence andexplicitfaultassumptions. Researchanalysis not fullcurrentstandard.",
+      "min": 0,
+      "unit": "us",
+      "integer": false,
+      "label": "tt guard us",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      }
+    },
+    "tt_clock_error_us": {
+      "type": "number",
+      "description": "Actual worstrelativelocalclockdifference, nottimestampgranularity.",
+      "source": "https://ntrs.nasa.gov/api/citations/20120003666/downloads/20120003666.pdf",
+      "source_revision": "NASA/CR2012-217554 March2012 selectedsections2/3.2: cluster/equalintegrationcycles, scheduledperlinknonoverlap, SM/CM/SC rolesnotnecessarilyfixeddeviceclass, precision/permanence andexplicitfaultassumptions. Researchanalysis not fullcurrentstandard.",
+      "min": 0,
+      "unit": "us",
+      "integer": false,
+      "label": "tt clock error us",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      }
+    },
+    "tt_precision_us": {
+      "type": "number",
+      "description": "Actual requiredmaximumrelativeclockerrorDelta.",
+      "source": "https://ntrs.nasa.gov/api/citations/20120003666/downloads/20120003666.pdf",
+      "source_revision": "NASA/CR2012-217554 March2012 selectedsections2/3.2: cluster/equalintegrationcycles, scheduledperlinknonoverlap, SM/CM/SC rolesnotnecessarilyfixeddeviceclass, precision/permanence andexplicitfaultassumptions. Researchanalysis not fullcurrentstandard.",
+      "min": 0,
+      "unit": "us",
+      "integer": false,
+      "label": "tt precision us",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      }
+    },
+    "tt_receive_window_us": {
+      "type": "number",
+      "description": "Actual scheduledPCFreceptionacceptancewindow.",
+      "source": "https://ntrs.nasa.gov/api/citations/20120003666/downloads/20120003666.pdf",
+      "source_revision": "NASA/CR2012-217554 March2012 selectedsections2/3.2: cluster/equalintegrationcycles, scheduledperlinknonoverlap, SM/CM/SC rolesnotnecessarilyfixeddeviceclass, precision/permanence andexplicitfaultassumptions. Researchanalysis not fullcurrentstandard.",
+      "min": 0,
+      "unit": "us",
+      "integer": false,
+      "label": "tt receive window us",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      }
+    },
+    "tt_sync_masters": {
+      "type": "number",
+      "description": "ActualregisteredSMmembershipcount.",
+      "source": "https://ntrs.nasa.gov/api/citations/20120003666/downloads/20120003666.pdf",
+      "source_revision": "NASA/CR2012-217554 March2012 selectedsections2/3.2: cluster/equalintegrationcycles, scheduledperlinknonoverlap, SM/CM/SC rolesnotnecessarilyfixeddeviceclass, precision/permanence andexplicitfaultassumptions. Researchanalysis not fullcurrentstandard.",
+      "min": 0,
+      "integer": true,
+      "label": "tt sync masters",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      }
+    },
+    "tt_compression_masters": {
+      "type": "number",
+      "description": "ActualregisteredCMmembershipcount.",
+      "source": "https://ntrs.nasa.gov/api/citations/20120003666/downloads/20120003666.pdf",
+      "source_revision": "NASA/CR2012-217554 March2012 selectedsections2/3.2: cluster/equalintegrationcycles, scheduledperlinknonoverlap, SM/CM/SC rolesnotnecessarilyfixeddeviceclass, precision/permanence andexplicitfaultassumptions. Researchanalysis not fullcurrentstandard.",
+      "min": 0,
+      "integer": true,
+      "label": "tt compression masters",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      }
+    },
+    "tt_sync_priority": {
+      "type": "number",
+      "description": "Actual clockpriorityfromconfiguredfilter, no fixed1 or2.",
+      "source": "https://ntrs.nasa.gov/api/citations/20120014302/downloads/20120014302.pdf",
+      "source_revision": "NASA/CR2012-217764 publicstartupmodel report selectedsection2:roles/priorityfilter/CSCAIN/cliquerecovery. Example6SM6CM10integrationcycles not defaults or generalfaultproof.",
+      "min": 0,
+      "integer": true,
+      "label": "tt sync priority",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      }
+    },
+    "tt_rx_time_us": {
+      "type": "number",
+      "description": "ActualPCFreceptiontimestamp inqualifiedcommonclockscope.",
+      "source": "https://ntrs.nasa.gov/api/citations/20120003666/downloads/20120003666.pdf",
+      "source_revision": "NASA/CR2012-217554 March2012 selectedsections2/3.2: cluster/equalintegrationcycles, scheduledperlinknonoverlap, SM/CM/SC rolesnotnecessarilyfixeddeviceclass, precision/permanence andexplicitfaultassumptions. Researchanalysis not fullcurrentstandard.",
+      "unit": "us",
+      "integer": false,
+      "label": "tt rx time us",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      }
+    },
+    "tt_actual_delay_us": {
+      "type": "number",
+      "description": "Actual accumulatedtransitdelay forpermanence, notnominalserializationonly.",
+      "source": "https://ntrs.nasa.gov/api/citations/20120003666/downloads/20120003666.pdf",
+      "source_revision": "NASA/CR2012-217554 March2012 selectedsections2/3.2: cluster/equalintegrationcycles, scheduledperlinknonoverlap, SM/CM/SC rolesnotnecessarilyfixeddeviceclass, precision/permanence andexplicitfaultassumptions. Researchanalysis not fullcurrentstandard.",
+      "min": 0,
+      "unit": "us",
+      "integer": false,
+      "label": "tt actual delay us",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      }
+    },
+    "tt_maximum_delay_us": {
+      "type": "number",
+      "description": "Actual qualifiedmaxPCFtransportdelay.",
+      "source": "https://ntrs.nasa.gov/api/citations/20120003666/downloads/20120003666.pdf",
+      "source_revision": "NASA/CR2012-217554 March2012 selectedsections2/3.2: cluster/equalintegrationcycles, scheduledperlinknonoverlap, SM/CM/SC rolesnotnecessarilyfixeddeviceclass, precision/permanence andexplicitfaultassumptions. Researchanalysis not fullcurrentstandard.",
+      "min": 0,
+      "unit": "us",
+      "integer": false,
+      "label": "tt maximum delay us",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      }
+    },
+    "tt_added_delay_us": {
+      "type": "number",
+      "description": "Actual artificialpermanencewait=max−actualdelay.",
+      "source": "https://ntrs.nasa.gov/api/citations/20120003666/downloads/20120003666.pdf",
+      "source_revision": "NASA/CR2012-217554 March2012 selectedsections2/3.2: cluster/equalintegrationcycles, scheduledperlinknonoverlap, SM/CM/SC rolesnotnecessarilyfixeddeviceclass, precision/permanence andexplicitfaultassumptions. Researchanalysis not fullcurrentstandard.",
+      "min": 0,
+      "unit": "us",
+      "integer": false,
+      "label": "tt added delay us",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      }
+    },
+    "tt_permanence_us": {
+      "type": "number",
+      "description": "Actualdeliverypoint=reception+addedwait.",
+      "source": "https://ntrs.nasa.gov/api/citations/20120003666/downloads/20120003666.pdf",
+      "source_revision": "NASA/CR2012-217554 March2012 selectedsections2/3.2: cluster/equalintegrationcycles, scheduledperlinknonoverlap, SM/CM/SC rolesnotnecessarilyfixeddeviceclass, precision/permanence andexplicitfaultassumptions. Researchanalysis not fullcurrentstandard.",
+      "unit": "us",
+      "integer": false,
+      "label": "tt permanence us",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      }
+    },
+    "tt_compression_us": {
+      "type": "number",
+      "description": "Actual boundedCMcompressionprocessing/wait.",
+      "source": "https://ntrs.nasa.gov/api/citations/20120003666/downloads/20120003666.pdf",
+      "source_revision": "NASA/CR2012-217554 March2012 selectedsections2/3.2: cluster/equalintegrationcycles, scheduledperlinknonoverlap, SM/CM/SC rolesnotnecessarilyfixeddeviceclass, precision/permanence andexplicitfaultassumptions. Researchanalysis not fullcurrentstandard.",
+      "min": 0,
+      "unit": "us",
+      "integer": false,
+      "label": "tt compression us",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      }
+    },
+    "tt_startup_us": {
+      "type": "number",
+      "description": "Actual boundedcoldstart/reintegrationresolution underfaultassumptions.",
+      "source": "https://ntrs.nasa.gov/api/citations/20120014302/downloads/20120014302.pdf",
+      "source_revision": "NASA/CR2012-217764 publicstartupmodel report selectedsection2:roles/priorityfilter/CSCAIN/cliquerecovery. Example6SM6CM10integrationcycles not defaults or generalfaultproof.",
+      "min": 0,
+      "unit": "us",
+      "integer": false,
+      "label": "tt startup us",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      }
+    },
+    "tt_clique_recovery_us": {
+      "type": "number",
+      "description": "Actual boundedpost-transientcliquerecovery, no example60cycledefault.",
+      "source": "https://ntrs.nasa.gov/api/citations/20120014302/downloads/20120014302.pdf",
+      "source_revision": "NASA/CR2012-217764 publicstartupmodel report selectedsection2:roles/priorityfilter/CSCAIN/cliquerecovery. Example6SM6CM10integrationcycles not defaults or generalfaultproof.",
+      "min": 0,
+      "unit": "us",
+      "integer": false,
+      "label": "tt clique recovery us",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      }
+    },
+    "tt_rc_bag_us": {
+      "type": "number",
+      "description": "Actual selectedRCminimuminterframegap/BAG; ownARINCboundsource, notTTcycle.",
+      "source": "https://indico.esa.int/event/22/contributions/2011/attachments/1698/1990/6.ADCSS_2013_-_Implementation_aspects_of_TTEthernet_Interfaces_P-FLPP-HO_-_1108586_-_RSE_-_1_-_1.pdf",
+      "source_revision": "RUAG ADCSS23October2013 presentation actualslides4-5: TT/RC/BE, commonglobaltime/perhopVLschedule, switchgatekeepers,PCF/latencycorrection.",
+      "min": 0,
+      "unit": "us",
+      "integer": false,
+      "label": "tt rc bag us",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      }
+    },
+    "tt_rc_jitter_us": {
+      "type": "number",
+      "description": "Actual selectedRCrelease/arrivaljitter.",
+      "source": "https://indico.esa.int/event/22/contributions/2011/attachments/1698/1990/6.ADCSS_2013_-_Implementation_aspects_of_TTEthernet_Interfaces_P-FLPP-HO_-_1108586_-_RSE_-_1_-_1.pdf",
+      "source_revision": "RUAG ADCSS23October2013 presentation actualslides4-5: TT/RC/BE, commonglobaltime/perhopVLschedule, switchgatekeepers,PCF/latencycorrection.",
+      "min": 0,
+      "unit": "us",
+      "integer": false,
+      "label": "tt rc jitter us",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      }
+    },
+    "tt_rc_queue_us": {
+      "type": "number",
+      "description": "Actual fullRCqueue/servicecontentionenvelope.",
+      "source": "https://ntrs.nasa.gov/api/citations/20120003666/downloads/20120003666.pdf",
+      "source_revision": "NASA/CR2012-217554 March2012 selectedsections2/3.2: cluster/equalintegrationcycles, scheduledperlinknonoverlap, SM/CM/SC rolesnotnecessarilyfixeddeviceclass, precision/permanence andexplicitfaultassumptions. Researchanalysis not fullcurrentstandard.",
+      "min": 0,
+      "unit": "us",
+      "integer": false,
+      "label": "tt rc queue us",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      }
+    },
+    "tt_be_blocking_us": {
+      "type": "number",
+      "description": "Actual boundedBEinterference ifclaimed;BEalonehasnoguarantee.",
+      "source": "https://ntrs.nasa.gov/api/citations/20120003666/downloads/20120003666.pdf",
+      "source_revision": "NASA/CR2012-217554 March2012 selectedsections2/3.2: cluster/equalintegrationcycles, scheduledperlinknonoverlap, SM/CM/SC rolesnotnecessarilyfixeddeviceclass, precision/permanence andexplicitfaultassumptions. Researchanalysis not fullcurrentstandard.",
+      "min": 0,
+      "unit": "us",
+      "integer": false,
+      "label": "tt be blocking us",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      }
+    },
+    "tt_switch_residence_us": {
+      "type": "number",
+      "description": "Actual totalswitchprocessing/queue/waitbound alongpath.",
+      "source": "https://ntrs.nasa.gov/api/citations/20120003666/downloads/20120003666.pdf",
+      "source_revision": "NASA/CR2012-217554 March2012 selectedsections2/3.2: cluster/equalintegrationcycles, scheduledperlinknonoverlap, SM/CM/SC rolesnotnecessarilyfixeddeviceclass, precision/permanence andexplicitfaultassumptions. Researchanalysis not fullcurrentstandard.",
+      "min": 0,
+      "unit": "us",
+      "integer": false,
+      "label": "tt switch residence us",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      }
+    },
+    "tt_hop_count": {
+      "type": "number",
+      "description": "Actual whole pathlink/switchcount.",
+      "source": "https://ntrs.nasa.gov/api/citations/20120003666/downloads/20120003666.pdf",
+      "source_revision": "NASA/CR2012-217554 March2012 selectedsections2/3.2: cluster/equalintegrationcycles, scheduledperlinknonoverlap, SM/CM/SC rolesnotnecessarilyfixeddeviceclass, precision/permanence andexplicitfaultassumptions. Researchanalysis not fullcurrentstandard.",
+      "min": 1,
+      "integer": true,
+      "label": "tt hop count",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      }
+    },
+    "tt_source_ms": {
+      "type": "number",
+      "description": "Actual sampling/encode/hostqueue envelope.",
+      "source": "https://saemobilus.sae.org/standards/as6802a-time-triggered-ethernet",
+      "source_revision": "SAE AS6802A publisherpublicabstract14February2023: networkfault-tolerantsynchronization anddispatch; node-memory/CPUpartitioning andcompleteapplicationarchitecture notcovered. Fulllicensedstandardnotreviewed.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "label": "tt source ms",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      }
+    },
+    "tt_transport_ms": {
+      "type": "number",
+      "description": "Actual allhopTT/RC/BE path envelope.",
+      "source": "https://saemobilus.sae.org/standards/as6802a-time-triggered-ethernet",
+      "source_revision": "SAE AS6802A publisherpublicabstract14February2023: networkfault-tolerantsynchronization anddispatch; node-memory/CPUpartitioning andcompleteapplicationarchitecture notcovered. Fulllicensedstandardnotreviewed.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "label": "tt transport ms",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      }
+    },
+    "tt_consumer_ms": {
+      "type": "number",
+      "description": "Actual decode/applicationCPU/use envelope separate AS6802networkscope.",
+      "source": "https://saemobilus.sae.org/standards/as6802a-time-triggered-ethernet",
+      "source_revision": "SAE AS6802A publisherpublicabstract14February2023: networkfault-tolerantsynchronization anddispatch; node-memory/CPUpartitioning andcompleteapplicationarchitecture notcovered. Fulllicensedstandardnotreviewed.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "label": "tt consumer ms",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      }
+    },
+    "tt_e2e_ms": {
+      "type": "number",
+      "description": "Actual source+transport+consumerbound.",
+      "source": "https://saemobilus.sae.org/standards/as6802a-time-triggered-ethernet",
+      "source_revision": "SAE AS6802A publisherpublicabstract14February2023: networkfault-tolerantsynchronization anddispatch; node-memory/CPUpartitioning andcompleteapplicationarchitecture notcovered. Fulllicensedstandardnotreviewed.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "label": "tt e2e ms",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      }
+    },
+    "tt_deadline_ms": {
+      "type": "number",
+      "description": "Actual independent functionaldeadline.",
+      "source": "https://saemobilus.sae.org/standards/as6802a-time-triggered-ethernet",
+      "source_revision": "SAE AS6802A publisherpublicabstract14February2023: networkfault-tolerantsynchronization anddispatch; node-memory/CPUpartitioning andcompleteapplicationarchitecture notcovered. Fulllicensedstandardnotreviewed.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "label": "tt deadline ms",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      }
+    },
+    "tt_age_ms": {
+      "type": "number",
+      "description": "Actual correlatedproducer-to-consumerdataage.",
+      "source": "https://saemobilus.sae.org/standards/as6802a-time-triggered-ethernet",
+      "source_revision": "SAE AS6802A publisherpublicabstract14February2023: networkfault-tolerantsynchronization anddispatch; node-memory/CPUpartitioning andcompleteapplicationarchitecture notcovered. Fulllicensedstandardnotreviewed.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "label": "tt age ms",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      }
+    },
+    "tt_freshness_ms": {
+      "type": "number",
+      "description": "Actual independentlyacceptablecurrentdataage.",
+      "source": "https://saemobilus.sae.org/standards/as6802a-time-triggered-ethernet",
+      "source_revision": "SAE AS6802A publisherpublicabstract14February2023: networkfault-tolerantsynchronization anddispatch; node-memory/CPUpartitioning andcompleteapplicationarchitecture notcovered. Fulllicensedstandardnotreviewed.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "label": "tt freshness ms",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      }
+    },
+    "tt_full_duplex": {
+      "type": "boolean",
+      "description": "Actual knownTTTechdevicephysicalmodefull-duplex, notwholeprofilecert.",
+      "source": "https://tttech.com/aerospace/products/end-systems/tte-end-system-lab-space-pmc",
+      "source_revision": "TTTech TTEEndSystemLabSpacePMC publicproductpage captured2October2026:3channels100/1000M fullDuplex, TT/RC/BE. Product not all TTEdevices.",
+      "label": "tt full duplex",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "tt_review_profile": "PUBLIC_REFERENCE",
+            "tt_proposal_mode": "SOURCE_BASELINE",
+            "tt_device_profile": "TTTECH_CONTROLLER_SPACE_2016"
+          },
+          "value": true,
+          "source": "https://indico.esa.int/event/148/attachments/985/1175/brochure_final.pdf",
+          "source_revision": "TTTech ADCSS2016 exhibitor sheet actualPDFpage32: EndSystemControllerSpace3channels10/100/1000M,RGMII vsRMII,128send/256receiveVL/8partitions/1024send2048receiveCOMports. Edition/product-specific maxima."
+        },
+        {
+          "when": {
+            "tt_review_profile": "PUBLIC_REFERENCE",
+            "tt_proposal_mode": "SOURCE_BASELINE",
+            "tt_device_profile": "TTTECH_PMC_2026"
+          },
+          "value": true,
+          "source": "https://tttech.com/aerospace/products/end-systems/tte-end-system-lab-space-pmc",
+          "source_revision": "TTTech TTEEndSystemLabSpacePMC publicproductpage captured2October2026:3channels100/1000M fullDuplex, TT/RC/BE. Product not all TTEdevices."
+        }
+      ],
+      "schema_when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      }
+    },
+    "tt_fault_tolerance_claimed": {
+      "type": "boolean",
+      "description": "Actualrequestednetworkfault-guarantees requireexplicitcase.",
+      "source": "https://ntrs.nasa.gov/api/citations/20120003666/downloads/20120003666.pdf",
+      "source_revision": "NASA/CR2012-217554 March2012 selectedsections2/3.2: cluster/equalintegrationcycles, scheduledperlinknonoverlap, SM/CM/SC rolesnotnecessarilyfixeddeviceclass, precision/permanence andexplicitfaultassumptions. Researchanalysis not fullcurrentstandard.",
+      "label": "tt fault tolerance claimed",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      }
+    },
+    "tt_tt_nonoverlap_verified": {
+      "type": "boolean",
+      "description": "Actual everyTTintervalnonoverlap ontheentireselectedroute.",
+      "source": "https://ntrs.nasa.gov/api/citations/20120003666/downloads/20120003666.pdf",
+      "source_revision": "NASA/CR2012-217554 March2012 selectedsections2/3.2: cluster/equalintegrationcycles, scheduledperlinknonoverlap, SM/CM/SC rolesnotnecessarilyfixeddeviceclass, precision/permanence andexplicitfaultassumptions. Researchanalysis not fullcurrentstandard.",
+      "label": "tt tt nonoverlap verified",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      }
+    },
+    "tt_clock_verified": {
+      "type": "boolean",
+      "description": "Actualsynchronization/drift/precision/faultobservation qualified.",
+      "source": "https://ntrs.nasa.gov/api/citations/20120003666/downloads/20120003666.pdf",
+      "source_revision": "NASA/CR2012-217554 March2012 selectedsections2/3.2: cluster/equalintegrationcycles, scheduledperlinknonoverlap, SM/CM/SC rolesnotnecessarilyfixeddeviceclass, precision/permanence andexplicitfaultassumptions. Researchanalysis not fullcurrentstandard.",
+      "label": "tt clock verified",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      }
+    },
+    "tt_schedule_verified": {
+      "type": "boolean",
+      "description": "Actualschedulecompiled/installed/allhop timing andcompetingtrafficverified.",
+      "source": "https://indico.esa.int/event/22/contributions/2011/attachments/1698/1990/6.ADCSS_2013_-_Implementation_aspects_of_TTEthernet_Interfaces_P-FLPP-HO_-_1108586_-_RSE_-_1_-_1.pdf",
+      "source_revision": "RUAG ADCSS23October2013 presentation actualslides4-5: TT/RC/BE, commonglobaltime/perhopVLschedule, switchgatekeepers,PCF/latencycorrection.",
+      "label": "tt schedule verified",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      }
+    },
+    "tt_path_verified": {
+      "type": "boolean",
+      "description": "Actual allhopdevice/PHY/channel/streamboundqualified.",
+      "source": "https://ntrs.nasa.gov/api/citations/20120003666/downloads/20120003666.pdf",
+      "source_revision": "NASA/CR2012-217554 March2012 selectedsections2/3.2: cluster/equalintegrationcycles, scheduledperlinknonoverlap, SM/CM/SC rolesnotnecessarilyfixeddeviceclass, precision/permanence andexplicitfaultassumptions. Researchanalysis not fullcurrentstandard.",
+      "label": "tt path verified",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      }
+    },
+    "tt_host_verified": {
+      "type": "boolean",
+      "description": "ActualnodeCPU/memoryapplicationintegrationproofseparate networkstandard.",
+      "source": "https://saemobilus.sae.org/standards/as6802a-time-triggered-ethernet",
+      "source_revision": "SAE AS6802A publisherpublicabstract14February2023: networkfault-tolerantsynchronization anddispatch; node-memory/CPUpartitioning andcompleteapplicationarchitecture notcovered. Fulllicensedstandardnotreviewed.",
+      "label": "tt host verified",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      }
+    },
+    "tt_data_accepted": {
+      "type": "boolean",
+      "description": "Actualfreshcorrelateddatasetconsumedbyfunction.",
+      "source": "https://saemobilus.sae.org/standards/as6802a-time-triggered-ethernet",
+      "source_revision": "SAE AS6802A publisherpublicabstract14February2023: networkfault-tolerantsynchronization anddispatch; node-memory/CPUpartitioning andcompleteapplicationarchitecture notcovered. Fulllicensedstandardnotreviewed.",
+      "label": "tt data accepted",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      }
+    },
+    "tt_revision": {
+      "type": "text",
+      "description": "ActualAS6802/implementation/devicebuildedition.",
+      "source": "https://saemobilus.sae.org/standards/as6802a-time-triggered-ethernet",
+      "source_revision": "SAE AS6802A publisherpublicabstract14February2023: networkfault-tolerantsynchronization anddispatch; node-memory/CPUpartitioning andcompleteapplicationarchitecture notcovered. Fulllicensedstandardnotreviewed.",
+      "label": "tt revision",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "tt_configuration_source": {
+      "type": "text",
+      "description": "Actual hardware/ports/VLs/TT/RC/BEbindings.",
+      "source": "https://indico.esa.int/event/22/contributions/2011/attachments/1698/1990/6.ADCSS_2013_-_Implementation_aspects_of_TTEthernet_Interfaces_P-FLPP-HO_-_1108586_-_RSE_-_1_-_1.pdf",
+      "source_revision": "RUAG ADCSS23October2013 presentation actualslides4-5: TT/RC/BE, commonglobaltime/perhopVLschedule, switchgatekeepers,PCF/latencycorrection.",
+      "label": "tt configuration source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "tt_phy_source": {
+      "type": "text",
+      "description": "Actual PHYfull-duplex/cable/encoding/frame/IFG/capabilities.",
+      "source": "https://www.esa.int/Enabling_Support/Space_Engineering_Technology/Onboard_Computers_and_Data_Handling/Time-Triggered_Ethernet",
+      "source_revision": "ESA publicTTEoverview: distinctscheduled/asynchronousclasses, switchedEthernet andactualPHYdevices; no universal1Gbit/s.",
+      "label": "tt phy source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "tt_schedule_source": {
+      "type": "text",
+      "description": "Actual entireglobalperhopTTscheduleandRC/BEpolicingbounds.",
+      "source": "https://ntrs.nasa.gov/api/citations/20120003666/downloads/20120003666.pdf",
+      "source_revision": "NASA/CR2012-217554 March2012 selectedsections2/3.2: cluster/equalintegrationcycles, scheduledperlinknonoverlap, SM/CM/SC rolesnotnecessarilyfixeddeviceclass, precision/permanence andexplicitfaultassumptions. Researchanalysis not fullcurrentstandard.",
+      "label": "tt schedule source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "tt_acceptance_source": {
+      "type": "text",
+      "description": "Actual independentfunctiondeadline/freshnessfailure contract.",
+      "source": "https://saemobilus.sae.org/standards/as6802a-time-triggered-ethernet",
+      "source_revision": "SAE AS6802A publisherpublicabstract14February2023: networkfault-tolerantsynchronization anddispatch; node-memory/CPUpartitioning andcompleteapplicationarchitecture notcovered. Fulllicensedstandardnotreviewed.",
+      "label": "tt acceptance source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "tt_registered_source": {
+      "type": "text",
+      "description": "Actual independentlyqualifiedvariant/edition extension.",
+      "source": "https://saemobilus.sae.org/standards/as6802a-time-triggered-ethernet",
+      "source_revision": "SAE AS6802A publisherpublicabstract14February2023: networkfault-tolerantsynchronization anddispatch; node-memory/CPUpartitioning andcompleteapplicationarchitecture notcovered. Fulllicensedstandardnotreviewed.",
+      "label": "tt registered source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "tt_device_source": {
+      "type": "text",
+      "description": "Actualselectedvendor/device/revision capabilities.",
+      "source": "https://tttech.com/aerospace/products/end-systems/tte-end-system-lab-space-pmc",
+      "source_revision": "TTTech TTEEndSystemLabSpacePMC publicproductpage captured2October2026:3channels100/1000M fullDuplex, TT/RC/BE. Product not all TTEdevices.",
+      "label": "tt device source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      }
+    },
+    "tt_clock_source": {
+      "type": "text",
+      "description": "Actual SM/CM/SCmembership/state/precision/startup/clique/fault evidence.",
+      "source": "https://ntrs.nasa.gov/api/citations/20120003666/downloads/20120003666.pdf",
+      "source_revision": "NASA/CR2012-217554 March2012 selectedsections2/3.2: cluster/equalintegrationcycles, scheduledperlinknonoverlap, SM/CM/SC rolesnotnecessarilyfixeddeviceclass, precision/permanence andexplicitfaultassumptions. Researchanalysis not fullcurrentstandard.",
+      "label": "tt clock source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      }
+    },
+    "tt_pcf_source": {
+      "type": "text",
+      "description": "ActualcompletePCFcodec/version/type/membership/transitdelayqualification.",
+      "source": "https://ntrs.nasa.gov/api/citations/20120014302/downloads/20120014302.pdf",
+      "source_revision": "NASA/CR2012-217764 publicstartupmodel report selectedsection2:roles/priorityfilter/CSCAIN/cliquerecovery. Example6SM6CM10integrationcycles not defaults or generalfaultproof.",
+      "label": "tt pcf source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      }
+    },
+    "tt_fault_source": {
+      "type": "text",
+      "description": "Actual faultassumptions/topology/independentchannels/proofandtests.",
+      "source": "https://ntrs.nasa.gov/api/citations/20120003666/downloads/20120003666.pdf",
+      "source_revision": "NASA/CR2012-217554 March2012 selectedsections2/3.2: cluster/equalintegrationcycles, scheduledperlinknonoverlap, SM/CM/SC rolesnotnecessarilyfixeddeviceclass, precision/permanence andexplicitfaultassumptions. Researchanalysis not fullcurrentstandard.",
+      "label": "tt fault source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      }
+    },
+    "tt_rc_source": {
+      "type": "text",
+      "description": "Actual registeredRCcodec/BAG/jitter/queue/policing qualification.",
+      "source": "https://indico.esa.int/event/22/contributions/2011/attachments/1698/1990/6.ADCSS_2013_-_Implementation_aspects_of_TTEthernet_Interfaces_P-FLPP-HO_-_1108586_-_RSE_-_1_-_1.pdf",
+      "source_revision": "RUAG ADCSS23October2013 presentation actualslides4-5: TT/RC/BE, commonglobaltime/perhopVLschedule, switchgatekeepers,PCF/latencycorrection.",
+      "label": "tt rc source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      }
+    },
+    "tt_observation_source": {
+      "type": "text",
+      "description": "Actualcorrelatedemission/allhoparrival/consumer trace.",
+      "source": "https://saemobilus.sae.org/standards/as6802a-time-triggered-ethernet",
+      "source_revision": "SAE AS6802A publisherpublicabstract14February2023: networkfault-tolerantsynchronization anddispatch; node-memory/CPUpartitioning andcompleteapplicationarchitecture notcovered. Fulllicensedstandardnotreviewed.",
+      "label": "tt observation source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      }
+    },
+    "tt_be_bound_source": {
+      "type": "text",
+      "description": "Actualextrareservation/queue/policingproof forclaimedBEbound.",
+      "source": "https://ntrs.nasa.gov/api/citations/20120003666/downloads/20120003666.pdf",
+      "source_revision": "NASA/CR2012-217554 March2012 selectedsections2/3.2: cluster/equalintegrationcycles, scheduledperlinknonoverlap, SM/CM/SC rolesnotnecessarilyfixeddeviceclass, precision/permanence andexplicitfaultassumptions. Researchanalysis not fullcurrentstandard.",
+      "label": "tt be bound source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      }
+    },
+    "tt_vl_id": {
+      "type": "text",
+      "description": "Actualperstreamvirtual-linkidentifier, notfixedglobalCANid.",
+      "source": "https://indico.esa.int/event/22/contributions/2011/attachments/1698/1990/6.ADCSS_2013_-_Implementation_aspects_of_TTEthernet_Interfaces_P-FLPP-HO_-_1108586_-_RSE_-_1_-_1.pdf",
+      "source_revision": "RUAG ADCSS23October2013 presentation actualslides4-5: TT/RC/BE, commonglobaltime/perhopVLschedule, switchgatekeepers,PCF/latencycorrection.",
+      "label": "tt vl id",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      }
+    },
+    "tt_path_id": {
+      "type": "text",
+      "description": "Actualboundchannel/routeidentity.",
+      "source": "https://ntrs.nasa.gov/api/citations/20120003666/downloads/20120003666.pdf",
+      "source_revision": "NASA/CR2012-217554 March2012 selectedsections2/3.2: cluster/equalintegrationcycles, scheduledperlinknonoverlap, SM/CM/SC rolesnotnecessarilyfixeddeviceclass, precision/permanence andexplicitfaultassumptions. Researchanalysis not fullcurrentstandard.",
+      "label": "tt path id",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      }
+    },
+    "tt_schedule_revision": {
+      "type": "text",
+      "description": "Actual installedschedule/configurationartifactversion.",
+      "source": "https://indico.esa.int/event/22/contributions/2011/attachments/1698/1990/6.ADCSS_2013_-_Implementation_aspects_of_TTEthernet_Interfaces_P-FLPP-HO_-_1108586_-_RSE_-_1_-_1.pdf",
+      "source_revision": "RUAG ADCSS23October2013 presentation actualslides4-5: TT/RC/BE, commonglobaltime/perhopVLschedule, switchgatekeepers,PCF/latencycorrection.",
+      "label": "tt schedule revision",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      }
+    },
+    "tt_membership_source": {
+      "type": "text",
+      "description": "Actual SM/CMpriorityfilter/domain/clique membership.",
+      "source": "https://ntrs.nasa.gov/api/citations/20120014302/downloads/20120014302.pdf",
+      "source_revision": "NASA/CR2012-217764 publicstartupmodel report selectedsection2:roles/priorityfilter/CSCAIN/cliquerecovery. Example6SM6CM10integrationcycles not defaults or generalfaultproof.",
+      "label": "tt membership source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      }
+    },
+    "tt_host_source": {
+      "type": "text",
+      "description": "Actualnodememory/CPU/sampling/consumptionpartitioning proof.",
+      "source": "https://saemobilus.sae.org/standards/as6802a-time-triggered-ethernet",
+      "source_revision": "SAE AS6802A publisherpublicabstract14February2023: networkfault-tolerantsynchronization anddispatch; node-memory/CPUpartitioning andcompleteapplicationarchitecture notcovered. Fulllicensedstandardnotreviewed.",
+      "label": "tt host source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      }
+    }
+  },
+  "mechanisms": {
+    "network": [
+      "TT_RC_BE_SEPARATE",
+      "SM_CM_SC_ROLES_PCF_STARTUP_SYNC"
+    ],
+    "timing": [
+      "GLOBAL_SCHEDULE_AND_PRECISION_QUALIFIED",
+      "NODE_APPLICATION_NOT_AS6802_NETWORK_PROOF"
+    ]
+  },
+  "parameter_constraints": [
+    {
+      "parameter": "tt_registered_source",
+      "when": {
+        "tt_review_profile": "REGISTERED_ACTUAL"
+      },
+      "required": true,
+      "source": "https://saemobilus.sae.org/standards/as6802a-time-triggered-ethernet"
+    },
+    {
+      "parameter": "bitrate",
+      "when": {},
+      "allowed": [],
+      "source": "https://saemobilus.sae.org/standards/as6802a-time-triggered-ethernet"
+    },
+    {
+      "parameter": "reserved_bandwidth_percent",
+      "when": {},
+      "allowed": [],
+      "source": "https://saemobilus.sae.org/standards/as6802a-time-triggered-ethernet"
+    },
+    {
+      "parameter": "sync_method",
+      "when": {},
+      "allowed": [],
+      "source": "https://saemobilus.sae.org/standards/as6802a-time-triggered-ethernet"
+    },
+    {
+      "parameter": "retransmission_enabled",
+      "when": {},
+      "allowed": [],
+      "source": "https://saemobilus.sae.org/standards/as6802a-time-triggered-ethernet"
+    },
+    {
+      "parameter": "retransmission_rate",
+      "when": {},
+      "allowed": [],
+      "source": "https://saemobilus.sae.org/standards/as6802a-time-triggered-ethernet"
+    },
+    {
+      "parameter": "retry_limit",
+      "when": {},
+      "allowed": [],
+      "source": "https://saemobilus.sae.org/standards/as6802a-time-triggered-ethernet"
+    },
+    {
+      "parameter": "retransmission_delay_ms",
+      "when": {},
+      "allowed": [],
+      "source": "https://saemobilus.sae.org/standards/as6802a-time-triggered-ethernet"
+    },
+    {
+      "parameter": "gateway_maximum_throughput",
+      "when": {},
+      "allowed": [],
+      "source": "https://saemobilus.sae.org/standards/as6802a-time-triggered-ethernet"
+    },
+    {
+      "parameter": "gateway_input_buffer",
+      "when": {},
+      "allowed": [],
+      "source": "https://saemobilus.sae.org/standards/as6802a-time-triggered-ethernet"
+    },
+    {
+      "parameter": "gateway_output_buffer",
+      "when": {},
+      "allowed": [],
+      "source": "https://saemobilus.sae.org/standards/as6802a-time-triggered-ethernet"
+    },
+    {
+      "parameter": "gateway_maximum_routes",
+      "when": {},
+      "allowed": [],
+      "source": "https://saemobilus.sae.org/standards/as6802a-time-triggered-ethernet"
+    },
+    {
+      "parameter": "gateway_maximum_messages_s",
+      "when": {},
+      "allowed": [],
+      "source": "https://saemobilus.sae.org/standards/as6802a-time-triggered-ethernet"
+    },
+    {
+      "parameter": "mtu_bytes",
+      "when": {},
+      "allowed": [],
+      "source": "https://saemobilus.sae.org/standards/as6802a-time-triggered-ethernet"
+    },
+    {
+      "parameter": "duplex",
+      "when": {},
+      "allowed": [],
+      "source": "https://saemobilus.sae.org/standards/as6802a-time-triggered-ethernet"
+    },
+    {
+      "parameter": "vlan_id",
+      "when": {},
+      "allowed": [],
+      "source": "https://saemobilus.sae.org/standards/as6802a-time-triggered-ethernet"
+    },
+    {
+      "parameter": "rate_limit_bit_s",
+      "when": {},
+      "allowed": [],
+      "source": "https://saemobilus.sae.org/standards/as6802a-time-triggered-ethernet"
+    },
+    {
+      "parameter": "tt_link_bps",
+      "when": {
+        "tt_review_profile": "PUBLIC_REFERENCE",
+        "tt_device_profile": "TTTECH_CONTROLLER_SPACE_2016"
+      },
+      "source": "https://indico.esa.int/event/148/attachments/985/1175/brochure_final.pdf",
+      "allowed": [
+        10000000,
+        100000000,
+        1000000000
+      ]
+    },
+    {
+      "parameter": "tt_channels",
+      "when": {
+        "tt_review_profile": "PUBLIC_REFERENCE",
+        "tt_device_profile": "TTTECH_CONTROLLER_SPACE_2016"
+      },
+      "source": "https://tttech.com/aerospace/products/end-systems/tte-end-system-lab-space-pmc",
+      "maximum": 3
+    },
+    {
+      "parameter": "tt_full_duplex",
+      "when": {
+        "tt_review_profile": "PUBLIC_REFERENCE",
+        "tt_device_profile": "TTTECH_CONTROLLER_SPACE_2016"
+      },
+      "source": "https://tttech.com/aerospace/products/end-systems/tte-end-system-lab-space-pmc",
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "tt_link_bps",
+      "when": {
+        "tt_review_profile": "PUBLIC_REFERENCE",
+        "tt_device_profile": "TTTECH_PMC_2026"
+      },
+      "source": "https://tttech.com/aerospace/products/end-systems/tte-end-system-lab-space-pmc",
+      "allowed": [
+        100000000,
+        1000000000
+      ]
+    },
+    {
+      "parameter": "tt_channels",
+      "when": {
+        "tt_review_profile": "PUBLIC_REFERENCE",
+        "tt_device_profile": "TTTECH_PMC_2026"
+      },
+      "source": "https://tttech.com/aerospace/products/end-systems/tte-end-system-lab-space-pmc",
+      "maximum": 3
+    },
+    {
+      "parameter": "tt_full_duplex",
+      "when": {
+        "tt_review_profile": "PUBLIC_REFERENCE",
+        "tt_device_profile": "TTTECH_PMC_2026"
+      },
+      "source": "https://tttech.com/aerospace/products/end-systems/tte-end-system-lab-space-pmc",
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "tt_send_vls",
+      "when": {
+        "tt_review_profile": "PUBLIC_REFERENCE",
+        "tt_device_profile": "TTTECH_CONTROLLER_SPACE_2016"
+      },
+      "source": "https://indico.esa.int/event/148/attachments/985/1175/brochure_final.pdf",
+      "maximum": 128
+    },
+    {
+      "parameter": "tt_receive_vls",
+      "when": {
+        "tt_review_profile": "PUBLIC_REFERENCE",
+        "tt_device_profile": "TTTECH_CONTROLLER_SPACE_2016"
+      },
+      "source": "https://indico.esa.int/event/148/attachments/985/1175/brochure_final.pdf",
+      "maximum": 256
+    },
+    {
+      "parameter": "tt_partitions",
+      "when": {
+        "tt_review_profile": "PUBLIC_REFERENCE",
+        "tt_device_profile": "TTTECH_CONTROLLER_SPACE_2016"
+      },
+      "source": "https://indico.esa.int/event/148/attachments/985/1175/brochure_final.pdf",
+      "maximum": 8
+    },
+    {
+      "parameter": "tt_send_com_ports",
+      "when": {
+        "tt_review_profile": "PUBLIC_REFERENCE",
+        "tt_device_profile": "TTTECH_CONTROLLER_SPACE_2016"
+      },
+      "source": "https://indico.esa.int/event/148/attachments/985/1175/brochure_final.pdf",
+      "maximum": 1024
+    },
+    {
+      "parameter": "tt_receive_com_ports",
+      "when": {
+        "tt_review_profile": "PUBLIC_REFERENCE",
+        "tt_device_profile": "TTTECH_CONTROLLER_SPACE_2016"
+      },
+      "source": "https://indico.esa.int/event/148/attachments/985/1175/brochure_final.pdf",
+      "maximum": 2048
+    },
+    {
+      "parameter": "tt_link_bps",
+      "when": {
+        "tt_review_profile": "PUBLIC_REFERENCE",
+        "tt_device_profile": "TTTECH_CONTROLLER_SPACE_2016",
+        "tt_phy_interface": "RMII"
+      },
+      "source": "https://indico.esa.int/event/148/attachments/985/1175/brochure_final.pdf",
+      "allowed": [
+        10000000,
+        100000000
+      ]
+    },
+    {
+      "parameter": "tt_device_source",
+      "when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      },
+      "source": "https://tttech.com/aerospace/products/end-systems/tte-end-system-lab-space-pmc",
+      "when_present": [
+        "tt_device_profile"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "tt_serialization_us",
+      "when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      },
+      "source": "https://saemobilus.sae.org/standards/as6802a-time-triggered-ethernet",
+      "equal_ratio": {
+        "numerator_parameter": "tt_wire_bytes",
+        "denominator_parameter": "tt_link_bps",
+        "factor": 8000000
+      }
+    },
+    {
+      "parameter": "tt_wire_bytes",
+      "when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      },
+      "source": "https://saemobilus.sae.org/standards/as6802a-time-triggered-ethernet",
+      "minimum_parameter": "tt_frame_bytes"
+    },
+    {
+      "parameter": "tt_frame_bytes",
+      "when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      },
+      "source": "https://saemobilus.sae.org/standards/as6802a-time-triggered-ethernet",
+      "maximum_parameter": "tt_peer_frame_max"
+    },
+    {
+      "parameter": "tt_cluster_us",
+      "when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      },
+      "source": "https://ntrs.nasa.gov/api/citations/20120003666/downloads/20120003666.pdf",
+      "equal_expression": {
+        "product": [
+          "tt_integration_us",
+          "tt_integration_cycles"
+        ]
+      }
+    },
+    {
+      "parameter": "tt_clock_error_us",
+      "when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      },
+      "source": "https://ntrs.nasa.gov/api/citations/20120003666/downloads/20120003666.pdf",
+      "maximum_parameter": "tt_precision_us"
+    },
+    {
+      "parameter": "tt_phase_us",
+      "when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      },
+      "source": "https://ntrs.nasa.gov/api/citations/20120003666/downloads/20120003666.pdf",
+      "exclusive_maximum_expression": "tt_period_us"
+    },
+    {
+      "parameter": "tt_slot_end_us",
+      "when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      },
+      "source": "https://ntrs.nasa.gov/api/citations/20120003666/downloads/20120003666.pdf",
+      "maximum_parameter": "tt_cluster_us",
+      "minimum_expression": {
+        "sum": [
+          "tt_offset_us",
+          "tt_serialization_us",
+          "tt_guard_us"
+        ]
+      }
+    },
+    {
+      "parameter": "tt_guard_us",
+      "when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      },
+      "source": "https://ntrs.nasa.gov/api/citations/20120003666/downloads/20120003666.pdf",
+      "minimum_parameter": "tt_clock_error_us"
+    },
+    {
+      "parameter": "tt_actual_delay_us",
+      "when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      },
+      "source": "https://ntrs.nasa.gov/api/citations/20120003666/downloads/20120003666.pdf",
+      "maximum_parameter": "tt_maximum_delay_us"
+    },
+    {
+      "parameter": "tt_added_delay_us",
+      "when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      },
+      "source": "https://ntrs.nasa.gov/api/citations/20120003666/downloads/20120003666.pdf",
+      "equal_expression": {
+        "subtract": [
+          "tt_maximum_delay_us",
+          "tt_actual_delay_us"
+        ]
+      }
+    },
+    {
+      "parameter": "tt_permanence_us",
+      "when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      },
+      "source": "https://ntrs.nasa.gov/api/citations/20120003666/downloads/20120003666.pdf",
+      "equal_expression": {
+        "sum": [
+          "tt_rx_time_us",
+          "tt_added_delay_us"
+        ]
+      }
+    },
+    {
+      "parameter": "tt_actual_delay_us",
+      "when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      },
+      "source": "https://ntrs.nasa.gov/api/citations/20120003666/downloads/20120003666.pdf",
+      "when_present": [
+        "tt_added_delay_us"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "tt_maximum_delay_us",
+      "when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      },
+      "source": "https://ntrs.nasa.gov/api/citations/20120003666/downloads/20120003666.pdf",
+      "when_present": [
+        "tt_added_delay_us"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "tt_rx_time_us",
+      "when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      },
+      "source": "https://ntrs.nasa.gov/api/citations/20120003666/downloads/20120003666.pdf",
+      "when_present": [
+        "tt_permanence_us"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "tt_added_delay_us",
+      "when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      },
+      "source": "https://ntrs.nasa.gov/api/citations/20120003666/downloads/20120003666.pdf",
+      "when_present": [
+        "tt_permanence_us"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "tt_clock_source",
+      "when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      },
+      "source": "https://ntrs.nasa.gov/api/citations/20120003666/downloads/20120003666.pdf",
+      "when_present": [
+        "tt_sync_role"
+      ],
+      "when_not": {
+        "tt_sync_role": "NONE"
+      },
+      "required": true
+    },
+    {
+      "parameter": "tt_membership_source",
+      "when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      },
+      "source": "https://ntrs.nasa.gov/api/citations/20120003666/downloads/20120003666.pdf",
+      "when_present": [
+        "tt_sync_role"
+      ],
+      "when_not": {
+        "tt_sync_role": "NONE"
+      },
+      "required": true
+    },
+    {
+      "parameter": "tt_pcf_source",
+      "when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      },
+      "source": "https://ntrs.nasa.gov/api/citations/20120014302/downloads/20120014302.pdf",
+      "when_present": [
+        "tt_pcf_type"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "tt_fault_source",
+      "when": {
+        "tt_review_profile": "PUBLIC_REFERENCE",
+        "tt_fault_tolerance_claimed": true
+      },
+      "source": "https://ntrs.nasa.gov/api/citations/20120003666/downloads/20120003666.pdf",
+      "required": true
+    },
+    {
+      "parameter": "tt_fault_profile",
+      "when": {
+        "tt_review_profile": "PUBLIC_REFERENCE",
+        "tt_fault_tolerance_claimed": true
+      },
+      "source": "https://ntrs.nasa.gov/api/citations/20120003666/downloads/20120003666.pdf",
+      "required": true
+    },
+    {
+      "parameter": "tt_rc_profile",
+      "when": {
+        "tt_review_profile": "PUBLIC_REFERENCE",
+        "tt_traffic_class": "RC"
+      },
+      "source": "https://indico.esa.int/event/22/contributions/2011/attachments/1698/1990/6.ADCSS_2013_-_Implementation_aspects_of_TTEthernet_Interfaces_P-FLPP-HO_-_1108586_-_RSE_-_1_-_1.pdf",
+      "required": true
+    },
+    {
+      "parameter": "tt_rc_source",
+      "when": {
+        "tt_review_profile": "PUBLIC_REFERENCE",
+        "tt_traffic_class": "RC"
+      },
+      "source": "https://indico.esa.int/event/22/contributions/2011/attachments/1698/1990/6.ADCSS_2013_-_Implementation_aspects_of_TTEthernet_Interfaces_P-FLPP-HO_-_1108586_-_RSE_-_1_-_1.pdf",
+      "required": true
+    },
+    {
+      "parameter": "tt_rc_bag_us",
+      "when": {
+        "tt_review_profile": "PUBLIC_REFERENCE",
+        "tt_traffic_class": "RC"
+      },
+      "source": "https://indico.esa.int/event/22/contributions/2011/attachments/1698/1990/6.ADCSS_2013_-_Implementation_aspects_of_TTEthernet_Interfaces_P-FLPP-HO_-_1108586_-_RSE_-_1_-_1.pdf",
+      "required": true
+    },
+    {
+      "parameter": "tt_rc_jitter_us",
+      "when": {
+        "tt_review_profile": "PUBLIC_REFERENCE",
+        "tt_traffic_class": "RC"
+      },
+      "source": "https://indico.esa.int/event/22/contributions/2011/attachments/1698/1990/6.ADCSS_2013_-_Implementation_aspects_of_TTEthernet_Interfaces_P-FLPP-HO_-_1108586_-_RSE_-_1_-_1.pdf",
+      "required": true
+    },
+    {
+      "parameter": "tt_rc_queue_us",
+      "when": {
+        "tt_review_profile": "PUBLIC_REFERENCE",
+        "tt_traffic_class": "RC"
+      },
+      "source": "https://indico.esa.int/event/22/contributions/2011/attachments/1698/1990/6.ADCSS_2013_-_Implementation_aspects_of_TTEthernet_Interfaces_P-FLPP-HO_-_1108586_-_RSE_-_1_-_1.pdf",
+      "required": true
+    },
+    {
+      "parameter": "tt_rc_bag_us",
+      "when": {
+        "tt_review_profile": "PUBLIC_REFERENCE",
+        "tt_traffic_class": "RC"
+      },
+      "source": "https://indico.esa.int/event/22/contributions/2011/attachments/1698/1990/6.ADCSS_2013_-_Implementation_aspects_of_TTEthernet_Interfaces_P-FLPP-HO_-_1108586_-_RSE_-_1_-_1.pdf",
+      "exclusive_minimum": 0
+    },
+    {
+      "parameter": "tt_be_bound_source",
+      "when": {
+        "tt_review_profile": "PUBLIC_REFERENCE",
+        "tt_traffic_class": "BE"
+      },
+      "source": "https://ntrs.nasa.gov/api/citations/20120003666/downloads/20120003666.pdf",
+      "when_present": [
+        "tt_transport_ms"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "tt_integration_us",
+      "when": {
+        "tt_review_profile": "PUBLIC_REFERENCE",
+        "tt_traffic_class": "TT"
+      },
+      "source": "https://ntrs.nasa.gov/api/citations/20120003666/downloads/20120003666.pdf",
+      "required": true
+    },
+    {
+      "parameter": "tt_integration_cycles",
+      "when": {
+        "tt_review_profile": "PUBLIC_REFERENCE",
+        "tt_traffic_class": "TT"
+      },
+      "source": "https://ntrs.nasa.gov/api/citations/20120003666/downloads/20120003666.pdf",
+      "required": true
+    },
+    {
+      "parameter": "tt_cluster_us",
+      "when": {
+        "tt_review_profile": "PUBLIC_REFERENCE",
+        "tt_traffic_class": "TT"
+      },
+      "source": "https://ntrs.nasa.gov/api/citations/20120003666/downloads/20120003666.pdf",
+      "required": true
+    },
+    {
+      "parameter": "tt_period_us",
+      "when": {
+        "tt_review_profile": "PUBLIC_REFERENCE",
+        "tt_traffic_class": "TT"
+      },
+      "source": "https://ntrs.nasa.gov/api/citations/20120003666/downloads/20120003666.pdf",
+      "required": true
+    },
+    {
+      "parameter": "tt_phase_us",
+      "when": {
+        "tt_review_profile": "PUBLIC_REFERENCE",
+        "tt_traffic_class": "TT"
+      },
+      "source": "https://ntrs.nasa.gov/api/citations/20120003666/downloads/20120003666.pdf",
+      "required": true
+    },
+    {
+      "parameter": "tt_offset_us",
+      "when": {
+        "tt_review_profile": "PUBLIC_REFERENCE",
+        "tt_traffic_class": "TT"
+      },
+      "source": "https://ntrs.nasa.gov/api/citations/20120003666/downloads/20120003666.pdf",
+      "required": true
+    },
+    {
+      "parameter": "tt_slot_end_us",
+      "when": {
+        "tt_review_profile": "PUBLIC_REFERENCE",
+        "tt_traffic_class": "TT"
+      },
+      "source": "https://ntrs.nasa.gov/api/citations/20120003666/downloads/20120003666.pdf",
+      "required": true
+    },
+    {
+      "parameter": "tt_serialization_us",
+      "when": {
+        "tt_review_profile": "PUBLIC_REFERENCE",
+        "tt_traffic_class": "TT"
+      },
+      "source": "https://ntrs.nasa.gov/api/citations/20120003666/downloads/20120003666.pdf",
+      "required": true
+    },
+    {
+      "parameter": "tt_guard_us",
+      "when": {
+        "tt_review_profile": "PUBLIC_REFERENCE",
+        "tt_traffic_class": "TT"
+      },
+      "source": "https://ntrs.nasa.gov/api/citations/20120003666/downloads/20120003666.pdf",
+      "required": true
+    },
+    {
+      "parameter": "tt_clock_error_us",
+      "when": {
+        "tt_review_profile": "PUBLIC_REFERENCE",
+        "tt_traffic_class": "TT"
+      },
+      "source": "https://ntrs.nasa.gov/api/citations/20120003666/downloads/20120003666.pdf",
+      "required": true
+    },
+    {
+      "parameter": "tt_precision_us",
+      "when": {
+        "tt_review_profile": "PUBLIC_REFERENCE",
+        "tt_traffic_class": "TT"
+      },
+      "source": "https://ntrs.nasa.gov/api/citations/20120003666/downloads/20120003666.pdf",
+      "required": true
+    },
+    {
+      "parameter": "tt_clock_source",
+      "when": {
+        "tt_review_profile": "PUBLIC_REFERENCE",
+        "tt_traffic_class": "TT"
+      },
+      "source": "https://ntrs.nasa.gov/api/citations/20120003666/downloads/20120003666.pdf",
+      "required": true
+    },
+    {
+      "parameter": "tt_vl_id",
+      "when": {
+        "tt_review_profile": "PUBLIC_REFERENCE",
+        "tt_traffic_class": "TT"
+      },
+      "source": "https://ntrs.nasa.gov/api/citations/20120003666/downloads/20120003666.pdf",
+      "required": true
+    },
+    {
+      "parameter": "tt_path_id",
+      "when": {
+        "tt_review_profile": "PUBLIC_REFERENCE",
+        "tt_traffic_class": "TT"
+      },
+      "source": "https://ntrs.nasa.gov/api/citations/20120003666/downloads/20120003666.pdf",
+      "required": true
+    },
+    {
+      "parameter": "tt_schedule_revision",
+      "when": {
+        "tt_review_profile": "PUBLIC_REFERENCE",
+        "tt_traffic_class": "TT"
+      },
+      "source": "https://ntrs.nasa.gov/api/citations/20120003666/downloads/20120003666.pdf",
+      "required": true
+    },
+    {
+      "parameter": "tt_integration_us",
+      "when": {
+        "tt_review_profile": "PUBLIC_REFERENCE",
+        "tt_traffic_class": "TT"
+      },
+      "source": "https://ntrs.nasa.gov/api/citations/20120003666/downloads/20120003666.pdf",
+      "exclusive_minimum": 0
+    },
+    {
+      "parameter": "tt_cluster_us",
+      "when": {
+        "tt_review_profile": "PUBLIC_REFERENCE",
+        "tt_traffic_class": "TT"
+      },
+      "source": "https://ntrs.nasa.gov/api/citations/20120003666/downloads/20120003666.pdf",
+      "exclusive_minimum": 0
+    },
+    {
+      "parameter": "tt_period_us",
+      "when": {
+        "tt_review_profile": "PUBLIC_REFERENCE",
+        "tt_traffic_class": "TT"
+      },
+      "source": "https://ntrs.nasa.gov/api/citations/20120003666/downloads/20120003666.pdf",
+      "exclusive_minimum": 0
+    },
+    {
+      "parameter": "tt_sync_role",
+      "when": {
+        "tt_review_profile": "PUBLIC_REFERENCE",
+        "tt_traffic_class": "TT"
+      },
+      "source": "https://ntrs.nasa.gov/api/citations/20120003666/downloads/20120003666.pdf",
+      "required": true,
+      "allowed": [
+        "SM",
+        "CM",
+        "SC"
+      ]
+    },
+    {
+      "parameter": "tt_e2e_ms",
+      "when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      },
+      "source": "https://saemobilus.sae.org/standards/as6802a-time-triggered-ethernet",
+      "equal_expression": {
+        "sum": [
+          "tt_source_ms",
+          "tt_transport_ms",
+          "tt_consumer_ms"
+        ]
+      },
+      "maximum_parameter": "tt_deadline_ms"
+    },
+    {
+      "parameter": "tt_age_ms",
+      "when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      },
+      "source": "https://saemobilus.sae.org/standards/as6802a-time-triggered-ethernet",
+      "maximum_parameter": "tt_freshness_ms"
+    },
+    {
+      "parameter": "tt_source_ms",
+      "when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      },
+      "source": "https://saemobilus.sae.org/standards/as6802a-time-triggered-ethernet",
+      "when_present": [
+        "tt_e2e_ms"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "tt_transport_ms",
+      "when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      },
+      "source": "https://saemobilus.sae.org/standards/as6802a-time-triggered-ethernet",
+      "when_present": [
+        "tt_e2e_ms"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "tt_consumer_ms",
+      "when": {
+        "tt_review_profile": "PUBLIC_REFERENCE"
+      },
+      "source": "https://saemobilus.sae.org/standards/as6802a-time-triggered-ethernet",
+      "when_present": [
+        "tt_e2e_ms"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "tt_observation_source",
+      "when": {
+        "tt_review_profile": "PUBLIC_REFERENCE",
+        "tt_data_accepted": true
+      },
+      "source": "https://saemobilus.sae.org/standards/as6802a-time-triggered-ethernet",
+      "required": true
+    },
+    {
+      "parameter": "tt_host_source",
+      "when": {
+        "tt_review_profile": "PUBLIC_REFERENCE",
+        "tt_data_accepted": true
+      },
+      "source": "https://saemobilus.sae.org/standards/as6802a-time-triggered-ethernet",
+      "required": true
+    },
+    {
+      "parameter": "tt_e2e_ms",
+      "when": {
+        "tt_review_profile": "PUBLIC_REFERENCE",
+        "tt_data_accepted": true
+      },
+      "source": "https://saemobilus.sae.org/standards/as6802a-time-triggered-ethernet",
+      "required": true
+    },
+    {
+      "parameter": "tt_deadline_ms",
+      "when": {
+        "tt_review_profile": "PUBLIC_REFERENCE",
+        "tt_data_accepted": true
+      },
+      "source": "https://saemobilus.sae.org/standards/as6802a-time-triggered-ethernet",
+      "required": true
+    },
+    {
+      "parameter": "tt_age_ms",
+      "when": {
+        "tt_review_profile": "PUBLIC_REFERENCE",
+        "tt_data_accepted": true
+      },
+      "source": "https://saemobilus.sae.org/standards/as6802a-time-triggered-ethernet",
+      "required": true
+    },
+    {
+      "parameter": "tt_freshness_ms",
+      "when": {
+        "tt_review_profile": "PUBLIC_REFERENCE",
+        "tt_data_accepted": true
+      },
+      "source": "https://saemobilus.sae.org/standards/as6802a-time-triggered-ethernet",
+      "required": true
+    },
+    {
+      "parameter": "tt_path_verified",
+      "when": {
+        "tt_review_profile": "PUBLIC_REFERENCE",
+        "tt_data_accepted": true
+      },
+      "source": "https://saemobilus.sae.org/standards/as6802a-time-triggered-ethernet",
+      "required": true,
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "tt_host_verified",
+      "when": {
+        "tt_review_profile": "PUBLIC_REFERENCE",
+        "tt_data_accepted": true
+      },
+      "source": "https://saemobilus.sae.org/standards/as6802a-time-triggered-ethernet",
+      "required": true,
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "tt_outcome",
+      "when": {
+        "tt_review_profile": "PUBLIC_REFERENCE",
+        "tt_data_accepted": true
+      },
+      "source": "https://saemobilus.sae.org/standards/as6802a-time-triggered-ethernet",
+      "required": true,
+      "allowed": [
+        "ACCEPTED"
+      ]
+    },
+    {
+      "parameter": "tt_clock_verified",
+      "when": {
+        "tt_review_profile": "PUBLIC_REFERENCE",
+        "tt_data_accepted": true,
+        "tt_traffic_class": "TT"
+      },
+      "source": "https://ntrs.nasa.gov/api/citations/20120003666/downloads/20120003666.pdf",
+      "required": true,
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "tt_schedule_verified",
+      "when": {
+        "tt_review_profile": "PUBLIC_REFERENCE",
+        "tt_data_accepted": true,
+        "tt_traffic_class": "TT"
+      },
+      "source": "https://ntrs.nasa.gov/api/citations/20120003666/downloads/20120003666.pdf",
+      "required": true,
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "tt_tt_nonoverlap_verified",
+      "when": {
+        "tt_review_profile": "PUBLIC_REFERENCE",
+        "tt_data_accepted": true,
+        "tt_traffic_class": "TT"
+      },
+      "source": "https://ntrs.nasa.gov/api/citations/20120003666/downloads/20120003666.pdf",
+      "required": true,
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "tt_sync_state",
+      "when": {
+        "tt_review_profile": "PUBLIC_REFERENCE",
+        "tt_data_accepted": true,
+        "tt_traffic_class": "TT"
+      },
+      "source": "https://ntrs.nasa.gov/api/citations/20120003666/downloads/20120003666.pdf",
+      "required": true,
+      "allowed": [
+        "SYNCHRONIZED"
+      ]
+    }
+  ],
+  "physical_layer_profile_id": null,
+  "medium_access_model": null,
+  "native_parameter_prefixes": [
+    "tt_"
+  ],
+  "parameter_aliases": {},
+  "parameter_alias_limits": {},
+  "parameter_evidence_scope": "EXPLICIT_LAYER",
+  "rate_source_profile_id": null,
+  "arbitration_model_id": null,
+  "max_payload_bytes": null,
+  "capabilities": {
+    "supports_signals": true,
+    "supports_data_objects": false,
+    "supports_streams": false,
+    "supports_multicast": true,
+    "supports_publish_subscribe": false,
+    "supports_request_response": false,
+    "supports_cyclic": true,
+    "supports_event": true,
+    "supports_redundancy": true,
+    "supports_time_sync": true,
+    "supports_safety_profile": false,
+    "supports_segmentation": false,
+    "supports_fragmentation": false,
+    "supports_qos": true
+  },
+  "deterministic": false,
+  "overhead_bytes": 8,
+  "implementation_status": "PLANNED",
+  "connection_type": "COMMUNICATION_TECHNOLOGY",
+  "parameter_proposals": {
+    "kind": "DEVICE_DEPENDENT",
+    "status": "REVIEW_REQUIRED",
+    "required_fields": [],
+    "note": "No universal rate is available; inspect the selected hardware/profile."
+  },
+  "capacity_evidence": {
+    "status": "MODEL_MISSING",
+    "frame_model": null,
+    "schedule_model": null,
+    "requires_confirmed_device_parameters": true
+  },
+  "components": {
+    "binding": "tte.binding",
+    "generator": "tte.generator",
+    "validator": "tte.validator",
+    "timing_model": null,
+    "load_model": null,
+    "encoder": "tte.encoder",
+    "decoder": "tte.decoder"
+  },
+  "known_limitations": "Technology-specific conformance details require a vendor/profile extension."
+}

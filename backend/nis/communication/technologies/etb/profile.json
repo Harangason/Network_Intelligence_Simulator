@@ -1,0 +1,1918 @@
+{
+  "id": "etb",
+  "label": "Ethernet Train Backbone",
+  "domain": "rail",
+  "layer": "INDUSTRY_PROFILE",
+  "transport_unit": "FRAME",
+  "payload_element_types": [
+    "FIELD",
+    "RAW_DATA"
+  ],
+  "hardware_interface": "ethernet_port",
+  "hardware_capability_aliases": [
+    "ethernet_port"
+  ],
+  "default_stack": [
+    "ethernet",
+    "etb"
+  ],
+  "stack_variants": [
+    [
+      "ethernet",
+      "etb"
+    ]
+  ],
+  "default_bitrate": 100000000,
+  "rate_model": {
+    "type": "SINGLE_BITRATE",
+    "fields": [
+      "bitrate_bps"
+    ],
+    "minimum_bps": 1
+  },
+  "local_timing_schema": [],
+  "parameter_schema": {
+    "bitrate_bps": {
+      "label": "Link Speed",
+      "category": "physical",
+      "scope": "network",
+      "type": "number",
+      "description": "Technology-profiled network rate.",
+      "required": true,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100000000,
+      "unit": "bit/s",
+      "min": 1,
+      "default_review": {
+        "technology": "etb",
+        "rate_profile": "etb",
+        "values": {
+          "bitrate_bps": 100000000
+        },
+        "basis": "LITERATURE_DEFAULT",
+        "status": "REVIEW_REQUIRED",
+        "source": "https://docs.westermo.com/weos/weos-5/HowTo/iec61375-port-setting-backbone-ports.html",
+        "source_revision": "WeOS5.29 ETBN port settings 100Mb/Gbit sections, accessed2026-10-01; IEC61375-2-5:2014 publisher edition1.0"
+      },
+      "allowed_bps": [],
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED",
+      "source": "https://docs.westermo.com/weos/weos-5/HowTo/iec61375-port-setting-backbone-ports.html",
+      "source_revision": "WeOS5.29 ETBN port settings 100Mb/Gbit sections, accessed2026-10-01; IEC61375-2-5:2014 publisher edition1.0",
+      "conditional_defaults": [
+        {
+          "when": {
+            "etb_phy": "100BASE_TX"
+          },
+          "value": 100000000
+        },
+        {
+          "when": {
+            "etb_phy": "1000BASE_T"
+          },
+          "value": 1000000000
+        }
+      ]
+    },
+    "payload_bytes": {
+      "label": "Payload",
+      "category": "physical",
+      "scope": "message",
+      "type": "number",
+      "description": "Actual MAC-client data octets excluding MAC header/FCS/padding; not complete TRDP/IP application data.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.ieee802.org/3/frame_study/0409/daines_3_0409.pdf",
+      "source_revision": "WeOS5 TTDP and ETBN port settings accessed2026-10-01",
+      "integer": true
+    },
+    "cycle_ms": {
+      "label": "Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "Standardperiode fuer zyklische Nachrichten.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "minimum_cycle_time_ms": {
+      "label": "Minimum Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "deadline_ms": {
+      "label": "Deadline",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "timeout_ms": {
+      "label": "Timeout",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_latency_ms": {
+      "label": "Maximum Latency",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "jitter_ms": {
+      "label": "Jitter Budget",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "freshness_ms": {
+      "label": "Data Freshness",
+      "category": "timing",
+      "scope": "signal",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "source_processing_delay_ms": {
+      "label": "Source Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_processing_delay_ms": {
+      "label": "Target Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "propagation_delay_ms": {
+      "label": "Propagation",
+      "category": "timing",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.01,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_bus_load_percent": {
+      "label": "Ziel-Buslast",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "Zielwert fuer die aus Routing, Payload, Zyklus und Bitrate berechnete Buslast.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "peak_factor": {
+      "label": "Peak Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.15,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_factor": {
+      "label": "Burst Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.5,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_window_ms": {
+      "label": "Burst Window",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "warning_threshold": {
+      "label": "Load Warning",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "critical_threshold": {
+      "label": "Load Critical",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 75,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "overload_threshold": {
+      "label": "Load Overload",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 90,
+      "unit": "%",
+      "min": 1,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "queue_size": {
+      "label": "Queue Size",
+      "category": "qos",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 256,
+      "unit": "Frames",
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1",
+      "integer": true
+    },
+    "queue_policy": {
+      "label": "Queue Policy",
+      "category": "qos",
+      "scope": "network",
+      "type": "select",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": "FIFO",
+      "options": [
+        "FIFO",
+        "PRIORITY",
+        "CUSTOM"
+      ],
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "traffic_class": {
+      "label": "Traffic Class",
+      "category": "qos",
+      "scope": "route",
+      "type": "select",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": "BEST_EFFORT",
+      "options": [
+        "BEST_EFFORT",
+        "CONTROL",
+        "REALTIME",
+        "SAFETY_CRITICAL"
+      ],
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "packet_loss_probability": {
+      "label": "Packet Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "frame_loss_probability": {
+      "label": "Frame Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "bit_error_rate": {
+      "label": "Bit Error Rate",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "corruption_probability": {
+      "label": "Corruption",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duplicate_probability": {
+      "label": "Duplication",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "reordering_probability": {
+      "label": "Reordering",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "required_reliability": {
+      "label": "Required Reliability",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.999,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_offset_ms": {
+      "label": "Clock Offset",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_drift_ppm": {
+      "label": "Clock Drift",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 20,
+      "unit": "ppm",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_precision_ms": {
+      "label": "Sync Precision",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_interval_ms": {
+      "label": "Sync Interval",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1000,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_sync_error_ms": {
+      "label": "Maximum Sync Error",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_delay_ms": {
+      "label": "Gateway Processing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.2,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_queue_delay_ms": {
+      "label": "Gateway Queueing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "protocol_conversion_delay_ms": {
+      "label": "Protocol Conversion",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duration_s": {
+      "label": "Simulation Duration",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 1,
+      "unit": "s",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "seed": {
+      "label": "Random Seed",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 42,
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "max_events": {
+      "label": "Maximum Events",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 100000,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "dropout_probability": {
+      "label": "Failure Injection Dropout",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "mtu_bytes": {
+      "label": "MTU",
+      "category": "physical",
+      "scope": "network",
+      "type": "number",
+      "description": "Selected MAC-client payload limit, not IP MTU or complete application message; actual peer limit and frame profile required.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 1,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "source": "https://www.ieee802.org/3/frame_study/0409/daines_3_0409.pdf",
+      "source_revision": "IEEE802.3 FESG 30September2004 existing basic MAC frame, pages3/5/6",
+      "integer": true,
+      "conditional_defaults": [
+        {
+          "when": {
+            "etb_frame_profile": "BASIC_MAC"
+          },
+          "value": 1500
+        }
+      ]
+    },
+    "duplex": {
+      "label": "Duplex",
+      "category": "physical",
+      "scope": "network",
+      "type": "select",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "FULL",
+        "HALF"
+      ],
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "source": "https://docs.westermo.com/weos/weos-5/HowTo/iec61375-port-setting-backbone-ports.html",
+      "source_revision": "WeOS5 TTDP and ETBN port settings accessed2026-10-01",
+      "conditional_defaults": [
+        {
+          "when": {
+            "etb_phy": "100BASE_TX"
+          },
+          "value": "FULL"
+        },
+        {
+          "when": {
+            "etb_phy": "1000BASE_T"
+          },
+          "value": "FULL"
+        }
+      ]
+    },
+    "vlan_id": {
+      "label": "VLAN ID",
+      "category": "qos",
+      "scope": "network",
+      "type": "number",
+      "description": "Actual configured backbone VLAN, distinct from TTDP topology VLAN492 and ECN VLAN/interface mapping. No invented VLAN0.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 1,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://docs.westermo.com/weos/5/Train/ttdp/",
+      "source_revision": "WeOS5 TTDP and ETBN port settings accessed2026-10-01",
+      "integer": true,
+      "max": 4094
+    },
+    "rate_limit_bit_s": {
+      "label": "Rate Limit",
+      "category": "qos",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual configured port policer limit; zero only explicitly declared disabled. Not a generic unknown-rate fallback.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "bit/s",
+      "min": 0,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://docs.westermo.com/weos/5/Train/ttdp/",
+      "source_revision": "WeOS5 TTDP and ETBN port settings accessed2026-10-01",
+      "integer": true
+    },
+    "etb_edition": {
+      "label": "Actual ETB edition",
+      "category": "physical",
+      "scope": "network",
+      "type": "select",
+      "description": "ETB-specific declaration. Static consist position differs from dynamically assigned train ETBN ID; real topology and state require separate evidence.",
+      "required": true,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "IEC_2014",
+        "DEVICE_SPECIFIC"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://docs.westermo.com/weos/5/Train/ttdp/",
+      "source_revision": "WeOS5.29 TTDP and ETBN port-settings documentation accessed2026-10-01; implementation-qualified limits, not all-edition IEC conformance"
+    },
+    "etb_phy": {
+      "label": "Selected ETB PHY",
+      "category": "physical",
+      "scope": "network",
+      "type": "select",
+      "description": "ETB-specific declaration. Static consist position differs from dynamically assigned train ETBN ID; real topology and state require separate evidence.",
+      "required": true,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": "100BASE_TX",
+      "options": [
+        "100BASE_TX",
+        "1000BASE_T",
+        "DEVICE_SPECIFIC"
+      ],
+      "integer": false,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED",
+      "source": "https://docs.westermo.com/weos/weos-5/HowTo/iec61375-port-setting-backbone-ports.html",
+      "source_revision": "WeOS5.29 TTDP and ETBN port-settings documentation accessed2026-10-01; implementation-qualified limits, not all-edition IEC conformance"
+    },
+    "etb_node_role": {
+      "label": "Actual ETB endpoint role",
+      "category": "physical",
+      "scope": "network",
+      "type": "select",
+      "description": "ETB-specific declaration. Static consist position differs from dynamically assigned train ETBN ID; real topology and state require separate evidence.",
+      "required": true,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "ETBN",
+        "END_DEVICE",
+        "DEVICE_SPECIFIC"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://docs.westermo.com/weos/5/Train/ttdp/",
+      "source_revision": "WeOS5.29 TTDP and ETBN port-settings documentation accessed2026-10-01; implementation-qualified limits, not all-edition IEC conformance"
+    },
+    "etb_configuration_source": {
+      "label": "Actual edition/device/firmware configuration",
+      "category": "physical",
+      "scope": "network",
+      "type": "text",
+      "description": "ETB-specific declaration. Static consist position differs from dynamically assigned train ETBN ID; real topology and state require separate evidence.",
+      "required": true,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://docs.westermo.com/weos/5/Train/ttdp/",
+      "source_revision": "WeOS5.29 TTDP and ETBN port-settings documentation accessed2026-10-01; implementation-qualified limits, not all-edition IEC conformance"
+    },
+    "etb_physical_binding": {
+      "label": "Actual backbone port/cabling/bypass profile",
+      "category": "physical",
+      "scope": "network",
+      "type": "text",
+      "description": "ETB-specific declaration. Static consist position differs from dynamically assigned train ETBN ID; real topology and state require separate evidence.",
+      "required": true,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://docs.westermo.com/weos/weos-5/HowTo/iec61375-port-setting-backbone-ports.html",
+      "source_revision": "WeOS5.29 TTDP and ETBN port-settings documentation accessed2026-10-01; implementation-qualified limits, not all-edition IEC conformance"
+    },
+    "etb_implementation": {
+      "label": "Actual ETB implementation",
+      "category": "physical",
+      "scope": "network",
+      "type": "select",
+      "description": "ETB-specific declaration. Static consist position differs from dynamically assigned train ETBN ID; real topology and state require separate evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "WEOS_5",
+        "DEVICE_SPECIFIC"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://docs.westermo.com/weos/5/Train/ttdp/",
+      "source_revision": "WeOS5.29 TTDP and ETBN port-settings documentation accessed2026-10-01; implementation-qualified limits, not all-edition IEC conformance"
+    },
+    "etb_frame_profile": {
+      "label": "Selected MAC frame profile",
+      "category": "physical",
+      "scope": "network",
+      "type": "select",
+      "description": "ETB-specific declaration. Static consist position differs from dynamically assigned train ETBN ID; real topology and state require separate evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": "BASIC_MAC",
+      "options": [
+        "BASIC_MAC",
+        "DEVICE_SPECIFIC"
+      ],
+      "integer": false,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED",
+      "source": "https://docs.westermo.com/weos/5/Train/ttdp/",
+      "source_revision": "WeOS5.29 TTDP and ETBN port-settings documentation accessed2026-10-01; implementation-qualified limits, not all-edition IEC conformance"
+    },
+    "etb_local_id": {
+      "label": "Actual static ETBN position in consist",
+      "category": "physical",
+      "scope": "network",
+      "type": "number",
+      "description": "ETB-specific declaration. Static consist position differs from dynamically assigned train ETBN ID; real topology and state require separate evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 1,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://docs.westermo.com/weos/5/Train/ttdp/",
+      "source_revision": "WeOS5.29 TTDP and ETBN port-settings documentation accessed2026-10-01; implementation-qualified limits, not all-edition IEC conformance"
+    },
+    "etb_ecn_id": {
+      "label": "Actual attached consist network ID",
+      "category": "physical",
+      "scope": "network",
+      "type": "number",
+      "description": "ETB-specific declaration. Static consist position differs from dynamically assigned train ETBN ID; real topology and state require separate evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 1,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://docs.westermo.com/weos/5/Train/ttdp/",
+      "source_revision": "WeOS5.29 TTDP and ETBN port-settings documentation accessed2026-10-01; implementation-qualified limits, not all-edition IEC conformance"
+    },
+    "etb_backbone_id": {
+      "label": "Actual backbone purpose ID",
+      "category": "physical",
+      "scope": "network",
+      "type": "number",
+      "description": "ETB-specific declaration. Static consist position differs from dynamically assigned train ETBN ID; real topology and state require separate evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "source": "https://docs.westermo.com/weos/5/Train/ttdp/",
+      "source_revision": "WeOS5.29 TTDP and ETBN port-settings documentation accessed2026-10-01; implementation-qualified limits, not all-edition IEC conformance",
+      "conditional_defaults": [
+        {
+          "when": {
+            "etb_implementation": "WEOS_5"
+          },
+          "value": 0
+        }
+      ]
+    },
+    "etb_dir1_ports": {
+      "label": "Actual direction1 redundant port count",
+      "category": "physical",
+      "scope": "network",
+      "type": "number",
+      "description": "ETB-specific declaration. Static consist position differs from dynamically assigned train ETBN ID; real topology and state require separate evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://docs.westermo.com/weos/5/Train/ttdp/",
+      "source_revision": "WeOS5.29 TTDP and ETBN port-settings documentation accessed2026-10-01; implementation-qualified limits, not all-edition IEC conformance"
+    },
+    "etb_dir2_ports": {
+      "label": "Actual direction2 redundant port count",
+      "category": "physical",
+      "scope": "network",
+      "type": "number",
+      "description": "ETB-specific declaration. Static consist position differs from dynamically assigned train ETBN ID; real topology and state require separate evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://docs.westermo.com/weos/5/Train/ttdp/",
+      "source_revision": "WeOS5.29 TTDP and ETBN port-settings documentation accessed2026-10-01; implementation-qualified limits, not all-edition IEC conformance"
+    },
+    "etb_aggregation": {
+      "label": "Actual link aggregation mechanism",
+      "category": "physical",
+      "scope": "network",
+      "type": "select",
+      "description": "ETB-specific declaration. Static consist position differs from dynamically assigned train ETBN ID; real topology and state require separate evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "TTDP_ACTIVE_STANDBY",
+        "DEVICE_SPECIFIC"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://docs.westermo.com/weos/5/Train/ttdp/",
+      "source_revision": "WeOS5.29 TTDP and ETBN port-settings documentation accessed2026-10-01; implementation-qualified limits, not all-edition IEC conformance"
+    },
+    "etb_active_links_per_direction": {
+      "label": "Actual simultaneously active data links per direction",
+      "category": "physical",
+      "scope": "network",
+      "type": "number",
+      "description": "ETB-specific declaration. Static consist position differs from dynamically assigned train ETBN ID; real topology and state require separate evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://docs.westermo.com/weos/5/Train/ttdp/",
+      "source_revision": "WeOS5.29 TTDP and ETBN port-settings documentation accessed2026-10-01; implementation-qualified limits, not all-edition IEC conformance"
+    },
+    "etb_topology_vlan": {
+      "label": "Actual TTDP topology signalling VLAN",
+      "category": "physical",
+      "scope": "network",
+      "type": "number",
+      "description": "ETB-specific declaration. Static consist position differs from dynamically assigned train ETBN ID; real topology and state require separate evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 1,
+      "max": 4094,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "source": "https://docs.westermo.com/weos/5/Train/ttdp/",
+      "source_revision": "WeOS5.29 TTDP and ETBN port-settings documentation accessed2026-10-01; implementation-qualified limits, not all-edition IEC conformance",
+      "conditional_defaults": [
+        {
+          "when": {
+            "etb_implementation": "WEOS_5"
+          },
+          "value": 492
+        }
+      ]
+    },
+    "etb_igmp_snooping": {
+      "label": "Actual backbone IGMP snooping enabled",
+      "category": "physical",
+      "scope": "network",
+      "type": "boolean",
+      "description": "ETB-specific declaration. Static consist position differs from dynamically assigned train ETBN ID; real topology and state require separate evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://docs.westermo.com/weos/5/Train/ttdp/",
+      "source_revision": "WeOS5.29 TTDP and ETBN port-settings documentation accessed2026-10-01; implementation-qualified limits, not all-edition IEC conformance"
+    },
+    "etb_consist_uuid": {
+      "label": "Actual consist UUID",
+      "category": "physical",
+      "scope": "network",
+      "type": "text",
+      "description": "ETB-specific declaration. Static consist position differs from dynamically assigned train ETBN ID; real topology and state require separate evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://docs.westermo.com/weos/5/Train/ttdp/",
+      "source_revision": "WeOS5.29 TTDP and ETBN port-settings documentation accessed2026-10-01; implementation-qualified limits, not all-edition IEC conformance",
+      "pattern": "[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}",
+      "forbidden_values": [
+        "00000000-0000-0000-0000-000000000000"
+      ]
+    },
+    "etb_etbn_mac": {
+      "label": "Actual ETBN MAC address",
+      "category": "physical",
+      "scope": "network",
+      "type": "text",
+      "description": "ETB-specific declaration. Static consist position differs from dynamically assigned train ETBN ID; real topology and state require separate evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://docs.westermo.com/weos/5/Train/ttdp/",
+      "source_revision": "WeOS5.29 TTDP and ETBN port-settings documentation accessed2026-10-01; implementation-qualified limits, not all-edition IEC conformance",
+      "pattern": "(?:[0-9a-fA-F]{2}:){5}[0-9a-fA-F]{2}"
+    },
+    "etb_topology_counter": {
+      "label": "Actual current etbTopoCnt value",
+      "category": "physical",
+      "scope": "network",
+      "type": "text",
+      "description": "ETB-specific declaration. Static consist position differs from dynamically assigned train ETBN ID; real topology and state require separate evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://docs.westermo.com/weos/5/Train/ttdp/",
+      "source_revision": "WeOS5.29 TTDP and ETBN port-settings documentation accessed2026-10-01; implementation-qualified limits, not all-edition IEC conformance"
+    },
+    "etb_message_topology_counter": {
+      "label": "Actual message etbTopoCnt value",
+      "category": "physical",
+      "scope": "network",
+      "type": "text",
+      "description": "ETB-specific declaration. Static consist position differs from dynamically assigned train ETBN ID; real topology and state require separate evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://docs.westermo.com/weos/5/Train/ttdp/",
+      "source_revision": "WeOS5.29 TTDP and ETBN port-settings documentation accessed2026-10-01; implementation-qualified limits, not all-edition IEC conformance"
+    },
+    "etb_inauguration": {
+      "label": "Actual inauguration state",
+      "category": "physical",
+      "scope": "network",
+      "type": "select",
+      "description": "ETB-specific declaration. Static consist position differs from dynamically assigned train ETBN ID; real topology and state require separate evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "PENDING",
+        "INAUGURATED",
+        "FAILED"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://docs.westermo.com/weos/5/Train/ttdp/",
+      "source_revision": "WeOS5.29 TTDP and ETBN port-settings documentation accessed2026-10-01; implementation-qualified limits, not all-edition IEC conformance"
+    },
+    "etb_inhibition": {
+      "label": "Actual inauguration inhibition",
+      "category": "physical",
+      "scope": "network",
+      "type": "boolean",
+      "description": "ETB-specific declaration. Static consist position differs from dynamically assigned train ETBN ID; real topology and state require separate evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://docs.westermo.com/weos/5/Train/ttdp/",
+      "source_revision": "WeOS5.29 TTDP and ETBN port-settings documentation accessed2026-10-01; implementation-qualified limits, not all-edition IEC conformance"
+    },
+    "etb_traffic_enabled": {
+      "label": "Actual ETB application traffic enabled",
+      "category": "physical",
+      "scope": "network",
+      "type": "boolean",
+      "description": "ETB-specific declaration. Static consist position differs from dynamically assigned train ETBN ID; real topology and state require separate evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://docs.westermo.com/weos/5/Train/ttdp/",
+      "source_revision": "WeOS5.29 TTDP and ETBN port-settings documentation accessed2026-10-01; implementation-qualified limits, not all-edition IEC conformance"
+    },
+    "etb_traffic_scope": {
+      "label": "Actual application traffic scope",
+      "category": "physical",
+      "scope": "network",
+      "type": "select",
+      "description": "ETB-specific declaration. Static consist position differs from dynamically assigned train ETBN ID; real topology and state require separate evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "INTRA_CONSIST",
+        "INTER_CONSIST"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://docs.westermo.com/weos/5/Train/ttdp/",
+      "source_revision": "WeOS5.29 TTDP and ETBN port-settings documentation accessed2026-10-01; implementation-qualified limits, not all-edition IEC conformance"
+    },
+    "etb_state_source": {
+      "label": "Actual inauguration/topology/traffic state evidence",
+      "category": "physical",
+      "scope": "network",
+      "type": "text",
+      "description": "ETB-specific declaration. Static consist position differs from dynamically assigned train ETBN ID; real topology and state require separate evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://docs.westermo.com/weos/5/Train/ttdp/",
+      "source_revision": "WeOS5.29 TTDP and ETBN port-settings documentation accessed2026-10-01; implementation-qualified limits, not all-edition IEC conformance"
+    },
+    "etb_topology_source": {
+      "label": "Actual ordered consist/ETBN/ECN topology mapping",
+      "category": "physical",
+      "scope": "network",
+      "type": "text",
+      "description": "ETB-specific declaration. Static consist position differs from dynamically assigned train ETBN ID; real topology and state require separate evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://docs.westermo.com/weos/5/Train/ttdp/",
+      "source_revision": "WeOS5.29 TTDP and ETBN port-settings documentation accessed2026-10-01; implementation-qualified limits, not all-edition IEC conformance"
+    },
+    "etb_hello_period_ms": {
+      "label": "Actual TTDP HELLO period",
+      "category": "timing",
+      "scope": "network",
+      "type": "number",
+      "description": "ETB-specific declaration. Static consist position differs from dynamically assigned train ETBN ID; real topology and state require separate evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "ms",
+      "min": 0.001,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://docs.westermo.com/weos/5/Train/ttdp/",
+      "source_revision": "WeOS5.29 TTDP and ETBN port-settings documentation accessed2026-10-01; implementation-qualified limits, not all-edition IEC conformance"
+    },
+    "etb_hello_timeout_ms": {
+      "label": "Actual TTDP HELLO neighbour-loss timeout",
+      "category": "timing",
+      "scope": "network",
+      "type": "number",
+      "description": "ETB-specific declaration. Static consist position differs from dynamically assigned train ETBN ID; real topology and state require separate evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "ms",
+      "min": 0.001,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://docs.westermo.com/weos/5/Train/ttdp/",
+      "source_revision": "WeOS5.29 TTDP and ETBN port-settings documentation accessed2026-10-01; implementation-qualified limits, not all-edition IEC conformance"
+    },
+    "etb_topology_period_ms": {
+      "label": "Actual TTDP TOPOLOGY period",
+      "category": "timing",
+      "scope": "network",
+      "type": "number",
+      "description": "ETB-specific declaration. Static consist position differs from dynamically assigned train ETBN ID; real topology and state require separate evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "ms",
+      "min": 0.001,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://docs.westermo.com/weos/5/Train/ttdp/",
+      "source_revision": "WeOS5.29 TTDP and ETBN port-settings documentation accessed2026-10-01; implementation-qualified limits, not all-edition IEC conformance"
+    },
+    "etb_link_recovery_bound_ms": {
+      "label": "Actual link/bypass/failover upper bound",
+      "category": "timing",
+      "scope": "network",
+      "type": "number",
+      "description": "ETB-specific declaration. Static consist position differs from dynamically assigned train ETBN ID; real topology and state require separate evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "ms",
+      "min": 0,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://docs.westermo.com/weos/5/Train/ttdp/",
+      "source_revision": "WeOS5.29 TTDP and ETBN port-settings documentation accessed2026-10-01; implementation-qualified limits, not all-edition IEC conformance"
+    },
+    "etb_ip_address": {
+      "label": "Actual topology-assigned IPv4/IPv6 address",
+      "category": "physical",
+      "scope": "network",
+      "type": "text",
+      "description": "ETB-specific declaration. Static consist position differs from dynamically assigned train ETBN ID; real topology and state require separate evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://docs.westermo.com/weos/5/Train/ttdp/",
+      "source_revision": "WeOS5.29 TTDP and ETBN port-settings documentation accessed2026-10-01; implementation-qualified limits, not all-edition IEC conformance",
+      "format": "IP_ADDRESS"
+    },
+    "etb_address_mapping_source": {
+      "label": "Actual TTDP/ECN/NAT/multicast mapping",
+      "category": "physical",
+      "scope": "network",
+      "type": "text",
+      "description": "ETB-specific declaration. Static consist position differs from dynamically assigned train ETBN ID; real topology and state require separate evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://docs.westermo.com/weos/5/Train/ttdp/",
+      "source_revision": "WeOS5.29 TTDP and ETBN port-settings documentation accessed2026-10-01; implementation-qualified limits, not all-edition IEC conformance"
+    },
+    "etb_mdix_mode": {
+      "label": "Actual port crossover configuration",
+      "category": "physical",
+      "scope": "network",
+      "type": "select",
+      "description": "ETB-specific declaration. Static consist position differs from dynamically assigned train ETBN ID; real topology and state require separate evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "MDI",
+        "MDIX",
+        "AUTO"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://docs.westermo.com/weos/weos-5/HowTo/iec61375-port-setting-backbone-ports.html",
+      "source_revision": "WeOS5.29 TTDP and ETBN port-settings documentation accessed2026-10-01; implementation-qualified limits, not all-edition IEC conformance"
+    },
+    "etb_autonegotiation": {
+      "label": "Actual port auto negotiation enabled",
+      "category": "physical",
+      "scope": "network",
+      "type": "boolean",
+      "description": "ETB-specific declaration. Static consist position differs from dynamically assigned train ETBN ID; real topology and state require separate evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://docs.westermo.com/weos/weos-5/HowTo/iec61375-port-setting-backbone-ports.html",
+      "source_revision": "WeOS5.29 TTDP and ETBN port-settings documentation accessed2026-10-01; implementation-qualified limits, not all-edition IEC conformance"
+    },
+    "etb_clock_role": {
+      "label": "Actual Gbit port clock role",
+      "category": "physical",
+      "scope": "network",
+      "type": "select",
+      "description": "ETB-specific declaration. Static consist position differs from dynamically assigned train ETBN ID; real topology and state require separate evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "MASTER",
+        "FOLLOWER",
+        "AUTO"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://docs.westermo.com/weos/weos-5/HowTo/iec61375-port-setting-backbone-ports.html",
+      "source_revision": "WeOS5.29 TTDP and ETBN port-settings documentation accessed2026-10-01; implementation-qualified limits, not all-edition IEC conformance"
+    },
+    "etb_peer_clock_role": {
+      "label": "Actual connected peer Gbit clock role",
+      "category": "physical",
+      "scope": "network",
+      "type": "select",
+      "description": "ETB-specific declaration. Static consist position differs from dynamically assigned train ETBN ID; real topology and state require separate evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "MASTER",
+        "FOLLOWER",
+        "AUTO"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://docs.westermo.com/weos/weos-5/HowTo/iec61375-port-setting-backbone-ports.html",
+      "source_revision": "WeOS5.29 TTDP and ETBN port-settings documentation accessed2026-10-01; implementation-qualified limits, not all-edition IEC conformance"
+    },
+    "etb_queue_source": {
+      "label": "Actual switching/control-class queue and scheduling evidence",
+      "category": "physical",
+      "scope": "network",
+      "type": "text",
+      "description": "ETB-specific declaration. Static consist position differs from dynamically assigned train ETBN ID; real topology and state require separate evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://docs.westermo.com/weos/5/Train/ttdp/",
+      "source_revision": "WeOS5.29 TTDP and ETBN port-settings documentation accessed2026-10-01; implementation-qualified limits, not all-edition IEC conformance"
+    },
+    "etb_peer_limit_source": {
+      "label": "Actual peer MAC frame/payload limits",
+      "category": "physical",
+      "scope": "network",
+      "type": "text",
+      "description": "ETB-specific declaration. Static consist position differs from dynamically assigned train ETBN ID; real topology and state require separate evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://docs.westermo.com/weos/5/Train/ttdp/",
+      "source_revision": "WeOS5.29 TTDP and ETBN port-settings documentation accessed2026-10-01; implementation-qualified limits, not all-edition IEC conformance"
+    }
+  },
+  "mechanisms": {
+    "transport": [
+      "EXPLICIT_ETB_BACKBONE_NOT_ECN"
+    ],
+    "arbitration": [
+      "FULL_DUPLEX_SWITCH_QUEUES_AND_TTDP_REDUNDANT_ACTIVE_LINK"
+    ],
+    "topology": [
+      "CONSIST_UUID_ETBN_ECN_TTDP_INAUGURATION"
+    ]
+  },
+  "parameter_constraints": [
+    {
+      "when": {
+        "etb_phy": "100BASE_TX"
+      },
+      "parameter": "bitrate_bps",
+      "allowed": [
+        100000000
+      ],
+      "source": "https://docs.westermo.com/weos/weos-5/HowTo/iec61375-port-setting-backbone-ports.html",
+      "source_revision": "WeOS5.29 ETBN port settings 100Mb/Gbit sections, accessed2026-10-01; IEC61375-2-5:2014 publisher edition1.0"
+    },
+    {
+      "when": {
+        "etb_phy": "1000BASE_T"
+      },
+      "parameter": "bitrate_bps",
+      "allowed": [
+        1000000000
+      ],
+      "source": "https://docs.westermo.com/weos/weos-5/HowTo/iec61375-port-setting-backbone-ports.html",
+      "source_revision": "WeOS5.29 ETBN port settings 100Mb/Gbit sections, accessed2026-10-01; IEC61375-2-5:2014 publisher edition1.0"
+    },
+    {
+      "when": {
+        "etb_phy": "100BASE_TX"
+      },
+      "parameter": "duplex",
+      "allowed": [
+        "FULL"
+      ],
+      "source": "https://docs.westermo.com/weos/weos-5/HowTo/iec61375-port-setting-backbone-ports.html",
+      "source_revision": "WeOS5.29 ETBN port settings 100Mb/Gbit sections, accessed2026-10-01; IEC61375-2-5:2014 publisher edition1.0"
+    },
+    {
+      "when": {
+        "etb_phy": "1000BASE_T"
+      },
+      "parameter": "duplex",
+      "allowed": [
+        "FULL"
+      ],
+      "source": "https://docs.westermo.com/weos/weos-5/HowTo/iec61375-port-setting-backbone-ports.html",
+      "source_revision": "WeOS5.29 ETBN port settings 100Mb/Gbit sections, accessed2026-10-01; IEC61375-2-5:2014 publisher edition1.0"
+    },
+    {
+      "when": {
+        "etb_frame_profile": "BASIC_MAC"
+      },
+      "parameter": "payload_bytes",
+      "maximum": 1500,
+      "source": "https://docs.westermo.com/weos/weos-5/HowTo/iec61375-port-setting-backbone-ports.html",
+      "source_revision": "WeOS5.29 ETBN port settings 100Mb/Gbit sections, accessed2026-10-01; IEC61375-2-5:2014 publisher edition1.0"
+    },
+    {
+      "when": {
+        "etb_frame_profile": "BASIC_MAC"
+      },
+      "parameter": "mtu_bytes",
+      "maximum": 1500,
+      "source": "https://docs.westermo.com/weos/weos-5/HowTo/iec61375-port-setting-backbone-ports.html",
+      "source_revision": "WeOS5.29 ETBN port settings 100Mb/Gbit sections, accessed2026-10-01; IEC61375-2-5:2014 publisher edition1.0"
+    },
+    {
+      "when": {},
+      "parameter": "payload_bytes",
+      "maximum_parameter": "mtu_bytes",
+      "source": "https://docs.westermo.com/weos/weos-5/HowTo/iec61375-port-setting-backbone-ports.html",
+      "source_revision": "WeOS5.29 ETBN port settings 100Mb/Gbit sections, accessed2026-10-01; IEC61375-2-5:2014 publisher edition1.0"
+    },
+    {
+      "when": {},
+      "parameter": "rate_limit_bit_s",
+      "maximum_parameter": "bitrate_bps",
+      "source": "https://docs.westermo.com/weos/weos-5/HowTo/iec61375-port-setting-backbone-ports.html",
+      "source_revision": "WeOS5.29 ETBN port settings 100Mb/Gbit sections, accessed2026-10-01; IEC61375-2-5:2014 publisher edition1.0"
+    },
+    {
+      "when": {
+        "etb_implementation": "WEOS_5"
+      },
+      "parameter": "etb_local_id",
+      "maximum": 32,
+      "source": "https://docs.westermo.com/weos/weos-5/HowTo/iec61375-port-setting-backbone-ports.html",
+      "source_revision": "WeOS5.29 ETBN port settings 100Mb/Gbit sections, accessed2026-10-01; IEC61375-2-5:2014 publisher edition1.0"
+    },
+    {
+      "when": {
+        "etb_implementation": "WEOS_5"
+      },
+      "parameter": "etb_ecn_id",
+      "maximum": 4,
+      "source": "https://docs.westermo.com/weos/weos-5/HowTo/iec61375-port-setting-backbone-ports.html",
+      "source_revision": "WeOS5.29 ETBN port settings 100Mb/Gbit sections, accessed2026-10-01; IEC61375-2-5:2014 publisher edition1.0"
+    },
+    {
+      "when": {
+        "etb_implementation": "WEOS_5"
+      },
+      "parameter": "etb_backbone_id",
+      "allowed": [
+        0,
+        1
+      ],
+      "source": "https://docs.westermo.com/weos/weos-5/HowTo/iec61375-port-setting-backbone-ports.html",
+      "source_revision": "WeOS5.29 ETBN port settings 100Mb/Gbit sections, accessed2026-10-01; IEC61375-2-5:2014 publisher edition1.0"
+    },
+    {
+      "when": {
+        "etb_implementation": "WEOS_5"
+      },
+      "parameter": "etb_dir1_ports",
+      "maximum": 2,
+      "source": "https://docs.westermo.com/weos/weos-5/HowTo/iec61375-port-setting-backbone-ports.html",
+      "source_revision": "WeOS5.29 ETBN port settings 100Mb/Gbit sections, accessed2026-10-01; IEC61375-2-5:2014 publisher edition1.0"
+    },
+    {
+      "when": {
+        "etb_implementation": "WEOS_5"
+      },
+      "parameter": "etb_dir2_ports",
+      "maximum": 2,
+      "source": "https://docs.westermo.com/weos/weos-5/HowTo/iec61375-port-setting-backbone-ports.html",
+      "source_revision": "WeOS5.29 ETBN port settings 100Mb/Gbit sections, accessed2026-10-01; IEC61375-2-5:2014 publisher edition1.0"
+    },
+    {
+      "when": {
+        "etb_aggregation": "TTDP_ACTIVE_STANDBY"
+      },
+      "parameter": "etb_active_links_per_direction",
+      "maximum": 1,
+      "source": "https://docs.westermo.com/weos/weos-5/HowTo/iec61375-port-setting-backbone-ports.html",
+      "source_revision": "WeOS5.29 ETBN port settings 100Mb/Gbit sections, accessed2026-10-01; IEC61375-2-5:2014 publisher edition1.0"
+    },
+    {
+      "when": {
+        "etb_implementation": "WEOS_5"
+      },
+      "parameter": "etb_igmp_snooping",
+      "allowed": [
+        false
+      ],
+      "source": "https://docs.westermo.com/weos/weos-5/HowTo/iec61375-port-setting-backbone-ports.html",
+      "source_revision": "WeOS5.29 ETBN port settings 100Mb/Gbit sections, accessed2026-10-01; IEC61375-2-5:2014 publisher edition1.0"
+    },
+    {
+      "when": {
+        "etb_implementation": "WEOS_5"
+      },
+      "parameter": "etb_topology_vlan",
+      "allowed": [
+        492
+      ],
+      "source": "https://docs.westermo.com/weos/weos-5/HowTo/iec61375-port-setting-backbone-ports.html",
+      "source_revision": "WeOS5.29 ETBN port settings 100Mb/Gbit sections, accessed2026-10-01; IEC61375-2-5:2014 publisher edition1.0"
+    },
+    {
+      "when": {
+        "etb_inauguration": "PENDING"
+      },
+      "parameter": "etb_traffic_enabled",
+      "allowed": [
+        false
+      ],
+      "source": "https://docs.westermo.com/weos/weos-5/HowTo/iec61375-port-setting-backbone-ports.html",
+      "source_revision": "WeOS5.29 ETBN port settings 100Mb/Gbit sections, accessed2026-10-01; IEC61375-2-5:2014 publisher edition1.0"
+    },
+    {
+      "when": {
+        "etb_inauguration": "FAILED"
+      },
+      "parameter": "etb_traffic_enabled",
+      "allowed": [
+        false
+      ],
+      "source": "https://docs.westermo.com/weos/weos-5/HowTo/iec61375-port-setting-backbone-ports.html",
+      "source_revision": "WeOS5.29 ETBN port settings 100Mb/Gbit sections, accessed2026-10-01; IEC61375-2-5:2014 publisher edition1.0"
+    },
+    {
+      "when": {
+        "etb_traffic_enabled": true,
+        "etb_traffic_scope": "INTER_CONSIST"
+      },
+      "parameter": "etb_message_topology_counter",
+      "equal_parameter": "etb_topology_counter",
+      "source": "https://docs.westermo.com/weos/weos-5/HowTo/iec61375-port-setting-backbone-ports.html",
+      "source_revision": "WeOS5.29 ETBN port settings 100Mb/Gbit sections, accessed2026-10-01; IEC61375-2-5:2014 publisher edition1.0"
+    },
+    {
+      "when": {},
+      "parameter": "etb_hello_timeout_ms",
+      "minimum_parameter": "etb_hello_period_ms",
+      "source": "https://docs.westermo.com/weos/weos-5/HowTo/iec61375-port-setting-backbone-ports.html",
+      "source_revision": "WeOS5.29 ETBN port settings 100Mb/Gbit sections, accessed2026-10-01; IEC61375-2-5:2014 publisher edition1.0"
+    },
+    {
+      "when": {
+        "etb_phy": "100BASE_TX"
+      },
+      "parameter": "etb_clock_role",
+      "allowed": [],
+      "source": "https://docs.westermo.com/weos/weos-5/HowTo/iec61375-port-setting-backbone-ports.html",
+      "source_revision": "WeOS5.29 ETBN port settings 100Mb/Gbit sections, accessed2026-10-01; IEC61375-2-5:2014 publisher edition1.0"
+    },
+    {
+      "when": {
+        "etb_phy": "100BASE_TX"
+      },
+      "parameter": "etb_peer_clock_role",
+      "allowed": [],
+      "source": "https://docs.westermo.com/weos/weos-5/HowTo/iec61375-port-setting-backbone-ports.html",
+      "source_revision": "WeOS5.29 ETBN port settings 100Mb/Gbit sections, accessed2026-10-01; IEC61375-2-5:2014 publisher edition1.0"
+    },
+    {
+      "when": {
+        "etb_phy": "1000BASE_T",
+        "etb_clock_role": "MASTER"
+      },
+      "parameter": "etb_peer_clock_role",
+      "allowed": [
+        "FOLLOWER",
+        "AUTO"
+      ],
+      "source": "https://docs.westermo.com/weos/weos-5/HowTo/iec61375-port-setting-backbone-ports.html",
+      "source_revision": "WeOS5.29 ETBN port settings 100Mb/Gbit sections, accessed2026-10-01; IEC61375-2-5:2014 publisher edition1.0"
+    },
+    {
+      "when": {
+        "etb_phy": "1000BASE_T",
+        "etb_clock_role": "FOLLOWER"
+      },
+      "parameter": "etb_peer_clock_role",
+      "allowed": [
+        "MASTER",
+        "AUTO"
+      ],
+      "source": "https://docs.westermo.com/weos/weos-5/HowTo/iec61375-port-setting-backbone-ports.html",
+      "source_revision": "WeOS5.29 ETBN port settings 100Mb/Gbit sections, accessed2026-10-01; IEC61375-2-5:2014 publisher edition1.0"
+    },
+    {
+      "when": {},
+      "parameter": "etb_active_links_per_direction",
+      "maximum_parameter": "etb_dir1_ports",
+      "source": "https://docs.westermo.com/weos/weos-5/HowTo/iec61375-port-setting-backbone-ports.html",
+      "source_revision": "WeOS5.29 ETBN port settings 100Mb/Gbit sections, accessed2026-10-01; IEC61375-2-5:2014 publisher edition1.0"
+    },
+    {
+      "when": {},
+      "parameter": "etb_active_links_per_direction",
+      "maximum_parameter": "etb_dir2_ports",
+      "source": "https://docs.westermo.com/weos/weos-5/HowTo/iec61375-port-setting-backbone-ports.html",
+      "source_revision": "WeOS5.29 ETBN port settings 100Mb/Gbit sections, accessed2026-10-01; IEC61375-2-5:2014 publisher edition1.0"
+    }
+  ],
+  "physical_layer_profile_id": null,
+  "medium_access_model": null,
+  "native_parameter_prefixes": [],
+  "parameter_aliases": {},
+  "parameter_alias_limits": {},
+  "parameter_evidence_scope": null,
+  "rate_source_profile_id": null,
+  "arbitration_model_id": null,
+  "max_payload_bytes": 1500,
+  "capabilities": {
+    "supports_signals": true,
+    "supports_data_objects": true,
+    "supports_streams": true,
+    "supports_multicast": true,
+    "supports_publish_subscribe": false,
+    "supports_request_response": false,
+    "supports_cyclic": true,
+    "supports_event": true,
+    "supports_redundancy": true,
+    "supports_time_sync": false,
+    "supports_safety_profile": false,
+    "supports_segmentation": false,
+    "supports_fragmentation": false,
+    "supports_qos": true
+  },
+  "deterministic": true,
+  "overhead_bytes": 8,
+  "implementation_status": "PLANNED",
+  "connection_type": "COMMUNICATION_TECHNOLOGY",
+  "parameter_proposals": {
+    "kind": "BASELINE_PROFILE_RATE",
+    "default_bps": 100000000,
+    "status": "REVIEW_REQUIRED",
+    "source": "https://docs.westermo.com/weos/weos-5/HowTo/iec61375-port-setting-backbone-ports.html",
+    "source_revision": "WeOS5.29 ETBN port settings 100Mb/Gbit sections, accessed2026-10-01; IEC61375-2-5:2014 publisher edition1.0",
+    "note": "100Mb full-duplex is a source-qualified baseline proposal. Gbit ports require their own PHY and clock roles; redundant TTDP links do not double capacity. Actual inauguration, bindings, queues and edition remain unverified."
+  },
+  "capacity_evidence": {
+    "status": "MODEL_MISSING",
+    "frame_model": null,
+    "schedule_model": null,
+    "requires_confirmed_device_parameters": true
+  },
+  "components": {
+    "binding": "etb.binding",
+    "generator": "etb.generator",
+    "validator": "etb.validator",
+    "timing_model": null,
+    "load_model": null,
+    "encoder": "etb.encoder",
+    "decoder": "etb.decoder"
+  },
+  "known_limitations": "Technology-specific conformance details require a vendor/profile extension."
+}

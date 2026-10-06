@@ -5069,8 +5069,13 @@ def test_ethernet_timing_and_load_adapters_require_explicit_frame_layout():
 
 def test_generic_ethernet_uses_reviewed_ieee_schema_and_preserves_unknown_peer_state():
     fields={f['key']:f for f in registry.parameter_fields('generic_ethernet')}
-    plain=lambda f:{k:v for k,v in f.items() if k!='default_review'}
+    # Scenario examples are owned by each profile; the actual IEEE schema stays identical.
+    plain=lambda f:{k:v for k,v in f.items() if k not in {'default_review','simulation_default','simulation_default_provenance'}}
     assert {k:plain(v) for k,v in fields.items()}=={f['key']:plain(f) for f in registry.parameter_fields('ethernet')}
+    for field in fields.values():
+        proposal=field['simulation_default_provenance']
+        assert proposal['technology']=='generic_ethernet' and proposal['hardware_evidence'] is False
+        assert proposal['value']==field['simulation_default']
     assert fields['bitrate']['default_review']['technology']=='generic_ethernet'
     profile=registry.profile('generic_ethernet')
     assert profile['domain']=='generic_networking' and profile['default_stack']==['generic_ethernet']
@@ -7394,7 +7399,15 @@ def test_http_schema_is_registered_profile_schema_for_every_technology():
                     if value is not None:
                         field['decimal_' + target] = str(value)
                         field.pop(target, None)
-        assert SimulationService._parameter_schema(profile['id'], profile) == expected
+        actual = SimulationService._parameter_schema(profile['id'], profile)
+        scenario_keys = {'simulation_default', 'simulation_default_provenance'}
+        assert [{key: value for key, value in field.items() if key not in scenario_keys}
+                for field in actual] == expected
+        for field in actual:
+            proposal = field['simulation_default_provenance']
+            assert proposal['technology'] == profile['id']
+            assert proposal['source'] == 'NIS_SIMULATION_ASSUMPTION' and proposal['status'] == 'ASSUMED'
+            assert proposal['hardware_evidence'] is False and proposal['value'] == field['simulation_default']
         assert all(field.get('parameter_origin') and field.get('source') for field in expected)
 
 

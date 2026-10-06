@@ -1,0 +1,3280 @@
+{
+  "id": "uart",
+  "label": "UART / USART",
+  "domain": "generic_networking",
+  "layer": "DATA_LINK",
+  "transport_unit": "STREAM_CHUNK",
+  "payload_element_types": [
+    "RAW_DATA"
+  ],
+  "hardware_interface": "explicit_uart_clock_framing_and_phy",
+  "hardware_capability_aliases": [
+    "serial_port"
+  ],
+  "default_stack": [
+    "uart"
+  ],
+  "stack_variants": [
+    [
+      "uart"
+    ]
+  ],
+  "default_bitrate": null,
+  "rate_model": {
+    "type": "EXPLICIT_UART_DEVICE_CLOCK",
+    "fields": []
+  },
+  "local_timing_schema": [],
+  "parameter_schema": {
+    "payload_bytes": {
+      "label": "Payload",
+      "category": "physical",
+      "scope": "message",
+      "type": "number",
+      "description": "Actual application octets; distinct encoded characters, UART start/parity/stop periods, electrical bridge and host read chunks. No universal baud or message limit.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "source_revision": "Microchip PIC24H DS70232B 2008 chapter17: reset framing,8/9-bit,parity,1/2 stop,16/4 clock,16-bit BRG,FIFO/status/55h autobaud. Device-dependent clock and electrical link, not universal115200.",
+      "integer": true
+    },
+    "cycle_ms": {
+      "label": "Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "Standardperiode fuer zyklische Nachrichten.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "minimum_cycle_time_ms": {
+      "label": "Minimum Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "deadline_ms": {
+      "label": "Deadline",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "timeout_ms": {
+      "label": "Timeout",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_latency_ms": {
+      "label": "Maximum Latency",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "jitter_ms": {
+      "label": "Jitter Budget",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "freshness_ms": {
+      "label": "Data Freshness",
+      "category": "timing",
+      "scope": "signal",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "source_processing_delay_ms": {
+      "label": "Source Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_processing_delay_ms": {
+      "label": "Target Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "propagation_delay_ms": {
+      "label": "Propagation",
+      "category": "timing",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.01,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_bus_load_percent": {
+      "label": "Ziel-Buslast",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "Zielwert fuer die aus Routing, Payload, Zyklus und Bitrate berechnete Buslast.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "peak_factor": {
+      "label": "Peak Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.15,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_factor": {
+      "label": "Burst Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.5,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_window_ms": {
+      "label": "Burst Window",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "warning_threshold": {
+      "label": "Load Warning",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "critical_threshold": {
+      "label": "Load Critical",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 75,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "overload_threshold": {
+      "label": "Load Overload",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 90,
+      "unit": "%",
+      "min": 1,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "queue_size": {
+      "label": "Queue Size",
+      "category": "qos",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 256,
+      "unit": "Frames",
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "queue_policy": {
+      "label": "Queue Policy",
+      "category": "qos",
+      "scope": "network",
+      "type": "select",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": "FIFO",
+      "options": [
+        "FIFO",
+        "PRIORITY",
+        "STRICT_PRIORITY",
+        "WEIGHTED_PRIORITY",
+        "WRR",
+        "ROUND_ROBIN",
+        "TIME_TRIGGERED",
+        "TAS",
+        "CBS",
+        "CUSTOM"
+      ],
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "qos_priority": {
+      "label": "Default Priority",
+      "category": "qos",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 3,
+      "min": 0,
+      "max": 7,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "traffic_class": {
+      "label": "Traffic Class",
+      "category": "qos",
+      "scope": "route",
+      "type": "select",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": "BEST_EFFORT",
+      "options": [
+        "BEST_EFFORT",
+        "CONTROL",
+        "REALTIME",
+        "SAFETY_CRITICAL"
+      ],
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "packet_loss_probability": {
+      "label": "Packet Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "frame_loss_probability": {
+      "label": "Frame Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "bit_error_rate": {
+      "label": "Bit Error Rate",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "corruption_probability": {
+      "label": "Corruption",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duplicate_probability": {
+      "label": "Duplication",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "reordering_probability": {
+      "label": "Reordering",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "required_reliability": {
+      "label": "Required Reliability",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.999,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_offset_ms": {
+      "label": "Clock Offset",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_drift_ppm": {
+      "label": "Clock Drift",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 20,
+      "unit": "ppm",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_precision_ms": {
+      "label": "Sync Precision",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_interval_ms": {
+      "label": "Sync Interval",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1000,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_sync_error_ms": {
+      "label": "Maximum Sync Error",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_delay_ms": {
+      "label": "Gateway Processing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.2,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_queue_delay_ms": {
+      "label": "Gateway Queueing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "protocol_conversion_delay_ms": {
+      "label": "Protocol Conversion",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duration_s": {
+      "label": "Simulation Duration",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 1,
+      "unit": "s",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "seed": {
+      "label": "Random Seed",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 42,
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "max_events": {
+      "label": "Maximum Events",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 100000,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "dropout_probability": {
+      "label": "Failure Injection Dropout",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "ua_review_profile": {
+      "type": "select",
+      "description": "Source identified UART hardware or independently qualified implementation.",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "source_revision": "Microchip PIC24H DS70232B 2008 chapter17: reset framing,8/9-bit,parity,1/2 stop,16/4 clock,16-bit BRG,FIFO/status/55h autobaud. Device-dependent clock and electrical link, not universal115200.",
+      "options": [
+        "PIC24H_DS70232B",
+        "LPC24XX_UM10237_4",
+        "REGISTERED_ACTUAL"
+      ],
+      "label": "ua review profile",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ua_proposal_mode": {
+      "type": "select",
+      "description": "Register reset proposals are not confirmed active device configuration.",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "source_revision": "Microchip PIC24H DS70232B 2008 chapter17: reset framing,8/9-bit,parity,1/2 stop,16/4 clock,16-bit BRG,FIFO/status/55h autobaud. Device-dependent clock and electrical link, not universal115200.",
+      "options": [
+        "SOURCE_BASELINE",
+        "ACTUAL_CONFIG"
+      ],
+      "label": "ua proposal mode",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ua_mode": {
+      "type": "select",
+      "description": "Actual asynchronous start/stop versus independently qualified synchronous USART or extension.",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "source_revision": "Microchip PIC24H DS70232B 2008 chapter17: reset framing,8/9-bit,parity,1/2 stop,16/4 clock,16-bit BRG,FIFO/status/55h autobaud. Device-dependent clock and electrical link, not universal115200.",
+      "options": [
+        "ASYNC_UART",
+        "SYNC_USART",
+        "REGISTERED_ACTUAL"
+      ],
+      "label": "ua mode",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ua_direction": {
+      "type": "select",
+      "description": "Actual independent Tx/Rx or bound half-duplex direction.",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "source_revision": "Microchip PIC24H DS70232B 2008 chapter17: reset framing,8/9-bit,parity,1/2 stop,16/4 clock,16-bit BRG,FIFO/status/55h autobaud. Device-dependent clock and electrical link, not universal115200.",
+      "options": [
+        "TX",
+        "RX",
+        "FULL_DUPLEX",
+        "HALF_DUPLEX"
+      ],
+      "label": "ua direction",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ua_parity": {
+      "type": "select",
+      "description": "Actual parity, stick parity only source supported hardware.",
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10237.pdf",
+      "source_revision": "NXP LPC24xx UM10237 Rev04 26August2009 chapters16/17:5..8 bits,1/1.5/2 stop,stick parity,DL divisor and fractional divider constraints,UART1 hardware flow versus UART0/2/3,actual baud and error states.",
+      "options": [
+        "NONE",
+        "EVEN",
+        "ODD",
+        "MARK",
+        "SPACE"
+      ],
+      "label": "ua parity",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "ua_review_profile": "PIC24H_DS70232B",
+            "ua_proposal_mode": "SOURCE_BASELINE"
+          },
+          "value": "NONE",
+          "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+          "source_revision": "Microchip PIC24H DS70232B 2008 chapter17: reset framing,8/9-bit,parity,1/2 stop,16/4 clock,16-bit BRG,FIFO/status/55h autobaud. Device-dependent clock and electrical link, not universal115200."
+        },
+        {
+          "when": {
+            "ua_review_profile": "LPC24XX_UM10237_4",
+            "ua_proposal_mode": "SOURCE_BASELINE"
+          },
+          "value": "NONE",
+          "source": "https://www.nxp.com/docs/en/user-guide/UM10237.pdf",
+          "source_revision": "NXP LPC24xx UM10237 Rev04 26August2009 chapters16/17:5..8 bits,1/1.5/2 stop,stick parity,DL divisor and fractional divider constraints,UART1 hardware flow versus UART0/2/3,actual baud and error states."
+        }
+      ]
+    },
+    "ua_peer_parity": {
+      "type": "select",
+      "description": "Actual remote framing selection, separately verified.",
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10237.pdf",
+      "source_revision": "NXP LPC24xx UM10237 Rev04 26August2009 chapters16/17:5..8 bits,1/1.5/2 stop,stick parity,DL divisor and fractional divider constraints,UART1 hardware flow versus UART0/2/3,actual baud and error states.",
+      "options": [
+        "NONE",
+        "EVEN",
+        "ODD",
+        "MARK",
+        "SPACE"
+      ],
+      "label": "ua peer parity",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ua_bit_order": {
+      "type": "select",
+      "description": "Actual serialized data order. Reviewed UART profiles LSB first.",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "source_revision": "Microchip PIC24H DS70232B 2008 chapter17: reset framing,8/9-bit,parity,1/2 stop,16/4 clock,16-bit BRG,FIFO/status/55h autobaud. Device-dependent clock and electrical link, not universal115200.",
+      "options": [
+        "LSB_FIRST",
+        "MSB_FIRST",
+        "REGISTERED_ACTUAL"
+      ],
+      "label": "ua bit order",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "ua_review_profile": "PIC24H_DS70232B",
+            "ua_proposal_mode": "SOURCE_BASELINE"
+          },
+          "value": "LSB_FIRST",
+          "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+          "source_revision": "Microchip PIC24H DS70232B 2008 chapter17: reset framing,8/9-bit,parity,1/2 stop,16/4 clock,16-bit BRG,FIFO/status/55h autobaud. Device-dependent clock and electrical link, not universal115200."
+        },
+        {
+          "when": {
+            "ua_review_profile": "LPC24XX_UM10237_4",
+            "ua_proposal_mode": "SOURCE_BASELINE"
+          },
+          "value": "LSB_FIRST",
+          "source": "https://www.nxp.com/docs/en/user-guide/UM10237.pdf",
+          "source_revision": "NXP LPC24xx UM10237 Rev04 26August2009 chapters16/17:5..8 bits,1/1.5/2 stop,stick parity,DL divisor and fractional divider constraints,UART1 hardware flow versus UART0/2/3,actual baud and error states."
+        }
+      ]
+    },
+    "ua_flow": {
+      "type": "select",
+      "description": "Actual CTS/RTS or software blocking, not assumed unlimited bandwidth.",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "source_revision": "Microchip PIC24H DS70232B 2008 chapter17: reset framing,8/9-bit,parity,1/2 stop,16/4 clock,16-bit BRG,FIFO/status/55h autobaud. Device-dependent clock and electrical link, not universal115200.",
+      "options": [
+        "NONE",
+        "RTS_CTS",
+        "XON_XOFF",
+        "REGISTERED_ACTUAL"
+      ],
+      "label": "ua flow",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ua_autobaud": {
+      "type": "select",
+      "description": "Actual disabled/armed/complete/failed measurement; examples are not active baud.",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "source_revision": "Microchip PIC24H DS70232B 2008 chapter17: reset framing,8/9-bit,parity,1/2 stop,16/4 clock,16-bit BRG,FIFO/status/55h autobaud. Device-dependent clock and electrical link, not universal115200.",
+      "options": [
+        "DISABLED",
+        "ARMED",
+        "COMPLETE",
+        "FAILED"
+      ],
+      "label": "ua autobaud",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ua_polarity": {
+      "type": "select",
+      "description": "Actual TTL-side idle polarity, not RS232 external voltage sign.",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "source_revision": "Microchip PIC24H DS70232B 2008 chapter17: reset framing,8/9-bit,parity,1/2 stop,16/4 clock,16-bit BRG,FIFO/status/55h autobaud. Device-dependent clock and electrical link, not universal115200.",
+      "options": [
+        "IDLE_HIGH",
+        "IDLE_LOW",
+        "REGISTERED_ACTUAL"
+      ],
+      "label": "ua polarity",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ua_outcome": {
+      "type": "select",
+      "description": "Actual correlated decoded character/application result.",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "source_revision": "Microchip PIC24H DS70232B 2008 chapter17: reset framing,8/9-bit,parity,1/2 stop,16/4 clock,16-bit BRG,FIFO/status/55h autobaud. Device-dependent clock and electrical link, not universal115200.",
+      "options": [
+        "ACCEPTED",
+        "PARITY_ERROR",
+        "FRAMING_ERROR",
+        "OVERRUN",
+        "BREAK",
+        "FLOW_BLOCKED",
+        "UNKNOWN"
+      ],
+      "label": "ua outcome",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ua_baud": {
+      "type": "number",
+      "description": "Actual wire symbols/s; binary UART one bit/symbol, no universally mandated baud.",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "source_revision": "Microchip PIC24H DS70232B 2008 chapter17: reset framing,8/9-bit,parity,1/2 stop,16/4 clock,16-bit BRG,FIFO/status/55h autobaud. Device-dependent clock and electrical link, not universal115200.",
+      "min": 0,
+      "unit": "Bd",
+      "integer": false,
+      "label": "ua baud",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ua_peer_baud": {
+      "type": "number",
+      "description": "Actual remote wire symbols/s, distinct oscillator/divider.",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "source_revision": "Microchip PIC24H DS70232B 2008 chapter17: reset framing,8/9-bit,parity,1/2 stop,16/4 clock,16-bit BRG,FIFO/status/55h autobaud. Device-dependent clock and electrical link, not universal115200.",
+      "min": 0,
+      "unit": "Bd",
+      "integer": false,
+      "label": "ua peer baud",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ua_target_baud": {
+      "type": "number",
+      "description": "Actual commissioned target baud for divider error calculation.",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "source_revision": "Microchip PIC24H DS70232B 2008 chapter17: reset framing,8/9-bit,parity,1/2 stop,16/4 clock,16-bit BRG,FIFO/status/55h autobaud. Device-dependent clock and electrical link, not universal115200.",
+      "min": 0,
+      "unit": "Bd",
+      "integer": false,
+      "label": "ua target baud",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ua_clock_hz": {
+      "type": "number",
+      "description": "Actual PIC FCY=FOSC/2 or LPC PCLK input, not CPU oscillator substituted.",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "source_revision": "Microchip PIC24H DS70232B 2008 chapter17: reset framing,8/9-bit,parity,1/2 stop,16/4 clock,16-bit BRG,FIFO/status/55h autobaud. Device-dependent clock and electrical link, not universal115200.",
+      "min": 0,
+      "unit": "Hz",
+      "integer": false,
+      "label": "ua clock hz",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ua_oversampling": {
+      "type": "number",
+      "description": "Actual PIC16 or4 sampling divider; LPC fixed16.",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "source_revision": "Microchip PIC24H DS70232B 2008 chapter17: reset framing,8/9-bit,parity,1/2 stop,16/4 clock,16-bit BRG,FIFO/status/55h autobaud. Device-dependent clock and electrical link, not universal115200.",
+      "min": 1,
+      "integer": true,
+      "label": "ua oversampling",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "ua_review_profile": "PIC24H_DS70232B",
+            "ua_proposal_mode": "SOURCE_BASELINE"
+          },
+          "value": 16,
+          "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+          "source_revision": "Microchip PIC24H DS70232B 2008 chapter17: reset framing,8/9-bit,parity,1/2 stop,16/4 clock,16-bit BRG,FIFO/status/55h autobaud. Device-dependent clock and electrical link, not universal115200."
+        },
+        {
+          "when": {
+            "ua_review_profile": "LPC24XX_UM10237_4",
+            "ua_proposal_mode": "SOURCE_BASELINE"
+          },
+          "value": 16,
+          "source": "https://www.nxp.com/docs/en/user-guide/UM10237.pdf",
+          "source_revision": "NXP LPC24xx UM10237 Rev04 26August2009 chapters16/17:5..8 bits,1/1.5/2 stop,stick parity,DL divisor and fractional divider constraints,UART1 hardware flow versus UART0/2/3,actual baud and error states."
+        }
+      ]
+    },
+    "ua_brg": {
+      "type": "number",
+      "description": "Actual PIC24H 16-bit UxBRG; zero legal max rate, not0baud.",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "source_revision": "Microchip PIC24H DS70232B 2008 chapter17: reset framing,8/9-bit,parity,1/2 stop,16/4 clock,16-bit BRG,FIFO/status/55h autobaud. Device-dependent clock and electrical link, not universal115200.",
+      "min": 0,
+      "max": 65535,
+      "integer": true,
+      "label": "ua brg",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ua_dll": {
+      "type": "number",
+      "description": "Actual LPC divisor low register.",
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10237.pdf",
+      "source_revision": "NXP LPC24xx UM10237 Rev04 26August2009 chapters16/17:5..8 bits,1/1.5/2 stop,stick parity,DL divisor and fractional divider constraints,UART1 hardware flow versus UART0/2/3,actual baud and error states.",
+      "min": 0,
+      "max": 255,
+      "integer": true,
+      "label": "ua dll",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ua_dlm": {
+      "type": "number",
+      "description": "Actual LPC divisor high register.",
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10237.pdf",
+      "source_revision": "NXP LPC24xx UM10237 Rev04 26August2009 chapters16/17:5..8 bits,1/1.5/2 stop,stick parity,DL divisor and fractional divider constraints,UART1 hardware flow versus UART0/2/3,actual baud and error states.",
+      "min": 0,
+      "max": 255,
+      "integer": true,
+      "label": "ua dlm",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ua_divisor": {
+      "type": "number",
+      "description": "Actual LPC nonzero 16-bit divisor=(DLM*256)+DLL.",
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10237.pdf",
+      "source_revision": "NXP LPC24xx UM10237 Rev04 26August2009 chapters16/17:5..8 bits,1/1.5/2 stop,stick parity,DL divisor and fractional divider constraints,UART1 hardware flow versus UART0/2/3,actual baud and error states.",
+      "min": 1,
+      "max": 65535,
+      "integer": true,
+      "label": "ua divisor",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ua_divaddval": {
+      "type": "number",
+      "description": "Actual LPC fractional addition numerator.",
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10237.pdf",
+      "source_revision": "NXP LPC24xx UM10237 Rev04 26August2009 chapters16/17:5..8 bits,1/1.5/2 stop,stick parity,DL divisor and fractional divider constraints,UART1 hardware flow versus UART0/2/3,actual baud and error states.",
+      "min": 0,
+      "max": 14,
+      "integer": true,
+      "label": "ua divaddval",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "ua_review_profile": "LPC24XX_UM10237_4",
+            "ua_proposal_mode": "SOURCE_BASELINE"
+          },
+          "value": 0,
+          "source": "https://www.nxp.com/docs/en/user-guide/UM10237.pdf",
+          "source_revision": "NXP LPC24xx UM10237 Rev04 26August2009 chapters16/17:5..8 bits,1/1.5/2 stop,stick parity,DL divisor and fractional divider constraints,UART1 hardware flow versus UART0/2/3,actual baud and error states."
+        }
+      ]
+    },
+    "ua_mulval": {
+      "type": "number",
+      "description": "Actual LPC fractional multiplier denominator.",
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10237.pdf",
+      "source_revision": "NXP LPC24xx UM10237 Rev04 26August2009 chapters16/17:5..8 bits,1/1.5/2 stop,stick parity,DL divisor and fractional divider constraints,UART1 hardware flow versus UART0/2/3,actual baud and error states.",
+      "min": 1,
+      "max": 15,
+      "integer": true,
+      "label": "ua mulval",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "ua_review_profile": "LPC24XX_UM10237_4",
+            "ua_proposal_mode": "SOURCE_BASELINE"
+          },
+          "value": 1,
+          "source": "https://www.nxp.com/docs/en/user-guide/UM10237.pdf",
+          "source_revision": "NXP LPC24xx UM10237 Rev04 26August2009 chapters16/17:5..8 bits,1/1.5/2 stop,stick parity,DL divisor and fractional divider constraints,UART1 hardware flow versus UART0/2/3,actual baud and error states."
+        }
+      ]
+    },
+    "ua_port": {
+      "type": "number",
+      "description": "Actual selected UART0/1/2/3, hardware CTS/RTS only UART1 LPC24xx.",
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10237.pdf",
+      "source_revision": "NXP LPC24xx UM10237 Rev04 26August2009 chapters16/17:5..8 bits,1/1.5/2 stop,stick parity,DL divisor and fractional divider constraints,UART1 hardware flow versus UART0/2/3,actual baud and error states.",
+      "min": 0,
+      "max": 3,
+      "integer": true,
+      "label": "ua port",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ua_data_bits": {
+      "type": "number",
+      "description": "Actual payload data bits; parity not included here.",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "source_revision": "Microchip PIC24H DS70232B 2008 chapter17: reset framing,8/9-bit,parity,1/2 stop,16/4 clock,16-bit BRG,FIFO/status/55h autobaud. Device-dependent clock and electrical link, not universal115200.",
+      "min": 1,
+      "unit": "bit",
+      "integer": true,
+      "label": "ua data bits",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "ua_review_profile": "PIC24H_DS70232B",
+            "ua_proposal_mode": "SOURCE_BASELINE"
+          },
+          "value": 8,
+          "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+          "source_revision": "Microchip PIC24H DS70232B 2008 chapter17: reset framing,8/9-bit,parity,1/2 stop,16/4 clock,16-bit BRG,FIFO/status/55h autobaud. Device-dependent clock and electrical link, not universal115200."
+        },
+        {
+          "when": {
+            "ua_review_profile": "LPC24XX_UM10237_4",
+            "ua_proposal_mode": "SOURCE_BASELINE"
+          },
+          "value": 5,
+          "source": "https://www.nxp.com/docs/en/user-guide/UM10237.pdf",
+          "source_revision": "NXP LPC24xx UM10237 Rev04 26August2009 chapters16/17:5..8 bits,1/1.5/2 stop,stick parity,DL divisor and fractional divider constraints,UART1 hardware flow versus UART0/2/3,actual baud and error states."
+        }
+      ]
+    },
+    "ua_peer_data_bits": {
+      "type": "number",
+      "description": "Actual peer payload data bits.",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "source_revision": "Microchip PIC24H DS70232B 2008 chapter17: reset framing,8/9-bit,parity,1/2 stop,16/4 clock,16-bit BRG,FIFO/status/55h autobaud. Device-dependent clock and electrical link, not universal115200.",
+      "min": 1,
+      "unit": "bit",
+      "integer": true,
+      "label": "ua peer data bits",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ua_start_bits": {
+      "type": "number",
+      "description": "Actual occupied start periods, reviewed hardware1.",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "source_revision": "Microchip PIC24H DS70232B 2008 chapter17: reset framing,8/9-bit,parity,1/2 stop,16/4 clock,16-bit BRG,FIFO/status/55h autobaud. Device-dependent clock and electrical link, not universal115200.",
+      "min": 0,
+      "unit": "bit-period",
+      "integer": true,
+      "label": "ua start bits",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "ua_review_profile": "PIC24H_DS70232B",
+            "ua_proposal_mode": "SOURCE_BASELINE"
+          },
+          "value": 1,
+          "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+          "source_revision": "Microchip PIC24H DS70232B 2008 chapter17: reset framing,8/9-bit,parity,1/2 stop,16/4 clock,16-bit BRG,FIFO/status/55h autobaud. Device-dependent clock and electrical link, not universal115200."
+        },
+        {
+          "when": {
+            "ua_review_profile": "LPC24XX_UM10237_4",
+            "ua_proposal_mode": "SOURCE_BASELINE"
+          },
+          "value": 1,
+          "source": "https://www.nxp.com/docs/en/user-guide/UM10237.pdf",
+          "source_revision": "NXP LPC24xx UM10237 Rev04 26August2009 chapters16/17:5..8 bits,1/1.5/2 stop,stick parity,DL divisor and fractional divider constraints,UART1 hardware flow versus UART0/2/3,actual baud and error states."
+        }
+      ]
+    },
+    "ua_stop_bits": {
+      "type": "number",
+      "description": "Actual occupied stop periods; LPC5-bit long stop1.5, otherwise2.",
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10237.pdf",
+      "source_revision": "NXP LPC24xx UM10237 Rev04 26August2009 chapters16/17:5..8 bits,1/1.5/2 stop,stick parity,DL divisor and fractional divider constraints,UART1 hardware flow versus UART0/2/3,actual baud and error states.",
+      "min": 0,
+      "unit": "bit-period",
+      "integer": false,
+      "label": "ua stop bits",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "ua_review_profile": "PIC24H_DS70232B",
+            "ua_proposal_mode": "SOURCE_BASELINE"
+          },
+          "value": 1,
+          "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+          "source_revision": "Microchip PIC24H DS70232B 2008 chapter17: reset framing,8/9-bit,parity,1/2 stop,16/4 clock,16-bit BRG,FIFO/status/55h autobaud. Device-dependent clock and electrical link, not universal115200."
+        },
+        {
+          "when": {
+            "ua_review_profile": "LPC24XX_UM10237_4",
+            "ua_proposal_mode": "SOURCE_BASELINE"
+          },
+          "value": 1,
+          "source": "https://www.nxp.com/docs/en/user-guide/UM10237.pdf",
+          "source_revision": "NXP LPC24xx UM10237 Rev04 26August2009 chapters16/17:5..8 bits,1/1.5/2 stop,stick parity,DL divisor and fractional divider constraints,UART1 hardware flow versus UART0/2/3,actual baud and error states."
+        }
+      ]
+    },
+    "ua_peer_stop_bits": {
+      "type": "number",
+      "description": "Actual peer framing stop periods.",
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10237.pdf",
+      "source_revision": "NXP LPC24xx UM10237 Rev04 26August2009 chapters16/17:5..8 bits,1/1.5/2 stop,stick parity,DL divisor and fractional divider constraints,UART1 hardware flow versus UART0/2/3,actual baud and error states.",
+      "min": 0,
+      "unit": "bit-period",
+      "integer": false,
+      "label": "ua peer stop bits",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ua_parity_bits": {
+      "type": "number",
+      "description": "Actual parity overhead0none/1enabled, not another data bit.",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "source_revision": "Microchip PIC24H DS70232B 2008 chapter17: reset framing,8/9-bit,parity,1/2 stop,16/4 clock,16-bit BRG,FIFO/status/55h autobaud. Device-dependent clock and electrical link, not universal115200.",
+      "min": 0,
+      "max": 1,
+      "unit": "bit",
+      "integer": true,
+      "label": "ua parity bits",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ua_character_bits": {
+      "type": "number",
+      "description": "Actual start+data+parity+stop occupied bit periods.",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "source_revision": "Microchip PIC24H DS70232B 2008 chapter17: reset framing,8/9-bit,parity,1/2 stop,16/4 clock,16-bit BRG,FIFO/status/55h autobaud. Device-dependent clock and electrical link, not universal115200.",
+      "min": 0,
+      "unit": "bit-period",
+      "integer": false,
+      "label": "ua character bits",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ua_characters": {
+      "type": "number",
+      "description": "Actual encoded character count, not arbitrary API write chunk octets.",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "source_revision": "Microchip PIC24H DS70232B 2008 chapter17: reset framing,8/9-bit,parity,1/2 stop,16/4 clock,16-bit BRG,FIFO/status/55h autobaud. Device-dependent clock and electrical link, not universal115200.",
+      "min": 0,
+      "unit": "character",
+      "integer": true,
+      "label": "ua characters",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ua_wire_bits": {
+      "type": "number",
+      "description": "Actual encoded characters times occupied character periods.",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "source_revision": "Microchip PIC24H DS70232B 2008 chapter17: reset framing,8/9-bit,parity,1/2 stop,16/4 clock,16-bit BRG,FIFO/status/55h autobaud. Device-dependent clock and electrical link, not universal115200.",
+      "min": 0,
+      "unit": "bit-period",
+      "integer": false,
+      "label": "ua wire bits",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ua_serialization_us": {
+      "type": "number",
+      "description": "Actual wire bit-periods / actual baud, excluding idle and blocked flow.",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "source_revision": "Microchip PIC24H DS70232B 2008 chapter17: reset framing,8/9-bit,parity,1/2 stop,16/4 clock,16-bit BRG,FIFO/status/55h autobaud. Device-dependent clock and electrical link, not universal115200.",
+      "min": 0,
+      "unit": "us",
+      "integer": false,
+      "label": "ua serialization us",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ua_idle_us": {
+      "type": "number",
+      "description": "Actual aggregate bounded intercharacter/application gaps.",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "source_revision": "Microchip PIC24H DS70232B 2008 chapter17: reset framing,8/9-bit,parity,1/2 stop,16/4 clock,16-bit BRG,FIFO/status/55h autobaud. Device-dependent clock and electrical link, not universal115200.",
+      "min": 0,
+      "unit": "us",
+      "integer": false,
+      "label": "ua idle us",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ua_flow_block_us": {
+      "type": "number",
+      "description": "Actual bounded CTS/software flow stalls; unbounded peer has no guaranteed completion.",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "source_revision": "Microchip PIC24H DS70232B 2008 chapter17: reset framing,8/9-bit,parity,1/2 stop,16/4 clock,16-bit BRG,FIFO/status/55h autobaud. Device-dependent clock and electrical link, not universal115200.",
+      "min": 0,
+      "unit": "us",
+      "integer": false,
+      "label": "ua flow block us",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ua_transfer_us": {
+      "type": "number",
+      "description": "Actual complete serial transfer bound including gaps and blocking.",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "source_revision": "Microchip PIC24H DS70232B 2008 chapter17: reset framing,8/9-bit,parity,1/2 stop,16/4 clock,16-bit BRG,FIFO/status/55h autobaud. Device-dependent clock and electrical link, not universal115200.",
+      "min": 0,
+      "unit": "us",
+      "integer": false,
+      "label": "ua transfer us",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ua_rx_fifo": {
+      "type": "number",
+      "description": "Actual available receive characters PIC4/LPC16, not software buffer bytes.",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "source_revision": "Microchip PIC24H DS70232B 2008 chapter17: reset framing,8/9-bit,parity,1/2 stop,16/4 clock,16-bit BRG,FIFO/status/55h autobaud. Device-dependent clock and electrical link, not universal115200.",
+      "min": 1,
+      "unit": "character",
+      "integer": true,
+      "label": "ua rx fifo",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ua_tx_fifo": {
+      "type": "number",
+      "description": "Actual available transmit FIFO characters excluding shift register.",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "source_revision": "Microchip PIC24H DS70232B 2008 chapter17: reset framing,8/9-bit,parity,1/2 stop,16/4 clock,16-bit BRG,FIFO/status/55h autobaud. Device-dependent clock and electrical link, not universal115200.",
+      "min": 1,
+      "unit": "character",
+      "integer": true,
+      "label": "ua tx fifo",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ua_rx_occupancy": {
+      "type": "number",
+      "description": "Actual unread hardware FIFO characters at observation.",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "source_revision": "Microchip PIC24H DS70232B 2008 chapter17: reset framing,8/9-bit,parity,1/2 stop,16/4 clock,16-bit BRG,FIFO/status/55h autobaud. Device-dependent clock and electrical link, not universal115200.",
+      "min": 0,
+      "unit": "character",
+      "integer": true,
+      "label": "ua rx occupancy",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ua_arrival_characters": {
+      "type": "number",
+      "description": "Actual additional chars arriving before service.",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "source_revision": "Microchip PIC24H DS70232B 2008 chapter17: reset framing,8/9-bit,parity,1/2 stop,16/4 clock,16-bit BRG,FIFO/status/55h autobaud. Device-dependent clock and electrical link, not universal115200.",
+      "min": 0,
+      "unit": "character",
+      "integer": true,
+      "label": "ua arrival characters",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ua_service_capacity": {
+      "type": "number",
+      "description": "Actual chars removed during service envelope.",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "source_revision": "Microchip PIC24H DS70232B 2008 chapter17: reset framing,8/9-bit,parity,1/2 stop,16/4 clock,16-bit BRG,FIFO/status/55h autobaud. Device-dependent clock and electrical link, not universal115200.",
+      "min": 0,
+      "unit": "character",
+      "integer": true,
+      "label": "ua service capacity",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ua_post_occupancy": {
+      "type": "number",
+      "description": "Actual post-service FIFO occupancy for specified ordering, not universal schedulability.",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "source_revision": "Microchip PIC24H DS70232B 2008 chapter17: reset framing,8/9-bit,parity,1/2 stop,16/4 clock,16-bit BRG,FIFO/status/55h autobaud. Device-dependent clock and electrical link, not universal115200.",
+      "min": 0,
+      "unit": "character",
+      "integer": true,
+      "label": "ua post occupancy",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ua_baud_error_percent": {
+      "type": "number",
+      "description": "Actual signed (baud-target)/target*100, no universal1.1/10percent tolerance.",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "source_revision": "Microchip PIC24H DS70232B 2008 chapter17: reset framing,8/9-bit,parity,1/2 stop,16/4 clock,16-bit BRG,FIFO/status/55h autobaud. Device-dependent clock and electrical link, not universal115200.",
+      "unit": "%",
+      "integer": false,
+      "label": "ua baud error percent",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ua_peer_error_percent": {
+      "type": "number",
+      "description": "Actual bounded oscillator+divider deviation magnitude of peer.",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "source_revision": "Microchip PIC24H DS70232B 2008 chapter17: reset framing,8/9-bit,parity,1/2 stop,16/4 clock,16-bit BRG,FIFO/status/55h autobaud. Device-dependent clock and electrical link, not universal115200.",
+      "min": 0,
+      "unit": "%",
+      "integer": false,
+      "label": "ua peer error percent",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ua_local_error_percent": {
+      "type": "number",
+      "description": "Actual bounded local oscillator+divider deviation magnitude.",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "source_revision": "Microchip PIC24H DS70232B 2008 chapter17: reset framing,8/9-bit,parity,1/2 stop,16/4 clock,16-bit BRG,FIFO/status/55h autobaud. Device-dependent clock and electrical link, not universal115200.",
+      "min": 0,
+      "unit": "%",
+      "integer": false,
+      "label": "ua local error percent",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ua_combined_error_percent": {
+      "type": "number",
+      "description": "Actual sum of worst magnitudes under qualified independent error model.",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "source_revision": "Microchip PIC24H DS70232B 2008 chapter17: reset framing,8/9-bit,parity,1/2 stop,16/4 clock,16-bit BRG,FIFO/status/55h autobaud. Device-dependent clock and electrical link, not universal115200.",
+      "min": 0,
+      "unit": "%",
+      "integer": false,
+      "label": "ua combined error percent",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ua_receiver_tolerance_percent": {
+      "type": "number",
+      "description": "Actual device/mode-dependent verified receive sampling tolerance.",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "source_revision": "Microchip PIC24H DS70232B 2008 chapter17: reset framing,8/9-bit,parity,1/2 stop,16/4 clock,16-bit BRG,FIFO/status/55h autobaud. Device-dependent clock and electrical link, not universal115200.",
+      "min": 0,
+      "unit": "%",
+      "integer": false,
+      "label": "ua receiver tolerance percent",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ua_autobaud_sync": {
+      "type": "number",
+      "description": "Actual sync character PIC55h versus LPC AT A/a protocol.",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "source_revision": "Microchip PIC24H DS70232B 2008 chapter17: reset framing,8/9-bit,parity,1/2 stop,16/4 clock,16-bit BRG,FIFO/status/55h autobaud. Device-dependent clock and electrical link, not universal115200.",
+      "min": 0,
+      "max": 255,
+      "integer": true,
+      "label": "ua autobaud sync",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ua_source_ms": {
+      "type": "number",
+      "description": "Actual producer/encode/host queue bound.",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "source_revision": "Microchip PIC24H DS70232B 2008 chapter17: reset framing,8/9-bit,parity,1/2 stop,16/4 clock,16-bit BRG,FIFO/status/55h autobaud. Device-dependent clock and electrical link, not universal115200.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "label": "ua source ms",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ua_path_ms": {
+      "type": "number",
+      "description": "Actual PHY/transfer and driver delivery bound.",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "source_revision": "Microchip PIC24H DS70232B 2008 chapter17: reset framing,8/9-bit,parity,1/2 stop,16/4 clock,16-bit BRG,FIFO/status/55h autobaud. Device-dependent clock and electrical link, not universal115200.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "label": "ua path ms",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ua_consumer_ms": {
+      "type": "number",
+      "description": "Actual decoder/use/service bound.",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "source_revision": "Microchip PIC24H DS70232B 2008 chapter17: reset framing,8/9-bit,parity,1/2 stop,16/4 clock,16-bit BRG,FIFO/status/55h autobaud. Device-dependent clock and electrical link, not universal115200.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "label": "ua consumer ms",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ua_e2e_ms": {
+      "type": "number",
+      "description": "Actual complete source+path+consumer bound.",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "source_revision": "Microchip PIC24H DS70232B 2008 chapter17: reset framing,8/9-bit,parity,1/2 stop,16/4 clock,16-bit BRG,FIFO/status/55h autobaud. Device-dependent clock and electrical link, not universal115200.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "label": "ua e2e ms",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ua_deadline_ms": {
+      "type": "number",
+      "description": "Actual independent functional deadline.",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "source_revision": "Microchip PIC24H DS70232B 2008 chapter17: reset framing,8/9-bit,parity,1/2 stop,16/4 clock,16-bit BRG,FIFO/status/55h autobaud. Device-dependent clock and electrical link, not universal115200.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "label": "ua deadline ms",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ua_age_ms": {
+      "type": "number",
+      "description": "Actual correlated data age at use.",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "source_revision": "Microchip PIC24H DS70232B 2008 chapter17: reset framing,8/9-bit,parity,1/2 stop,16/4 clock,16-bit BRG,FIFO/status/55h autobaud. Device-dependent clock and electrical link, not universal115200.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "label": "ua age ms",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ua_freshness_ms": {
+      "type": "number",
+      "description": "Actual acceptable application data age.",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "source_revision": "Microchip PIC24H DS70232B 2008 chapter17: reset framing,8/9-bit,parity,1/2 stop,16/4 clock,16-bit BRG,FIFO/status/55h autobaud. Device-dependent clock and electrical link, not universal115200.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "label": "ua freshness ms",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ua_enabled": {
+      "type": "boolean",
+      "description": "Actual UART and transmitter enabled; reset disabled is not productive interface.",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "source_revision": "Microchip PIC24H DS70232B 2008 chapter17: reset framing,8/9-bit,parity,1/2 stop,16/4 clock,16-bit BRG,FIFO/status/55h autobaud. Device-dependent clock and electrical link, not universal115200.",
+      "label": "ua enabled",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ua_rx_enabled": {
+      "type": "boolean",
+      "description": "Actual receiver active, separately from Tx.",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "source_revision": "Microchip PIC24H DS70232B 2008 chapter17: reset framing,8/9-bit,parity,1/2 stop,16/4 clock,16-bit BRG,FIFO/status/55h autobaud. Device-dependent clock and electrical link, not universal115200.",
+      "label": "ua rx enabled",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ua_peer_verified": {
+      "type": "boolean",
+      "description": "Actual matching baud/framing/polarity/flow and decoder on both endpoints.",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "source_revision": "Microchip PIC24H DS70232B 2008 chapter17: reset framing,8/9-bit,parity,1/2 stop,16/4 clock,16-bit BRG,FIFO/status/55h autobaud. Device-dependent clock and electrical link, not universal115200.",
+      "label": "ua peer verified",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ua_fifo_verified": {
+      "type": "boolean",
+      "description": "Actual worst FIFO service/interrupt/DMA capacity and no lost chars.",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "source_revision": "Microchip PIC24H DS70232B 2008 chapter17: reset framing,8/9-bit,parity,1/2 stop,16/4 clock,16-bit BRG,FIFO/status/55h autobaud. Device-dependent clock and electrical link, not universal115200.",
+      "label": "ua fifo verified",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ua_phy_verified": {
+      "type": "boolean",
+      "description": "Actual electrical driver/voltage/cable/termination/ground and direction path.",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "source_revision": "Microchip PIC24H DS70232B 2008 chapter17: reset framing,8/9-bit,parity,1/2 stop,16/4 clock,16-bit BRG,FIFO/status/55h autobaud. Device-dependent clock and electrical link, not universal115200.",
+      "label": "ua phy verified",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ua_data_accepted": {
+      "type": "boolean",
+      "description": "Actual fresh decoded dataset consumed under independent requirement.",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "source_revision": "Microchip PIC24H DS70232B 2008 chapter17: reset framing,8/9-bit,parity,1/2 stop,16/4 clock,16-bit BRG,FIFO/status/55h autobaud. Device-dependent clock and electrical link, not universal115200.",
+      "label": "ua data accepted",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ua_revision": {
+      "type": "text",
+      "description": "Actual hardware/controller/revision/driver edition.",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "source_revision": "Microchip PIC24H DS70232B 2008 chapter17: reset framing,8/9-bit,parity,1/2 stop,16/4 clock,16-bit BRG,FIFO/status/55h autobaud. Device-dependent clock and electrical link, not universal115200.",
+      "label": "ua revision",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ua_configuration_source": {
+      "type": "text",
+      "description": "Actual both endpoints baud/framing/flow/polarity settings.",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "source_revision": "Microchip PIC24H DS70232B 2008 chapter17: reset framing,8/9-bit,parity,1/2 stop,16/4 clock,16-bit BRG,FIFO/status/55h autobaud. Device-dependent clock and electrical link, not universal115200.",
+      "label": "ua configuration source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ua_clock_source": {
+      "type": "text",
+      "description": "Actual input-clock selection, oscillator and baud-divider register proof.",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "source_revision": "Microchip PIC24H DS70232B 2008 chapter17: reset framing,8/9-bit,parity,1/2 stop,16/4 clock,16-bit BRG,FIFO/status/55h autobaud. Device-dependent clock and electrical link, not universal115200.",
+      "label": "ua clock source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ua_phy_source": {
+      "type": "text",
+      "description": "Actual TTL/RS232/RS422/RS485/bridge electrical binding, no UART electrical universal.",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "source_revision": "Microchip PIC24H DS70232B 2008 chapter17: reset framing,8/9-bit,parity,1/2 stop,16/4 clock,16-bit BRG,FIFO/status/55h autobaud. Device-dependent clock and electrical link, not universal115200.",
+      "label": "ua phy source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ua_codec_source": {
+      "type": "text",
+      "description": "Actual application encoding/boundaries/escaping/endianness, not write chunk.",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "source_revision": "Microchip PIC24H DS70232B 2008 chapter17: reset framing,8/9-bit,parity,1/2 stop,16/4 clock,16-bit BRG,FIFO/status/55h autobaud. Device-dependent clock and electrical link, not universal115200.",
+      "label": "ua codec source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ua_acceptance_source": {
+      "type": "text",
+      "description": "Actual application deadline/freshness/error handling.",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "source_revision": "Microchip PIC24H DS70232B 2008 chapter17: reset framing,8/9-bit,parity,1/2 stop,16/4 clock,16-bit BRG,FIFO/status/55h autobaud. Device-dependent clock and electrical link, not universal115200.",
+      "label": "ua acceptance source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ua_registered_source": {
+      "type": "text",
+      "description": "Actual independently qualified controller/USART mode.",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "source_revision": "Microchip PIC24H DS70232B 2008 chapter17: reset framing,8/9-bit,parity,1/2 stop,16/4 clock,16-bit BRG,FIFO/status/55h autobaud. Device-dependent clock and electrical link, not universal115200.",
+      "label": "ua registered source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ua_flow_source": {
+      "type": "text",
+      "description": "Actual bounded peer flow-control behavior.",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "source_revision": "Microchip PIC24H DS70232B 2008 chapter17: reset framing,8/9-bit,parity,1/2 stop,16/4 clock,16-bit BRG,FIFO/status/55h autobaud. Device-dependent clock and electrical link, not universal115200.",
+      "label": "ua flow source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ua_error_source": {
+      "type": "text",
+      "description": "Actual receiver oversampling/clock tolerance and worst oscillator uncertainty.",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "source_revision": "Microchip PIC24H DS70232B 2008 chapter17: reset framing,8/9-bit,parity,1/2 stop,16/4 clock,16-bit BRG,FIFO/status/55h autobaud. Device-dependent clock and electrical link, not universal115200.",
+      "label": "ua error source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ua_fifo_source": {
+      "type": "text",
+      "description": "Actual interrupt/DMA/service/preempting task envelope.",
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10237.pdf",
+      "source_revision": "NXP LPC24xx UM10237 Rev04 26August2009 chapters16/17:5..8 bits,1/1.5/2 stop,stick parity,DL divisor and fractional divider constraints,UART1 hardware flow versus UART0/2/3,actual baud and error states.",
+      "label": "ua fifo source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ua_observation_source": {
+      "type": "text",
+      "description": "Actual correlated character/application trace including error status.",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "source_revision": "Microchip PIC24H DS70232B 2008 chapter17: reset framing,8/9-bit,parity,1/2 stop,16/4 clock,16-bit BRG,FIFO/status/55h autobaud. Device-dependent clock and electrical link, not universal115200.",
+      "label": "ua observation source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ua_autobaud_source": {
+      "type": "text",
+      "description": "Actual completed sync measurement or qualified startup timeout.",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "source_revision": "Microchip PIC24H DS70232B 2008 chapter17: reset framing,8/9-bit,parity,1/2 stop,16/4 clock,16-bit BRG,FIFO/status/55h autobaud. Device-dependent clock and electrical link, not universal115200.",
+      "label": "ua autobaud source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    }
+  },
+  "mechanisms": {
+    "network": [
+      "UART_START_STOP_NOT_RS232_VOLTAGE",
+      "USART_SYNC_REQUIRES_REGISTERED_PATH"
+    ],
+    "timing": [
+      "DEVICE_DIVIDER_AND_PEER_ERROR",
+      "FIFO_FLOW_AND_APPLICATION_ACCEPTANCE"
+    ]
+  },
+  "parameter_constraints": [
+    {
+      "parameter": "bitrate",
+      "when": {},
+      "allowed": [],
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf"
+    },
+    {
+      "parameter": "reserved_bandwidth_percent",
+      "when": {},
+      "allowed": [],
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf"
+    },
+    {
+      "parameter": "sync_method",
+      "when": {},
+      "allowed": [],
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf"
+    },
+    {
+      "parameter": "retransmission_enabled",
+      "when": {},
+      "allowed": [],
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf"
+    },
+    {
+      "parameter": "retransmission_rate",
+      "when": {},
+      "allowed": [],
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf"
+    },
+    {
+      "parameter": "retry_limit",
+      "when": {},
+      "allowed": [],
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf"
+    },
+    {
+      "parameter": "retransmission_delay_ms",
+      "when": {},
+      "allowed": [],
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf"
+    },
+    {
+      "parameter": "gateway_maximum_throughput",
+      "when": {},
+      "allowed": [],
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf"
+    },
+    {
+      "parameter": "gateway_input_buffer",
+      "when": {},
+      "allowed": [],
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf"
+    },
+    {
+      "parameter": "gateway_output_buffer",
+      "when": {},
+      "allowed": [],
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf"
+    },
+    {
+      "parameter": "gateway_maximum_routes",
+      "when": {},
+      "allowed": [],
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf"
+    },
+    {
+      "parameter": "gateway_maximum_messages_s",
+      "when": {},
+      "allowed": [],
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf"
+    },
+    {
+      "parameter": "ua_registered_source",
+      "when": {
+        "ua_review_profile": "REGISTERED_ACTUAL"
+      },
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "required": true
+    },
+    {
+      "parameter": "ua_registered_source",
+      "when": {
+        "ua_mode": "SYNC_USART"
+      },
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "required": true
+    },
+    {
+      "parameter": "ua_registered_source",
+      "when": {
+        "ua_mode": "REGISTERED_ACTUAL"
+      },
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "required": true
+    },
+    {
+      "parameter": "ua_mode",
+      "when": {
+        "ua_review_profile": "PIC24H_DS70232B"
+      },
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "allowed": [
+        "ASYNC_UART"
+      ]
+    },
+    {
+      "parameter": "ua_mode",
+      "when": {
+        "ua_review_profile": "LPC24XX_UM10237_4"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10237.pdf",
+      "allowed": [
+        "ASYNC_UART"
+      ]
+    },
+    {
+      "parameter": "ua_data_bits",
+      "when": {
+        "ua_review_profile": "PIC24H_DS70232B"
+      },
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "allowed": [
+        8,
+        9
+      ]
+    },
+    {
+      "parameter": "ua_parity",
+      "when": {
+        "ua_review_profile": "PIC24H_DS70232B"
+      },
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "allowed": [
+        "NONE",
+        "EVEN",
+        "ODD"
+      ]
+    },
+    {
+      "parameter": "ua_stop_bits",
+      "when": {
+        "ua_review_profile": "PIC24H_DS70232B"
+      },
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "allowed": [
+        1,
+        2
+      ]
+    },
+    {
+      "parameter": "ua_oversampling",
+      "when": {
+        "ua_review_profile": "PIC24H_DS70232B"
+      },
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "allowed": [
+        4,
+        16
+      ]
+    },
+    {
+      "parameter": "ua_start_bits",
+      "when": {
+        "ua_review_profile": "PIC24H_DS70232B"
+      },
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "allowed": [
+        1
+      ]
+    },
+    {
+      "parameter": "ua_bit_order",
+      "when": {
+        "ua_review_profile": "PIC24H_DS70232B"
+      },
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "allowed": [
+        "LSB_FIRST"
+      ]
+    },
+    {
+      "parameter": "ua_baud",
+      "when": {
+        "ua_review_profile": "PIC24H_DS70232B"
+      },
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "required": true
+    },
+    {
+      "parameter": "ua_data_bits",
+      "when": {
+        "ua_review_profile": "PIC24H_DS70232B"
+      },
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "required": true
+    },
+    {
+      "parameter": "ua_start_bits",
+      "when": {
+        "ua_review_profile": "PIC24H_DS70232B"
+      },
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "required": true
+    },
+    {
+      "parameter": "ua_stop_bits",
+      "when": {
+        "ua_review_profile": "PIC24H_DS70232B"
+      },
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "required": true
+    },
+    {
+      "parameter": "ua_parity",
+      "when": {
+        "ua_review_profile": "PIC24H_DS70232B"
+      },
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "required": true
+    },
+    {
+      "parameter": "ua_direction",
+      "when": {
+        "ua_review_profile": "PIC24H_DS70232B"
+      },
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "required": true
+    },
+    {
+      "parameter": "ua_flow",
+      "when": {
+        "ua_review_profile": "PIC24H_DS70232B"
+      },
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "required": true
+    },
+    {
+      "parameter": "ua_baud",
+      "when": {
+        "ua_review_profile": "PIC24H_DS70232B"
+      },
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "exclusive_minimum": 0
+    },
+    {
+      "parameter": "ua_data_bits",
+      "when": {
+        "ua_review_profile": "LPC24XX_UM10237_4"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10237.pdf",
+      "allowed": [
+        5,
+        6,
+        7,
+        8
+      ]
+    },
+    {
+      "parameter": "ua_parity",
+      "when": {
+        "ua_review_profile": "LPC24XX_UM10237_4"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10237.pdf",
+      "allowed": [
+        "NONE",
+        "EVEN",
+        "ODD",
+        "MARK",
+        "SPACE"
+      ]
+    },
+    {
+      "parameter": "ua_stop_bits",
+      "when": {
+        "ua_review_profile": "LPC24XX_UM10237_4"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10237.pdf",
+      "allowed": [
+        1,
+        1.5,
+        2
+      ]
+    },
+    {
+      "parameter": "ua_oversampling",
+      "when": {
+        "ua_review_profile": "LPC24XX_UM10237_4"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10237.pdf",
+      "allowed": [
+        16
+      ]
+    },
+    {
+      "parameter": "ua_start_bits",
+      "when": {
+        "ua_review_profile": "LPC24XX_UM10237_4"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10237.pdf",
+      "allowed": [
+        1
+      ]
+    },
+    {
+      "parameter": "ua_bit_order",
+      "when": {
+        "ua_review_profile": "LPC24XX_UM10237_4"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10237.pdf",
+      "allowed": [
+        "LSB_FIRST"
+      ]
+    },
+    {
+      "parameter": "ua_baud",
+      "when": {
+        "ua_review_profile": "LPC24XX_UM10237_4"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10237.pdf",
+      "required": true
+    },
+    {
+      "parameter": "ua_data_bits",
+      "when": {
+        "ua_review_profile": "LPC24XX_UM10237_4"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10237.pdf",
+      "required": true
+    },
+    {
+      "parameter": "ua_start_bits",
+      "when": {
+        "ua_review_profile": "LPC24XX_UM10237_4"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10237.pdf",
+      "required": true
+    },
+    {
+      "parameter": "ua_stop_bits",
+      "when": {
+        "ua_review_profile": "LPC24XX_UM10237_4"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10237.pdf",
+      "required": true
+    },
+    {
+      "parameter": "ua_parity",
+      "when": {
+        "ua_review_profile": "LPC24XX_UM10237_4"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10237.pdf",
+      "required": true
+    },
+    {
+      "parameter": "ua_direction",
+      "when": {
+        "ua_review_profile": "LPC24XX_UM10237_4"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10237.pdf",
+      "required": true
+    },
+    {
+      "parameter": "ua_flow",
+      "when": {
+        "ua_review_profile": "LPC24XX_UM10237_4"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10237.pdf",
+      "required": true
+    },
+    {
+      "parameter": "ua_baud",
+      "when": {
+        "ua_review_profile": "LPC24XX_UM10237_4"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10237.pdf",
+      "exclusive_minimum": 0
+    },
+    {
+      "parameter": "ua_parity",
+      "when": {
+        "ua_review_profile": "PIC24H_DS70232B",
+        "ua_data_bits": 9
+      },
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "allowed": [
+        "NONE"
+      ]
+    },
+    {
+      "parameter": "ua_stop_bits",
+      "when": {
+        "ua_review_profile": "LPC24XX_UM10237_4",
+        "ua_data_bits": 5
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10237.pdf",
+      "allowed": [
+        1,
+        1.5
+      ]
+    },
+    {
+      "parameter": "ua_stop_bits",
+      "when": {
+        "ua_review_profile": "LPC24XX_UM10237_4"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10237.pdf",
+      "when_ranges": {
+        "ua_data_bits": [
+          6,
+          8
+        ]
+      },
+      "allowed": [
+        1,
+        2
+      ]
+    },
+    {
+      "parameter": "ua_baud",
+      "when": {
+        "ua_review_profile": "PIC24H_DS70232B"
+      },
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "equal_ratio": {
+        "numerator_parameter": "ua_clock_hz",
+        "denominator_sum": [
+          "ua_brg"
+        ],
+        "denominator_offset": 1,
+        "denominator_product": [
+          "ua_oversampling"
+        ]
+      }
+    },
+    {
+      "parameter": "ua_divisor",
+      "when": {
+        "ua_review_profile": "LPC24XX_UM10237_4"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10237.pdf",
+      "equal_expression": {
+        "sum": [
+          {
+            "product": [
+              256,
+              "ua_dlm"
+            ]
+          },
+          "ua_dll"
+        ]
+      }
+    },
+    {
+      "parameter": "ua_divaddval",
+      "when": {
+        "ua_review_profile": "LPC24XX_UM10237_4"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10237.pdf",
+      "exclusive_maximum_expression": "ua_mulval"
+    },
+    {
+      "parameter": "ua_dll",
+      "when": {
+        "ua_review_profile": "LPC24XX_UM10237_4",
+        "ua_dlm": 0
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10237.pdf",
+      "when_greater_than": {
+        "ua_divaddval": 0
+      },
+      "minimum": 3
+    },
+    {
+      "parameter": "ua_baud",
+      "when": {
+        "ua_review_profile": "LPC24XX_UM10237_4"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10237.pdf",
+      "equal_ratio": {
+        "numerator_parameter": "ua_clock_hz",
+        "numerator_product": [
+          "ua_mulval"
+        ],
+        "denominator_sum": [
+          "ua_mulval",
+          "ua_divaddval"
+        ],
+        "denominator_product": [
+          "ua_divisor"
+        ],
+        "factor": 0.0625
+      }
+    },
+    {
+      "parameter": "ua_port",
+      "when": {
+        "ua_review_profile": "LPC24XX_UM10237_4",
+        "ua_flow": "RTS_CTS"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10237.pdf",
+      "required": true,
+      "allowed": [
+        1
+      ]
+    },
+    {
+      "parameter": "ua_rx_fifo",
+      "when": {
+        "ua_review_profile": "PIC24H_DS70232B"
+      },
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "maximum": 4
+    },
+    {
+      "parameter": "ua_tx_fifo",
+      "when": {
+        "ua_review_profile": "PIC24H_DS70232B"
+      },
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "maximum": 4
+    },
+    {
+      "parameter": "ua_rx_fifo",
+      "when": {
+        "ua_review_profile": "LPC24XX_UM10237_4"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10237.pdf",
+      "maximum": 16
+    },
+    {
+      "parameter": "ua_tx_fifo",
+      "when": {
+        "ua_review_profile": "LPC24XX_UM10237_4"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10237.pdf",
+      "maximum": 16
+    },
+    {
+      "parameter": "ua_parity_bits",
+      "when": {
+        "ua_parity": "NONE"
+      },
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "ua_parity_bits",
+      "when": {},
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "when_present": [
+        "ua_parity"
+      ],
+      "when_not": {
+        "ua_parity": "NONE"
+      },
+      "allowed": [
+        1
+      ]
+    },
+    {
+      "parameter": "ua_character_bits",
+      "when": {},
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "equal_expression": {
+        "sum": [
+          "ua_start_bits",
+          "ua_data_bits",
+          "ua_parity_bits",
+          "ua_stop_bits"
+        ]
+      }
+    },
+    {
+      "parameter": "ua_wire_bits",
+      "when": {},
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "equal_expression": {
+        "product": [
+          "ua_characters",
+          "ua_character_bits"
+        ]
+      }
+    },
+    {
+      "parameter": "ua_serialization_us",
+      "when": {},
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "equal_ratio": {
+        "numerator_parameter": "ua_wire_bits",
+        "denominator_parameter": "ua_baud",
+        "factor": 1000000
+      }
+    },
+    {
+      "parameter": "ua_transfer_us",
+      "when": {},
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "minimum_expression": {
+        "sum": [
+          "ua_serialization_us",
+          "ua_idle_us",
+          "ua_flow_block_us"
+        ]
+      }
+    },
+    {
+      "parameter": "ua_baud",
+      "when": {},
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "when_present": [
+        "ua_baud_error_percent",
+        "ua_target_baud"
+      ],
+      "equal_expression": {
+        "product": [
+          "ua_target_baud",
+          {
+            "sum": [
+              1,
+              {
+                "product": [
+                  0.01,
+                  "ua_baud_error_percent"
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "parameter": "ua_combined_error_percent",
+      "when": {},
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "equal_expression": {
+        "sum": [
+          "ua_local_error_percent",
+          "ua_peer_error_percent"
+        ]
+      },
+      "maximum_parameter": "ua_receiver_tolerance_percent"
+    },
+    {
+      "parameter": "ua_rx_occupancy",
+      "when": {},
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "maximum_parameter": "ua_rx_fifo"
+    },
+    {
+      "parameter": "ua_post_occupancy",
+      "when": {},
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "maximum_parameter": "ua_rx_fifo",
+      "equal_expression": {
+        "maximum": [
+          0,
+          {
+            "subtract": [
+              {
+                "sum": [
+                  "ua_rx_occupancy",
+                  "ua_arrival_characters"
+                ]
+              },
+              "ua_service_capacity"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "parameter": "ua_data_bits",
+      "when": {
+        "ua_peer_verified": true
+      },
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "equal_parameter": "ua_peer_data_bits"
+    },
+    {
+      "parameter": "ua_peer_data_bits",
+      "when": {
+        "ua_peer_verified": true
+      },
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "required": true
+    },
+    {
+      "parameter": "ua_parity",
+      "when": {
+        "ua_peer_verified": true
+      },
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "equal_parameter": "ua_peer_parity"
+    },
+    {
+      "parameter": "ua_peer_parity",
+      "when": {
+        "ua_peer_verified": true
+      },
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "required": true
+    },
+    {
+      "parameter": "ua_stop_bits",
+      "when": {
+        "ua_peer_verified": true
+      },
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "equal_parameter": "ua_peer_stop_bits"
+    },
+    {
+      "parameter": "ua_peer_stop_bits",
+      "when": {
+        "ua_peer_verified": true
+      },
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "required": true
+    },
+    {
+      "parameter": "ua_error_source",
+      "when": {
+        "ua_peer_verified": true
+      },
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "required": true
+    },
+    {
+      "parameter": "ua_combined_error_percent",
+      "when": {
+        "ua_peer_verified": true
+      },
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "required": true
+    },
+    {
+      "parameter": "ua_receiver_tolerance_percent",
+      "when": {
+        "ua_peer_verified": true
+      },
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "required": true
+    },
+    {
+      "parameter": "ua_flow_source",
+      "when": {
+        "ua_flow": "RTS_CTS"
+      },
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "when_present": [
+        "ua_transfer_us"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "ua_flow_block_us",
+      "when": {
+        "ua_flow": "RTS_CTS"
+      },
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "when_present": [
+        "ua_transfer_us"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "ua_flow_source",
+      "when": {
+        "ua_flow": "XON_XOFF"
+      },
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "when_present": [
+        "ua_transfer_us"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "ua_flow_block_us",
+      "when": {
+        "ua_flow": "XON_XOFF"
+      },
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "when_present": [
+        "ua_transfer_us"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "ua_flow_source",
+      "when": {
+        "ua_flow": "REGISTERED_ACTUAL"
+      },
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "when_present": [
+        "ua_transfer_us"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "ua_flow_block_us",
+      "when": {
+        "ua_flow": "REGISTERED_ACTUAL"
+      },
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "when_present": [
+        "ua_transfer_us"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "ua_autobaud_sync",
+      "when": {
+        "ua_review_profile": "PIC24H_DS70232B",
+        "ua_autobaud": "COMPLETE"
+      },
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "required": true,
+      "allowed": [
+        85
+      ]
+    },
+    {
+      "parameter": "ua_autobaud_sync",
+      "when": {
+        "ua_review_profile": "LPC24XX_UM10237_4",
+        "ua_autobaud": "COMPLETE"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10237.pdf",
+      "required": true,
+      "allowed": [
+        65,
+        97
+      ]
+    },
+    {
+      "parameter": "ua_autobaud_source",
+      "when": {
+        "ua_autobaud": "COMPLETE"
+      },
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "required": true
+    },
+    {
+      "parameter": "ua_e2e_ms",
+      "when": {},
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "equal_expression": {
+        "sum": [
+          "ua_source_ms",
+          "ua_path_ms",
+          "ua_consumer_ms"
+        ]
+      },
+      "maximum_parameter": "ua_deadline_ms"
+    },
+    {
+      "parameter": "ua_age_ms",
+      "when": {},
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "maximum_parameter": "ua_freshness_ms"
+    },
+    {
+      "parameter": "ua_source_ms",
+      "when": {},
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "when_present": [
+        "ua_e2e_ms"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "ua_path_ms",
+      "when": {},
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "when_present": [
+        "ua_e2e_ms"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "ua_consumer_ms",
+      "when": {},
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "when_present": [
+        "ua_e2e_ms"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "ua_observation_source",
+      "when": {
+        "ua_data_accepted": true
+      },
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "required": true
+    },
+    {
+      "parameter": "ua_fifo_source",
+      "when": {
+        "ua_data_accepted": true
+      },
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "required": true
+    },
+    {
+      "parameter": "ua_error_source",
+      "when": {
+        "ua_data_accepted": true
+      },
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "required": true
+    },
+    {
+      "parameter": "ua_e2e_ms",
+      "when": {
+        "ua_data_accepted": true
+      },
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "required": true
+    },
+    {
+      "parameter": "ua_deadline_ms",
+      "when": {
+        "ua_data_accepted": true
+      },
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "required": true
+    },
+    {
+      "parameter": "ua_age_ms",
+      "when": {
+        "ua_data_accepted": true
+      },
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "required": true
+    },
+    {
+      "parameter": "ua_freshness_ms",
+      "when": {
+        "ua_data_accepted": true
+      },
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "required": true
+    },
+    {
+      "parameter": "ua_enabled",
+      "when": {
+        "ua_data_accepted": true
+      },
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "required": true,
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "ua_peer_verified",
+      "when": {
+        "ua_data_accepted": true
+      },
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "required": true,
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "ua_fifo_verified",
+      "when": {
+        "ua_data_accepted": true
+      },
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "required": true,
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "ua_phy_verified",
+      "when": {
+        "ua_data_accepted": true
+      },
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "required": true,
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "ua_outcome",
+      "when": {
+        "ua_data_accepted": true
+      },
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/70232B.pdf",
+      "required": true,
+      "allowed": [
+        "ACCEPTED"
+      ]
+    }
+  ],
+  "physical_layer_profile_id": null,
+  "medium_access_model": null,
+  "native_parameter_prefixes": [
+    "ua_"
+  ],
+  "parameter_aliases": {},
+  "parameter_alias_limits": {},
+  "parameter_evidence_scope": "EXPLICIT_LAYER",
+  "rate_source_profile_id": null,
+  "arbitration_model_id": null,
+  "max_payload_bytes": null,
+  "capabilities": {
+    "supports_signals": true,
+    "supports_data_objects": false,
+    "supports_streams": true,
+    "supports_multicast": false,
+    "supports_publish_subscribe": false,
+    "supports_request_response": false,
+    "supports_cyclic": true,
+    "supports_event": true,
+    "supports_redundancy": false,
+    "supports_time_sync": false,
+    "supports_safety_profile": false,
+    "supports_segmentation": false,
+    "supports_fragmentation": false,
+    "supports_qos": false
+  },
+  "deterministic": false,
+  "overhead_bytes": 8,
+  "implementation_status": "PARTIAL",
+  "connection_type": "COMMUNICATION_TECHNOLOGY",
+  "parameter_proposals": {
+    "kind": "DEVICE_DEPENDENT",
+    "status": "REVIEW_REQUIRED",
+    "required_fields": [],
+    "note": "No universal rate is available; inspect the selected hardware/profile."
+  },
+  "capacity_evidence": {
+    "status": "MODEL_MISSING",
+    "frame_model": null,
+    "schedule_model": null,
+    "requires_confirmed_device_parameters": true
+  },
+  "components": {
+    "binding": "uart.binding",
+    "generator": "uart.generator",
+    "validator": "uart.validator",
+    "timing_model": null,
+    "load_model": null,
+    "encoder": "uart.encoder",
+    "decoder": "uart.decoder"
+  },
+  "known_limitations": "Technology-specific conformance details require a vendor/profile extension."
+}

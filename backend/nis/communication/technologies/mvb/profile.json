@@ -1,0 +1,4185 @@
+{
+  "id": "mvb",
+  "label": "MVB",
+  "domain": "generic_networking",
+  "layer": "DATA_LINK",
+  "transport_unit": "PROCESS_DATA",
+  "payload_element_types": [
+    "SIGNAL",
+    "STATUS"
+  ],
+  "hardware_interface": "mvb_interface",
+  "hardware_capability_aliases": [
+    "mvb_interface"
+  ],
+  "default_stack": [
+    "mvb"
+  ],
+  "stack_variants": [
+    [
+      "mvb"
+    ]
+  ],
+  "default_bitrate": 1500000,
+  "rate_model": {
+    "type": "FIXED_LINK_RATE",
+    "fields": [
+      "bitrate_bps"
+    ],
+    "fixed_bps": 1500000
+  },
+  "local_timing_schema": [],
+  "parameter_schema": {
+    "bitrate_bps": {
+      "label": "MVB nominal carrier rate",
+      "category": "physical",
+      "scope": "network",
+      "type": "number",
+      "description": "Fixed nominal gross1.5Mbit/s, not measuredclock/usablethroughput or doubledManchesterbaud. ActualPHY/frame/scan/tolerance requireevidence.",
+      "required": true,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1500000,
+      "unit": "bit/s",
+      "min": 1500000,
+      "default_review": {
+        "technology": "mvb",
+        "rate_profile": "mvb",
+        "values": {
+          "bitrate_bps": 1500000
+        },
+        "basis": "FIXED_PROFILE_RATE",
+        "status": "REVIEW_REQUIRED",
+        "source": "https://www.imc-tm.cn/fileadmin/Public/Downloads/Datasheets/imc_optional_accessories/imc_Accessories_EN_TDs/TD_Digital_Fieldbus.pdf",
+        "source_revision": "imc fieldbusinterfaces datasheet4.15 February27 2026 pp17-18; hardwarewiredEMD orESD+ logging periodicdata, not configurable transmitter/busadministrator"
+      },
+      "allowed_bps": [
+        1500000
+      ],
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED",
+      "source": "https://www.imc-tm.cn/fileadmin/Public/Downloads/Datasheets/imc_optional_accessories/imc_Accessories_EN_TDs/TD_Digital_Fieldbus.pdf",
+      "source_revision": "imc fieldbusinterfaces datasheet4.15 February27 2026 pp17-18; hardwarewiredEMD orESD+ logging periodicdata, not configurable transmitter/busadministrator",
+      "max": 1500000,
+      "integer": true
+    },
+    "payload_bytes": {
+      "label": "Payload",
+      "category": "physical",
+      "scope": "message",
+      "type": "number",
+      "description": "Actual applicationencodedbytes within selected16/32/64/128/256bitdataset. Messageport256bits includes actualheader; no universal32byte applicationallocation.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "max": 32,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.imc-tm.cn/fileadmin/Public/Downloads/Datasheets/imc_optional_accessories/imc_Accessories_EN_TDs/TD_Digital_Fieldbus.pdf",
+      "source_revision": "imc fieldbusinterfaces datasheet4.15 February27 2026 pp17-18; hardwarewiredEMD orESD+ logging periodicdata, not configurable transmitter/busadministrator",
+      "integer": true
+    },
+    "cycle_ms": {
+      "label": "Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "Standardperiode fuer zyklische Nachrichten.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "minimum_cycle_time_ms": {
+      "label": "Minimum Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "deadline_ms": {
+      "label": "Deadline",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "timeout_ms": {
+      "label": "Timeout",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_latency_ms": {
+      "label": "Maximum Latency",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "jitter_ms": {
+      "label": "Jitter Budget",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "freshness_ms": {
+      "label": "Data Freshness",
+      "category": "timing",
+      "scope": "signal",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "source_processing_delay_ms": {
+      "label": "Source Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_processing_delay_ms": {
+      "label": "Target Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "propagation_delay_ms": {
+      "label": "Propagation",
+      "category": "timing",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.01,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_bus_load_percent": {
+      "label": "Ziel-Buslast",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "Zielwert fuer die aus Routing, Payload, Zyklus und Bitrate berechnete Buslast.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "peak_factor": {
+      "label": "Peak Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.15,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_factor": {
+      "label": "Burst Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.5,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_window_ms": {
+      "label": "Burst Window",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "warning_threshold": {
+      "label": "Load Warning",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "critical_threshold": {
+      "label": "Load Critical",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 75,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "overload_threshold": {
+      "label": "Load Overload",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 90,
+      "unit": "%",
+      "min": 1,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "traffic_class": {
+      "label": "Traffic Class",
+      "category": "qos",
+      "scope": "route",
+      "type": "select",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": "BEST_EFFORT",
+      "options": [
+        "BEST_EFFORT",
+        "CONTROL",
+        "REALTIME",
+        "SAFETY_CRITICAL"
+      ],
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "packet_loss_probability": {
+      "label": "Packet Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "frame_loss_probability": {
+      "label": "Frame Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "bit_error_rate": {
+      "label": "Bit Error Rate",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "corruption_probability": {
+      "label": "Corruption",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duplicate_probability": {
+      "label": "Duplication",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "reordering_probability": {
+      "label": "Reordering",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "required_reliability": {
+      "label": "Required Reliability",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.999,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_offset_ms": {
+      "label": "Clock Offset",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_drift_ppm": {
+      "label": "Clock Drift",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 20,
+      "unit": "ppm",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_precision_ms": {
+      "label": "Sync Precision",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_interval_ms": {
+      "label": "Sync Interval",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1000,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_sync_error_ms": {
+      "label": "Maximum Sync Error",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_delay_ms": {
+      "label": "Gateway Processing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.2,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_queue_delay_ms": {
+      "label": "Gateway Queueing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "protocol_conversion_delay_ms": {
+      "label": "Protocol Conversion",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_maximum_throughput": {
+      "label": "Gateway Throughput",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100000000,
+      "unit": "bit/s",
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_input_buffer": {
+      "label": "Gateway Input Buffer",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 256,
+      "unit": "Frames",
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_output_buffer": {
+      "label": "Gateway Output Buffer",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 256,
+      "unit": "Frames",
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_maximum_routes": {
+      "label": "Gateway Maximum Routes",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 10000,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_maximum_messages_s": {
+      "label": "Gateway Messages per Second",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100000,
+      "unit": "msg/s",
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duration_s": {
+      "label": "Simulation Duration",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 1,
+      "unit": "s",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "seed": {
+      "label": "Random Seed",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 42,
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "max_events": {
+      "label": "Maximum Events",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 100000,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "dropout_probability": {
+      "label": "Failure Injection Dropout",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "mv_implementation": {
+      "type": "select",
+      "description": "Actual qualified historical ABB controller, current imc logging device or registered implementation; no silent interchange.",
+      "options": [
+        "ABB_PC_NODE_1995",
+        "IMC_LOGGING_4_15",
+        "REGISTERED"
+      ],
+      "source": "https://www.imc-tm.cn/fileadmin/Public/Downloads/Datasheets/imc_optional_accessories/imc_Accessories_EN_TDs/TD_Digital_Fieldbus.pdf",
+      "source_revision": "imc fieldbusinterfaces datasheet4.15 February27 2026 pp17-18; hardwarewiredEMD orESD+ logging periodicdata, not configurable transmitter/busadministrator",
+      "integer": false,
+      "label": "implementation",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mv_transfer": {
+      "type": "select",
+      "description": "Actual periodic processdata, messagepoll or supervisory/event procedure; eventpoll12bits are parameters not genericdestination.",
+      "options": [
+        "PROCESS_DATA",
+        "MESSAGE_DATA",
+        "SUPERVISORY_EVENT"
+      ],
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "integer": false,
+      "label": "transfer",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mv_port_role": {
+      "type": "select",
+      "description": "Actual configured source, sink or passive monitor; process port has oneproducer and potentially manyconsumers.",
+      "options": [
+        "SOURCE",
+        "SINK",
+        "MONITOR"
+      ],
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "integer": false,
+      "label": "port role",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mv_phy": {
+      "type": "select",
+      "description": "Actual physically wired electricalshort/middle/extendedshort or optical media; not interchangeable CAN/ethernet port.",
+      "options": [
+        "ESD",
+        "ESD_PLUS",
+        "EMD",
+        "OGF",
+        "REGISTERED"
+      ],
+      "source": "https://www.imc-tm.cn/fileadmin/Public/Downloads/Datasheets/imc_optional_accessories/imc_Accessories_EN_TDs/TD_Digital_Fieldbus.pdf",
+      "source_revision": "imc fieldbusinterfaces datasheet4.15 February27 2026 pp17-18; hardwarewiredEMD orESD+ logging periodicdata, not configurable transmitter/busadministrator",
+      "integer": false,
+      "label": "phy",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mv_topology": {
+      "type": "select",
+      "description": "Actual bus versus opticalstar or qualifiedalternative.",
+      "options": [
+        "BUS",
+        "STAR",
+        "REGISTERED"
+      ],
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "integer": false,
+      "label": "topology",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mv_encoding": {
+      "type": "select",
+      "description": "Actual native Manchester MVB signalling, not NRZ UART and not two payload bits percarrierbit.",
+      "options": [
+        "MVB_MANCHESTER"
+      ],
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "integer": false,
+      "label": "encoding",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "mv_implementation": "ABB_PC_NODE_1995"
+          },
+          "value": "MVB_MANCHESTER",
+          "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+          "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance"
+        },
+        {
+          "when": {
+            "mv_implementation": "IMC_LOGGING_4_15"
+          },
+          "value": "MVB_MANCHESTER",
+          "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+          "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance"
+        }
+      ]
+    },
+    "mv_address_scope": {
+      "type": "select",
+      "description": "Actual12bit master field meaning logicalport/deviceaddress/eventpollparameters.",
+      "options": [
+        "LOGICAL_PORT",
+        "DEVICE_ADDRESS",
+        "EVENT_PARAMETERS"
+      ],
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "integer": false,
+      "label": "address scope",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mv_check_profile": {
+      "type": "select",
+      "description": "Actual TC57 eightbit check permax64databits; no CANCRC or ModbusCRC16 fallback.",
+      "options": [
+        "TC57_8_PER_MAX64",
+        "REGISTERED"
+      ],
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "integer": false,
+      "label": "check profile",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "mv_implementation": "ABB_PC_NODE_1995"
+          },
+          "value": "TC57_8_PER_MAX64",
+          "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+          "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance"
+        },
+        {
+          "when": {
+            "mv_implementation": "IMC_LOGGING_4_15"
+          },
+          "value": "TC57_8_PER_MAX64",
+          "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+          "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance"
+        }
+      ]
+    },
+    "mv_cable_profile": {
+      "type": "select",
+      "description": "Actual selected LAPPpart or other qualified copper/fibre; no universal120ohm assumption.",
+      "options": [
+        "LAPP_2173001_V06",
+        "REGISTERED"
+      ],
+      "source": "https://www.lapp.ch/media/PIM_NEU/Datenbl%C3%A4tter/DB2173001EN.pdf",
+      "source_revision": "LAPP UNITRONICTRAINMVB2173001 DB2173001EN Version06 November27 2025 pp1-2; cable-specific electrical/mechanical/thermal limits",
+      "integer": false,
+      "label": "cable profile",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mv_cable_installation": {
+      "type": "select",
+      "description": "Actual fixed or occasionalflex installation affects minimumradius.",
+      "options": [
+        "FIXED",
+        "OCCASIONAL_FLEX"
+      ],
+      "source": "https://www.lapp.ch/media/PIM_NEU/Datenbl%C3%A4tter/DB2173001EN.pdf",
+      "source_revision": "LAPP UNITRONICTRAINMVB2173001 DB2173001EN Version06 November27 2025 pp1-2; cable-specific electrical/mechanical/thermal limits",
+      "integer": false,
+      "label": "cable installation",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mv_cable_loss_point": {
+      "type": "select",
+      "description": "Actual supported attenuation measurement frequency versus registered spectrum.",
+      "options": [
+        "F1_5_MHZ",
+        "F3_MHZ",
+        "REGISTERED"
+      ],
+      "source": "https://www.lapp.ch/media/PIM_NEU/Datenbl%C3%A4tter/DB2173001EN.pdf",
+      "source_revision": "LAPP UNITRONICTRAINMVB2173001 DB2173001EN Version06 November27 2025 pp1-2; cable-specific electrical/mechanical/thermal limits",
+      "integer": false,
+      "label": "cable loss point",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mv_device_source": {
+      "type": "text",
+      "description": "Actual device/controller/datasheet/edition and qualification, not manufacturername inferred fromindustry.",
+      "source": "https://www.imc-tm.cn/fileadmin/Public/Downloads/Datasheets/imc_optional_accessories/imc_Accessories_EN_TDs/TD_Digital_Fieldbus.pdf",
+      "source_revision": "imc fieldbusinterfaces datasheet4.15 February27 2026 pp17-18; hardwarewiredEMD orESD+ logging periodicdata, not configurable transmitter/busadministrator",
+      "integer": false,
+      "label": "device source",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mv_master_ref": {
+      "type": "text",
+      "description": "Actual current busadministrator; backup master count does not allow concurrentmasterframes.",
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "integer": false,
+      "label": "master ref",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mv_source_ref": {
+      "type": "text",
+      "description": "Actual oneproducer device for selectedlogicalport; masteradministrator may be anotherdevice.",
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "integer": false,
+      "label": "source ref",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mv_mapping_source": {
+      "type": "text",
+      "description": "Actual source/sink/port/device/fixeddataset assignment and addresses.",
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "integer": false,
+      "label": "mapping source",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mv_codec_source": {
+      "type": "text",
+      "description": "Actual native encodedframe/enddelimiters/check/bytebitorder/applicationdataset ormessageheader.",
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "integer": false,
+      "label": "codec source",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mv_schedule_source": {
+      "type": "text",
+      "description": "Actual administrator scanlist/periodic-sporadic budget/mastership/retry response and queues.",
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "integer": false,
+      "label": "schedule source",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mv_physical_source": {
+      "type": "text",
+      "description": "Actual wiredPHY/length/coupling/repeaters/terminators/slowest redundantline measurements.",
+      "source": "https://www.imc-tm.cn/fileadmin/Public/Downloads/Datasheets/imc_optional_accessories/imc_Accessories_EN_TDs/TD_Digital_Fieldbus.pdf",
+      "source_revision": "imc fieldbusinterfaces datasheet4.15 February27 2026 pp17-18; hardwarewiredEMD orESD+ logging periodicdata, not configurable transmitter/busadministrator",
+      "integer": false,
+      "label": "physical source",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mv_acceptance_source": {
+      "type": "text",
+      "description": "Actual freshness/deadline/security/safety criteria; portupdates alone are notE2Eacceptance.",
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "integer": false,
+      "label": "acceptance source",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mv_registered_source": {
+      "type": "text",
+      "description": "Actual selectedalternative implementation/PHY/CRC/schedule/registered qualification.",
+      "source": "https://webstore.iec.ch/en/publication/5402",
+      "source_revision": "IEC61375-3-1:2012 Edition1 publicationJune21 2012/stability2030 primarypublisher metadata only; fulllicensed268page normative text not read",
+      "integer": false,
+      "label": "registered source",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mv_wired_phy": {
+      "type": "text",
+      "description": "Actual immutable hardwarechosen PHY on imc logging device; mustmatchbusphysically.",
+      "source": "https://www.imc-tm.cn/fileadmin/Public/Downloads/Datasheets/imc_optional_accessories/imc_Accessories_EN_TDs/TD_Digital_Fieldbus.pdf",
+      "source_revision": "imc fieldbusinterfaces datasheet4.15 February27 2026 pp17-18; hardwarewiredEMD orESD+ logging periodicdata, not configurable transmitter/busadministrator",
+      "integer": false,
+      "label": "wired phy",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mv_master_word_hex": {
+      "type": "text",
+      "description": "Actual fourhex characters representingtwooctets/16informationbits: Fcodehigh4 plusaddress/parameterslow12.",
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "integer": false,
+      "label": "master word hex",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mv_cable_source": {
+      "type": "text",
+      "description": "Actual installedpart/datasheet/measurement; qualifiedpartselection is notinstallationproof.",
+      "source": "https://www.lapp.ch/media/PIM_NEU/Datenbl%C3%A4tter/DB2173001EN.pdf",
+      "source_revision": "LAPP UNITRONICTRAINMVB2173001 DB2173001EN Version06 November27 2025 pp1-2; cable-specific electrical/mechanical/thermal limits",
+      "integer": false,
+      "label": "cable source",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mv_cable_characterization_source": {
+      "type": "text",
+      "description": "Actual otherfrequency/impedance/attenuation/coupling/temperature source.",
+      "source": "https://www.lapp.ch/media/PIM_NEU/Datenbl%C3%A4tter/DB2173001EN.pdf",
+      "source_revision": "LAPP UNITRONICTRAINMVB2173001 DB2173001EN Version06 November27 2025 pp1-2; cable-specific electrical/mechanical/thermal limits",
+      "integer": false,
+      "label": "cable characterization source",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mv_freshness_source": {
+      "type": "text",
+      "description": "Actual perport update age/application acceptance and behavior onstale data.",
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "integer": false,
+      "label": "freshness source",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mv_function_code": {
+      "type": "number",
+      "description": "Actual4bit Fcode: PD0..4,5..7/10/11reserved,8mastership/9event/12message/13..15poll.",
+      "min": 0,
+      "max": 15,
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "integer": true,
+      "label": "function code",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mv_address_field": {
+      "type": "number",
+      "description": "Actual12bit value including logicalport0..4095 or devices/parameters, not IPaddress.",
+      "min": 0,
+      "max": 4095,
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "integer": true,
+      "label": "address field",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mv_message_station_address": {
+      "type": "number",
+      "description": "Actual8bit message station destination/source, distinct12bit deviceaddress.",
+      "min": 0,
+      "max": 255,
+      "source": "https://www.imc-tm.cn/fileadmin/Public/Downloads/Datasheets/imc_optional_accessories/imc_Accessories_EN_TDs/TD_Digital_Fieldbus.pdf",
+      "source_revision": "imc fieldbusinterfaces datasheet4.15 February27 2026 pp17-18; hardwarewiredEMD orESD+ logging periodicdata, not configurable transmitter/busadministrator",
+      "integer": true,
+      "label": "message station address",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mv_dataset_bits": {
+      "type": "number",
+      "description": "Actual configuredport16/32/64/128/256bit full data, not everyapplicationvariablebytecount.",
+      "min": 16,
+      "max": 256,
+      "unit": "bit",
+      "source": "https://www.imc-tm.cn/fileadmin/Public/Downloads/Datasheets/imc_optional_accessories/imc_Accessories_EN_TDs/TD_Digital_Fieldbus.pdf",
+      "source_revision": "imc fieldbusinterfaces datasheet4.15 February27 2026 pp17-18; hardwarewiredEMD orESD+ logging periodicdata, not configurable transmitter/busadministrator",
+      "integer": true,
+      "label": "dataset bits",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mv_delimiter_bits": {
+      "type": "number",
+      "description": "Actual ninebit native master/slave startdelimiter includingManchester violations.",
+      "min": 1,
+      "unit": "bit",
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "integer": true,
+      "label": "delimiter bits",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "mv_implementation": "ABB_PC_NODE_1995"
+          },
+          "value": 9,
+          "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+          "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance"
+        },
+        {
+          "when": {
+            "mv_implementation": "IMC_LOGGING_4_15"
+          },
+          "value": 9,
+          "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+          "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance"
+        }
+      ]
+    },
+    "mv_master_info_bits": {
+      "type": "number",
+      "description": "Actual fourFcode+12address informationbits, excludingdelimiter/check.",
+      "min": 1,
+      "unit": "bit",
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "integer": true,
+      "label": "master info bits",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "mv_implementation": "ABB_PC_NODE_1995"
+          },
+          "value": 16,
+          "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+          "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance"
+        },
+        {
+          "when": {
+            "mv_implementation": "IMC_LOGGING_4_15"
+          },
+          "value": 16,
+          "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+          "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance"
+        }
+      ]
+    },
+    "mv_master_check_bits": {
+      "type": "number",
+      "description": "Actual eightbit master check, not CRC16.",
+      "min": 1,
+      "unit": "bit",
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "integer": true,
+      "label": "master check bits",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "mv_implementation": "ABB_PC_NODE_1995"
+          },
+          "value": 8,
+          "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+          "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance"
+        },
+        {
+          "when": {
+            "mv_implementation": "IMC_LOGGING_4_15"
+          },
+          "value": 8,
+          "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+          "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance"
+        }
+      ]
+    },
+    "mv_master_frame_bits": {
+      "type": "number",
+      "description": "Actual33nativebit-times=9+16+8; enddelimiter/guard is separatelyqualified.",
+      "min": 1,
+      "unit": "bit",
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "integer": true,
+      "label": "master frame bits",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "mv_implementation": "ABB_PC_NODE_1995"
+          },
+          "value": 33,
+          "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+          "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance"
+        },
+        {
+          "when": {
+            "mv_implementation": "IMC_LOGGING_4_15"
+          },
+          "value": 33,
+          "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+          "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance"
+        }
+      ]
+    },
+    "mv_check_blocks": {
+      "type": "number",
+      "description": "Actual number of8bit check sequences overup to64bit datablocks.",
+      "min": 1,
+      "max": 4,
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "integer": true,
+      "label": "check blocks",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mv_check_bits_per_block": {
+      "type": "number",
+      "description": "Actual eightcheckbits permax64databits.",
+      "min": 1,
+      "unit": "bit",
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "integer": true,
+      "label": "check bits per block",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "mv_implementation": "ABB_PC_NODE_1995"
+          },
+          "value": 8,
+          "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+          "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance"
+        },
+        {
+          "when": {
+            "mv_implementation": "IMC_LOGGING_4_15"
+          },
+          "value": 8,
+          "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+          "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance"
+        }
+      ]
+    },
+    "mv_slave_frame_bits": {
+      "type": "number",
+      "description": "Actual start9+data+8*ceil(data/64), excluding separatelyqualifiedenddelimiter/guard.",
+      "min": 1,
+      "unit": "bit",
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "integer": true,
+      "label": "slave frame bits",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mv_master_serial_us": {
+      "type": "number",
+      "description": "Actual serialized33bit-times at1.5Mbit/s=22us, not complete telegramincludingturnaround.",
+      "min": 0,
+      "unit": "us",
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "integer": false,
+      "label": "master serial us",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "mv_implementation": "ABB_PC_NODE_1995"
+          },
+          "value": 22,
+          "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+          "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance"
+        },
+        {
+          "when": {
+            "mv_implementation": "IMC_LOGGING_4_15"
+          },
+          "value": 22,
+          "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+          "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance"
+        }
+      ]
+    },
+    "mv_slave_serial_us": {
+      "type": "number",
+      "description": "Actual nativeframebit-times serialization withoutseparate enddelimiter/turnaround.",
+      "min": 0,
+      "unit": "us",
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "integer": false,
+      "label": "slave serial us",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mv_end_guard_us": {
+      "type": "number",
+      "description": "Actual media-specific enddelimiter/idle shaping and guard, sourcequalified not guessedonebyte.",
+      "min": 0,
+      "unit": "us",
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "integer": false,
+      "label": "end guard us",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mv_reply_at_slave_us": {
+      "type": "number",
+      "description": "Actual endmaster->startslave atsource, ABBhistorical1.4..4us only.",
+      "min": 0,
+      "unit": "us",
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "integer": false,
+      "label": "reply at slave us",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mv_reply_at_master_us": {
+      "type": "number",
+      "description": "Actual endmaster->startslave atmaster, includesroundtrip/repeater/accessdelay; historical<=42.7us.",
+      "min": 0,
+      "unit": "us",
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "integer": false,
+      "label": "reply at master us",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mv_line_a_reply_us": {
+      "type": "number",
+      "description": "Actual lineA roundtrip/reply bound, separate redundant lineB.",
+      "min": 0,
+      "unit": "us",
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "integer": false,
+      "label": "line a reply us",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mv_line_b_reply_us": {
+      "type": "number",
+      "description": "Actual lineB roundtrip/reply bound; worstredundantline governs not average.",
+      "min": 0,
+      "unit": "us",
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "integer": false,
+      "label": "line b reply us",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mv_next_master_gap_us": {
+      "type": "number",
+      "description": "Actual controller gap afterresponse, not a universalCANintermission.",
+      "min": 0,
+      "unit": "us",
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "integer": false,
+      "label": "next master gap us",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mv_telegram_bound_us": {
+      "type": "number",
+      "description": "Actual master+reply+slave+endguard+nextmastergap bound; no wholebusywindow/schedulecertificate.",
+      "min": 0,
+      "unit": "us",
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "integer": false,
+      "label": "telegram bound us",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mv_active_masters": {
+      "type": "number",
+      "description": "Actual atmostone activeadministrator, tokenrotationbackup not simultaneousmasters.",
+      "min": 0,
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "integer": true,
+      "label": "active masters",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "mv_implementation": "ABB_PC_NODE_1995"
+          },
+          "value": 1,
+          "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+          "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance"
+        },
+        {
+          "when": {
+            "mv_implementation": "IMC_LOGGING_4_15"
+          },
+          "value": 1,
+          "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+          "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance"
+        }
+      ]
+    },
+    "mv_source_count": {
+      "type": "number",
+      "description": "Actual processport producer count, exactlyone; eventpoll can involve multiplebidders.",
+      "min": 0,
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "integer": true,
+      "label": "source count",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mv_sink_count": {
+      "type": "number",
+      "description": "Actual number ofsubscribed consumers; framebroadcast not perconsumer duplicated.",
+      "min": 0,
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "integer": true,
+      "label": "sink count",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mv_segment_m": {
+      "type": "number",
+      "description": "Actual selectedmedium segmentlength; historicalESD20/EMD200/OGF2000 andimc200 qualifiers.",
+      "min": 0,
+      "unit": "m",
+      "source": "https://www.imc-tm.cn/fileadmin/Public/Downloads/Datasheets/imc_optional_accessories/imc_Accessories_EN_TDs/TD_Digital_Fieldbus.pdf",
+      "source_revision": "imc fieldbusinterfaces datasheet4.15 February27 2026 pp17-18; hardwarewiredEMD orESD+ logging periodicdata, not configurable transmitter/busadministrator",
+      "integer": false,
+      "label": "segment m",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mv_segment_nodes": {
+      "type": "number",
+      "description": "Actual segmenttaps; imcselected32max, not allnetworks4095 devices ononewire.",
+      "min": 1,
+      "source": "https://www.imc-tm.cn/fileadmin/Public/Downloads/Datasheets/imc_optional_accessories/imc_Accessories_EN_TDs/TD_Digital_Fieldbus.pdf",
+      "source_revision": "imc fieldbusinterfaces datasheet4.15 February27 2026 pp17-18; hardwarewiredEMD orESD+ logging periodicdata, not configurable transmitter/busadministrator",
+      "integer": true,
+      "label": "segment nodes",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mv_base_cycle_ms": {
+      "type": "number",
+      "description": "Actual ABB1ms standardtarget versusqualified0.833ms60Hzsetting; no globalCAN100ms.",
+      "min": 0,
+      "unit": "ms",
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "integer": false,
+      "label": "base cycle ms",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "mv_implementation": "ABB_PC_NODE_1995"
+          },
+          "value": 1,
+          "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+          "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance"
+        }
+      ]
+    },
+    "mv_basic_multiple": {
+      "type": "number",
+      "description": "Actual ABBbasicperiod1/2/4/8 multiplesof selectedbasecycle.",
+      "min": 1,
+      "max": 8,
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "integer": true,
+      "label": "basic multiple",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mv_basic_period_ms": {
+      "type": "number",
+      "description": "Actual basecycle timesbasicmultiple, distinctindividualportpollperiod.",
+      "min": 0,
+      "unit": "ms",
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "integer": false,
+      "label": "basic period ms",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mv_poll_exponent": {
+      "type": "number",
+      "description": "Actual poweroftwo multiplier forindividual portpollcycle.",
+      "min": 0,
+      "max": 10,
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "integer": true,
+      "label": "poll exponent",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mv_poll_period_ms": {
+      "type": "number",
+      "description": "Actual basicperiod times2^exponent; historical1024msupperlimit qualified.",
+      "min": 0,
+      "unit": "ms",
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "integer": false,
+      "label": "poll period ms",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mv_macro_period_ms": {
+      "type": "number",
+      "description": "Actual longestindividualpollperiod inactualscanlist, not assumed1024ms cycle.",
+      "min": 0,
+      "unit": "ms",
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "integer": false,
+      "label": "macro period ms",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mv_master_frame_interval_ms": {
+      "type": "number",
+      "description": "Actual masterframe monitoringinterval, ABBhistorical<=1.3ms.",
+      "min": 0,
+      "unit": "ms",
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "integer": false,
+      "label": "master frame interval ms",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mv_periodic_us": {
+      "type": "number",
+      "description": "Actual periodicphase reservedbudget inbasicperiod.",
+      "min": 0,
+      "unit": "us",
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "integer": false,
+      "label": "periodic us",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mv_supervisory_us": {
+      "type": "number",
+      "description": "Actual supervisoryphase budget, includingmastership/status.",
+      "min": 0,
+      "unit": "us",
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "integer": false,
+      "label": "supervisory us",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mv_event_us": {
+      "type": "number",
+      "description": "Actual eventphase budget/queues/responses, not a CANidentifierpriority.",
+      "min": 0,
+      "unit": "us",
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "integer": false,
+      "label": "event us",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mv_guard_us": {
+      "type": "number",
+      "description": "Actual guardphase budget untilnextperiod; no newframe iflongestresponse cannotfinish.",
+      "min": 0,
+      "unit": "us",
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "integer": false,
+      "label": "guard us",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mv_turn_macrocycles": {
+      "type": "number",
+      "description": "Actual controller mastership turncount, tokenhandover stateactual.",
+      "min": 1,
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "integer": true,
+      "label": "turn macrocycles",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mv_remaining_us": {
+      "type": "number",
+      "description": "Actual time untilnextbasicperiod; cannotstartlongesttelegram beyondthis.",
+      "min": 0,
+      "unit": "us",
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "integer": false,
+      "label": "remaining us",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mv_longest_telegram_us": {
+      "type": "number",
+      "description": "Actual configuredlongestmaster-response withalloverhead/slowestline.",
+      "min": 0,
+      "unit": "us",
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "integer": false,
+      "label": "longest telegram us",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mv_message_header_bytes": {
+      "type": "number",
+      "description": "Actual messageport transportheaderwithin256bitdata; no fabricated zeroheader.",
+      "min": 0,
+      "max": 32,
+      "unit": "byte",
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "integer": true,
+      "label": "message header bytes",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mv_variable_offset_bits": {
+      "type": "number",
+      "description": "Actual applicationvariable bitoffsetwithinfixeddataset.",
+      "min": 0,
+      "max": 255,
+      "unit": "bit",
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "integer": true,
+      "label": "variable offset bits",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mv_variable_bits": {
+      "type": "number",
+      "description": "Actual application encoding width, not inferredfromfrequency/function.",
+      "min": 1,
+      "max": 256,
+      "unit": "bit",
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "integer": true,
+      "label": "variable bits",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mv_update_age_ms": {
+      "type": "number",
+      "description": "Actual sinkport lastupdate age, not genericlinklatency.",
+      "min": 0,
+      "unit": "ms",
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "integer": false,
+      "label": "update age ms",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mv_freshness_limit_ms": {
+      "type": "number",
+      "description": "Actual applicationaccepted freshnesslimit, not universalbusstandard.",
+      "min": 0,
+      "unit": "ms",
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "integer": false,
+      "label": "freshness limit ms",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mv_clock_tolerance_ppm": {
+      "type": "number",
+      "description": "Actual declaredclock tolerance fromselectedhardware; no guessed universal50ppm.",
+      "min": 0,
+      "unit": "ppm",
+      "source": "https://www.imc-tm.cn/fileadmin/Public/Downloads/Datasheets/imc_optional_accessories/imc_Accessories_EN_TDs/TD_Digital_Fieldbus.pdf",
+      "source_revision": "imc fieldbusinterfaces datasheet4.15 February27 2026 pp17-18; hardwarewiredEMD orESD+ logging periodicdata, not configurable transmitter/busadministrator",
+      "integer": false,
+      "label": "clock tolerance ppm",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mv_measured_rate_bps": {
+      "type": "number",
+      "description": "Actual measuredrate distinctnominal1.5M carrier; comparisonrequiresactualclock tolerance.",
+      "min": 1,
+      "unit": "bit/s",
+      "source": "https://www.imc-tm.cn/fileadmin/Public/Downloads/Datasheets/imc_optional_accessories/imc_Accessories_EN_TDs/TD_Digital_Fieldbus.pdf",
+      "source_revision": "imc fieldbusinterfaces datasheet4.15 February27 2026 pp17-18; hardwarewiredEMD orESD+ logging periodicdata, not configurable transmitter/busadministrator",
+      "integer": false,
+      "label": "measured rate bps",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mv_cable_impedance_ohm": {
+      "type": "number",
+      "description": "Actual cableimpedance atqualifiedfrequency; LAPP120±10% ispart-specific.",
+      "min": 0,
+      "unit": "ohm",
+      "source": "https://www.lapp.ch/media/PIM_NEU/Datenbl%C3%A4tter/DB2173001EN.pdf",
+      "source_revision": "LAPP UNITRONICTRAINMVB2173001 DB2173001EN Version06 November27 2025 pp1-2; cable-specific electrical/mechanical/thermal limits",
+      "integer": false,
+      "label": "cable impedance ohm",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mv_cable_r_ohm_km": {
+      "type": "number",
+      "description": "Actual20Cconductorresistance, LAPP<=40.1ohm/km.",
+      "min": 0,
+      "unit": "ohm/km",
+      "source": "https://www.lapp.ch/media/PIM_NEU/Datenbl%C3%A4tter/DB2173001EN.pdf",
+      "source_revision": "LAPP UNITRONICTRAINMVB2173001 DB2173001EN Version06 November27 2025 pp1-2; cable-specific electrical/mechanical/thermal limits",
+      "integer": false,
+      "label": "cable r ohm km",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mv_cable_insulation_ohm_km": {
+      "type": "number",
+      "description": "Actual20Cinsulationresistance lengthproduct, LAPP>=5Gohm*km.",
+      "min": 0,
+      "unit": "ohm*km",
+      "source": "https://www.lapp.ch/media/PIM_NEU/Datenbl%C3%A4tter/DB2173001EN.pdf",
+      "source_revision": "LAPP UNITRONICTRAINMVB2173001 DB2173001EN Version06 November27 2025 pp1-2; cable-specific electrical/mechanical/thermal limits",
+      "integer": false,
+      "label": "cable insulation ohm km",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mv_cable_cap_nf_km": {
+      "type": "number",
+      "description": "Actual20Cmutualcapacitance at1.5MHz, LAPP<=46nF/km.",
+      "min": 0,
+      "unit": "nF/km",
+      "source": "https://www.lapp.ch/media/PIM_NEU/Datenbl%C3%A4tter/DB2173001EN.pdf",
+      "source_revision": "LAPP UNITRONICTRAINMVB2173001 DB2173001EN Version06 November27 2025 pp1-2; cable-specific electrical/mechanical/thermal limits",
+      "integer": false,
+      "label": "cable cap nf km",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mv_cable_coupling_pf_km": {
+      "type": "number",
+      "description": "Actual20Ccapacitivecoupling at1.5MHz, LAPP<=1500pF/km.",
+      "min": 0,
+      "unit": "pF/km",
+      "source": "https://www.lapp.ch/media/PIM_NEU/Datenbl%C3%A4tter/DB2173001EN.pdf",
+      "source_revision": "LAPP UNITRONICTRAINMVB2173001 DB2173001EN Version06 November27 2025 pp1-2; cable-specific electrical/mechanical/thermal limits",
+      "integer": false,
+      "label": "cable coupling pf km",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mv_cable_attenuation_db_km": {
+      "type": "number",
+      "description": "Actual attenuation atselectedqualifiedfrequency, not fixedwholeline loss.",
+      "min": 0,
+      "unit": "dB/km",
+      "source": "https://www.lapp.ch/media/PIM_NEU/Datenbl%C3%A4tter/DB2173001EN.pdf",
+      "source_revision": "LAPP UNITRONICTRAINMVB2173001 DB2173001EN Version06 November27 2025 pp1-2; cable-specific electrical/mechanical/thermal limits",
+      "integer": false,
+      "label": "cable attenuation db km",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mv_cable_frequency_mhz": {
+      "type": "number",
+      "description": "Actual cablecharacterizationfrequency, sourcequalified0.75..3MHzimpedanceband.",
+      "min": 0,
+      "unit": "MHz",
+      "source": "https://www.lapp.ch/media/PIM_NEU/Datenbl%C3%A4tter/DB2173001EN.pdf",
+      "source_revision": "LAPP UNITRONICTRAINMVB2173001 DB2173001EN Version06 November27 2025 pp1-2; cable-specific electrical/mechanical/thermal limits",
+      "integer": false,
+      "label": "cable frequency mhz",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mv_cable_lab_temperature_c": {
+      "type": "number",
+      "description": "Actual electricalqualification labtemperature20C, distinctoperatingtemperature.",
+      "unit": "C",
+      "source": "https://www.lapp.ch/media/PIM_NEU/Datenbl%C3%A4tter/DB2173001EN.pdf",
+      "source_revision": "LAPP UNITRONICTRAINMVB2173001 DB2173001EN Version06 November27 2025 pp1-2; cable-specific electrical/mechanical/thermal limits",
+      "integer": false,
+      "label": "cable lab temperature c",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mv_cable_cap_frequency_mhz": {
+      "type": "number",
+      "description": "Actual1.5MHzcapacitance/coupling testpoint, separate loss/impedance/transferimpedance.",
+      "min": 0,
+      "unit": "MHz",
+      "source": "https://www.lapp.ch/media/PIM_NEU/Datenbl%C3%A4tter/DB2173001EN.pdf",
+      "source_revision": "LAPP UNITRONICTRAINMVB2173001 DB2173001EN Version06 November27 2025 pp1-2; cable-specific electrical/mechanical/thermal limits",
+      "integer": false,
+      "label": "cable cap frequency mhz",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mv_cable_xtalk_frequency_mhz": {
+      "type": "number",
+      "description": "Actual0.75..3MHznearendcrosstalk testpoint.",
+      "min": 0,
+      "unit": "MHz",
+      "source": "https://www.lapp.ch/media/PIM_NEU/Datenbl%C3%A4tter/DB2173001EN.pdf",
+      "source_revision": "LAPP UNITRONICTRAINMVB2173001 DB2173001EN Version06 November27 2025 pp1-2; cable-specific electrical/mechanical/thermal limits",
+      "integer": false,
+      "label": "cable xtalk frequency mhz",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mv_cable_transfer_frequency_mhz": {
+      "type": "number",
+      "description": "Actual20MHztransferimpedance testpoint, not the1.5Mbit/s carrierfrequency.",
+      "min": 0,
+      "unit": "MHz",
+      "source": "https://www.lapp.ch/media/PIM_NEU/Datenbl%C3%A4tter/DB2173001EN.pdf",
+      "source_revision": "LAPP UNITRONICTRAINMVB2173001 DB2173001EN Version06 November27 2025 pp1-2; cable-specific electrical/mechanical/thermal limits",
+      "integer": false,
+      "label": "cable transfer frequency mhz",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mv_cable_crosstalk_db_km": {
+      "type": "number",
+      "description": "Actual20Cnearendcrosstalk at0.75..3MHz, LAPP>=45dB/km.",
+      "min": 0,
+      "unit": "dB/km",
+      "source": "https://www.lapp.ch/media/PIM_NEU/Datenbl%C3%A4tter/DB2173001EN.pdf",
+      "source_revision": "LAPP UNITRONICTRAINMVB2173001 DB2173001EN Version06 November27 2025 pp1-2; cable-specific electrical/mechanical/thermal limits",
+      "integer": false,
+      "label": "cable crosstalk db km",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mv_cable_transfer_mohm_m": {
+      "type": "number",
+      "description": "Actualtransferimpedance at20MHz, LAPP<=20milliohm/m.",
+      "min": 0,
+      "unit": "milliohm/m",
+      "source": "https://www.lapp.ch/media/PIM_NEU/Datenbl%C3%A4tter/DB2173001EN.pdf",
+      "source_revision": "LAPP UNITRONICTRAINMVB2173001 DB2173001EN Version06 November27 2025 pp1-2; cable-specific electrical/mechanical/thermal limits",
+      "integer": false,
+      "label": "cable transfer mohm m",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mv_cable_velocity_c": {
+      "type": "number",
+      "description": "Actual nominalpropagation velocityfraction0.74c forselectedLAPPpart, not allmedia6us/km.",
+      "min": 0,
+      "max": 1,
+      "source": "https://www.lapp.ch/media/PIM_NEU/Datenbl%C3%A4tter/DB2173001EN.pdf",
+      "source_revision": "LAPP UNITRONICTRAINMVB2173001 DB2173001EN Version06 November27 2025 pp1-2; cable-specific electrical/mechanical/thermal limits",
+      "integer": false,
+      "label": "cable velocity c",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "mv_cable_profile": "LAPP_2173001_V06"
+          },
+          "value": 0.74,
+          "source": "https://www.lapp.ch/media/PIM_NEU/Datenbl%C3%A4tter/DB2173001EN.pdf",
+          "source_revision": "LAPP UNITRONICTRAINMVB2173001 DB2173001EN Version06 November27 2025 pp1-2; cable-specific electrical/mechanical/thermal limits"
+        }
+      ]
+    },
+    "mv_operating_voltage_v": {
+      "type": "number",
+      "description": "Actual cableoperatingvoltage<=125V, not a transmitamplitude orpowersupplyrating.",
+      "min": 0,
+      "unit": "V",
+      "source": "https://www.lapp.ch/media/PIM_NEU/Datenbl%C3%A4tter/DB2173001EN.pdf",
+      "source_revision": "LAPP UNITRONICTRAINMVB2173001 DB2173001EN Version06 November27 2025 pp1-2; cable-specific electrical/mechanical/thermal limits",
+      "integer": false,
+      "label": "operating voltage v",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mv_cable_outer_mm": {
+      "type": "number",
+      "description": "Actual installedouterdiameter; nominal7.6mm proposalrequirespartverification.",
+      "min": 0,
+      "unit": "mm",
+      "source": "https://www.lapp.ch/media/PIM_NEU/Datenbl%C3%A4tter/DB2173001EN.pdf",
+      "source_revision": "LAPP UNITRONICTRAINMVB2173001 DB2173001EN Version06 November27 2025 pp1-2; cable-specific electrical/mechanical/thermal limits",
+      "integer": false,
+      "label": "cable outer mm",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "mv_cable_profile": "LAPP_2173001_V06"
+          },
+          "value": 7.6,
+          "source": "https://www.lapp.ch/media/PIM_NEU/Datenbl%C3%A4tter/DB2173001EN.pdf",
+          "source_revision": "LAPP UNITRONICTRAINMVB2173001 DB2173001EN Version06 November27 2025 pp1-2; cable-specific electrical/mechanical/thermal limits"
+        }
+      ]
+    },
+    "mv_bending_radius_mm": {
+      "type": "number",
+      "description": "Actual installedminimumradius3*diamfixed/10*diamoccasionalflex.",
+      "min": 0,
+      "unit": "mm",
+      "source": "https://www.lapp.ch/media/PIM_NEU/Datenbl%C3%A4tter/DB2173001EN.pdf",
+      "source_revision": "LAPP UNITRONICTRAINMVB2173001 DB2173001EN Version06 November27 2025 pp1-2; cable-specific electrical/mechanical/thermal limits",
+      "integer": false,
+      "label": "bending radius mm",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mv_temperature_c": {
+      "type": "number",
+      "description": "Actual fixedinstallationtemperature, LAPP−40..90C; no universaltransceiverthermalrange.",
+      "unit": "C",
+      "source": "https://www.lapp.ch/media/PIM_NEU/Datenbl%C3%A4tter/DB2173001EN.pdf",
+      "source_revision": "LAPP UNITRONICTRAINMVB2173001 DB2173001EN Version06 November27 2025 pp1-2; cable-specific electrical/mechanical/thermal limits",
+      "integer": false,
+      "label": "temperature c",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mv_redundant": {
+      "type": "boolean",
+      "description": "Actual duplicatedmedia sendboth/receiveone, no twiceusefulpayloadallocation.",
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "integer": false,
+      "label": "redundant",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mv_fixed_dataset": {
+      "type": "boolean",
+      "description": "Actual processdataset size/formatfixedatinitialization; runtimeformat changes not allowed.",
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "integer": false,
+      "label": "fixed dataset",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mv_variables_nonoverlap": {
+      "type": "boolean",
+      "description": "Actual codec/layout verifiednooverlappingprocessvariables.",
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "integer": false,
+      "label": "variables nonoverlap",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mv_word_bit_order_qualified": {
+      "type": "boolean",
+      "description": "Actual host/controller endian andbit/wordmixingqualification; no implicitlittleendian.",
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "integer": false,
+      "label": "word bit order qualified",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mv_start_permitted": {
+      "type": "boolean",
+      "description": "Actual controllerabouttostartmasterframe; longestresponsemustfitremainingperiod.",
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "integer": false,
+      "label": "start permitted",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    }
+  },
+  "mechanisms": {
+    "encoding": [
+      "MVB_MANCHESTER_WITH_DISTINCT_MASTER_SLAVE_DELIMITERS"
+    ],
+    "medium_access": [
+      "ONE_MASTER_SCAN_AND_SLAVE_RESPONSE",
+      "SPORADIC_EVENT_POLL_NOT_CAN_ARBITRATION"
+    ],
+    "framing": [
+      "FCODE_AND_12BIT_ADDRESS_SCOPE",
+      "8CHECK_BITS_PER_MAX64_DATA_BITS"
+    ],
+    "redundancy": [
+      "DUPLICATED_MEDIA_SEND_BOTH_RECEIVE_ONE",
+      "WORST_LINE_RESPONSE_BOUND"
+    ],
+    "timing": [
+      "FIXED_DATASET_AND_ACTUAL_PORT_FRESHNESS",
+      "QUALIFIED_ADMINISTRATOR_SCAN_LIST"
+    ]
+  },
+  "parameter_constraints": [
+    {
+      "parameter": "local_timing_evidence",
+      "when": {},
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "allowed": []
+    },
+    {
+      "parameter": "mv_implementation",
+      "when": {},
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "required": true
+    },
+    {
+      "parameter": "mv_transfer",
+      "when": {},
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "required": true
+    },
+    {
+      "parameter": "mv_port_role",
+      "when": {},
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "required": true
+    },
+    {
+      "parameter": "mv_phy",
+      "when": {},
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "required": true
+    },
+    {
+      "parameter": "mv_topology",
+      "when": {},
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "required": true
+    },
+    {
+      "parameter": "mv_encoding",
+      "when": {},
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "required": true
+    },
+    {
+      "parameter": "mv_master_ref",
+      "when": {},
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "required": true
+    },
+    {
+      "parameter": "mv_device_source",
+      "when": {},
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "required": true
+    },
+    {
+      "parameter": "mv_mapping_source",
+      "when": {},
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "required": true
+    },
+    {
+      "parameter": "mv_codec_source",
+      "when": {},
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "required": true
+    },
+    {
+      "parameter": "mv_schedule_source",
+      "when": {},
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "required": true
+    },
+    {
+      "parameter": "mv_physical_source",
+      "when": {},
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "required": true
+    },
+    {
+      "parameter": "mv_acceptance_source",
+      "when": {},
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "required": true
+    },
+    {
+      "parameter": "mv_active_masters",
+      "when": {},
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "required": true
+    },
+    {
+      "parameter": "mv_redundant",
+      "when": {},
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "required": true
+    },
+    {
+      "parameter": "mv_active_masters",
+      "when": {},
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "allowed": [
+        1
+      ]
+    },
+    {
+      "parameter": "mv_registered_source",
+      "when": {
+        "mv_implementation": "REGISTERED"
+      },
+      "source": "https://webstore.iec.ch/en/publication/5402",
+      "source_revision": "IEC61375-3-1:2012 Edition1 publicationJune21 2012/stability2030 primarypublisher metadata only; fulllicensed268page normative text not read",
+      "required": true
+    },
+    {
+      "parameter": "mv_phy",
+      "when": {
+        "mv_implementation": "IMC_LOGGING_4_15"
+      },
+      "source": "https://www.imc-tm.cn/fileadmin/Public/Downloads/Datasheets/imc_optional_accessories/imc_Accessories_EN_TDs/TD_Digital_Fieldbus.pdf",
+      "source_revision": "imc fieldbusinterfaces datasheet4.15 February27 2026 pp17-18; hardwarewiredEMD orESD+ logging periodicdata, not configurable transmitter/busadministrator",
+      "allowed": [
+        "EMD",
+        "ESD_PLUS"
+      ]
+    },
+    {
+      "parameter": "mv_wired_phy",
+      "when": {
+        "mv_implementation": "IMC_LOGGING_4_15"
+      },
+      "source": "https://www.imc-tm.cn/fileadmin/Public/Downloads/Datasheets/imc_optional_accessories/imc_Accessories_EN_TDs/TD_Digital_Fieldbus.pdf",
+      "source_revision": "imc fieldbusinterfaces datasheet4.15 February27 2026 pp17-18; hardwarewiredEMD orESD+ logging periodicdata, not configurable transmitter/busadministrator",
+      "required": true,
+      "equal_parameter": "mv_phy"
+    },
+    {
+      "parameter": "mv_port_role",
+      "when": {
+        "mv_implementation": "IMC_LOGGING_4_15"
+      },
+      "source": "https://www.imc-tm.cn/fileadmin/Public/Downloads/Datasheets/imc_optional_accessories/imc_Accessories_EN_TDs/TD_Digital_Fieldbus.pdf",
+      "source_revision": "imc fieldbusinterfaces datasheet4.15 February27 2026 pp17-18; hardwarewiredEMD orESD+ logging periodicdata, not configurable transmitter/busadministrator",
+      "allowed": [
+        "MONITOR"
+      ]
+    },
+    {
+      "parameter": "mv_transfer",
+      "when": {
+        "mv_implementation": "IMC_LOGGING_4_15"
+      },
+      "source": "https://www.imc-tm.cn/fileadmin/Public/Downloads/Datasheets/imc_optional_accessories/imc_Accessories_EN_TDs/TD_Digital_Fieldbus.pdf",
+      "source_revision": "imc fieldbusinterfaces datasheet4.15 February27 2026 pp17-18; hardwarewiredEMD orESD+ logging periodicdata, not configurable transmitter/busadministrator",
+      "allowed": [
+        "PROCESS_DATA"
+      ]
+    },
+    {
+      "parameter": "mv_topology",
+      "when": {
+        "mv_implementation": "IMC_LOGGING_4_15"
+      },
+      "source": "https://www.imc-tm.cn/fileadmin/Public/Downloads/Datasheets/imc_optional_accessories/imc_Accessories_EN_TDs/TD_Digital_Fieldbus.pdf",
+      "source_revision": "imc fieldbusinterfaces datasheet4.15 February27 2026 pp17-18; hardwarewiredEMD orESD+ logging periodicdata, not configurable transmitter/busadministrator",
+      "allowed": [
+        "BUS"
+      ]
+    },
+    {
+      "parameter": "mv_segment_m",
+      "when": {
+        "mv_implementation": "IMC_LOGGING_4_15"
+      },
+      "source": "https://www.imc-tm.cn/fileadmin/Public/Downloads/Datasheets/imc_optional_accessories/imc_Accessories_EN_TDs/TD_Digital_Fieldbus.pdf",
+      "source_revision": "imc fieldbusinterfaces datasheet4.15 February27 2026 pp17-18; hardwarewiredEMD orESD+ logging periodicdata, not configurable transmitter/busadministrator",
+      "maximum": 200
+    },
+    {
+      "parameter": "mv_segment_nodes",
+      "when": {
+        "mv_implementation": "IMC_LOGGING_4_15"
+      },
+      "source": "https://www.imc-tm.cn/fileadmin/Public/Downloads/Datasheets/imc_optional_accessories/imc_Accessories_EN_TDs/TD_Digital_Fieldbus.pdf",
+      "source_revision": "imc fieldbusinterfaces datasheet4.15 February27 2026 pp17-18; hardwarewiredEMD orESD+ logging periodicdata, not configurable transmitter/busadministrator",
+      "maximum": 32
+    },
+    {
+      "parameter": "mv_segment_m",
+      "when": {
+        "mv_implementation": "ABB_PC_NODE_1995",
+        "mv_phy": "ESD"
+      },
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "maximum": 20
+    },
+    {
+      "parameter": "mv_segment_m",
+      "when": {
+        "mv_implementation": "ABB_PC_NODE_1995",
+        "mv_phy": "EMD"
+      },
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "maximum": 200
+    },
+    {
+      "parameter": "mv_segment_m",
+      "when": {
+        "mv_implementation": "ABB_PC_NODE_1995",
+        "mv_phy": "OGF"
+      },
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "maximum": 2000
+    },
+    {
+      "parameter": "mv_registered_source",
+      "when": {
+        "mv_phy": "REGISTERED"
+      },
+      "source": "https://webstore.iec.ch/en/publication/5402",
+      "source_revision": "IEC61375-3-1:2012 Edition1 publicationJune21 2012/stability2030 primarypublisher metadata only; fulllicensed268page normative text not read",
+      "required": true
+    },
+    {
+      "parameter": "mv_registered_source",
+      "when": {
+        "mv_check_profile": "REGISTERED"
+      },
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "required": true
+    },
+    {
+      "parameter": "mv_delimiter_bits",
+      "when": {},
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "allowed": [
+        9
+      ]
+    },
+    {
+      "parameter": "mv_master_info_bits",
+      "when": {},
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "allowed": [
+        16
+      ]
+    },
+    {
+      "parameter": "mv_master_check_bits",
+      "when": {},
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "allowed": [
+        8
+      ]
+    },
+    {
+      "parameter": "mv_master_frame_bits",
+      "when": {},
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "allowed": [
+        33
+      ]
+    },
+    {
+      "parameter": "mv_check_bits_per_block",
+      "when": {},
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "allowed": [
+        8
+      ]
+    },
+    {
+      "parameter": "mv_dataset_bits",
+      "when": {},
+      "source": "https://www.imc-tm.cn/fileadmin/Public/Downloads/Datasheets/imc_optional_accessories/imc_Accessories_EN_TDs/TD_Digital_Fieldbus.pdf",
+      "source_revision": "imc fieldbusinterfaces datasheet4.15 February27 2026 pp17-18; hardwarewiredEMD orESD+ logging periodicdata, not configurable transmitter/busadministrator",
+      "allowed": [
+        16,
+        32,
+        64,
+        128,
+        256
+      ]
+    },
+    {
+      "parameter": "mv_check_blocks",
+      "when": {},
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "equal_expression": {
+        "ceiling": [
+          {
+            "product": [
+              "mv_dataset_bits",
+              0.015625
+            ]
+          }
+        ]
+      },
+      "exact_decimal_equality": true
+    },
+    {
+      "parameter": "mv_slave_frame_bits",
+      "when": {},
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "equal_expression": {
+        "sum": [
+          9,
+          "mv_dataset_bits",
+          {
+            "product": [
+              8,
+              "mv_check_blocks"
+            ]
+          }
+        ]
+      },
+      "exact_decimal_equality": true
+    },
+    {
+      "parameter": "mv_master_frame_bits",
+      "when": {},
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "equal_expression": {
+        "sum": [
+          "mv_delimiter_bits",
+          "mv_master_info_bits",
+          "mv_master_check_bits"
+        ]
+      },
+      "exact_decimal_equality": true
+    },
+    {
+      "parameter": "mv_master_serial_us",
+      "when": {},
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "allowed": [
+        22
+      ]
+    },
+    {
+      "parameter": "mv_slave_serial_us",
+      "when": {},
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "equal_expression": {
+        "product": [
+          "mv_slave_frame_bits",
+          0.6666666666666666
+        ]
+      }
+    },
+    {
+      "parameter": "mv_telegram_bound_us",
+      "when": {},
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "minimum_expression": {
+        "sum": [
+          "mv_master_serial_us",
+          "mv_reply_at_master_us",
+          "mv_slave_serial_us",
+          "mv_end_guard_us",
+          "mv_next_master_gap_us"
+        ]
+      }
+    },
+    {
+      "parameter": "mv_reply_at_master_us",
+      "when": {
+        "mv_implementation": "ABB_PC_NODE_1995"
+      },
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "maximum": 42.7
+    },
+    {
+      "parameter": "mv_reply_at_slave_us",
+      "when": {
+        "mv_implementation": "ABB_PC_NODE_1995"
+      },
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "minimum": 1.4,
+      "maximum": 4
+    },
+    {
+      "parameter": "mv_reply_at_master_us",
+      "when": {},
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "minimum_parameter": "mv_reply_at_slave_us"
+    },
+    {
+      "parameter": "mv_reply_at_master_us",
+      "when": {
+        "mv_redundant": true
+      },
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "minimum_parameter": "mv_line_a_reply_us"
+    },
+    {
+      "parameter": "mv_reply_at_master_us",
+      "when": {
+        "mv_redundant": true
+      },
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "minimum_parameter": "mv_line_b_reply_us"
+    },
+    {
+      "parameter": "mv_dataset_bits",
+      "when": {
+        "mv_transfer": "PROCESS_DATA",
+        "mv_function_code": 0
+      },
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "allowed": [
+        16
+      ]
+    },
+    {
+      "parameter": "mv_dataset_bits",
+      "when": {
+        "mv_transfer": "PROCESS_DATA",
+        "mv_function_code": 1
+      },
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "allowed": [
+        32
+      ]
+    },
+    {
+      "parameter": "mv_dataset_bits",
+      "when": {
+        "mv_transfer": "PROCESS_DATA",
+        "mv_function_code": 2
+      },
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "allowed": [
+        64
+      ]
+    },
+    {
+      "parameter": "mv_dataset_bits",
+      "when": {
+        "mv_transfer": "PROCESS_DATA",
+        "mv_function_code": 3
+      },
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "allowed": [
+        128
+      ]
+    },
+    {
+      "parameter": "mv_dataset_bits",
+      "when": {
+        "mv_transfer": "PROCESS_DATA",
+        "mv_function_code": 4
+      },
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "allowed": [
+        256
+      ]
+    },
+    {
+      "parameter": "mv_function_code",
+      "when": {
+        "mv_transfer": "PROCESS_DATA"
+      },
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "required": true
+    },
+    {
+      "parameter": "mv_address_field",
+      "when": {
+        "mv_transfer": "PROCESS_DATA"
+      },
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "required": true
+    },
+    {
+      "parameter": "mv_dataset_bits",
+      "when": {
+        "mv_transfer": "PROCESS_DATA"
+      },
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "required": true
+    },
+    {
+      "parameter": "mv_source_ref",
+      "when": {
+        "mv_transfer": "PROCESS_DATA"
+      },
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "required": true
+    },
+    {
+      "parameter": "mv_source_count",
+      "when": {
+        "mv_transfer": "PROCESS_DATA"
+      },
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "required": true
+    },
+    {
+      "parameter": "mv_fixed_dataset",
+      "when": {
+        "mv_transfer": "PROCESS_DATA"
+      },
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "required": true
+    },
+    {
+      "parameter": "mv_variables_nonoverlap",
+      "when": {
+        "mv_transfer": "PROCESS_DATA"
+      },
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "required": true
+    },
+    {
+      "parameter": "mv_word_bit_order_qualified",
+      "when": {
+        "mv_transfer": "PROCESS_DATA"
+      },
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "required": true
+    },
+    {
+      "parameter": "mv_function_code",
+      "when": {
+        "mv_transfer": "PROCESS_DATA"
+      },
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "allowed": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ]
+    },
+    {
+      "parameter": "mv_address_scope",
+      "when": {
+        "mv_transfer": "PROCESS_DATA"
+      },
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "required": true,
+      "allowed": [
+        "LOGICAL_PORT"
+      ]
+    },
+    {
+      "parameter": "mv_source_count",
+      "when": {
+        "mv_transfer": "PROCESS_DATA"
+      },
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "allowed": [
+        1
+      ]
+    },
+    {
+      "parameter": "mv_fixed_dataset",
+      "when": {
+        "mv_transfer": "PROCESS_DATA"
+      },
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "mv_variables_nonoverlap",
+      "when": {
+        "mv_transfer": "PROCESS_DATA"
+      },
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "mv_word_bit_order_qualified",
+      "when": {
+        "mv_transfer": "PROCESS_DATA"
+      },
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "payload_bytes",
+      "when": {},
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "maximum_expression": {
+        "product": [
+          "mv_dataset_bits",
+          0.125
+        ]
+      }
+    },
+    {
+      "parameter": "mv_function_code",
+      "when": {
+        "mv_transfer": "MESSAGE_DATA"
+      },
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "required": true,
+      "allowed": [
+        12
+      ]
+    },
+    {
+      "parameter": "mv_dataset_bits",
+      "when": {
+        "mv_transfer": "MESSAGE_DATA"
+      },
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "required": true,
+      "allowed": [
+        256
+      ]
+    },
+    {
+      "parameter": "mv_address_scope",
+      "when": {
+        "mv_transfer": "MESSAGE_DATA"
+      },
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "required": true,
+      "allowed": [
+        "DEVICE_ADDRESS"
+      ]
+    },
+    {
+      "parameter": "mv_message_header_bytes",
+      "when": {
+        "mv_transfer": "MESSAGE_DATA"
+      },
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "required": true
+    },
+    {
+      "parameter": "payload_bytes",
+      "when": {
+        "mv_transfer": "MESSAGE_DATA"
+      },
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "maximum_expression": {
+        "subtract": [
+          32,
+          "mv_message_header_bytes"
+        ]
+      }
+    },
+    {
+      "parameter": "mv_function_code",
+      "when": {
+        "mv_transfer": "SUPERVISORY_EVENT"
+      },
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "required": true,
+      "allowed": [
+        8,
+        9,
+        13,
+        14,
+        15
+      ]
+    },
+    {
+      "parameter": "mv_address_scope",
+      "when": {
+        "mv_transfer": "SUPERVISORY_EVENT",
+        "mv_function_code": 9
+      },
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "required": true,
+      "allowed": [
+        "EVENT_PARAMETERS"
+      ]
+    },
+    {
+      "parameter": "mv_master_word_hex",
+      "when": {},
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "pattern": "[0-9a-fA-F]{4}",
+      "integer_bitfields": [
+        {
+          "offset": 12,
+          "width": 4,
+          "parameter": "mv_function_code"
+        },
+        {
+          "offset": 0,
+          "width": 12,
+          "parameter": "mv_address_field"
+        }
+      ]
+    },
+    {
+      "parameter": "mv_variable_offset_bits",
+      "when": {},
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "maximum_expression": {
+        "subtract": [
+          "mv_dataset_bits",
+          "mv_variable_bits"
+        ]
+      }
+    },
+    {
+      "parameter": "mv_freshness_source",
+      "when": {},
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "when_present": [
+        "mv_update_age_ms"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "mv_freshness_limit_ms",
+      "when": {},
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "when_present": [
+        "mv_update_age_ms"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "mv_update_age_ms",
+      "when": {},
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "maximum_parameter": "mv_freshness_limit_ms"
+    },
+    {
+      "parameter": "mv_clock_tolerance_ppm",
+      "when": {},
+      "source": "https://www.imc-tm.cn/fileadmin/Public/Downloads/Datasheets/imc_optional_accessories/imc_Accessories_EN_TDs/TD_Digital_Fieldbus.pdf",
+      "source_revision": "imc fieldbusinterfaces datasheet4.15 February27 2026 pp17-18; hardwarewiredEMD orESD+ logging periodicdata, not configurable transmitter/busadministrator",
+      "when_present": [
+        "mv_measured_rate_bps"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "mv_measured_rate_bps",
+      "when": {},
+      "source": "https://www.imc-tm.cn/fileadmin/Public/Downloads/Datasheets/imc_optional_accessories/imc_Accessories_EN_TDs/TD_Digital_Fieldbus.pdf",
+      "source_revision": "imc fieldbusinterfaces datasheet4.15 February27 2026 pp17-18; hardwarewiredEMD orESD+ logging periodicdata, not configurable transmitter/busadministrator",
+      "minimum_expression": {
+        "product": [
+          1500000,
+          {
+            "subtract": [
+              1,
+              {
+                "product": [
+                  "mv_clock_tolerance_ppm",
+                  1e-06
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "parameter": "mv_measured_rate_bps",
+      "when": {},
+      "source": "https://www.imc-tm.cn/fileadmin/Public/Downloads/Datasheets/imc_optional_accessories/imc_Accessories_EN_TDs/TD_Digital_Fieldbus.pdf",
+      "source_revision": "imc fieldbusinterfaces datasheet4.15 February27 2026 pp17-18; hardwarewiredEMD orESD+ logging periodicdata, not configurable transmitter/busadministrator",
+      "maximum_expression": {
+        "product": [
+          1500000,
+          {
+            "sum": [
+              1,
+              {
+                "product": [
+                  "mv_clock_tolerance_ppm",
+                  1e-06
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "parameter": "mv_base_cycle_ms",
+      "when": {
+        "mv_implementation": "ABB_PC_NODE_1995"
+      },
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "allowed": [
+        1,
+        0.833
+      ]
+    },
+    {
+      "parameter": "mv_basic_multiple",
+      "when": {
+        "mv_implementation": "ABB_PC_NODE_1995"
+      },
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "allowed": [
+        1,
+        2,
+        4,
+        8
+      ]
+    },
+    {
+      "parameter": "mv_basic_period_ms",
+      "when": {},
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "equal_expression": {
+        "product": [
+          "mv_base_cycle_ms",
+          "mv_basic_multiple"
+        ]
+      },
+      "exact_decimal_equality": true
+    },
+    {
+      "parameter": "mv_poll_period_ms",
+      "when": {},
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "equal_expression": {
+        "product": [
+          "mv_basic_period_ms",
+          {
+            "power": [
+              2,
+              "mv_poll_exponent"
+            ]
+          }
+        ]
+      },
+      "exact_decimal_equality": true
+    },
+    {
+      "parameter": "mv_poll_period_ms",
+      "when": {
+        "mv_implementation": "ABB_PC_NODE_1995"
+      },
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "maximum": 1024
+    },
+    {
+      "parameter": "mv_macro_period_ms",
+      "when": {
+        "mv_implementation": "ABB_PC_NODE_1995"
+      },
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "maximum": 1024,
+      "minimum_parameter": "mv_poll_period_ms"
+    },
+    {
+      "parameter": "mv_master_frame_interval_ms",
+      "when": {
+        "mv_implementation": "ABB_PC_NODE_1995"
+      },
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "maximum": 1.3
+    },
+    {
+      "parameter": "mv_periodic_us",
+      "when": {},
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "equal_expression": {
+        "subtract": [
+          {
+            "product": [
+              1000,
+              "mv_basic_period_ms"
+            ]
+          },
+          {
+            "sum": [
+              "mv_supervisory_us",
+              "mv_event_us",
+              "mv_guard_us"
+            ]
+          }
+        ]
+      },
+      "exact_decimal_equality": true
+    },
+    {
+      "parameter": "mv_periodic_us",
+      "when": {
+        "mv_implementation": "ABB_PC_NODE_1995"
+      },
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "maximum_expression": {
+        "subtract": [
+          {
+            "product": [
+              1000,
+              "mv_basic_period_ms"
+            ]
+          },
+          350
+        ]
+      }
+    },
+    {
+      "parameter": "mv_remaining_us",
+      "when": {
+        "mv_start_permitted": true
+      },
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "required": true
+    },
+    {
+      "parameter": "mv_longest_telegram_us",
+      "when": {
+        "mv_start_permitted": true
+      },
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "required": true
+    },
+    {
+      "parameter": "mv_remaining_us",
+      "when": {
+        "mv_start_permitted": true
+      },
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "minimum_parameter": "mv_longest_telegram_us"
+    },
+    {
+      "parameter": "mv_longest_telegram_us",
+      "when": {},
+      "source": "https://www.daube.ch/ddd/files/mvb_kit_c2.pdf",
+      "source_revision": "ABB MVBVirtualTerminal/PCNode TN-AC-95/185 December19 1995 chapter2 pp2-2..2-7 and2-10..2-18 on technical author website; source contains no2-8/2-9; historical controller qualifier, not all-edition IECconformance",
+      "minimum_parameter": "mv_telegram_bound_us"
+    },
+    {
+      "parameter": "mv_cable_source",
+      "when": {},
+      "source": "https://www.lapp.ch/media/PIM_NEU/Datenbl%C3%A4tter/DB2173001EN.pdf",
+      "source_revision": "LAPP UNITRONICTRAINMVB2173001 DB2173001EN Version06 November27 2025 pp1-2; cable-specific electrical/mechanical/thermal limits",
+      "when_present": [
+        "mv_cable_profile"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "mv_cable_characterization_source",
+      "when": {
+        "mv_cable_profile": "REGISTERED"
+      },
+      "source": "https://www.lapp.ch/media/PIM_NEU/Datenbl%C3%A4tter/DB2173001EN.pdf",
+      "source_revision": "LAPP UNITRONICTRAINMVB2173001 DB2173001EN Version06 November27 2025 pp1-2; cable-specific electrical/mechanical/thermal limits",
+      "required": true
+    },
+    {
+      "parameter": "mv_cable_lab_temperature_c",
+      "when": {
+        "mv_cable_profile": "LAPP_2173001_V06"
+      },
+      "source": "https://www.lapp.ch/media/PIM_NEU/Datenbl%C3%A4tter/DB2173001EN.pdf",
+      "source_revision": "LAPP UNITRONICTRAINMVB2173001 DB2173001EN Version06 November27 2025 pp1-2; cable-specific electrical/mechanical/thermal limits",
+      "when_present": [
+        "mv_cable_r_ohm_km"
+      ],
+      "required": true,
+      "allowed": [
+        20
+      ]
+    },
+    {
+      "parameter": "mv_cable_lab_temperature_c",
+      "when": {
+        "mv_cable_profile": "LAPP_2173001_V06"
+      },
+      "source": "https://www.lapp.ch/media/PIM_NEU/Datenbl%C3%A4tter/DB2173001EN.pdf",
+      "source_revision": "LAPP UNITRONICTRAINMVB2173001 DB2173001EN Version06 November27 2025 pp1-2; cable-specific electrical/mechanical/thermal limits",
+      "when_present": [
+        "mv_cable_insulation_ohm_km"
+      ],
+      "required": true,
+      "allowed": [
+        20
+      ]
+    },
+    {
+      "parameter": "mv_cable_lab_temperature_c",
+      "when": {
+        "mv_cable_profile": "LAPP_2173001_V06"
+      },
+      "source": "https://www.lapp.ch/media/PIM_NEU/Datenbl%C3%A4tter/DB2173001EN.pdf",
+      "source_revision": "LAPP UNITRONICTRAINMVB2173001 DB2173001EN Version06 November27 2025 pp1-2; cable-specific electrical/mechanical/thermal limits",
+      "when_present": [
+        "mv_cable_cap_nf_km"
+      ],
+      "required": true,
+      "allowed": [
+        20
+      ]
+    },
+    {
+      "parameter": "mv_cable_lab_temperature_c",
+      "when": {
+        "mv_cable_profile": "LAPP_2173001_V06"
+      },
+      "source": "https://www.lapp.ch/media/PIM_NEU/Datenbl%C3%A4tter/DB2173001EN.pdf",
+      "source_revision": "LAPP UNITRONICTRAINMVB2173001 DB2173001EN Version06 November27 2025 pp1-2; cable-specific electrical/mechanical/thermal limits",
+      "when_present": [
+        "mv_cable_coupling_pf_km"
+      ],
+      "required": true,
+      "allowed": [
+        20
+      ]
+    },
+    {
+      "parameter": "mv_cable_cap_frequency_mhz",
+      "when": {
+        "mv_cable_profile": "LAPP_2173001_V06"
+      },
+      "source": "https://www.lapp.ch/media/PIM_NEU/Datenbl%C3%A4tter/DB2173001EN.pdf",
+      "source_revision": "LAPP UNITRONICTRAINMVB2173001 DB2173001EN Version06 November27 2025 pp1-2; cable-specific electrical/mechanical/thermal limits",
+      "when_present": [
+        "mv_cable_cap_nf_km"
+      ],
+      "required": true,
+      "allowed": [
+        1.5
+      ]
+    },
+    {
+      "parameter": "mv_cable_cap_frequency_mhz",
+      "when": {
+        "mv_cable_profile": "LAPP_2173001_V06"
+      },
+      "source": "https://www.lapp.ch/media/PIM_NEU/Datenbl%C3%A4tter/DB2173001EN.pdf",
+      "source_revision": "LAPP UNITRONICTRAINMVB2173001 DB2173001EN Version06 November27 2025 pp1-2; cable-specific electrical/mechanical/thermal limits",
+      "when_present": [
+        "mv_cable_coupling_pf_km"
+      ],
+      "required": true,
+      "allowed": [
+        1.5
+      ]
+    },
+    {
+      "parameter": "mv_cable_xtalk_frequency_mhz",
+      "when": {
+        "mv_cable_profile": "LAPP_2173001_V06"
+      },
+      "source": "https://www.lapp.ch/media/PIM_NEU/Datenbl%C3%A4tter/DB2173001EN.pdf",
+      "source_revision": "LAPP UNITRONICTRAINMVB2173001 DB2173001EN Version06 November27 2025 pp1-2; cable-specific electrical/mechanical/thermal limits",
+      "when_present": [
+        "mv_cable_crosstalk_db_km"
+      ],
+      "required": true,
+      "minimum": 0.75,
+      "maximum": 3
+    },
+    {
+      "parameter": "mv_cable_transfer_frequency_mhz",
+      "when": {
+        "mv_cable_profile": "LAPP_2173001_V06"
+      },
+      "source": "https://www.lapp.ch/media/PIM_NEU/Datenbl%C3%A4tter/DB2173001EN.pdf",
+      "source_revision": "LAPP UNITRONICTRAINMVB2173001 DB2173001EN Version06 November27 2025 pp1-2; cable-specific electrical/mechanical/thermal limits",
+      "when_present": [
+        "mv_cable_transfer_mohm_m"
+      ],
+      "required": true,
+      "allowed": [
+        20
+      ]
+    },
+    {
+      "parameter": "mv_cable_impedance_ohm",
+      "when": {
+        "mv_cable_profile": "LAPP_2173001_V06"
+      },
+      "source": "https://www.lapp.ch/media/PIM_NEU/Datenbl%C3%A4tter/DB2173001EN.pdf",
+      "source_revision": "LAPP UNITRONICTRAINMVB2173001 DB2173001EN Version06 November27 2025 pp1-2; cable-specific electrical/mechanical/thermal limits",
+      "minimum": 108,
+      "maximum": 132
+    },
+    {
+      "parameter": "mv_cable_r_ohm_km",
+      "when": {
+        "mv_cable_profile": "LAPP_2173001_V06"
+      },
+      "source": "https://www.lapp.ch/media/PIM_NEU/Datenbl%C3%A4tter/DB2173001EN.pdf",
+      "source_revision": "LAPP UNITRONICTRAINMVB2173001 DB2173001EN Version06 November27 2025 pp1-2; cable-specific electrical/mechanical/thermal limits",
+      "minimum": 0,
+      "maximum": 40.1
+    },
+    {
+      "parameter": "mv_cable_insulation_ohm_km",
+      "when": {
+        "mv_cable_profile": "LAPP_2173001_V06"
+      },
+      "source": "https://www.lapp.ch/media/PIM_NEU/Datenbl%C3%A4tter/DB2173001EN.pdf",
+      "source_revision": "LAPP UNITRONICTRAINMVB2173001 DB2173001EN Version06 November27 2025 pp1-2; cable-specific electrical/mechanical/thermal limits",
+      "minimum": 5000000000,
+      "maximum": null
+    },
+    {
+      "parameter": "mv_cable_cap_nf_km",
+      "when": {
+        "mv_cable_profile": "LAPP_2173001_V06"
+      },
+      "source": "https://www.lapp.ch/media/PIM_NEU/Datenbl%C3%A4tter/DB2173001EN.pdf",
+      "source_revision": "LAPP UNITRONICTRAINMVB2173001 DB2173001EN Version06 November27 2025 pp1-2; cable-specific electrical/mechanical/thermal limits",
+      "minimum": 0,
+      "maximum": 46
+    },
+    {
+      "parameter": "mv_cable_coupling_pf_km",
+      "when": {
+        "mv_cable_profile": "LAPP_2173001_V06"
+      },
+      "source": "https://www.lapp.ch/media/PIM_NEU/Datenbl%C3%A4tter/DB2173001EN.pdf",
+      "source_revision": "LAPP UNITRONICTRAINMVB2173001 DB2173001EN Version06 November27 2025 pp1-2; cable-specific electrical/mechanical/thermal limits",
+      "minimum": 0,
+      "maximum": 1500
+    },
+    {
+      "parameter": "mv_cable_crosstalk_db_km",
+      "when": {
+        "mv_cable_profile": "LAPP_2173001_V06"
+      },
+      "source": "https://www.lapp.ch/media/PIM_NEU/Datenbl%C3%A4tter/DB2173001EN.pdf",
+      "source_revision": "LAPP UNITRONICTRAINMVB2173001 DB2173001EN Version06 November27 2025 pp1-2; cable-specific electrical/mechanical/thermal limits",
+      "minimum": 45,
+      "maximum": null
+    },
+    {
+      "parameter": "mv_cable_transfer_mohm_m",
+      "when": {
+        "mv_cable_profile": "LAPP_2173001_V06"
+      },
+      "source": "https://www.lapp.ch/media/PIM_NEU/Datenbl%C3%A4tter/DB2173001EN.pdf",
+      "source_revision": "LAPP UNITRONICTRAINMVB2173001 DB2173001EN Version06 November27 2025 pp1-2; cable-specific electrical/mechanical/thermal limits",
+      "minimum": 0,
+      "maximum": 20
+    },
+    {
+      "parameter": "mv_operating_voltage_v",
+      "when": {
+        "mv_cable_profile": "LAPP_2173001_V06"
+      },
+      "source": "https://www.lapp.ch/media/PIM_NEU/Datenbl%C3%A4tter/DB2173001EN.pdf",
+      "source_revision": "LAPP UNITRONICTRAINMVB2173001 DB2173001EN Version06 November27 2025 pp1-2; cable-specific electrical/mechanical/thermal limits",
+      "minimum": 0,
+      "maximum": 125
+    },
+    {
+      "parameter": "mv_phy",
+      "when": {
+        "mv_cable_profile": "LAPP_2173001_V06"
+      },
+      "source": "https://www.lapp.ch/media/PIM_NEU/Datenbl%C3%A4tter/DB2173001EN.pdf",
+      "source_revision": "LAPP UNITRONICTRAINMVB2173001 DB2173001EN Version06 November27 2025 pp1-2; cable-specific electrical/mechanical/thermal limits",
+      "allowed": [
+        "ESD",
+        "ESD_PLUS",
+        "EMD"
+      ]
+    },
+    {
+      "parameter": "mv_cable_frequency_mhz",
+      "when": {},
+      "source": "https://www.lapp.ch/media/PIM_NEU/Datenbl%C3%A4tter/DB2173001EN.pdf",
+      "source_revision": "LAPP UNITRONICTRAINMVB2173001 DB2173001EN Version06 November27 2025 pp1-2; cable-specific electrical/mechanical/thermal limits",
+      "when_present": [
+        "mv_cable_impedance_ohm"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "mv_cable_frequency_mhz",
+      "when": {
+        "mv_cable_profile": "LAPP_2173001_V06"
+      },
+      "source": "https://www.lapp.ch/media/PIM_NEU/Datenbl%C3%A4tter/DB2173001EN.pdf",
+      "source_revision": "LAPP UNITRONICTRAINMVB2173001 DB2173001EN Version06 November27 2025 pp1-2; cable-specific electrical/mechanical/thermal limits",
+      "when_present": [
+        "mv_cable_impedance_ohm"
+      ],
+      "minimum": 0.75,
+      "maximum": 3
+    },
+    {
+      "parameter": "mv_cable_loss_point",
+      "when": {},
+      "source": "https://www.lapp.ch/media/PIM_NEU/Datenbl%C3%A4tter/DB2173001EN.pdf",
+      "source_revision": "LAPP UNITRONICTRAINMVB2173001 DB2173001EN Version06 November27 2025 pp1-2; cable-specific electrical/mechanical/thermal limits",
+      "when_present": [
+        "mv_cable_attenuation_db_km"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "mv_cable_frequency_mhz",
+      "when": {
+        "mv_cable_profile": "LAPP_2173001_V06",
+        "mv_cable_loss_point": "F1_5_MHZ"
+      },
+      "source": "https://www.lapp.ch/media/PIM_NEU/Datenbl%C3%A4tter/DB2173001EN.pdf",
+      "source_revision": "LAPP UNITRONICTRAINMVB2173001 DB2173001EN Version06 November27 2025 pp1-2; cable-specific electrical/mechanical/thermal limits",
+      "required": true,
+      "allowed": [
+        1.5
+      ]
+    },
+    {
+      "parameter": "mv_cable_attenuation_db_km",
+      "when": {
+        "mv_cable_profile": "LAPP_2173001_V06",
+        "mv_cable_loss_point": "F1_5_MHZ"
+      },
+      "source": "https://www.lapp.ch/media/PIM_NEU/Datenbl%C3%A4tter/DB2173001EN.pdf",
+      "source_revision": "LAPP UNITRONICTRAINMVB2173001 DB2173001EN Version06 November27 2025 pp1-2; cable-specific electrical/mechanical/thermal limits",
+      "maximum": 15
+    },
+    {
+      "parameter": "mv_cable_frequency_mhz",
+      "when": {
+        "mv_cable_profile": "LAPP_2173001_V06",
+        "mv_cable_loss_point": "F3_MHZ"
+      },
+      "source": "https://www.lapp.ch/media/PIM_NEU/Datenbl%C3%A4tter/DB2173001EN.pdf",
+      "source_revision": "LAPP UNITRONICTRAINMVB2173001 DB2173001EN Version06 November27 2025 pp1-2; cable-specific electrical/mechanical/thermal limits",
+      "required": true,
+      "allowed": [
+        3
+      ]
+    },
+    {
+      "parameter": "mv_cable_attenuation_db_km",
+      "when": {
+        "mv_cable_profile": "LAPP_2173001_V06",
+        "mv_cable_loss_point": "F3_MHZ"
+      },
+      "source": "https://www.lapp.ch/media/PIM_NEU/Datenbl%C3%A4tter/DB2173001EN.pdf",
+      "source_revision": "LAPP UNITRONICTRAINMVB2173001 DB2173001EN Version06 November27 2025 pp1-2; cable-specific electrical/mechanical/thermal limits",
+      "maximum": 20
+    },
+    {
+      "parameter": "mv_cable_characterization_source",
+      "when": {
+        "mv_cable_loss_point": "REGISTERED"
+      },
+      "source": "https://www.lapp.ch/media/PIM_NEU/Datenbl%C3%A4tter/DB2173001EN.pdf",
+      "source_revision": "LAPP UNITRONICTRAINMVB2173001 DB2173001EN Version06 November27 2025 pp1-2; cable-specific electrical/mechanical/thermal limits",
+      "required": true
+    },
+    {
+      "parameter": "mv_bending_radius_mm",
+      "when": {
+        "mv_cable_profile": "LAPP_2173001_V06",
+        "mv_cable_installation": "FIXED"
+      },
+      "source": "https://www.lapp.ch/media/PIM_NEU/Datenbl%C3%A4tter/DB2173001EN.pdf",
+      "source_revision": "LAPP UNITRONICTRAINMVB2173001 DB2173001EN Version06 November27 2025 pp1-2; cable-specific electrical/mechanical/thermal limits",
+      "minimum_expression": {
+        "product": [
+          3,
+          "mv_cable_outer_mm"
+        ]
+      }
+    },
+    {
+      "parameter": "mv_bending_radius_mm",
+      "when": {
+        "mv_cable_profile": "LAPP_2173001_V06",
+        "mv_cable_installation": "OCCASIONAL_FLEX"
+      },
+      "source": "https://www.lapp.ch/media/PIM_NEU/Datenbl%C3%A4tter/DB2173001EN.pdf",
+      "source_revision": "LAPP UNITRONICTRAINMVB2173001 DB2173001EN Version06 November27 2025 pp1-2; cable-specific electrical/mechanical/thermal limits",
+      "minimum_expression": {
+        "product": [
+          10,
+          "mv_cable_outer_mm"
+        ]
+      }
+    },
+    {
+      "parameter": "mv_temperature_c",
+      "when": {
+        "mv_cable_profile": "LAPP_2173001_V06",
+        "mv_cable_installation": "FIXED"
+      },
+      "source": "https://www.lapp.ch/media/PIM_NEU/Datenbl%C3%A4tter/DB2173001EN.pdf",
+      "source_revision": "LAPP UNITRONICTRAINMVB2173001 DB2173001EN Version06 November27 2025 pp1-2; cable-specific electrical/mechanical/thermal limits",
+      "minimum": -40,
+      "maximum": 90
+    },
+    {
+      "parameter": "mv_cable_characterization_source",
+      "when": {
+        "mv_cable_profile": "LAPP_2173001_V06",
+        "mv_cable_installation": "OCCASIONAL_FLEX"
+      },
+      "source": "https://www.lapp.ch/media/PIM_NEU/Datenbl%C3%A4tter/DB2173001EN.pdf",
+      "source_revision": "LAPP UNITRONICTRAINMVB2173001 DB2173001EN Version06 November27 2025 pp1-2; cable-specific electrical/mechanical/thermal limits",
+      "when_present": [
+        "mv_temperature_c"
+      ],
+      "required": true
+    }
+  ],
+  "physical_layer_profile_id": null,
+  "medium_access_model": null,
+  "native_parameter_prefixes": [
+    "mv_"
+  ],
+  "parameter_aliases": {},
+  "parameter_alias_limits": {},
+  "parameter_evidence_scope": "EXPLICIT_LAYER",
+  "rate_source_profile_id": null,
+  "arbitration_model_id": null,
+  "max_payload_bytes": 32,
+  "capabilities": {
+    "supports_signals": true,
+    "supports_data_objects": false,
+    "supports_streams": false,
+    "supports_multicast": true,
+    "supports_publish_subscribe": false,
+    "supports_request_response": false,
+    "supports_cyclic": true,
+    "supports_event": true,
+    "supports_redundancy": false,
+    "supports_time_sync": true,
+    "supports_safety_profile": false,
+    "supports_segmentation": false,
+    "supports_fragmentation": false,
+    "supports_qos": false
+  },
+  "deterministic": true,
+  "overhead_bytes": 8,
+  "implementation_status": "PARTIAL",
+  "connection_type": "COMMUNICATION_TECHNOLOGY",
+  "parameter_proposals": {
+    "kind": "FIXED_STANDARD_BASELINE",
+    "default_bps": 1500000,
+    "status": "REVIEW_REQUIRED",
+    "source": "https://www.imc-tm.cn/fileadmin/Public/Downloads/Datasheets/imc_optional_accessories/imc_Accessories_EN_TDs/TD_Digital_Fieldbus.pdf",
+    "source_revision": "imc fieldbusinterfaces datasheet4.15 February27 2026 pp17-18; hardwarewiredEMD orESD+ logging periodicdata, not configurable transmitter/busadministrator",
+    "note": "MVB gross1.5Mbit/s proposal, Manchester/frame/check/turnaround and actualadministrator scanlist separate. WiredEMD/ESD+ logging4.15 differs historicABBcontroller qualification. No nominalrate capacity or CAN/Ethernet fallback."
+  },
+  "capacity_evidence": {
+    "status": "MODEL_MISSING",
+    "frame_model": null,
+    "schedule_model": null,
+    "requires_confirmed_device_parameters": true
+  },
+  "components": {
+    "binding": "mvb.binding",
+    "generator": "mvb.generator",
+    "validator": "mvb.validator",
+    "timing_model": null,
+    "load_model": null,
+    "encoder": "mvb.encoder",
+    "decoder": "mvb.decoder"
+  },
+  "known_limitations": "Technology-specific conformance details require a vendor/profile extension."
+}

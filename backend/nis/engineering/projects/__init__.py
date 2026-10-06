@@ -1,0 +1,1 @@
+"""Canonical engineering.projects package."""

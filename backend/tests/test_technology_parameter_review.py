@@ -222,3 +222,20 @@ def test_unresolved_parameter_artifact_exports_its_native_actionable_findings(te
     assert check['required'][source_field] is False
     assert any(f['code'] == 'TECHNOLOGY_PARAMETER_MISSING' and f.get('parameter') == source_field
                for f in check['profile_findings'])
+
+
+
+def test_current_parameter_review_endpoint_is_read_only_and_project_scoped():
+    from backend.nis.app import create_app
+    from uuid import uuid4
+    client=create_app(testing=True).test_client()
+    project='parameter-review-'+uuid4().hex
+    headers={'X-Project-ID':project}
+    before=client.get('/api/engineering/workflow/parameters',headers=headers).get_json()
+    review=client.get('/api/engineering/workflow/parameters/review',headers=headers)
+    assert review.status_code==200,review.get_json()
+    result=review.get_json()
+    assert result['project_id']==before['project_id'] and result['edit_token']==before['edit_token']
+    assert result['source']=='CURRENT_CANONICAL_MODEL' and result['findings']==[]
+    after=client.get('/api/engineering/workflow/parameters',headers=headers).get_json()
+    assert after==before

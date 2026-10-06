@@ -1,0 +1,2032 @@
+{
+  "id": "bluetooth_le",
+  "label": "Bluetooth LE",
+  "domain": "iot_wireless",
+  "layer": "DATA_LINK",
+  "transport_unit": "PDU",
+  "payload_element_types": [
+    "FIELD",
+    "DATA_OBJECT"
+  ],
+  "hardware_interface": "wireless_interface",
+  "hardware_capability_aliases": [
+    "wireless_interface"
+  ],
+  "default_stack": [
+    "bluetooth_le"
+  ],
+  "stack_variants": [
+    [
+      "bluetooth_le"
+    ]
+  ],
+  "default_bitrate": 1000000,
+  "rate_model": {
+    "type": "SINGLE_BITRATE",
+    "fields": [
+      "bitrate_bps"
+    ],
+    "allowed_bps": [
+      125000,
+      500000,
+      1000000,
+      2000000
+    ]
+  },
+  "local_timing_schema": [],
+  "parameter_schema": {
+    "bitrate_bps": {
+      "label": "Bitrate",
+      "category": "physical",
+      "scope": "network",
+      "type": "number",
+      "description": "Selected transmit PHY effective data rate. LE Coded packets use separately coded sections; this is not sufficient for packet airtime. LE 1M is mandatory, 2M/Coded optional.",
+      "required": true,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1000000,
+      "unit": "bit/s",
+      "min": 1,
+      "default_review": {
+        "technology": "bluetooth_le",
+        "rate_profile": "bluetooth_le",
+        "values": {
+          "bitrate_bps": 1000000
+        },
+        "basis": "LOWEST_MANDATORY_PHY",
+        "status": "REVIEW_REQUIRED",
+        "source": "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-62/out/en/low-energy-controller/radio-physical-layer-specification.html",
+        "source_revision": "Bluetooth Core 6.2 Vol 6 Part A section 2, mandatory LE 1M; accessed 2026-10-01"
+      },
+      "allowed_bps": [
+        125000,
+        500000,
+        1000000,
+        2000000
+      ],
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED",
+      "source": "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-62/out/en/low-energy-controller/radio-physical-layer-specification.html",
+      "source_revision": "Bluetooth Core 6.2 Vol 6 Part A section 2, mandatory LE 1M; accessed 2026-10-01"
+    },
+    "payload_bytes": {
+      "label": "Payload",
+      "category": "physical",
+      "scope": "message",
+      "type": "number",
+      "description": "Actual LL Data PDU Payload field, not a GATT value or ATT MTU. Includes L2CAP fragments, excludes LL header/CRC/MIC. Empty data PDU is valid. Actual negotiated lengths/times limit it.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "max": 251,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-62/out/en/low-energy-controller/link-layer-specification.html",
+      "source_revision": "Bluetooth Core 6.2 Vol 6 Part B 2.4.1 / 4.5.10",
+      "integer": true
+    },
+    "cycle_ms": {
+      "label": "Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "Standardperiode fuer zyklische Nachrichten.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "minimum_cycle_time_ms": {
+      "label": "Minimum Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "deadline_ms": {
+      "label": "Deadline",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "timeout_ms": {
+      "label": "Timeout",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_latency_ms": {
+      "label": "Maximum Latency",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "jitter_ms": {
+      "label": "Jitter Budget",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "freshness_ms": {
+      "label": "Data Freshness",
+      "category": "timing",
+      "scope": "signal",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "source_processing_delay_ms": {
+      "label": "Source Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_processing_delay_ms": {
+      "label": "Target Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "propagation_delay_ms": {
+      "label": "Propagation",
+      "category": "timing",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.01,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_bus_load_percent": {
+      "label": "Ziel-Buslast",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "Zielwert fuer die aus Routing, Payload, Zyklus und Bitrate berechnete Buslast.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "peak_factor": {
+      "label": "Peak Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.15,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_factor": {
+      "label": "Burst Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.5,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_window_ms": {
+      "label": "Burst Window",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "warning_threshold": {
+      "label": "Load Warning",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "critical_threshold": {
+      "label": "Load Critical",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 75,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "overload_threshold": {
+      "label": "Load Overload",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 90,
+      "unit": "%",
+      "min": 1,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "queue_size": {
+      "label": "Queue Size",
+      "category": "qos",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 256,
+      "unit": "Frames",
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1",
+      "integer": true
+    },
+    "queue_policy": {
+      "label": "Queue Policy",
+      "category": "qos",
+      "scope": "network",
+      "type": "select",
+      "description": "Abstract NIS host queue; not a proven central radio schedule or TAS/CBS.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": "FIFO",
+      "options": [
+        "FIFO",
+        "PRIORITY",
+        "CUSTOM"
+      ],
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "traffic_class": {
+      "label": "Traffic Class",
+      "category": "qos",
+      "scope": "route",
+      "type": "select",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": "BEST_EFFORT",
+      "options": [
+        "BEST_EFFORT",
+        "CONTROL",
+        "REALTIME",
+        "SAFETY_CRITICAL"
+      ],
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "packet_loss_probability": {
+      "label": "Packet Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "frame_loss_probability": {
+      "label": "Frame Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "bit_error_rate": {
+      "label": "Bit Error Rate",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "corruption_probability": {
+      "label": "Corruption",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duplicate_probability": {
+      "label": "Duplication",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "reordering_probability": {
+      "label": "Reordering",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "required_reliability": {
+      "label": "Required Reliability",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.999,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_offset_ms": {
+      "label": "Clock Offset",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_drift_ppm": {
+      "label": "Clock Drift",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 20,
+      "unit": "ppm",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_precision_ms": {
+      "label": "Sync Precision",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_interval_ms": {
+      "label": "Sync Interval",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1000,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_sync_error_ms": {
+      "label": "Maximum Sync Error",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_delay_ms": {
+      "label": "Gateway Processing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.2,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_queue_delay_ms": {
+      "label": "Gateway Queueing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "protocol_conversion_delay_ms": {
+      "label": "Protocol Conversion",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duration_s": {
+      "label": "Simulation Duration",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 1,
+      "unit": "s",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "seed": {
+      "label": "Random Seed",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 42,
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1",
+      "integer": true
+    },
+    "max_events": {
+      "label": "Maximum Events",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 100000,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1",
+      "integer": true
+    },
+    "dropout_probability": {
+      "label": "Failure Injection Dropout",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "ble_bearer": {
+      "label": "Registered BLE transport baseline",
+      "category": "physical",
+      "scope": "network",
+      "type": "select",
+      "description": "ACL baseline or actual peer configuration; optional advertising/isochronous/channel-sounding bearers require their own reviewed profile. A saved value does not execute the radio schedule.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": "ACL_DATA",
+      "options": [
+        "ACL_DATA"
+      ],
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED",
+      "source": "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-62/out/en/low-energy-controller/link-layer-specification.html",
+      "source_revision": "Bluetooth Core 6.2 Vol 6 Part B 4.5; accessed 2026-10-01"
+    },
+    "ble_tx_phy": {
+      "label": "Selected transmit PHY",
+      "category": "physical",
+      "scope": "network",
+      "type": "select",
+      "description": "ACL baseline or actual peer configuration; optional advertising/isochronous/channel-sounding bearers require their own reviewed profile. A saved value does not execute the radio schedule.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": "LE_1M",
+      "options": [
+        "LE_1M",
+        "LE_2M",
+        "LE_CODED_S2",
+        "LE_CODED_S8"
+      ],
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED",
+      "source": "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-62/out/en/low-energy-controller/link-layer-specification.html",
+      "source_revision": "Bluetooth Core 6.2 Vol 6 Part B 4.5.1 / 5.1.10; accessed 2026-10-01"
+    },
+    "ble_rx_phy": {
+      "label": "Actual independently selected receive PHY",
+      "category": "physical",
+      "scope": "network",
+      "type": "select",
+      "description": "ACL baseline or actual peer configuration; optional advertising/isochronous/channel-sounding bearers require their own reviewed profile. A saved value does not execute the radio schedule.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "LE_1M",
+        "LE_2M",
+        "LE_CODED_S2",
+        "LE_CODED_S8"
+      ],
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-62/out/en/low-energy-controller/link-layer-specification.html",
+      "source_revision": "Bluetooth Core 6.2 Vol 6 Part B 4.5.1 / 5.1.10; accessed 2026-10-01"
+    },
+    "ble_2m_supported": {
+      "label": "Actual local optional 2M capability",
+      "category": "physical",
+      "scope": "network",
+      "type": "boolean",
+      "description": "ACL baseline or actual peer configuration; optional advertising/isochronous/channel-sounding bearers require their own reviewed profile. A saved value does not execute the radio schedule.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-62/out/en/low-energy-controller/link-layer-specification.html",
+      "source_revision": "Bluetooth Core 6.2 Vol 6 Part B 4.6; accessed 2026-10-01"
+    },
+    "ble_coded_supported": {
+      "label": "Actual local optional coded PHY capability",
+      "category": "physical",
+      "scope": "network",
+      "type": "boolean",
+      "description": "ACL baseline or actual peer configuration; optional advertising/isochronous/channel-sounding bearers require their own reviewed profile. A saved value does not execute the radio schedule.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-62/out/en/low-energy-controller/link-layer-specification.html",
+      "source_revision": "Bluetooth Core 6.2 Vol 6 Part B 4.6; accessed 2026-10-01"
+    },
+    "ble_remote_2m_supported": {
+      "label": "Actual remote optional 2M capability",
+      "category": "physical",
+      "scope": "network",
+      "type": "boolean",
+      "description": "ACL baseline or actual peer configuration; optional advertising/isochronous/channel-sounding bearers require their own reviewed profile. A saved value does not execute the radio schedule.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-62/out/en/low-energy-controller/link-layer-specification.html",
+      "source_revision": "Bluetooth Core 6.2 Vol 6 Part B 4.6; accessed 2026-10-01"
+    },
+    "ble_remote_coded_supported": {
+      "label": "Actual remote optional coded PHY capability",
+      "category": "physical",
+      "scope": "network",
+      "type": "boolean",
+      "description": "ACL baseline or actual peer configuration; optional advertising/isochronous/channel-sounding bearers require their own reviewed profile. A saved value does not execute the radio schedule.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-62/out/en/low-energy-controller/link-layer-specification.html",
+      "source_revision": "Bluetooth Core 6.2 Vol 6 Part B 4.6; accessed 2026-10-01"
+    },
+    "ble_dle_supported": {
+      "label": "Actual data length extension support",
+      "category": "physical",
+      "scope": "network",
+      "type": "boolean",
+      "description": "ACL baseline or actual peer configuration; optional advertising/isochronous/channel-sounding bearers require their own reviewed profile. A saved value does not execute the radio schedule.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-62/out/en/low-energy-controller/link-layer-specification.html",
+      "source_revision": "Bluetooth Core 6.2 Vol 6 Part B 4.6.7 / 4.5.10; accessed 2026-10-01"
+    },
+    "ble_short_intervals_supported": {
+      "label": "Actual 6.2 shorter interval support",
+      "category": "physical",
+      "scope": "network",
+      "type": "boolean",
+      "description": "ACL baseline or actual peer configuration; optional advertising/isochronous/channel-sounding bearers require their own reviewed profile. A saved value does not execute the radio schedule.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-62/out/en/low-energy-controller/link-layer-specification.html",
+      "source_revision": "Bluetooth Core 6.2 Vol 6 Part B 4.5.1 / 5.1.32; accessed 2026-10-01"
+    },
+    "ble_subrating_supported": {
+      "label": "Actual subrating support",
+      "category": "physical",
+      "scope": "network",
+      "type": "boolean",
+      "description": "ACL baseline or actual peer configuration; optional advertising/isochronous/channel-sounding bearers require their own reviewed profile. A saved value does not execute the radio schedule.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-62/out/en/low-energy-controller/link-layer-specification.html",
+      "source_revision": "Bluetooth Core 6.2 Vol 6 Part B 4.5.1; accessed 2026-10-01"
+    },
+    "ble_interval_set": {
+      "label": "Connection interval baseline",
+      "category": "physical",
+      "scope": "network",
+      "type": "select",
+      "description": "ACL baseline or actual peer configuration; optional advertising/isochronous/channel-sounding bearers require their own reviewed profile. A saved value does not execute the radio schedule.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": "BASELINE",
+      "options": [
+        "BASELINE",
+        "ROUNDED",
+        "EXTENDED"
+      ],
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED",
+      "source": "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-62/out/en/low-energy-controller/link-layer-specification.html",
+      "source_revision": "Bluetooth Core 6.2 Vol 6 Part B 4.5.1; accessed 2026-10-01"
+    },
+    "ble_connection_interval_us": {
+      "label": "Connection interval",
+      "category": "physical",
+      "scope": "network",
+      "type": "number",
+      "description": "Lowest selected interval-set proposal, not a universal controller default. Baseline >=7500 us / 1250-us grid; optional 6.2 extended >=375 us / 125-us grid. Must satisfy peer capability and supervision bound.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "us",
+      "min": 375,
+      "max": 4000000,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-62/out/en/low-energy-controller/link-layer-specification.html",
+      "source_revision": "Bluetooth Core 6.2 Vol 6 Part B 4.5.1; accessed 2026-10-01",
+      "integer": true,
+      "multiple_of": 125,
+      "conditional_defaults": [
+        {
+          "when": {
+            "ble_interval_set": "BASELINE"
+          },
+          "value": 7500
+        },
+        {
+          "when": {
+            "ble_interval_set": "ROUNDED"
+          },
+          "value": 1250
+        },
+        {
+          "when": {
+            "ble_interval_set": "EXTENDED"
+          },
+          "value": 375
+        }
+      ]
+    },
+    "ble_peripheral_latency": {
+      "label": "Skipped subrated events",
+      "category": "physical",
+      "scope": "network",
+      "type": "number",
+      "description": "ACL baseline or actual peer configuration; optional advertising/isochronous/channel-sounding bearers require their own reviewed profile. A saved value does not execute the radio schedule.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "events",
+      "min": 0,
+      "max": 499,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-62/out/en/low-energy-controller/link-layer-specification.html",
+      "source_revision": "Bluetooth Core 6.2 Vol 6 Part B 4.5.1; accessed 2026-10-01",
+      "integer": true
+    },
+    "ble_subrate_factor": {
+      "label": "Connection subrate factor",
+      "category": "physical",
+      "scope": "network",
+      "type": "number",
+      "description": "ACL baseline or actual peer configuration; optional advertising/isochronous/channel-sounding bearers require their own reviewed profile. A saved value does not execute the radio schedule.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1,
+      "min": 1,
+      "max": 500,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED",
+      "source": "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-62/out/en/low-energy-controller/link-layer-specification.html",
+      "source_revision": "Bluetooth Core 6.2 Vol 6 Part B 4.5.1 new connection; accessed 2026-10-01",
+      "integer": true
+    },
+    "ble_continuation_number": {
+      "label": "Continuation events",
+      "category": "physical",
+      "scope": "network",
+      "type": "number",
+      "description": "ACL baseline or actual peer configuration; optional advertising/isochronous/channel-sounding bearers require their own reviewed profile. A saved value does not execute the radio schedule.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 499,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED",
+      "source": "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-62/out/en/low-energy-controller/link-layer-specification.html",
+      "source_revision": "Bluetooth Core 6.2 Vol 6 Part B 4.5.1 new connection; accessed 2026-10-01",
+      "integer": true
+    },
+    "ble_supervision_timeout_ms": {
+      "label": "Connection supervision timeout",
+      "category": "physical",
+      "scope": "network",
+      "type": "number",
+      "description": "Actual 100..32000 ms in 10-ms steps; strictly greater than 2 * interval * subrate * (latency+1). No independent 100-ms default valid for every connection.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "ms",
+      "min": 100,
+      "max": 32000,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-62/out/en/low-energy-controller/link-layer-specification.html",
+      "source_revision": "Bluetooth Core 6.2 Vol 6 Part B 4.5.2; accessed 2026-10-01",
+      "integer": true,
+      "multiple_of": 10
+    },
+    "ble_ifs_us": {
+      "label": "ACL inter-frame space baseline",
+      "category": "physical",
+      "scope": "network",
+      "type": "number",
+      "description": "Standard initial 150 us. Core 6.0+ frame-space update may negotiate per-direction/per-PHY values; no actual update or bidirectional equality is inferred.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 150,
+      "unit": "us",
+      "min": 0,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED",
+      "source": "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-62/out/en/low-energy-controller/link-layer-specification.html",
+      "source_revision": "Bluetooth Core 6.2 Vol 6 Part B 4.1.1 / 5.1.30; accessed 2026-10-01",
+      "integer": true
+    },
+    "ble_encryption_active": {
+      "label": "Actual connection encryption state",
+      "category": "physical",
+      "scope": "network",
+      "type": "boolean",
+      "description": "ACL baseline or actual peer configuration; optional advertising/isochronous/channel-sounding bearers require their own reviewed profile. A saved value does not execute the radio schedule.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-62/out/en/low-energy-controller/link-layer-specification.html",
+      "source_revision": "Bluetooth Core 6.2 Vol 6 Part B 2.4 / 5.1.3; accessed 2026-10-01"
+    },
+    "ble_local_max_tx_octets": {
+      "label": "Local connection maximum TX payload",
+      "category": "physical",
+      "scope": "network",
+      "type": "number",
+      "description": "ACL baseline or actual peer configuration; optional advertising/isochronous/channel-sounding bearers require their own reviewed profile. A saved value does not execute the radio schedule.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 27,
+      "max": 251,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-62/out/en/low-energy-controller/link-layer-specification.html",
+      "source_revision": "Bluetooth Core 6.2 Vol 6 Part B 4.5.10; accessed 2026-10-01",
+      "integer": true
+    },
+    "ble_local_max_rx_octets": {
+      "label": "Local connection maximum RX payload",
+      "category": "physical",
+      "scope": "network",
+      "type": "number",
+      "description": "ACL baseline or actual peer configuration; optional advertising/isochronous/channel-sounding bearers require their own reviewed profile. A saved value does not execute the radio schedule.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 27,
+      "max": 251,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-62/out/en/low-energy-controller/link-layer-specification.html",
+      "source_revision": "Bluetooth Core 6.2 Vol 6 Part B 4.5.10; accessed 2026-10-01",
+      "integer": true
+    },
+    "ble_remote_max_tx_octets": {
+      "label": "Actual remote maximum TX payload",
+      "category": "physical",
+      "scope": "network",
+      "type": "number",
+      "description": "ACL baseline or actual peer configuration; optional advertising/isochronous/channel-sounding bearers require their own reviewed profile. A saved value does not execute the radio schedule.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 27,
+      "max": 251,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-62/out/en/low-energy-controller/link-layer-specification.html",
+      "source_revision": "Bluetooth Core 6.2 Vol 6 Part B 4.5.10; accessed 2026-10-01",
+      "integer": true
+    },
+    "ble_remote_max_rx_octets": {
+      "label": "Actual remote maximum RX payload",
+      "category": "physical",
+      "scope": "network",
+      "type": "number",
+      "description": "ACL baseline or actual peer configuration; optional advertising/isochronous/channel-sounding bearers require their own reviewed profile. A saved value does not execute the radio schedule.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 27,
+      "max": 251,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-62/out/en/low-energy-controller/link-layer-specification.html",
+      "source_revision": "Bluetooth Core 6.2 Vol 6 Part B 4.5.10; accessed 2026-10-01",
+      "integer": true
+    },
+    "ble_supported_max_tx_octets": {
+      "label": "Local hardware TX capability",
+      "category": "physical",
+      "scope": "network",
+      "type": "number",
+      "description": "ACL baseline or actual peer configuration; optional advertising/isochronous/channel-sounding bearers require their own reviewed profile. A saved value does not execute the radio schedule.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 27,
+      "max": 251,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-62/out/en/low-energy-controller/link-layer-specification.html",
+      "source_revision": "Bluetooth Core 6.2 Vol 6 Part B 4.5.10; accessed 2026-10-01",
+      "integer": true
+    },
+    "ble_supported_max_rx_octets": {
+      "label": "Local hardware RX capability",
+      "category": "physical",
+      "scope": "network",
+      "type": "number",
+      "description": "ACL baseline or actual peer configuration; optional advertising/isochronous/channel-sounding bearers require their own reviewed profile. A saved value does not execute the radio schedule.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 27,
+      "max": 251,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-62/out/en/low-energy-controller/link-layer-specification.html",
+      "source_revision": "Bluetooth Core 6.2 Vol 6 Part B 4.5.10; accessed 2026-10-01",
+      "integer": true
+    },
+    "ble_local_max_tx_time_us": {
+      "label": "Local connection maximum TX time",
+      "category": "physical",
+      "scope": "network",
+      "type": "number",
+      "description": "ACL baseline or actual peer configuration; optional advertising/isochronous/channel-sounding bearers require their own reviewed profile. A saved value does not execute the radio schedule.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "us",
+      "min": 328,
+      "max": 17040,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-62/out/en/low-energy-controller/link-layer-specification.html",
+      "source_revision": "Bluetooth Core 6.2 Vol 6 Part B 4.5.10 table 4.8; accessed 2026-10-01",
+      "integer": true
+    },
+    "ble_local_max_rx_time_us": {
+      "label": "Local connection maximum RX time",
+      "category": "physical",
+      "scope": "network",
+      "type": "number",
+      "description": "ACL baseline or actual peer configuration; optional advertising/isochronous/channel-sounding bearers require their own reviewed profile. A saved value does not execute the radio schedule.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "us",
+      "min": 328,
+      "max": 17040,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-62/out/en/low-energy-controller/link-layer-specification.html",
+      "source_revision": "Bluetooth Core 6.2 Vol 6 Part B 4.5.10 table 4.8; accessed 2026-10-01",
+      "integer": true
+    },
+    "ble_remote_max_tx_time_us": {
+      "label": "Actual remote maximum TX time",
+      "category": "physical",
+      "scope": "network",
+      "type": "number",
+      "description": "ACL baseline or actual peer configuration; optional advertising/isochronous/channel-sounding bearers require their own reviewed profile. A saved value does not execute the radio schedule.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "us",
+      "min": 328,
+      "max": 17040,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-62/out/en/low-energy-controller/link-layer-specification.html",
+      "source_revision": "Bluetooth Core 6.2 Vol 6 Part B 4.5.10 table 4.8; accessed 2026-10-01",
+      "integer": true
+    },
+    "ble_remote_max_rx_time_us": {
+      "label": "Actual remote maximum RX time",
+      "category": "physical",
+      "scope": "network",
+      "type": "number",
+      "description": "ACL baseline or actual peer configuration; optional advertising/isochronous/channel-sounding bearers require their own reviewed profile. A saved value does not execute the radio schedule.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "us",
+      "min": 328,
+      "max": 17040,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-62/out/en/low-energy-controller/link-layer-specification.html",
+      "source_revision": "Bluetooth Core 6.2 Vol 6 Part B 4.5.10 table 4.8; accessed 2026-10-01",
+      "integer": true
+    },
+    "ble_supported_max_tx_time_us": {
+      "label": "Local hardware TX timing capability",
+      "category": "physical",
+      "scope": "network",
+      "type": "number",
+      "description": "ACL baseline or actual peer configuration; optional advertising/isochronous/channel-sounding bearers require their own reviewed profile. A saved value does not execute the radio schedule.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "us",
+      "min": 328,
+      "max": 17040,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-62/out/en/low-energy-controller/link-layer-specification.html",
+      "source_revision": "Bluetooth Core 6.2 Vol 6 Part B 4.5.10 table 4.8; accessed 2026-10-01",
+      "integer": true
+    },
+    "ble_supported_max_rx_time_us": {
+      "label": "Local hardware RX timing capability",
+      "category": "physical",
+      "scope": "network",
+      "type": "number",
+      "description": "ACL baseline or actual peer configuration; optional advertising/isochronous/channel-sounding bearers require their own reviewed profile. A saved value does not execute the radio schedule.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "us",
+      "min": 328,
+      "max": 17040,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-62/out/en/low-energy-controller/link-layer-specification.html",
+      "source_revision": "Bluetooth Core 6.2 Vol 6 Part B 4.5.10 table 4.8; accessed 2026-10-01",
+      "integer": true
+    },
+    "ble_used_channel_count": {
+      "label": "Actual used data channels",
+      "category": "physical",
+      "scope": "network",
+      "type": "number",
+      "description": "ACL baseline or actual peer configuration; optional advertising/isochronous/channel-sounding bearers require their own reviewed profile. A saved value does not execute the radio schedule.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "channels",
+      "min": 2,
+      "max": 37,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-62/out/en/low-energy-controller/link-layer-specification.html",
+      "source_revision": "Bluetooth Core 6.2 Vol 6 Part B 1.4.1 / 4.5.8.1; accessed 2026-10-01",
+      "integer": true
+    },
+    "ble_central_node_id": {
+      "label": "Actual central node identity",
+      "category": "physical",
+      "scope": "network",
+      "type": "text",
+      "description": "ACL baseline or actual peer configuration; optional advertising/isochronous/channel-sounding bearers require their own reviewed profile. A saved value does not execute the radio schedule.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-62/out/en/low-energy-controller/link-layer-specification.html",
+      "source_revision": "Bluetooth Core 6.2 Vol 6 Part B 4.5; accessed 2026-10-01"
+    },
+    "ble_peripheral_node_id": {
+      "label": "Actual peripheral node identity",
+      "category": "physical",
+      "scope": "network",
+      "type": "text",
+      "description": "ACL baseline or actual peer configuration; optional advertising/isochronous/channel-sounding bearers require their own reviewed profile. A saved value does not execute the radio schedule.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-62/out/en/low-energy-controller/link-layer-specification.html",
+      "source_revision": "Bluetooth Core 6.2 Vol 6 Part B 4.5; accessed 2026-10-01"
+    },
+    "ble_cte_supported": {
+      "label": "Actual connection CTE support",
+      "category": "physical",
+      "scope": "network",
+      "type": "boolean",
+      "description": "ACL baseline or actual peer configuration; optional advertising/isochronous/channel-sounding bearers require their own reviewed profile. A saved value does not execute the radio schedule.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-62/out/en/low-energy-controller/link-layer-specification.html",
+      "source_revision": "Bluetooth Core 6.2 Vol 6 Part B 4.5.10 table 4.8; accessed 2026-10-01"
+    }
+  },
+  "mechanisms": {
+    "arbitration": [
+      "LE_CENTRAL_CONNECTION_EVENTS",
+      "ADAPTIVE_FREQUENCY_HOPPING"
+    ],
+    "integrity": [
+      "LE_CRC24",
+      "OPTIONAL_AES_CCM_MIC"
+    ],
+    "addressing": [
+      "LE_PUBLIC_OR_RANDOM_DEVICE_ADDRESS",
+      "LE_ACCESS_ADDRESS"
+    ],
+    "reliability": [
+      "LE_SN_NESN_ACK",
+      "LE_CONNECTION_SUPERVISION"
+    ],
+    "security": [
+      "LE_PAIRING_AND_DEVICE_SECURITY_POLICY"
+    ]
+  },
+  "parameter_constraints": [
+    {
+      "when": {
+        "ble_tx_phy": "LE_1M"
+      },
+      "parameter": "bitrate_bps",
+      "allowed": [
+        1000000
+      ],
+      "source": "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-62/out/en/low-energy-controller/link-layer-specification.html",
+      "source_revision": "Bluetooth Core 6.2 Vol 6 Part B sections 2.4 / 4.5; accessed 2026-10-01"
+    },
+    {
+      "when": {
+        "ble_tx_phy": "LE_2M"
+      },
+      "parameter": "bitrate_bps",
+      "allowed": [
+        2000000
+      ],
+      "source": "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-62/out/en/low-energy-controller/link-layer-specification.html",
+      "source_revision": "Bluetooth Core 6.2 Vol 6 Part B sections 2.4 / 4.5; accessed 2026-10-01"
+    },
+    {
+      "when": {
+        "ble_tx_phy": "LE_CODED_S2"
+      },
+      "parameter": "bitrate_bps",
+      "allowed": [
+        500000
+      ],
+      "source": "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-62/out/en/low-energy-controller/link-layer-specification.html",
+      "source_revision": "Bluetooth Core 6.2 Vol 6 Part B sections 2.4 / 4.5; accessed 2026-10-01"
+    },
+    {
+      "when": {
+        "ble_tx_phy": "LE_CODED_S8"
+      },
+      "parameter": "bitrate_bps",
+      "allowed": [
+        125000
+      ],
+      "source": "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-62/out/en/low-energy-controller/link-layer-specification.html",
+      "source_revision": "Bluetooth Core 6.2 Vol 6 Part B sections 2.4 / 4.5; accessed 2026-10-01"
+    },
+    {
+      "when": {
+        "ble_2m_supported": false
+      },
+      "parameter": "ble_tx_phy",
+      "allowed": [
+        "LE_1M",
+        "LE_CODED_S2",
+        "LE_CODED_S8"
+      ],
+      "source": "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-62/out/en/low-energy-controller/link-layer-specification.html",
+      "source_revision": "Bluetooth Core 6.2 Vol 6 Part B sections 2.4 / 4.5; accessed 2026-10-01"
+    },
+    {
+      "when": {
+        "ble_coded_supported": false
+      },
+      "parameter": "ble_tx_phy",
+      "allowed": [
+        "LE_1M",
+        "LE_2M"
+      ],
+      "source": "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-62/out/en/low-energy-controller/link-layer-specification.html",
+      "source_revision": "Bluetooth Core 6.2 Vol 6 Part B sections 2.4 / 4.5; accessed 2026-10-01"
+    },
+    {
+      "when": {
+        "ble_2m_supported": false
+      },
+      "parameter": "ble_rx_phy",
+      "allowed": [
+        "LE_1M",
+        "LE_CODED_S2",
+        "LE_CODED_S8"
+      ],
+      "source": "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-62/out/en/low-energy-controller/link-layer-specification.html",
+      "source_revision": "Bluetooth Core 6.2 Vol 6 Part B sections 2.4 / 4.5; accessed 2026-10-01"
+    },
+    {
+      "when": {
+        "ble_coded_supported": false
+      },
+      "parameter": "ble_rx_phy",
+      "allowed": [
+        "LE_1M",
+        "LE_2M"
+      ],
+      "source": "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-62/out/en/low-energy-controller/link-layer-specification.html",
+      "source_revision": "Bluetooth Core 6.2 Vol 6 Part B sections 2.4 / 4.5; accessed 2026-10-01"
+    },
+    {
+      "when": {
+        "ble_interval_set": "BASELINE"
+      },
+      "parameter": "ble_connection_interval_us",
+      "minimum": 7500,
+      "multiple_of": 1250,
+      "source": "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-62/out/en/low-energy-controller/link-layer-specification.html",
+      "source_revision": "Bluetooth Core 6.2 Vol 6 Part B sections 2.4 / 4.5; accessed 2026-10-01"
+    },
+    {
+      "when": {
+        "ble_interval_set": "ROUNDED"
+      },
+      "parameter": "ble_connection_interval_us",
+      "minimum": 1250,
+      "multiple_of": 1250,
+      "source": "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-62/out/en/low-energy-controller/link-layer-specification.html",
+      "source_revision": "Bluetooth Core 6.2 Vol 6 Part B sections 2.4 / 4.5; accessed 2026-10-01"
+    },
+    {
+      "when": {
+        "ble_interval_set": "EXTENDED"
+      },
+      "parameter": "ble_connection_interval_us",
+      "multiple_of": 125,
+      "source": "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-62/out/en/low-energy-controller/link-layer-specification.html",
+      "source_revision": "Bluetooth Core 6.2 Vol 6 Part B sections 2.4 / 4.5; accessed 2026-10-01"
+    },
+    {
+      "when": {
+        "ble_short_intervals_supported": false
+      },
+      "parameter": "ble_interval_set",
+      "allowed": [
+        "BASELINE"
+      ],
+      "source": "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-62/out/en/low-energy-controller/link-layer-specification.html",
+      "source_revision": "Bluetooth Core 6.2 Vol 6 Part B sections 2.4 / 4.5; accessed 2026-10-01"
+    },
+    {
+      "when": {},
+      "parameter": "ble_continuation_number",
+      "maximum_parameter": "ble_subrate_factor",
+      "maximum_offset": -1,
+      "source": "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-62/out/en/low-energy-controller/link-layer-specification.html",
+      "source_revision": "Bluetooth Core 6.2 Vol 6 Part B sections 2.4 / 4.5; accessed 2026-10-01"
+    },
+    {
+      "when": {
+        "ble_subrating_supported": false
+      },
+      "parameter": "ble_subrate_factor",
+      "allowed": [
+        1
+      ],
+      "source": "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-62/out/en/low-energy-controller/link-layer-specification.html",
+      "source_revision": "Bluetooth Core 6.2 Vol 6 Part B sections 2.4 / 4.5; accessed 2026-10-01"
+    },
+    {
+      "when": {},
+      "parameter": "ble_supervision_timeout_ms",
+      "minimum_product_parameters": [
+        {
+          "parameter": "ble_connection_interval_us"
+        },
+        {
+          "parameter": "ble_subrate_factor"
+        },
+        {
+          "parameter": "ble_peripheral_latency",
+          "offset": 1
+        }
+      ],
+      "minimum_product_factor": 0.002,
+      "exclusive_minimum_product": true,
+      "source": "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-62/out/en/low-energy-controller/link-layer-specification.html",
+      "source_revision": "Bluetooth Core 6.2 Vol 6 Part B sections 2.4 / 4.5; accessed 2026-10-01"
+    },
+    {
+      "when": {},
+      "parameter": "ble_peripheral_latency",
+      "bounded_product_parameters": [
+        {
+          "parameter": "ble_subrate_factor"
+        },
+        {
+          "parameter": "ble_peripheral_latency",
+          "offset": 1
+        }
+      ],
+      "maximum_product": 500,
+      "source": "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-62/out/en/low-energy-controller/link-layer-specification.html",
+      "source_revision": "Bluetooth Core 6.2 Vol 6 Part B sections 2.4 / 4.5; accessed 2026-10-01"
+    },
+    {
+      "when": {},
+      "parameter": "payload_bytes",
+      "maximum_parameter": "ble_local_max_tx_octets",
+      "source": "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-62/out/en/low-energy-controller/link-layer-specification.html",
+      "source_revision": "Bluetooth Core 6.2 Vol 6 Part B sections 2.4 / 4.5; accessed 2026-10-01"
+    },
+    {
+      "when": {},
+      "parameter": "payload_bytes",
+      "maximum_parameter": "ble_remote_max_rx_octets",
+      "source": "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-62/out/en/low-energy-controller/link-layer-specification.html",
+      "source_revision": "Bluetooth Core 6.2 Vol 6 Part B sections 2.4 / 4.5; accessed 2026-10-01"
+    },
+    {
+      "when": {
+        "ble_dle_supported": false
+      },
+      "parameter": "ble_local_max_tx_octets",
+      "allowed": [
+        27
+      ],
+      "source": "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-62/out/en/low-energy-controller/link-layer-specification.html",
+      "source_revision": "Bluetooth Core 6.2 Vol 6 Part B sections 2.4 / 4.5; accessed 2026-10-01"
+    },
+    {
+      "when": {
+        "ble_dle_supported": false
+      },
+      "parameter": "ble_local_max_rx_octets",
+      "allowed": [
+        27
+      ],
+      "source": "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-62/out/en/low-energy-controller/link-layer-specification.html",
+      "source_revision": "Bluetooth Core 6.2 Vol 6 Part B sections 2.4 / 4.5; accessed 2026-10-01"
+    },
+    {
+      "when": {},
+      "parameter": "ble_local_max_tx_octets",
+      "maximum_parameter": "ble_supported_max_tx_octets",
+      "source": "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-62/out/en/low-energy-controller/link-layer-specification.html",
+      "source_revision": "Bluetooth Core 6.2 Vol 6 Part B sections 2.4 / 4.5; accessed 2026-10-01"
+    },
+    {
+      "when": {},
+      "parameter": "ble_local_max_rx_octets",
+      "maximum_parameter": "ble_supported_max_rx_octets",
+      "source": "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-62/out/en/low-energy-controller/link-layer-specification.html",
+      "source_revision": "Bluetooth Core 6.2 Vol 6 Part B sections 2.4 / 4.5; accessed 2026-10-01"
+    },
+    {
+      "when": {},
+      "parameter": "ble_local_max_tx_time_us",
+      "maximum_parameter": "ble_supported_max_tx_time_us",
+      "source": "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-62/out/en/low-energy-controller/link-layer-specification.html",
+      "source_revision": "Bluetooth Core 6.2 Vol 6 Part B sections 2.4 / 4.5; accessed 2026-10-01"
+    },
+    {
+      "when": {},
+      "parameter": "ble_local_max_rx_time_us",
+      "maximum_parameter": "ble_supported_max_rx_time_us",
+      "source": "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-62/out/en/low-energy-controller/link-layer-specification.html",
+      "source_revision": "Bluetooth Core 6.2 Vol 6 Part B sections 2.4 / 4.5; accessed 2026-10-01"
+    },
+    {
+      "when": {
+        "ble_remote_2m_supported": false
+      },
+      "parameter": "ble_tx_phy",
+      "allowed": [
+        "LE_1M",
+        "LE_CODED_S2",
+        "LE_CODED_S8"
+      ],
+      "source": "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-62/out/en/low-energy-controller/link-layer-specification.html",
+      "source_revision": "Bluetooth Core 6.2 Vol 6 Part B sections 2.4 / 4.5; accessed 2026-10-01"
+    },
+    {
+      "when": {
+        "ble_remote_coded_supported": false
+      },
+      "parameter": "ble_tx_phy",
+      "allowed": [
+        "LE_1M",
+        "LE_2M"
+      ],
+      "source": "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-62/out/en/low-energy-controller/link-layer-specification.html",
+      "source_revision": "Bluetooth Core 6.2 Vol 6 Part B sections 2.4 / 4.5; accessed 2026-10-01"
+    },
+    {
+      "when": {
+        "ble_remote_2m_supported": false
+      },
+      "parameter": "ble_rx_phy",
+      "allowed": [
+        "LE_1M",
+        "LE_CODED_S2",
+        "LE_CODED_S8"
+      ],
+      "source": "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-62/out/en/low-energy-controller/link-layer-specification.html",
+      "source_revision": "Bluetooth Core 6.2 Vol 6 Part B sections 2.4 / 4.5; accessed 2026-10-01"
+    },
+    {
+      "when": {
+        "ble_remote_coded_supported": false
+      },
+      "parameter": "ble_rx_phy",
+      "allowed": [
+        "LE_1M",
+        "LE_2M"
+      ],
+      "source": "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-62/out/en/low-energy-controller/link-layer-specification.html",
+      "source_revision": "Bluetooth Core 6.2 Vol 6 Part B sections 2.4 / 4.5; accessed 2026-10-01"
+    },
+    {
+      "when": {
+        "ble_coded_supported": false,
+        "ble_dle_supported": false,
+        "ble_cte_supported": false
+      },
+      "parameter": "ble_local_max_tx_time_us",
+      "maximum": 328,
+      "source": "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-62/out/en/low-energy-controller/link-layer-specification.html",
+      "source_revision": "Bluetooth Core 6.2 Vol 6 Part B sections 2.4 / 4.5; accessed 2026-10-01"
+    },
+    {
+      "when": {
+        "ble_coded_supported": false,
+        "ble_dle_supported": false,
+        "ble_cte_supported": true
+      },
+      "parameter": "ble_local_max_tx_time_us",
+      "maximum": 336,
+      "source": "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-62/out/en/low-energy-controller/link-layer-specification.html",
+      "source_revision": "Bluetooth Core 6.2 Vol 6 Part B sections 2.4 / 4.5; accessed 2026-10-01"
+    },
+    {
+      "when": {
+        "ble_coded_supported": false,
+        "ble_dle_supported": true,
+        "ble_cte_supported": false
+      },
+      "parameter": "ble_local_max_tx_time_us",
+      "maximum": 2120,
+      "source": "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-62/out/en/low-energy-controller/link-layer-specification.html",
+      "source_revision": "Bluetooth Core 6.2 Vol 6 Part B sections 2.4 / 4.5; accessed 2026-10-01"
+    },
+    {
+      "when": {
+        "ble_coded_supported": false,
+        "ble_dle_supported": true,
+        "ble_cte_supported": true
+      },
+      "parameter": "ble_local_max_tx_time_us",
+      "maximum": 2128,
+      "source": "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-62/out/en/low-energy-controller/link-layer-specification.html",
+      "source_revision": "Bluetooth Core 6.2 Vol 6 Part B sections 2.4 / 4.5; accessed 2026-10-01"
+    },
+    {
+      "when": {
+        "ble_coded_supported": true,
+        "ble_dle_supported": false
+      },
+      "parameter": "ble_local_max_tx_time_us",
+      "maximum": 2704,
+      "source": "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-62/out/en/low-energy-controller/link-layer-specification.html",
+      "source_revision": "Bluetooth Core 6.2 Vol 6 Part B sections 2.4 / 4.5; accessed 2026-10-01"
+    },
+    {
+      "when": {
+        "ble_coded_supported": false,
+        "ble_dle_supported": false,
+        "ble_cte_supported": false
+      },
+      "parameter": "ble_local_max_rx_time_us",
+      "maximum": 328,
+      "source": "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-62/out/en/low-energy-controller/link-layer-specification.html",
+      "source_revision": "Bluetooth Core 6.2 Vol 6 Part B sections 2.4 / 4.5; accessed 2026-10-01"
+    },
+    {
+      "when": {
+        "ble_coded_supported": false,
+        "ble_dle_supported": false,
+        "ble_cte_supported": true
+      },
+      "parameter": "ble_local_max_rx_time_us",
+      "maximum": 336,
+      "source": "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-62/out/en/low-energy-controller/link-layer-specification.html",
+      "source_revision": "Bluetooth Core 6.2 Vol 6 Part B sections 2.4 / 4.5; accessed 2026-10-01"
+    },
+    {
+      "when": {
+        "ble_coded_supported": false,
+        "ble_dle_supported": true,
+        "ble_cte_supported": false
+      },
+      "parameter": "ble_local_max_rx_time_us",
+      "maximum": 2120,
+      "source": "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-62/out/en/low-energy-controller/link-layer-specification.html",
+      "source_revision": "Bluetooth Core 6.2 Vol 6 Part B sections 2.4 / 4.5; accessed 2026-10-01"
+    },
+    {
+      "when": {
+        "ble_coded_supported": false,
+        "ble_dle_supported": true,
+        "ble_cte_supported": true
+      },
+      "parameter": "ble_local_max_rx_time_us",
+      "maximum": 2128,
+      "source": "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-62/out/en/low-energy-controller/link-layer-specification.html",
+      "source_revision": "Bluetooth Core 6.2 Vol 6 Part B sections 2.4 / 4.5; accessed 2026-10-01"
+    },
+    {
+      "when": {
+        "ble_coded_supported": true,
+        "ble_dle_supported": false
+      },
+      "parameter": "ble_local_max_rx_time_us",
+      "maximum": 2704,
+      "source": "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-62/out/en/low-energy-controller/link-layer-specification.html",
+      "source_revision": "Bluetooth Core 6.2 Vol 6 Part B sections 2.4 / 4.5; accessed 2026-10-01"
+    },
+    {
+      "when": {
+        "ble_coded_supported": false,
+        "ble_dle_supported": false,
+        "ble_cte_supported": false
+      },
+      "parameter": "ble_supported_max_tx_time_us",
+      "maximum": 328,
+      "source": "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-62/out/en/low-energy-controller/link-layer-specification.html",
+      "source_revision": "Bluetooth Core 6.2 Vol 6 Part B sections 2.4 / 4.5; accessed 2026-10-01"
+    },
+    {
+      "when": {
+        "ble_coded_supported": false,
+        "ble_dle_supported": false,
+        "ble_cte_supported": true
+      },
+      "parameter": "ble_supported_max_tx_time_us",
+      "maximum": 336,
+      "source": "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-62/out/en/low-energy-controller/link-layer-specification.html",
+      "source_revision": "Bluetooth Core 6.2 Vol 6 Part B sections 2.4 / 4.5; accessed 2026-10-01"
+    },
+    {
+      "when": {
+        "ble_coded_supported": false,
+        "ble_dle_supported": true,
+        "ble_cte_supported": false
+      },
+      "parameter": "ble_supported_max_tx_time_us",
+      "maximum": 2120,
+      "source": "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-62/out/en/low-energy-controller/link-layer-specification.html",
+      "source_revision": "Bluetooth Core 6.2 Vol 6 Part B sections 2.4 / 4.5; accessed 2026-10-01"
+    },
+    {
+      "when": {
+        "ble_coded_supported": false,
+        "ble_dle_supported": true,
+        "ble_cte_supported": true
+      },
+      "parameter": "ble_supported_max_tx_time_us",
+      "maximum": 2128,
+      "source": "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-62/out/en/low-energy-controller/link-layer-specification.html",
+      "source_revision": "Bluetooth Core 6.2 Vol 6 Part B sections 2.4 / 4.5; accessed 2026-10-01"
+    },
+    {
+      "when": {
+        "ble_coded_supported": true,
+        "ble_dle_supported": false
+      },
+      "parameter": "ble_supported_max_tx_time_us",
+      "maximum": 2704,
+      "source": "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-62/out/en/low-energy-controller/link-layer-specification.html",
+      "source_revision": "Bluetooth Core 6.2 Vol 6 Part B sections 2.4 / 4.5; accessed 2026-10-01"
+    },
+    {
+      "when": {
+        "ble_coded_supported": false,
+        "ble_dle_supported": false,
+        "ble_cte_supported": false
+      },
+      "parameter": "ble_supported_max_rx_time_us",
+      "maximum": 328,
+      "source": "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-62/out/en/low-energy-controller/link-layer-specification.html",
+      "source_revision": "Bluetooth Core 6.2 Vol 6 Part B sections 2.4 / 4.5; accessed 2026-10-01"
+    },
+    {
+      "when": {
+        "ble_coded_supported": false,
+        "ble_dle_supported": false,
+        "ble_cte_supported": true
+      },
+      "parameter": "ble_supported_max_rx_time_us",
+      "maximum": 336,
+      "source": "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-62/out/en/low-energy-controller/link-layer-specification.html",
+      "source_revision": "Bluetooth Core 6.2 Vol 6 Part B sections 2.4 / 4.5; accessed 2026-10-01"
+    },
+    {
+      "when": {
+        "ble_coded_supported": false,
+        "ble_dle_supported": true,
+        "ble_cte_supported": false
+      },
+      "parameter": "ble_supported_max_rx_time_us",
+      "maximum": 2120,
+      "source": "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-62/out/en/low-energy-controller/link-layer-specification.html",
+      "source_revision": "Bluetooth Core 6.2 Vol 6 Part B sections 2.4 / 4.5; accessed 2026-10-01"
+    },
+    {
+      "when": {
+        "ble_coded_supported": false,
+        "ble_dle_supported": true,
+        "ble_cte_supported": true
+      },
+      "parameter": "ble_supported_max_rx_time_us",
+      "maximum": 2128,
+      "source": "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-62/out/en/low-energy-controller/link-layer-specification.html",
+      "source_revision": "Bluetooth Core 6.2 Vol 6 Part B sections 2.4 / 4.5; accessed 2026-10-01"
+    },
+    {
+      "when": {
+        "ble_coded_supported": true,
+        "ble_dle_supported": false
+      },
+      "parameter": "ble_supported_max_rx_time_us",
+      "maximum": 2704,
+      "source": "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-62/out/en/low-energy-controller/link-layer-specification.html",
+      "source_revision": "Bluetooth Core 6.2 Vol 6 Part B sections 2.4 / 4.5; accessed 2026-10-01"
+    }
+  ],
+  "physical_layer_profile_id": "LE_RADIO_ACL",
+  "medium_access_model": "CENTRAL_SCHEDULED_FREQUENCY_HOPPING",
+  "native_parameter_prefixes": [],
+  "parameter_aliases": {},
+  "parameter_alias_limits": {},
+  "parameter_evidence_scope": null,
+  "rate_source_profile_id": null,
+  "arbitration_model_id": "LE_CENTRAL_ACL_EVENTS",
+  "max_payload_bytes": 251,
+  "capabilities": {
+    "supports_signals": true,
+    "supports_data_objects": true,
+    "supports_streams": false,
+    "supports_multicast": false,
+    "supports_publish_subscribe": true,
+    "supports_request_response": true,
+    "supports_cyclic": true,
+    "supports_event": true,
+    "supports_redundancy": false,
+    "supports_time_sync": false,
+    "supports_safety_profile": false,
+    "supports_segmentation": false,
+    "supports_fragmentation": false,
+    "supports_qos": false
+  },
+  "deterministic": false,
+  "overhead_bytes": 8,
+  "implementation_status": "EXPERIMENTAL",
+  "connection_type": "COMMUNICATION_TECHNOLOGY",
+  "parameter_proposals": {
+    "kind": "STANDARD_BASELINE",
+    "unit": "bit/s",
+    "default_bps": 1000000,
+    "default_basis": "LOWEST_MANDATORY_PHY",
+    "source": "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-62/out/en/low-energy-controller/radio-physical-layer-specification.html",
+    "source_revision": "Bluetooth Core 6.2 Vol 6 Part A section 2, mandatory LE 1M; accessed 2026-10-01",
+    "status": "REVIEW_REQUIRED",
+    "note": "Optional PHY/coding and actual direction must be confirmed. Coded payload rate is not a uniform whole-packet rate."
+  },
+  "capacity_evidence": {
+    "status": "MODEL_MISSING",
+    "frame_model": null,
+    "schedule_model": null,
+    "requires_confirmed_device_parameters": true
+  },
+  "components": {
+    "binding": "bluetooth_le.binding",
+    "generator": "bluetooth_le.generator",
+    "validator": "bluetooth_le.validator",
+    "timing_model": null,
+    "load_model": null,
+    "encoder": "bluetooth_le.encoder",
+    "decoder": "bluetooth_le.decoder"
+  },
+  "known_limitations": "Technology-specific conformance details require a vendor/profile extension."
+}

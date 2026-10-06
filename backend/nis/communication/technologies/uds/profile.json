@@ -1,0 +1,3530 @@
+{
+  "id": "uds",
+  "label": "UDS",
+  "domain": "generic_networking",
+  "layer": "APPLICATION",
+  "transport_unit": "SERVICE_REQUEST",
+  "payload_element_types": [
+    "COMMAND",
+    "STATUS",
+    "RAW_DATA"
+  ],
+  "hardware_interface": "explicit_uds_selected_transport",
+  "hardware_capability_aliases": [
+    "can_or_ethernet_interface"
+  ],
+  "default_stack": [
+    "uds"
+  ],
+  "stack_variants": [
+    [
+      "uds"
+    ],
+    [
+      "can",
+      "uds"
+    ]
+  ],
+  "default_bitrate": null,
+  "rate_model": {
+    "type": "EXPLICIT_UDS_SELECTED_TP",
+    "fields": []
+  },
+  "local_timing_schema": [],
+  "parameter_schema": {
+    "payload_bytes": {
+      "label": "Payload",
+      "category": "physical",
+      "scope": "message",
+      "type": "number",
+      "description": "Actual diagnostic service data, separate request/subfunction/negative headers and selected CAN/DoIP/FlexRay/LIN transport N-SDU. No universal4095 byte UDS or CAN rate.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "source_revision": "AUTOSAR CP R25-11 DCM selected7.2.4/7.3.4/8.8.1 and configuredtimings10.2: session/transport separation, SPRMIB/functional NRC suppression, pending limits and session timing seconds. Not full ISO14229 clause or all802page conformance.",
+      "integer": true
+    },
+    "cycle_ms": {
+      "label": "Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "Standardperiode fuer zyklische Nachrichten.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "minimum_cycle_time_ms": {
+      "label": "Minimum Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "deadline_ms": {
+      "label": "Deadline",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "timeout_ms": {
+      "label": "Timeout",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_latency_ms": {
+      "label": "Maximum Latency",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "jitter_ms": {
+      "label": "Jitter Budget",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "freshness_ms": {
+      "label": "Data Freshness",
+      "category": "timing",
+      "scope": "signal",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "source_processing_delay_ms": {
+      "label": "Source Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_processing_delay_ms": {
+      "label": "Target Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "propagation_delay_ms": {
+      "label": "Propagation",
+      "category": "timing",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.01,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_bus_load_percent": {
+      "label": "Ziel-Buslast",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "Zielwert fuer die aus Routing, Payload, Zyklus und Bitrate berechnete Buslast.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "peak_factor": {
+      "label": "Peak Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.15,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_factor": {
+      "label": "Burst Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.5,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_window_ms": {
+      "label": "Burst Window",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "warning_threshold": {
+      "label": "Load Warning",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "critical_threshold": {
+      "label": "Load Critical",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 75,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "overload_threshold": {
+      "label": "Load Overload",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 90,
+      "unit": "%",
+      "min": 1,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "queue_size": {
+      "label": "Queue Size",
+      "category": "qos",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 256,
+      "unit": "Frames",
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "queue_policy": {
+      "label": "Queue Policy",
+      "category": "qos",
+      "scope": "network",
+      "type": "select",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": "FIFO",
+      "options": [
+        "FIFO",
+        "PRIORITY",
+        "STRICT_PRIORITY",
+        "WEIGHTED_PRIORITY",
+        "WRR",
+        "ROUND_ROBIN",
+        "TIME_TRIGGERED",
+        "TAS",
+        "CBS",
+        "CUSTOM"
+      ],
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "qos_priority": {
+      "label": "Default Priority",
+      "category": "qos",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 3,
+      "min": 0,
+      "max": 7,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "traffic_class": {
+      "label": "Traffic Class",
+      "category": "qos",
+      "scope": "route",
+      "type": "select",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": "BEST_EFFORT",
+      "options": [
+        "BEST_EFFORT",
+        "CONTROL",
+        "REALTIME",
+        "SAFETY_CRITICAL"
+      ],
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "packet_loss_probability": {
+      "label": "Packet Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "frame_loss_probability": {
+      "label": "Frame Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "bit_error_rate": {
+      "label": "Bit Error Rate",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "corruption_probability": {
+      "label": "Corruption",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duplicate_probability": {
+      "label": "Duplication",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "reordering_probability": {
+      "label": "Reordering",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "required_reliability": {
+      "label": "Required Reliability",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.999,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_offset_ms": {
+      "label": "Clock Offset",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_drift_ppm": {
+      "label": "Clock Drift",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 20,
+      "unit": "ppm",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_precision_ms": {
+      "label": "Sync Precision",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_interval_ms": {
+      "label": "Sync Interval",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1000,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_sync_error_ms": {
+      "label": "Maximum Sync Error",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_delay_ms": {
+      "label": "Gateway Processing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.2,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_queue_delay_ms": {
+      "label": "Gateway Queueing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "protocol_conversion_delay_ms": {
+      "label": "Protocol Conversion",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duration_s": {
+      "label": "Simulation Duration",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 1,
+      "unit": "s",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "seed": {
+      "label": "Random Seed",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 42,
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "max_events": {
+      "label": "Maximum Events",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 100000,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "dropout_probability": {
+      "label": "Failure Injection Dropout",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "us_review_profile": {
+      "type": "select",
+      "description": "Actual selected public DCM rules versus qualified independent diagnostic implementation.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "source_revision": "AUTOSAR CP R25-11 DCM selected7.2.4/7.3.4/8.8.1 and configuredtimings10.2: session/transport separation, SPRMIB/functional NRC suppression, pending limits and session timing seconds. Not full ISO14229 clause or all802page conformance.",
+      "options": [
+        "AUTOSAR_DCM_R25_11",
+        "REGISTERED_ACTUAL"
+      ],
+      "label": "us review profile",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "us_proposal_mode": {
+      "type": "select",
+      "description": "Literature-defined values proposed, never confirmed session state.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "source_revision": "AUTOSAR CP R25-11 DCM selected7.2.4/7.3.4/8.8.1 and configuredtimings10.2: session/transport separation, SPRMIB/functional NRC suppression, pending limits and session timing seconds. Not full ISO14229 clause or all802page conformance.",
+      "options": [
+        "SOURCE_BASELINE",
+        "ACTUAL_CONFIG"
+      ],
+      "label": "us proposal mode",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "us_transport": {
+      "type": "select",
+      "description": "Actual CAN/CANFD ISO-TP, DoIP, FlexRay TP, LIN TP or registered path; no implicit CAN/Ethernet.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "source_revision": "AUTOSAR CP R25-11 DCM selected7.2.4/7.3.4/8.8.1 and configuredtimings10.2: session/transport separation, SPRMIB/functional NRC suppression, pending limits and session timing seconds. Not full ISO14229 clause or all802page conformance.",
+      "options": [
+        "CAN_ISOTP",
+        "CANFD_ISOTP",
+        "DOIP",
+        "FLEXRAY_TP",
+        "LIN_TP",
+        "REGISTERED_ACTUAL"
+      ],
+      "label": "us transport",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "us_addressing": {
+      "type": "select",
+      "description": "Actual physical single-target or functional diagnostic target group.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "source_revision": "AUTOSAR CP R25-11 DCM selected7.2.4/7.3.4/8.8.1 and configuredtimings10.2: session/transport separation, SPRMIB/functional NRC suppression, pending limits and session timing seconds. Not full ISO14229 clause or all802page conformance.",
+      "options": [
+        "PHYSICAL",
+        "FUNCTIONAL"
+      ],
+      "label": "us addressing",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "us_codec_profile": {
+      "type": "select",
+      "description": "Actual pinned public codec behavior versus own registered ISO edition.",
+      "source": "https://raw.githubusercontent.com/pylessard/python-udsoncan/v1.25.1/udsoncan/services/DiagnosticSessionControl.py",
+      "source_revision": "python-udsoncan v1.25.1 original DiagnosticSessionControl: 2013+ response sessionecho and >HH P2 milliseconds/P2star10ms,2006 manufacturer-specific records. Implementation rather than complete ISO standard.",
+      "options": [
+        "UDSONCAN_1_25_1",
+        "REGISTERED_ACTUAL"
+      ],
+      "label": "us codec profile",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "us_standard_version": {
+      "type": "select",
+      "description": "Actual selected session-record interpretation.",
+      "source": "https://raw.githubusercontent.com/pylessard/python-udsoncan/v1.25.1/udsoncan/services/DiagnosticSessionControl.py",
+      "source_revision": "python-udsoncan v1.25.1 original DiagnosticSessionControl: 2013+ response sessionecho and >HH P2 milliseconds/P2star10ms,2006 manufacturer-specific records. Implementation rather than complete ISO standard.",
+      "options": [
+        "ISO_2006",
+        "ISO_2013_PLUS",
+        "REGISTERED_ACTUAL"
+      ],
+      "label": "us standard version",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "us_message_kind": {
+      "type": "select",
+      "description": "Actual transmitted/received request, positive, negative or suppressed result.",
+      "source": "https://raw.githubusercontent.com/pylessard/python-udsoncan/v1.25.1/udsoncan/Response.py",
+      "source_revision": "python-udsoncan v1.25.1 original Response: positive response service ID and negative7F/requestSID/NRC, selected encoding/decoding, not diagnostic session or whole functional success.",
+      "options": [
+        "REQUEST",
+        "POSITIVE",
+        "NEGATIVE",
+        "SUPPRESSED"
+      ],
+      "label": "us message kind",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "us_can_addressing": {
+      "type": "select",
+      "description": "Actual CAN-TP address mode from bound N-SDU, only CAN paths.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_CANTransportLayer.pdf",
+      "source_revision": "AUTOSAR CP R25-11 CanTp selected7.3/8.5/10.2: CAN transport flow/address/timers scoped CAN, actual N-SDU path not universal UDS4095byte limit.",
+      "options": [
+        "NORMAL",
+        "EXTENDED",
+        "MIXED_11",
+        "NORMAL_FIXED",
+        "MIXED_29"
+      ],
+      "label": "us can addressing",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "us_phase": {
+      "type": "select",
+      "description": "Actual first response versus response-pending continuation.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "source_revision": "AUTOSAR CP R25-11 DCM selected7.2.4/7.3.4/8.8.1 and configuredtimings10.2: session/transport separation, SPRMIB/functional NRC suppression, pending limits and session timing seconds. Not full ISO14229 clause or all802page conformance.",
+      "options": [
+        "INITIAL_P2",
+        "AFTER_NRC78_P2STAR"
+      ],
+      "label": "us phase",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "us_s3_policy": {
+      "type": "select",
+      "description": "Actual default5000ms or specifically configured override.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "source_revision": "AUTOSAR CP R25-11 DCM selected7.2.4/7.3.4/8.8.1 and configuredtimings10.2: session/transport separation, SPRMIB/functional NRC suppression, pending limits and session timing seconds. Not full ISO14229 clause or all802page conformance.",
+      "options": [
+        "NO_OVERRIDE",
+        "CONFIGURED_OVERRIDE"
+      ],
+      "label": "us s3 policy",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "us_outcome": {
+      "type": "select",
+      "description": "Actual final diagnostic/application result; pending/positive ACK alone is not functional acceptance.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "source_revision": "AUTOSAR CP R25-11 DCM selected7.2.4/7.3.4/8.8.1 and configuredtimings10.2: session/transport separation, SPRMIB/functional NRC suppression, pending limits and session timing seconds. Not full ISO14229 clause or all802page conformance.",
+      "options": [
+        "ACCEPTED",
+        "RESPONSE_PENDING",
+        "NEGATIVE",
+        "TIMED_OUT",
+        "SUPPRESSED",
+        "UNKNOWN"
+      ],
+      "label": "us outcome",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "us_request_sid": {
+      "type": "number",
+      "description": "Actual request service identifier; response ranges are not valid transmitted requests.",
+      "source": "https://raw.githubusercontent.com/pylessard/python-udsoncan/v1.25.1/udsoncan/BaseService.py",
+      "source_revision": "python-udsoncan v1.25.1 original BaseService: positive response=requestSID+40h, selected service implementation tables.",
+      "min": 0,
+      "max": 255,
+      "integer": true,
+      "label": "us request sid",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "us_response_sid": {
+      "type": "number",
+      "description": "Actual positiveSID=request+40h or negative7F.",
+      "source": "https://raw.githubusercontent.com/pylessard/python-udsoncan/v1.25.1/udsoncan/Response.py",
+      "source_revision": "python-udsoncan v1.25.1 original Response: positive response service ID and negative7F/requestSID/NRC, selected encoding/decoding, not diagnostic session or whole functional success.",
+      "min": 0,
+      "max": 255,
+      "integer": true,
+      "label": "us response sid",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "us_subfunction": {
+      "type": "number",
+      "description": "Actual service subfunction low7bits, not suppress bit.",
+      "source": "https://raw.githubusercontent.com/pylessard/python-udsoncan/v1.25.1/udsoncan/Request.py",
+      "source_revision": "python-udsoncan v1.25.1 original Request: subfunction low7bits and suppresspositive bit7 only services with subfunction; complete request framing and positive suppression flag.",
+      "min": 0,
+      "max": 127,
+      "integer": true,
+      "label": "us subfunction",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "us_wire_subfunction": {
+      "type": "number",
+      "description": "Actual byte including bit7positive suppression.",
+      "source": "https://raw.githubusercontent.com/pylessard/python-udsoncan/v1.25.1/udsoncan/Request.py",
+      "source_revision": "python-udsoncan v1.25.1 original Request: subfunction low7bits and suppresspositive bit7 only services with subfunction; complete request framing and positive suppression flag.",
+      "min": 0,
+      "max": 255,
+      "integer": true,
+      "label": "us wire subfunction",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "us_nrc": {
+      "type": "number",
+      "description": "Actual nonzero negative result code; allowed service/session codes need own table.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "source_revision": "AUTOSAR CP R25-11 DCM selected7.2.4/7.3.4/8.8.1 and configuredtimings10.2: session/transport separation, SPRMIB/functional NRC suppression, pending limits and session timing seconds. Not full ISO14229 clause or all802page conformance.",
+      "min": 1,
+      "max": 255,
+      "integer": true,
+      "label": "us nrc",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "us_request_bytes": {
+      "type": "number",
+      "description": "Actual complete UDS request bytes including service/subfunction, excluding TP headers.",
+      "source": "https://raw.githubusercontent.com/pylessard/python-udsoncan/v1.25.1/udsoncan/Request.py",
+      "source_revision": "python-udsoncan v1.25.1 original Request: subfunction low7bits and suppresspositive bit7 only services with subfunction; complete request framing and positive suppression flag.",
+      "min": 1,
+      "unit": "byte",
+      "integer": true,
+      "label": "us request bytes",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "us_response_bytes": {
+      "type": "number",
+      "description": "Actual complete UDS response bytes including service/negative headers.",
+      "source": "https://raw.githubusercontent.com/pylessard/python-udsoncan/v1.25.1/udsoncan/Response.py",
+      "source_revision": "python-udsoncan v1.25.1 original Response: positive response service ID and negative7F/requestSID/NRC, selected encoding/decoding, not diagnostic session or whole functional success.",
+      "min": 0,
+      "unit": "byte",
+      "integer": true,
+      "label": "us response bytes",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "us_request_data_bytes": {
+      "type": "number",
+      "description": "Actual request service data, separate service/subfunction headers.",
+      "source": "https://raw.githubusercontent.com/pylessard/python-udsoncan/v1.25.1/udsoncan/Request.py",
+      "source_revision": "python-udsoncan v1.25.1 original Request: subfunction low7bits and suppresspositive bit7 only services with subfunction; complete request framing and positive suppression flag.",
+      "min": 0,
+      "unit": "byte",
+      "integer": true,
+      "label": "us request data bytes",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "us_response_data_bytes": {
+      "type": "number",
+      "description": "Actual positive service data, separate SID.",
+      "source": "https://raw.githubusercontent.com/pylessard/python-udsoncan/v1.25.1/udsoncan/Response.py",
+      "source_revision": "python-udsoncan v1.25.1 original Response: positive response service ID and negative7F/requestSID/NRC, selected encoding/decoding, not diagnostic session or whole functional success.",
+      "min": 0,
+      "unit": "byte",
+      "integer": true,
+      "label": "us response data bytes",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "us_tp_max_bytes": {
+      "type": "number",
+      "description": "Actual bound TP/peer N-SDU maximum, not universal4095/65535.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_CANTransportLayer.pdf",
+      "source_revision": "AUTOSAR CP R25-11 CanTp selected7.3/8.5/10.2: CAN transport flow/address/timers scoped CAN, actual N-SDU path not universal UDS4095byte limit.",
+      "min": 1,
+      "unit": "byte",
+      "integer": true,
+      "label": "us tp max bytes",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "us_rx_buffer_bytes": {
+      "type": "number",
+      "description": "Actual DCM receive buffer capacity for entire request.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "source_revision": "AUTOSAR CP R25-11 DCM selected7.2.4/7.3.4/8.8.1 and configuredtimings10.2: session/transport separation, SPRMIB/functional NRC suppression, pending limits and session timing seconds. Not full ISO14229 clause or all802page conformance.",
+      "min": 1,
+      "unit": "byte",
+      "integer": true,
+      "label": "us rx buffer bytes",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "us_tx_buffer_bytes": {
+      "type": "number",
+      "description": "Actual DCM response buffer capacity including headers.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "source_revision": "AUTOSAR CP R25-11 DCM selected7.2.4/7.3.4/8.8.1 and configuredtimings10.2: session/transport separation, SPRMIB/functional NRC suppression, pending limits and session timing seconds. Not full ISO14229 clause or all802page conformance.",
+      "min": 1,
+      "unit": "byte",
+      "integer": true,
+      "label": "us tx buffer bytes",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "us_session": {
+      "type": "number",
+      "description": "Actual active diagnostic session level;1..126 per DCM.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "source_revision": "AUTOSAR CP R25-11 DCM selected7.2.4/7.3.4/8.8.1 and configuredtimings10.2: session/transport separation, SPRMIB/functional NRC suppression, pending limits and session timing seconds. Not full ISO14229 clause or all802page conformance.",
+      "min": 1,
+      "max": 126,
+      "integer": true,
+      "label": "us session",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "us_session_echo": {
+      "type": "number",
+      "description": "Actual matching sessionControl positive response echo.",
+      "source": "https://raw.githubusercontent.com/pylessard/python-udsoncan/v1.25.1/udsoncan/services/DiagnosticSessionControl.py",
+      "source_revision": "python-udsoncan v1.25.1 original DiagnosticSessionControl: 2013+ response sessionecho and >HH P2 milliseconds/P2star10ms,2006 manufacturer-specific records. Implementation rather than complete ISO standard.",
+      "min": 0,
+      "max": 127,
+      "integer": true,
+      "label": "us session echo",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "us_security_level": {
+      "type": "number",
+      "description": "Actual controller security state0locked or configured1..63, not proof authenticated.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "source_revision": "AUTOSAR CP R25-11 DCM selected7.2.4/7.3.4/8.8.1 and configuredtimings10.2: session/transport separation, SPRMIB/functional NRC suppression, pending limits and session timing seconds. Not full ISO14229 clause or all802page conformance.",
+      "min": 0,
+      "max": 63,
+      "integer": true,
+      "label": "us security level",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "us_p2_min_s": {
+      "type": "number",
+      "description": "Actual DCM P2minimum0seconds.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "source_revision": "AUTOSAR CP R25-11 DCM selected7.2.4/7.3.4/8.8.1 and configuredtimings10.2: session/transport separation, SPRMIB/functional NRC suppression, pending limits and session timing seconds. Not full ISO14229 clause or all802page conformance.",
+      "min": 0,
+      "unit": "s",
+      "integer": false,
+      "label": "us p2 min s",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "us_review_profile": "AUTOSAR_DCM_R25_11",
+            "us_proposal_mode": "SOURCE_BASELINE"
+          },
+          "value": 0,
+          "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+          "source_revision": "AUTOSAR CP R25-11 DCM selected7.2.4/7.3.4/8.8.1 and configuredtimings10.2: session/transport separation, SPRMIB/functional NRC suppression, pending limits and session timing seconds. Not full ISO14229 clause or all802page conformance."
+        }
+      ]
+    },
+    "us_p2_star_min_s": {
+      "type": "number",
+      "description": "Actual DCM P2star minimum0seconds.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "source_revision": "AUTOSAR CP R25-11 DCM selected7.2.4/7.3.4/8.8.1 and configuredtimings10.2: session/transport separation, SPRMIB/functional NRC suppression, pending limits and session timing seconds. Not full ISO14229 clause or all802page conformance.",
+      "min": 0,
+      "unit": "s",
+      "integer": false,
+      "label": "us p2 star min s",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "us_review_profile": "AUTOSAR_DCM_R25_11",
+            "us_proposal_mode": "SOURCE_BASELINE"
+          },
+          "value": 0,
+          "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+          "source_revision": "AUTOSAR CP R25-11 DCM selected7.2.4/7.3.4/8.8.1 and configuredtimings10.2: session/transport separation, SPRMIB/functional NRC suppression, pending limits and session timing seconds. Not full ISO14229 clause or all802page conformance."
+        }
+      ]
+    },
+    "us_p2_server_s": {
+      "type": "number",
+      "description": "Actual per-session P2maximum in seconds, no universal50ms.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "source_revision": "AUTOSAR CP R25-11 DCM selected7.2.4/7.3.4/8.8.1 and configuredtimings10.2: session/transport separation, SPRMIB/functional NRC suppression, pending limits and session timing seconds. Not full ISO14229 clause or all802page conformance.",
+      "min": 0,
+      "unit": "s",
+      "integer": false,
+      "label": "us p2 server s",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "us_p2_star_server_s": {
+      "type": "number",
+      "description": "Actual per-session P2star maximum in seconds, no universal5s.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "source_revision": "AUTOSAR CP R25-11 DCM selected7.2.4/7.3.4/8.8.1 and configuredtimings10.2: session/transport separation, SPRMIB/functional NRC suppression, pending limits and session timing seconds. Not full ISO14229 clause or all802page conformance.",
+      "min": 0,
+      "unit": "s",
+      "integer": false,
+      "label": "us p2 star server s",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "us_p2_wire_raw": {
+      "type": "number",
+      "description": "Actual16-bit session response P2 unit1ms in selected2013+codec.",
+      "source": "https://raw.githubusercontent.com/pylessard/python-udsoncan/v1.25.1/udsoncan/services/DiagnosticSessionControl.py",
+      "source_revision": "python-udsoncan v1.25.1 original DiagnosticSessionControl: 2013+ response sessionecho and >HH P2 milliseconds/P2star10ms,2006 manufacturer-specific records. Implementation rather than complete ISO standard.",
+      "min": 0,
+      "max": 65535,
+      "integer": true,
+      "label": "us p2 wire raw",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "us_p2_star_wire_raw": {
+      "type": "number",
+      "description": "Actual16-bit P2star response unit10ms, not1ms.",
+      "source": "https://raw.githubusercontent.com/pylessard/python-udsoncan/v1.25.1/udsoncan/services/DiagnosticSessionControl.py",
+      "source_revision": "python-udsoncan v1.25.1 original DiagnosticSessionControl: 2013+ response sessionecho and >HH P2 milliseconds/P2star10ms,2006 manufacturer-specific records. Implementation rather than complete ISO standard.",
+      "min": 0,
+      "max": 65535,
+      "integer": true,
+      "label": "us p2 star wire raw",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "us_p2_adjust_s": {
+      "type": "number",
+      "description": "Actual internal initiation offset for DCM P2 and bus transmission, tasktime multiple.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "source_revision": "AUTOSAR CP R25-11 DCM selected7.2.4/7.3.4/8.8.1 and configuredtimings10.2: session/transport separation, SPRMIB/functional NRC suppression, pending limits and session timing seconds. Not full ISO14229 clause or all802page conformance.",
+      "min": 0,
+      "unit": "s",
+      "integer": false,
+      "label": "us p2 adjust s",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "us_p2_star_adjust_s": {
+      "type": "number",
+      "description": "Actual P2star initiation offset, separate software/communication delay.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "source_revision": "AUTOSAR CP R25-11 DCM selected7.2.4/7.3.4/8.8.1 and configuredtimings10.2: session/transport separation, SPRMIB/functional NRC suppression, pending limits and session timing seconds. Not full ISO14229 clause or all802page conformance.",
+      "min": 0,
+      "unit": "s",
+      "integer": false,
+      "label": "us p2 star adjust s",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "us_p2_adjust_ticks": {
+      "type": "number",
+      "description": "Actual whole DCM task periods represented by normalized P2adjust.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "source_revision": "AUTOSAR CP R25-11 DCM selected7.2.4/7.3.4/8.8.1 and configuredtimings10.2: session/transport separation, SPRMIB/functional NRC suppression, pending limits and session timing seconds. Not full ISO14229 clause or all802page conformance.",
+      "min": 0,
+      "unit": "tick",
+      "integer": true,
+      "label": "us p2 adjust ticks",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "us_p2_star_adjust_ticks": {
+      "type": "number",
+      "description": "Actual whole task periods represented by P2star adjust.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "source_revision": "AUTOSAR CP R25-11 DCM selected7.2.4/7.3.4/8.8.1 and configuredtimings10.2: session/transport separation, SPRMIB/functional NRC suppression, pending limits and session timing seconds. Not full ISO14229 clause or all802page conformance.",
+      "min": 0,
+      "unit": "tick",
+      "integer": true,
+      "label": "us p2 star adjust ticks",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "us_task_s": {
+      "type": "number",
+      "description": "Actual configured cyclic DCM task period, no fixed NIS100ms.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "source_revision": "AUTOSAR CP R25-11 DCM selected7.2.4/7.3.4/8.8.1 and configuredtimings10.2: session/transport separation, SPRMIB/functional NRC suppression, pending limits and session timing seconds. Not full ISO14229 clause or all802page conformance.",
+      "min": 0,
+      "unit": "s",
+      "integer": false,
+      "label": "us task s",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "us_p2_trigger_s": {
+      "type": "number",
+      "description": "Actual latest pending response initiation=P2max−adjust.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "source_revision": "AUTOSAR CP R25-11 DCM selected7.2.4/7.3.4/8.8.1 and configuredtimings10.2: session/transport separation, SPRMIB/functional NRC suppression, pending limits and session timing seconds. Not full ISO14229 clause or all802page conformance.",
+      "min": 0,
+      "unit": "s",
+      "integer": false,
+      "label": "us p2 trigger s",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "us_p2_star_trigger_s": {
+      "type": "number",
+      "description": "Actual pending continuation initiation=P2starmax−adjust.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "source_revision": "AUTOSAR CP R25-11 DCM selected7.2.4/7.3.4/8.8.1 and configuredtimings10.2: session/transport separation, SPRMIB/functional NRC suppression, pending limits and session timing seconds. Not full ISO14229 clause or all802page conformance.",
+      "min": 0,
+      "unit": "s",
+      "integer": false,
+      "label": "us p2 star trigger s",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "us_s3_s": {
+      "type": "number",
+      "description": "Actual nondefault session inactivity timeout, not network transfer timeout.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "source_revision": "AUTOSAR CP R25-11 DCM selected7.2.4/7.3.4/8.8.1 and configuredtimings10.2: session/transport separation, SPRMIB/functional NRC suppression, pending limits and session timing seconds. Not full ISO14229 clause or all802page conformance.",
+      "min": 0,
+      "unit": "s",
+      "integer": false,
+      "label": "us s3 s",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "us_review_profile": "AUTOSAR_DCM_R25_11",
+            "us_proposal_mode": "SOURCE_BASELINE",
+            "us_s3_policy": "NO_OVERRIDE"
+          },
+          "value": 5,
+          "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+          "source_revision": "AUTOSAR CP R25-11 DCM selected7.2.4/7.3.4/8.8.1 and configuredtimings10.2: session/transport separation, SPRMIB/functional NRC suppression, pending limits and session timing seconds. Not full ISO14229 clause or all802page conformance."
+        }
+      ]
+    },
+    "us_s3_override_s": {
+      "type": "number",
+      "description": "Actual configured S3 override>=5s in selected DCM.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "source_revision": "AUTOSAR CP R25-11 DCM selected7.2.4/7.3.4/8.8.1 and configuredtimings10.2: session/transport separation, SPRMIB/functional NRC suppression, pending limits and session timing seconds. Not full ISO14229 clause or all802page conformance.",
+      "min": 0,
+      "unit": "s",
+      "integer": false,
+      "label": "us s3 override s",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "us_inactive_s": {
+      "type": "number",
+      "description": "Actual same client/connection inactivity while S3timer running.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "source_revision": "AUTOSAR CP R25-11 DCM selected7.2.4/7.3.4/8.8.1 and configuredtimings10.2: session/transport separation, SPRMIB/functional NRC suppression, pending limits and session timing seconds. Not full ISO14229 clause or all802page conformance.",
+      "min": 0,
+      "unit": "s",
+      "integer": false,
+      "label": "us inactive s",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "us_pending_count": {
+      "type": "number",
+      "description": "Actual NRC78 count for same request, not whole system retrycounter.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "source_revision": "AUTOSAR CP R25-11 DCM selected7.2.4/7.3.4/8.8.1 and configuredtimings10.2: session/transport separation, SPRMIB/functional NRC suppression, pending limits and session timing seconds. Not full ISO14229 clause or all802page conformance.",
+      "min": 0,
+      "integer": true,
+      "label": "us pending count",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "us_pending_limit": {
+      "type": "number",
+      "description": "Actual DCM max NRC78 perrequest0..255;0disallows, no defaultinfinity.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "source_revision": "AUTOSAR CP R25-11 DCM selected7.2.4/7.3.4/8.8.1 and configuredtimings10.2: session/transport separation, SPRMIB/functional NRC suppression, pending limits and session timing seconds. Not full ISO14229 clause or all802page conformance.",
+      "min": 0,
+      "max": 255,
+      "integer": true,
+      "label": "us pending limit",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "us_response_start_s": {
+      "type": "number",
+      "description": "Actual elapsed time from session request completion to response start.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "source_revision": "AUTOSAR CP R25-11 DCM selected7.2.4/7.3.4/8.8.1 and configuredtimings10.2: session/transport separation, SPRMIB/functional NRC suppression, pending limits and session timing seconds. Not full ISO14229 clause or all802page conformance.",
+      "min": 0,
+      "unit": "s",
+      "integer": false,
+      "label": "us response start s",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "us_client_p2_s": {
+      "type": "number",
+      "description": "Actual client wait budget including communication margins.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "source_revision": "AUTOSAR CP R25-11 DCM selected7.2.4/7.3.4/8.8.1 and configuredtimings10.2: session/transport separation, SPRMIB/functional NRC suppression, pending limits and session timing seconds. Not full ISO14229 clause or all802page conformance.",
+      "min": 0,
+      "unit": "s",
+      "integer": false,
+      "label": "us client p2 s",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "us_client_p2_star_s": {
+      "type": "number",
+      "description": "Actual client continuation budget including transport margins.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "source_revision": "AUTOSAR CP R25-11 DCM selected7.2.4/7.3.4/8.8.1 and configuredtimings10.2: session/transport separation, SPRMIB/functional NRC suppression, pending limits and session timing seconds. Not full ISO14229 clause or all802page conformance.",
+      "min": 0,
+      "unit": "s",
+      "integer": false,
+      "label": "us client p2 star s",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "us_cantp_bs": {
+      "type": "number",
+      "description": "Actual CAN receive block size byte, not UDS service payloadlimit.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_CANTransportLayer.pdf",
+      "source_revision": "AUTOSAR CP R25-11 CanTp selected7.3/8.5/10.2: CAN transport flow/address/timers scoped CAN, actual N-SDU path not universal UDS4095byte limit.",
+      "min": 0,
+      "max": 255,
+      "integer": true,
+      "label": "us cantp bs",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "us_cantp_stmin_s": {
+      "type": "number",
+      "description": "Actual CAN-TP configured minimum consecutive-frame spacing seconds.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_CANTransportLayer.pdf",
+      "source_revision": "AUTOSAR CP R25-11 CanTp selected7.3/8.5/10.2: CAN transport flow/address/timers scoped CAN, actual N-SDU path not universal UDS4095byte limit.",
+      "min": 0,
+      "unit": "s",
+      "integer": false,
+      "label": "us cantp stmin s",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "us_cantp_n_as_s": {
+      "type": "number",
+      "description": "Actual CAN sender frame-confirmation timeout, independent P2.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_CANTransportLayer.pdf",
+      "source_revision": "AUTOSAR CP R25-11 CanTp selected7.3/8.5/10.2: CAN transport flow/address/timers scoped CAN, actual N-SDU path not universal UDS4095byte limit.",
+      "min": 0,
+      "unit": "s",
+      "integer": false,
+      "label": "us cantp n as s",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "us_cantp_n_bs_s": {
+      "type": "number",
+      "description": "Actual CAN sender flow-control wait timeout.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_CANTransportLayer.pdf",
+      "source_revision": "AUTOSAR CP R25-11 CanTp selected7.3/8.5/10.2: CAN transport flow/address/timers scoped CAN, actual N-SDU path not universal UDS4095byte limit.",
+      "min": 0,
+      "unit": "s",
+      "integer": false,
+      "label": "us cantp n bs s",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "us_cantp_n_cr_s": {
+      "type": "number",
+      "description": "Actual CAN receiver consecutive-frame timeout.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_CANTransportLayer.pdf",
+      "source_revision": "AUTOSAR CP R25-11 CanTp selected7.3/8.5/10.2: CAN transport flow/address/timers scoped CAN, actual N-SDU path not universal UDS4095byte limit.",
+      "min": 0,
+      "unit": "s",
+      "integer": false,
+      "label": "us cantp n cr s",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "us_source_ms": {
+      "type": "number",
+      "description": "Actual tester/application request creation bound.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "source_revision": "AUTOSAR CP R25-11 DCM selected7.2.4/7.3.4/8.8.1 and configuredtimings10.2: session/transport separation, SPRMIB/functional NRC suppression, pending limits and session timing seconds. Not full ISO14229 clause or all802page conformance.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "label": "us source ms",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "us_transport_ms": {
+      "type": "number",
+      "description": "Actual full request/response TP/routing/queue bound.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "source_revision": "AUTOSAR CP R25-11 DCM selected7.2.4/7.3.4/8.8.1 and configuredtimings10.2: session/transport separation, SPRMIB/functional NRC suppression, pending limits and session timing seconds. Not full ISO14229 clause or all802page conformance.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "label": "us transport ms",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "us_service_ms": {
+      "type": "number",
+      "description": "Actual diagnostic/target function processing/use bound.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "source_revision": "AUTOSAR CP R25-11 DCM selected7.2.4/7.3.4/8.8.1 and configuredtimings10.2: session/transport separation, SPRMIB/functional NRC suppression, pending limits and session timing seconds. Not full ISO14229 clause or all802page conformance.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "label": "us service ms",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "us_e2e_ms": {
+      "type": "number",
+      "description": "Actual whole producer+transport+function bound.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "source_revision": "AUTOSAR CP R25-11 DCM selected7.2.4/7.3.4/8.8.1 and configuredtimings10.2: session/transport separation, SPRMIB/functional NRC suppression, pending limits and session timing seconds. Not full ISO14229 clause or all802page conformance.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "label": "us e2e ms",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "us_deadline_ms": {
+      "type": "number",
+      "description": "Actual independent functional deadline, not merely P2sessionvalid.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "source_revision": "AUTOSAR CP R25-11 DCM selected7.2.4/7.3.4/8.8.1 and configuredtimings10.2: session/transport separation, SPRMIB/functional NRC suppression, pending limits and session timing seconds. Not full ISO14229 clause or all802page conformance.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "label": "us deadline ms",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "us_age_ms": {
+      "type": "number",
+      "description": "Actual consumed dataset age.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "source_revision": "AUTOSAR CP R25-11 DCM selected7.2.4/7.3.4/8.8.1 and configuredtimings10.2: session/transport separation, SPRMIB/functional NRC suppression, pending limits and session timing seconds. Not full ISO14229 clause or all802page conformance.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "label": "us age ms",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "us_freshness_ms": {
+      "type": "number",
+      "description": "Actual independent acceptable data age.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "source_revision": "AUTOSAR CP R25-11 DCM selected7.2.4/7.3.4/8.8.1 and configuredtimings10.2: session/transport separation, SPRMIB/functional NRC suppression, pending limits and session timing seconds. Not full ISO14229 clause or all802page conformance.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "label": "us freshness ms",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "us_has_subfunction": {
+      "type": "boolean",
+      "description": "Actual service table says subfunction and SPRMIB present.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "source_revision": "AUTOSAR CP R25-11 DCM selected7.2.4/7.3.4/8.8.1 and configuredtimings10.2: session/transport separation, SPRMIB/functional NRC suppression, pending limits and session timing seconds. Not full ISO14229 clause or all802page conformance.",
+      "label": "us has subfunction",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "us_suppress_positive": {
+      "type": "boolean",
+      "description": "Actual request bit suppresses positive response, not all negative responses.",
+      "source": "https://raw.githubusercontent.com/pylessard/python-udsoncan/v1.25.1/udsoncan/Request.py",
+      "source_revision": "python-udsoncan v1.25.1 original Request: subfunction low7bits and suppresspositive bit7 only services with subfunction; complete request framing and positive suppression flag.",
+      "label": "us suppress positive",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "us_response_sent": {
+      "type": "boolean",
+      "description": "Actual final/negative PDU transmission presence, not mocked write success.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "source_revision": "AUTOSAR CP R25-11 DCM selected7.2.4/7.3.4/8.8.1 and configuredtimings10.2: session/transport separation, SPRMIB/functional NRC suppression, pending limits and session timing seconds. Not full ISO14229 clause or all802page conformance.",
+      "label": "us response sent",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "us_s3_running": {
+      "type": "boolean",
+      "description": "Actual same client/connection session inactivity timer active.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "source_revision": "AUTOSAR CP R25-11 DCM selected7.2.4/7.3.4/8.8.1 and configuredtimings10.2: session/transport separation, SPRMIB/functional NRC suppression, pending limits and session timing seconds. Not full ISO14229 clause or all802page conformance.",
+      "label": "us s3 running",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "us_session_reverted": {
+      "type": "boolean",
+      "description": "Actual observed return to default session after inactivity.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "source_revision": "AUTOSAR CP R25-11 DCM selected7.2.4/7.3.4/8.8.1 and configuredtimings10.2: session/transport separation, SPRMIB/functional NRC suppression, pending limits and session timing seconds. Not full ISO14229 clause or all802page conformance.",
+      "label": "us session reverted",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "us_tp_verified": {
+      "type": "boolean",
+      "description": "Actual selected full CAN/DoIP/FlexRay/LIN N-SDU transport proof.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_CANTransportLayer.pdf",
+      "source_revision": "AUTOSAR CP R25-11 CanTp selected7.3/8.5/10.2: CAN transport flow/address/timers scoped CAN, actual N-SDU path not universal UDS4095byte limit.",
+      "label": "us tp verified",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "us_path_verified": {
+      "type": "boolean",
+      "description": "Actual whole request/response route and all target devices qualified.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "source_revision": "AUTOSAR CP R25-11 DCM selected7.2.4/7.3.4/8.8.1 and configuredtimings10.2: session/transport separation, SPRMIB/functional NRC suppression, pending limits and session timing seconds. Not full ISO14229 clause or all802page conformance.",
+      "label": "us path verified",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "us_service_verified": {
+      "type": "boolean",
+      "description": "Actual service/session/security access/function processing acceptance.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "source_revision": "AUTOSAR CP R25-11 DCM selected7.2.4/7.3.4/8.8.1 and configuredtimings10.2: session/transport separation, SPRMIB/functional NRC suppression, pending limits and session timing seconds. Not full ISO14229 clause or all802page conformance.",
+      "label": "us service verified",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "us_data_accepted": {
+      "type": "boolean",
+      "description": "Actual independent function requirement met with fresh correlated data.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "source_revision": "AUTOSAR CP R25-11 DCM selected7.2.4/7.3.4/8.8.1 and configuredtimings10.2: session/transport separation, SPRMIB/functional NRC suppression, pending limits and session timing seconds. Not full ISO14229 clause or all802page conformance.",
+      "label": "us data accepted",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "us_revision": {
+      "type": "text",
+      "description": "Actual diagnostic standard/DCM/controller implementation edition.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "source_revision": "AUTOSAR CP R25-11 DCM selected7.2.4/7.3.4/8.8.1 and configuredtimings10.2: session/transport separation, SPRMIB/functional NRC suppression, pending limits and session timing seconds. Not full ISO14229 clause or all802page conformance.",
+      "label": "us revision",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "us_configuration_source": {
+      "type": "text",
+      "description": "Actual tester/target/address/service-table/session/security configuration.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "source_revision": "AUTOSAR CP R25-11 DCM selected7.2.4/7.3.4/8.8.1 and configuredtimings10.2: session/transport separation, SPRMIB/functional NRC suppression, pending limits and session timing seconds. Not full ISO14229 clause or all802page conformance.",
+      "label": "us configuration source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "us_transport_source": {
+      "type": "text",
+      "description": "Actual selected registered N-SDU/DoIP/channel/peer capacity binding.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_CANTransportLayer.pdf",
+      "source_revision": "AUTOSAR CP R25-11 CanTp selected7.3/8.5/10.2: CAN transport flow/address/timers scoped CAN, actual N-SDU path not universal UDS4095byte limit.",
+      "label": "us transport source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "us_timing_source": {
+      "type": "text",
+      "description": "Actual session P2/P2star/S3/client and processing evidence.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "source_revision": "AUTOSAR CP R25-11 DCM selected7.2.4/7.3.4/8.8.1 and configuredtimings10.2: session/transport separation, SPRMIB/functional NRC suppression, pending limits and session timing seconds. Not full ISO14229 clause or all802page conformance.",
+      "label": "us timing source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "us_acceptance_source": {
+      "type": "text",
+      "description": "Actual independent function/current data/deadline contract.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "source_revision": "AUTOSAR CP R25-11 DCM selected7.2.4/7.3.4/8.8.1 and configuredtimings10.2: session/transport separation, SPRMIB/functional NRC suppression, pending limits and session timing seconds. Not full ISO14229 clause or all802page conformance.",
+      "label": "us acceptance source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "us_registered_source": {
+      "type": "text",
+      "description": "Actual independently qualified implementation/edition.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "source_revision": "AUTOSAR CP R25-11 DCM selected7.2.4/7.3.4/8.8.1 and configuredtimings10.2: session/transport separation, SPRMIB/functional NRC suppression, pending limits and session timing seconds. Not full ISO14229 clause or all802page conformance.",
+      "label": "us registered source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "us_codec_source": {
+      "type": "text",
+      "description": "Actual service definitions/NRC table and complete wire encoding version.",
+      "source": "https://raw.githubusercontent.com/pylessard/python-udsoncan/v1.25.1/udsoncan/Response.py",
+      "source_revision": "python-udsoncan v1.25.1 original Response: positive response service ID and negative7F/requestSID/NRC, selected encoding/decoding, not diagnostic session or whole functional success.",
+      "label": "us codec source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "us_can_source": {
+      "type": "text",
+      "description": "Actual CAN-TP frame/address/flowcontrol/timer/physical schedule evidence.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_CANTransportLayer.pdf",
+      "source_revision": "AUTOSAR CP R25-11 CanTp selected7.3/8.5/10.2: CAN transport flow/address/timers scoped CAN, actual N-SDU path not universal UDS4095byte limit.",
+      "label": "us can source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "us_doip_source": {
+      "type": "text",
+      "description": "Actual DoIP activation/logical addresses/TCP/IP/PHY request-response proof.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "source_revision": "AUTOSAR CP R25-11 DCM selected7.2.4/7.3.4/8.8.1 and configuredtimings10.2: session/transport separation, SPRMIB/functional NRC suppression, pending limits and session timing seconds. Not full ISO14229 clause or all802page conformance.",
+      "label": "us doip source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "us_flexray_source": {
+      "type": "text",
+      "description": "Actual registered FlexRay-TP slots/channels/peer timing path.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "source_revision": "AUTOSAR CP R25-11 DCM selected7.2.4/7.3.4/8.8.1 and configuredtimings10.2: session/transport separation, SPRMIB/functional NRC suppression, pending limits and session timing seconds. Not full ISO14229 clause or all802page conformance.",
+      "label": "us flexray source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "us_lin_source": {
+      "type": "text",
+      "description": "Actual registered LIN-TP diagnostics schedule/address/timing path.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "source_revision": "AUTOSAR CP R25-11 DCM selected7.2.4/7.3.4/8.8.1 and configuredtimings10.2: session/transport separation, SPRMIB/functional NRC suppression, pending limits and session timing seconds. Not full ISO14229 clause or all802page conformance.",
+      "label": "us lin source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "us_request_hex": {
+      "type": "text",
+      "description": "Actual complete encoded request octets including SID/subfunction.",
+      "source": "https://raw.githubusercontent.com/pylessard/python-udsoncan/v1.25.1/udsoncan/Request.py",
+      "source_revision": "python-udsoncan v1.25.1 original Request: subfunction low7bits and suppresspositive bit7 only services with subfunction; complete request framing and positive suppression flag.",
+      "pattern": "(?:[0-9a-fA-F]{2})*",
+      "label": "us request hex",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "us_response_hex": {
+      "type": "text",
+      "description": "Actual complete positive/negative response octets.",
+      "source": "https://raw.githubusercontent.com/pylessard/python-udsoncan/v1.25.1/udsoncan/Response.py",
+      "source_revision": "python-udsoncan v1.25.1 original Response: positive response service ID and negative7F/requestSID/NRC, selected encoding/decoding, not diagnostic session or whole functional success.",
+      "pattern": "(?:[0-9a-fA-F]{2})*",
+      "label": "us response hex",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "us_observation_source": {
+      "type": "text",
+      "description": "Actual correlated request, pending/final response and functional-use trace.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "source_revision": "AUTOSAR CP R25-11 DCM selected7.2.4/7.3.4/8.8.1 and configuredtimings10.2: session/transport separation, SPRMIB/functional NRC suppression, pending limits and session timing seconds. Not full ISO14229 clause or all802page conformance.",
+      "label": "us observation source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    }
+  },
+  "mechanisms": {
+    "network": [
+      "SESSION_SEPARATE_TP",
+      "SERVICE_SECURITY_AND_ADDRESS_QUALIFIED"
+    ],
+    "timing": [
+      "P2_P2STAR_S3_NOT_TP_TIMEOUT",
+      "FINAL_FUNCTION_NOT_NRC78_PENDING"
+    ]
+  },
+  "parameter_constraints": [
+    {
+      "parameter": "us_registered_source",
+      "when": {
+        "us_review_profile": "REGISTERED_ACTUAL"
+      },
+      "required": true,
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf"
+    },
+    {
+      "parameter": "bitrate",
+      "when": {},
+      "allowed": [],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf"
+    },
+    {
+      "parameter": "reserved_bandwidth_percent",
+      "when": {},
+      "allowed": [],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf"
+    },
+    {
+      "parameter": "sync_method",
+      "when": {},
+      "allowed": [],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf"
+    },
+    {
+      "parameter": "retransmission_enabled",
+      "when": {},
+      "allowed": [],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf"
+    },
+    {
+      "parameter": "retransmission_rate",
+      "when": {},
+      "allowed": [],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf"
+    },
+    {
+      "parameter": "retry_limit",
+      "when": {},
+      "allowed": [],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf"
+    },
+    {
+      "parameter": "retransmission_delay_ms",
+      "when": {},
+      "allowed": [],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf"
+    },
+    {
+      "parameter": "gateway_maximum_throughput",
+      "when": {},
+      "allowed": [],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf"
+    },
+    {
+      "parameter": "gateway_input_buffer",
+      "when": {},
+      "allowed": [],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf"
+    },
+    {
+      "parameter": "gateway_output_buffer",
+      "when": {},
+      "allowed": [],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf"
+    },
+    {
+      "parameter": "gateway_maximum_routes",
+      "when": {},
+      "allowed": [],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf"
+    },
+    {
+      "parameter": "gateway_maximum_messages_s",
+      "when": {},
+      "allowed": [],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf"
+    },
+    {
+      "parameter": "us_can_source",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11",
+        "us_transport": "CAN_ISOTP"
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "required": true
+    },
+    {
+      "parameter": "us_can_source",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11",
+        "us_transport": "CANFD_ISOTP"
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "required": true
+    },
+    {
+      "parameter": "us_doip_source",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11",
+        "us_transport": "DOIP"
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "required": true
+    },
+    {
+      "parameter": "us_flexray_source",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11",
+        "us_transport": "FLEXRAY_TP"
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "required": true
+    },
+    {
+      "parameter": "us_lin_source",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11",
+        "us_transport": "LIN_TP"
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "required": true
+    },
+    {
+      "parameter": "us_registered_source",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11",
+        "us_transport": "REGISTERED_ACTUAL"
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "required": true
+    },
+    {
+      "parameter": "us_can_addressing",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11",
+        "us_transport": "DOIP"
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_CANTransportLayer.pdf",
+      "allowed": []
+    },
+    {
+      "parameter": "us_cantp_bs",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11",
+        "us_transport": "DOIP"
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_CANTransportLayer.pdf",
+      "allowed": []
+    },
+    {
+      "parameter": "us_cantp_stmin_s",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11",
+        "us_transport": "DOIP"
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_CANTransportLayer.pdf",
+      "allowed": []
+    },
+    {
+      "parameter": "us_cantp_n_as_s",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11",
+        "us_transport": "DOIP"
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_CANTransportLayer.pdf",
+      "allowed": []
+    },
+    {
+      "parameter": "us_cantp_n_bs_s",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11",
+        "us_transport": "DOIP"
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_CANTransportLayer.pdf",
+      "allowed": []
+    },
+    {
+      "parameter": "us_cantp_n_cr_s",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11",
+        "us_transport": "DOIP"
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_CANTransportLayer.pdf",
+      "allowed": []
+    },
+    {
+      "parameter": "us_can_source",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11",
+        "us_transport": "DOIP"
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_CANTransportLayer.pdf",
+      "allowed": []
+    },
+    {
+      "parameter": "us_can_addressing",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11",
+        "us_transport": "FLEXRAY_TP"
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_CANTransportLayer.pdf",
+      "allowed": []
+    },
+    {
+      "parameter": "us_cantp_bs",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11",
+        "us_transport": "FLEXRAY_TP"
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_CANTransportLayer.pdf",
+      "allowed": []
+    },
+    {
+      "parameter": "us_cantp_stmin_s",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11",
+        "us_transport": "FLEXRAY_TP"
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_CANTransportLayer.pdf",
+      "allowed": []
+    },
+    {
+      "parameter": "us_cantp_n_as_s",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11",
+        "us_transport": "FLEXRAY_TP"
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_CANTransportLayer.pdf",
+      "allowed": []
+    },
+    {
+      "parameter": "us_cantp_n_bs_s",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11",
+        "us_transport": "FLEXRAY_TP"
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_CANTransportLayer.pdf",
+      "allowed": []
+    },
+    {
+      "parameter": "us_cantp_n_cr_s",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11",
+        "us_transport": "FLEXRAY_TP"
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_CANTransportLayer.pdf",
+      "allowed": []
+    },
+    {
+      "parameter": "us_can_source",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11",
+        "us_transport": "FLEXRAY_TP"
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_CANTransportLayer.pdf",
+      "allowed": []
+    },
+    {
+      "parameter": "us_can_addressing",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11",
+        "us_transport": "LIN_TP"
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_CANTransportLayer.pdf",
+      "allowed": []
+    },
+    {
+      "parameter": "us_cantp_bs",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11",
+        "us_transport": "LIN_TP"
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_CANTransportLayer.pdf",
+      "allowed": []
+    },
+    {
+      "parameter": "us_cantp_stmin_s",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11",
+        "us_transport": "LIN_TP"
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_CANTransportLayer.pdf",
+      "allowed": []
+    },
+    {
+      "parameter": "us_cantp_n_as_s",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11",
+        "us_transport": "LIN_TP"
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_CANTransportLayer.pdf",
+      "allowed": []
+    },
+    {
+      "parameter": "us_cantp_n_bs_s",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11",
+        "us_transport": "LIN_TP"
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_CANTransportLayer.pdf",
+      "allowed": []
+    },
+    {
+      "parameter": "us_cantp_n_cr_s",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11",
+        "us_transport": "LIN_TP"
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_CANTransportLayer.pdf",
+      "allowed": []
+    },
+    {
+      "parameter": "us_can_source",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11",
+        "us_transport": "LIN_TP"
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_CANTransportLayer.pdf",
+      "allowed": []
+    },
+    {
+      "parameter": "us_request_bytes",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11"
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_CANTransportLayer.pdf",
+      "maximum_parameter": "us_tp_max_bytes"
+    },
+    {
+      "parameter": "us_response_bytes",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11"
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_CANTransportLayer.pdf",
+      "maximum_parameter": "us_tp_max_bytes"
+    },
+    {
+      "parameter": "us_request_bytes",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11"
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "maximum_parameter": "us_rx_buffer_bytes"
+    },
+    {
+      "parameter": "us_response_bytes",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11"
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "maximum_parameter": "us_tx_buffer_bytes"
+    },
+    {
+      "parameter": "us_p2_min_s",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11"
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "us_p2_star_min_s",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11"
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "us_p2_server_s",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11"
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "maximum": 1
+    },
+    {
+      "parameter": "us_p2_star_server_s",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11"
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "maximum": 100
+    },
+    {
+      "parameter": "us_p2_adjust_s",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11"
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "maximum": 1
+    },
+    {
+      "parameter": "us_p2_star_adjust_s",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11"
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "maximum": 5
+    },
+    {
+      "parameter": "us_task_s",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11"
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "exclusive_minimum": 0
+    },
+    {
+      "parameter": "us_p2_adjust_s",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11"
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "maximum_parameter": "us_p2_server_s",
+      "equal_expression": {
+        "product": [
+          "us_task_s",
+          "us_p2_adjust_ticks"
+        ]
+      }
+    },
+    {
+      "parameter": "us_p2_adjust_ticks",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11"
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "when_present": [
+        "us_p2_adjust_s",
+        "us_task_s"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "us_p2_trigger_s",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11"
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "equal_expression": {
+        "subtract": [
+          "us_p2_server_s",
+          "us_p2_adjust_s"
+        ]
+      }
+    },
+    {
+      "parameter": "us_p2_star_adjust_s",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11"
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "maximum_parameter": "us_p2_star_server_s",
+      "equal_expression": {
+        "product": [
+          "us_task_s",
+          "us_p2_star_adjust_ticks"
+        ]
+      }
+    },
+    {
+      "parameter": "us_p2_star_adjust_ticks",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11"
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "when_present": [
+        "us_p2_star_adjust_s",
+        "us_task_s"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "us_p2_star_trigger_s",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11"
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "equal_expression": {
+        "subtract": [
+          "us_p2_star_server_s",
+          "us_p2_star_adjust_s"
+        ]
+      }
+    },
+    {
+      "parameter": "us_s3_s",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11",
+        "us_s3_policy": "NO_OVERRIDE"
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "allowed": [
+        5
+      ]
+    },
+    {
+      "parameter": "us_s3_override_s",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11",
+        "us_s3_policy": "NO_OVERRIDE"
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "allowed": []
+    },
+    {
+      "parameter": "us_s3_override_s",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11",
+        "us_s3_policy": "CONFIGURED_OVERRIDE"
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "required": true,
+      "minimum": 5
+    },
+    {
+      "parameter": "us_s3_s",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11",
+        "us_s3_policy": "CONFIGURED_OVERRIDE"
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "equal_parameter": "us_s3_override_s"
+    },
+    {
+      "parameter": "us_pending_count",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11"
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "maximum_parameter": "us_pending_limit"
+    },
+    {
+      "parameter": "us_nrc",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11",
+        "us_pending_limit": 0,
+        "us_message_kind": "NEGATIVE",
+        "us_nrc": 120
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "allowed": []
+    },
+    {
+      "parameter": "us_response_start_s",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11",
+        "us_phase": "INITIAL_P2"
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "maximum_parameter": "us_p2_server_s"
+    },
+    {
+      "parameter": "us_response_start_s",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11",
+        "us_phase": "AFTER_NRC78_P2STAR"
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "maximum_parameter": "us_p2_star_server_s"
+    },
+    {
+      "parameter": "us_client_p2_s",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11"
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "minimum_parameter": "us_p2_server_s"
+    },
+    {
+      "parameter": "us_client_p2_star_s",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11"
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "minimum_parameter": "us_p2_star_server_s"
+    },
+    {
+      "parameter": "us_request_sid",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11"
+      },
+      "source": "https://raw.githubusercontent.com/pylessard/python-udsoncan/v1.25.1/udsoncan/BaseService.py",
+      "when_ranges": {
+        "us_request_sid": [
+          64,
+          127
+        ]
+      },
+      "allowed": []
+    },
+    {
+      "parameter": "us_request_sid",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11"
+      },
+      "source": "https://raw.githubusercontent.com/pylessard/python-udsoncan/v1.25.1/udsoncan/BaseService.py",
+      "when_ranges": {
+        "us_request_sid": [
+          192,
+          255
+        ]
+      },
+      "allowed": []
+    },
+    {
+      "parameter": "us_subfunction",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11",
+        "us_has_subfunction": true
+      },
+      "source": "https://raw.githubusercontent.com/pylessard/python-udsoncan/v1.25.1/udsoncan/Request.py",
+      "required": true
+    },
+    {
+      "parameter": "us_wire_subfunction",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11",
+        "us_has_subfunction": true
+      },
+      "source": "https://raw.githubusercontent.com/pylessard/python-udsoncan/v1.25.1/udsoncan/Request.py",
+      "required": true
+    },
+    {
+      "parameter": "us_suppress_positive",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11",
+        "us_has_subfunction": true
+      },
+      "source": "https://raw.githubusercontent.com/pylessard/python-udsoncan/v1.25.1/udsoncan/Request.py",
+      "required": true
+    },
+    {
+      "parameter": "us_subfunction",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11",
+        "us_has_subfunction": false
+      },
+      "source": "https://raw.githubusercontent.com/pylessard/python-udsoncan/v1.25.1/udsoncan/Request.py",
+      "allowed": []
+    },
+    {
+      "parameter": "us_wire_subfunction",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11",
+        "us_has_subfunction": false
+      },
+      "source": "https://raw.githubusercontent.com/pylessard/python-udsoncan/v1.25.1/udsoncan/Request.py",
+      "allowed": []
+    },
+    {
+      "parameter": "us_suppress_positive",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11",
+        "us_has_subfunction": false
+      },
+      "source": "https://raw.githubusercontent.com/pylessard/python-udsoncan/v1.25.1/udsoncan/Request.py",
+      "allowed": [
+        false
+      ]
+    },
+    {
+      "parameter": "us_wire_subfunction",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11",
+        "us_suppress_positive": true
+      },
+      "source": "https://raw.githubusercontent.com/pylessard/python-udsoncan/v1.25.1/udsoncan/Request.py",
+      "equal_expression": {
+        "sum": [
+          "us_subfunction",
+          128
+        ]
+      }
+    },
+    {
+      "parameter": "us_wire_subfunction",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11",
+        "us_suppress_positive": false
+      },
+      "source": "https://raw.githubusercontent.com/pylessard/python-udsoncan/v1.25.1/udsoncan/Request.py",
+      "equal_parameter": "us_subfunction"
+    },
+    {
+      "parameter": "us_request_bytes",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11",
+        "us_has_subfunction": false
+      },
+      "source": "https://raw.githubusercontent.com/pylessard/python-udsoncan/v1.25.1/udsoncan/Request.py",
+      "equal_expression": {
+        "sum": [
+          "us_request_data_bytes",
+          1
+        ]
+      },
+      "minimum": 1
+    },
+    {
+      "parameter": "us_request_bytes",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11",
+        "us_has_subfunction": true
+      },
+      "source": "https://raw.githubusercontent.com/pylessard/python-udsoncan/v1.25.1/udsoncan/Request.py",
+      "equal_expression": {
+        "sum": [
+          "us_request_data_bytes",
+          2
+        ]
+      },
+      "minimum": 2
+    },
+    {
+      "parameter": "us_response_sid",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11",
+        "us_message_kind": "POSITIVE"
+      },
+      "source": "https://raw.githubusercontent.com/pylessard/python-udsoncan/v1.25.1/udsoncan/BaseService.py",
+      "equal_expression": {
+        "sum": [
+          "us_request_sid",
+          64
+        ]
+      }
+    },
+    {
+      "parameter": "us_response_bytes",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11",
+        "us_message_kind": "POSITIVE"
+      },
+      "source": "https://raw.githubusercontent.com/pylessard/python-udsoncan/v1.25.1/udsoncan/Response.py",
+      "equal_expression": {
+        "sum": [
+          "us_response_data_bytes",
+          1
+        ]
+      }
+    },
+    {
+      "parameter": "us_response_sid",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11",
+        "us_message_kind": "NEGATIVE"
+      },
+      "source": "https://raw.githubusercontent.com/pylessard/python-udsoncan/v1.25.1/udsoncan/Response.py",
+      "allowed": [
+        127
+      ]
+    },
+    {
+      "parameter": "us_response_bytes",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11",
+        "us_message_kind": "NEGATIVE"
+      },
+      "source": "https://raw.githubusercontent.com/pylessard/python-udsoncan/v1.25.1/udsoncan/Response.py",
+      "minimum": 3
+    },
+    {
+      "parameter": "us_nrc",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11",
+        "us_message_kind": "NEGATIVE"
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "required": true
+    },
+    {
+      "parameter": "us_response_sent",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11",
+        "us_message_kind": "POSITIVE",
+        "us_suppress_positive": true
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "allowed": [
+        false
+      ]
+    },
+    {
+      "parameter": "us_response_sent",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11",
+        "us_message_kind": "NEGATIVE",
+        "us_addressing": "FUNCTIONAL",
+        "us_nrc": 17
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "allowed": [
+        false
+      ]
+    },
+    {
+      "parameter": "us_response_sent",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11",
+        "us_message_kind": "NEGATIVE",
+        "us_addressing": "FUNCTIONAL",
+        "us_nrc": 18
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "allowed": [
+        false
+      ]
+    },
+    {
+      "parameter": "us_response_sent",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11",
+        "us_message_kind": "NEGATIVE",
+        "us_addressing": "FUNCTIONAL",
+        "us_nrc": 49
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "allowed": [
+        false
+      ]
+    },
+    {
+      "parameter": "us_response_sent",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11",
+        "us_message_kind": "NEGATIVE",
+        "us_addressing": "FUNCTIONAL",
+        "us_nrc": 126
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "allowed": [
+        false
+      ]
+    },
+    {
+      "parameter": "us_response_sent",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11",
+        "us_message_kind": "NEGATIVE",
+        "us_addressing": "FUNCTIONAL",
+        "us_nrc": 127
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "allowed": [
+        false
+      ]
+    },
+    {
+      "parameter": "us_request_hex",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11"
+      },
+      "source": "https://raw.githubusercontent.com/pylessard/python-udsoncan/v1.25.1/udsoncan/Request.py",
+      "hex_bytes_parameter": "us_request_bytes",
+      "hex_octets": [
+        {
+          "parameter": "us_request_sid",
+          "offset": 0,
+          "width": 1
+        }
+      ]
+    },
+    {
+      "parameter": "us_request_hex",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11",
+        "us_has_subfunction": true
+      },
+      "source": "https://raw.githubusercontent.com/pylessard/python-udsoncan/v1.25.1/udsoncan/Request.py",
+      "hex_octets": [
+        {
+          "parameter": "us_wire_subfunction",
+          "offset": 1,
+          "width": 1
+        }
+      ]
+    },
+    {
+      "parameter": "us_response_hex",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11"
+      },
+      "source": "https://raw.githubusercontent.com/pylessard/python-udsoncan/v1.25.1/udsoncan/Response.py",
+      "hex_bytes_parameter": "us_response_bytes",
+      "hex_octets": [
+        {
+          "parameter": "us_response_sid",
+          "offset": 0,
+          "width": 1
+        }
+      ]
+    },
+    {
+      "parameter": "us_response_hex",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11",
+        "us_message_kind": "NEGATIVE"
+      },
+      "source": "https://raw.githubusercontent.com/pylessard/python-udsoncan/v1.25.1/udsoncan/Response.py",
+      "hex_octets": [
+        {
+          "parameter": "us_request_sid",
+          "offset": 1,
+          "width": 1
+        },
+        {
+          "parameter": "us_nrc",
+          "offset": 2,
+          "width": 1
+        }
+      ]
+    },
+    {
+      "parameter": "us_codec_profile",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11"
+      },
+      "source": "https://raw.githubusercontent.com/pylessard/python-udsoncan/v1.25.1/udsoncan/Request.py",
+      "when_present": [
+        "us_request_hex"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "us_codec_profile",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11"
+      },
+      "source": "https://raw.githubusercontent.com/pylessard/python-udsoncan/v1.25.1/udsoncan/Response.py",
+      "when_present": [
+        "us_response_hex"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "us_codec_source",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11"
+      },
+      "source": "https://raw.githubusercontent.com/pylessard/python-udsoncan/v1.25.1/udsoncan/Request.py",
+      "when_present": [
+        "us_request_hex"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "us_codec_source",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11"
+      },
+      "source": "https://raw.githubusercontent.com/pylessard/python-udsoncan/v1.25.1/udsoncan/Response.py",
+      "when_present": [
+        "us_response_hex"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "us_codec_source",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11",
+        "us_codec_profile": "REGISTERED_ACTUAL"
+      },
+      "source": "https://raw.githubusercontent.com/pylessard/python-udsoncan/v1.25.1/udsoncan/Response.py",
+      "required": true
+    },
+    {
+      "parameter": "us_response_bytes",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11",
+        "us_codec_profile": "UDSONCAN_1_25_1",
+        "us_standard_version": "ISO_2013_PLUS",
+        "us_request_sid": 16,
+        "us_message_kind": "POSITIVE"
+      },
+      "source": "https://raw.githubusercontent.com/pylessard/python-udsoncan/v1.25.1/udsoncan/services/DiagnosticSessionControl.py",
+      "allowed": [
+        6
+      ]
+    },
+    {
+      "parameter": "us_session_echo",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11",
+        "us_codec_profile": "UDSONCAN_1_25_1",
+        "us_standard_version": "ISO_2013_PLUS",
+        "us_request_sid": 16,
+        "us_message_kind": "POSITIVE"
+      },
+      "source": "https://raw.githubusercontent.com/pylessard/python-udsoncan/v1.25.1/udsoncan/services/DiagnosticSessionControl.py",
+      "equal_parameter": "us_session"
+    },
+    {
+      "parameter": "us_p2_server_s",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11",
+        "us_codec_profile": "UDSONCAN_1_25_1",
+        "us_standard_version": "ISO_2013_PLUS",
+        "us_request_sid": 16,
+        "us_message_kind": "POSITIVE"
+      },
+      "source": "https://raw.githubusercontent.com/pylessard/python-udsoncan/v1.25.1/udsoncan/services/DiagnosticSessionControl.py",
+      "equal_expression": {
+        "product": [
+          0.001,
+          "us_p2_wire_raw"
+        ]
+      }
+    },
+    {
+      "parameter": "us_p2_star_server_s",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11",
+        "us_codec_profile": "UDSONCAN_1_25_1",
+        "us_standard_version": "ISO_2013_PLUS",
+        "us_request_sid": 16,
+        "us_message_kind": "POSITIVE"
+      },
+      "source": "https://raw.githubusercontent.com/pylessard/python-udsoncan/v1.25.1/udsoncan/services/DiagnosticSessionControl.py",
+      "equal_expression": {
+        "product": [
+          0.01,
+          "us_p2_star_wire_raw"
+        ]
+      }
+    },
+    {
+      "parameter": "us_response_hex",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11",
+        "us_codec_profile": "UDSONCAN_1_25_1",
+        "us_standard_version": "ISO_2013_PLUS",
+        "us_request_sid": 16,
+        "us_message_kind": "POSITIVE"
+      },
+      "source": "https://raw.githubusercontent.com/pylessard/python-udsoncan/v1.25.1/udsoncan/services/DiagnosticSessionControl.py",
+      "hex_octets": [
+        {
+          "parameter": "us_session_echo",
+          "offset": 1,
+          "width": 1
+        },
+        {
+          "parameter": "us_p2_wire_raw",
+          "offset": 2,
+          "width": 2
+        },
+        {
+          "parameter": "us_p2_star_wire_raw",
+          "offset": 4,
+          "width": 2
+        }
+      ]
+    },
+    {
+      "parameter": "us_e2e_ms",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11"
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "equal_expression": {
+        "sum": [
+          "us_source_ms",
+          "us_transport_ms",
+          "us_service_ms"
+        ]
+      },
+      "maximum_parameter": "us_deadline_ms"
+    },
+    {
+      "parameter": "us_age_ms",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11"
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "maximum_parameter": "us_freshness_ms"
+    },
+    {
+      "parameter": "us_source_ms",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11"
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "when_present": [
+        "us_e2e_ms"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "us_transport_ms",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11"
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "when_present": [
+        "us_e2e_ms"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "us_service_ms",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11"
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "when_present": [
+        "us_e2e_ms"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "us_observation_source",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11",
+        "us_data_accepted": true
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "required": true
+    },
+    {
+      "parameter": "us_e2e_ms",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11",
+        "us_data_accepted": true
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "required": true
+    },
+    {
+      "parameter": "us_deadline_ms",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11",
+        "us_data_accepted": true
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "required": true
+    },
+    {
+      "parameter": "us_age_ms",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11",
+        "us_data_accepted": true
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "required": true
+    },
+    {
+      "parameter": "us_freshness_ms",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11",
+        "us_data_accepted": true
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "required": true
+    },
+    {
+      "parameter": "us_tp_verified",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11",
+        "us_data_accepted": true
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "required": true,
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "us_path_verified",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11",
+        "us_data_accepted": true
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "required": true,
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "us_service_verified",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11",
+        "us_data_accepted": true
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "required": true,
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "us_outcome",
+      "when": {
+        "us_review_profile": "AUTOSAR_DCM_R25_11",
+        "us_data_accepted": true
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf",
+      "required": true,
+      "allowed": [
+        "ACCEPTED"
+      ]
+    }
+  ],
+  "physical_layer_profile_id": null,
+  "medium_access_model": null,
+  "native_parameter_prefixes": [
+    "us_"
+  ],
+  "parameter_aliases": {},
+  "parameter_alias_limits": {},
+  "parameter_evidence_scope": "EXPLICIT_LAYER",
+  "rate_source_profile_id": null,
+  "arbitration_model_id": null,
+  "max_payload_bytes": null,
+  "capabilities": {
+    "supports_signals": true,
+    "supports_data_objects": false,
+    "supports_streams": false,
+    "supports_multicast": false,
+    "supports_publish_subscribe": false,
+    "supports_request_response": true,
+    "supports_cyclic": true,
+    "supports_event": true,
+    "supports_redundancy": false,
+    "supports_time_sync": false,
+    "supports_safety_profile": false,
+    "supports_segmentation": false,
+    "supports_fragmentation": false,
+    "supports_qos": false
+  },
+  "deterministic": false,
+  "overhead_bytes": 8,
+  "implementation_status": "PLANNED",
+  "connection_type": "COMMUNICATION_TECHNOLOGY",
+  "parameter_proposals": {
+    "kind": "DEVICE_DEPENDENT",
+    "status": "REVIEW_REQUIRED",
+    "required_fields": [],
+    "note": "No universal rate is available; inspect the selected hardware/profile."
+  },
+  "capacity_evidence": {
+    "status": "MODEL_MISSING",
+    "frame_model": null,
+    "schedule_model": null,
+    "requires_confirmed_device_parameters": true
+  },
+  "components": {
+    "binding": "uds.binding",
+    "generator": "uds.generator",
+    "validator": "uds.validator",
+    "timing_model": null,
+    "load_model": null,
+    "encoder": "uds.encoder",
+    "decoder": "uds.decoder"
+  },
+  "known_limitations": "Technology-specific conformance details require a vendor/profile extension."
+}

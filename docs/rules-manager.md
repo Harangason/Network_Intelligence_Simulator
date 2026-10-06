@@ -1,5 +1,13 @@
 # Aufgabenbezogenes Regelregister
 
+## Prüfung der Strukturmigration — 03.10.2026
+
+[Prüfbericht mit Soll/Ist, Quellbelegen und Abnahmestatus](project-scanner/migration-review-20261003/analysis.md).
+Wesentlich umgesetzt und ausgeliefert; offene Befunde R1–R5 betreffen
+Technologie-Fallbacks, fachliche Regelablage, Übergangsnachweise,
+Architekturprüfungen und Moduldokumentation. Dieser Prüfauftrag ergänzt
+keine Verträge und verändert keine Anwendungsfunktionen.
+
 ## Dateiinventar — 02.10.2026
 
 Quellenbezogene Verzeichnisstruktur und Inhaltsbeschreibungen:
@@ -1764,3 +1772,22 @@ This task registration does not replace project contracts or confer new permissi
 - Soll: TechnologyProfile als maßgebliche Quelle; fehlende technische Evidenz sichtbar und ohne fremde Ersatzrate; Kapazitäts- und Zeitfreigabe getrennt.
 - Ist/Priorität: P0 für `CUSTOM`-Ratenfallback, generischen Rahmenrechner und Reifeverwechslung; P1 für fehlende Hardware-Evidenzpfade und Katalog-/Routing-Abweichung. Belege und Nachweisgrenzen stehen im Bericht.
 - Offene Entscheidung: technologiespezifische Modelle und Pflichtfelder je Bus/Stack fachlich festlegen. Dieser Prüfhinweis ändert keinen Vertrag und erteilt keine Umsetzungsfreigabe.
+
+<!-- tool-check:nis-structure-completion-20261003 -->
+## Tool Check: nis-structure-completion-20261003
+
+- Category: Tool Check
+- Skill: tool-checker
+- Source: I:\PycharmProjects\My_first_Network_Simulator\docs\migrations\structure-checks.json
+- Source Hash: 1cc528b13efd18143d48e5f10fd9c62fcae74ef95784e513102dfad185d96f42
+- Status: ACTIVE
+- Last Ingest: 2026-10-04T07:58:48.263696+00:00
+- Manifest: I:\PycharmProjects\My_first_Network_Simulator\.tool-checker\state\tasks\nis-structure-completion-20261003\manifest.json
+
+Use the normalized manifest after source/rule hash checks. Re-analyze changed sources.
+Perform UI checks with the available browser skill and actual browser tools.
+PASS requires stored evidence and verified completion criteria.
+Default presentation: PROGRESS. Percentage, status and step counters come from runtime events.
+Progress rendering never invokes an LLM. Full local logs are shown only on request.
+This task registration does not replace project contracts or confer new permissions.
+<!-- /tool-check:nis-structure-completion-20261003 -->

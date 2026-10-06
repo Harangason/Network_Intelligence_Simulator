@@ -1,0 +1,1 @@
+"""Canonical infrastructure.persistence package."""

@@ -1,0 +1,2944 @@
+{
+  "id": "doip",
+  "label": "DoIP",
+  "domain": "automotive",
+  "layer": "APPLICATION",
+  "transport_unit": "PDU",
+  "payload_element_types": [
+    "COMMAND",
+    "STATUS",
+    "RAW_DATA"
+  ],
+  "hardware_interface": "explicit_ip_transport_binding",
+  "hardware_capability_aliases": [
+    "ethernet_port"
+  ],
+  "default_stack": [
+    "doip"
+  ],
+  "stack_variants": [
+    [
+      "doip"
+    ],
+    [
+      "ethernet",
+      "ip",
+      "tcp",
+      "doip"
+    ]
+  ],
+  "default_bitrate": null,
+  "rate_model": {
+    "type": "APPLICATION_TRANSPORT_DEPENDENT",
+    "fields": []
+  },
+  "local_timing_schema": [],
+  "parameter_schema": {
+    "payload_bytes": {
+      "label": "Payload",
+      "category": "physical",
+      "scope": "message",
+      "type": "number",
+      "description": "Actual DoIP payload excluding generic8-byte header, uint32 length. Diagnostic payload includes4 address bytes and at least1 user-data byte; ACK/control/discovery layouts have distinct lengths.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "max": 4294967295,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01",
+      "integer": true
+    },
+    "cycle_ms": {
+      "label": "Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "Standardperiode fuer zyklische Nachrichten.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "minimum_cycle_time_ms": {
+      "label": "Minimum Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "deadline_ms": {
+      "label": "Deadline",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "timeout_ms": {
+      "label": "Timeout",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_latency_ms": {
+      "label": "Maximum Latency",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "jitter_ms": {
+      "label": "Jitter Budget",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "freshness_ms": {
+      "label": "Data Freshness",
+      "category": "timing",
+      "scope": "signal",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "source_processing_delay_ms": {
+      "label": "Source Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_processing_delay_ms": {
+      "label": "Target Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "propagation_delay_ms": {
+      "label": "Propagation",
+      "category": "timing",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.01,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_bus_load_percent": {
+      "label": "Ziel-Buslast",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "Zielwert fuer die aus Routing, Payload, Zyklus und Bitrate berechnete Buslast.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "peak_factor": {
+      "label": "Peak Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.15,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_factor": {
+      "label": "Burst Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.5,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_window_ms": {
+      "label": "Burst Window",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "warning_threshold": {
+      "label": "Load Warning",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "critical_threshold": {
+      "label": "Load Critical",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 75,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "overload_threshold": {
+      "label": "Load Overload",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 90,
+      "unit": "%",
+      "min": 1,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "queue_size": {
+      "label": "Queue Size",
+      "category": "qos",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 256,
+      "unit": "Frames",
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1",
+      "integer": true
+    },
+    "queue_policy": {
+      "label": "Queue Policy",
+      "category": "qos",
+      "scope": "network",
+      "type": "select",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": "FIFO",
+      "options": [
+        "FIFO",
+        "PRIORITY",
+        "CUSTOM"
+      ],
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "traffic_class": {
+      "label": "Traffic Class",
+      "category": "qos",
+      "scope": "route",
+      "type": "select",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": "BEST_EFFORT",
+      "options": [
+        "BEST_EFFORT",
+        "CONTROL",
+        "REALTIME",
+        "SAFETY_CRITICAL"
+      ],
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "packet_loss_probability": {
+      "label": "Packet Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "frame_loss_probability": {
+      "label": "Frame Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "bit_error_rate": {
+      "label": "Bit Error Rate",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "corruption_probability": {
+      "label": "Corruption",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duplicate_probability": {
+      "label": "Duplication",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "reordering_probability": {
+      "label": "Reordering",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "required_reliability": {
+      "label": "Required Reliability",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.999,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_offset_ms": {
+      "label": "Clock Offset",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_drift_ppm": {
+      "label": "Clock Drift",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 20,
+      "unit": "ppm",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_precision_ms": {
+      "label": "Sync Precision",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_interval_ms": {
+      "label": "Sync Interval",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1000,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_sync_error_ms": {
+      "label": "Maximum Sync Error",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_delay_ms": {
+      "label": "Gateway Processing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.2,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_queue_delay_ms": {
+      "label": "Gateway Queueing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "protocol_conversion_delay_ms": {
+      "label": "Protocol Conversion",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duration_s": {
+      "label": "Simulation Duration",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 1,
+      "unit": "s",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "seed": {
+      "label": "Random Seed",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 42,
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "max_events": {
+      "label": "Maximum Events",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 100000,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "dropout_probability": {
+      "label": "Failure Injection Dropout",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "doip_edition": {
+      "label": "Actual DoIP protocol edition",
+      "category": "physical",
+      "scope": "route",
+      "type": "select",
+      "description": "Matched DoIP edition/message/connection declaration. IP bandwidth, routing state, actual buffers and upper diagnostic timing remain separate from scalar validity.",
+      "required": true,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "ISO_2012",
+        "ISO_2019",
+        "DEVICE_SPECIFIC"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    "doip_transport": {
+      "label": "Actual message transport",
+      "category": "physical",
+      "scope": "route",
+      "type": "select",
+      "description": "Matched DoIP edition/message/connection declaration. IP bandwidth, routing state, actual buffers and upper diagnostic timing remain separate from scalar validity.",
+      "required": true,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "UDP",
+        "TCP",
+        "TLS"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    "doip_transport_binding": {
+      "label": "Actual IP/transport/network path profile",
+      "category": "physical",
+      "scope": "route",
+      "type": "text",
+      "description": "Matched DoIP edition/message/connection declaration. IP bandwidth, routing state, actual buffers and upper diagnostic timing remain separate from scalar validity.",
+      "required": true,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    "doip_configuration_source": {
+      "label": "Actual edition/entity/OEM/implementation configuration",
+      "category": "physical",
+      "scope": "route",
+      "type": "text",
+      "description": "Matched DoIP edition/message/connection declaration. IP bandwidth, routing state, actual buffers and upper diagnostic timing remain separate from scalar validity.",
+      "required": true,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    "doip_protocol_version": {
+      "label": "Actual generic-header version",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Matched DoIP edition/message/connection declaration. IP bandwidth, routing state, actual buffers and upper diagnostic timing remain separate from scalar validity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "max": 255,
+      "integer": true,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01",
+      "conditional_defaults": [
+        {
+          "when": {
+            "doip_edition": "ISO_2012"
+          },
+          "value": 2
+        },
+        {
+          "when": {
+            "doip_edition": "ISO_2019"
+          },
+          "value": 3
+        }
+      ]
+    },
+    "doip_inverse_version": {
+      "label": "Actual inverted version byte",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Matched DoIP edition/message/connection declaration. IP bandwidth, routing state, actual buffers and upper diagnostic timing remain separate from scalar validity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "max": 255,
+      "integer": true,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01",
+      "conditional_defaults": [
+        {
+          "when": {
+            "doip_edition": "ISO_2012"
+          },
+          "value": 253
+        },
+        {
+          "when": {
+            "doip_edition": "ISO_2019"
+          },
+          "value": 252
+        }
+      ]
+    },
+    "doip_payload_type": {
+      "label": "Actual encoded payload type",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Matched DoIP edition/message/connection declaration. IP bandwidth, routing state, actual buffers and upper diagnostic timing remain separate from scalar validity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "max": 65535,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    "doip_message_bytes": {
+      "label": "Actual complete DoIP message",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Matched DoIP edition/message/connection declaration. IP bandwidth, routing state, actual buffers and upper diagnostic timing remain separate from scalar validity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 8,
+      "max": 4294967303,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    "doip_port": {
+      "label": "Actual selected transport port",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Matched DoIP edition/message/connection declaration. IP bandwidth, routing state, actual buffers and upper diagnostic timing remain separate from scalar validity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 1,
+      "max": 65535,
+      "integer": true,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "source": "https://raw.githubusercontent.com/jacobschaer/python-doipclient/main/doipclient/constants.py",
+      "source_revision": "ISO13400-2:2019 represented constants tables39/41; separate securedTCP3496",
+      "conditional_defaults": [
+        {
+          "when": {
+            "doip_transport": "UDP"
+          },
+          "value": 13400
+        },
+        {
+          "when": {
+            "doip_transport": "TCP"
+          },
+          "value": 13400
+        },
+        {
+          "when": {
+            "doip_transport": "TLS"
+          },
+          "value": 3496
+        }
+      ]
+    },
+    "doip_optional_field_present": {
+      "label": "Actual layout optional-field presence",
+      "category": "physical",
+      "scope": "route",
+      "type": "boolean",
+      "description": "Matched DoIP edition/message/connection declaration. IP bandwidth, routing state, actual buffers and upper diagnostic timing remain separate from scalar validity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    "doip_user_data_bytes": {
+      "label": "Actual diagnostic data excluding addresses",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Matched DoIP edition/message/connection declaration. IP bandwidth, routing state, actual buffers and upper diagnostic timing remain separate from scalar validity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 1,
+      "max": 4294967291,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    "doip_ack_copy_bytes": {
+      "label": "Actual previous-message data copied in ACK/NACK",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Matched DoIP edition/message/connection declaration. IP bandwidth, routing state, actual buffers and upper diagnostic timing remain separate from scalar validity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "max": 4294967290,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    "doip_ack_code": {
+      "label": "Actual diagnostic ACK/NACK code",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Matched DoIP edition/message/connection declaration. IP bandwidth, routing state, actual buffers and upper diagnostic timing remain separate from scalar validity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "max": 255,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    "doip_source_role": {
+      "label": "Actual logical source role",
+      "category": "physical",
+      "scope": "route",
+      "type": "select",
+      "description": "Matched DoIP edition/message/connection declaration. IP bandwidth, routing state, actual buffers and upper diagnostic timing remain separate from scalar validity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "CLIENT",
+        "ENTITY",
+        "DEVICE_SPECIFIC"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    "doip_source_address": {
+      "label": "Actual logical source address",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Matched DoIP edition/message/connection declaration. IP bandwidth, routing state, actual buffers and upper diagnostic timing remain separate from scalar validity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 1,
+      "max": 65535,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    "doip_target_address": {
+      "label": "Actual configured logical target address",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Matched DoIP edition/message/connection declaration. IP bandwidth, routing state, actual buffers and upper diagnostic timing remain separate from scalar validity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 1,
+      "max": 65535,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    "doip_address_mapping_source": {
+      "label": "Actual supported source/target/functional route mapping",
+      "category": "physical",
+      "scope": "route",
+      "type": "text",
+      "description": "Matched DoIP edition/message/connection declaration. IP bandwidth, routing state, actual buffers and upper diagnostic timing remain separate from scalar validity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    "doip_activation_type": {
+      "label": "Selected routing activation type",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Matched DoIP edition/message/connection declaration. IP bandwidth, routing state, actual buffers and upper diagnostic timing remain separate from scalar validity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "max": 255,
+      "integer": true,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01",
+      "conditional_defaults": [
+        {
+          "when": {
+            "doip_payload_type": 5
+          },
+          "value": 0
+        }
+      ]
+    },
+    "doip_reserved": {
+      "label": "Reserved routing-activation field",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Matched DoIP edition/message/connection declaration. IP bandwidth, routing state, actual buffers and upper diagnostic timing remain separate from scalar validity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "max": 0,
+      "integer": true,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01",
+      "conditional_defaults": [
+        {
+          "when": {
+            "doip_payload_type": 5
+          },
+          "value": 0
+        },
+        {
+          "when": {
+            "doip_payload_type": 6
+          },
+          "value": 0
+        }
+      ]
+    },
+    "doip_oem_data": {
+      "label": "Actual optional OEM routing-activation uint32",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Matched DoIP edition/message/connection declaration. IP bandwidth, routing state, actual buffers and upper diagnostic timing remain separate from scalar validity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "max": 4294967295,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    "doip_routing_active": {
+      "label": "Actual completed routing activation",
+      "category": "physical",
+      "scope": "route",
+      "type": "boolean",
+      "description": "Matched DoIP edition/message/connection declaration. IP bandwidth, routing state, actual buffers and upper diagnostic timing remain separate from scalar validity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    "doip_routing_source": {
+      "label": "Actual activation/authentication/confirmation/socket evidence",
+      "category": "physical",
+      "scope": "route",
+      "type": "text",
+      "description": "Matched DoIP edition/message/connection declaration. IP bandwidth, routing state, actual buffers and upper diagnostic timing remain separate from scalar validity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    "doip_max_sockets": {
+      "label": "Actual maximum concurrent TCP_DATA sockets",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Matched DoIP edition/message/connection declaration. IP bandwidth, routing state, actual buffers and upper diagnostic timing remain separate from scalar validity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 1,
+      "max": 255,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    "doip_open_sockets": {
+      "label": "Actual currently open TCP_DATA sockets",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Matched DoIP edition/message/connection declaration. IP bandwidth, routing state, actual buffers and upper diagnostic timing remain separate from scalar validity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "max": 255,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    "doip_peer_size_definition": {
+      "label": "Actual meaning of peer maximum size",
+      "category": "physical",
+      "scope": "route",
+      "type": "select",
+      "description": "Matched DoIP edition/message/connection declaration. IP bandwidth, routing state, actual buffers and upper diagnostic timing remain separate from scalar validity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "DOIP_PAYLOAD",
+        "DIAGNOSTIC_USER_DATA",
+        "COMPLETE_DOIP_MESSAGE",
+        "DEVICE_SPECIFIC"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    "doip_peer_size_limit_bytes": {
+      "label": "Actual advertised/configured peer size limit",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Matched DoIP edition/message/connection declaration. IP bandwidth, routing state, actual buffers and upper diagnostic timing remain separate from scalar validity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "max": 4294967303,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    "doip_peer_size_source": {
+      "label": "Actual peer-buffer/max-size interpretation evidence",
+      "category": "physical",
+      "scope": "route",
+      "type": "text",
+      "description": "Matched DoIP edition/message/connection declaration. IP bandwidth, routing state, actual buffers and upper diagnostic timing remain separate from scalar validity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    "doip_node_type": {
+      "label": "Actual entity node type",
+      "category": "physical",
+      "scope": "route",
+      "type": "select",
+      "description": "Matched DoIP edition/message/connection declaration. IP bandwidth, routing state, actual buffers and upper diagnostic timing remain separate from scalar validity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "GATEWAY",
+        "NODE"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    "doip_initial_inactivity_ms": {
+      "label": "Initial TCP inactivity timeout",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "Matched DoIP edition/message/connection declaration. IP bandwidth, routing state, actual buffers and upper diagnostic timing remain separate from scalar validity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "ms",
+      "min": 0.001,
+      "integer": false,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "source": "https://raw.githubusercontent.com/jacobschaer/python-doipclient/main/doipclient/constants.py",
+      "source_revision": "python-doipclient primary constants representingISO13400-2:2019 accessed2026-10-01; proposals not observed device parameters",
+      "conditional_defaults": [
+        {
+          "when": {
+            "doip_edition": "ISO_2019",
+            "doip_transport": "TCP"
+          },
+          "value": 2000
+        },
+        {
+          "when": {
+            "doip_edition": "ISO_2019",
+            "doip_transport": "TLS"
+          },
+          "value": 2000
+        }
+      ]
+    },
+    "doip_general_inactivity_ms": {
+      "label": "General TCP inactivity timeout",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "Matched DoIP edition/message/connection declaration. IP bandwidth, routing state, actual buffers and upper diagnostic timing remain separate from scalar validity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "ms",
+      "min": 0.001,
+      "integer": false,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "source": "https://raw.githubusercontent.com/jacobschaer/python-doipclient/main/doipclient/constants.py",
+      "source_revision": "python-doipclient primary constants representingISO13400-2:2019 accessed2026-10-01; proposals not observed device parameters",
+      "conditional_defaults": [
+        {
+          "when": {
+            "doip_edition": "ISO_2019",
+            "doip_transport": "TCP"
+          },
+          "value": 300000
+        },
+        {
+          "when": {
+            "doip_edition": "ISO_2019",
+            "doip_transport": "TLS"
+          },
+          "value": 300000
+        }
+      ]
+    },
+    "doip_alive_check_ms": {
+      "label": "Alive-check response timeout",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "Matched DoIP edition/message/connection declaration. IP bandwidth, routing state, actual buffers and upper diagnostic timing remain separate from scalar validity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "ms",
+      "min": 0,
+      "integer": false,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "source": "https://raw.githubusercontent.com/jacobschaer/python-doipclient/main/doipclient/constants.py",
+      "source_revision": "python-doipclient primary constants representingISO13400-2:2019 accessed2026-10-01; proposals not observed device parameters",
+      "conditional_defaults": [
+        {
+          "when": {
+            "doip_edition": "ISO_2019",
+            "doip_transport": "TCP"
+          },
+          "value": 500
+        },
+        {
+          "when": {
+            "doip_edition": "ISO_2019",
+            "doip_transport": "TLS"
+          },
+          "value": 500
+        }
+      ]
+    },
+    "doip_control_timeout_ms": {
+      "label": "DoIP control response timeout",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "Matched DoIP edition/message/connection declaration. IP bandwidth, routing state, actual buffers and upper diagnostic timing remain separate from scalar validity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "ms",
+      "min": 0.001,
+      "integer": false,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "source": "https://raw.githubusercontent.com/jacobschaer/python-doipclient/main/doipclient/constants.py",
+      "source_revision": "python-doipclient primary constants representingISO13400-2:2019 accessed2026-10-01; proposals not observed device parameters",
+      "conditional_defaults": [
+        {
+          "when": {
+            "doip_edition": "ISO_2019",
+            "doip_transport": "UDP"
+          },
+          "value": 2000
+        },
+        {
+          "when": {
+            "doip_edition": "ISO_2019",
+            "doip_transport": "TCP"
+          },
+          "value": 2000
+        },
+        {
+          "when": {
+            "doip_edition": "ISO_2019",
+            "doip_transport": "TLS"
+          },
+          "value": 2000
+        }
+      ]
+    },
+    "doip_diagnostic_ack_ms": {
+      "label": "DoIP diagnostic message ACK wait",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "Matched DoIP edition/message/connection declaration. IP bandwidth, routing state, actual buffers and upper diagnostic timing remain separate from scalar validity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "ms",
+      "min": 0.001,
+      "integer": false,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "source": "https://raw.githubusercontent.com/jacobschaer/python-doipclient/main/doipclient/constants.py",
+      "source_revision": "python-doipclient primary constants representingISO13400-2:2019 accessed2026-10-01; proposals not observed device parameters",
+      "conditional_defaults": [
+        {
+          "when": {
+            "doip_edition": "ISO_2019",
+            "doip_transport": "TCP"
+          },
+          "value": 2000
+        },
+        {
+          "when": {
+            "doip_edition": "ISO_2019",
+            "doip_transport": "TLS"
+          },
+          "value": 2000
+        }
+      ]
+    },
+    "doip_announce_wait_max_ms": {
+      "label": "Maximum randomized initial announcement delay",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "Matched DoIP edition/message/connection declaration. IP bandwidth, routing state, actual buffers and upper diagnostic timing remain separate from scalar validity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "ms",
+      "min": 0,
+      "integer": false,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "source": "https://raw.githubusercontent.com/jacobschaer/python-doipclient/main/doipclient/constants.py",
+      "source_revision": "python-doipclient primary constants representingISO13400-2:2019 accessed2026-10-01; proposals not observed device parameters",
+      "conditional_defaults": [
+        {
+          "when": {
+            "doip_edition": "ISO_2019",
+            "doip_transport": "UDP"
+          },
+          "value": 500
+        }
+      ]
+    },
+    "doip_announce_interval_ms": {
+      "label": "Announcement interval",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "Matched DoIP edition/message/connection declaration. IP bandwidth, routing state, actual buffers and upper diagnostic timing remain separate from scalar validity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "ms",
+      "min": 0,
+      "integer": false,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "source": "https://raw.githubusercontent.com/jacobschaer/python-doipclient/main/doipclient/constants.py",
+      "source_revision": "python-doipclient primary constants representingISO13400-2:2019 accessed2026-10-01; proposals not observed device parameters",
+      "conditional_defaults": [
+        {
+          "when": {
+            "doip_edition": "ISO_2019",
+            "doip_transport": "UDP"
+          },
+          "value": 500
+        }
+      ]
+    },
+    "doip_announce_count": {
+      "label": "Announcement repetitions",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Matched DoIP edition/message/connection declaration. IP bandwidth, routing state, actual buffers and upper diagnostic timing remain separate from scalar validity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 1,
+      "max": 255,
+      "integer": true,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "source": "https://raw.githubusercontent.com/jacobschaer/python-doipclient/main/doipclient/constants.py",
+      "source_revision": "python-doipclient primary constants representingISO13400-2:2019 accessed2026-10-01; proposals not observed device parameters",
+      "conditional_defaults": [
+        {
+          "when": {
+            "doip_edition": "ISO_2019",
+            "doip_transport": "UDP"
+          },
+          "value": 3
+        }
+      ]
+    },
+    "doip_vin_hex": {
+      "label": "Actual17-byte VIN field as hex octets",
+      "category": "physical",
+      "scope": "route",
+      "type": "text",
+      "description": "Matched DoIP edition/message/connection declaration. IP bandwidth, routing state, actual buffers and upper diagnostic timing remain separate from scalar validity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01",
+      "pattern": "[0-9A-Fa-f]{34}"
+    },
+    "doip_eid_hex": {
+      "label": "Actual6-byte EID field as hex octets",
+      "category": "physical",
+      "scope": "route",
+      "type": "text",
+      "description": "Matched DoIP edition/message/connection declaration. IP bandwidth, routing state, actual buffers and upper diagnostic timing remain separate from scalar validity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01",
+      "pattern": "[0-9A-Fa-f]{12}"
+    },
+    "doip_gid_hex": {
+      "label": "Actual6-byte GID field as hex octets",
+      "category": "physical",
+      "scope": "route",
+      "type": "text",
+      "description": "Matched DoIP edition/message/connection declaration. IP bandwidth, routing state, actual buffers and upper diagnostic timing remain separate from scalar validity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01",
+      "pattern": "[0-9A-Fa-f]{12}"
+    },
+    "doip_ip_address": {
+      "label": "Actual destination IP address",
+      "category": "physical",
+      "scope": "route",
+      "type": "text",
+      "description": "Matched DoIP edition/message/connection declaration. IP bandwidth, routing state, actual buffers and upper diagnostic timing remain separate from scalar validity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01",
+      "format": "IP_ADDRESS"
+    },
+    "doip_tls_source": {
+      "label": "Actual TLS version/trust/peer/certificate configuration",
+      "category": "physical",
+      "scope": "route",
+      "type": "text",
+      "description": "Matched DoIP edition/message/connection declaration. IP bandwidth, routing state, actual buffers and upper diagnostic timing remain separate from scalar validity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    "doip_upper_timing_source": {
+      "label": "Actual UDS/application P2/P2star/session timing contract",
+      "category": "physical",
+      "scope": "route",
+      "type": "text",
+      "description": "Matched DoIP edition/message/connection declaration. IP bandwidth, routing state, actual buffers and upper diagnostic timing remain separate from scalar validity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    }
+  },
+  "mechanisms": {
+    "integrity": [
+      "VERSION_INVERSE_PATTERN_AND_PAYLOAD_LENGTH",
+      "SELECTED_IP_TRANSPORT_INTEGRITY"
+    ],
+    "discovery": [
+      "UDP_VEHICLE_IDENTIFICATION_ANNOUNCEMENT"
+    ],
+    "diagnostics": [
+      "TCP_DATA_OR_TLS",
+      "ROUTING_ACTIVATION",
+      "LOGICAL_SOURCE_TARGET_ADDRESSES",
+      "DOIP_ACK_NACK"
+    ],
+    "supervision": [
+      "INITIAL_GENERAL_INACTIVITY_AND_ALIVE_CHECK"
+    ],
+    "upper_layer": [
+      "UDS_TIMING_IS_SEPARATE_FROM_DOIP_ACK"
+    ]
+  },
+  "parameter_constraints": [
+    {
+      "when": {},
+      "parameter": "doip_inverse_version",
+      "equal_expression": {
+        "subtract": [
+          255,
+          "doip_protocol_version"
+        ]
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {},
+      "parameter": "doip_message_bytes",
+      "equal_expression": {
+        "sum": [
+          8,
+          "payload_bytes"
+        ]
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_edition": "ISO_2012"
+      },
+      "when_ranges": {
+        "doip_protocol_version": [
+          0,
+          254
+        ]
+      },
+      "parameter": "doip_protocol_version",
+      "allowed": [
+        2
+      ],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_edition": "ISO_2019"
+      },
+      "when_ranges": {
+        "doip_protocol_version": [
+          0,
+          254
+        ]
+      },
+      "parameter": "doip_protocol_version",
+      "allowed": [
+        3
+      ],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_protocol_version": 255
+      },
+      "parameter": "doip_payload_type",
+      "allowed": [
+        1,
+        2,
+        3
+      ],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_protocol_version": 255
+      },
+      "parameter": "doip_transport",
+      "allowed": [
+        "UDP"
+      ],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_edition": "ISO_2012"
+      },
+      "parameter": "doip_payload_type",
+      "allowed": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        16385,
+        16386,
+        16387,
+        16388,
+        32769,
+        32770,
+        32771
+      ],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_edition": "ISO_2019"
+      },
+      "parameter": "doip_payload_type",
+      "allowed": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        16385,
+        16386,
+        16387,
+        16388,
+        32769,
+        32770,
+        32771
+      ],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_payload_type": 1
+      },
+      "parameter": "doip_transport",
+      "allowed": [
+        "UDP"
+      ],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_payload_type": 2
+      },
+      "parameter": "doip_transport",
+      "allowed": [
+        "UDP"
+      ],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_payload_type": 3
+      },
+      "parameter": "doip_transport",
+      "allowed": [
+        "UDP"
+      ],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_payload_type": 4
+      },
+      "parameter": "doip_transport",
+      "allowed": [
+        "UDP"
+      ],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_payload_type": 16385
+      },
+      "parameter": "doip_transport",
+      "allowed": [
+        "UDP"
+      ],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_payload_type": 16386
+      },
+      "parameter": "doip_transport",
+      "allowed": [
+        "UDP"
+      ],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_payload_type": 16387
+      },
+      "parameter": "doip_transport",
+      "allowed": [
+        "UDP"
+      ],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_payload_type": 16388
+      },
+      "parameter": "doip_transport",
+      "allowed": [
+        "UDP"
+      ],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_payload_type": 5
+      },
+      "parameter": "doip_transport",
+      "allowed": [
+        "TCP",
+        "TLS"
+      ],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_payload_type": 6
+      },
+      "parameter": "doip_transport",
+      "allowed": [
+        "TCP",
+        "TLS"
+      ],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_payload_type": 7
+      },
+      "parameter": "doip_transport",
+      "allowed": [
+        "TCP",
+        "TLS"
+      ],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_payload_type": 8
+      },
+      "parameter": "doip_transport",
+      "allowed": [
+        "TCP",
+        "TLS"
+      ],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_payload_type": 32769
+      },
+      "parameter": "doip_transport",
+      "allowed": [
+        "TCP",
+        "TLS"
+      ],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_payload_type": 32770
+      },
+      "parameter": "doip_transport",
+      "allowed": [
+        "TCP",
+        "TLS"
+      ],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_payload_type": 32771
+      },
+      "parameter": "doip_transport",
+      "allowed": [
+        "TCP",
+        "TLS"
+      ],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_payload_type": 0
+      },
+      "parameter": "payload_bytes",
+      "allowed": [
+        1
+      ],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_payload_type": 1
+      },
+      "parameter": "payload_bytes",
+      "allowed": [
+        0
+      ],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_payload_type": 2
+      },
+      "parameter": "payload_bytes",
+      "allowed": [
+        6
+      ],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_payload_type": 3
+      },
+      "parameter": "payload_bytes",
+      "allowed": [
+        17
+      ],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_payload_type": 7
+      },
+      "parameter": "payload_bytes",
+      "allowed": [
+        0
+      ],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_payload_type": 8
+      },
+      "parameter": "payload_bytes",
+      "allowed": [
+        2
+      ],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_payload_type": 16385
+      },
+      "parameter": "payload_bytes",
+      "allowed": [
+        0
+      ],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_payload_type": 16387
+      },
+      "parameter": "payload_bytes",
+      "allowed": [
+        0
+      ],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_payload_type": 16388
+      },
+      "parameter": "payload_bytes",
+      "allowed": [
+        1
+      ],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_payload_type": 4,
+        "doip_optional_field_present": false
+      },
+      "parameter": "payload_bytes",
+      "allowed": [
+        32
+      ],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_payload_type": 4,
+        "doip_optional_field_present": true
+      },
+      "parameter": "payload_bytes",
+      "allowed": [
+        33
+      ],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_payload_type": 5,
+        "doip_optional_field_present": false
+      },
+      "parameter": "payload_bytes",
+      "allowed": [
+        7
+      ],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_payload_type": 5,
+        "doip_optional_field_present": true
+      },
+      "parameter": "payload_bytes",
+      "allowed": [
+        11
+      ],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_payload_type": 6,
+        "doip_optional_field_present": false
+      },
+      "parameter": "payload_bytes",
+      "allowed": [
+        9
+      ],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_payload_type": 6,
+        "doip_optional_field_present": true
+      },
+      "parameter": "payload_bytes",
+      "allowed": [
+        13
+      ],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_payload_type": 16386,
+        "doip_optional_field_present": false
+      },
+      "parameter": "payload_bytes",
+      "allowed": [
+        3
+      ],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_payload_type": 16386,
+        "doip_optional_field_present": true
+      },
+      "parameter": "payload_bytes",
+      "allowed": [
+        7
+      ],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_payload_type": 32769
+      },
+      "parameter": "payload_bytes",
+      "minimum": 5,
+      "equal_expression": {
+        "sum": [
+          4,
+          "doip_user_data_bytes"
+        ]
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_payload_type": 32770
+      },
+      "parameter": "payload_bytes",
+      "minimum": 5,
+      "equal_expression": {
+        "sum": [
+          5,
+          "doip_ack_copy_bytes"
+        ]
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_payload_type": 32771
+      },
+      "parameter": "payload_bytes",
+      "minimum": 5,
+      "equal_expression": {
+        "sum": [
+          5,
+          "doip_ack_copy_bytes"
+        ]
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_payload_type": 32770
+      },
+      "parameter": "doip_ack_code",
+      "allowed": [
+        0
+      ],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {},
+      "parameter": "doip_open_sockets",
+      "maximum_parameter": "doip_max_sockets",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_peer_size_definition": "DOIP_PAYLOAD"
+      },
+      "parameter": "payload_bytes",
+      "maximum_parameter": "doip_peer_size_limit_bytes",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_peer_size_definition": "DIAGNOSTIC_USER_DATA"
+      },
+      "parameter": "doip_user_data_bytes",
+      "maximum_parameter": "doip_peer_size_limit_bytes",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_peer_size_definition": "COMPLETE_DOIP_MESSAGE"
+      },
+      "parameter": "doip_message_bytes",
+      "maximum_parameter": "doip_peer_size_limit_bytes",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_peer_size_definition": "DOIP_PAYLOAD"
+      },
+      "parameter": "doip_peer_size_limit_bytes",
+      "maximum": 4294967295,
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_peer_size_definition": "DIAGNOSTIC_USER_DATA"
+      },
+      "parameter": "doip_peer_size_limit_bytes",
+      "maximum": 4294967295,
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_transport": "UDP"
+      },
+      "parameter": "doip_routing_active",
+      "allowed": [],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_transport": "UDP"
+      },
+      "parameter": "doip_tls_source",
+      "allowed": [],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_payload_type": 32769
+      },
+      "parameter": "doip_routing_active",
+      "allowed": [
+        true
+      ],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_source_role": "CLIENT"
+      },
+      "parameter": "doip_source_address",
+      "minimum": 3584,
+      "maximum": 4095,
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {},
+      "parameter": "doip_reserved",
+      "allowed": [
+        0
+      ],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_edition": "ISO_2012"
+      },
+      "parameter": "doip_transport",
+      "allowed": [
+        "UDP",
+        "TCP"
+      ],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_transport": "UDP"
+      },
+      "parameter": "doip_initial_inactivity_ms",
+      "allowed": [],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_transport": "UDP"
+      },
+      "parameter": "doip_general_inactivity_ms",
+      "allowed": [],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_transport": "UDP"
+      },
+      "parameter": "doip_alive_check_ms",
+      "allowed": [],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_transport": "UDP"
+      },
+      "parameter": "doip_diagnostic_ack_ms",
+      "allowed": [],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_transport": "TCP"
+      },
+      "parameter": "doip_announce_wait_max_ms",
+      "allowed": [],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_transport": "TCP"
+      },
+      "parameter": "doip_announce_interval_ms",
+      "allowed": [],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_transport": "TCP"
+      },
+      "parameter": "doip_announce_count",
+      "allowed": [],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_transport": "TLS"
+      },
+      "parameter": "doip_announce_wait_max_ms",
+      "allowed": [],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_transport": "TLS"
+      },
+      "parameter": "doip_announce_interval_ms",
+      "allowed": [],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_transport": "TLS"
+      },
+      "parameter": "doip_announce_count",
+      "allowed": [],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_payload_type": 0
+      },
+      "parameter": "doip_user_data_bytes",
+      "allowed": [],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_payload_type": 0
+      },
+      "parameter": "doip_ack_copy_bytes",
+      "allowed": [],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_payload_type": 0
+      },
+      "parameter": "doip_ack_code",
+      "allowed": [],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_payload_type": 1
+      },
+      "parameter": "doip_user_data_bytes",
+      "allowed": [],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_payload_type": 1
+      },
+      "parameter": "doip_ack_copy_bytes",
+      "allowed": [],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_payload_type": 1
+      },
+      "parameter": "doip_ack_code",
+      "allowed": [],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_payload_type": 2
+      },
+      "parameter": "doip_user_data_bytes",
+      "allowed": [],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_payload_type": 2
+      },
+      "parameter": "doip_ack_copy_bytes",
+      "allowed": [],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_payload_type": 2
+      },
+      "parameter": "doip_ack_code",
+      "allowed": [],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_payload_type": 3
+      },
+      "parameter": "doip_user_data_bytes",
+      "allowed": [],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_payload_type": 3
+      },
+      "parameter": "doip_ack_copy_bytes",
+      "allowed": [],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_payload_type": 3
+      },
+      "parameter": "doip_ack_code",
+      "allowed": [],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_payload_type": 4
+      },
+      "parameter": "doip_user_data_bytes",
+      "allowed": [],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_payload_type": 4
+      },
+      "parameter": "doip_ack_copy_bytes",
+      "allowed": [],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_payload_type": 4
+      },
+      "parameter": "doip_ack_code",
+      "allowed": [],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_payload_type": 5
+      },
+      "parameter": "doip_user_data_bytes",
+      "allowed": [],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_payload_type": 5
+      },
+      "parameter": "doip_ack_copy_bytes",
+      "allowed": [],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_payload_type": 5
+      },
+      "parameter": "doip_ack_code",
+      "allowed": [],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_payload_type": 6
+      },
+      "parameter": "doip_user_data_bytes",
+      "allowed": [],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_payload_type": 6
+      },
+      "parameter": "doip_ack_copy_bytes",
+      "allowed": [],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_payload_type": 6
+      },
+      "parameter": "doip_ack_code",
+      "allowed": [],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_payload_type": 7
+      },
+      "parameter": "doip_user_data_bytes",
+      "allowed": [],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_payload_type": 7
+      },
+      "parameter": "doip_ack_copy_bytes",
+      "allowed": [],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_payload_type": 7
+      },
+      "parameter": "doip_ack_code",
+      "allowed": [],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_payload_type": 8
+      },
+      "parameter": "doip_user_data_bytes",
+      "allowed": [],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_payload_type": 8
+      },
+      "parameter": "doip_ack_copy_bytes",
+      "allowed": [],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_payload_type": 8
+      },
+      "parameter": "doip_ack_code",
+      "allowed": [],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_payload_type": 16385
+      },
+      "parameter": "doip_user_data_bytes",
+      "allowed": [],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_payload_type": 16385
+      },
+      "parameter": "doip_ack_copy_bytes",
+      "allowed": [],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_payload_type": 16385
+      },
+      "parameter": "doip_ack_code",
+      "allowed": [],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_payload_type": 16386
+      },
+      "parameter": "doip_user_data_bytes",
+      "allowed": [],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_payload_type": 16386
+      },
+      "parameter": "doip_ack_copy_bytes",
+      "allowed": [],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_payload_type": 16386
+      },
+      "parameter": "doip_ack_code",
+      "allowed": [],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_payload_type": 16387
+      },
+      "parameter": "doip_user_data_bytes",
+      "allowed": [],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_payload_type": 16387
+      },
+      "parameter": "doip_ack_copy_bytes",
+      "allowed": [],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_payload_type": 16387
+      },
+      "parameter": "doip_ack_code",
+      "allowed": [],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_payload_type": 16388
+      },
+      "parameter": "doip_user_data_bytes",
+      "allowed": [],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_payload_type": 16388
+      },
+      "parameter": "doip_ack_copy_bytes",
+      "allowed": [],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_payload_type": 16388
+      },
+      "parameter": "doip_ack_code",
+      "allowed": [],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_payload_type": 32769
+      },
+      "parameter": "doip_ack_copy_bytes",
+      "allowed": [],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_payload_type": 32769
+      },
+      "parameter": "doip_ack_code",
+      "allowed": [],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_payload_type": 32770
+      },
+      "parameter": "doip_user_data_bytes",
+      "allowed": [],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_payload_type": 32771
+      },
+      "parameter": "doip_user_data_bytes",
+      "allowed": [],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_optional_field_present": false,
+        "doip_payload_type": 5
+      },
+      "parameter": "doip_oem_data",
+      "allowed": [],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    },
+    {
+      "when": {
+        "doip_optional_field_present": false,
+        "doip_payload_type": 6
+      },
+      "parameter": "doip_oem_data",
+      "allowed": [],
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+      "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01"
+    }
+  ],
+  "physical_layer_profile_id": null,
+  "medium_access_model": null,
+  "native_parameter_prefixes": [],
+  "parameter_aliases": {},
+  "parameter_alias_limits": {},
+  "parameter_evidence_scope": null,
+  "rate_source_profile_id": null,
+  "arbitration_model_id": null,
+  "max_payload_bytes": 4294967295,
+  "capabilities": {
+    "supports_signals": true,
+    "supports_data_objects": false,
+    "supports_streams": false,
+    "supports_multicast": false,
+    "supports_publish_subscribe": false,
+    "supports_request_response": true,
+    "supports_cyclic": true,
+    "supports_event": true,
+    "supports_redundancy": false,
+    "supports_time_sync": false,
+    "supports_safety_profile": false,
+    "supports_segmentation": false,
+    "supports_fragmentation": false,
+    "supports_qos": false
+  },
+  "deterministic": false,
+  "overhead_bytes": 8,
+  "implementation_status": "PLANNED",
+  "connection_type": "COMMUNICATION_TECHNOLOGY",
+  "parameter_proposals": {
+    "kind": "APPLICATION_TRANSPORT_DEPENDENT",
+    "status": "REVIEW_REQUIRED",
+    "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticOverIP.pdf",
+    "source_revision": "AUTOSAR CP R25-11 Document418 chapters7.3/10.2, ISO13400-2:2019 representation; primary implementation constants read2026-10-01",
+    "note": "DoIP has no own Ethernet bitrate or universal4096B message limit. Eight-byte header/32-bit payload length, UDP discovery and TCP/TLS diagnostics require matched edition, actual peer and explicit lower profile."
+  },
+  "capacity_evidence": {
+    "status": "MODEL_MISSING",
+    "frame_model": null,
+    "schedule_model": null,
+    "requires_confirmed_device_parameters": true
+  },
+  "components": {
+    "binding": "doip.binding",
+    "generator": "doip.generator",
+    "validator": "doip.validator",
+    "timing_model": null,
+    "load_model": null,
+    "encoder": "doip.encoder",
+    "decoder": "doip.decoder"
+  },
+  "known_limitations": "Technology-specific conformance details require a vendor/profile extension."
+}

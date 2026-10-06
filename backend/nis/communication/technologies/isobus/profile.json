@@ -1,0 +1,3714 @@
+{
+  "id": "isobus",
+  "label": "ISO 11783 / ISOBUS",
+  "domain": "generic_networking",
+  "layer": "INDUSTRY_PROFILE",
+  "transport_unit": "MESSAGE",
+  "payload_element_types": [
+    "FIELD",
+    "SIGNAL"
+  ],
+  "hardware_interface": "isobus_qualified_can_port",
+  "hardware_capability_aliases": [
+    "can_controller"
+  ],
+  "default_stack": [
+    "isobus"
+  ],
+  "stack_variants": [
+    [
+      "isobus"
+    ],
+    [
+      "can",
+      "j1939",
+      "isobus"
+    ]
+  ],
+  "default_bitrate": null,
+  "rate_model": {
+    "type": "CLASSIC_ISOBUS_NATIVE_CAN_250K",
+    "fields": []
+  },
+  "local_timing_schema": [],
+  "parameter_schema": {
+    "payload_bytes": {
+      "label": "Payload",
+      "category": "physical",
+      "scope": "message",
+      "type": "number",
+      "description": "Actual full ISOBUS application message; single frame8, TP1785, ETP117440505 and GNSS FastPacket223 apply to independently selected layouts.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_transport_protocol.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "integer": true
+    },
+    "cycle_ms": {
+      "label": "Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "Standardperiode fuer zyklische Nachrichten.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "minimum_cycle_time_ms": {
+      "label": "Minimum Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "deadline_ms": {
+      "label": "Deadline",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "timeout_ms": {
+      "label": "Timeout",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_latency_ms": {
+      "label": "Maximum Latency",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "jitter_ms": {
+      "label": "Jitter Budget",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "freshness_ms": {
+      "label": "Data Freshness",
+      "category": "timing",
+      "scope": "signal",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "source_processing_delay_ms": {
+      "label": "Source Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_processing_delay_ms": {
+      "label": "Target Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "propagation_delay_ms": {
+      "label": "Propagation",
+      "category": "timing",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.01,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_bus_load_percent": {
+      "label": "Ziel-Buslast",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "Zielwert fuer die aus Routing, Payload, Zyklus und Bitrate berechnete Buslast.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "peak_factor": {
+      "label": "Peak Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.15,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_factor": {
+      "label": "Burst Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.5,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_window_ms": {
+      "label": "Burst Window",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "warning_threshold": {
+      "label": "Load Warning",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "critical_threshold": {
+      "label": "Load Critical",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 75,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "overload_threshold": {
+      "label": "Load Overload",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 90,
+      "unit": "%",
+      "min": 1,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "traffic_class": {
+      "label": "Traffic Class",
+      "category": "qos",
+      "scope": "route",
+      "type": "select",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": "BEST_EFFORT",
+      "options": [
+        "BEST_EFFORT",
+        "CONTROL",
+        "REALTIME",
+        "SAFETY_CRITICAL"
+      ],
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "packet_loss_probability": {
+      "label": "Packet Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "frame_loss_probability": {
+      "label": "Frame Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "bit_error_rate": {
+      "label": "Bit Error Rate",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "corruption_probability": {
+      "label": "Corruption",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duplicate_probability": {
+      "label": "Duplication",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "reordering_probability": {
+      "label": "Reordering",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "required_reliability": {
+      "label": "Required Reliability",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.999,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_offset_ms": {
+      "label": "Clock Offset",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_drift_ppm": {
+      "label": "Clock Drift",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 20,
+      "unit": "ppm",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_precision_ms": {
+      "label": "Sync Precision",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_interval_ms": {
+      "label": "Sync Interval",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1000,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_sync_error_ms": {
+      "label": "Maximum Sync Error",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_delay_ms": {
+      "label": "Gateway Processing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.2,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_queue_delay_ms": {
+      "label": "Gateway Queueing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "protocol_conversion_delay_ms": {
+      "label": "Protocol Conversion",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duration_s": {
+      "label": "Simulation Duration",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 1,
+      "unit": "s",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "seed": {
+      "label": "Random Seed",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 42,
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "max_events": {
+      "label": "Maximum Events",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 100000,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "dropout_probability": {
+      "label": "Failure Injection Dropout",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "iso_path": {
+      "type": "select",
+      "description": "Explicit classic CAN path; High Speed ISOBUS must have a separate registered Ethernet profile, never CAN overclock.",
+      "source": "https://committee.iso.org/standard/89949.html?browse=tc",
+      "source_revision": "ISO11783-3:2026 Ed5 March2026 publisher metadata/CEFF scope read; full licensed55-page text not read",
+      "options": [
+        "CLASSIC_CAN"
+      ],
+      "label": "path",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iso_profile": {
+      "type": "select",
+      "description": "Actual selected device/version versus unchanged factory profile of the exact reviewed library commit.",
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_network_configuration.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "options": [
+        "QUALIFIED_DEVICE",
+        "AGISOSTACK_40EFE24_FACTORY"
+      ],
+      "label": "profile",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iso_direction": {
+      "type": "select",
+      "description": "Actual transfer sender/receiver; BAM concurrency limit applies to one sender, not all receivers.",
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_transport_protocol.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "options": [
+        "TRANSMITTER",
+        "RECEIVER"
+      ],
+      "label": "direction",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iso_service": {
+      "type": "select",
+      "description": "Actual registered functionality; VT/TC/TIM/DDI and GNSS require their own application schema/evidence.",
+      "source": "https://www.aef-online.org/products/conformance-test.html",
+      "source_revision": "AEF functionality-specific conformance process; certification requires actual product records, accessed2026-10-01",
+      "options": [
+        "PROCESS_DATA",
+        "ADDRESS_CLAIM",
+        "REQUEST_PGN",
+        "COMMANDED_ADDRESS",
+        "GNSS_FAST_PACKET",
+        "VIRTUAL_TERMINAL",
+        "TASK_CONTROLLER",
+        "DIAGNOSTICS",
+        "FILE_SERVER",
+        "TIM"
+      ],
+      "label": "service",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iso_transport": {
+      "type": "select",
+      "description": "Actual single CAN frame, TP BAM/connection, ETP or qualified GNSS FastPacket; payload ceilings differ.",
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_transport_protocol.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "options": [
+        "SINGLE_FRAME",
+        "TP_BAM",
+        "TP_CONNECTION",
+        "ETP",
+        "GNSS_FAST_PACKET"
+      ],
+      "label": "transport",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iso_frame_format": {
+      "type": "select",
+      "description": "ISO11783-3 CEFF classical extended29-bit, not11-bit/FD/BRS/XL.",
+      "source": "https://committee.iso.org/standard/89949.html?browse=tc",
+      "source_revision": "ISO11783-3:2026 Ed5 March2026 publisher metadata/CEFF scope read; full licensed55-page text not read",
+      "options": [
+        "CLASSIC_EXTENDED_29"
+      ],
+      "default": "CLASSIC_EXTENDED_29",
+      "label": "frame format",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_STANDARD",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iso_frame_phase": {
+      "type": "select",
+      "description": "Actual application/control/data/FastPacket first/subsequent frame; whole-message PGN differs from TP frame PGN.",
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_transport_protocol.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "options": [
+        "APPLICATION",
+        "TP_CM",
+        "TP_DT",
+        "ETP_CM",
+        "ETP_DT",
+        "FP_FIRST",
+        "FP_NEXT"
+      ],
+      "label": "frame phase",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iso_pdu_kind": {
+      "type": "select",
+      "description": "Actual PDU1 destination-specific versus PDU2 group-extension broadcast identifier layout.",
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/src/can_identifier.cpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "options": [
+        "PDU1",
+        "PDU2"
+      ],
+      "label": "pdu kind",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iso_claim_state": {
+      "type": "select",
+      "description": "Actual claimed versus cannot-claim/request state; NULL254 is not an ordinary application source.",
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/src/can_internal_control_function.cpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "options": [
+        "CLAIMED",
+        "REQUESTING",
+        "CANNOT_CLAIM"
+      ],
+      "label": "claim state",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iso_part3_revision": {
+      "type": "text",
+      "description": "Actual qualified ISO11783-3 edition; no assumed2026 conformance from a library source.",
+      "source": "https://committee.iso.org/standard/89949.html?browse=tc",
+      "source_revision": "ISO11783-3:2026 Ed5 March2026 publisher metadata/CEFF scope read; full licensed55-page text not read",
+      "label": "part3 revision",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iso_build_commit": {
+      "type": "text",
+      "description": "Actual exact implementation commit, not floating main reference.",
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_network_configuration.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "label": "build commit",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iso_build_source": {
+      "type": "text",
+      "description": "Actual binary/build configuration and modified/unmodified firmware evidence.",
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_network_configuration.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "label": "build source",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iso_device_source": {
+      "type": "text",
+      "description": "Actual controller/driver/transceiver firmware and supported services/transport.",
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_network_configuration.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "label": "device source",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iso_physical_source": {
+      "type": "text",
+      "description": "Actual ISO11783-2 harness, stub/termination/power/EMC/propagation/PHY evidence.",
+      "source": "https://www.aef-online.org/about-us/activities/high-speed-isobus.html",
+      "source_revision": "AEF original CAN250k/backbone40m versus independent high-speed Ethernet project; accessed2026-10-01",
+      "label": "physical source",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iso_binding_source": {
+      "type": "text",
+      "description": "Actual canonical CAN port/segment and independently registered gateways.",
+      "source": "https://www.aef-online.org/about-us/activities/high-speed-isobus.html",
+      "source_revision": "AEF original CAN250k/backbone40m versus independent high-speed Ethernet project; accessed2026-10-01",
+      "label": "binding source",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iso_pgn_source": {
+      "type": "text",
+      "description": "Actual selected PGN/DDI/function dictionary revision and codec, not copied J1939/NMEA industry defaults.",
+      "source": "https://www.isobus.net/isobus/",
+      "source_revision": "VDMA maintenance agency live ISO11783-11 data dictionary, revision snapshot must be selected per actual PGN/DDI",
+      "label": "pgn source",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iso_name_source": {
+      "type": "text",
+      "description": "Actual unique NAME allocation, manufacturer/function/industry assignments and changing address.",
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/src/can_NAME.cpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "label": "name source",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iso_application_source": {
+      "type": "text",
+      "description": "Actual selected VT/TC/GNSS/diagnostics/file/TIM application schema and role capabilities.",
+      "source": "https://www.aef-online.org/products/conformance-test.html",
+      "source_revision": "AEF functionality-specific conformance process; certification requires actual product records, accessed2026-10-01",
+      "label": "application source",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iso_schedule_source": {
+      "type": "text",
+      "description": "Actual priority/interference/update/transport/claim/driver-queue schedule.",
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_transport_protocol.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "label": "schedule source",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iso_acceptance_source": {
+      "type": "text",
+      "description": "Actual complete functional E2E/freshness/safety acceptance distinct from TP timer.",
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_transport_protocol.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "label": "acceptance source",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iso_capacity_source": {
+      "type": "text",
+      "description": "Actual whole shared CAN segment traffic, retries/errors, bit stuffing and arbitration proof.",
+      "source": "https://www.aef-online.org/about-us/activities/high-speed-isobus.html",
+      "source_revision": "AEF original CAN250k/backbone40m versus independent high-speed Ethernet project; accessed2026-10-01",
+      "label": "capacity source",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iso_conformance_source": {
+      "type": "text",
+      "description": "Actual AEF product/version and selected certified functionality records.",
+      "source": "https://www.aef-online.org/products/conformance-test.html",
+      "source_revision": "AEF functionality-specific conformance process; certification requires actual product records, accessed2026-10-01",
+      "label": "conformance source",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iso_name_hex": {
+      "type": "text",
+      "description": "Actual exact64-bit NAME in16hex digits; JS float/placeholder allFF cannot represent identity.",
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/src/can_NAME.cpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "label": "name hex",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iso_bitrate_bps": {
+      "type": "number",
+      "description": "Classic ISOBUS250000bit/s nominal rate, not genericCAN1M/FD8M.",
+      "source": "https://www.aef-online.org/about-us/activities/high-speed-isobus.html",
+      "source_revision": "AEF original CAN250k/backbone40m versus independent high-speed Ethernet project; accessed2026-10-01",
+      "unit": "bit/s",
+      "min": 250000,
+      "max": 250000,
+      "label": "bitrate bps",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_STANDARD",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "default": 250000
+    },
+    "iso_backbone_m": {
+      "type": "number",
+      "description": "Actual classic CAN backbone length40m ceiling, not whole Ethernet/switch path.",
+      "source": "https://www.aef-online.org/about-us/activities/high-speed-isobus.html",
+      "source_revision": "AEF original CAN250k/backbone40m versus independent high-speed Ethernet project; accessed2026-10-01",
+      "unit": "m",
+      "min": 0,
+      "max": 40,
+      "label": "backbone m",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iso_stub_m": {
+      "type": "number",
+      "description": "Actual qualified harness branch length; no unverified universal stub default.",
+      "source": "https://www.aef-online.org/about-us/activities/high-speed-isobus.html",
+      "source_revision": "AEF original CAN250k/backbone40m versus independent high-speed Ethernet project; accessed2026-10-01",
+      "unit": "m",
+      "min": 0,
+      "label": "stub m",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iso_propagation_ns": {
+      "type": "number",
+      "description": "Actual round-trip harness/transceiver delay.",
+      "source": "https://www.aef-online.org/about-us/activities/high-speed-isobus.html",
+      "source_revision": "AEF original CAN250k/backbone40m versus independent high-speed Ethernet project; accessed2026-10-01",
+      "unit": "ns",
+      "min": 0,
+      "label": "propagation ns",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iso_termination_count": {
+      "type": "number",
+      "description": "Actual termination/active termination units; generic passive120Ohm count is not inferred.",
+      "source": "https://www.aef-online.org/about-us/activities/high-speed-isobus.html",
+      "source_revision": "AEF original CAN250k/backbone40m versus independent high-speed Ethernet project; accessed2026-10-01",
+      "min": 0,
+      "label": "termination count",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iso_supply_v": {
+      "type": "number",
+      "description": "Actual bus/control/termination power supply and operating evidence, not example tractor12V.",
+      "source": "https://www.aef-online.org/about-us/activities/high-speed-isobus.html",
+      "source_revision": "AEF original CAN250k/backbone40m versus independent high-speed Ethernet project; accessed2026-10-01",
+      "unit": "V",
+      "min": 0,
+      "label": "supply v",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iso_priority": {
+      "type": "number",
+      "description": "Actual3-bit CAN identifier priority; pinned library application6/control/data7 proposals differ.",
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/src/can_identifier.cpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "min": 0,
+      "max": 7,
+      "label": "priority",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "iso_profile": "AGISOSTACK_40EFE24_FACTORY",
+            "iso_build_commit": "40efe24161e4d3f62b7ba1309b56475c280bfa24",
+            "iso_unmodified_build": true,
+            "iso_frame_phase": "APPLICATION"
+          },
+          "value": 6,
+          "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/src/can_identifier.cpp",
+          "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read"
+        },
+        {
+          "when": {
+            "iso_profile": "AGISOSTACK_40EFE24_FACTORY",
+            "iso_build_commit": "40efe24161e4d3f62b7ba1309b56475c280bfa24",
+            "iso_unmodified_build": true,
+            "iso_frame_phase": "TP_CM"
+          },
+          "value": 7,
+          "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/src/can_identifier.cpp",
+          "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read"
+        },
+        {
+          "when": {
+            "iso_profile": "AGISOSTACK_40EFE24_FACTORY",
+            "iso_build_commit": "40efe24161e4d3f62b7ba1309b56475c280bfa24",
+            "iso_unmodified_build": true,
+            "iso_frame_phase": "TP_DT"
+          },
+          "value": 7,
+          "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/src/can_identifier.cpp",
+          "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read"
+        },
+        {
+          "when": {
+            "iso_profile": "AGISOSTACK_40EFE24_FACTORY",
+            "iso_build_commit": "40efe24161e4d3f62b7ba1309b56475c280bfa24",
+            "iso_unmodified_build": true,
+            "iso_frame_phase": "ETP_CM"
+          },
+          "value": 7,
+          "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/src/can_identifier.cpp",
+          "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read"
+        },
+        {
+          "when": {
+            "iso_profile": "AGISOSTACK_40EFE24_FACTORY",
+            "iso_build_commit": "40efe24161e4d3f62b7ba1309b56475c280bfa24",
+            "iso_unmodified_build": true,
+            "iso_frame_phase": "ETP_DT"
+          },
+          "value": 7,
+          "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/src/can_identifier.cpp",
+          "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read"
+        }
+      ]
+    },
+    "iso_pgn": {
+      "type": "number",
+      "description": "Actual18-bit PGN; PDU1 low byte0 versus PDU2 group extension; current data frame versus whole application message separate.",
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/src/can_identifier.cpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "min": 0,
+      "max": 262143,
+      "label": "pgn",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iso_message_pgn": {
+      "type": "number",
+      "description": "Actual whole reassembled application PGN distinct from TP/ETP control/data PGNs.",
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_transport_protocol.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "min": 0,
+      "max": 262143,
+      "label": "message pgn",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iso_extended_data_page": {
+      "type": "number",
+      "description": "Actual identifier EDP bit with qualified dictionary, not implicit industry alias.",
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/src/can_identifier.cpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "min": 0,
+      "max": 1,
+      "label": "extended data page",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iso_data_page": {
+      "type": "number",
+      "description": "Actual identifier data-page bit.",
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/src/can_identifier.cpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "min": 0,
+      "max": 1,
+      "label": "data page",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iso_pdu_format": {
+      "type": "number",
+      "description": "Actual8-bit PF determines PDU1 PF<240 or PDU2 PF>=240.",
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/src/can_identifier.cpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "min": 0,
+      "max": 255,
+      "label": "pdu format",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iso_pdu_specific": {
+      "type": "number",
+      "description": "Actual destination byte for PDU1 or group extension for PDU2.",
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/src/can_identifier.cpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "min": 0,
+      "max": 255,
+      "label": "pdu specific",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iso_source_address": {
+      "type": "number",
+      "description": "Actual current SA, broadcast255 is never sender.",
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/src/can_internal_control_function.cpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "min": 0,
+      "max": 254,
+      "label": "source address",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iso_destination_address": {
+      "type": "number",
+      "description": "Actual DA, NULL254 unavailable, broadcast255 distinct from specific0..253.",
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/src/can_identifier.cpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "min": 0,
+      "max": 255,
+      "label": "destination address",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iso_preferred_address": {
+      "type": "number",
+      "description": "Actual requested SA or NULL254 requiring arbitrary-address capability.",
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/src/can_internal_control_function.cpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "min": 0,
+      "max": 254,
+      "label": "preferred address",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iso_can_id": {
+      "type": "number",
+      "description": "Actual encoded29-bit identifier; flags in a host32-bit CAN structure are not ID bits.",
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/src/can_identifier.cpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "min": 0,
+      "max": 536870911,
+      "label": "can id",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iso_manufacturer_code": {
+      "type": "number",
+      "description": "Actual11-bit manufacturer allocation, not factory identity0.",
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/src/can_NAME.cpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "min": 0,
+      "max": 2047,
+      "label": "manufacturer code",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iso_identity_number": {
+      "type": "number",
+      "description": "Actual21-bit unique control-function identity.",
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/src/can_NAME.cpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "min": 0,
+      "max": 2097151,
+      "label": "identity number",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iso_ecu_instance": {
+      "type": "number",
+      "description": "Actual3-bit ECU instance.",
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/src/can_NAME.cpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "min": 0,
+      "max": 7,
+      "label": "ecu instance",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iso_function_instance": {
+      "type": "number",
+      "description": "Actual5-bit function instance.",
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/src/can_NAME.cpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "min": 0,
+      "max": 31,
+      "label": "function instance",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iso_function_code": {
+      "type": "number",
+      "description": "Actual8-bit function interpreted in actual class/industry dictionary.",
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/src/can_NAME.cpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "min": 0,
+      "max": 255,
+      "label": "function code",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iso_device_class": {
+      "type": "number",
+      "description": "Actual7-bit device class.",
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/src/can_NAME.cpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "min": 0,
+      "max": 127,
+      "label": "device class",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iso_device_class_instance": {
+      "type": "number",
+      "description": "Actual4-bit class instance.",
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/src/can_NAME.cpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "min": 0,
+      "max": 15,
+      "label": "device class instance",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iso_industry_group": {
+      "type": "number",
+      "description": "Actual NAME industry group0..5; never copied from NIS industry selection;6/7 reserved in reviewed library.",
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/src/can_NAME.cpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "min": 0,
+      "max": 5,
+      "label": "industry group",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iso_name_reserved_bit": {
+      "type": "number",
+      "description": "Actual reserved NAME bit48, kept explicit for exact encoding.",
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/src/can_NAME.cpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "min": 0,
+      "max": 1,
+      "label": "name reserved bit",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iso_claim_contention_ms": {
+      "type": "number",
+      "description": "Pinned library address contention250ms, not transmission completion deadline.",
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_internal_control_function.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "unit": "ms",
+      "min": 0,
+      "label": "claim contention ms",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "iso_profile": "AGISOSTACK_40EFE24_FACTORY",
+            "iso_build_commit": "40efe24161e4d3f62b7ba1309b56475c280bfa24",
+            "iso_unmodified_build": true
+          },
+          "value": 250,
+          "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_internal_control_function.hpp",
+          "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read"
+        }
+      ]
+    },
+    "iso_claim_random_delay_ms": {
+      "type": "number",
+      "description": "Actual randomized floor(U[0,255]*0.6) in reviewed library; do not default one random value.",
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/src/can_internal_control_function.cpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "unit": "ms",
+      "min": 0,
+      "max": 153,
+      "label": "claim random delay ms",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iso_arbitration_start_address": {
+      "type": "number",
+      "description": "Actual dynamic SA search start128 in pinned library.",
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_internal_control_function.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "min": 0,
+      "max": 253,
+      "label": "arbitration start address",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "iso_profile": "AGISOSTACK_40EFE24_FACTORY",
+            "iso_build_commit": "40efe24161e4d3f62b7ba1309b56475c280bfa24",
+            "iso_unmodified_build": true
+          },
+          "value": 128,
+          "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_internal_control_function.hpp",
+          "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read"
+        }
+      ]
+    },
+    "iso_arbitration_end_address": {
+      "type": "number",
+      "description": "Actual dynamic search end depends on NAME group/library revision.",
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/src/can_internal_control_function.cpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "min": 0,
+      "max": 253,
+      "label": "arbitration end address",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "iso_profile": "AGISOSTACK_40EFE24_FACTORY",
+            "iso_build_commit": "40efe24161e4d3f62b7ba1309b56475c280bfa24",
+            "iso_unmodified_build": true,
+            "iso_industry_group": 0
+          },
+          "value": 247,
+          "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/src/can_internal_control_function.cpp",
+          "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read"
+        },
+        {
+          "when": {
+            "iso_profile": "AGISOSTACK_40EFE24_FACTORY",
+            "iso_build_commit": "40efe24161e4d3f62b7ba1309b56475c280bfa24",
+            "iso_unmodified_build": true,
+            "iso_industry_group": 1
+          },
+          "value": 158,
+          "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/src/can_internal_control_function.cpp",
+          "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read"
+        },
+        {
+          "when": {
+            "iso_profile": "AGISOSTACK_40EFE24_FACTORY",
+            "iso_build_commit": "40efe24161e4d3f62b7ba1309b56475c280bfa24",
+            "iso_unmodified_build": true,
+            "iso_industry_group": 2
+          },
+          "value": 235,
+          "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/src/can_internal_control_function.cpp",
+          "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read"
+        },
+        {
+          "when": {
+            "iso_profile": "AGISOSTACK_40EFE24_FACTORY",
+            "iso_build_commit": "40efe24161e4d3f62b7ba1309b56475c280bfa24",
+            "iso_unmodified_build": true,
+            "iso_industry_group": 3
+          },
+          "value": 207,
+          "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/src/can_internal_control_function.cpp",
+          "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read"
+        },
+        {
+          "when": {
+            "iso_profile": "AGISOSTACK_40EFE24_FACTORY",
+            "iso_build_commit": "40efe24161e4d3f62b7ba1309b56475c280bfa24",
+            "iso_unmodified_build": true,
+            "iso_industry_group": 4
+          },
+          "value": 207,
+          "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/src/can_internal_control_function.cpp",
+          "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read"
+        },
+        {
+          "when": {
+            "iso_profile": "AGISOSTACK_40EFE24_FACTORY",
+            "iso_build_commit": "40efe24161e4d3f62b7ba1309b56475c280bfa24",
+            "iso_unmodified_build": true,
+            "iso_industry_group": 5
+          },
+          "value": 207,
+          "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/src/can_internal_control_function.cpp",
+          "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read"
+        }
+      ]
+    },
+    "iso_message_octets": {
+      "type": "number",
+      "description": "Actual full application message, not per-CAN frame8 or TP1785 universal bound.",
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_extended_transport_protocol.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "unit": "Byte",
+      "min": 0,
+      "max": 117440505,
+      "label": "message octets",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iso_frame_octets": {
+      "type": "number",
+      "description": "Actual current classical CAN data field0..8; transport frames normally8.",
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_transport_protocol.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "unit": "Byte",
+      "min": 0,
+      "max": 8,
+      "label": "frame octets",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iso_transport_data_octets": {
+      "type": "number",
+      "description": "Actual TP/ETP data per frame7 after1-byte sequence.",
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_transport_protocol.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "unit": "Byte",
+      "min": 0,
+      "max": 7,
+      "label": "transport data octets",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iso_fp_first_data_octets": {
+      "type": "number",
+      "description": "Actual FastPacket first frame6 data after sequence+length.",
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/nmea2000_fast_packet_protocol.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "unit": "Byte",
+      "min": 0,
+      "max": 6,
+      "label": "fp first data octets",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iso_fp_next_data_octets": {
+      "type": "number",
+      "description": "Actual subsequent FastPacket7 data after counter.",
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/nmea2000_fast_packet_protocol.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "unit": "Byte",
+      "min": 0,
+      "max": 7,
+      "label": "fp next data octets",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iso_data_frames": {
+      "type": "number",
+      "description": "Actual ceil(message/7) TP/ETP or1+ceil((message-6)/7) FastPacket.",
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_transport_protocol.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "min": 1,
+      "max": 16777215,
+      "label": "data frames",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iso_tp_sequence": {
+      "type": "number",
+      "description": "Actual TP data sequence1..255, not0-based CAN frame index.",
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_transport_protocol.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "min": 1,
+      "max": 255,
+      "label": "tp sequence",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iso_etp_offset_packets": {
+      "type": "number",
+      "description": "Actual24-bit ETP DPO packet offset.",
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_extended_transport_protocol.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "min": 0,
+      "max": 16777215,
+      "label": "etp offset packets",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iso_absolute_packet": {
+      "type": "number",
+      "description": "Actual ETP offset+1-based local sequence within full message.",
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_extended_transport_protocol.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "min": 1,
+      "max": 16777215,
+      "label": "absolute packet",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iso_fp_sequence": {
+      "type": "number",
+      "description": "Actual3-bit FastPacket flow sequence.",
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/nmea2000_fast_packet_protocol.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "min": 0,
+      "max": 7,
+      "label": "fp sequence",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iso_fp_frame_counter": {
+      "type": "number",
+      "description": "Actual5-bit FastPacket frame counter0..31.",
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/nmea2000_fast_packet_protocol.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "min": 0,
+      "max": 31,
+      "label": "fp frame counter",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iso_max_sessions": {
+      "type": "number",
+      "description": "Actual implementation memory cap on transport sessions,0 disables admission.",
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_network_configuration.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "min": 0,
+      "max": 4294967295,
+      "label": "max sessions",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "iso_profile": "AGISOSTACK_40EFE24_FACTORY",
+            "iso_build_commit": "40efe24161e4d3f62b7ba1309b56475c280bfa24",
+            "iso_unmodified_build": true
+          },
+          "value": 4,
+          "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_network_configuration.hpp",
+          "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read"
+        }
+      ]
+    },
+    "iso_active_sessions": {
+      "type": "number",
+      "description": "Actual concurrent sessions, not a proposed factory memory bound.",
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_network_configuration.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "min": 0,
+      "label": "active sessions",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iso_frames_per_update": {
+      "type": "number",
+      "description": "Actual implementation queue admission cap per manager update; not universal bus-load proof.",
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_network_configuration.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "min": 0,
+      "max": 255,
+      "label": "frames per update",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "iso_profile": "AGISOSTACK_40EFE24_FACTORY",
+            "iso_build_commit": "40efe24161e4d3f62b7ba1309b56475c280bfa24",
+            "iso_unmodified_build": true
+          },
+          "value": 255,
+          "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_network_configuration.hpp",
+          "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read"
+        }
+      ]
+    },
+    "iso_cts_packets": {
+      "type": "number",
+      "description": "Actual negotiated receiver CTS count,0 may pause; sender and receiver capability separate.",
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_network_configuration.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "min": 0,
+      "max": 255,
+      "label": "cts packets",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "iso_profile": "AGISOSTACK_40EFE24_FACTORY",
+            "iso_build_commit": "40efe24161e4d3f62b7ba1309b56475c280bfa24",
+            "iso_unmodified_build": true,
+            "iso_transport": "TP_CONNECTION"
+          },
+          "value": 16,
+          "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_network_configuration.hpp",
+          "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read"
+        }
+      ]
+    },
+    "iso_dpo_packets": {
+      "type": "number",
+      "description": "Actual ETP block packets0..255 at selected protocol phase.",
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_network_configuration.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "min": 0,
+      "max": 255,
+      "label": "dpo packets",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "iso_profile": "AGISOSTACK_40EFE24_FACTORY",
+            "iso_build_commit": "40efe24161e4d3f62b7ba1309b56475c280bfa24",
+            "iso_unmodified_build": true,
+            "iso_transport": "ETP"
+          },
+          "value": 16,
+          "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_network_configuration.hpp",
+          "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read"
+        }
+      ]
+    },
+    "iso_bam_interval_ms": {
+      "type": "number",
+      "description": "Actual ISOBUS BAM frame spacing10..200ms; pinned library50ms for J1939 compatibility.",
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_network_configuration.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "unit": "ms",
+      "min": 10,
+      "max": 200,
+      "label": "bam interval ms",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "iso_profile": "AGISOSTACK_40EFE24_FACTORY",
+            "iso_build_commit": "40efe24161e4d3f62b7ba1309b56475c280bfa24",
+            "iso_unmodified_build": true,
+            "iso_transport": "TP_BAM"
+          },
+          "value": 50,
+          "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_network_configuration.hpp",
+          "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read"
+        }
+      ]
+    },
+    "iso_t1_ms": {
+      "type": "number",
+      "description": "Actual TP/ETP inter-data timeout; pinned library750ms.",
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_transport_protocol.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "unit": "ms",
+      "min": 0,
+      "label": "t1 ms",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "iso_profile": "AGISOSTACK_40EFE24_FACTORY",
+            "iso_build_commit": "40efe24161e4d3f62b7ba1309b56475c280bfa24",
+            "iso_unmodified_build": true,
+            "iso_transport": "TP_CONNECTION"
+          },
+          "value": 750,
+          "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_transport_protocol.hpp",
+          "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read"
+        },
+        {
+          "when": {
+            "iso_profile": "AGISOSTACK_40EFE24_FACTORY",
+            "iso_build_commit": "40efe24161e4d3f62b7ba1309b56475c280bfa24",
+            "iso_unmodified_build": true,
+            "iso_transport": "ETP"
+          },
+          "value": 750,
+          "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_transport_protocol.hpp",
+          "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read"
+        }
+      ]
+    },
+    "iso_t2_ms": {
+      "type": "number",
+      "description": "Actual TP/ETP receiver response timeout; pinned library1250ms.",
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_transport_protocol.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "unit": "ms",
+      "min": 0,
+      "label": "t2 ms",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "iso_profile": "AGISOSTACK_40EFE24_FACTORY",
+            "iso_build_commit": "40efe24161e4d3f62b7ba1309b56475c280bfa24",
+            "iso_unmodified_build": true,
+            "iso_transport": "TP_CONNECTION"
+          },
+          "value": 1250,
+          "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_transport_protocol.hpp",
+          "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read"
+        },
+        {
+          "when": {
+            "iso_profile": "AGISOSTACK_40EFE24_FACTORY",
+            "iso_build_commit": "40efe24161e4d3f62b7ba1309b56475c280bfa24",
+            "iso_unmodified_build": true,
+            "iso_transport": "ETP"
+          },
+          "value": 1250,
+          "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_transport_protocol.hpp",
+          "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read"
+        }
+      ]
+    },
+    "iso_t3_ms": {
+      "type": "number",
+      "description": "Actual TP/ETP connection response timeout; pinned library1250ms.",
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_transport_protocol.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "unit": "ms",
+      "min": 0,
+      "label": "t3 ms",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "iso_profile": "AGISOSTACK_40EFE24_FACTORY",
+            "iso_build_commit": "40efe24161e4d3f62b7ba1309b56475c280bfa24",
+            "iso_unmodified_build": true,
+            "iso_transport": "TP_CONNECTION"
+          },
+          "value": 1250,
+          "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_transport_protocol.hpp",
+          "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read"
+        },
+        {
+          "when": {
+            "iso_profile": "AGISOSTACK_40EFE24_FACTORY",
+            "iso_build_commit": "40efe24161e4d3f62b7ba1309b56475c280bfa24",
+            "iso_unmodified_build": true,
+            "iso_transport": "ETP"
+          },
+          "value": 1250,
+          "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_transport_protocol.hpp",
+          "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read"
+        }
+      ]
+    },
+    "iso_t4_ms": {
+      "type": "number",
+      "description": "Actual TP/ETP hold timeout; pinned header1050ms, exact state-machine use remains distinct.",
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_transport_protocol.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "unit": "ms",
+      "min": 0,
+      "label": "t4 ms",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "iso_profile": "AGISOSTACK_40EFE24_FACTORY",
+            "iso_build_commit": "40efe24161e4d3f62b7ba1309b56475c280bfa24",
+            "iso_unmodified_build": true,
+            "iso_transport": "TP_CONNECTION"
+          },
+          "value": 1050,
+          "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_transport_protocol.hpp",
+          "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read"
+        },
+        {
+          "when": {
+            "iso_profile": "AGISOSTACK_40EFE24_FACTORY",
+            "iso_build_commit": "40efe24161e4d3f62b7ba1309b56475c280bfa24",
+            "iso_unmodified_build": true,
+            "iso_transport": "ETP"
+          },
+          "value": 1050,
+          "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_transport_protocol.hpp",
+          "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read"
+        }
+      ]
+    },
+    "iso_tr_ms": {
+      "type": "number",
+      "description": "Actual TP/ETP retry/hold timing bound; pinned header200ms, not end-to-end latency.",
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_transport_protocol.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "unit": "ms",
+      "min": 0,
+      "label": "tr ms",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "iso_profile": "AGISOSTACK_40EFE24_FACTORY",
+            "iso_build_commit": "40efe24161e4d3f62b7ba1309b56475c280bfa24",
+            "iso_unmodified_build": true,
+            "iso_transport": "TP_CONNECTION"
+          },
+          "value": 200,
+          "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_transport_protocol.hpp",
+          "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read"
+        },
+        {
+          "when": {
+            "iso_profile": "AGISOSTACK_40EFE24_FACTORY",
+            "iso_build_commit": "40efe24161e4d3f62b7ba1309b56475c280bfa24",
+            "iso_unmodified_build": true,
+            "iso_transport": "ETP"
+          },
+          "value": 200,
+          "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_transport_protocol.hpp",
+          "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read"
+        }
+      ]
+    },
+    "iso_fp_timeout_ms": {
+      "type": "number",
+      "description": "Actual FastPacket reassembly timeout; pinned library750ms.",
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/nmea2000_fast_packet_protocol.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "unit": "ms",
+      "min": 0,
+      "label": "fp timeout ms",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "iso_profile": "AGISOSTACK_40EFE24_FACTORY",
+            "iso_build_commit": "40efe24161e4d3f62b7ba1309b56475c280bfa24",
+            "iso_unmodified_build": true,
+            "iso_transport": "GNSS_FAST_PACKET"
+          },
+          "value": 750,
+          "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/nmea2000_fast_packet_protocol.hpp",
+          "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read"
+        }
+      ]
+    },
+    "iso_driver_update_ms": {
+      "type": "number",
+      "description": "Actual manager/driver update period; frames/update alone does not determine throughput.",
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_network_configuration.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "unit": "ms",
+      "min": 0,
+      "label": "driver update ms",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iso_stuffed_frame_bits": {
+      "type": "number",
+      "description": "Actual bounded classical extended CAN wire bits including stuffing/ACK/IFS, not message_octets*8.",
+      "source": "https://www.aef-online.org/about-us/activities/high-speed-isobus.html",
+      "source_revision": "AEF original CAN250k/backbone40m versus independent high-speed Ethernet project; accessed2026-10-01",
+      "unit": "bit",
+      "min": 0,
+      "label": "stuffed frame bits",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iso_arbitration_bound_ms": {
+      "type": "number",
+      "description": "Actual interference/priority blocking bound on selected shared segment.",
+      "source": "https://www.aef-online.org/about-us/activities/high-speed-isobus.html",
+      "source_revision": "AEF original CAN250k/backbone40m versus independent high-speed Ethernet project; accessed2026-10-01",
+      "unit": "ms",
+      "min": 0,
+      "label": "arbitration bound ms",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iso_functional_bound_ms": {
+      "type": "number",
+      "description": "Actual complete application E2E deadline.",
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_transport_protocol.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "unit": "ms",
+      "min": 0,
+      "label": "functional bound ms",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iso_unmodified_build": {
+      "type": "boolean",
+      "description": "Actual pinned source/build has no settings modifications.",
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_network_configuration.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "label": "unmodified build",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iso_arbitrary_address_capable": {
+      "type": "boolean",
+      "description": "Actual NAME bit63 and address-claiming capability.",
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_network_configuration.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "label": "arbitrary address capable",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iso_brs": {
+      "type": "boolean",
+      "description": "Classical ISOBUS has no FD bit-rate switch.",
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_network_configuration.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "label": "brs",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iso_fd_enabled": {
+      "type": "boolean",
+      "description": "Classical ISOBUS has no FD frames.",
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_network_configuration.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "label": "fd enabled",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iso_claim_confirmed": {
+      "type": "boolean",
+      "description": "Actual observed address claim; library constant alone cannot confirm claim.",
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_network_configuration.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "label": "claim confirmed",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iso_schedule_confirmed": {
+      "type": "boolean",
+      "description": "Actual schedule confirmation.",
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_network_configuration.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "label": "schedule confirmed",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iso_capacity_confirmed": {
+      "type": "boolean",
+      "description": "Actual full segment capacity confirmation.",
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_network_configuration.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "label": "capacity confirmed",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    }
+  },
+  "mechanisms": {
+    "framing": [
+      "CLASSIC_EXTENDED_CAN_29"
+    ],
+    "arbitration": [
+      "ACTUAL_CAN_IDENTIFIER_PRIORITY_AND_NAME_ADDRESS_CLAIM"
+    ],
+    "addressing": [
+      "UNIQUE_NAME_AND_CHANGING_SOURCE_ADDRESS"
+    ],
+    "segmentation": [
+      "SINGLE8_TP1785_ETP117440505_GNSS_FP223_SEPARATE"
+    ],
+    "acceptance": [
+      "AEF_SELECTED_FUNCTIONALITY_AND_FULL_SEGMENT_SCHEDULE_NOT_INFERRED"
+    ]
+  },
+  "parameter_constraints": [
+    {
+      "parameter": "iso_fd_enabled",
+      "when": {},
+      "source": "https://committee.iso.org/standard/89949.html?browse=tc",
+      "source_revision": "ISO11783-3:2026 Ed5 March2026 publisher metadata/CEFF scope read; full licensed55-page text not read",
+      "allowed": [
+        false
+      ]
+    },
+    {
+      "parameter": "iso_brs",
+      "when": {},
+      "source": "https://committee.iso.org/standard/89949.html?browse=tc",
+      "source_revision": "ISO11783-3:2026 Ed5 March2026 publisher metadata/CEFF scope read; full licensed55-page text not read",
+      "allowed": [
+        false
+      ]
+    },
+    {
+      "parameter": "iso_name_hex",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/src/can_NAME.cpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "pattern": "[0-9a-fA-F]{16}",
+      "forbidden": [
+        "ffffffffffffffff",
+        "FFFFFFFFFFFFFFFF"
+      ],
+      "integer_text_base": 16,
+      "integer_bitfields": [
+        {
+          "parameter": "iso_identity_number",
+          "offset": 0,
+          "width": 21,
+          "boolean": false
+        },
+        {
+          "parameter": "iso_manufacturer_code",
+          "offset": 21,
+          "width": 11,
+          "boolean": false
+        },
+        {
+          "parameter": "iso_ecu_instance",
+          "offset": 32,
+          "width": 3,
+          "boolean": false
+        },
+        {
+          "parameter": "iso_function_instance",
+          "offset": 35,
+          "width": 5,
+          "boolean": false
+        },
+        {
+          "parameter": "iso_function_code",
+          "offset": 40,
+          "width": 8,
+          "boolean": false
+        },
+        {
+          "parameter": "iso_name_reserved_bit",
+          "offset": 48,
+          "width": 1,
+          "boolean": false
+        },
+        {
+          "parameter": "iso_device_class",
+          "offset": 49,
+          "width": 7,
+          "boolean": false
+        },
+        {
+          "parameter": "iso_device_class_instance",
+          "offset": 56,
+          "width": 4,
+          "boolean": false
+        },
+        {
+          "parameter": "iso_industry_group",
+          "offset": 60,
+          "width": 3,
+          "boolean": false
+        },
+        {
+          "parameter": "iso_arbitrary_address_capable",
+          "offset": 63,
+          "width": 1,
+          "boolean": true
+        }
+      ]
+    },
+    {
+      "parameter": "iso_destination_address",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/src/can_identifier.cpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "forbidden": [
+        254
+      ]
+    },
+    {
+      "parameter": "iso_source_address",
+      "when": {
+        "iso_claim_state": "CLAIMED"
+      },
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/src/can_internal_control_function.cpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "maximum": 253
+    },
+    {
+      "parameter": "iso_source_address",
+      "when": {
+        "iso_claim_state": "CANNOT_CLAIM"
+      },
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/src/can_internal_control_function.cpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "allowed": [
+        254
+      ]
+    },
+    {
+      "parameter": "iso_source_address",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/src/can_internal_control_function.cpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "when_not": {
+        "iso_service": "REQUEST_PGN",
+        "iso_claim_state": "CANNOT_CLAIM"
+      },
+      "when_present": [
+        "iso_service"
+      ],
+      "maximum": 253
+    },
+    {
+      "parameter": "iso_service",
+      "when": {
+        "iso_claim_state": "CANNOT_CLAIM"
+      },
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/src/can_internal_control_function.cpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "allowed": [
+        "ADDRESS_CLAIM"
+      ]
+    },
+    {
+      "parameter": "iso_arbitrary_address_capable",
+      "when": {
+        "iso_preferred_address": 254
+      },
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/src/can_internal_control_function.cpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "allowed": [
+        true
+      ],
+      "required": true
+    },
+    {
+      "parameter": "iso_arbitration_end_address",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/src/can_internal_control_function.cpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "minimum_parameter": "iso_arbitration_start_address"
+    },
+    {
+      "parameter": "iso_pdu_format",
+      "when": {
+        "iso_pdu_kind": "PDU1"
+      },
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/src/can_identifier.cpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "maximum": 239
+    },
+    {
+      "parameter": "iso_pdu_format",
+      "when": {
+        "iso_pdu_kind": "PDU2"
+      },
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/src/can_identifier.cpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "minimum": 240
+    },
+    {
+      "parameter": "iso_pdu_specific",
+      "when": {
+        "iso_pdu_kind": "PDU1"
+      },
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/src/can_identifier.cpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "equal_parameter": "iso_destination_address"
+    },
+    {
+      "parameter": "iso_destination_address",
+      "when": {
+        "iso_pdu_kind": "PDU2"
+      },
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/src/can_identifier.cpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "allowed": [
+        255
+      ]
+    },
+    {
+      "parameter": "iso_pgn",
+      "when": {
+        "iso_pdu_kind": "PDU1"
+      },
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/src/can_identifier.cpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "multiple_of": 256,
+      "equal_expression": {
+        "sum": [
+          {
+            "product": [
+              "iso_extended_data_page",
+              131072
+            ]
+          },
+          {
+            "product": [
+              "iso_data_page",
+              65536
+            ]
+          },
+          {
+            "product": [
+              "iso_pdu_format",
+              256
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "parameter": "iso_pgn",
+      "when": {
+        "iso_pdu_kind": "PDU2"
+      },
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/src/can_identifier.cpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "equal_expression": {
+        "sum": [
+          {
+            "sum": [
+              {
+                "product": [
+                  "iso_extended_data_page",
+                  131072
+                ]
+              },
+              {
+                "product": [
+                  "iso_data_page",
+                  65536
+                ]
+              },
+              {
+                "product": [
+                  "iso_pdu_format",
+                  256
+                ]
+              }
+            ]
+          },
+          "iso_pdu_specific"
+        ]
+      }
+    },
+    {
+      "parameter": "iso_can_id",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/src/can_identifier.cpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "equal_expression": {
+        "sum": [
+          {
+            "product": [
+              "iso_priority",
+              67108864
+            ]
+          },
+          {
+            "product": [
+              "iso_extended_data_page",
+              33554432
+            ]
+          },
+          {
+            "product": [
+              "iso_data_page",
+              16777216
+            ]
+          },
+          {
+            "product": [
+              "iso_pdu_format",
+              65536
+            ]
+          },
+          {
+            "product": [
+              "iso_pdu_specific",
+              256
+            ]
+          },
+          "iso_source_address"
+        ]
+      }
+    },
+    {
+      "parameter": "iso_message_octets",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_transport_protocol.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "equal_parameter": "payload_bytes"
+    },
+    {
+      "parameter": "iso_message_octets",
+      "when": {
+        "iso_transport": "TP_BAM"
+      },
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_transport_protocol.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "minimum": 9,
+      "maximum": 1785
+    },
+    {
+      "parameter": "iso_data_frames",
+      "when": {
+        "iso_transport": "TP_BAM"
+      },
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_transport_protocol.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "equal_expression": {
+        "ceiling": [
+          {
+            "product": [
+              "iso_message_octets",
+              0.14285714285714285
+            ]
+          }
+        ]
+      },
+      "maximum": 255
+    },
+    {
+      "parameter": "iso_frame_phase",
+      "when": {
+        "iso_transport": "TP_BAM"
+      },
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_transport_protocol.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "allowed": [
+        "TP_CM",
+        "TP_DT"
+      ]
+    },
+    {
+      "parameter": "iso_message_octets",
+      "when": {
+        "iso_transport": "TP_CONNECTION"
+      },
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_transport_protocol.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "minimum": 9,
+      "maximum": 1785
+    },
+    {
+      "parameter": "iso_data_frames",
+      "when": {
+        "iso_transport": "TP_CONNECTION"
+      },
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_transport_protocol.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "equal_expression": {
+        "ceiling": [
+          {
+            "product": [
+              "iso_message_octets",
+              0.14285714285714285
+            ]
+          }
+        ]
+      },
+      "maximum": 255
+    },
+    {
+      "parameter": "iso_frame_phase",
+      "when": {
+        "iso_transport": "TP_CONNECTION"
+      },
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_transport_protocol.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "allowed": [
+        "TP_CM",
+        "TP_DT"
+      ]
+    },
+    {
+      "parameter": "iso_message_octets",
+      "when": {
+        "iso_transport": "SINGLE_FRAME"
+      },
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_transport_protocol.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "maximum": 8
+    },
+    {
+      "parameter": "iso_data_frames",
+      "when": {
+        "iso_transport": "SINGLE_FRAME"
+      },
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_transport_protocol.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "allowed": [
+        1
+      ]
+    },
+    {
+      "parameter": "iso_frame_octets",
+      "when": {
+        "iso_transport": "SINGLE_FRAME"
+      },
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_transport_protocol.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "equal_parameter": "iso_message_octets"
+    },
+    {
+      "parameter": "iso_message_pgn",
+      "when": {
+        "iso_transport": "SINGLE_FRAME"
+      },
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_transport_protocol.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "equal_parameter": "iso_pgn"
+    },
+    {
+      "parameter": "iso_frame_phase",
+      "when": {
+        "iso_transport": "SINGLE_FRAME"
+      },
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_transport_protocol.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "allowed": [
+        "APPLICATION"
+      ]
+    },
+    {
+      "parameter": "iso_bam_interval_ms",
+      "when": {
+        "iso_transport": "SINGLE_FRAME"
+      },
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_transport_protocol.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "allowed": []
+    },
+    {
+      "parameter": "iso_tp_sequence",
+      "when": {
+        "iso_transport": "SINGLE_FRAME"
+      },
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_transport_protocol.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "allowed": []
+    },
+    {
+      "parameter": "iso_cts_packets",
+      "when": {
+        "iso_transport": "SINGLE_FRAME"
+      },
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_transport_protocol.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "allowed": []
+    },
+    {
+      "parameter": "iso_dpo_packets",
+      "when": {
+        "iso_transport": "SINGLE_FRAME"
+      },
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_transport_protocol.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "allowed": []
+    },
+    {
+      "parameter": "iso_etp_offset_packets",
+      "when": {
+        "iso_transport": "SINGLE_FRAME"
+      },
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_transport_protocol.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "allowed": []
+    },
+    {
+      "parameter": "iso_absolute_packet",
+      "when": {
+        "iso_transport": "SINGLE_FRAME"
+      },
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_transport_protocol.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "allowed": []
+    },
+    {
+      "parameter": "iso_fp_sequence",
+      "when": {
+        "iso_transport": "SINGLE_FRAME"
+      },
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_transport_protocol.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "allowed": []
+    },
+    {
+      "parameter": "iso_fp_frame_counter",
+      "when": {
+        "iso_transport": "SINGLE_FRAME"
+      },
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_transport_protocol.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "allowed": []
+    },
+    {
+      "parameter": "iso_message_octets",
+      "when": {
+        "iso_transport": "ETP"
+      },
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_extended_transport_protocol.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "minimum": 1786,
+      "maximum": 117440505
+    },
+    {
+      "parameter": "iso_data_frames",
+      "when": {
+        "iso_transport": "ETP"
+      },
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_extended_transport_protocol.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "equal_expression": {
+        "ceiling": [
+          {
+            "product": [
+              "iso_message_octets",
+              0.14285714285714285
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "parameter": "iso_frame_phase",
+      "when": {
+        "iso_transport": "ETP"
+      },
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_extended_transport_protocol.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "allowed": [
+        "ETP_CM",
+        "ETP_DT"
+      ]
+    },
+    {
+      "parameter": "iso_destination_address",
+      "when": {
+        "iso_transport": "ETP"
+      },
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_extended_transport_protocol.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "maximum": 253
+    },
+    {
+      "parameter": "iso_destination_address",
+      "when": {
+        "iso_transport": "TP_CONNECTION"
+      },
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_transport_protocol.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "maximum": 253
+    },
+    {
+      "parameter": "iso_destination_address",
+      "when": {
+        "iso_transport": "TP_BAM"
+      },
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_transport_protocol.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "allowed": [
+        255
+      ]
+    },
+    {
+      "parameter": "iso_active_sessions",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_network_configuration.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "maximum_parameter": "iso_max_sessions"
+    },
+    {
+      "parameter": "iso_active_sessions",
+      "when": {
+        "iso_transport": "TP_BAM",
+        "iso_direction": "TRANSMITTER"
+      },
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_transport_protocol.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "maximum": 1
+    },
+    {
+      "parameter": "iso_max_sessions",
+      "when": {
+        "iso_transport": "TP_BAM"
+      },
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_network_configuration.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "minimum": 1
+    },
+    {
+      "parameter": "iso_max_sessions",
+      "when": {
+        "iso_transport": "TP_CONNECTION"
+      },
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_network_configuration.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "minimum": 1
+    },
+    {
+      "parameter": "iso_max_sessions",
+      "when": {
+        "iso_transport": "ETP"
+      },
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_network_configuration.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "minimum": 1
+    },
+    {
+      "parameter": "iso_pgn",
+      "when": {
+        "iso_frame_phase": "TP_CM"
+      },
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_transport_protocol.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "allowed": [
+        60416
+      ]
+    },
+    {
+      "parameter": "iso_frame_octets",
+      "when": {
+        "iso_frame_phase": "TP_CM"
+      },
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_transport_protocol.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "allowed": [
+        8
+      ]
+    },
+    {
+      "parameter": "iso_pgn",
+      "when": {
+        "iso_frame_phase": "TP_DT"
+      },
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_transport_protocol.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "allowed": [
+        60160
+      ]
+    },
+    {
+      "parameter": "iso_frame_octets",
+      "when": {
+        "iso_frame_phase": "TP_DT"
+      },
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_transport_protocol.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "allowed": [
+        8
+      ]
+    },
+    {
+      "parameter": "iso_pgn",
+      "when": {
+        "iso_frame_phase": "ETP_CM"
+      },
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_extended_transport_protocol.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "allowed": [
+        51200
+      ]
+    },
+    {
+      "parameter": "iso_frame_octets",
+      "when": {
+        "iso_frame_phase": "ETP_CM"
+      },
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_transport_protocol.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "allowed": [
+        8
+      ]
+    },
+    {
+      "parameter": "iso_pgn",
+      "when": {
+        "iso_frame_phase": "ETP_DT"
+      },
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_extended_transport_protocol.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "allowed": [
+        50944
+      ]
+    },
+    {
+      "parameter": "iso_frame_octets",
+      "when": {
+        "iso_frame_phase": "ETP_DT"
+      },
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_transport_protocol.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "allowed": [
+        8
+      ]
+    },
+    {
+      "parameter": "iso_transport_data_octets",
+      "when": {
+        "iso_frame_phase": "TP_DT"
+      },
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_transport_protocol.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "allowed": [
+        7
+      ]
+    },
+    {
+      "parameter": "iso_transport_data_octets",
+      "when": {
+        "iso_frame_phase": "ETP_DT"
+      },
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_transport_protocol.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "allowed": [
+        7
+      ]
+    },
+    {
+      "parameter": "iso_absolute_packet",
+      "when": {
+        "iso_transport": "ETP"
+      },
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_extended_transport_protocol.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "equal_expression": {
+        "sum": [
+          "iso_etp_offset_packets",
+          "iso_tp_sequence"
+        ]
+      },
+      "maximum_parameter": "iso_data_frames"
+    },
+    {
+      "parameter": "iso_service",
+      "when": {
+        "iso_transport": "GNSS_FAST_PACKET"
+      },
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/nmea2000_fast_packet_protocol.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "allowed": [
+        "GNSS_FAST_PACKET"
+      ]
+    },
+    {
+      "parameter": "iso_message_octets",
+      "when": {
+        "iso_transport": "GNSS_FAST_PACKET"
+      },
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/nmea2000_fast_packet_protocol.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "minimum": 9,
+      "maximum": 223
+    },
+    {
+      "parameter": "iso_frame_phase",
+      "when": {
+        "iso_transport": "GNSS_FAST_PACKET"
+      },
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/nmea2000_fast_packet_protocol.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "allowed": [
+        "FP_FIRST",
+        "FP_NEXT"
+      ]
+    },
+    {
+      "parameter": "iso_pgn",
+      "when": {
+        "iso_transport": "GNSS_FAST_PACKET"
+      },
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/nmea2000_fast_packet_protocol.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "minimum": 126976,
+      "maximum": 131071
+    },
+    {
+      "parameter": "iso_data_frames",
+      "when": {
+        "iso_transport": "GNSS_FAST_PACKET"
+      },
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/nmea2000_fast_packet_protocol.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "equal_expression": {
+        "sum": [
+          1,
+          {
+            "ceiling": [
+              {
+                "product": [
+                  {
+                    "subtract": [
+                      "iso_message_octets",
+                      6
+                    ]
+                  },
+                  0.14285714285714285
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "parameter": "iso_fp_frame_counter",
+      "when": {
+        "iso_frame_phase": "FP_FIRST"
+      },
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/nmea2000_fast_packet_protocol.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "iso_fp_frame_counter",
+      "when": {
+        "iso_frame_phase": "FP_NEXT"
+      },
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/nmea2000_fast_packet_protocol.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "minimum": 1
+    },
+    {
+      "parameter": "iso_message_octets",
+      "when": {
+        "iso_service": "ADDRESS_CLAIM"
+      },
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/src/can_internal_control_function.cpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "allowed": [
+        8
+      ]
+    },
+    {
+      "parameter": "iso_message_octets",
+      "when": {
+        "iso_service": "REQUEST_PGN"
+      },
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/src/can_internal_control_function.cpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "allowed": [
+        3
+      ]
+    },
+    {
+      "parameter": "iso_message_octets",
+      "when": {
+        "iso_service": "COMMANDED_ADDRESS"
+      },
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/src/can_internal_control_function.cpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "allowed": [
+        9
+      ]
+    },
+    {
+      "parameter": "iso_build_source",
+      "when": {
+        "iso_profile": "AGISOSTACK_40EFE24_FACTORY"
+      },
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_network_configuration.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "required": true
+    },
+    {
+      "parameter": "iso_build_commit",
+      "when": {
+        "iso_profile": "AGISOSTACK_40EFE24_FACTORY"
+      },
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_network_configuration.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "required": true
+    },
+    {
+      "parameter": "iso_unmodified_build",
+      "when": {
+        "iso_profile": "AGISOSTACK_40EFE24_FACTORY"
+      },
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_network_configuration.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "required": true
+    },
+    {
+      "parameter": "iso_build_commit",
+      "when": {
+        "iso_profile": "AGISOSTACK_40EFE24_FACTORY"
+      },
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_network_configuration.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "allowed": [
+        "40efe24161e4d3f62b7ba1309b56475c280bfa24"
+      ]
+    },
+    {
+      "parameter": "iso_unmodified_build",
+      "when": {
+        "iso_profile": "AGISOSTACK_40EFE24_FACTORY"
+      },
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_network_configuration.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "iso_t1_ms",
+      "when": {
+        "iso_profile": "AGISOSTACK_40EFE24_FACTORY"
+      },
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_transport_protocol.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "allowed": [
+        750
+      ]
+    },
+    {
+      "parameter": "iso_t2_ms",
+      "when": {
+        "iso_profile": "AGISOSTACK_40EFE24_FACTORY"
+      },
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_transport_protocol.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "allowed": [
+        1250
+      ]
+    },
+    {
+      "parameter": "iso_t3_ms",
+      "when": {
+        "iso_profile": "AGISOSTACK_40EFE24_FACTORY"
+      },
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_transport_protocol.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "allowed": [
+        1250
+      ]
+    },
+    {
+      "parameter": "iso_t4_ms",
+      "when": {
+        "iso_profile": "AGISOSTACK_40EFE24_FACTORY"
+      },
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_transport_protocol.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "allowed": [
+        1050
+      ]
+    },
+    {
+      "parameter": "iso_tr_ms",
+      "when": {
+        "iso_profile": "AGISOSTACK_40EFE24_FACTORY"
+      },
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_transport_protocol.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "allowed": [
+        200
+      ]
+    },
+    {
+      "parameter": "iso_fp_timeout_ms",
+      "when": {
+        "iso_profile": "AGISOSTACK_40EFE24_FACTORY"
+      },
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/nmea2000_fast_packet_protocol.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "allowed": [
+        750
+      ]
+    },
+    {
+      "parameter": "iso_claim_contention_ms",
+      "when": {
+        "iso_profile": "AGISOSTACK_40EFE24_FACTORY"
+      },
+      "source": "https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/40efe24161e4d3f62b7ba1309b56475c280bfa24/isobus/include/isobus/isobus/can_internal_control_function.hpp",
+      "source_revision": "AgIsoStack++ pinned commit40efe24161e4d3f62b7ba1309b56475c280bfa242026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read",
+      "allowed": [
+        250
+      ]
+    }
+  ],
+  "physical_layer_profile_id": null,
+  "medium_access_model": null,
+  "native_parameter_prefixes": [
+    "iso_"
+  ],
+  "parameter_aliases": {},
+  "parameter_alias_limits": {},
+  "parameter_evidence_scope": null,
+  "rate_source_profile_id": null,
+  "arbitration_model_id": null,
+  "max_payload_bytes": null,
+  "capabilities": {
+    "supports_signals": true,
+    "supports_data_objects": true,
+    "supports_streams": false,
+    "supports_multicast": true,
+    "supports_publish_subscribe": false,
+    "supports_request_response": false,
+    "supports_cyclic": true,
+    "supports_event": true,
+    "supports_redundancy": false,
+    "supports_time_sync": false,
+    "supports_safety_profile": false,
+    "supports_segmentation": true,
+    "supports_fragmentation": false,
+    "supports_qos": false
+  },
+  "deterministic": false,
+  "overhead_bytes": 8,
+  "implementation_status": "PARTIAL",
+  "connection_type": "COMMUNICATION_TECHNOLOGY",
+  "parameter_proposals": {
+    "kind": "DEVICE_DEPENDENT",
+    "status": "REVIEW_REQUIRED",
+    "required_fields": [],
+    "note": "No universal rate is available; inspect the selected hardware/profile."
+  },
+  "capacity_evidence": {
+    "status": "MODEL_MISSING",
+    "frame_model": null,
+    "schedule_model": null,
+    "requires_confirmed_device_parameters": true
+  },
+  "components": {
+    "binding": "isobus.binding",
+    "generator": "isobus.generator",
+    "validator": "isobus.validator",
+    "timing_model": null,
+    "load_model": null,
+    "encoder": "isobus.encoder",
+    "decoder": "isobus.decoder"
+  },
+  "known_limitations": "Technology-specific conformance details require a vendor/profile extension."
+}

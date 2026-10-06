@@ -1,0 +1,2136 @@
+{
+  "id": "dnp3",
+  "label": "DNP3",
+  "domain": "generic_networking",
+  "layer": "APPLICATION",
+  "transport_unit": "PDU",
+  "payload_element_types": [
+    "DATA_OBJECT",
+    "STATUS",
+    "QUALITY"
+  ],
+  "hardware_interface": "explicit_transport_binding",
+  "hardware_capability_aliases": [
+    "serial_or_ethernet_interface"
+  ],
+  "default_stack": [
+    "dnp3"
+  ],
+  "stack_variants": [
+    [
+      "dnp3"
+    ]
+  ],
+  "default_bitrate": null,
+  "rate_model": {
+    "type": "APPLICATION_TRANSPORT_DEPENDENT",
+    "fields": []
+  },
+  "local_timing_schema": [],
+  "parameter_schema": {
+    "payload_bytes": {
+      "label": "Payload",
+      "category": "physical",
+      "scope": "message",
+      "type": "number",
+      "description": "Actual complete encoded DNP3 application message octets including application headers; may span multiple peer-limited fragments and transport segments. Not universal2048B limit.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.dnp.org/Portals/0/AboutUs/DNP3%20Primer%20Rev%20A.pdf",
+      "source_revision": "DNP Users Group Primer RevisionA 20March2005 pages5..7; StepFunctionDNP3 1.6.0 June2024 implementation is separate",
+      "integer": true
+    },
+    "cycle_ms": {
+      "label": "Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "Standardperiode fuer zyklische Nachrichten.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "minimum_cycle_time_ms": {
+      "label": "Minimum Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "deadline_ms": {
+      "label": "Deadline",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "timeout_ms": {
+      "label": "Timeout",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_latency_ms": {
+      "label": "Maximum Latency",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "jitter_ms": {
+      "label": "Jitter Budget",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "freshness_ms": {
+      "label": "Data Freshness",
+      "category": "timing",
+      "scope": "signal",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "source_processing_delay_ms": {
+      "label": "Source Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_processing_delay_ms": {
+      "label": "Target Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "propagation_delay_ms": {
+      "label": "Propagation",
+      "category": "timing",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.01,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_bus_load_percent": {
+      "label": "Ziel-Buslast",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "Zielwert fuer die aus Routing, Payload, Zyklus und Bitrate berechnete Buslast.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "peak_factor": {
+      "label": "Peak Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.15,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_factor": {
+      "label": "Burst Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.5,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_window_ms": {
+      "label": "Burst Window",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "warning_threshold": {
+      "label": "Load Warning",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "critical_threshold": {
+      "label": "Load Critical",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 75,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "overload_threshold": {
+      "label": "Load Overload",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 90,
+      "unit": "%",
+      "min": 1,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "queue_size": {
+      "label": "Queue Size",
+      "category": "qos",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 256,
+      "unit": "Frames",
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1",
+      "integer": true
+    },
+    "queue_policy": {
+      "label": "Queue Policy",
+      "category": "qos",
+      "scope": "network",
+      "type": "select",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": "FIFO",
+      "options": [
+        "FIFO",
+        "PRIORITY",
+        "CUSTOM"
+      ],
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "traffic_class": {
+      "label": "Traffic Class",
+      "category": "qos",
+      "scope": "route",
+      "type": "select",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": "BEST_EFFORT",
+      "options": [
+        "BEST_EFFORT",
+        "CONTROL",
+        "REALTIME",
+        "SAFETY_CRITICAL"
+      ],
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "packet_loss_probability": {
+      "label": "Packet Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "frame_loss_probability": {
+      "label": "Frame Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "bit_error_rate": {
+      "label": "Bit Error Rate",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "corruption_probability": {
+      "label": "Corruption",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duplicate_probability": {
+      "label": "Duplication",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "reordering_probability": {
+      "label": "Reordering",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "required_reliability": {
+      "label": "Required Reliability",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.999,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_offset_ms": {
+      "label": "Clock Offset",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_drift_ppm": {
+      "label": "Clock Drift",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 20,
+      "unit": "ppm",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_precision_ms": {
+      "label": "Sync Precision",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_interval_ms": {
+      "label": "Sync Interval",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1000,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_sync_error_ms": {
+      "label": "Maximum Sync Error",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_delay_ms": {
+      "label": "Gateway Processing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.2,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_queue_delay_ms": {
+      "label": "Gateway Queueing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "protocol_conversion_delay_ms": {
+      "label": "Protocol Conversion",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duration_s": {
+      "label": "Simulation Duration",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 1,
+      "unit": "s",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "seed": {
+      "label": "Random Seed",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 42,
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "max_events": {
+      "label": "Maximum Events",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 100000,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "dropout_probability": {
+      "label": "Failure Injection Dropout",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "dnp_role": {
+      "label": "Actual DNP3 endpoint role",
+      "category": "physical",
+      "scope": "route",
+      "type": "select",
+      "description": "Separate DNP3 link/transport/application/peer configuration. Native scalar declarations do not prove supported group/variation, installed peer buffers, timestamps, security, medium access or capacity.",
+      "required": true,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "MASTER",
+        "OUTSTATION"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.dnp.org/Portals/0/AboutUs/DNP3%20Primer%20Rev%20A.pdf",
+      "source_revision": "DNP Users Group Primer RevisionA 20March2005 pages5..7; StepFunctionDNP3 1.6.0 June2024 implementation is separate"
+    },
+    "dnp_transport": {
+      "label": "Actual DNP3 lower transport",
+      "category": "physical",
+      "scope": "route",
+      "type": "select",
+      "description": "Separate DNP3 link/transport/application/peer configuration. Native scalar declarations do not prove supported group/variation, installed peer buffers, timestamps, security, medium access or capacity.",
+      "required": true,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "SERIAL",
+        "TCP",
+        "UDP",
+        "TLS",
+        "SCTP",
+        "DEVICE_SPECIFIC"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.dnp.org/Portals/0/AboutUs/DNP3%20Primer%20Rev%20A.pdf",
+      "source_revision": "DNP Users Group Primer RevisionA 20March2005 pages5..7; StepFunctionDNP3 1.6.0 June2024 implementation is separate"
+    },
+    "dnp_transport_binding": {
+      "label": "Actual matched lower transport profile",
+      "category": "physical",
+      "scope": "route",
+      "type": "text",
+      "description": "Separate DNP3 link/transport/application/peer configuration. Native scalar declarations do not prove supported group/variation, installed peer buffers, timestamps, security, medium access or capacity.",
+      "required": true,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.dnp.org/Portals/0/AboutUs/DNP3%20Primer%20Rev%20A.pdf",
+      "source_revision": "DNP Users Group Primer RevisionA 20March2005 pages5..7; StepFunctionDNP3 1.6.0 June2024 implementation is separate"
+    },
+    "dnp_configuration_source": {
+      "label": "Actual IEEE1815 edition/device profile/configuration source",
+      "category": "physical",
+      "scope": "route",
+      "type": "text",
+      "description": "Separate DNP3 link/transport/application/peer configuration. Native scalar declarations do not prove supported group/variation, installed peer buffers, timestamps, security, medium access or capacity.",
+      "required": true,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.dnp.org/Portals/0/AboutUs/DNP3%20Primer%20Rev%20A.pdf",
+      "source_revision": "DNP Users Group Primer RevisionA 20March2005 pages5..7; StepFunctionDNP3 1.6.0 June2024 implementation is separate"
+    },
+    "dnp_implementation": {
+      "label": "Actual matching DNP3 implementation",
+      "category": "physical",
+      "scope": "route",
+      "type": "select",
+      "description": "Separate DNP3 link/transport/application/peer configuration. Native scalar declarations do not prove supported group/variation, installed peer buffers, timestamps, security, medium access or capacity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "STEPFUNC_1_6",
+        "DEVICE_SPECIFIC"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.dnp.org/Portals/0/AboutUs/DNP3%20Primer%20Rev%20A.pdf",
+      "source_revision": "DNP Users Group Primer RevisionA 20March2005 pages5..7; StepFunctionDNP3 1.6.0 June2024 implementation is separate"
+    },
+    "dnp_master_address": {
+      "label": "Actual master link address",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Separate DNP3 link/transport/application/peer configuration. Native scalar declarations do not prove supported group/variation, installed peer buffers, timestamps, security, medium access or capacity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "max": 65519,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://raw.githubusercontent.com/stepfunc/dnp3/1.6.0/dnp3/src/link/header.rs",
+      "source_revision": "StepFunctionDNP3 1.6.0 link header constants and AnyAddress; individual0..65519 reserved65520..65531 self65532 broadcast65533..65535"
+    },
+    "dnp_outstation_address": {
+      "label": "Actual outstation link address",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Separate DNP3 link/transport/application/peer configuration. Native scalar declarations do not prove supported group/variation, installed peer buffers, timestamps, security, medium access or capacity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "max": 65519,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://raw.githubusercontent.com/stepfunc/dnp3/1.6.0/dnp3/src/link/header.rs",
+      "source_revision": "StepFunctionDNP3 1.6.0 link header constants and AnyAddress; individual0..65519 reserved65520..65531 self65532 broadcast65533..65535"
+    },
+    "dnp_destination_mode": {
+      "label": "Actual link destination addressing",
+      "category": "physical",
+      "scope": "route",
+      "type": "select",
+      "description": "Separate DNP3 link/transport/application/peer configuration. Native scalar declarations do not prove supported group/variation, installed peer buffers, timestamps, security, medium access or capacity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "UNICAST",
+        "SELF",
+        "BROADCAST_NO_CONFIRM",
+        "BROADCAST_CONFIRM",
+        "BROADCAST_OPTIONAL_CONFIRM"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://raw.githubusercontent.com/stepfunc/dnp3/1.6.0/dnp3/src/link/header.rs",
+      "source_revision": "StepFunctionDNP3 1.6.0 link header constants and AnyAddress; individual0..65519 reserved65520..65531 self65532 broadcast65533..65535"
+    },
+    "dnp_destination_address": {
+      "label": "Actual link destination address",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Separate DNP3 link/transport/application/peer configuration. Native scalar declarations do not prove supported group/variation, installed peer buffers, timestamps, security, medium access or capacity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "max": 65535,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://raw.githubusercontent.com/stepfunc/dnp3/1.6.0/dnp3/src/link/header.rs",
+      "source_revision": "StepFunctionDNP3 1.6.0 link header constants and AnyAddress; individual0..65519 reserved65520..65531 self65532 broadcast65533..65535"
+    },
+    "dnp_port": {
+      "label": "Actual selected IP service port",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Separate DNP3 link/transport/application/peer configuration. Native scalar declarations do not prove supported group/variation, installed peer buffers, timestamps, security, medium access or capacity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 1,
+      "max": 65535,
+      "integer": true,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "source": "https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.txt",
+      "source_revision": "IANA dnp TCP/UDP/SCTP20000 accessed2026-10-01",
+      "conditional_defaults": [
+        {
+          "when": {
+            "dnp_transport": "TCP"
+          },
+          "value": 20000
+        },
+        {
+          "when": {
+            "dnp_transport": "UDP"
+          },
+          "value": 20000
+        },
+        {
+          "when": {
+            "dnp_transport": "SCTP"
+          },
+          "value": 20000
+        }
+      ]
+    },
+    "dnp_link_user_bytes": {
+      "label": "Actual link data without block CRC",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Separate DNP3 link/transport/application/peer configuration. Native scalar declarations do not prove supported group/variation, installed peer buffers, timestamps, security, medium access or capacity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "max": 250,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.dnp.org/Portals/0/AboutUs/DNP3%20Primer%20Rev%20A.pdf",
+      "source_revision": "DNP Users Group Primer RevisionA 20March2005 pages5..7; StepFunctionDNP3 1.6.0 June2024 implementation is separate"
+    },
+    "dnp_link_length_field": {
+      "label": "Actual link length-field value excluding CRC",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Separate DNP3 link/transport/application/peer configuration. Native scalar declarations do not prove supported group/variation, installed peer buffers, timestamps, security, medium access or capacity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 5,
+      "max": 255,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.dnp.org/Portals/0/AboutUs/DNP3%20Primer%20Rev%20A.pdf",
+      "source_revision": "DNP Users Group Primer RevisionA 20March2005 pages5..7; StepFunctionDNP3 1.6.0 June2024 implementation is separate"
+    },
+    "dnp_link_frame_bytes": {
+      "label": "Actual complete DNP3 link frame",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Separate DNP3 link/transport/application/peer configuration. Native scalar declarations do not prove supported group/variation, installed peer buffers, timestamps, security, medium access or capacity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 10,
+      "max": 292,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.dnp.org/Portals/0/AboutUs/DNP3%20Primer%20Rev%20A.pdf",
+      "source_revision": "DNP Users Group Primer RevisionA 20March2005 pages5..7; StepFunctionDNP3 1.6.0 June2024 implementation is separate"
+    },
+    "dnp_transport_data_bytes": {
+      "label": "Actual application octets in transport segment",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Separate DNP3 link/transport/application/peer configuration. Native scalar declarations do not prove supported group/variation, installed peer buffers, timestamps, security, medium access or capacity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "max": 249,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.dnp.org/Portals/0/AboutUs/DNP3%20Primer%20Rev%20A.pdf",
+      "source_revision": "DNP Users Group Primer RevisionA 20March2005 pages5..7; StepFunctionDNP3 1.6.0 June2024 implementation is separate"
+    },
+    "dnp_fragment_limit_bytes": {
+      "label": "Proposed application fragment limit",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Separate DNP3 link/transport/application/peer configuration. Native scalar declarations do not prove supported group/variation, installed peer buffers, timestamps, security, medium access or capacity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 2048,
+      "unit": "Byte",
+      "min": 1,
+      "integer": true,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED",
+      "source": "https://www.dnp.org/Portals/0/AboutUs/DNP3%20Primer%20Rev%20A.pdf",
+      "source_revision": "DNP Users Group Primer RevisionA 20March2005 pages5..7; StepFunctionDNP3 1.6.0 June2024 implementation is separate"
+    },
+    "dnp_peer_rx_buffer_bytes": {
+      "label": "Actual receiving peer reassembly buffer",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Separate DNP3 link/transport/application/peer configuration. Native scalar declarations do not prove supported group/variation, installed peer buffers, timestamps, security, medium access or capacity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 1,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.dnp.org/Portals/0/AboutUs/DNP3%20Primer%20Rev%20A.pdf",
+      "source_revision": "DNP Users Group Primer RevisionA 20March2005 pages5..7; StepFunctionDNP3 1.6.0 June2024 implementation is separate"
+    },
+    "dnp_application_fragment_bytes": {
+      "label": "Actual selected encoded application fragment",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Separate DNP3 link/transport/application/peer configuration. Native scalar declarations do not prove supported group/variation, installed peer buffers, timestamps, security, medium access or capacity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 2,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.dnp.org/Portals/0/AboutUs/DNP3%20Primer%20Rev%20A.pdf",
+      "source_revision": "DNP Users Group Primer RevisionA 20March2005 pages5..7; StepFunctionDNP3 1.6.0 June2024 implementation is separate"
+    },
+    "dnp_application_kind": {
+      "label": "Actual application request/response",
+      "category": "physical",
+      "scope": "route",
+      "type": "select",
+      "description": "Separate DNP3 link/transport/application/peer configuration. Native scalar declarations do not prove supported group/variation, installed peer buffers, timestamps, security, medium access or capacity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "REQUEST",
+        "RESPONSE",
+        "UNSOLICITED_RESPONSE"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.dnp.org/Portals/0/AboutUs/DNP3%20Primer%20Rev%20A.pdf",
+      "source_revision": "DNP Users Group Primer RevisionA 20March2005 pages5..7; StepFunctionDNP3 1.6.0 June2024 implementation is separate"
+    },
+    "dnp_link_confirm": {
+      "label": "Actual link-layer confirmation enabled",
+      "category": "physical",
+      "scope": "route",
+      "type": "boolean",
+      "description": "Separate DNP3 link/transport/application/peer configuration. Native scalar declarations do not prove supported group/variation, installed peer buffers, timestamps, security, medium access or capacity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.dnp.org/Portals/0/AboutUs/DNP3%20Primer%20Rev%20A.pdf",
+      "source_revision": "DNP Users Group Primer RevisionA 20March2005 pages5..7; StepFunctionDNP3 1.6.0 June2024 implementation is separate"
+    },
+    "dnp_link_confirm_timeout_ms": {
+      "label": "Actual link confirmation timeout",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "Separate DNP3 link/transport/application/peer configuration. Native scalar declarations do not prove supported group/variation, installed peer buffers, timestamps, security, medium access or capacity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "ms",
+      "min": 0.001,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.dnp.org/Portals/0/AboutUs/DNP3%20Primer%20Rev%20A.pdf",
+      "source_revision": "DNP Users Group Primer RevisionA 20March2005 pages5..7; StepFunctionDNP3 1.6.0 June2024 implementation is separate"
+    },
+    "dnp_link_retries": {
+      "label": "Actual link confirmation retry count",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Separate DNP3 link/transport/application/peer configuration. Native scalar declarations do not prove supported group/variation, installed peer buffers, timestamps, security, medium access or capacity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.dnp.org/Portals/0/AboutUs/DNP3%20Primer%20Rev%20A.pdf",
+      "source_revision": "DNP Users Group Primer RevisionA 20March2005 pages5..7; StepFunctionDNP3 1.6.0 June2024 implementation is separate"
+    },
+    "dnp_response_timeout_ms": {
+      "label": "Actual master association response timeout",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "Separate DNP3 link/transport/application/peer configuration. Native scalar declarations do not prove supported group/variation, installed peer buffers, timestamps, security, medium access or capacity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "ms",
+      "min": 0.001,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.dnp.org/Portals/0/AboutUs/DNP3%20Primer%20Rev%20A.pdf",
+      "source_revision": "DNP Users Group Primer RevisionA 20March2005 pages5..7; StepFunctionDNP3 1.6.0 June2024 implementation is separate"
+    },
+    "dnp_app_confirm_timeout_ms": {
+      "label": "Actual outstation application-confirmation timeout",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "Separate DNP3 link/transport/application/peer configuration. Native scalar declarations do not prove supported group/variation, installed peer buffers, timestamps, security, medium access or capacity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "ms",
+      "min": 0.001,
+      "integer": false,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "source": "https://docs.stepfunc.io/dnp3/1.6.0/rust/src/dnp3/outstation/config.rs.html",
+      "source_revision": "StepFunctionDNP3 1.6.0 config/association/Features defaults, June24 2024; vendor-specific",
+      "conditional_defaults": [
+        {
+          "when": {
+            "dnp_implementation": "STEPFUNC_1_6",
+            "dnp_role": "OUTSTATION"
+          },
+          "value": 5000
+        }
+      ]
+    },
+    "dnp_select_timeout_ms": {
+      "label": "Actual outstation select-before-operate timeout",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "Separate DNP3 link/transport/application/peer configuration. Native scalar declarations do not prove supported group/variation, installed peer buffers, timestamps, security, medium access or capacity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "ms",
+      "min": 0.001,
+      "integer": false,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "source": "https://docs.stepfunc.io/dnp3/1.6.0/rust/src/dnp3/outstation/config.rs.html",
+      "source_revision": "StepFunctionDNP3 1.6.0 config/association/Features defaults, June24 2024; vendor-specific",
+      "conditional_defaults": [
+        {
+          "when": {
+            "dnp_implementation": "STEPFUNC_1_6",
+            "dnp_role": "OUTSTATION"
+          },
+          "value": 5000
+        }
+      ]
+    },
+    "dnp_unsolicited_enabled": {
+      "label": "Actual outstation unsolicited reporting enabled",
+      "category": "physical",
+      "scope": "route",
+      "type": "boolean",
+      "description": "Separate DNP3 link/transport/application/peer configuration. Native scalar declarations do not prove supported group/variation, installed peer buffers, timestamps, security, medium access or capacity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "source": "https://docs.stepfunc.io/dnp3/1.6.0/rust/src/dnp3/outstation/config.rs.html",
+      "source_revision": "StepFunctionDNP3 1.6.0 config/association/Features defaults, June24 2024; vendor-specific",
+      "conditional_defaults": [
+        {
+          "when": {
+            "dnp_implementation": "STEPFUNC_1_6",
+            "dnp_role": "OUTSTATION"
+          },
+          "value": true
+        }
+      ]
+    },
+    "dnp_unsolicited_retry_mode": {
+      "label": "Actual unsolicited retry limit mode",
+      "category": "physical",
+      "scope": "route",
+      "type": "select",
+      "description": "Separate DNP3 link/transport/application/peer configuration. Native scalar declarations do not prove supported group/variation, installed peer buffers, timestamps, security, medium access or capacity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "FINITE",
+        "UNLIMITED"
+      ],
+      "integer": false,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "source": "https://docs.stepfunc.io/dnp3/1.6.0/rust/src/dnp3/outstation/config.rs.html",
+      "source_revision": "StepFunctionDNP3 1.6.0 config/association/Features defaults, June24 2024; vendor-specific",
+      "conditional_defaults": [
+        {
+          "when": {
+            "dnp_implementation": "STEPFUNC_1_6",
+            "dnp_role": "OUTSTATION"
+          },
+          "value": "UNLIMITED"
+        }
+      ]
+    },
+    "dnp_max_unsolicited_retries": {
+      "label": "Actual finite non-regenerated unsolicited retries",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Separate DNP3 link/transport/application/peer configuration. Native scalar declarations do not prove supported group/variation, installed peer buffers, timestamps, security, medium access or capacity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.dnp.org/Portals/0/AboutUs/DNP3%20Primer%20Rev%20A.pdf",
+      "source_revision": "DNP Users Group Primer RevisionA 20March2005 pages5..7; StepFunctionDNP3 1.6.0 June2024 implementation is separate"
+    },
+    "dnp_unsolicited_retry_delay_ms": {
+      "label": "Actual delay between unsolicited retry series",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "Separate DNP3 link/transport/application/peer configuration. Native scalar declarations do not prove supported group/variation, installed peer buffers, timestamps, security, medium access or capacity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "ms",
+      "min": 0,
+      "integer": false,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "source": "https://docs.stepfunc.io/dnp3/1.6.0/rust/src/dnp3/outstation/config.rs.html",
+      "source_revision": "StepFunctionDNP3 1.6.0 config/association/Features defaults, June24 2024; vendor-specific",
+      "conditional_defaults": [
+        {
+          "when": {
+            "dnp_implementation": "STEPFUNC_1_6",
+            "dnp_role": "OUTSTATION"
+          },
+          "value": 5000
+        }
+      ]
+    },
+    "dnp_keepalive_enabled": {
+      "label": "Actual REQUEST_LINK_STATUS keepalive enabled",
+      "category": "physical",
+      "scope": "route",
+      "type": "boolean",
+      "description": "Separate DNP3 link/transport/application/peer configuration. Native scalar declarations do not prove supported group/variation, installed peer buffers, timestamps, security, medium access or capacity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "source": "https://docs.stepfunc.io/dnp3/1.6.0/rust/src/dnp3/outstation/config.rs.html",
+      "source_revision": "StepFunctionDNP3 1.6.0 config/association/Features defaults, June24 2024; vendor-specific",
+      "conditional_defaults": [
+        {
+          "when": {
+            "dnp_implementation": "STEPFUNC_1_6",
+            "dnp_role": "MASTER"
+          },
+          "value": false
+        },
+        {
+          "when": {
+            "dnp_implementation": "STEPFUNC_1_6",
+            "dnp_role": "OUTSTATION"
+          },
+          "value": true
+        }
+      ]
+    },
+    "dnp_keepalive_ms": {
+      "label": "Actual link inactivity before status request",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "Separate DNP3 link/transport/application/peer configuration. Native scalar declarations do not prove supported group/variation, installed peer buffers, timestamps, security, medium access or capacity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "ms",
+      "min": 0.001,
+      "integer": false,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "source": "https://docs.stepfunc.io/dnp3/1.6.0/rust/src/dnp3/outstation/config.rs.html",
+      "source_revision": "StepFunctionDNP3 1.6.0 config/association/Features defaults, June24 2024; vendor-specific",
+      "conditional_defaults": [
+        {
+          "when": {
+            "dnp_implementation": "STEPFUNC_1_6",
+            "dnp_role": "OUTSTATION",
+            "dnp_keepalive_enabled": true
+          },
+          "value": 60000
+        }
+      ]
+    },
+    "dnp_auto_retry_min_ms": {
+      "label": "Actual master automatic-task minimum backoff",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "Separate DNP3 link/transport/application/peer configuration. Native scalar declarations do not prove supported group/variation, installed peer buffers, timestamps, security, medium access or capacity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "ms",
+      "min": 0,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.dnp.org/Portals/0/AboutUs/DNP3%20Primer%20Rev%20A.pdf",
+      "source_revision": "DNP Users Group Primer RevisionA 20March2005 pages5..7; StepFunctionDNP3 1.6.0 June2024 implementation is separate"
+    },
+    "dnp_auto_retry_max_ms": {
+      "label": "Actual master automatic-task maximum backoff",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "Separate DNP3 link/transport/application/peer configuration. Native scalar declarations do not prove supported group/variation, installed peer buffers, timestamps, security, medium access or capacity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "ms",
+      "min": 0,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.dnp.org/Portals/0/AboutUs/DNP3%20Primer%20Rev%20A.pdf",
+      "source_revision": "DNP Users Group Primer RevisionA 20March2005 pages5..7; StepFunctionDNP3 1.6.0 June2024 implementation is separate"
+    },
+    "dnp_data_class": {
+      "label": "Actual static/event object class",
+      "category": "physical",
+      "scope": "route",
+      "type": "select",
+      "description": "Separate DNP3 link/transport/application/peer configuration. Native scalar declarations do not prove supported group/variation, installed peer buffers, timestamps, security, medium access or capacity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "CLASS0",
+        "CLASS1",
+        "CLASS2",
+        "CLASS3"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.dnp.org/Portals/0/AboutUs/DNP3%20Primer%20Rev%20A.pdf",
+      "source_revision": "DNP Users Group Primer RevisionA 20March2005 pages5..7; StepFunctionDNP3 1.6.0 June2024 implementation is separate"
+    },
+    "dnp_group": {
+      "label": "Actual encoded object group",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Separate DNP3 link/transport/application/peer configuration. Native scalar declarations do not prove supported group/variation, installed peer buffers, timestamps, security, medium access or capacity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "max": 255,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.dnp.org/Portals/0/AboutUs/DNP3%20Primer%20Rev%20A.pdf",
+      "source_revision": "DNP Users Group Primer RevisionA 20March2005 pages5..7; StepFunctionDNP3 1.6.0 June2024 implementation is separate"
+    },
+    "dnp_variation": {
+      "label": "Actual encoded object variation",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Separate DNP3 link/transport/application/peer configuration. Native scalar declarations do not prove supported group/variation, installed peer buffers, timestamps, security, medium access or capacity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "max": 255,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.dnp.org/Portals/0/AboutUs/DNP3%20Primer%20Rev%20A.pdf",
+      "source_revision": "DNP Users Group Primer RevisionA 20March2005 pages5..7; StepFunctionDNP3 1.6.0 June2024 implementation is separate"
+    },
+    "dnp_object_mapping_source": {
+      "label": "Actual supported object/variation/index/qualifier mapping",
+      "category": "physical",
+      "scope": "route",
+      "type": "text",
+      "description": "Separate DNP3 link/transport/application/peer configuration. Native scalar declarations do not prove supported group/variation, installed peer buffers, timestamps, security, medium access or capacity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.dnp.org/Portals/0/AboutUs/DNP3%20Primer%20Rev%20A.pdf",
+      "source_revision": "DNP Users Group Primer RevisionA 20March2005 pages5..7; StepFunctionDNP3 1.6.0 June2024 implementation is separate"
+    },
+    "dnp_point_index_start": {
+      "label": "Actual first requested point index",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Separate DNP3 link/transport/application/peer configuration. Native scalar declarations do not prove supported group/variation, installed peer buffers, timestamps, security, medium access or capacity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "max": 65535,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.dnp.org/Portals/0/AboutUs/DNP3%20Primer%20Rev%20A.pdf",
+      "source_revision": "DNP Users Group Primer RevisionA 20March2005 pages5..7; StepFunctionDNP3 1.6.0 June2024 implementation is separate"
+    },
+    "dnp_point_index_end": {
+      "label": "Actual last requested point index",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Separate DNP3 link/transport/application/peer configuration. Native scalar declarations do not prove supported group/variation, installed peer buffers, timestamps, security, medium access or capacity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "max": 65535,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.dnp.org/Portals/0/AboutUs/DNP3%20Primer%20Rev%20A.pdf",
+      "source_revision": "DNP Users Group Primer RevisionA 20March2005 pages5..7; StepFunctionDNP3 1.6.0 June2024 implementation is separate"
+    },
+    "dnp_event_buffer_source": {
+      "label": "Actual per-object-type event capacities/overflow policy",
+      "category": "physical",
+      "scope": "route",
+      "type": "text",
+      "description": "Separate DNP3 link/transport/application/peer configuration. Native scalar declarations do not prove supported group/variation, installed peer buffers, timestamps, security, medium access or capacity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.dnp.org/Portals/0/AboutUs/DNP3%20Primer%20Rev%20A.pdf",
+      "source_revision": "DNP Users Group Primer RevisionA 20March2005 pages5..7; StepFunctionDNP3 1.6.0 June2024 implementation is separate"
+    },
+    "dnp_medium_access_source": {
+      "label": "Actual shared-medium unsolicited access policy",
+      "category": "physical",
+      "scope": "route",
+      "type": "text",
+      "description": "Separate DNP3 link/transport/application/peer configuration. Native scalar declarations do not prove supported group/variation, installed peer buffers, timestamps, security, medium access or capacity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.dnp.org/Portals/0/AboutUs/DNP3%20Primer%20Rev%20A.pdf",
+      "source_revision": "DNP Users Group Primer RevisionA 20March2005 pages5..7; StepFunctionDNP3 1.6.0 June2024 implementation is separate"
+    },
+    "dnp_time_sync": {
+      "label": "Actual DNP3 time synchronization procedure",
+      "category": "physical",
+      "scope": "route",
+      "type": "select",
+      "description": "Separate DNP3 link/transport/application/peer configuration. Native scalar declarations do not prove supported group/variation, installed peer buffers, timestamps, security, medium access or capacity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "DISABLED",
+        "LAN",
+        "NON_LAN",
+        "DEVICE_SPECIFIC"
+      ],
+      "integer": false,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "source": "https://docs.stepfunc.io/dnp3/1.6.0/rust/src/dnp3/outstation/config.rs.html",
+      "source_revision": "StepFunctionDNP3 1.6.0 config/association/Features defaults, June24 2024; vendor-specific",
+      "conditional_defaults": [
+        {
+          "when": {
+            "dnp_implementation": "STEPFUNC_1_6",
+            "dnp_role": "MASTER"
+          },
+          "value": "DISABLED"
+        }
+      ]
+    },
+    "dnp_time_sync_source": {
+      "label": "Actual clock timestamp/source/delay/acceptance evidence",
+      "category": "physical",
+      "scope": "route",
+      "type": "text",
+      "description": "Separate DNP3 link/transport/application/peer configuration. Native scalar declarations do not prove supported group/variation, installed peer buffers, timestamps, security, medium access or capacity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.dnp.org/Portals/0/AboutUs/DNP3%20Primer%20Rev%20A.pdf",
+      "source_revision": "DNP Users Group Primer RevisionA 20March2005 pages5..7; StepFunctionDNP3 1.6.0 June2024 implementation is separate"
+    },
+    "dnp_control_mode": {
+      "label": "Actual control transaction",
+      "category": "physical",
+      "scope": "route",
+      "type": "select",
+      "description": "Separate DNP3 link/transport/application/peer configuration. Native scalar declarations do not prove supported group/variation, installed peer buffers, timestamps, security, medium access or capacity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "SELECT_BEFORE_OPERATE",
+        "DIRECT_OPERATE",
+        "DIRECT_OPERATE_NO_ACK"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.dnp.org/Portals/0/AboutUs/DNP3%20Primer%20Rev%20A.pdf",
+      "source_revision": "DNP Users Group Primer RevisionA 20March2005 pages5..7; StepFunctionDNP3 1.6.0 June2024 implementation is separate"
+    },
+    "dnp_security_mode": {
+      "label": "Actual transport/authentication security configuration",
+      "category": "physical",
+      "scope": "route",
+      "type": "select",
+      "description": "Separate DNP3 link/transport/application/peer configuration. Native scalar declarations do not prove supported group/variation, installed peer buffers, timestamps, security, medium access or capacity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "NONE",
+        "TLS_ONLY",
+        "SA_ONLY",
+        "TLS_AND_SA",
+        "DEVICE_SPECIFIC"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.dnp.org/Portals/0/AboutUs/DNP3%20Primer%20Rev%20A.pdf",
+      "source_revision": "DNP Users Group Primer RevisionA 20March2005 pages5..7; StepFunctionDNP3 1.6.0 June2024 implementation is separate"
+    },
+    "dnp_security_source": {
+      "label": "Actual TLS/SA edition/keys/peer verification source",
+      "category": "physical",
+      "scope": "route",
+      "type": "text",
+      "description": "Separate DNP3 link/transport/application/peer configuration. Native scalar declarations do not prove supported group/variation, installed peer buffers, timestamps, security, medium access or capacity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.dnp.org/Portals/0/AboutUs/DNP3%20Primer%20Rev%20A.pdf",
+      "source_revision": "DNP Users Group Primer RevisionA 20March2005 pages5..7; StepFunctionDNP3 1.6.0 June2024 implementation is separate"
+    }
+  },
+  "mechanisms": {
+    "integrity": [
+      "DNP3_LINK_HEADER_AND_16_OCTET_BLOCK_CRC"
+    ],
+    "addressing": [
+      "DNP3_SOURCE_DESTINATION_LINK_ADDRESSES"
+    ],
+    "fragmentation": [
+      "LINK_250_OCTETS",
+      "TRANSPORT_249_APPLICATION_OCTETS",
+      "PEER_BUFFER_LIMITED_APPLICATION_FRAGMENTS"
+    ],
+    "delivery": [
+      "POLLING_OR_UNSOLICITED",
+      "OPTIONAL_LINK_CONFIRM",
+      "APPLICATION_CONFIRM"
+    ],
+    "objects": [
+      "GROUP_VARIATION_POINT_INDEX",
+      "STATIC_CLASS0_AND_EVENT_CLASSES1_2_3"
+    ]
+  },
+  "parameter_constraints": [
+    {
+      "when": {},
+      "parameter": "dnp_master_address",
+      "not_equal_parameter": "dnp_outstation_address",
+      "source": "https://www.dnp.org/Portals/0/AboutUs/DNP3%20Primer%20Rev%20A.pdf",
+      "source_revision": "DNP Users Group Primer RevisionA 20March2005 pages5..7; StepFunctionDNP3 1.6.0 June2024 implementation is separate"
+    },
+    {
+      "when": {
+        "dnp_destination_mode": "UNICAST"
+      },
+      "parameter": "dnp_destination_address",
+      "maximum": 65519,
+      "source": "https://www.dnp.org/Portals/0/AboutUs/DNP3%20Primer%20Rev%20A.pdf",
+      "source_revision": "DNP Users Group Primer RevisionA 20March2005 pages5..7; StepFunctionDNP3 1.6.0 June2024 implementation is separate"
+    },
+    {
+      "when": {
+        "dnp_destination_mode": "SELF"
+      },
+      "parameter": "dnp_destination_address",
+      "allowed": [
+        65532
+      ],
+      "source": "https://www.dnp.org/Portals/0/AboutUs/DNP3%20Primer%20Rev%20A.pdf",
+      "source_revision": "DNP Users Group Primer RevisionA 20March2005 pages5..7; StepFunctionDNP3 1.6.0 June2024 implementation is separate"
+    },
+    {
+      "when": {
+        "dnp_destination_mode": "BROADCAST_NO_CONFIRM"
+      },
+      "parameter": "dnp_destination_address",
+      "allowed": [
+        65533
+      ],
+      "source": "https://www.dnp.org/Portals/0/AboutUs/DNP3%20Primer%20Rev%20A.pdf",
+      "source_revision": "DNP Users Group Primer RevisionA 20March2005 pages5..7; StepFunctionDNP3 1.6.0 June2024 implementation is separate"
+    },
+    {
+      "when": {
+        "dnp_destination_mode": "BROADCAST_CONFIRM"
+      },
+      "parameter": "dnp_destination_address",
+      "allowed": [
+        65534
+      ],
+      "source": "https://www.dnp.org/Portals/0/AboutUs/DNP3%20Primer%20Rev%20A.pdf",
+      "source_revision": "DNP Users Group Primer RevisionA 20March2005 pages5..7; StepFunctionDNP3 1.6.0 June2024 implementation is separate"
+    },
+    {
+      "when": {
+        "dnp_destination_mode": "BROADCAST_OPTIONAL_CONFIRM"
+      },
+      "parameter": "dnp_destination_address",
+      "allowed": [
+        65535
+      ],
+      "source": "https://www.dnp.org/Portals/0/AboutUs/DNP3%20Primer%20Rev%20A.pdf",
+      "source_revision": "DNP Users Group Primer RevisionA 20March2005 pages5..7; StepFunctionDNP3 1.6.0 June2024 implementation is separate"
+    },
+    {
+      "when_ranges": {
+        "dnp_destination_address": [
+          65520,
+          65531
+        ]
+      },
+      "when": {},
+      "parameter": "dnp_destination_address",
+      "allowed": [],
+      "source": "https://www.dnp.org/Portals/0/AboutUs/DNP3%20Primer%20Rev%20A.pdf",
+      "source_revision": "DNP Users Group Primer RevisionA 20March2005 pages5..7; StepFunctionDNP3 1.6.0 June2024 implementation is separate"
+    },
+    {
+      "when": {},
+      "parameter": "dnp_link_length_field",
+      "equal_expression": {
+        "sum": [
+          5,
+          "dnp_link_user_bytes"
+        ]
+      },
+      "source": "https://www.dnp.org/Portals/0/AboutUs/DNP3%20Primer%20Rev%20A.pdf",
+      "source_revision": "DNP Users Group Primer RevisionA 20March2005 pages5..7; StepFunctionDNP3 1.6.0 June2024 implementation is separate"
+    },
+    {
+      "when": {},
+      "parameter": "dnp_link_frame_bytes",
+      "equal_expression": {
+        "sum": [
+          10,
+          "dnp_link_user_bytes",
+          {
+            "product": [
+              2,
+              {
+                "ceiling": [
+                  {
+                    "product": [
+                      0.0625,
+                      "dnp_link_user_bytes"
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "source": "https://www.dnp.org/Portals/0/AboutUs/DNP3%20Primer%20Rev%20A.pdf",
+      "source_revision": "DNP Users Group Primer RevisionA 20March2005 pages5..7; StepFunctionDNP3 1.6.0 June2024 implementation is separate"
+    },
+    {
+      "when": {},
+      "when_ranges": {
+        "dnp_link_user_bytes": [
+          1,
+          250
+        ]
+      },
+      "parameter": "dnp_transport_data_bytes",
+      "equal_expression": {
+        "subtract": [
+          "dnp_link_user_bytes",
+          1
+        ]
+      },
+      "source": "https://www.dnp.org/Portals/0/AboutUs/DNP3%20Primer%20Rev%20A.pdf",
+      "source_revision": "DNP Users Group Primer RevisionA 20March2005 pages5..7; StepFunctionDNP3 1.6.0 June2024 implementation is separate"
+    },
+    {
+      "when": {
+        "dnp_link_user_bytes": 0
+      },
+      "parameter": "dnp_transport_data_bytes",
+      "allowed": [],
+      "source": "https://www.dnp.org/Portals/0/AboutUs/DNP3%20Primer%20Rev%20A.pdf",
+      "source_revision": "DNP Users Group Primer RevisionA 20March2005 pages5..7; StepFunctionDNP3 1.6.0 June2024 implementation is separate"
+    },
+    {
+      "when": {},
+      "parameter": "dnp_application_fragment_bytes",
+      "maximum_parameter": "dnp_fragment_limit_bytes",
+      "source": "https://www.dnp.org/Portals/0/AboutUs/DNP3%20Primer%20Rev%20A.pdf",
+      "source_revision": "DNP Users Group Primer RevisionA 20March2005 pages5..7; StepFunctionDNP3 1.6.0 June2024 implementation is separate"
+    },
+    {
+      "when": {},
+      "parameter": "dnp_application_fragment_bytes",
+      "maximum_parameter": "dnp_peer_rx_buffer_bytes",
+      "source": "https://www.dnp.org/Portals/0/AboutUs/DNP3%20Primer%20Rev%20A.pdf",
+      "source_revision": "DNP Users Group Primer RevisionA 20March2005 pages5..7; StepFunctionDNP3 1.6.0 June2024 implementation is separate"
+    },
+    {
+      "when": {},
+      "parameter": "dnp_fragment_limit_bytes",
+      "maximum_parameter": "dnp_peer_rx_buffer_bytes",
+      "source": "https://www.dnp.org/Portals/0/AboutUs/DNP3%20Primer%20Rev%20A.pdf",
+      "source_revision": "DNP Users Group Primer RevisionA 20March2005 pages5..7; StepFunctionDNP3 1.6.0 June2024 implementation is separate"
+    },
+    {
+      "when": {},
+      "parameter": "dnp_application_fragment_bytes",
+      "maximum_parameter": "payload_bytes",
+      "source": "https://www.dnp.org/Portals/0/AboutUs/DNP3%20Primer%20Rev%20A.pdf",
+      "source_revision": "DNP Users Group Primer RevisionA 20March2005 pages5..7; StepFunctionDNP3 1.6.0 June2024 implementation is separate"
+    },
+    {
+      "when": {
+        "dnp_application_kind": "REQUEST"
+      },
+      "parameter": "dnp_application_fragment_bytes",
+      "minimum": 2,
+      "source": "https://www.dnp.org/Portals/0/AboutUs/DNP3%20Primer%20Rev%20A.pdf",
+      "source_revision": "DNP Users Group Primer RevisionA 20March2005 pages5..7; StepFunctionDNP3 1.6.0 June2024 implementation is separate"
+    },
+    {
+      "when": {
+        "dnp_application_kind": "RESPONSE"
+      },
+      "parameter": "dnp_application_fragment_bytes",
+      "minimum": 4,
+      "source": "https://www.dnp.org/Portals/0/AboutUs/DNP3%20Primer%20Rev%20A.pdf",
+      "source_revision": "DNP Users Group Primer RevisionA 20March2005 pages5..7; StepFunctionDNP3 1.6.0 June2024 implementation is separate"
+    },
+    {
+      "when": {
+        "dnp_application_kind": "UNSOLICITED_RESPONSE"
+      },
+      "parameter": "dnp_application_fragment_bytes",
+      "minimum": 4,
+      "source": "https://www.dnp.org/Portals/0/AboutUs/DNP3%20Primer%20Rev%20A.pdf",
+      "source_revision": "DNP Users Group Primer RevisionA 20March2005 pages5..7; StepFunctionDNP3 1.6.0 June2024 implementation is separate"
+    },
+    {
+      "when": {
+        "dnp_link_confirm": false
+      },
+      "parameter": "dnp_link_confirm_timeout_ms",
+      "allowed": [],
+      "source": "https://www.dnp.org/Portals/0/AboutUs/DNP3%20Primer%20Rev%20A.pdf",
+      "source_revision": "DNP Users Group Primer RevisionA 20March2005 pages5..7; StepFunctionDNP3 1.6.0 June2024 implementation is separate"
+    },
+    {
+      "when": {
+        "dnp_link_confirm": false
+      },
+      "parameter": "dnp_link_retries",
+      "allowed": [],
+      "source": "https://www.dnp.org/Portals/0/AboutUs/DNP3%20Primer%20Rev%20A.pdf",
+      "source_revision": "DNP Users Group Primer RevisionA 20March2005 pages5..7; StepFunctionDNP3 1.6.0 June2024 implementation is separate"
+    },
+    {
+      "when": {
+        "dnp_unsolicited_enabled": false
+      },
+      "parameter": "dnp_application_kind",
+      "allowed": [
+        "REQUEST",
+        "RESPONSE"
+      ],
+      "source": "https://www.dnp.org/Portals/0/AboutUs/DNP3%20Primer%20Rev%20A.pdf",
+      "source_revision": "DNP Users Group Primer RevisionA 20March2005 pages5..7; StepFunctionDNP3 1.6.0 June2024 implementation is separate"
+    },
+    {
+      "when": {
+        "dnp_unsolicited_retry_mode": "UNLIMITED"
+      },
+      "parameter": "dnp_max_unsolicited_retries",
+      "allowed": [],
+      "source": "https://www.dnp.org/Portals/0/AboutUs/DNP3%20Primer%20Rev%20A.pdf",
+      "source_revision": "DNP Users Group Primer RevisionA 20March2005 pages5..7; StepFunctionDNP3 1.6.0 June2024 implementation is separate"
+    },
+    {
+      "when": {
+        "dnp_keepalive_enabled": false
+      },
+      "parameter": "dnp_keepalive_ms",
+      "allowed": [],
+      "source": "https://www.dnp.org/Portals/0/AboutUs/DNP3%20Primer%20Rev%20A.pdf",
+      "source_revision": "DNP Users Group Primer RevisionA 20March2005 pages5..7; StepFunctionDNP3 1.6.0 June2024 implementation is separate"
+    },
+    {
+      "when": {
+        "dnp_transport": "SERIAL"
+      },
+      "parameter": "dnp_port",
+      "allowed": [],
+      "source": "https://www.dnp.org/Portals/0/AboutUs/DNP3%20Primer%20Rev%20A.pdf",
+      "source_revision": "DNP Users Group Primer RevisionA 20March2005 pages5..7; StepFunctionDNP3 1.6.0 June2024 implementation is separate"
+    },
+    {
+      "when": {
+        "dnp_transport": "TLS"
+      },
+      "parameter": "dnp_security_mode",
+      "allowed": [
+        "TLS_ONLY",
+        "TLS_AND_SA",
+        "DEVICE_SPECIFIC"
+      ],
+      "source": "https://www.dnp.org/Portals/0/AboutUs/DNP3%20Primer%20Rev%20A.pdf",
+      "source_revision": "DNP Users Group Primer RevisionA 20March2005 pages5..7; StepFunctionDNP3 1.6.0 June2024 implementation is separate"
+    },
+    {
+      "when": {},
+      "parameter": "dnp_auto_retry_max_ms",
+      "minimum_parameter": "dnp_auto_retry_min_ms",
+      "source": "https://www.dnp.org/Portals/0/AboutUs/DNP3%20Primer%20Rev%20A.pdf",
+      "source_revision": "DNP Users Group Primer RevisionA 20March2005 pages5..7; StepFunctionDNP3 1.6.0 June2024 implementation is separate"
+    },
+    {
+      "when": {},
+      "parameter": "dnp_point_index_end",
+      "minimum_parameter": "dnp_point_index_start",
+      "source": "https://www.dnp.org/Portals/0/AboutUs/DNP3%20Primer%20Rev%20A.pdf",
+      "source_revision": "DNP Users Group Primer RevisionA 20March2005 pages5..7; StepFunctionDNP3 1.6.0 June2024 implementation is separate"
+    },
+    {
+      "when": {
+        "dnp_application_kind": "UNSOLICITED_RESPONSE"
+      },
+      "parameter": "dnp_data_class",
+      "allowed": [
+        "CLASS1",
+        "CLASS2",
+        "CLASS3"
+      ],
+      "source": "https://www.dnp.org/Portals/0/AboutUs/DNP3%20Primer%20Rev%20A.pdf",
+      "source_revision": "DNP Users Group Primer RevisionA 20March2005 pages5..7; StepFunctionDNP3 1.6.0 June2024 implementation is separate"
+    },
+    {
+      "when": {
+        "dnp_role": "MASTER"
+      },
+      "parameter": "dnp_app_confirm_timeout_ms",
+      "allowed": [],
+      "source": "https://www.dnp.org/Portals/0/AboutUs/DNP3%20Primer%20Rev%20A.pdf",
+      "source_revision": "DNP Users Group Primer RevisionA 20March2005 pages5..7; StepFunctionDNP3 1.6.0 June2024 implementation is separate"
+    },
+    {
+      "when": {
+        "dnp_role": "MASTER"
+      },
+      "parameter": "dnp_select_timeout_ms",
+      "allowed": [],
+      "source": "https://www.dnp.org/Portals/0/AboutUs/DNP3%20Primer%20Rev%20A.pdf",
+      "source_revision": "DNP Users Group Primer RevisionA 20March2005 pages5..7; StepFunctionDNP3 1.6.0 June2024 implementation is separate"
+    },
+    {
+      "when": {
+        "dnp_role": "MASTER"
+      },
+      "parameter": "dnp_unsolicited_enabled",
+      "allowed": [],
+      "source": "https://www.dnp.org/Portals/0/AboutUs/DNP3%20Primer%20Rev%20A.pdf",
+      "source_revision": "DNP Users Group Primer RevisionA 20March2005 pages5..7; StepFunctionDNP3 1.6.0 June2024 implementation is separate"
+    },
+    {
+      "when": {
+        "dnp_role": "MASTER"
+      },
+      "parameter": "dnp_unsolicited_retry_mode",
+      "allowed": [],
+      "source": "https://www.dnp.org/Portals/0/AboutUs/DNP3%20Primer%20Rev%20A.pdf",
+      "source_revision": "DNP Users Group Primer RevisionA 20March2005 pages5..7; StepFunctionDNP3 1.6.0 June2024 implementation is separate"
+    },
+    {
+      "when": {
+        "dnp_role": "MASTER"
+      },
+      "parameter": "dnp_max_unsolicited_retries",
+      "allowed": [],
+      "source": "https://www.dnp.org/Portals/0/AboutUs/DNP3%20Primer%20Rev%20A.pdf",
+      "source_revision": "DNP Users Group Primer RevisionA 20March2005 pages5..7; StepFunctionDNP3 1.6.0 June2024 implementation is separate"
+    },
+    {
+      "when": {
+        "dnp_role": "MASTER"
+      },
+      "parameter": "dnp_unsolicited_retry_delay_ms",
+      "allowed": [],
+      "source": "https://www.dnp.org/Portals/0/AboutUs/DNP3%20Primer%20Rev%20A.pdf",
+      "source_revision": "DNP Users Group Primer RevisionA 20March2005 pages5..7; StepFunctionDNP3 1.6.0 June2024 implementation is separate"
+    },
+    {
+      "when": {
+        "dnp_role": "OUTSTATION"
+      },
+      "parameter": "dnp_response_timeout_ms",
+      "allowed": [],
+      "source": "https://www.dnp.org/Portals/0/AboutUs/DNP3%20Primer%20Rev%20A.pdf",
+      "source_revision": "DNP Users Group Primer RevisionA 20March2005 pages5..7; StepFunctionDNP3 1.6.0 June2024 implementation is separate"
+    },
+    {
+      "when": {
+        "dnp_role": "OUTSTATION"
+      },
+      "parameter": "dnp_auto_retry_min_ms",
+      "allowed": [],
+      "source": "https://www.dnp.org/Portals/0/AboutUs/DNP3%20Primer%20Rev%20A.pdf",
+      "source_revision": "DNP Users Group Primer RevisionA 20March2005 pages5..7; StepFunctionDNP3 1.6.0 June2024 implementation is separate"
+    },
+    {
+      "when": {
+        "dnp_role": "OUTSTATION"
+      },
+      "parameter": "dnp_auto_retry_max_ms",
+      "allowed": [],
+      "source": "https://www.dnp.org/Portals/0/AboutUs/DNP3%20Primer%20Rev%20A.pdf",
+      "source_revision": "DNP Users Group Primer RevisionA 20March2005 pages5..7; StepFunctionDNP3 1.6.0 June2024 implementation is separate"
+    }
+  ],
+  "physical_layer_profile_id": null,
+  "medium_access_model": null,
+  "native_parameter_prefixes": [],
+  "parameter_aliases": {},
+  "parameter_alias_limits": {},
+  "parameter_evidence_scope": null,
+  "rate_source_profile_id": null,
+  "arbitration_model_id": null,
+  "max_payload_bytes": null,
+  "capabilities": {
+    "supports_signals": true,
+    "supports_data_objects": true,
+    "supports_streams": false,
+    "supports_multicast": false,
+    "supports_publish_subscribe": false,
+    "supports_request_response": true,
+    "supports_cyclic": true,
+    "supports_event": true,
+    "supports_redundancy": false,
+    "supports_time_sync": false,
+    "supports_safety_profile": false,
+    "supports_segmentation": true,
+    "supports_fragmentation": false,
+    "supports_qos": false
+  },
+  "deterministic": false,
+  "overhead_bytes": 8,
+  "implementation_status": "PARTIAL",
+  "connection_type": "COMMUNICATION_TECHNOLOGY",
+  "parameter_proposals": {
+    "kind": "APPLICATION_TRANSPORT_DEPENDENT",
+    "status": "REVIEW_REQUIRED",
+    "source": "https://www.dnp.org/Portals/0/AboutUs/DNP3%20Primer%20Rev%20A.pdf",
+    "source_revision": "DNP Users Group Primer RevisionA 20March2005 pages5..7; StepFunctionDNP3 1.6.0 June2024 implementation is separate",
+    "note": "DNP3 has no own physical bitrate. Link frame292/octet-data250/transport-data249 and peer buffer-limited application fragments differ;2048 is a typical fragment proposal, not a complete-message limit. Actual transport/edition/device evidence required."
+  },
+  "capacity_evidence": {
+    "status": "MODEL_MISSING",
+    "frame_model": null,
+    "schedule_model": null,
+    "requires_confirmed_device_parameters": true
+  },
+  "components": {
+    "binding": "dnp3.binding",
+    "generator": "dnp3.generator",
+    "validator": "dnp3.validator",
+    "timing_model": null,
+    "load_model": null,
+    "encoder": "dnp3.encoder",
+    "decoder": "dnp3.decoder"
+  },
+  "known_limitations": "Technology-specific conformance details require a vendor/profile extension."
+}

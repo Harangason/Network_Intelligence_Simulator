@@ -1,0 +1,5161 @@
+{
+  "id": "tsn",
+  "label": "Time-Sensitive Networking",
+  "domain": "generic_networking",
+  "layer": "INDUSTRY_PROFILE",
+  "transport_unit": "FRAME",
+  "payload_element_types": [
+    "FIELD",
+    "RAW_DATA"
+  ],
+  "hardware_interface": "explicit_tsn_tools_and_qualified_phy",
+  "hardware_capability_aliases": [
+    "ethernet_port"
+  ],
+  "default_stack": [
+    "tsn"
+  ],
+  "stack_variants": [
+    [
+      "tsn"
+    ],
+    [
+      "ethernet",
+      "tsn"
+    ]
+  ],
+  "default_bitrate": null,
+  "rate_model": {
+    "type": "EXPLICIT_TSN_TOOLSET_AND_PHY",
+    "fields": []
+  },
+  "local_timing_schema": [],
+  "parameter_schema": {
+    "payload_bytes": {
+      "label": "Payload",
+      "category": "physical",
+      "scope": "message",
+      "type": "number",
+      "description": "Actual selectedstreamL2/application bytes, no universalTSN1500bytecap; ownqueueMaxSDU0inheritsactualMACmax, port/class/framing/guard independent.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-sched.yang",
+      "source_revision": "IEEE802.1Qcw YANG22October2023: scheduling perport gate list,8bitstates, rationalcycle, actual supported limits, admin vsoper.",
+      "integer": true
+    },
+    "cycle_ms": {
+      "label": "Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "Standardperiode fuer zyklische Nachrichten.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "minimum_cycle_time_ms": {
+      "label": "Minimum Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "deadline_ms": {
+      "label": "Deadline",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "timeout_ms": {
+      "label": "Timeout",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_latency_ms": {
+      "label": "Maximum Latency",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "jitter_ms": {
+      "label": "Jitter Budget",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "freshness_ms": {
+      "label": "Data Freshness",
+      "category": "timing",
+      "scope": "signal",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "source_processing_delay_ms": {
+      "label": "Source Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_processing_delay_ms": {
+      "label": "Target Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "propagation_delay_ms": {
+      "label": "Propagation",
+      "category": "timing",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.01,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_bus_load_percent": {
+      "label": "Ziel-Buslast",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "Zielwert fuer die aus Routing, Payload, Zyklus und Bitrate berechnete Buslast.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "peak_factor": {
+      "label": "Peak Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.15,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_factor": {
+      "label": "Burst Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.5,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_window_ms": {
+      "label": "Burst Window",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "warning_threshold": {
+      "label": "Load Warning",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "critical_threshold": {
+      "label": "Load Critical",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 75,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "overload_threshold": {
+      "label": "Load Overload",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 90,
+      "unit": "%",
+      "min": 1,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "queue_size": {
+      "label": "Queue Size",
+      "category": "qos",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 256,
+      "unit": "Frames",
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "queue_policy": {
+      "label": "Queue Policy",
+      "category": "qos",
+      "scope": "network",
+      "type": "select",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": "FIFO",
+      "options": [
+        "FIFO",
+        "PRIORITY",
+        "STRICT_PRIORITY",
+        "WEIGHTED_PRIORITY",
+        "WRR",
+        "ROUND_ROBIN",
+        "TIME_TRIGGERED",
+        "TAS",
+        "CBS",
+        "CUSTOM"
+      ],
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "qos_priority": {
+      "label": "Default Priority",
+      "category": "qos",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 3,
+      "min": 0,
+      "max": 7,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "traffic_class": {
+      "label": "Traffic Class",
+      "category": "qos",
+      "scope": "route",
+      "type": "select",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": "BEST_EFFORT",
+      "options": [
+        "BEST_EFFORT",
+        "CONTROL",
+        "REALTIME",
+        "SAFETY_CRITICAL"
+      ],
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "packet_loss_probability": {
+      "label": "Packet Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "frame_loss_probability": {
+      "label": "Frame Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "bit_error_rate": {
+      "label": "Bit Error Rate",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "corruption_probability": {
+      "label": "Corruption",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duplicate_probability": {
+      "label": "Duplication",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "reordering_probability": {
+      "label": "Reordering",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "required_reliability": {
+      "label": "Required Reliability",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.999,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_offset_ms": {
+      "label": "Clock Offset",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_drift_ppm": {
+      "label": "Clock Drift",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 20,
+      "unit": "ppm",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_precision_ms": {
+      "label": "Sync Precision",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_interval_ms": {
+      "label": "Sync Interval",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1000,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_sync_error_ms": {
+      "label": "Maximum Sync Error",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_delay_ms": {
+      "label": "Gateway Processing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.2,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_queue_delay_ms": {
+      "label": "Gateway Queueing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "protocol_conversion_delay_ms": {
+      "label": "Protocol Conversion",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duration_s": {
+      "label": "Simulation Duration",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 1,
+      "unit": "s",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "seed": {
+      "label": "Random Seed",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 42,
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "max_events": {
+      "label": "Maximum Events",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 100000,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "dropout_probability": {
+      "label": "Failure Injection Dropout",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "tn_review_profile": {
+      "type": "select",
+      "description": "Actual supported management baseline or independent variant.",
+      "source": "https://www.ieee802.org/1/files/public/docs2026/admin-tsn-summary-0326-v01.pdf",
+      "source_revision": "IEEE TSN summary9March2026; separate toolsets/profiles. Tool registration does not mean every tool is executed/certified.",
+      "options": [
+        "IEEE_PUBLIC_MODELS",
+        "REGISTERED_ACTUAL"
+      ],
+      "label": "tn review profile",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "tn_proposal_mode": {
+      "type": "select",
+      "description": "Source proposals versus commissioned actual configuration.",
+      "source": "https://www.ieee802.org/1/files/public/docs2026/admin-tsn-summary-0326-v01.pdf",
+      "source_revision": "IEEE TSN summary9March2026; separate toolsets/profiles. Tool registration does not mean every tool is executed/certified.",
+      "options": [
+        "SOURCE_BASELINE",
+        "ACTUAL_CONFIG"
+      ],
+      "label": "tn proposal mode",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "tn_mapping": {
+      "type": "select",
+      "description": "Actual IEEE management or pinnedLinux implementation semantics.",
+      "source": "https://raw.githubusercontent.com/iproute2/iproute2/v6.17.0/man/man8/tc-taprio.8",
+      "source_revision": "iproute2 pinnedv6.17.0 TAPRIO manpage: simplifiedIEEE2018mapping,0/1/2 flags,PHC vsclockid, queueMaxSDU0inheritMTU, S/H/R,GCLns andactualoffload.",
+      "options": [
+        "IEEE_YANG",
+        "LINUX_IPROUTE2_6_17",
+        "REGISTERED_ACTUAL"
+      ],
+      "label": "tn mapping",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "tn_preemption_status": {
+      "type": "select",
+      "description": "Actual current selected priority service; eachpriorityindependent.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-preemption.yang",
+      "source_revision": "IEEE802.1Qcw YANG26October2023: perpriorityExpressdefault, actualMAC hold/release advance andactive state, no universal64bytefragment guess.",
+      "options": [
+        "EXPRESS",
+        "PREEMPTABLE"
+      ],
+      "label": "tn preemption status",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "tn_review_profile": "IEEE_PUBLIC_MODELS",
+            "tn_proposal_mode": "SOURCE_BASELINE"
+          },
+          "value": "EXPRESS",
+          "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-preemption.yang",
+          "source_revision": "IEEE802.1Qcw YANG26October2023: perpriorityExpressdefault, actualMAC hold/release advance andactive state, no universal64bytefragment guess."
+        }
+      ],
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_hold_request": {
+      "type": "select",
+      "description": "Actual MAC hold/release state, initializationrelease not observeddefault.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-preemption.yang",
+      "source_revision": "IEEE802.1Qcw YANG26October2023: perpriorityExpressdefault, actualMAC hold/release advance andactive state, no universal64bytefragment guess.",
+      "options": [
+        "HOLD",
+        "RELEASE"
+      ],
+      "label": "tn hold request",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_color_mode": {
+      "type": "select",
+      "description": "Actual bandwidth profile ignores or considers inputcolor.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-psfp.yang",
+      "source_revision": "IEEE802.1Qcw YANG26October2023: flowmeterCIR/EIR bits/s, CBS/EBS octets, mandatorycolor/coupling/yellowdrop, streamgates.",
+      "options": [
+        "COLOR_BLIND",
+        "COLOR_AWARE"
+      ],
+      "label": "tn color mode",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_coupling": {
+      "type": "select",
+      "description": "Actual uncoupled0 orcoupled1 meter.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-psfp.yang",
+      "source_revision": "IEEE802.1Qcw YANG26October2023: flowmeterCIR/EIR bits/s, CBS/EBS octets, mandatorycolor/coupling/yellowdrop, streamgates.",
+      "options": [
+        "ZERO",
+        "ONE"
+      ],
+      "label": "tn coupling",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_cbs_model": {
+      "type": "select",
+      "description": "Actual selected simpleAnnexLcreditformula versus independentlyqualifiedshapercomposition.",
+      "source": "https://raw.githubusercontent.com/iproute2/iproute2/v6.17.0/man/man8/tc-cbs.8",
+      "source_revision": "iproute2 pinnedv6.17.0 CBS manpage: kbit/s mapping, actualwholewireoverhead, send=idle−port, high/lowcredit AnnexL simplemodel; not arbitrarymulticlassnetworkbound.",
+      "options": [
+        "SIMPLE_ANNEX_L",
+        "REGISTERED_ACTUAL"
+      ],
+      "label": "tn cbs model",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_recovery_algorithm": {
+      "type": "select",
+      "description": "Actual FRER vector or match recovery; vendor requires own codec.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1cb-frer.yang",
+      "source_revision": "IEEE802.1CB YANG8December2021: independent generation/identification/recovery, vector/historymin2 vsmatch, reset/no-sequence/latenterror requirements.",
+      "options": [
+        "VECTOR",
+        "MATCH",
+        "REGISTERED_ACTUAL"
+      ],
+      "label": "tn recovery algorithm",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_cqf_profile": {
+      "type": "select",
+      "description": "Actual selected CQF implementation scope.",
+      "source": "https://www.nxp.com/docs/en/user-guide/REALTIMEEDGEUG_Rev2.3.pdf",
+      "source_revision": "NXP RealTimeEdgeUG Rev2.3 28July2022 section7.4 printed99: implementation-specificCQF equalcycle/gatetime andintegercycle multiple. Example10000/2000ns is notnormative default.",
+      "options": [
+        "NXP_RTE_2_3",
+        "REGISTERED_ACTUAL"
+      ],
+      "label": "tn cqf profile",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_stream_status": {
+      "type": "select",
+      "description": "Actual reservation/computation status;STARTED notsuccessfulREADY.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-cnc-config.yang",
+      "source_revision": "IEEE802.1Q CNC publicYANG31January2024: domain/CUC/stream/talker/listener/status. compute RPCstart is not actual successfulreservation.",
+      "options": [
+        "STARTED",
+        "READY",
+        "FAILED",
+        "UNKNOWN"
+      ],
+      "label": "tn stream status",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_outcome": {
+      "type": "select",
+      "description": "Actual correlated consumer result.",
+      "source": "https://www.ieee802.org/1/files/public/docs2026/admin-tsn-summary-0326-v01.pdf",
+      "source_revision": "IEEE TSN summary9March2026; separate toolsets/profiles. Tool registration does not mean every tool is executed/certified.",
+      "options": [
+        "ACCEPTED",
+        "STALE",
+        "ERROR",
+        "UNKNOWN"
+      ],
+      "label": "tn outcome",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_link_bps": {
+      "type": "number",
+      "description": "Actual bound perhop physical link rate; no TSNuniversal1Gbit/s.",
+      "source": "https://www.ieee802.org/1/files/public/docs2026/admin-tsn-summary-0326-v01.pdf",
+      "source_revision": "IEEE TSN summary9March2026; separate toolsets/profiles. Tool registration does not mean every tool is executed/certified.",
+      "min": 1,
+      "unit": "bit/s",
+      "integer": true,
+      "label": "tn link bps",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_traffic_class": {
+      "type": "number",
+      "description": "Actual IEEE priority/queueclass0..7, Linuxextended0..15 onlyseparatelymapped.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-types%402023-10-22.yang",
+      "source_revision": "IEEE802.1Q types22October2023: basegateentries index/operation/uint32ns interval; no assumed consecutiveindexes.",
+      "min": 0,
+      "max": 15,
+      "integer": true,
+      "label": "tn traffic class",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_queue_max_sdu": {
+      "type": "number",
+      "description": "Actual perclassL2maxSDU;0 inherits underlyingMACmax, not zerocapacity.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-sched.yang",
+      "source_revision": "IEEE802.1Qcw YANG22October2023: scheduling perport gate list,8bitstates, rationalcycle, actual supported limits, admin vsoper.",
+      "min": 0,
+      "max": 4294967295,
+      "unit": "byte",
+      "integer": true,
+      "label": "tn queue max sdu",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "tn_review_profile": "IEEE_PUBLIC_MODELS",
+            "tn_proposal_mode": "SOURCE_BASELINE"
+          },
+          "value": 0,
+          "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-sched.yang",
+          "source_revision": "IEEE802.1Qcw YANG22October2023: scheduling perport gate list,8bitstates, rationalcycle, actual supported limits, admin vsoper."
+        }
+      ],
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_mac_max_sdu": {
+      "type": "number",
+      "description": "Actual boundMAC supportedmaxSDU, not a fixedTSN1500cap.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-sched.yang",
+      "source_revision": "IEEE802.1Qcw YANG22October2023: scheduling perport gate list,8bitstates, rationalcycle, actual supported limits, admin vsoper.",
+      "min": 1,
+      "unit": "byte",
+      "integer": true,
+      "label": "tn mac max sdu",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_admin_gate_states": {
+      "type": "number",
+      "description": "Actual admininitialgates bit7..0 class7..0, sourceproposal255 allopen.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-sched.yang",
+      "source_revision": "IEEE802.1Qcw YANG22October2023: scheduling perport gate list,8bitstates, rationalcycle, actual supported limits, admin vsoper.",
+      "min": 0,
+      "max": 255,
+      "integer": true,
+      "label": "tn admin gate states",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "tn_review_profile": "IEEE_PUBLIC_MODELS",
+            "tn_proposal_mode": "SOURCE_BASELINE"
+          },
+          "value": 255,
+          "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-sched.yang",
+          "source_revision": "IEEE802.1Qcw YANG22October2023: scheduling perport gate list,8bitstates, rationalcycle, actual supported limits, admin vsoper."
+        }
+      ],
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_oper_gate_states": {
+      "type": "number",
+      "description": "Actual observed runninggates independent ofadmin.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-sched.yang",
+      "source_revision": "IEEE802.1Qcw YANG22October2023: scheduling perport gate list,8bitstates, rationalcycle, actual supported limits, admin vsoper.",
+      "min": 0,
+      "max": 255,
+      "integer": true,
+      "label": "tn oper gate states",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_cycle_numerator": {
+      "type": "number",
+      "description": "Actual admincycle rational numeratorseconds uint32.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-types.yang",
+      "source_revision": "IEEE common publicYANG: rationaluint32 denominator≥1, PTP48bitseconds/nanoseconds<1e9.",
+      "min": 0,
+      "max": 4294967295,
+      "integer": true,
+      "label": "tn cycle numerator",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_cycle_denominator": {
+      "type": "number",
+      "description": "Actual cycle rationaldenominator≥1.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-types.yang",
+      "source_revision": "IEEE common publicYANG: rationaluint32 denominator≥1, PTP48bitseconds/nanoseconds<1e9.",
+      "min": 1,
+      "max": 4294967295,
+      "integer": true,
+      "label": "tn cycle denominator",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_cycle_ns": {
+      "type": "number",
+      "description": "Actual source-resolved cycle innanoseconds, distinctstreamperiod.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-sched.yang",
+      "source_revision": "IEEE802.1Qcw YANG22October2023: scheduling perport gate list,8bitstates, rationalcycle, actual supported limits, admin vsoper.",
+      "min": 0,
+      "unit": "ns",
+      "integer": false,
+      "label": "tn cycle ns",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_supported_cycle_ns": {
+      "type": "number",
+      "description": "Actual port supported cyclemaximum, not invented1ms.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-sched.yang",
+      "source_revision": "IEEE802.1Qcw YANG22October2023: scheduling perport gate list,8bitstates, rationalcycle, actual supported limits, admin vsoper.",
+      "min": 0,
+      "unit": "ns",
+      "integer": false,
+      "label": "tn supported cycle ns",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_cycle_extension_ns": {
+      "type": "number",
+      "description": "Actual maximumpermitted extension on reconfiguration, not everycycleguard.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-sched.yang",
+      "source_revision": "IEEE802.1Qcw YANG22October2023: scheduling perport gate list,8bitstates, rationalcycle, actual supported limits, admin vsoper.",
+      "min": 0,
+      "max": 4294967295,
+      "unit": "ns",
+      "integer": true,
+      "label": "tn cycle extension ns",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_base_seconds": {
+      "type": "number",
+      "description": "Actual PTPtimescale48bitseconds; no frozenUnixdefault.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-types.yang",
+      "source_revision": "IEEE common publicYANG: rationaluint32 denominator≥1, PTP48bitseconds/nanoseconds<1e9.",
+      "min": 0,
+      "max": 281474976710655,
+      "unit": "s",
+      "integer": true,
+      "label": "tn base seconds",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_base_nanoseconds": {
+      "type": "number",
+      "description": "Actual fractionalPTPtime<1e9ns.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-types.yang",
+      "source_revision": "IEEE common publicYANG: rationaluint32 denominator≥1, PTP48bitseconds/nanoseconds<1e9.",
+      "min": 0,
+      "max": 999999999,
+      "unit": "ns",
+      "integer": true,
+      "label": "tn base nanoseconds",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_tick_tenths_ns": {
+      "type": "number",
+      "description": "Actual portclock granularityunit0.1ns, not whole ns.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-sched.yang",
+      "source_revision": "IEEE802.1Qcw YANG22October2023: scheduling perport gate list,8bitstates, rationalcycle, actual supported limits, admin vsoper.",
+      "min": 0,
+      "max": 4294967295,
+      "unit": "0.1ns",
+      "integer": true,
+      "label": "tn tick tenths ns",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_tick_ns": {
+      "type": "number",
+      "description": "Actual converted portclocktick, not synchronizedaccuracy.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-sched.yang",
+      "source_revision": "IEEE802.1Qcw YANG22October2023: scheduling perport gate list,8bitstates, rationalcycle, actual supported limits, admin vsoper.",
+      "min": 0,
+      "unit": "ns",
+      "integer": false,
+      "label": "tn tick ns",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_supported_list_max": {
+      "type": "number",
+      "description": "Actual devicegate-table capacityentries.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-sched.yang",
+      "source_revision": "IEEE802.1Qcw YANG22October2023: scheduling perport gate list,8bitstates, rationalcycle, actual supported limits, admin vsoper.",
+      "min": 0,
+      "max": 4294967295,
+      "integer": true,
+      "label": "tn supported list max",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_supported_interval_max_ns": {
+      "type": "number",
+      "description": "Actual port maximumsingleGCLinterval.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-sched.yang",
+      "source_revision": "IEEE802.1Qcw YANG22October2023: scheduling perport gate list,8bitstates, rationalcycle, actual supported limits, admin vsoper.",
+      "min": 0,
+      "max": 4294967295,
+      "unit": "ns",
+      "integer": true,
+      "label": "tn supported interval max ns",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_gcl_sum_ns": {
+      "type": "number",
+      "description": "Actual aggregateintervals, Linuxsum=cycle,IEEEowncyclequalification.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-sched.yang",
+      "source_revision": "IEEE802.1Qcw YANG22October2023: scheduling perport gate list,8bitstates, rationalcycle, actual supported limits, admin vsoper.",
+      "min": 0,
+      "unit": "ns",
+      "integer": true,
+      "label": "tn gcl sum ns",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_gate_open_ns": {
+      "type": "number",
+      "description": "Actual aggregateapplicableclassservice window includingknownschedule.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-sched.yang",
+      "source_revision": "IEEE802.1Qcw YANG22October2023: scheduling perport gate list,8bitstates, rationalcycle, actual supported limits, admin vsoper.",
+      "min": 0,
+      "unit": "ns",
+      "integer": false,
+      "label": "tn gate open ns",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_guard_ns": {
+      "type": "number",
+      "description": "Actual qualified interferingframe/preemption+clock guard envelope, notfixeddefault.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-sched.yang",
+      "source_revision": "IEEE802.1Qcw YANG22October2023: scheduling perport gate list,8bitstates, rationalcycle, actual supported limits, admin vsoper.",
+      "min": 0,
+      "unit": "ns",
+      "integer": false,
+      "label": "tn guard ns",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_serialization_ns": {
+      "type": "number",
+      "description": "Actual wholeframeoccupiedserialization bound.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-sched.yang",
+      "source_revision": "IEEE802.1Qcw YANG22October2023: scheduling perport gate list,8bitstates, rationalcycle, actual supported limits, admin vsoper.",
+      "min": 0,
+      "unit": "ns",
+      "integer": false,
+      "label": "tn serialization ns",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_clock_error_ns": {
+      "type": "number",
+      "description": "Actual relativeclockoffset/drift bound alongpath.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1as-gptp.yang",
+      "source_revision": "IEEE802.1AS YANG10December2025: actualAScapability, logintervalsource, receiptcounts, scaled neighbor ratio, one-step/clock properties; no universalfixed synchronizationerror.",
+      "min": 0,
+      "unit": "ns",
+      "integer": false,
+      "label": "tn clock error ns",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_taprio_flags": {
+      "type": "number",
+      "description": "Actual Linux0software/1txtimeassist/2offload;3invalid.",
+      "source": "https://raw.githubusercontent.com/iproute2/iproute2/v6.17.0/man/man8/tc-taprio.8",
+      "source_revision": "iproute2 pinnedv6.17.0 TAPRIO manpage: simplifiedIEEE2018mapping,0/1/2 flags,PHC vsclockid, queueMaxSDU0inheritMTU, S/H/R,GCLns andactualoffload.",
+      "min": 0,
+      "max": 3,
+      "integer": true,
+      "label": "tn taprio flags",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_num_tc": {
+      "type": "number",
+      "description": "Actual Linuxtrafficclasses≤16, differentfromIEEE8bitgatetable.",
+      "source": "https://raw.githubusercontent.com/iproute2/iproute2/v6.17.0/man/man8/tc-taprio.8",
+      "source_revision": "iproute2 pinnedv6.17.0 TAPRIO manpage: simplifiedIEEE2018mapping,0/1/2 flags,PHC vsclockid, queueMaxSDU0inheritMTU, S/H/R,GCLns andactualoffload.",
+      "min": 1,
+      "max": 16,
+      "integer": true,
+      "label": "tn num tc",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_txtime_delay_ns": {
+      "type": "number",
+      "description": "Actual maximumtaprio-toNIC delay, mustexceedETFdelta.",
+      "source": "https://raw.githubusercontent.com/iproute2/iproute2/v6.17.0/man/man8/tc-taprio.8",
+      "source_revision": "iproute2 pinnedv6.17.0 TAPRIO manpage: simplifiedIEEE2018mapping,0/1/2 flags,PHC vsclockid, queueMaxSDU0inheritMTU, S/H/R,GCLns andactualoffload.",
+      "min": 0,
+      "max": 4294967295,
+      "unit": "ns",
+      "integer": true,
+      "label": "tn txtime delay ns",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_etf_delta_ns": {
+      "type": "number",
+      "description": "Actual ETF advance/wakeupbound.",
+      "source": "https://raw.githubusercontent.com/iproute2/iproute2/v6.17.0/man/man8/tc-taprio.8",
+      "source_revision": "iproute2 pinnedv6.17.0 TAPRIO manpage: simplifiedIEEE2018mapping,0/1/2 flags,PHC vsclockid, queueMaxSDU0inheritMTU, S/H/R,GCLns andactualoffload.",
+      "min": 0,
+      "unit": "ns",
+      "integer": true,
+      "label": "tn etf delta ns",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_idle_bps": {
+      "type": "number",
+      "description": "Actual perclass CBS reservedbitrate, adminignored ifSRPactive.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-cbsa.yang",
+      "source_revision": "IEEE802.1Qdx YANG7August2024: CBS pertrafficclass admin/oper idle slope bits/s, adminignored ifSRPactive, default0 means noreservation.",
+      "min": 0,
+      "unit": "bit/s",
+      "integer": false,
+      "label": "tn idle bps",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_admin_idle_bps": {
+      "type": "number",
+      "description": "Actual managementrequested CBS bits/s;0noreservation.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-cbsa.yang",
+      "source_revision": "IEEE802.1Qdx YANG7August2024: CBS pertrafficclass admin/oper idle slope bits/s, adminignored ifSRPactive, default0 means noreservation.",
+      "min": 0,
+      "max": 18446744073709551615,
+      "unit": "bit/s",
+      "integer": true,
+      "label": "tn admin idle bps",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "tn_review_profile": "IEEE_PUBLIC_MODELS",
+            "tn_proposal_mode": "SOURCE_BASELINE"
+          },
+          "value": 0,
+          "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-cbsa.yang",
+          "source_revision": "IEEE802.1Qdx YANG7August2024: CBS pertrafficclass admin/oper idle slope bits/s, adminignored ifSRPactive, default0 means noreservation."
+        }
+      ],
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_send_bps": {
+      "type": "number",
+      "description": "Actual CBS sendcreditdepletion idle−port, normallynegative.",
+      "source": "https://raw.githubusercontent.com/iproute2/iproute2/v6.17.0/man/man8/tc-cbs.8",
+      "source_revision": "iproute2 pinnedv6.17.0 CBS manpage: kbit/s mapping, actualwholewireoverhead, send=idle−port, high/lowcredit AnnexL simplemodel; not arbitrarymulticlassnetworkbound.",
+      "max": 0,
+      "unit": "bit/s",
+      "integer": false,
+      "label": "tn send bps",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_hi_credit_bytes": {
+      "type": "number",
+      "description": "Actual simpleCBS highcredit bound frommaxinterference*idle/port.",
+      "source": "https://raw.githubusercontent.com/iproute2/iproute2/v6.17.0/man/man8/tc-cbs.8",
+      "source_revision": "iproute2 pinnedv6.17.0 CBS manpage: kbit/s mapping, actualwholewireoverhead, send=idle−port, high/lowcredit AnnexL simplemodel; not arbitrarymulticlassnetworkbound.",
+      "min": 0,
+      "unit": "byte",
+      "integer": false,
+      "label": "tn hi credit bytes",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_lo_credit_bytes": {
+      "type": "number",
+      "description": "Actual simpleCBS lowcredit frommaxframe*send/port.",
+      "source": "https://raw.githubusercontent.com/iproute2/iproute2/v6.17.0/man/man8/tc-cbs.8",
+      "source_revision": "iproute2 pinnedv6.17.0 CBS manpage: kbit/s mapping, actualwholewireoverhead, send=idle−port, high/lowcredit AnnexL simplemodel; not arbitrarymulticlassnetworkbound.",
+      "max": 0,
+      "unit": "byte",
+      "integer": false,
+      "label": "tn lo credit bytes",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_max_interference_bytes": {
+      "type": "number",
+      "description": "Actual totalinterferingburstwireoccupation, notpayloadonly.",
+      "source": "https://raw.githubusercontent.com/iproute2/iproute2/v6.17.0/man/man8/tc-cbs.8",
+      "source_revision": "iproute2 pinnedv6.17.0 CBS manpage: kbit/s mapping, actualwholewireoverhead, send=idle−port, high/lowcredit AnnexL simplemodel; not arbitrarymulticlassnetworkbound.",
+      "min": 0,
+      "unit": "byte",
+      "integer": true,
+      "label": "tn max interference bytes",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_max_frame_bytes": {
+      "type": "number",
+      "description": "Actual completepacketwireoccupation includingalllayers/IPG.",
+      "source": "https://raw.githubusercontent.com/iproute2/iproute2/v6.17.0/man/man8/tc-cbs.8",
+      "source_revision": "iproute2 pinnedv6.17.0 CBS manpage: kbit/s mapping, actualwholewireoverhead, send=idle−port, high/lowcredit AnnexL simplemodel; not arbitrarymulticlassnetworkbound.",
+      "min": 0,
+      "unit": "byte",
+      "integer": true,
+      "label": "tn max frame bytes",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_cir_bps": {
+      "type": "number",
+      "description": "Actual PSFP committedinformation rate, uint64 wire/model value mustlossless.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-psfp.yang",
+      "source_revision": "IEEE802.1Qcw YANG26October2023: flowmeterCIR/EIR bits/s, CBS/EBS octets, mandatorycolor/coupling/yellowdrop, streamgates.",
+      "min": 0,
+      "max": 18446744073709551615,
+      "unit": "bit/s",
+      "integer": true,
+      "label": "tn cir bps",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_eir_bps": {
+      "type": "number",
+      "description": "Actual PSFP excessinformation rate.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-psfp.yang",
+      "source_revision": "IEEE802.1Qcw YANG26October2023: flowmeterCIR/EIR bits/s, CBS/EBS octets, mandatorycolor/coupling/yellowdrop, streamgates.",
+      "min": 0,
+      "max": 18446744073709551615,
+      "unit": "bit/s",
+      "integer": true,
+      "label": "tn eir bps",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_cbs_octets": {
+      "type": "number",
+      "description": "Actual PSFP committedburst inoctets, distinctATSburstbits.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-psfp.yang",
+      "source_revision": "IEEE802.1Qcw YANG26October2023: flowmeterCIR/EIR bits/s, CBS/EBS octets, mandatorycolor/coupling/yellowdrop, streamgates.",
+      "min": 0,
+      "max": 4294967295,
+      "unit": "byte",
+      "integer": true,
+      "label": "tn cbs octets",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_ebs_octets": {
+      "type": "number",
+      "description": "Actual PSFP excessburst octets.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-psfp.yang",
+      "source_revision": "IEEE802.1Qcw YANG26October2023: flowmeterCIR/EIR bits/s, CBS/EBS octets, mandatorycolor/coupling/yellowdrop, streamgates.",
+      "min": 0,
+      "max": 4294967295,
+      "unit": "byte",
+      "integer": true,
+      "label": "tn ebs octets",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_interval_octet_max": {
+      "type": "number",
+      "description": "Actual optional streamgate bytebudget; omittedmeansnolim,0zero notwildcard.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-psfp.yang",
+      "source_revision": "IEEE802.1Qcw YANG26October2023: flowmeterCIR/EIR bits/s, CBS/EBS octets, mandatorycolor/coupling/yellowdrop, streamgates.",
+      "min": 0,
+      "max": 4294967295,
+      "unit": "byte",
+      "integer": true,
+      "label": "tn interval octet max",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_stream_sdu_max": {
+      "type": "number",
+      "description": "Actual filtermaximumSDU, independentqueueMaxSDU.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-psfp.yang",
+      "source_revision": "IEEE802.1Qcw YANG26October2023: flowmeterCIR/EIR bits/s, CBS/EBS octets, mandatorycolor/coupling/yellowdrop, streamgates.",
+      "min": 0,
+      "max": 4294967295,
+      "unit": "byte",
+      "integer": true,
+      "label": "tn stream sdu max",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_hold_advance_ns": {
+      "type": "number",
+      "description": "Actual underlyingMAC property; no standarddefault.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-preemption.yang",
+      "source_revision": "IEEE802.1Qcw YANG26October2023: perpriorityExpressdefault, actualMAC hold/release advance andactive state, no universal64bytefragment guess.",
+      "min": 0,
+      "max": 4294967295,
+      "unit": "ns",
+      "integer": true,
+      "label": "tn hold advance ns",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_release_advance_ns": {
+      "type": "number",
+      "description": "Actual underlyingMAC property; no standarddefault.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-preemption.yang",
+      "source_revision": "IEEE802.1Qcw YANG26October2023: perpriorityExpressdefault, actualMAC hold/release advance andactive state, no universal64bytefragment guess.",
+      "min": 0,
+      "max": 4294967295,
+      "unit": "ns",
+      "integer": true,
+      "label": "tn release advance ns",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_fragment_block_ns": {
+      "type": "number",
+      "description": "Actual maximumresidualpreemptablefragment blocking, not fixed64octets.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-preemption.yang",
+      "source_revision": "IEEE802.1Qcw YANG26October2023: perpriorityExpressdefault, actualMAC hold/release advance andactive state, no universal64bytefragment guess.",
+      "min": 0,
+      "unit": "ns",
+      "integer": false,
+      "label": "tn fragment block ns",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_ats_cir_bps": {
+      "type": "number",
+      "description": "Actual ATS committedinformation rate inbits/s.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-ats.yang",
+      "source_revision": "IEEE802.1Qcz YANG3July2023: committedrate bits/s butburst bits, schedulergroup/reference/residence andperport timing.",
+      "min": 0,
+      "max": 18446744073709551615,
+      "unit": "bit/s",
+      "integer": true,
+      "label": "tn ats cir bps",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_ats_burst_bits": {
+      "type": "number",
+      "description": "Actual ATS committedburst bits, notPSFPoctets.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-ats.yang",
+      "source_revision": "IEEE802.1Qcz YANG3July2023: committedrate bits/s butburst bits, schedulergroup/reference/residence andperport timing.",
+      "min": 0,
+      "max": 4294967295,
+      "unit": "bit",
+      "integer": true,
+      "label": "tn ats burst bits",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_ats_group_id": {
+      "type": "number",
+      "description": "Actual existing scheduler-groupreference, notgenerateddefault.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-ats.yang",
+      "source_revision": "IEEE802.1Qcz YANG3July2023: committedrate bits/s butburst bits, schedulergroup/reference/residence andperport timing.",
+      "min": 0,
+      "max": 4294967295,
+      "integer": true,
+      "label": "tn ats group id",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_ats_residence_ns": {
+      "type": "number",
+      "description": "Actual scheduler group maxresidence time.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-ats.yang",
+      "source_revision": "IEEE802.1Qcz YANG3July2023: committedrate bits/s butburst bits, schedulergroup/reference/residence andperport timing.",
+      "min": 0,
+      "max": 4294967295,
+      "unit": "ns",
+      "integer": true,
+      "label": "tn ats residence ns",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_ats_processing_min_ns": {
+      "type": "number",
+      "description": "Actual portpairminimumprocessing.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-ats.yang",
+      "source_revision": "IEEE802.1Qcz YANG3July2023: committedrate bits/s butburst bits, schedulergroup/reference/residence andperport timing.",
+      "min": 0,
+      "max": 4294967295,
+      "unit": "ns",
+      "integer": true,
+      "label": "tn ats processing min ns",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_ats_processing_max_ns": {
+      "type": "number",
+      "description": "Actual portpairmaximumprocessing.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-ats.yang",
+      "source_revision": "IEEE802.1Qcz YANG3July2023: committedrate bits/s butburst bits, schedulergroup/reference/residence andperport timing.",
+      "min": 0,
+      "max": 4294967295,
+      "unit": "ns",
+      "integer": true,
+      "label": "tn ats processing max ns",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_ats_clock_variation_ns": {
+      "type": "number",
+      "description": "Actual portpairclockvariationmax.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-ats.yang",
+      "source_revision": "IEEE802.1Qcz YANG3July2023: committedrate bits/s butburst bits, schedulergroup/reference/residence andperport timing.",
+      "min": 0,
+      "max": 4294967295,
+      "unit": "ns",
+      "integer": true,
+      "label": "tn ats clock variation ns",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_ats_rate_deviation_ppm": {
+      "type": "number",
+      "description": "Actual portpairclockratedeviationmax.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-ats.yang",
+      "source_revision": "IEEE802.1Qcz YANG3July2023: committedrate bits/s butburst bits, schedulergroup/reference/residence andperport timing.",
+      "min": 0,
+      "max": 4294967295,
+      "unit": "ppm",
+      "integer": true,
+      "label": "tn ats rate deviation ppm",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_ats_recognition_ns": {
+      "type": "number",
+      "description": "Actual arrivalrecognitionmaxdelay.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-ats.yang",
+      "source_revision": "IEEE802.1Qcz YANG3July2023: committedrate bits/s butburst bits, schedulergroup/reference/residence andperport timing.",
+      "min": 0,
+      "max": 4294967295,
+      "unit": "ns",
+      "integer": true,
+      "label": "tn ats recognition ns",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_cqf_gate_ns": {
+      "type": "number",
+      "description": "Actual NXPconfiguration gateopen duration, not globalCQFdefault.",
+      "source": "https://www.nxp.com/docs/en/user-guide/REALTIMEEDGEUG_Rev2.3.pdf",
+      "source_revision": "NXP RealTimeEdgeUG Rev2.3 28July2022 section7.4 printed99: implementation-specificCQF equalcycle/gatetime andintegercycle multiple. Example10000/2000ns is notnormative default.",
+      "min": 1,
+      "unit": "ns",
+      "integer": true,
+      "label": "tn cqf gate ns",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_cqf_cycle_ns": {
+      "type": "number",
+      "description": "Actual NXPconfigurationcycle multipleofgate.",
+      "source": "https://www.nxp.com/docs/en/user-guide/REALTIMEEDGEUG_Rev2.3.pdf",
+      "source_revision": "NXP RealTimeEdgeUG Rev2.3 28July2022 section7.4 printed99: implementation-specificCQF equalcycle/gatetime andintegercycle multiple. Example10000/2000ns is notnormative default.",
+      "min": 1,
+      "unit": "ns",
+      "integer": true,
+      "label": "tn cqf cycle ns",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_frer_history": {
+      "type": "number",
+      "description": "Actual vectorhistorybits min2, matchalgorithmdoesnotuseit.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1cb-frer.yang",
+      "source_revision": "IEEE802.1CB YANG8December2021: independent generation/identification/recovery, vector/historymin2 vsmatch, reset/no-sequence/latenterror requirements.",
+      "min": 0,
+      "max": 4294967295,
+      "unit": "bit",
+      "integer": true,
+      "label": "tn frer history",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "tn_review_profile": "IEEE_PUBLIC_MODELS",
+            "tn_proposal_mode": "SOURCE_BASELINE",
+            "tn_recovery_algorithm": "VECTOR"
+          },
+          "value": 2,
+          "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1cb-frer.yang",
+          "source_revision": "IEEE802.1CB YANG8December2021: independent generation/identification/recovery, vector/historymin2 vsmatch, reset/no-sequence/latenterror requirements."
+        }
+      ],
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_frer_history_max": {
+      "type": "number",
+      "description": "Actual implementationmaximumhistory.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1cb-frer.yang",
+      "source_revision": "IEEE802.1CB YANG8December2021: independent generation/identification/recovery, vector/historymin2 vsmatch, reset/no-sequence/latenterror requirements.",
+      "min": 2,
+      "max": 4294967295,
+      "unit": "bit",
+      "integer": true,
+      "label": "tn frer history max",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_frer_reset_ms": {
+      "type": "number",
+      "description": "Actual recoverytimeout, no invented400ms.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1cb-frer.yang",
+      "source_revision": "IEEE802.1CB YANG8December2021: independent generation/identification/recovery, vector/historymin2 vsmatch, reset/no-sequence/latenterror requirements.",
+      "min": 0,
+      "max": 4294967295,
+      "unit": "ms",
+      "integer": true,
+      "label": "tn frer reset ms",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_frer_paths": {
+      "type": "number",
+      "description": "Actual configuredreplication/latenterrorpathcount uint16.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1cb-frer.yang",
+      "source_revision": "IEEE802.1CB YANG8December2021: independent generation/identification/recovery, vector/historymin2 vsmatch, reset/no-sequence/latenterror requirements.",
+      "min": 0,
+      "max": 65535,
+      "integer": true,
+      "label": "tn frer paths",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_frer_difference": {
+      "type": "number",
+      "description": "Actual latenterror signedcounterdifference threshold.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1cb-frer.yang",
+      "source_revision": "IEEE802.1CB YANG8December2021: independent generation/identification/recovery, vector/historymin2 vsmatch, reset/no-sequence/latenterror requirements.",
+      "min": -2147483648,
+      "max": 2147483647,
+      "integer": true,
+      "label": "tn frer difference",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_frer_period_ms": {
+      "type": "number",
+      "description": "Actual latenterrortest period, proposal2000ms.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1cb-frer.yang",
+      "source_revision": "IEEE802.1CB YANG8December2021: independent generation/identification/recovery, vector/historymin2 vsmatch, reset/no-sequence/latenterror requirements.",
+      "min": 0,
+      "max": 4294967295,
+      "unit": "ms",
+      "integer": true,
+      "label": "tn frer period ms",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "tn_review_profile": "IEEE_PUBLIC_MODELS",
+            "tn_proposal_mode": "SOURCE_BASELINE",
+            "tn_frer_latent": true
+          },
+          "value": 2000,
+          "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1cb-frer.yang",
+          "source_revision": "IEEE802.1CB YANG8December2021: independent generation/identification/recovery, vector/historymin2 vsmatch, reset/no-sequence/latenterror requirements."
+        }
+      ],
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_frer_reset_period_ms": {
+      "type": "number",
+      "description": "Actual latenterrorreset period, proposal30000ms.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1cb-frer.yang",
+      "source_revision": "IEEE802.1CB YANG8December2021: independent generation/identification/recovery, vector/historymin2 vsmatch, reset/no-sequence/latenterror requirements.",
+      "min": 0,
+      "max": 4294967295,
+      "unit": "ms",
+      "integer": true,
+      "label": "tn frer reset period ms",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "tn_review_profile": "IEEE_PUBLIC_MODELS",
+            "tn_proposal_mode": "SOURCE_BASELINE",
+            "tn_frer_latent": true
+          },
+          "value": 30000,
+          "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1cb-frer.yang",
+          "source_revision": "IEEE802.1CB YANG8December2021: independent generation/identification/recovery, vector/historymin2 vsmatch, reset/no-sequence/latenterror requirements."
+        }
+      ],
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_sequence_space": {
+      "type": "number",
+      "description": "Actual encoding-dependentRecovSeqSpace, not always16bitRtag.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1cb-frer.yang",
+      "source_revision": "IEEE802.1CB YANG8December2021: independent generation/identification/recovery, vector/historymin2 vsmatch, reset/no-sequence/latenterror requirements.",
+      "min": 1,
+      "max": 4294967295,
+      "integer": true,
+      "label": "tn sequence space",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_invalid_sequence": {
+      "type": "number",
+      "description": "Actual read-onlyvaluecannotbeencoded,≥sequence_space.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1cb-frer.yang",
+      "source_revision": "IEEE802.1CB YANG8December2021: independent generation/identification/recovery, vector/historymin2 vsmatch, reset/no-sequence/latenterror requirements.",
+      "min": 0,
+      "max": 4294967295,
+      "integer": true,
+      "label": "tn invalid sequence",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_neighbor_ratio_scaled": {
+      "type": "number",
+      "description": "Actual fractional(rateRatio−1)*2^41 signedint32.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1as-gptp.yang",
+      "source_revision": "IEEE802.1AS YANG10December2025: actualAScapability, logintervalsource, receiptcounts, scaled neighbor ratio, one-step/clock properties; no universalfixed synchronizationerror.",
+      "min": -2147483648,
+      "max": 2147483647,
+      "integer": true,
+      "label": "tn neighbor ratio scaled",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_neighbor_ratio": {
+      "type": "number",
+      "description": "Actual convertedneighborrate ratio, notscaledintegerasdirectratio.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1as-gptp.yang",
+      "source_revision": "IEEE802.1AS YANG10December2025: actualAScapability, logintervalsource, receiptcounts, scaled neighbor ratio, one-step/clock properties; no universalfixed synchronizationerror.",
+      "min": 0,
+      "integer": false,
+      "label": "tn neighbor ratio",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_sync_interval_s": {
+      "type": "number",
+      "description": "Actual current2^logSync seconds, nosetuniversal125ms.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1as-gptp.yang",
+      "source_revision": "IEEE802.1AS YANG10December2025: actualAScapability, logintervalsource, receiptcounts, scaled neighbor ratio, one-step/clock properties; no universalfixed synchronizationerror.",
+      "min": 0,
+      "unit": "s",
+      "integer": false,
+      "label": "tn sync interval s",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_sync_receipt_count": {
+      "type": "number",
+      "description": "Actual allowedmissingsyncintervals beforetimeout.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1as-gptp.yang",
+      "source_revision": "IEEE802.1AS YANG10December2025: actualAScapability, logintervalsource, receiptcounts, scaled neighbor ratio, one-step/clock properties; no universalfixed synchronizationerror.",
+      "min": 0,
+      "max": 255,
+      "integer": true,
+      "label": "tn sync receipt count",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_allowed_lost_responses": {
+      "type": "number",
+      "description": "Actual allowedPdelaylostresponses.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1as-gptp.yang",
+      "source_revision": "IEEE802.1AS YANG10December2025: actualAScapability, logintervalsource, receiptcounts, scaled neighbor ratio, one-step/clock properties; no universalfixed synchronizationerror.",
+      "min": 0,
+      "max": 255,
+      "integer": true,
+      "label": "tn allowed lost responses",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_allowed_faults": {
+      "type": "number",
+      "description": "Actual allowedfaults beforeAScapabilitylost.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1as-gptp.yang",
+      "source_revision": "IEEE802.1AS YANG10December2025: actualAScapability, logintervalsource, receiptcounts, scaled neighbor ratio, one-step/clock properties; no universalfixed synchronizationerror.",
+      "min": 0,
+      "max": 255,
+      "integer": true,
+      "label": "tn allowed faults",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_source_ms": {
+      "type": "number",
+      "description": "Actual producer/encode/queue envelope.",
+      "source": "https://www.ieee802.org/1/files/public/docs2026/admin-tsn-summary-0326-v01.pdf",
+      "source_revision": "IEEE TSN summary9March2026; separate toolsets/profiles. Tool registration does not mean every tool is executed/certified.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "label": "tn source ms",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_transport_ms": {
+      "type": "number",
+      "description": "Actual allhopPHY/queue/shaping/replication/acceptance envelope.",
+      "source": "https://www.ieee802.org/1/files/public/docs2026/admin-tsn-summary-0326-v01.pdf",
+      "source_revision": "IEEE TSN summary9March2026; separate toolsets/profiles. Tool registration does not mean every tool is executed/certified.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "label": "tn transport ms",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_consumer_ms": {
+      "type": "number",
+      "description": "Actual decode/use envelope.",
+      "source": "https://www.ieee802.org/1/files/public/docs2026/admin-tsn-summary-0326-v01.pdf",
+      "source_revision": "IEEE TSN summary9March2026; separate toolsets/profiles. Tool registration does not mean every tool is executed/certified.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "label": "tn consumer ms",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_e2e_ms": {
+      "type": "number",
+      "description": "Actual wholeproducer+transport+consumer bound.",
+      "source": "https://www.ieee802.org/1/files/public/docs2026/admin-tsn-summary-0326-v01.pdf",
+      "source_revision": "IEEE TSN summary9March2026; separate toolsets/profiles. Tool registration does not mean every tool is executed/certified.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "label": "tn e2e ms",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_deadline_ms": {
+      "type": "number",
+      "description": "Actual independentfunctional deadline.",
+      "source": "https://www.ieee802.org/1/files/public/docs2026/admin-tsn-summary-0326-v01.pdf",
+      "source_revision": "IEEE TSN summary9March2026; separate toolsets/profiles. Tool registration does not mean every tool is executed/certified.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "label": "tn deadline ms",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_age_ms": {
+      "type": "number",
+      "description": "Actual source-to-use correlatedage.",
+      "source": "https://www.ieee802.org/1/files/public/docs2026/admin-tsn-summary-0326-v01.pdf",
+      "source_revision": "IEEE TSN summary9March2026; separate toolsets/profiles. Tool registration does not mean every tool is executed/certified.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "label": "tn age ms",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_freshness_ms": {
+      "type": "number",
+      "description": "Actual independentacceptableage.",
+      "source": "https://www.ieee802.org/1/files/public/docs2026/admin-tsn-summary-0326-v01.pdf",
+      "source_revision": "IEEE TSN summary9March2026; separate toolsets/profiles. Tool registration does not mean every tool is executed/certified.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "label": "tn freshness ms",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_initial_log_sync": {
+      "type": "number",
+      "description": "Actual initial log2 sync interval inseconds; signedint8, edition/state-message sentinelsemantics independentlyqualified.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1as-gptp.yang",
+      "source_revision": "IEEE802.1AS YANG10December2025: actualAScapability, logintervalsource, receiptcounts, scaled neighbor ratio, one-step/clock properties; no universalfixed synchronizationerror.",
+      "min": -128,
+      "max": 127,
+      "integer": true,
+      "label": "tn initial log sync",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_current_log_sync": {
+      "type": "number",
+      "description": "Actual current log2 sync interval inseconds; signedint8, edition/state-message sentinelsemantics independentlyqualified.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1as-gptp.yang",
+      "source_revision": "IEEE802.1AS YANG10December2025: actualAScapability, logintervalsource, receiptcounts, scaled neighbor ratio, one-step/clock properties; no universalfixed synchronizationerror.",
+      "min": -128,
+      "max": 127,
+      "integer": true,
+      "label": "tn current log sync",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_mgt_log_sync": {
+      "type": "number",
+      "description": "Actual mgt log2 sync interval inseconds; signedint8, edition/state-message sentinelsemantics independentlyqualified.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1as-gptp.yang",
+      "source_revision": "IEEE802.1AS YANG10December2025: actualAScapability, logintervalsource, receiptcounts, scaled neighbor ratio, one-step/clock properties; no universalfixed synchronizationerror.",
+      "min": -128,
+      "max": 127,
+      "integer": true,
+      "label": "tn mgt log sync",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_use_mgt_sync": {
+      "type": "boolean",
+      "description": "Actual managementintervalsource versus Signaling/state-machine for sync.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1as-gptp.yang",
+      "source_revision": "IEEE802.1AS YANG10December2025: actualAScapability, logintervalsource, receiptcounts, scaled neighbor ratio, one-step/clock properties; no universalfixed synchronizationerror.",
+      "label": "tn use mgt sync",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_initial_log_announce": {
+      "type": "number",
+      "description": "Actual initial log2 announce interval inseconds; signedint8, edition/state-message sentinelsemantics independentlyqualified.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1as-gptp.yang",
+      "source_revision": "IEEE802.1AS YANG10December2025: actualAScapability, logintervalsource, receiptcounts, scaled neighbor ratio, one-step/clock properties; no universalfixed synchronizationerror.",
+      "min": -128,
+      "max": 127,
+      "integer": true,
+      "label": "tn initial log announce",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_current_log_announce": {
+      "type": "number",
+      "description": "Actual current log2 announce interval inseconds; signedint8, edition/state-message sentinelsemantics independentlyqualified.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1as-gptp.yang",
+      "source_revision": "IEEE802.1AS YANG10December2025: actualAScapability, logintervalsource, receiptcounts, scaled neighbor ratio, one-step/clock properties; no universalfixed synchronizationerror.",
+      "min": -128,
+      "max": 127,
+      "integer": true,
+      "label": "tn current log announce",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_mgt_log_announce": {
+      "type": "number",
+      "description": "Actual mgt log2 announce interval inseconds; signedint8, edition/state-message sentinelsemantics independentlyqualified.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1as-gptp.yang",
+      "source_revision": "IEEE802.1AS YANG10December2025: actualAScapability, logintervalsource, receiptcounts, scaled neighbor ratio, one-step/clock properties; no universalfixed synchronizationerror.",
+      "min": -128,
+      "max": 127,
+      "integer": true,
+      "label": "tn mgt log announce",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_use_mgt_announce": {
+      "type": "boolean",
+      "description": "Actual managementintervalsource versus Signaling/state-machine for announce.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1as-gptp.yang",
+      "source_revision": "IEEE802.1AS YANG10December2025: actualAScapability, logintervalsource, receiptcounts, scaled neighbor ratio, one-step/clock properties; no universalfixed synchronizationerror.",
+      "label": "tn use mgt announce",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_initial_log_pdelay": {
+      "type": "number",
+      "description": "Actual initial log2 pdelay interval inseconds; signedint8, edition/state-message sentinelsemantics independentlyqualified.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1as-gptp.yang",
+      "source_revision": "IEEE802.1AS YANG10December2025: actualAScapability, logintervalsource, receiptcounts, scaled neighbor ratio, one-step/clock properties; no universalfixed synchronizationerror.",
+      "min": -128,
+      "max": 127,
+      "integer": true,
+      "label": "tn initial log pdelay",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_current_log_pdelay": {
+      "type": "number",
+      "description": "Actual current log2 pdelay interval inseconds; signedint8, edition/state-message sentinelsemantics independentlyqualified.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1as-gptp.yang",
+      "source_revision": "IEEE802.1AS YANG10December2025: actualAScapability, logintervalsource, receiptcounts, scaled neighbor ratio, one-step/clock properties; no universalfixed synchronizationerror.",
+      "min": -128,
+      "max": 127,
+      "integer": true,
+      "label": "tn current log pdelay",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_mgt_log_pdelay": {
+      "type": "number",
+      "description": "Actual mgt log2 pdelay interval inseconds; signedint8, edition/state-message sentinelsemantics independentlyqualified.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1as-gptp.yang",
+      "source_revision": "IEEE802.1AS YANG10December2025: actualAScapability, logintervalsource, receiptcounts, scaled neighbor ratio, one-step/clock properties; no universalfixed synchronizationerror.",
+      "min": -128,
+      "max": 127,
+      "integer": true,
+      "label": "tn mgt log pdelay",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_use_mgt_pdelay": {
+      "type": "boolean",
+      "description": "Actual managementintervalsource versus Signaling/state-machine for pdelay.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1as-gptp.yang",
+      "source_revision": "IEEE802.1AS YANG10December2025: actualAScapability, logintervalsource, receiptcounts, scaled neighbor ratio, one-step/clock properties; no universalfixed synchronizationerror.",
+      "label": "tn use mgt pdelay",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_initial_log_gptp_cap": {
+      "type": "number",
+      "description": "Actual initial log2 gptp_cap interval inseconds; signedint8, edition/state-message sentinelsemantics independentlyqualified.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1as-gptp.yang",
+      "source_revision": "IEEE802.1AS YANG10December2025: actualAScapability, logintervalsource, receiptcounts, scaled neighbor ratio, one-step/clock properties; no universalfixed synchronizationerror.",
+      "min": -128,
+      "max": 127,
+      "integer": true,
+      "label": "tn initial log gptp cap",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_current_log_gptp_cap": {
+      "type": "number",
+      "description": "Actual current log2 gptp_cap interval inseconds; signedint8, edition/state-message sentinelsemantics independentlyqualified.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1as-gptp.yang",
+      "source_revision": "IEEE802.1AS YANG10December2025: actualAScapability, logintervalsource, receiptcounts, scaled neighbor ratio, one-step/clock properties; no universalfixed synchronizationerror.",
+      "min": -128,
+      "max": 127,
+      "integer": true,
+      "label": "tn current log gptp cap",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_mgt_log_gptp_cap": {
+      "type": "number",
+      "description": "Actual mgt log2 gptp_cap interval inseconds; signedint8, edition/state-message sentinelsemantics independentlyqualified.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1as-gptp.yang",
+      "source_revision": "IEEE802.1AS YANG10December2025: actualAScapability, logintervalsource, receiptcounts, scaled neighbor ratio, one-step/clock properties; no universalfixed synchronizationerror.",
+      "min": -128,
+      "max": 127,
+      "integer": true,
+      "label": "tn mgt log gptp cap",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_use_mgt_gptp_cap": {
+      "type": "boolean",
+      "description": "Actual managementintervalsource versus Signaling/state-machine for gptp_cap.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1as-gptp.yang",
+      "source_revision": "IEEE802.1AS YANG10December2025: actualAScapability, logintervalsource, receiptcounts, scaled neighbor ratio, one-step/clock properties; no universalfixed synchronizationerror.",
+      "label": "tn use mgt gptp cap",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_gate_enabled": {
+      "type": "boolean",
+      "description": "Actual schedulingactive; publicYANGdefaultfalse.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-sched.yang",
+      "source_revision": "IEEE802.1Qcw YANG22October2023: scheduling perport gate list,8bitstates, rationalcycle, actual supported limits, admin vsoper.",
+      "label": "tn gate enabled",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "tn_review_profile": "IEEE_PUBLIC_MODELS",
+            "tn_proposal_mode": "SOURCE_BASELINE"
+          },
+          "value": false,
+          "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-sched.yang",
+          "source_revision": "IEEE802.1Qcw YANG22October2023: scheduling perport gate list,8bitstates, rationalcycle, actual supported limits, admin vsoper."
+        }
+      ],
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_config_change": {
+      "type": "boolean",
+      "description": "Actual adminconfiguration change trigger, notoperconfirmation.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-sched.yang",
+      "source_revision": "IEEE802.1Qcw YANG22October2023: scheduling perport gate list,8bitstates, rationalcycle, actual supported limits, admin vsoper.",
+      "label": "tn config change",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_config_pending": {
+      "type": "boolean",
+      "description": "Actual operationalupdatepending state.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-sched.yang",
+      "source_revision": "IEEE802.1Qcw YANG22October2023: scheduling perport gate list,8bitstates, rationalcycle, actual supported limits, admin vsoper.",
+      "label": "tn config pending",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_cbs_enabled": {
+      "type": "boolean",
+      "description": "Actual selectedCBSmechanism, not everyTSNqueue.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-cbsa.yang",
+      "source_revision": "IEEE802.1Qdx YANG7August2024: CBS pertrafficclass admin/oper idle slope bits/s, adminignored ifSRPactive, default0 means noreservation.",
+      "label": "tn cbs enabled",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_srp_active": {
+      "type": "boolean",
+      "description": "Actual SRPreservationcontrolsoper-idleslope; adminnoeffect.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-cbsa.yang",
+      "source_revision": "IEEE802.1Qdx YANG7August2024: CBS pertrafficclass admin/oper idle slope bits/s, adminignored ifSRPactive, default0 means noreservation.",
+      "label": "tn srp active",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_psfp_enabled": {
+      "type": "boolean",
+      "description": "Actual perstreamfilter/policingselected.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-psfp.yang",
+      "source_revision": "IEEE802.1Qcw YANG26October2023: flowmeterCIR/EIR bits/s, CBS/EBS octets, mandatorycolor/coupling/yellowdrop, streamgates.",
+      "label": "tn psfp enabled",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_meter_enabled": {
+      "type": "boolean",
+      "description": "Actual flowmeter bound tostreamfilter.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-psfp.yang",
+      "source_revision": "IEEE802.1Qcw YANG26October2023: flowmeterCIR/EIR bits/s, CBS/EBS octets, mandatorycolor/coupling/yellowdrop, streamgates.",
+      "label": "tn meter enabled",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_drop_on_yellow": {
+      "type": "boolean",
+      "description": "Actual yellowdrop versusmarkdropeligible.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-psfp.yang",
+      "source_revision": "IEEE802.1Qcw YANG26October2023: flowmeterCIR/EIR bits/s, CBS/EBS octets, mandatorycolor/coupling/yellowdrop, streamgates.",
+      "label": "tn drop on yellow",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_mark_red_enable": {
+      "type": "boolean",
+      "description": "Actual markallred mechanismenabled.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-psfp.yang",
+      "source_revision": "IEEE802.1Qcw YANG26October2023: flowmeterCIR/EIR bits/s, CBS/EBS octets, mandatorycolor/coupling/yellowdrop, streamgates.",
+      "label": "tn mark red enable",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "tn_review_profile": "IEEE_PUBLIC_MODELS",
+            "tn_proposal_mode": "SOURCE_BASELINE"
+          },
+          "value": false,
+          "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-psfp.yang",
+          "source_revision": "IEEE802.1Qcw YANG26October2023: flowmeterCIR/EIR bits/s, CBS/EBS octets, mandatorycolor/coupling/yellowdrop, streamgates."
+        }
+      ],
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_mark_red": {
+      "type": "boolean",
+      "description": "Actual current allred state, notdefaultassumedrunning.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-psfp.yang",
+      "source_revision": "IEEE802.1Qcw YANG26October2023: flowmeterCIR/EIR bits/s, CBS/EBS octets, mandatorycolor/coupling/yellowdrop, streamgates.",
+      "label": "tn mark red",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "tn_review_profile": "IEEE_PUBLIC_MODELS",
+            "tn_proposal_mode": "SOURCE_BASELINE"
+          },
+          "value": false,
+          "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-psfp.yang",
+          "source_revision": "IEEE802.1Qcw YANG26October2023: flowmeterCIR/EIR bits/s, CBS/EBS octets, mandatorycolor/coupling/yellowdrop, streamgates."
+        }
+      ],
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_preemption_enabled": {
+      "type": "boolean",
+      "description": "Actual express/preemptable services selected anddevicecapabilityqualified.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-preemption.yang",
+      "source_revision": "IEEE802.1Qcw YANG26October2023: perpriorityExpressdefault, actualMAC hold/release advance andactive state, no universal64bytefragment guess.",
+      "label": "tn preemption enabled",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_preemption_active": {
+      "type": "boolean",
+      "description": "Actual MACpreemptionoperationallyactive.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-preemption.yang",
+      "source_revision": "IEEE802.1Qcw YANG26October2023: perpriorityExpressdefault, actualMAC hold/release advance andactive state, no universal64bytefragment guess.",
+      "label": "tn preemption active",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_ats_enabled": {
+      "type": "boolean",
+      "description": "Actual streamfilterATSschedulerassociationenabled.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-ats.yang",
+      "source_revision": "IEEE802.1Qcz YANG3July2023: committedrate bits/s butburst bits, schedulergroup/reference/residence andperport timing.",
+      "label": "tn ats enabled",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "tn_review_profile": "IEEE_PUBLIC_MODELS",
+            "tn_proposal_mode": "SOURCE_BASELINE"
+          },
+          "value": false,
+          "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-ats.yang",
+          "source_revision": "IEEE802.1Qcz YANG3July2023: committedrate bits/s butburst bits, schedulergroup/reference/residence andperport timing."
+        }
+      ],
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_cqf_enabled": {
+      "type": "boolean",
+      "description": "Actual selectedCQFpath.",
+      "source": "https://www.nxp.com/docs/en/user-guide/REALTIMEEDGEUG_Rev2.3.pdf",
+      "source_revision": "NXP RealTimeEdgeUG Rev2.3 28July2022 section7.4 printed99: implementation-specificCQF equalcycle/gatetime andintegercycle multiple. Example10000/2000ns is notnormative default.",
+      "label": "tn cqf enabled",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_frer_enabled": {
+      "type": "boolean",
+      "description": "Actual bound replication/recoverypath.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1cb-frer.yang",
+      "source_revision": "IEEE802.1CB YANG8December2021: independent generation/identification/recovery, vector/historymin2 vsmatch, reset/no-sequence/latenterror requirements.",
+      "label": "tn frer enabled",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_frer_individual": {
+      "type": "boolean",
+      "description": "Actual IndividualRecovery excludeslatenterrordetection.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1cb-frer.yang",
+      "source_revision": "IEEE802.1CB YANG8December2021: independent generation/identification/recovery, vector/historymin2 vsmatch, reset/no-sequence/latenterror requirements.",
+      "label": "tn frer individual",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_frer_latent": {
+      "type": "boolean",
+      "description": "Actual latenterrorfunction instantiated.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1cb-frer.yang",
+      "source_revision": "IEEE802.1CB YANG8December2021: independent generation/identification/recovery, vector/historymin2 vsmatch, reset/no-sequence/latenterror requirements.",
+      "label": "tn frer latent",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_take_no_sequence": {
+      "type": "boolean",
+      "description": "Actual untaggedpacketacceptpolicy.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1cb-frer.yang",
+      "source_revision": "IEEE802.1CB YANG8December2021: independent generation/identification/recovery, vector/historymin2 vsmatch, reset/no-sequence/latenterror requirements.",
+      "label": "tn take no sequence",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "tn_review_profile": "IEEE_PUBLIC_MODELS",
+            "tn_proposal_mode": "SOURCE_BASELINE"
+          },
+          "value": false,
+          "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1cb-frer.yang",
+          "source_revision": "IEEE802.1CB YANG8December2021: independent generation/identification/recovery, vector/historymin2 vsmatch, reset/no-sequence/latenterror requirements."
+        }
+      ],
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_frer_reset": {
+      "type": "boolean",
+      "description": "Actual resetrequest readfalse, writeTrue triggersreset.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1cb-frer.yang",
+      "source_revision": "IEEE802.1CB YANG8December2021: independent generation/identification/recovery, vector/historymin2 vsmatch, reset/no-sequence/latenterror requirements.",
+      "label": "tn frer reset",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "tn_review_profile": "IEEE_PUBLIC_MODELS",
+            "tn_proposal_mode": "SOURCE_BASELINE"
+          },
+          "value": false,
+          "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1cb-frer.yang",
+          "source_revision": "IEEE802.1CB YANG8December2021: independent generation/identification/recovery, vector/historymin2 vsmatch, reset/no-sequence/latenterror requirements."
+        }
+      ],
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_sync_required": {
+      "type": "boolean",
+      "description": "Actual selectedmechanismrequirescommon timescale; ATSalonecanasynchronous.",
+      "source": "https://www.ieee802.org/1/files/public/docs2026/admin-tsn-summary-0326-v01.pdf",
+      "source_revision": "IEEE TSN summary9March2026; separate toolsets/profiles. Tool registration does not mean every tool is executed/certified.",
+      "label": "tn sync required",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_as_capable": {
+      "type": "boolean",
+      "description": "Actual linkandpeer802.1ASinteroperability determined, notclockaccuracyproof.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1as-gptp.yang",
+      "source_revision": "IEEE802.1AS YANG10December2025: actualAScapability, logintervalsource, receiptcounts, scaled neighbor ratio, one-step/clock properties; no universalfixed synchronizationerror.",
+      "label": "tn as capable",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_sync_locked": {
+      "type": "boolean",
+      "description": "Actual operationalclocklocked.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1as-gptp.yang",
+      "source_revision": "IEEE802.1AS YANG10December2025: actualAScapability, logintervalsource, receiptcounts, scaled neighbor ratio, one-step/clock properties; no universalfixed synchronizationerror.",
+      "label": "tn sync locked",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_path_verified": {
+      "type": "boolean",
+      "description": "Actual allhopfeatures/clock/guards/resourcesconfiguredandverified.",
+      "source": "https://www.ieee802.org/1/files/public/docs2026/admin-tsn-summary-0326-v01.pdf",
+      "source_revision": "IEEE TSN summary9March2026; separate toolsets/profiles. Tool registration does not mean every tool is executed/certified.",
+      "label": "tn path verified",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_data_accepted": {
+      "type": "boolean",
+      "description": "Actual functionacceptedfreshcorrelateddata.",
+      "source": "https://www.ieee802.org/1/files/public/docs2026/admin-tsn-summary-0326-v01.pdf",
+      "source_revision": "IEEE TSN summary9March2026; separate toolsets/profiles. Tool registration does not mean every tool is executed/certified.",
+      "label": "tn data accepted",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_revision": {
+      "type": "text",
+      "description": "Actual selectededitions/toolset/device/buildrevision.",
+      "source": "https://www.ieee802.org/1/files/public/docs2026/admin-tsn-summary-0326-v01.pdf",
+      "source_revision": "IEEE TSN summary9March2026; separate toolsets/profiles. Tool registration does not mean every tool is executed/certified.",
+      "label": "tn revision",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "tn_configuration_source": {
+      "type": "text",
+      "description": "Actual commissionedTSNprofile/toolset andperhopconfiguration.",
+      "source": "https://www.ieee802.org/1/files/public/docs2026/admin-tsn-summary-0326-v01.pdf",
+      "source_revision": "IEEE TSN summary9March2026; separate toolsets/profiles. Tool registration does not mean every tool is executed/certified.",
+      "label": "tn configuration source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "tn_phy_source": {
+      "type": "text",
+      "description": "Actual boundlinkduplex/rate/packet/MTU/PHYrealization.",
+      "source": "https://www.ieee802.org/1/files/public/docs2026/admin-tsn-summary-0326-v01.pdf",
+      "source_revision": "IEEE TSN summary9March2026; separate toolsets/profiles. Tool registration does not mean every tool is executed/certified.",
+      "label": "tn phy source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "tn_schedule_source": {
+      "type": "text",
+      "description": "Actual correlatedallhopGCL/shaper/queue/guard/load bound.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-sched.yang",
+      "source_revision": "IEEE802.1Qcw YANG22October2023: scheduling perport gate list,8bitstates, rationalcycle, actual supported limits, admin vsoper.",
+      "label": "tn schedule source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "tn_acceptance_source": {
+      "type": "text",
+      "description": "Actual functionaldeadline/freshness contract.",
+      "source": "https://www.ieee802.org/1/files/public/docs2026/admin-tsn-summary-0326-v01.pdf",
+      "source_revision": "IEEE TSN summary9March2026; separate toolsets/profiles. Tool registration does not mean every tool is executed/certified.",
+      "label": "tn acceptance source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "tn_registered_source": {
+      "type": "text",
+      "description": "Actual independentlyqualifiededition/tool extension.",
+      "source": "https://www.ieee802.org/1/files/public/docs2026/admin-tsn-summary-0326-v01.pdf",
+      "source_revision": "IEEE TSN summary9March2026; separate toolsets/profiles. Tool registration does not mean every tool is executed/certified.",
+      "label": "tn registered source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "tn_observation_source": {
+      "type": "text",
+      "description": "Actual runningconfiguration andsource-to-use packet/consumertrace.",
+      "source": "https://www.ieee802.org/1/files/public/docs2026/admin-tsn-summary-0326-v01.pdf",
+      "source_revision": "IEEE TSN summary9March2026; separate toolsets/profiles. Tool registration does not mean every tool is executed/certified.",
+      "label": "tn observation source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_gcl_json": {
+      "type": "text",
+      "description": "Actual normalizedgateentries index/operation S,H,R/mask/interval_ns, notexecutableYANGwrite.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-sched.yang",
+      "source_revision": "IEEE802.1Qcw YANG22October2023: scheduling perport gate list,8bitstates, rationalcycle, actual supported limits, admin vsoper.",
+      "label": "tn gcl json",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_clockid": {
+      "type": "text",
+      "description": "Actual Linuxsoftwareclock source;mustabsentfullhardwareoffload.",
+      "source": "https://raw.githubusercontent.com/iproute2/iproute2/v6.17.0/man/man8/tc-taprio.8",
+      "source_revision": "iproute2 pinnedv6.17.0 TAPRIO manpage: simplifiedIEEE2018mapping,0/1/2 flags,PHC vsclockid, queueMaxSDU0inheritMTU, S/H/R,GCLns andactualoffload.",
+      "label": "tn clockid",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_phc_source": {
+      "type": "text",
+      "description": "Actual NIC PHC binding/offset/discipline source.",
+      "source": "https://raw.githubusercontent.com/iproute2/iproute2/v6.17.0/man/man8/tc-taprio.8",
+      "source_revision": "iproute2 pinnedv6.17.0 TAPRIO manpage: simplifiedIEEE2018mapping,0/1/2 flags,PHC vsclockid, queueMaxSDU0inheritMTU, S/H/R,GCLns andactualoffload.",
+      "label": "tn phc source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_queue_mapping_source": {
+      "type": "text",
+      "description": "Actual priority/class/contiguousnonoverlapping hardwarequeues.",
+      "source": "https://raw.githubusercontent.com/iproute2/iproute2/v6.17.0/man/man8/tc-taprio.8",
+      "source_revision": "iproute2 pinnedv6.17.0 TAPRIO manpage: simplifiedIEEE2018mapping,0/1/2 flags,PHC vsclockid, queueMaxSDU0inheritMTU, S/H/R,GCLns andactualoffload.",
+      "label": "tn queue mapping source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_preemption_source": {
+      "type": "text",
+      "description": "Actual bothMACs/PHYandhold/release/residualfragment qualification.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-preemption.yang",
+      "source_revision": "IEEE802.1Qcw YANG26October2023: perpriorityExpressdefault, actualMAC hold/release advance andactive state, no universal64bytefragment guess.",
+      "label": "tn preemption source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_psfp_source": {
+      "type": "text",
+      "description": "Actual streamidentity/gate/meter/SDU/color/rates/policyevidence.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-psfp.yang",
+      "source_revision": "IEEE802.1Qcw YANG26October2023: flowmeterCIR/EIR bits/s, CBS/EBS octets, mandatorycolor/coupling/yellowdrop, streamgates.",
+      "label": "tn psfp source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_ats_source": {
+      "type": "text",
+      "description": "Actual registeredgroup/portpair/residence/eligibilityscheduler evidence.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-ats.yang",
+      "source_revision": "IEEE802.1Qcz YANG3July2023: committedrate bits/s butburst bits, schedulergroup/reference/residence andperport timing.",
+      "label": "tn ats source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_cqf_source": {
+      "type": "text",
+      "description": "Actual CQFbuffer/phasing/clock/allhopdeviceimplementation.",
+      "source": "https://www.nxp.com/docs/en/user-guide/REALTIMEEDGEUG_Rev2.3.pdf",
+      "source_revision": "NXP RealTimeEdgeUG Rev2.3 28July2022 section7.4 printed99: implementation-specificCQF equalcycle/gatetime andintegercycle multiple. Example10000/2000ns is notnormative default.",
+      "label": "tn cqf source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_frer_source": {
+      "type": "text",
+      "description": "Actual distinctpaths/streamidentity/sequence/codec/history/reset/recovery evidence.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1cb-frer.yang",
+      "source_revision": "IEEE802.1CB YANG8December2021: independent generation/identification/recovery, vector/historymin2 vsmatch, reset/no-sequence/latenterror requirements.",
+      "label": "tn frer source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_gptp_source": {
+      "type": "text",
+      "description": "Actual gPTPdomain/clock/PTPtimescale/sync/peer-delay/asCapable qualification.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1as-gptp.yang",
+      "source_revision": "IEEE802.1AS YANG10December2025: actualAScapability, logintervalsource, receiptcounts, scaled neighbor ratio, one-step/clock properties; no universalfixed synchronizationerror.",
+      "label": "tn gptp source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_cbs_source": {
+      "type": "text",
+      "description": "Actual shaper/guard/priority composition qualification and selectedcreditmodel.",
+      "source": "https://raw.githubusercontent.com/iproute2/iproute2/v6.17.0/man/man8/tc-cbs.8",
+      "source_revision": "iproute2 pinnedv6.17.0 CBS manpage: kbit/s mapping, actualwholewireoverhead, send=idle−port, high/lowcredit AnnexL simplemodel; not arbitrarymulticlassnetworkbound.",
+      "label": "tn cbs source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_domain_id": {
+      "type": "text",
+      "description": "Actual configurationdomain independent ofgPTPdomainnumber.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-cnc-config.yang",
+      "source_revision": "IEEE802.1Q CNC publicYANG31January2024: domain/CUC/stream/talker/listener/status. compute RPCstart is not actual successfulreservation.",
+      "label": "tn domain id",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_cuc_id": {
+      "type": "text",
+      "description": "Actual identifiedusernetworkcontroller.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-cnc-config.yang",
+      "source_revision": "IEEE802.1Q CNC publicYANG31January2024: domain/CUC/stream/talker/listener/status. compute RPCstart is not actual successfulreservation.",
+      "label": "tn cuc id",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_stream_id": {
+      "type": "text",
+      "description": "Actual boundedstreamidentity andtalker/listener association.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-cnc-config.yang",
+      "source_revision": "IEEE802.1Q CNC publicYANG31January2024: domain/CUC/stream/talker/listener/status. compute RPCstart is not actual successfulreservation.",
+      "label": "tn stream id",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    },
+    "tn_reservation_source": {
+      "type": "text",
+      "description": "Actual completedCNC/computation/resource installation, RPCstartedinsufficient.",
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-cnc-config.yang",
+      "source_revision": "IEEE802.1Q CNC publicYANG31January2024: domain/CUC/stream/talker/listener/status. compute RPCstart is not actual successfulreservation.",
+      "label": "tn reservation source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      }
+    }
+  },
+  "mechanisms": {
+    "network": [
+      "SELECTED_TSN_TOOLS_NOT_ALL_AUTOMATICALLY_ACTIVE"
+    ],
+    "timing": [
+      "ACTUAL_ALLHOP_CLOCK_GUARD_RESOURCE_ENVELOPE",
+      "CONSUMER_ACCEPTANCE_SEPARATE"
+    ]
+  },
+  "parameter_constraints": [
+    {
+      "parameter": "tn_registered_source",
+      "when": {
+        "tn_review_profile": "REGISTERED_ACTUAL"
+      },
+      "required": true,
+      "source": "https://www.ieee802.org/1/files/public/docs2026/admin-tsn-summary-0326-v01.pdf"
+    },
+    {
+      "parameter": "bitrate",
+      "when": {},
+      "allowed": [],
+      "source": "https://www.ieee802.org/1/files/public/docs2026/admin-tsn-summary-0326-v01.pdf"
+    },
+    {
+      "parameter": "reserved_bandwidth_percent",
+      "when": {},
+      "allowed": [],
+      "source": "https://www.ieee802.org/1/files/public/docs2026/admin-tsn-summary-0326-v01.pdf"
+    },
+    {
+      "parameter": "sync_method",
+      "when": {},
+      "allowed": [],
+      "source": "https://www.ieee802.org/1/files/public/docs2026/admin-tsn-summary-0326-v01.pdf"
+    },
+    {
+      "parameter": "retransmission_enabled",
+      "when": {},
+      "allowed": [],
+      "source": "https://www.ieee802.org/1/files/public/docs2026/admin-tsn-summary-0326-v01.pdf"
+    },
+    {
+      "parameter": "retransmission_rate",
+      "when": {},
+      "allowed": [],
+      "source": "https://www.ieee802.org/1/files/public/docs2026/admin-tsn-summary-0326-v01.pdf"
+    },
+    {
+      "parameter": "retry_limit",
+      "when": {},
+      "allowed": [],
+      "source": "https://www.ieee802.org/1/files/public/docs2026/admin-tsn-summary-0326-v01.pdf"
+    },
+    {
+      "parameter": "retransmission_delay_ms",
+      "when": {},
+      "allowed": [],
+      "source": "https://www.ieee802.org/1/files/public/docs2026/admin-tsn-summary-0326-v01.pdf"
+    },
+    {
+      "parameter": "gateway_maximum_throughput",
+      "when": {},
+      "allowed": [],
+      "source": "https://www.ieee802.org/1/files/public/docs2026/admin-tsn-summary-0326-v01.pdf"
+    },
+    {
+      "parameter": "gateway_input_buffer",
+      "when": {},
+      "allowed": [],
+      "source": "https://www.ieee802.org/1/files/public/docs2026/admin-tsn-summary-0326-v01.pdf"
+    },
+    {
+      "parameter": "gateway_output_buffer",
+      "when": {},
+      "allowed": [],
+      "source": "https://www.ieee802.org/1/files/public/docs2026/admin-tsn-summary-0326-v01.pdf"
+    },
+    {
+      "parameter": "gateway_maximum_routes",
+      "when": {},
+      "allowed": [],
+      "source": "https://www.ieee802.org/1/files/public/docs2026/admin-tsn-summary-0326-v01.pdf"
+    },
+    {
+      "parameter": "gateway_maximum_messages_s",
+      "when": {},
+      "allowed": [],
+      "source": "https://www.ieee802.org/1/files/public/docs2026/admin-tsn-summary-0326-v01.pdf"
+    },
+    {
+      "parameter": "mtu_bytes",
+      "when": {},
+      "allowed": [],
+      "source": "https://www.ieee802.org/1/files/public/docs2026/admin-tsn-summary-0326-v01.pdf"
+    },
+    {
+      "parameter": "duplex",
+      "when": {},
+      "allowed": [],
+      "source": "https://www.ieee802.org/1/files/public/docs2026/admin-tsn-summary-0326-v01.pdf"
+    },
+    {
+      "parameter": "vlan_id",
+      "when": {},
+      "allowed": [],
+      "source": "https://www.ieee802.org/1/files/public/docs2026/admin-tsn-summary-0326-v01.pdf"
+    },
+    {
+      "parameter": "rate_limit_bit_s",
+      "when": {},
+      "allowed": [],
+      "source": "https://www.ieee802.org/1/files/public/docs2026/admin-tsn-summary-0326-v01.pdf"
+    },
+    {
+      "parameter": "tn_cycle_ns",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      },
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-sched.yang",
+      "equal_ratio": {
+        "numerator_parameter": "tn_cycle_numerator",
+        "denominator_parameter": "tn_cycle_denominator",
+        "factor": 1000000000
+      },
+      "maximum_parameter": "tn_supported_cycle_ns"
+    },
+    {
+      "parameter": "tn_tick_ns",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      },
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-sched.yang",
+      "equal_expression": {
+        "product": [
+          "tn_tick_tenths_ns",
+          0.1
+        ]
+      }
+    },
+    {
+      "parameter": "tn_gcl_json",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS",
+        "tn_mapping": "IEEE_YANG"
+      },
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-sched.yang",
+      "json_gate_schedule": {
+        "mask_max": 255,
+        "commands": [
+          "S",
+          "H",
+          "R"
+        ],
+        "max_entries_parameter": "tn_supported_list_max",
+        "max_interval_parameter": "tn_supported_interval_max_ns",
+        "sum_parameter": "tn_gcl_sum_ns"
+      }
+    },
+    {
+      "parameter": "tn_gcl_json",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS",
+        "tn_mapping": "LINUX_IPROUTE2_6_17"
+      },
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-sched.yang",
+      "json_gate_schedule": {
+        "mask_max": 65535,
+        "commands": [
+          "S",
+          "H",
+          "R"
+        ],
+        "max_entries_parameter": "tn_supported_list_max",
+        "max_interval_parameter": "tn_supported_interval_max_ns",
+        "sum_parameter": "tn_gcl_sum_ns"
+      }
+    },
+    {
+      "parameter": "tn_traffic_class",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS",
+        "tn_mapping": "IEEE_YANG"
+      },
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-sched.yang",
+      "maximum": 7
+    },
+    {
+      "parameter": "tn_gcl_sum_ns",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS",
+        "tn_mapping": "LINUX_IPROUTE2_6_17"
+      },
+      "source": "https://raw.githubusercontent.com/iproute2/iproute2/v6.17.0/man/man8/tc-taprio.8",
+      "equal_parameter": "tn_cycle_ns"
+    },
+    {
+      "parameter": "tn_gcl_json",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS",
+        "tn_gate_enabled": true
+      },
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-sched.yang",
+      "required": true
+    },
+    {
+      "parameter": "tn_cycle_ns",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS",
+        "tn_gate_enabled": true
+      },
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-sched.yang",
+      "required": true
+    },
+    {
+      "parameter": "tn_supported_cycle_ns",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS",
+        "tn_gate_enabled": true
+      },
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-sched.yang",
+      "required": true
+    },
+    {
+      "parameter": "tn_supported_list_max",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS",
+        "tn_gate_enabled": true
+      },
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-sched.yang",
+      "required": true
+    },
+    {
+      "parameter": "tn_supported_interval_max_ns",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS",
+        "tn_gate_enabled": true
+      },
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-sched.yang",
+      "required": true
+    },
+    {
+      "parameter": "tn_base_seconds",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS",
+        "tn_gate_enabled": true
+      },
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-sched.yang",
+      "required": true
+    },
+    {
+      "parameter": "tn_base_nanoseconds",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS",
+        "tn_gate_enabled": true
+      },
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-sched.yang",
+      "required": true
+    },
+    {
+      "parameter": "tn_cycle_numerator",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      },
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-sched.yang",
+      "when_present": [
+        "tn_cycle_ns"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "tn_cycle_denominator",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      },
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-sched.yang",
+      "when_present": [
+        "tn_cycle_ns"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "tn_queue_max_sdu",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      },
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-sched.yang",
+      "when_greater_than": {
+        "tn_queue_max_sdu": 0
+      },
+      "maximum_parameter": "tn_mac_max_sdu"
+    },
+    {
+      "parameter": "tn_taprio_flags",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      },
+      "source": "https://raw.githubusercontent.com/iproute2/iproute2/v6.17.0/man/man8/tc-taprio.8",
+      "allowed": [
+        0,
+        1,
+        2
+      ]
+    },
+    {
+      "parameter": "tn_clockid",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS",
+        "tn_mapping": "LINUX_IPROUTE2_6_17",
+        "tn_taprio_flags": 2
+      },
+      "source": "https://raw.githubusercontent.com/iproute2/iproute2/v6.17.0/man/man8/tc-taprio.8",
+      "allowed": []
+    },
+    {
+      "parameter": "tn_phc_source",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS",
+        "tn_mapping": "LINUX_IPROUTE2_6_17",
+        "tn_taprio_flags": 2
+      },
+      "source": "https://raw.githubusercontent.com/iproute2/iproute2/v6.17.0/man/man8/tc-taprio.8",
+      "required": true
+    },
+    {
+      "parameter": "tn_txtime_delay_ns",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS",
+        "tn_mapping": "LINUX_IPROUTE2_6_17",
+        "tn_taprio_flags": 1
+      },
+      "source": "https://raw.githubusercontent.com/iproute2/iproute2/v6.17.0/man/man8/tc-taprio.8",
+      "exclusive_minimum_expression": "tn_etf_delta_ns"
+    },
+    {
+      "parameter": "tn_send_bps",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS",
+        "tn_cbs_enabled": true,
+        "tn_cbs_model": "SIMPLE_ANNEX_L"
+      },
+      "source": "https://raw.githubusercontent.com/iproute2/iproute2/v6.17.0/man/man8/tc-cbs.8",
+      "equal_expression": {
+        "subtract": [
+          "tn_idle_bps",
+          "tn_link_bps"
+        ]
+      }
+    },
+    {
+      "parameter": "tn_idle_bps",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS",
+        "tn_cbs_enabled": true
+      },
+      "source": "https://raw.githubusercontent.com/iproute2/iproute2/v6.17.0/man/man8/tc-cbs.8",
+      "maximum_parameter": "tn_link_bps"
+    },
+    {
+      "parameter": "tn_idle_bps",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS",
+        "tn_cbs_enabled": true,
+        "tn_srp_active": false
+      },
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-cbsa.yang",
+      "equal_parameter": "tn_admin_idle_bps"
+    },
+    {
+      "parameter": "tn_hi_credit_bytes",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS",
+        "tn_cbs_enabled": true,
+        "tn_cbs_model": "SIMPLE_ANNEX_L"
+      },
+      "source": "https://raw.githubusercontent.com/iproute2/iproute2/v6.17.0/man/man8/tc-cbs.8",
+      "equal_ratio": {
+        "numerator_product": [
+          "tn_max_interference_bytes",
+          "tn_idle_bps"
+        ],
+        "numerator_offset": 1,
+        "denominator_parameter": "tn_link_bps"
+      }
+    },
+    {
+      "parameter": "tn_lo_credit_bytes",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS",
+        "tn_cbs_enabled": true,
+        "tn_cbs_model": "SIMPLE_ANNEX_L"
+      },
+      "source": "https://raw.githubusercontent.com/iproute2/iproute2/v6.17.0/man/man8/tc-cbs.8",
+      "equal_ratio": {
+        "numerator_product": [
+          "tn_max_frame_bytes",
+          "tn_send_bps"
+        ],
+        "numerator_offset": 1,
+        "denominator_parameter": "tn_link_bps"
+      }
+    },
+    {
+      "parameter": "tn_cbs_model",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS",
+        "tn_cbs_enabled": true
+      },
+      "source": "https://raw.githubusercontent.com/iproute2/iproute2/v6.17.0/man/man8/tc-cbs.8",
+      "required": true
+    },
+    {
+      "parameter": "tn_cbs_source",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS",
+        "tn_cbs_enabled": true
+      },
+      "source": "https://raw.githubusercontent.com/iproute2/iproute2/v6.17.0/man/man8/tc-cbs.8",
+      "required": true
+    },
+    {
+      "parameter": "tn_link_bps",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS",
+        "tn_cbs_enabled": true
+      },
+      "source": "https://raw.githubusercontent.com/iproute2/iproute2/v6.17.0/man/man8/tc-cbs.8",
+      "required": true
+    },
+    {
+      "parameter": "tn_idle_bps",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS",
+        "tn_cbs_enabled": true
+      },
+      "source": "https://raw.githubusercontent.com/iproute2/iproute2/v6.17.0/man/man8/tc-cbs.8",
+      "required": true
+    },
+    {
+      "parameter": "tn_send_bps",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS",
+        "tn_cbs_enabled": true,
+        "tn_cbs_model": "SIMPLE_ANNEX_L"
+      },
+      "source": "https://raw.githubusercontent.com/iproute2/iproute2/v6.17.0/man/man8/tc-cbs.8",
+      "required": true
+    },
+    {
+      "parameter": "tn_hi_credit_bytes",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS",
+        "tn_cbs_enabled": true,
+        "tn_cbs_model": "SIMPLE_ANNEX_L"
+      },
+      "source": "https://raw.githubusercontent.com/iproute2/iproute2/v6.17.0/man/man8/tc-cbs.8",
+      "required": true
+    },
+    {
+      "parameter": "tn_lo_credit_bytes",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS",
+        "tn_cbs_enabled": true,
+        "tn_cbs_model": "SIMPLE_ANNEX_L"
+      },
+      "source": "https://raw.githubusercontent.com/iproute2/iproute2/v6.17.0/man/man8/tc-cbs.8",
+      "required": true
+    },
+    {
+      "parameter": "tn_max_interference_bytes",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS",
+        "tn_cbs_enabled": true,
+        "tn_cbs_model": "SIMPLE_ANNEX_L"
+      },
+      "source": "https://raw.githubusercontent.com/iproute2/iproute2/v6.17.0/man/man8/tc-cbs.8",
+      "required": true
+    },
+    {
+      "parameter": "tn_max_frame_bytes",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS",
+        "tn_cbs_enabled": true,
+        "tn_cbs_model": "SIMPLE_ANNEX_L"
+      },
+      "source": "https://raw.githubusercontent.com/iproute2/iproute2/v6.17.0/man/man8/tc-cbs.8",
+      "required": true
+    },
+    {
+      "parameter": "tn_psfp_source",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS",
+        "tn_psfp_enabled": true
+      },
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-psfp.yang",
+      "required": true
+    },
+    {
+      "parameter": "tn_stream_sdu_max",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS",
+        "tn_psfp_enabled": true
+      },
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-psfp.yang",
+      "required": true
+    },
+    {
+      "parameter": "tn_cir_bps",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS",
+        "tn_meter_enabled": true
+      },
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-psfp.yang",
+      "required": true
+    },
+    {
+      "parameter": "tn_eir_bps",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS",
+        "tn_meter_enabled": true
+      },
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-psfp.yang",
+      "required": true
+    },
+    {
+      "parameter": "tn_cbs_octets",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS",
+        "tn_meter_enabled": true
+      },
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-psfp.yang",
+      "required": true
+    },
+    {
+      "parameter": "tn_ebs_octets",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS",
+        "tn_meter_enabled": true
+      },
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-psfp.yang",
+      "required": true
+    },
+    {
+      "parameter": "tn_color_mode",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS",
+        "tn_meter_enabled": true
+      },
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-psfp.yang",
+      "required": true
+    },
+    {
+      "parameter": "tn_coupling",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS",
+        "tn_meter_enabled": true
+      },
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-psfp.yang",
+      "required": true
+    },
+    {
+      "parameter": "tn_drop_on_yellow",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS",
+        "tn_meter_enabled": true
+      },
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-psfp.yang",
+      "required": true
+    },
+    {
+      "parameter": "tn_preemption_source",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS",
+        "tn_preemption_enabled": true
+      },
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-preemption.yang",
+      "required": true
+    },
+    {
+      "parameter": "tn_hold_advance_ns",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS",
+        "tn_preemption_enabled": true
+      },
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-preemption.yang",
+      "required": true
+    },
+    {
+      "parameter": "tn_release_advance_ns",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS",
+        "tn_preemption_enabled": true
+      },
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-preemption.yang",
+      "required": true
+    },
+    {
+      "parameter": "tn_fragment_block_ns",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS",
+        "tn_preemption_enabled": true
+      },
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-preemption.yang",
+      "required": true
+    },
+    {
+      "parameter": "tn_preemption_active",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS",
+        "tn_preemption_enabled": true
+      },
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-preemption.yang",
+      "required": true
+    },
+    {
+      "parameter": "tn_guard_ns",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS",
+        "tn_preemption_enabled": true
+      },
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-preemption.yang",
+      "minimum_expression": {
+        "sum": [
+          "tn_fragment_block_ns",
+          "tn_clock_error_ns"
+        ]
+      }
+    },
+    {
+      "parameter": "tn_guard_ns",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS",
+        "tn_preemption_enabled": false
+      },
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-sched.yang",
+      "minimum_expression": {
+        "sum": [
+          "tn_serialization_ns",
+          "tn_clock_error_ns"
+        ]
+      }
+    },
+    {
+      "parameter": "tn_ats_processing_min_ns",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      },
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-ats.yang",
+      "maximum_parameter": "tn_ats_processing_max_ns"
+    },
+    {
+      "parameter": "tn_ats_source",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS",
+        "tn_ats_enabled": true
+      },
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-ats.yang",
+      "required": true
+    },
+    {
+      "parameter": "tn_ats_cir_bps",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS",
+        "tn_ats_enabled": true
+      },
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-ats.yang",
+      "required": true
+    },
+    {
+      "parameter": "tn_ats_burst_bits",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS",
+        "tn_ats_enabled": true
+      },
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-ats.yang",
+      "required": true
+    },
+    {
+      "parameter": "tn_ats_group_id",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS",
+        "tn_ats_enabled": true
+      },
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-ats.yang",
+      "required": true
+    },
+    {
+      "parameter": "tn_ats_residence_ns",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS",
+        "tn_ats_enabled": true
+      },
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-ats.yang",
+      "required": true
+    },
+    {
+      "parameter": "tn_ats_processing_max_ns",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS",
+        "tn_ats_enabled": true
+      },
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-ats.yang",
+      "required": true
+    },
+    {
+      "parameter": "tn_ats_clock_variation_ns",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS",
+        "tn_ats_enabled": true
+      },
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-ats.yang",
+      "required": true
+    },
+    {
+      "parameter": "tn_ats_rate_deviation_ppm",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS",
+        "tn_ats_enabled": true
+      },
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-ats.yang",
+      "required": true
+    },
+    {
+      "parameter": "tn_ats_recognition_ns",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS",
+        "tn_ats_enabled": true
+      },
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-ats.yang",
+      "required": true
+    },
+    {
+      "parameter": "tn_cqf_profile",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS",
+        "tn_cqf_enabled": true
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/REALTIMEEDGEUG_Rev2.3.pdf",
+      "required": true
+    },
+    {
+      "parameter": "tn_cqf_source",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS",
+        "tn_cqf_enabled": true
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/REALTIMEEDGEUG_Rev2.3.pdf",
+      "required": true
+    },
+    {
+      "parameter": "tn_cqf_cycle_ns",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS",
+        "tn_cqf_profile": "NXP_RTE_2_3"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/REALTIMEEDGEUG_Rev2.3.pdf",
+      "equal_expression": {
+        "subtract": [
+          "tn_cqf_cycle_ns",
+          {
+            "integer_remainder": [
+              "tn_cqf_cycle_ns",
+              "tn_cqf_gate_ns"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "parameter": "tn_frer_history",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS",
+        "tn_recovery_algorithm": "VECTOR"
+      },
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1cb-frer.yang",
+      "minimum": 2,
+      "maximum_parameter": "tn_frer_history_max"
+    },
+    {
+      "parameter": "tn_frer_latent",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS",
+        "tn_frer_individual": true
+      },
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1cb-frer.yang",
+      "allowed": [
+        false
+      ]
+    },
+    {
+      "parameter": "tn_invalid_sequence",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      },
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1cb-frer.yang",
+      "minimum_parameter": "tn_sequence_space"
+    },
+    {
+      "parameter": "tn_frer_source",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS",
+        "tn_frer_enabled": true
+      },
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1cb-frer.yang",
+      "required": true
+    },
+    {
+      "parameter": "tn_recovery_algorithm",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS",
+        "tn_frer_enabled": true
+      },
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1cb-frer.yang",
+      "required": true
+    },
+    {
+      "parameter": "tn_frer_reset_ms",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS",
+        "tn_frer_enabled": true
+      },
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1cb-frer.yang",
+      "required": true
+    },
+    {
+      "parameter": "tn_sequence_space",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS",
+        "tn_frer_enabled": true
+      },
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1cb-frer.yang",
+      "required": true
+    },
+    {
+      "parameter": "tn_frer_paths",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS",
+        "tn_frer_latent": true
+      },
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1cb-frer.yang",
+      "required": true
+    },
+    {
+      "parameter": "tn_frer_difference",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS",
+        "tn_frer_latent": true
+      },
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1cb-frer.yang",
+      "required": true
+    },
+    {
+      "parameter": "tn_frer_period_ms",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS",
+        "tn_frer_latent": true
+      },
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1cb-frer.yang",
+      "required": true
+    },
+    {
+      "parameter": "tn_frer_reset_period_ms",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS",
+        "tn_frer_latent": true
+      },
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1cb-frer.yang",
+      "required": true
+    },
+    {
+      "parameter": "tn_neighbor_ratio",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      },
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1as-gptp.yang",
+      "equal_expression": {
+        "sum": [
+          1,
+          {
+            "product": [
+              "tn_neighbor_ratio_scaled",
+              4.547473508864641e-13
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "parameter": "tn_current_log_sync",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS",
+        "tn_use_mgt_sync": true
+      },
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1as-gptp.yang",
+      "equal_parameter": "tn_mgt_log_sync"
+    },
+    {
+      "parameter": "tn_current_log_announce",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS",
+        "tn_use_mgt_announce": true
+      },
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1as-gptp.yang",
+      "equal_parameter": "tn_mgt_log_announce"
+    },
+    {
+      "parameter": "tn_current_log_pdelay",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS",
+        "tn_use_mgt_pdelay": true
+      },
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1as-gptp.yang",
+      "equal_parameter": "tn_mgt_log_pdelay"
+    },
+    {
+      "parameter": "tn_current_log_gptp_cap",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS",
+        "tn_use_mgt_gptp_cap": true
+      },
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1as-gptp.yang",
+      "equal_parameter": "tn_mgt_log_gptp_cap"
+    },
+    {
+      "parameter": "tn_sync_interval_s",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      },
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1as-gptp.yang",
+      "equal_expression": {
+        "power": [
+          2,
+          "tn_current_log_sync"
+        ]
+      }
+    },
+    {
+      "parameter": "tn_gptp_source",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS",
+        "tn_sync_required": true
+      },
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1as-gptp.yang",
+      "required": true
+    },
+    {
+      "parameter": "tn_clock_error_ns",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS",
+        "tn_sync_required": true
+      },
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1as-gptp.yang",
+      "required": true
+    },
+    {
+      "parameter": "tn_as_capable",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS",
+        "tn_sync_required": true
+      },
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1as-gptp.yang",
+      "required": true
+    },
+    {
+      "parameter": "tn_sync_locked",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS",
+        "tn_sync_required": true
+      },
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1as-gptp.yang",
+      "required": true
+    },
+    {
+      "parameter": "tn_as_capable",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS",
+        "tn_sync_required": true,
+        "tn_data_accepted": true
+      },
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1as-gptp.yang",
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "tn_sync_locked",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS",
+        "tn_sync_required": true,
+        "tn_data_accepted": true
+      },
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1as-gptp.yang",
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "tn_gate_open_ns",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS",
+        "tn_gate_enabled": true
+      },
+      "source": "https://www.ieee802.org/1/files/public/YANGs/ieee802-dot1q-sched.yang",
+      "minimum_expression": {
+        "sum": [
+          "tn_serialization_ns",
+          "tn_guard_ns"
+        ]
+      }
+    },
+    {
+      "parameter": "tn_e2e_ms",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      },
+      "source": "https://www.ieee802.org/1/files/public/docs2026/admin-tsn-summary-0326-v01.pdf",
+      "equal_expression": {
+        "sum": [
+          "tn_source_ms",
+          "tn_transport_ms",
+          "tn_consumer_ms"
+        ]
+      },
+      "maximum_parameter": "tn_deadline_ms"
+    },
+    {
+      "parameter": "tn_age_ms",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      },
+      "source": "https://www.ieee802.org/1/files/public/docs2026/admin-tsn-summary-0326-v01.pdf",
+      "maximum_parameter": "tn_freshness_ms"
+    },
+    {
+      "parameter": "tn_source_ms",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      },
+      "source": "https://www.ieee802.org/1/files/public/docs2026/admin-tsn-summary-0326-v01.pdf",
+      "when_present": [
+        "tn_e2e_ms"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "tn_transport_ms",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      },
+      "source": "https://www.ieee802.org/1/files/public/docs2026/admin-tsn-summary-0326-v01.pdf",
+      "when_present": [
+        "tn_e2e_ms"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "tn_consumer_ms",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS"
+      },
+      "source": "https://www.ieee802.org/1/files/public/docs2026/admin-tsn-summary-0326-v01.pdf",
+      "when_present": [
+        "tn_e2e_ms"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "tn_observation_source",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS",
+        "tn_data_accepted": true
+      },
+      "source": "https://www.ieee802.org/1/files/public/docs2026/admin-tsn-summary-0326-v01.pdf",
+      "required": true
+    },
+    {
+      "parameter": "tn_e2e_ms",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS",
+        "tn_data_accepted": true
+      },
+      "source": "https://www.ieee802.org/1/files/public/docs2026/admin-tsn-summary-0326-v01.pdf",
+      "required": true
+    },
+    {
+      "parameter": "tn_deadline_ms",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS",
+        "tn_data_accepted": true
+      },
+      "source": "https://www.ieee802.org/1/files/public/docs2026/admin-tsn-summary-0326-v01.pdf",
+      "required": true
+    },
+    {
+      "parameter": "tn_age_ms",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS",
+        "tn_data_accepted": true
+      },
+      "source": "https://www.ieee802.org/1/files/public/docs2026/admin-tsn-summary-0326-v01.pdf",
+      "required": true
+    },
+    {
+      "parameter": "tn_freshness_ms",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS",
+        "tn_data_accepted": true
+      },
+      "source": "https://www.ieee802.org/1/files/public/docs2026/admin-tsn-summary-0326-v01.pdf",
+      "required": true
+    },
+    {
+      "parameter": "tn_stream_id",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS",
+        "tn_data_accepted": true
+      },
+      "source": "https://www.ieee802.org/1/files/public/docs2026/admin-tsn-summary-0326-v01.pdf",
+      "required": true
+    },
+    {
+      "parameter": "tn_reservation_source",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS",
+        "tn_data_accepted": true
+      },
+      "source": "https://www.ieee802.org/1/files/public/docs2026/admin-tsn-summary-0326-v01.pdf",
+      "required": true
+    },
+    {
+      "parameter": "tn_path_verified",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS",
+        "tn_data_accepted": true
+      },
+      "source": "https://www.ieee802.org/1/files/public/docs2026/admin-tsn-summary-0326-v01.pdf",
+      "required": true,
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "tn_stream_status",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS",
+        "tn_data_accepted": true
+      },
+      "source": "https://www.ieee802.org/1/files/public/docs2026/admin-tsn-summary-0326-v01.pdf",
+      "required": true,
+      "allowed": [
+        "READY"
+      ]
+    },
+    {
+      "parameter": "tn_config_pending",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS",
+        "tn_data_accepted": true
+      },
+      "source": "https://www.ieee802.org/1/files/public/docs2026/admin-tsn-summary-0326-v01.pdf",
+      "required": true,
+      "allowed": [
+        false
+      ]
+    },
+    {
+      "parameter": "tn_outcome",
+      "when": {
+        "tn_review_profile": "IEEE_PUBLIC_MODELS",
+        "tn_data_accepted": true
+      },
+      "source": "https://www.ieee802.org/1/files/public/docs2026/admin-tsn-summary-0326-v01.pdf",
+      "required": true,
+      "allowed": [
+        "ACCEPTED"
+      ]
+    }
+  ],
+  "physical_layer_profile_id": null,
+  "medium_access_model": null,
+  "native_parameter_prefixes": [
+    "tn_"
+  ],
+  "parameter_aliases": {},
+  "parameter_alias_limits": {},
+  "parameter_evidence_scope": "EXPLICIT_LAYER",
+  "rate_source_profile_id": null,
+  "arbitration_model_id": null,
+  "max_payload_bytes": null,
+  "capabilities": {
+    "supports_signals": true,
+    "supports_data_objects": true,
+    "supports_streams": true,
+    "supports_multicast": true,
+    "supports_publish_subscribe": false,
+    "supports_request_response": false,
+    "supports_cyclic": true,
+    "supports_event": true,
+    "supports_redundancy": true,
+    "supports_time_sync": true,
+    "supports_safety_profile": false,
+    "supports_segmentation": false,
+    "supports_fragmentation": false,
+    "supports_qos": true
+  },
+  "deterministic": false,
+  "overhead_bytes": 8,
+  "implementation_status": "PLANNED",
+  "connection_type": "COMMUNICATION_TECHNOLOGY",
+  "parameter_proposals": {
+    "kind": "DEVICE_DEPENDENT",
+    "status": "REVIEW_REQUIRED",
+    "required_fields": [],
+    "note": "No universal rate is available; inspect the selected hardware/profile."
+  },
+  "capacity_evidence": {
+    "status": "MODEL_MISSING",
+    "frame_model": null,
+    "schedule_model": null,
+    "requires_confirmed_device_parameters": true
+  },
+  "components": {
+    "binding": "tsn.binding",
+    "generator": "tsn.generator",
+    "validator": "tsn.validator",
+    "timing_model": null,
+    "load_model": null,
+    "encoder": "tsn.encoder",
+    "decoder": "tsn.decoder"
+  },
+  "known_limitations": "Technology-specific conformance details require a vendor/profile extension."
+}

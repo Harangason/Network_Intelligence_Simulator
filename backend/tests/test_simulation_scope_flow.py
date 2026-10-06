@@ -188,7 +188,8 @@ def test_generic_parameter_scope_requires_reason_only_for_explicit_new_or_change
     assert "simulation_scope" not in service.get()["parameters"]
     # Seed an authentic pre-contract row; production writes cannot create it.
     with get_connection() as connection:
-        connection.execute("UPDATE engineering_workflow_projects SET parameters = parameters || %s::jsonb WHERE project_id = %s",
+        # An authentic pre-file row has no committed project-file revision.
+        connection.execute("UPDATE engineering_workflow_projects SET parameters = parameters || %s::jsonb, context = context - '_user_values_revision' WHERE project_id = %s",
                            (Jsonb({"simulation_scope": legacy}), db_project))
     inherited = service.save_parameters({"target_bus_load_percent": 60})
     assert inherited["parameters"]["simulation_scope"] == legacy

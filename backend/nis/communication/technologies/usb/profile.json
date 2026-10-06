@@ -1,0 +1,6045 @@
+{
+  "id": "usb",
+  "label": "USB",
+  "domain": "generic_networking",
+  "layer": "DATA_LINK",
+  "transport_unit": "PACKET",
+  "payload_element_types": [
+    "RAW_DATA",
+    "STREAM_CHUNK"
+  ],
+  "hardware_interface": "usb_actual_host_endpoint_and_tunnel",
+  "hardware_capability_aliases": [
+    "usb_controller"
+  ],
+  "default_stack": [
+    "usb"
+  ],
+  "stack_variants": [
+    [
+      "usb"
+    ]
+  ],
+  "default_bitrate": null,
+  "rate_model": {
+    "type": "EXPLICIT_USB_NEGOTIATED_PHY",
+    "fields": []
+  },
+  "local_timing_schema": [],
+  "parameter_schema": {
+    "payload_bytes": {
+      "label": "Payload",
+      "category": "physical",
+      "scope": "message",
+      "type": "number",
+      "description": "Actual applicationtransfer bytes, separate negotiated endpoint/packet/companion/hostschedule and USB4tunnel allocation. No480M/1024 universal rate/payload cap.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "source_revision": "USB-IF June2025 bundle: USB2.0 April27 2000 selected5/7/9, May28 2002 errata, VBUS Max Limit ECN and Double Isochronous IN ECN. Selected clauses, not every bundle ECN.",
+      "integer": true
+    },
+    "cycle_ms": {
+      "label": "Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "Standardperiode fuer zyklische Nachrichten.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "minimum_cycle_time_ms": {
+      "label": "Minimum Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "deadline_ms": {
+      "label": "Deadline",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "timeout_ms": {
+      "label": "Timeout",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_latency_ms": {
+      "label": "Maximum Latency",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "jitter_ms": {
+      "label": "Jitter Budget",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "freshness_ms": {
+      "label": "Data Freshness",
+      "category": "timing",
+      "scope": "signal",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "source_processing_delay_ms": {
+      "label": "Source Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_processing_delay_ms": {
+      "label": "Target Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "propagation_delay_ms": {
+      "label": "Propagation",
+      "category": "timing",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.01,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_bus_load_percent": {
+      "label": "Ziel-Buslast",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "Zielwert fuer die aus Routing, Payload, Zyklus und Bitrate berechnete Buslast.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "peak_factor": {
+      "label": "Peak Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.15,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_factor": {
+      "label": "Burst Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.5,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_window_ms": {
+      "label": "Burst Window",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "warning_threshold": {
+      "label": "Load Warning",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "critical_threshold": {
+      "label": "Load Critical",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 75,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "overload_threshold": {
+      "label": "Load Overload",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 90,
+      "unit": "%",
+      "min": 1,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "queue_size": {
+      "label": "Queue Size",
+      "category": "qos",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 256,
+      "unit": "Frames",
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "queue_policy": {
+      "label": "Queue Policy",
+      "category": "qos",
+      "scope": "network",
+      "type": "select",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": "FIFO",
+      "options": [
+        "FIFO",
+        "PRIORITY",
+        "STRICT_PRIORITY",
+        "WEIGHTED_PRIORITY",
+        "WRR",
+        "ROUND_ROBIN",
+        "TIME_TRIGGERED",
+        "TAS",
+        "CBS",
+        "CUSTOM"
+      ],
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "qos_priority": {
+      "label": "Default Priority",
+      "category": "qos",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 3,
+      "min": 0,
+      "max": 7,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "traffic_class": {
+      "label": "Traffic Class",
+      "category": "qos",
+      "scope": "route",
+      "type": "select",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": "BEST_EFFORT",
+      "options": [
+        "BEST_EFFORT",
+        "CONTROL",
+        "REALTIME",
+        "SAFETY_CRITICAL"
+      ],
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "packet_loss_probability": {
+      "label": "Packet Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "frame_loss_probability": {
+      "label": "Frame Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "bit_error_rate": {
+      "label": "Bit Error Rate",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "corruption_probability": {
+      "label": "Corruption",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duplicate_probability": {
+      "label": "Duplication",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "reordering_probability": {
+      "label": "Reordering",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "required_reliability": {
+      "label": "Required Reliability",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.999,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_offset_ms": {
+      "label": "Clock Offset",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_drift_ppm": {
+      "label": "Clock Drift",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 20,
+      "unit": "ppm",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_precision_ms": {
+      "label": "Sync Precision",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_interval_ms": {
+      "label": "Sync Interval",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1000,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_sync_error_ms": {
+      "label": "Maximum Sync Error",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_delay_ms": {
+      "label": "Gateway Processing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.2,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_queue_delay_ms": {
+      "label": "Gateway Queueing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "protocol_conversion_delay_ms": {
+      "label": "Protocol Conversion",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duration_s": {
+      "label": "Simulation Duration",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 1,
+      "unit": "s",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "seed": {
+      "label": "Random Seed",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 42,
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "max_events": {
+      "label": "Maximum Events",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 100000,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "dropout_probability": {
+      "label": "Failure Injection Dropout",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "ub_review_profile": {
+      "type": "select",
+      "description": "Selected USB2/USB3 published parameter rules or independently qualified USB4 tunnel/other implementation.",
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "source_revision": "USB-IF June2025 bundle: USB2.0 April27 2000 selected5/7/9, May28 2002 errata, VBUS Max Limit ECN and Double Isochronous IN ECN. Selected clauses, not every bundle ECN.",
+      "options": [
+        "USB2_2025_BUNDLE",
+        "USB3_2_REV1_1",
+        "USB4_PUBLIC_ARCHITECTURE",
+        "REGISTERED_ACTUAL"
+      ],
+      "label": "ub review profile",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ub_proposal_mode": {
+      "type": "select",
+      "description": "Source literature baseline proposals versus observed device configuration.",
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "source_revision": "USB-IF June2025 bundle: USB2.0 April27 2000 selected5/7/9, May28 2002 errata, VBUS Max Limit ECN and Double Isochronous IN ECN. Selected clauses, not every bundle ECN.",
+      "options": [
+        "SOURCE_BASELINE",
+        "ACTUAL_CONFIG"
+      ],
+      "label": "ub proposal mode",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ub_speed": {
+      "type": "select",
+      "description": "Actual negotiated downstream USB link mode, not connector appearance.",
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "source_revision": "USB3.2 Rev1.1 June2022 selected3.2/4.4/9.6/9.7/11.4: negotiated lanes/rate/coding, endpoint/companion, periodic schedule and separately qualified power.",
+      "options": [
+        "LOW",
+        "FULL",
+        "HIGH",
+        "GEN1_X1",
+        "GEN1_X2",
+        "GEN2_X1",
+        "GEN2_X2",
+        "USB4_20",
+        "USB4_40",
+        "USB4_80",
+        "USB4_ASYM_120_40",
+        "REGISTERED_ACTUAL"
+      ],
+      "label": "ub speed",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ub_transfer": {
+      "type": "select",
+      "description": "Actual endpoint transfer type, independent of USB version.",
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "source_revision": "USB-IF June2025 bundle: USB2.0 April27 2000 selected5/7/9, May28 2002 errata, VBUS Max Limit ECN and Double Isochronous IN ECN. Selected clauses, not every bundle ECN.",
+      "options": [
+        "CONTROL",
+        "BULK",
+        "INTERRUPT",
+        "ISOCHRONOUS"
+      ],
+      "label": "ub transfer",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ub_direction": {
+      "type": "select",
+      "description": "Endpoint direction relative to host; control is bidirectional.",
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "source_revision": "USB-IF June2025 bundle: USB2.0 April27 2000 selected5/7/9, May28 2002 errata, VBUS Max Limit ECN and Double Isochronous IN ECN. Selected clauses, not every bundle ECN.",
+      "options": [
+        "IN",
+        "OUT",
+        "BIDIRECTIONAL"
+      ],
+      "label": "ub direction",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ub_device_state": {
+      "type": "select",
+      "description": "Actual enumeration/configuration state; default address0 is not configured.",
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "source_revision": "USB-IF June2025 bundle: USB2.0 April27 2000 selected5/7/9, May28 2002 errata, VBUS Max Limit ECN and Double Isochronous IN ECN. Selected clauses, not every bundle ECN.",
+      "options": [
+        "DEFAULT",
+        "ADDRESSED",
+        "CONFIGURED"
+      ],
+      "label": "ub device state",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ub_interrupt_usage": {
+      "type": "select",
+      "description": "Actual USB3 interrupt periodic versus notification semantics.",
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "source_revision": "USB3.2 Rev1.1 June2022 selected3.2/4.4/9.6/9.7/11.4: negotiated lanes/rate/coding, endpoint/companion, periodic schedule and separately qualified power.",
+      "options": [
+        "PERIODIC",
+        "NOTIFICATION"
+      ],
+      "label": "ub interrupt usage",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ub_iso_sync": {
+      "type": "select",
+      "description": "Actual isochronous synchronization descriptor bits.",
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "source_revision": "USB-IF June2025 bundle: USB2.0 April27 2000 selected5/7/9, May28 2002 errata, VBUS Max Limit ECN and Double Isochronous IN ECN. Selected clauses, not every bundle ECN.",
+      "options": [
+        "NONE",
+        "ASYNC",
+        "ADAPTIVE",
+        "SYNC"
+      ],
+      "label": "ub iso sync",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ub_iso_usage": {
+      "type": "select",
+      "description": "Actual isochronous data/explicit-feedback/implicit-feedback endpoint.",
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "source_revision": "USB-IF June2025 bundle: USB2.0 April27 2000 selected5/7/9, May28 2002 errata, VBUS Max Limit ECN and Double Isochronous IN ECN. Selected clauses, not every bundle ECN.",
+      "options": [
+        "DATA",
+        "FEEDBACK",
+        "IMPLICIT_FEEDBACK"
+      ],
+      "label": "ub iso usage",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ub_power_profile": {
+      "type": "select",
+      "description": "Power contract separate from data rate. Type-C/PD need independent actual source.",
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "source_revision": "USB3.2 Rev1.1 June2022 selected3.2/4.4/9.6/9.7/11.4: negotiated lanes/rate/coding, endpoint/companion, periodic schedule and separately qualified power.",
+      "options": [
+        "USB2_LEGACY",
+        "USB3_LEGACY_SINGLE_LANE",
+        "USB3_LEGACY_DUAL_LANE",
+        "TYPE_C_ACTUAL",
+        "PD_ACTUAL",
+        "SELF_POWERED_ACTUAL"
+      ],
+      "label": "ub power profile",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ub_vbus_revision": {
+      "type": "select",
+      "description": "Actual old USB2 voltage definition versus reviewed VBUS Max Limit ECN.",
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "source_revision": "USB-IF June2025 bundle: USB2.0 April27 2000 selected5/7/9, May28 2002 errata, VBUS Max Limit ECN and Double Isochronous IN ECN. Selected clauses, not every bundle ECN.",
+      "options": [
+        "BASE_2000",
+        "VBUS_MAX_ECN",
+        "REGISTERED_ACTUAL"
+      ],
+      "label": "ub vbus revision",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ub_outcome": {
+      "type": "select",
+      "description": "Actual transfer/application result; USB handshake is not fresh functional success.",
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "source_revision": "USB-IF June2025 bundle: USB2.0 April27 2000 selected5/7/9, May28 2002 errata, VBUS Max Limit ECN and Double Isochronous IN ECN. Selected clauses, not every bundle ECN.",
+      "options": [
+        "ACCEPTED",
+        "NAK",
+        "NYET",
+        "STALL",
+        "ERROR",
+        "UNKNOWN"
+      ],
+      "label": "ub outcome",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ub_encoding": {
+      "type": "select",
+      "description": "Actual selected PHY encoding; USB4 PAM3 aggregate is not USB2 NRZI.",
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "source_revision": "USB3.2 Rev1.1 June2022 selected3.2/4.4/9.6/9.7/11.4: negotiated lanes/rate/coding, endpoint/companion, periodic schedule and separately qualified power.",
+      "options": [
+        "NRZI_STUFF6",
+        "8B10B",
+        "128B132B",
+        "USB4_PAM3_ACTUAL",
+        "REGISTERED_ACTUAL"
+      ],
+      "label": "ub encoding",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ub_role": {
+      "type": "select",
+      "description": "Actual USB data-path host, device or hub.",
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "source_revision": "USB-IF June2025 bundle: USB2.0 April27 2000 selected5/7/9, May28 2002 errata, VBUS Max Limit ECN and Double Isochronous IN ECN. Selected clauses, not every bundle ECN.",
+      "options": [
+        "HOST",
+        "DEVICE",
+        "HUB"
+      ],
+      "label": "ub role",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ub_link_bps": {
+      "type": "number",
+      "description": "Actual nominal per-direction aggregate link signaling rate, excluding encoding efficiency and tunneling allocation.",
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "source_revision": "USB3.2 Rev1.1 June2022 selected3.2/4.4/9.6/9.7/11.4: negotiated lanes/rate/coding, endpoint/companion, periodic schedule and separately qualified power.",
+      "min": 1,
+      "unit": "bit/s",
+      "integer": true,
+      "label": "ub link bps",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "ub_proposal_mode": "SOURCE_BASELINE",
+            "ub_review_profile": "USB2_2025_BUNDLE",
+            "ub_speed": "LOW"
+          },
+          "value": 1500000,
+          "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+          "source_revision": "USB-IF June2025 bundle: USB2.0 April27 2000 selected5/7/9, May28 2002 errata, VBUS Max Limit ECN and Double Isochronous IN ECN. Selected clauses, not every bundle ECN."
+        },
+        {
+          "when": {
+            "ub_proposal_mode": "SOURCE_BASELINE",
+            "ub_review_profile": "USB2_2025_BUNDLE",
+            "ub_speed": "FULL"
+          },
+          "value": 12000000,
+          "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+          "source_revision": "USB-IF June2025 bundle: USB2.0 April27 2000 selected5/7/9, May28 2002 errata, VBUS Max Limit ECN and Double Isochronous IN ECN. Selected clauses, not every bundle ECN."
+        },
+        {
+          "when": {
+            "ub_proposal_mode": "SOURCE_BASELINE",
+            "ub_review_profile": "USB2_2025_BUNDLE",
+            "ub_speed": "HIGH"
+          },
+          "value": 480000000,
+          "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+          "source_revision": "USB-IF June2025 bundle: USB2.0 April27 2000 selected5/7/9, May28 2002 errata, VBUS Max Limit ECN and Double Isochronous IN ECN. Selected clauses, not every bundle ECN."
+        },
+        {
+          "when": {
+            "ub_proposal_mode": "SOURCE_BASELINE",
+            "ub_review_profile": "USB3_2_REV1_1",
+            "ub_speed": "GEN1_X1"
+          },
+          "value": 5000000000,
+          "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+          "source_revision": "USB3.2 Rev1.1 June2022 selected3.2/4.4/9.6/9.7/11.4: negotiated lanes/rate/coding, endpoint/companion, periodic schedule and separately qualified power."
+        },
+        {
+          "when": {
+            "ub_proposal_mode": "SOURCE_BASELINE",
+            "ub_review_profile": "USB3_2_REV1_1",
+            "ub_speed": "GEN1_X2"
+          },
+          "value": 10000000000,
+          "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+          "source_revision": "USB3.2 Rev1.1 June2022 selected3.2/4.4/9.6/9.7/11.4: negotiated lanes/rate/coding, endpoint/companion, periodic schedule and separately qualified power."
+        },
+        {
+          "when": {
+            "ub_proposal_mode": "SOURCE_BASELINE",
+            "ub_review_profile": "USB3_2_REV1_1",
+            "ub_speed": "GEN2_X1"
+          },
+          "value": 10000000000,
+          "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+          "source_revision": "USB3.2 Rev1.1 June2022 selected3.2/4.4/9.6/9.7/11.4: negotiated lanes/rate/coding, endpoint/companion, periodic schedule and separately qualified power."
+        },
+        {
+          "when": {
+            "ub_proposal_mode": "SOURCE_BASELINE",
+            "ub_review_profile": "USB3_2_REV1_1",
+            "ub_speed": "GEN2_X2"
+          },
+          "value": 20000000000,
+          "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+          "source_revision": "USB3.2 Rev1.1 June2022 selected3.2/4.4/9.6/9.7/11.4: negotiated lanes/rate/coding, endpoint/companion, periodic schedule and separately qualified power."
+        }
+      ]
+    },
+    "ub_lane_bps": {
+      "type": "number",
+      "description": "Actual single lane rate; dual lane aggregate is separate.",
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "source_revision": "USB3.2 Rev1.1 June2022 selected3.2/4.4/9.6/9.7/11.4: negotiated lanes/rate/coding, endpoint/companion, periodic schedule and separately qualified power.",
+      "min": 1,
+      "unit": "bit/s",
+      "integer": true,
+      "label": "ub lane bps",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ub_lanes": {
+      "type": "number",
+      "description": "Actual negotiated lane count, not available connector pairs.",
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "source_revision": "USB3.2 Rev1.1 June2022 selected3.2/4.4/9.6/9.7/11.4: negotiated lanes/rate/coding, endpoint/companion, periodic schedule and separately qualified power.",
+      "min": 1,
+      "integer": true,
+      "label": "ub lanes",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ub_reverse_bps": {
+      "type": "number",
+      "description": "Actual opposite direction rate for asymmetric USB4.",
+      "source": "https://www.usb.org/sites/default/files/2022-10/USB-IF%20USB%2080Gbps%20Announcement_FINAL_v2.pdf",
+      "source_revision": "USB-IF Oct18 2022 USB4v2.0 announcement:20/40/80Gbps, optional120/40 asymmetric and multi-protocol tunneling. Not full USB4 router/packet normative specification.",
+      "min": 1,
+      "unit": "bit/s",
+      "integer": true,
+      "label": "ub reverse bps",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ub_device_address": {
+      "type": "number",
+      "description": "Actual assigned7-bit device address;0 only defaultstate.",
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "source_revision": "USB-IF June2025 bundle: USB2.0 April27 2000 selected5/7/9, May28 2002 errata, VBUS Max Limit ECN and Double Isochronous IN ECN. Selected clauses, not every bundle ECN.",
+      "min": 0,
+      "max": 127,
+      "integer": true,
+      "label": "ub device address",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ub_endpoint": {
+      "type": "number",
+      "description": "Actual endpoint number0..15; EP0control has no endpoint descriptor.",
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "source_revision": "USB-IF June2025 bundle: USB2.0 April27 2000 selected5/7/9, May28 2002 errata, VBUS Max Limit ECN and Double Isochronous IN ECN. Selected clauses, not every bundle ECN.",
+      "min": 0,
+      "max": 15,
+      "integer": true,
+      "label": "ub endpoint",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ub_endpoint_address_raw": {
+      "type": "number",
+      "description": "Actual bEndpointAddress byte with reserved bits zero and directionbit7.",
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "source_revision": "USB-IF June2025 bundle: USB2.0 April27 2000 selected5/7/9, May28 2002 errata, VBUS Max Limit ECN and Double Isochronous IN ECN. Selected clauses, not every bundle ECN.",
+      "min": 0,
+      "max": 255,
+      "integer": true,
+      "label": "ub endpoint address raw",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ub_max_packet_bytes": {
+      "type": "number",
+      "description": "Actual decoded endpoint maximum data packet; not whole USB transfer/application length.",
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "source_revision": "USB-IF June2025 bundle: USB2.0 April27 2000 selected5/7/9, May28 2002 errata, VBUS Max Limit ECN and Double Isochronous IN ECN. Selected clauses, not every bundle ECN.",
+      "min": 0,
+      "max": 2047,
+      "unit": "byte",
+      "integer": true,
+      "label": "ub max packet bytes",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ub_packet_bytes": {
+      "type": "number",
+      "description": "Actual current data packet payload, may be zero/short.",
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "source_revision": "USB-IF June2025 bundle: USB2.0 April27 2000 selected5/7/9, May28 2002 errata, VBUS Max Limit ECN and Double Isochronous IN ECN. Selected clauses, not every bundle ECN.",
+      "min": 0,
+      "unit": "byte",
+      "integer": true,
+      "label": "ub packet bytes",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ub_transfer_bytes": {
+      "type": "number",
+      "description": "Actual whole application transfer may span many packets.",
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "source_revision": "USB-IF June2025 bundle: USB2.0 April27 2000 selected5/7/9, May28 2002 errata, VBUS Max Limit ECN and Double Isochronous IN ECN. Selected clauses, not every bundle ECN.",
+      "min": 0,
+      "unit": "byte",
+      "integer": true,
+      "label": "ub transfer bytes",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ub_host_buffer_bytes": {
+      "type": "number",
+      "description": "Actual available host transfer/reassembly buffer.",
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "source_revision": "USB-IF June2025 bundle: USB2.0 April27 2000 selected5/7/9, May28 2002 errata, VBUS Max Limit ECN and Double Isochronous IN ECN. Selected clauses, not every bundle ECN.",
+      "min": 0,
+      "unit": "byte",
+      "integer": true,
+      "label": "ub host buffer bytes",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ub_peer_buffer_bytes": {
+      "type": "number",
+      "description": "Actual device/class buffer for full transfer, independent maxpacket.",
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "source_revision": "USB-IF June2025 bundle: USB2.0 April27 2000 selected5/7/9, May28 2002 errata, VBUS Max Limit ECN and Double Isochronous IN ECN. Selected clauses, not every bundle ECN.",
+      "min": 0,
+      "unit": "byte",
+      "integer": true,
+      "label": "ub peer buffer bytes",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ub_max_packet_raw": {
+      "type": "number",
+      "description": "Actual USB2 wMaxPacketSize including high-bandwidth bits, not decoded bytes.",
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "source_revision": "USB-IF June2025 bundle: USB2.0 April27 2000 selected5/7/9, May28 2002 errata, VBUS Max Limit ECN and Double Isochronous IN ECN. Selected clauses, not every bundle ECN.",
+      "min": 0,
+      "max": 65535,
+      "integer": true,
+      "label": "ub max packet raw",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ub_extra_transactions": {
+      "type": "number",
+      "description": "Actual USB2 high-bandwidth additional opportunities0..2,3reserved.",
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "source_revision": "USB-IF June2025 bundle: USB2.0 April27 2000 selected5/7/9, May28 2002 errata, VBUS Max Limit ECN and Double Isochronous IN ECN. Selected clauses, not every bundle ECN.",
+      "min": 0,
+      "max": 2,
+      "integer": true,
+      "label": "ub extra transactions",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ub_transactions": {
+      "type": "number",
+      "description": "Actual USB2 packets/opportunities per microframe; qualified eUSB2 IN can reach6.",
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "source_revision": "USB-IF June2025 bundle: USB2.0 April27 2000 selected5/7/9, May28 2002 errata, VBUS Max Limit ECN and Double Isochronous IN ECN. Selected clauses, not every bundle ECN.",
+      "min": 1,
+      "max": 6,
+      "integer": true,
+      "label": "ub transactions",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ub_binterval": {
+      "type": "number",
+      "description": "Actual bInterval descriptor value; units and exponent depend speed/type.",
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "source_revision": "USB-IF June2025 bundle: USB2.0 April27 2000 selected5/7/9, May28 2002 errata, VBUS Max Limit ECN and Double Isochronous IN ECN. Selected clauses, not every bundle ECN.",
+      "min": 0,
+      "max": 255,
+      "integer": true,
+      "label": "ub binterval",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ub_interval_us": {
+      "type": "number",
+      "description": "Actual requested periodic interval from bInterval; not guaranteed functional completion.",
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "source_revision": "USB-IF June2025 bundle: USB2.0 April27 2000 selected5/7/9, May28 2002 errata, VBUS Max Limit ECN and Double Isochronous IN ECN. Selected clauses, not every bundle ECN.",
+      "min": 0,
+      "unit": "us",
+      "integer": false,
+      "label": "ub interval us",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ub_frame_us": {
+      "type": "number",
+      "description": "Actual1ms frame or125us high-speed microframe/service bus interval.",
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "source_revision": "USB-IF June2025 bundle: USB2.0 April27 2000 selected5/7/9, May28 2002 errata, VBUS Max Limit ECN and Double Isochronous IN ECN. Selected clauses, not every bundle ECN.",
+      "min": 0,
+      "unit": "us",
+      "integer": false,
+      "label": "ub frame us",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "ub_proposal_mode": "SOURCE_BASELINE",
+            "ub_speed": "LOW"
+          },
+          "value": 1000,
+          "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+          "source_revision": "USB-IF June2025 bundle: USB2.0 April27 2000 selected5/7/9, May28 2002 errata, VBUS Max Limit ECN and Double Isochronous IN ECN. Selected clauses, not every bundle ECN."
+        },
+        {
+          "when": {
+            "ub_proposal_mode": "SOURCE_BASELINE",
+            "ub_speed": "FULL"
+          },
+          "value": 1000,
+          "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+          "source_revision": "USB-IF June2025 bundle: USB2.0 April27 2000 selected5/7/9, May28 2002 errata, VBUS Max Limit ECN and Double Isochronous IN ECN. Selected clauses, not every bundle ECN."
+        },
+        {
+          "when": {
+            "ub_proposal_mode": "SOURCE_BASELINE",
+            "ub_speed": "HIGH"
+          },
+          "value": 125,
+          "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+          "source_revision": "USB-IF June2025 bundle: USB2.0 April27 2000 selected5/7/9, May28 2002 errata, VBUS Max Limit ECN and Double Isochronous IN ECN. Selected clauses, not every bundle ECN."
+        },
+        {
+          "when": {
+            "ub_proposal_mode": "SOURCE_BASELINE",
+            "ub_speed": "GEN1_X1"
+          },
+          "value": 125,
+          "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+          "source_revision": "USB3.2 Rev1.1 June2022 selected3.2/4.4/9.6/9.7/11.4: negotiated lanes/rate/coding, endpoint/companion, periodic schedule and separately qualified power."
+        },
+        {
+          "when": {
+            "ub_proposal_mode": "SOURCE_BASELINE",
+            "ub_speed": "GEN1_X2"
+          },
+          "value": 125,
+          "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+          "source_revision": "USB3.2 Rev1.1 June2022 selected3.2/4.4/9.6/9.7/11.4: negotiated lanes/rate/coding, endpoint/companion, periodic schedule and separately qualified power."
+        },
+        {
+          "when": {
+            "ub_proposal_mode": "SOURCE_BASELINE",
+            "ub_speed": "GEN2_X1"
+          },
+          "value": 125,
+          "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+          "source_revision": "USB3.2 Rev1.1 June2022 selected3.2/4.4/9.6/9.7/11.4: negotiated lanes/rate/coding, endpoint/companion, periodic schedule and separately qualified power."
+        },
+        {
+          "when": {
+            "ub_proposal_mode": "SOURCE_BASELINE",
+            "ub_speed": "GEN2_X2"
+          },
+          "value": 125,
+          "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+          "source_revision": "USB3.2 Rev1.1 June2022 selected3.2/4.4/9.6/9.7/11.4: negotiated lanes/rate/coding, endpoint/companion, periodic schedule and separately qualified power."
+        }
+      ]
+    },
+    "ub_periodic_allocation_percent": {
+      "type": "number",
+      "description": "Actual aggregate periodic schedule reservation, not default NIS warning limit.",
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "source_revision": "USB-IF June2025 bundle: USB2.0 April27 2000 selected5/7/9, May28 2002 errata, VBUS Max Limit ECN and Double Isochronous IN ECN. Selected clauses, not every bundle ECN.",
+      "min": 0,
+      "max": 100,
+      "unit": "%",
+      "integer": false,
+      "label": "ub periodic allocation percent",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ub_bytes_per_interval": {
+      "type": "number",
+      "description": "Actual selected periodic descriptor reservation bytes; transferred amount can be less.",
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "source_revision": "USB3.2 Rev1.1 June2022 selected3.2/4.4/9.6/9.7/11.4: negotiated lanes/rate/coding, endpoint/companion, periodic schedule and separately qualified power.",
+      "min": 0,
+      "unit": "byte",
+      "integer": true,
+      "label": "ub bytes per interval",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ub_bmaxburst": {
+      "type": "number",
+      "description": "USB3 zero-based maximum burst packets0..15, not retrycount.",
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "source_revision": "USB3.2 Rev1.1 June2022 selected3.2/4.4/9.6/9.7/11.4: negotiated lanes/rate/coding, endpoint/companion, periodic schedule and separately qualified power.",
+      "min": 0,
+      "max": 15,
+      "integer": true,
+      "label": "ub bmaxburst",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ub_burst_packets": {
+      "type": "number",
+      "description": "Actual USB3 burst maximum=bMaxBurst+1.",
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "source_revision": "USB3.2 Rev1.1 June2022 selected3.2/4.4/9.6/9.7/11.4: negotiated lanes/rate/coding, endpoint/companion, periodic schedule and separately qualified power.",
+      "min": 1,
+      "max": 16,
+      "integer": true,
+      "label": "ub burst packets",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ub_mult": {
+      "type": "number",
+      "description": "USB3 legacy ISO companion zero-based multiplier0..2; ignored with SSPcompanion.",
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "source_revision": "USB3.2 Rev1.1 June2022 selected3.2/4.4/9.6/9.7/11.4: negotiated lanes/rate/coding, endpoint/companion, periodic schedule and separately qualified power.",
+      "min": 0,
+      "max": 2,
+      "integer": true,
+      "label": "ub mult",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ub_maxstreams": {
+      "type": "number",
+      "description": "USB3 bulk companion MaxStreams0..16;0 means no streams.",
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "source_revision": "USB3.2 Rev1.1 June2022 selected3.2/4.4/9.6/9.7/11.4: negotiated lanes/rate/coding, endpoint/companion, periodic schedule and separately qualified power.",
+      "min": 0,
+      "max": 16,
+      "integer": true,
+      "label": "ub maxstreams",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ub_stream_count": {
+      "type": "number",
+      "description": "Actual bulk streams2^MaxStreams or0 ifunsupported.",
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "source_revision": "USB3.2 Rev1.1 June2022 selected3.2/4.4/9.6/9.7/11.4: negotiated lanes/rate/coding, endpoint/companion, periodic schedule and separately qualified power.",
+      "min": 0,
+      "max": 65536,
+      "integer": true,
+      "label": "ub stream count",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ub_wbytes_per_interval": {
+      "type": "number",
+      "description": "USB3 companion16-bit reservation;1 when SSPISOcompanion,0 bulk/control.",
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "source_revision": "USB3.2 Rev1.1 June2022 selected3.2/4.4/9.6/9.7/11.4: negotiated lanes/rate/coding, endpoint/companion, periodic schedule and separately qualified power.",
+      "min": 0,
+      "max": 65535,
+      "unit": "byte",
+      "integer": true,
+      "label": "ub wbytes per interval",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ub_dwbytes_per_interval": {
+      "type": "number",
+      "description": "Actual SSP/eUSB2 companion32-bit reservation in qualified mode.",
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "source_revision": "USB3.2 Rev1.1 June2022 selected3.2/4.4/9.6/9.7/11.4: negotiated lanes/rate/coding, endpoint/companion, periodic schedule and separately qualified power.",
+      "min": 0,
+      "max": 4294967295,
+      "unit": "byte",
+      "integer": true,
+      "label": "ub dwbytes per interval",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ub_ssp_iso_max_bytes": {
+      "type": "number",
+      "description": "Actual source-qualified SSP capacity bound from rate/lane revision; not fixed48Kforall.",
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "source_revision": "USB3.2 Rev1.1 June2022 selected3.2/4.4/9.6/9.7/11.4: negotiated lanes/rate/coding, endpoint/companion, periodic schedule and separately qualified power.",
+      "min": 1,
+      "unit": "byte",
+      "integer": true,
+      "label": "ub ssp iso max bytes",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ub_bcdusb": {
+      "type": "number",
+      "description": "Actual device descriptor BCD release, not speed alone.",
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "source_revision": "USB-IF June2025 bundle: USB2.0 April27 2000 selected5/7/9, May28 2002 errata, VBUS Max Limit ECN and Double Isochronous IN ECN. Selected clauses, not every bundle ECN.",
+      "min": 0,
+      "max": 65535,
+      "integer": true,
+      "label": "ub bcdusb",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ub_ep0_maxpacket_raw": {
+      "type": "number",
+      "description": "Actual USB3 bMaxPacketSize0 exponent9 for512, USB2 directly encoded.",
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "source_revision": "USB3.2 Rev1.1 June2022 selected3.2/4.4/9.6/9.7/11.4: negotiated lanes/rate/coding, endpoint/companion, periodic schedule and separately qualified power.",
+      "min": 0,
+      "max": 255,
+      "integer": true,
+      "label": "ub ep0 maxpacket raw",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ub_hub_levels": {
+      "type": "number",
+      "description": "Actual device path hub levels; USB2/USB3 limit5 interveninghubs.",
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "source_revision": "USB3.2 Rev1.1 June2022 selected3.2/4.4/9.6/9.7/11.4: negotiated lanes/rate/coding, endpoint/companion, periodic schedule and separately qualified power.",
+      "min": 0,
+      "integer": true,
+      "label": "ub hub levels",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ub_unit_load_ma": {
+      "type": "number",
+      "description": "Actual source-qualified data legacy power unit; USB2=100,USB3single150/dual250.",
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "source_revision": "USB3.2 Rev1.1 June2022 selected3.2/4.4/9.6/9.7/11.4: negotiated lanes/rate/coding, endpoint/companion, periodic schedule and separately qualified power.",
+      "min": 0,
+      "unit": "mA",
+      "integer": false,
+      "label": "ub unit load ma",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "ub_proposal_mode": "SOURCE_BASELINE",
+            "ub_power_profile": "USB2_LEGACY"
+          },
+          "value": 100,
+          "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+          "source_revision": "USB-IF June2025 bundle: USB2.0 April27 2000 selected5/7/9, May28 2002 errata, VBUS Max Limit ECN and Double Isochronous IN ECN. Selected clauses, not every bundle ECN."
+        },
+        {
+          "when": {
+            "ub_proposal_mode": "SOURCE_BASELINE",
+            "ub_power_profile": "USB3_LEGACY_SINGLE_LANE"
+          },
+          "value": 150,
+          "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+          "source_revision": "USB3.2 Rev1.1 June2022 selected3.2/4.4/9.6/9.7/11.4: negotiated lanes/rate/coding, endpoint/companion, periodic schedule and separately qualified power."
+        },
+        {
+          "when": {
+            "ub_proposal_mode": "SOURCE_BASELINE",
+            "ub_power_profile": "USB3_LEGACY_DUAL_LANE"
+          },
+          "value": 250,
+          "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+          "source_revision": "USB3.2 Rev1.1 June2022 selected3.2/4.4/9.6/9.7/11.4: negotiated lanes/rate/coding, endpoint/companion, periodic schedule and separately qualified power."
+        }
+      ]
+    },
+    "ub_current_ma": {
+      "type": "number",
+      "description": "Actual peak device sink current, not average/defaultconsumption.",
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "source_revision": "USB3.2 Rev1.1 June2022 selected3.2/4.4/9.6/9.7/11.4: negotiated lanes/rate/coding, endpoint/companion, periodic schedule and separately qualified power.",
+      "min": 0,
+      "unit": "mA",
+      "integer": false,
+      "label": "ub current ma",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ub_allocated_current_ma": {
+      "type": "number",
+      "description": "Actual host/source configured power allocation.",
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "source_revision": "USB3.2 Rev1.1 June2022 selected3.2/4.4/9.6/9.7/11.4: negotiated lanes/rate/coding, endpoint/companion, periodic schedule and separately qualified power.",
+      "min": 0,
+      "unit": "mA",
+      "integer": false,
+      "label": "ub allocated current ma",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ub_vbus_v": {
+      "type": "number",
+      "description": "Actual measured/specified supply at selected source/consumer boundary.",
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "source_revision": "USB-IF June2025 bundle: USB2.0 April27 2000 selected5/7/9, May28 2002 errata, VBUS Max Limit ECN and Double Isochronous IN ECN. Selected clauses, not every bundle ECN.",
+      "min": 0,
+      "unit": "V",
+      "integer": false,
+      "label": "ub vbus v",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ub_wire_bits": {
+      "type": "number",
+      "description": "Actual whole physical occupation bound with tokens,handshakes,stuffing/coding and gaps.",
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "source_revision": "USB-IF June2025 bundle: USB2.0 April27 2000 selected5/7/9, May28 2002 errata, VBUS Max Limit ECN and Double Isochronous IN ECN. Selected clauses, not every bundle ECN.",
+      "min": 0,
+      "unit": "bit",
+      "integer": true,
+      "label": "ub wire bits",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ub_wire_us": {
+      "type": "number",
+      "description": "Actual physical occupation bound, separate aggregate signal rate.",
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "source_revision": "USB-IF June2025 bundle: USB2.0 April27 2000 selected5/7/9, May28 2002 errata, VBUS Max Limit ECN and Double Isochronous IN ECN. Selected clauses, not every bundle ECN.",
+      "min": 0,
+      "unit": "us",
+      "integer": false,
+      "label": "ub wire us",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ub_host_wait_us": {
+      "type": "number",
+      "description": "Actual host schedule/NAK/retry/driver wait bound.",
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "source_revision": "USB-IF June2025 bundle: USB2.0 April27 2000 selected5/7/9, May28 2002 errata, VBUS Max Limit ECN and Double Isochronous IN ECN. Selected clauses, not every bundle ECN.",
+      "min": 0,
+      "unit": "us",
+      "integer": false,
+      "label": "ub host wait us",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ub_tunnel_allocation_bps": {
+      "type": "number",
+      "description": "Actual allocated USB4 data tunnel bandwidth, not entire80/120Glink.",
+      "source": "https://www.usb.org/sites/default/files/2022-10/USB-IF%20USB%2080Gbps%20Announcement_FINAL_v2.pdf",
+      "source_revision": "USB-IF Oct18 2022 USB4v2.0 announcement:20/40/80Gbps, optional120/40 asymmetric and multi-protocol tunneling. Not full USB4 router/packet normative specification.",
+      "min": 0,
+      "unit": "bit/s",
+      "integer": true,
+      "label": "ub tunnel allocation bps",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ub_source_ms": {
+      "type": "number",
+      "description": "Actual source application/driver delay.",
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "source_revision": "USB-IF June2025 bundle: USB2.0 April27 2000 selected5/7/9, May28 2002 errata, VBUS Max Limit ECN and Double Isochronous IN ECN. Selected clauses, not every bundle ECN.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "label": "ub source ms",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ub_transport_ms": {
+      "type": "number",
+      "description": "Actual complete host schedule,hub/TT,wire,tunnel and retries.",
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "source_revision": "USB-IF June2025 bundle: USB2.0 April27 2000 selected5/7/9, May28 2002 errata, VBUS Max Limit ECN and Double Isochronous IN ECN. Selected clauses, not every bundle ECN.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "label": "ub transport ms",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ub_use_ms": {
+      "type": "number",
+      "description": "Actual consuming device/application delay.",
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "source_revision": "USB-IF June2025 bundle: USB2.0 April27 2000 selected5/7/9, May28 2002 errata, VBUS Max Limit ECN and Double Isochronous IN ECN. Selected clauses, not every bundle ECN.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "label": "ub use ms",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ub_e2e_ms": {
+      "type": "number",
+      "description": "Actual correlated producer-to-consumer bound.",
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "source_revision": "USB-IF June2025 bundle: USB2.0 April27 2000 selected5/7/9, May28 2002 errata, VBUS Max Limit ECN and Double Isochronous IN ECN. Selected clauses, not every bundle ECN.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "label": "ub e2e ms",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ub_deadline_ms": {
+      "type": "number",
+      "description": "Independent function deadline, not bInterval guarantee.",
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "source_revision": "USB-IF June2025 bundle: USB2.0 April27 2000 selected5/7/9, May28 2002 errata, VBUS Max Limit ECN and Double Isochronous IN ECN. Selected clauses, not every bundle ECN.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "label": "ub deadline ms",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ub_age_ms": {
+      "type": "number",
+      "description": "Actual data age at consuming function.",
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "source_revision": "USB-IF June2025 bundle: USB2.0 April27 2000 selected5/7/9, May28 2002 errata, VBUS Max Limit ECN and Double Isochronous IN ECN. Selected clauses, not every bundle ECN.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "label": "ub age ms",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ub_freshness_ms": {
+      "type": "number",
+      "description": "Independent maximum data age.",
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "source_revision": "USB-IF June2025 bundle: USB2.0 April27 2000 selected5/7/9, May28 2002 errata, VBUS Max Limit ECN and Double Isochronous IN ECN. Selected clauses, not every bundle ECN.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "label": "ub freshness ms",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ub_double_eusb2": {
+      "type": "boolean",
+      "description": "Actual directly connected inbox native eUSB2 doubleISO IN capability, not allhighspeed.",
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "source_revision": "USB-IF June2025 bundle: USB2.0 April27 2000 selected5/7/9, May28 2002 errata, VBUS Max Limit ECN and Double Isochronous IN ECN. Selected clauses, not every bundle ECN.",
+      "label": "ub double eusb2",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ub_direct_inbox": {
+      "type": "boolean",
+      "description": "Actual direct inbox native eUSB2 device and qualified hostsoftware.",
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "source_revision": "USB-IF June2025 bundle: USB2.0 April27 2000 selected5/7/9, May28 2002 errata, VBUS Max Limit ECN and Double Isochronous IN ECN. Selected clauses, not every bundle ECN.",
+      "label": "ub direct inbox",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ub_ssp_iso_companion": {
+      "type": "boolean",
+      "description": "Actual SSPISO companion descriptor present and understood by selected host.",
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "source_revision": "USB3.2 Rev1.1 June2022 selected3.2/4.4/9.6/9.7/11.4: negotiated lanes/rate/coding, endpoint/companion, periodic schedule and separately qualified power.",
+      "label": "ub ssp iso companion",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ub_retry_enabled": {
+      "type": "boolean",
+      "description": "Actual link retransmission policy; ISO has no data retransmission guarantee.",
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "source_revision": "USB-IF June2025 bundle: USB2.0 April27 2000 selected5/7/9, May28 2002 errata, VBUS Max Limit ECN and Double Isochronous IN ECN. Selected clauses, not every bundle ECN.",
+      "label": "ub retry enabled",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ub_tt_required": {
+      "type": "boolean",
+      "description": "Actual low/fullspeed device on highspeed hub requires qualified transactiontranslator.",
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "source_revision": "USB-IF June2025 bundle: USB2.0 April27 2000 selected5/7/9, May28 2002 errata, VBUS Max Limit ECN and Double Isochronous IN ECN. Selected clauses, not every bundle ECN.",
+      "label": "ub tt required",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ub_schedule_verified": {
+      "type": "boolean",
+      "description": "Actual host whole endpoint aggregate schedule evidence.",
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "source_revision": "USB-IF June2025 bundle: USB2.0 April27 2000 selected5/7/9, May28 2002 errata, VBUS Max Limit ECN and Double Isochronous IN ECN. Selected clauses, not every bundle ECN.",
+      "label": "ub schedule verified",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ub_path_verified": {
+      "type": "boolean",
+      "description": "Actual all devices, hubs, TT, PHY/tunnel and driver path proof.",
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "source_revision": "USB3.2 Rev1.1 June2022 selected3.2/4.4/9.6/9.7/11.4: negotiated lanes/rate/coding, endpoint/companion, periodic schedule and separately qualified power.",
+      "label": "ub path verified",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ub_power_verified": {
+      "type": "boolean",
+      "description": "Actual source/consumer/connector power contract proof.",
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "source_revision": "USB3.2 Rev1.1 June2022 selected3.2/4.4/9.6/9.7/11.4: negotiated lanes/rate/coding, endpoint/companion, periodic schedule and separately qualified power.",
+      "label": "ub power verified",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ub_data_accepted": {
+      "type": "boolean",
+      "description": "Actual current application data accepted against own function.",
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "source_revision": "USB-IF June2025 bundle: USB2.0 April27 2000 selected5/7/9, May28 2002 errata, VBUS Max Limit ECN and Double Isochronous IN ECN. Selected clauses, not every bundle ECN.",
+      "label": "ub data accepted",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ub_revision": {
+      "type": "text",
+      "description": "Actual USB/device/class/ECN revision.",
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "source_revision": "USB-IF June2025 bundle: USB2.0 April27 2000 selected5/7/9, May28 2002 errata, VBUS Max Limit ECN and Double Isochronous IN ECN. Selected clauses, not every bundle ECN.",
+      "label": "ub revision",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ub_device_source": {
+      "type": "text",
+      "description": "Actual host/device and mutually selected PHY/endpoint capabilities.",
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "source_revision": "USB3.2 Rev1.1 June2022 selected3.2/4.4/9.6/9.7/11.4: negotiated lanes/rate/coding, endpoint/companion, periodic schedule and separately qualified power.",
+      "label": "ub device source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ub_descriptor_source": {
+      "type": "text",
+      "description": "Actual configuration/interface/endpoint/companion descriptors and class semantics.",
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "source_revision": "USB-IF June2025 bundle: USB2.0 April27 2000 selected5/7/9, May28 2002 errata, VBUS Max Limit ECN and Double Isochronous IN ECN. Selected clauses, not every bundle ECN.",
+      "label": "ub descriptor source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ub_schedule_source": {
+      "type": "text",
+      "description": "Actual host schedule,buffer,queue and driver service bound.",
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "source_revision": "USB-IF June2025 bundle: USB2.0 April27 2000 selected5/7/9, May28 2002 errata, VBUS Max Limit ECN and Double Isochronous IN ECN. Selected clauses, not every bundle ECN.",
+      "label": "ub schedule source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ub_physical_source": {
+      "type": "text",
+      "description": "Actual cables/ports/power/PHY, not connector implies speed.",
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "source_revision": "USB3.2 Rev1.1 June2022 selected3.2/4.4/9.6/9.7/11.4: negotiated lanes/rate/coding, endpoint/companion, periodic schedule and separately qualified power.",
+      "label": "ub physical source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ub_acceptance_source": {
+      "type": "text",
+      "description": "Actual independent function/age/deadline contract.",
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "source_revision": "USB-IF June2025 bundle: USB2.0 April27 2000 selected5/7/9, May28 2002 errata, VBUS Max Limit ECN and Double Isochronous IN ECN. Selected clauses, not every bundle ECN.",
+      "label": "ub acceptance source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ub_registered_source": {
+      "type": "text",
+      "description": "Actual independently qualified standard/device edition.",
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "source_revision": "USB3.2 Rev1.1 June2022 selected3.2/4.4/9.6/9.7/11.4: negotiated lanes/rate/coding, endpoint/companion, periodic schedule and separately qualified power.",
+      "label": "ub registered source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ub_tunnel_source": {
+      "type": "text",
+      "description": "Actual USB4 routers/adapters/allocation/encapsulation and bound endpoint path.",
+      "source": "https://www.usb.org/sites/default/files/2022-10/USB-IF%20USB%2080Gbps%20Announcement_FINAL_v2.pdf",
+      "source_revision": "USB-IF Oct18 2022 USB4v2.0 announcement:20/40/80Gbps, optional120/40 asymmetric and multi-protocol tunneling. Not full USB4 router/packet normative specification.",
+      "label": "ub tunnel source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ub_power_source": {
+      "type": "text",
+      "description": "Actual separate legacy/TypeC/PD/selfpowered contract.",
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "source_revision": "USB3.2 Rev1.1 June2022 selected3.2/4.4/9.6/9.7/11.4: negotiated lanes/rate/coding, endpoint/companion, periodic schedule and separately qualified power.",
+      "label": "ub power source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ub_ssp_source": {
+      "type": "text",
+      "description": "Actual SSPISO companion reservation and source-dependent rate/lane maximum.",
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "source_revision": "USB3.2 Rev1.1 June2022 selected3.2/4.4/9.6/9.7/11.4: negotiated lanes/rate/coding, endpoint/companion, periodic schedule and separately qualified power.",
+      "label": "ub ssp source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ub_observation_source": {
+      "type": "text",
+      "description": "Actual correlated source/USBtransactions/consumer observation.",
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "source_revision": "USB-IF June2025 bundle: USB2.0 April27 2000 selected5/7/9, May28 2002 errata, VBUS Max Limit ECN and Double Isochronous IN ECN. Selected clauses, not every bundle ECN.",
+      "label": "ub observation source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    }
+  },
+  "mechanisms": {
+    "network": [
+      "ENDPOINT_DESCRIPTOR_AND_CLASS",
+      "USB4_TUNNEL_NOT_ENDPOINT_MAXPACKET"
+    ],
+    "timing": [
+      "PERIODIC_RESERVATION_NOT_FUNCTION_ACCEPTANCE",
+      "ACTUAL_HUB_TT_RETRY_DRIVER_PATH"
+    ]
+  },
+  "parameter_constraints": [
+    {
+      "parameter": "bitrate",
+      "when": {},
+      "allowed": [],
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip"
+    },
+    {
+      "parameter": "reserved_bandwidth_percent",
+      "when": {},
+      "allowed": [],
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip"
+    },
+    {
+      "parameter": "sync_method",
+      "when": {},
+      "allowed": [],
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip"
+    },
+    {
+      "parameter": "retransmission_enabled",
+      "when": {},
+      "allowed": [],
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip"
+    },
+    {
+      "parameter": "retransmission_rate",
+      "when": {},
+      "allowed": [],
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip"
+    },
+    {
+      "parameter": "retry_limit",
+      "when": {},
+      "allowed": [],
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip"
+    },
+    {
+      "parameter": "retransmission_delay_ms",
+      "when": {},
+      "allowed": [],
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip"
+    },
+    {
+      "parameter": "gateway_maximum_throughput",
+      "when": {},
+      "allowed": [],
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip"
+    },
+    {
+      "parameter": "gateway_input_buffer",
+      "when": {},
+      "allowed": [],
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip"
+    },
+    {
+      "parameter": "gateway_output_buffer",
+      "when": {},
+      "allowed": [],
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip"
+    },
+    {
+      "parameter": "gateway_maximum_routes",
+      "when": {},
+      "allowed": [],
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip"
+    },
+    {
+      "parameter": "gateway_maximum_messages_s",
+      "when": {},
+      "allowed": [],
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip"
+    },
+    {
+      "parameter": "ub_registered_source",
+      "when": {
+        "ub_review_profile": "REGISTERED_ACTUAL"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "required": true
+    },
+    {
+      "parameter": "ub_speed",
+      "when": {
+        "ub_review_profile": "USB2_2025_BUNDLE"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "allowed": [
+        "LOW",
+        "FULL",
+        "HIGH"
+      ]
+    },
+    {
+      "parameter": "ub_speed",
+      "when": {
+        "ub_review_profile": "USB3_2_REV1_1"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": [
+        "GEN1_X1",
+        "GEN1_X2",
+        "GEN2_X1",
+        "GEN2_X2"
+      ]
+    },
+    {
+      "parameter": "ub_speed",
+      "when": {
+        "ub_review_profile": "USB4_PUBLIC_ARCHITECTURE"
+      },
+      "source": "https://www.usb.org/sites/default/files/2022-10/USB-IF%20USB%2080Gbps%20Announcement_FINAL_v2.pdf",
+      "allowed": [
+        "USB4_20",
+        "USB4_40",
+        "USB4_80",
+        "USB4_ASYM_120_40"
+      ]
+    },
+    {
+      "parameter": "ub_bmaxburst",
+      "when": {
+        "ub_speed": "LOW"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": []
+    },
+    {
+      "parameter": "ub_burst_packets",
+      "when": {
+        "ub_speed": "LOW"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": []
+    },
+    {
+      "parameter": "ub_mult",
+      "when": {
+        "ub_speed": "LOW"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": []
+    },
+    {
+      "parameter": "ub_maxstreams",
+      "when": {
+        "ub_speed": "LOW"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": []
+    },
+    {
+      "parameter": "ub_stream_count",
+      "when": {
+        "ub_speed": "LOW"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": []
+    },
+    {
+      "parameter": "ub_wbytes_per_interval",
+      "when": {
+        "ub_speed": "LOW"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": []
+    },
+    {
+      "parameter": "ub_ssp_iso_companion",
+      "when": {
+        "ub_speed": "LOW"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": []
+    },
+    {
+      "parameter": "ub_ssp_iso_max_bytes",
+      "when": {
+        "ub_speed": "LOW"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": []
+    },
+    {
+      "parameter": "ub_ssp_source",
+      "when": {
+        "ub_speed": "LOW"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": []
+    },
+    {
+      "parameter": "ub_interrupt_usage",
+      "when": {
+        "ub_speed": "LOW"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": []
+    },
+    {
+      "parameter": "ub_bmaxburst",
+      "when": {
+        "ub_speed": "FULL"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": []
+    },
+    {
+      "parameter": "ub_burst_packets",
+      "when": {
+        "ub_speed": "FULL"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": []
+    },
+    {
+      "parameter": "ub_mult",
+      "when": {
+        "ub_speed": "FULL"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": []
+    },
+    {
+      "parameter": "ub_maxstreams",
+      "when": {
+        "ub_speed": "FULL"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": []
+    },
+    {
+      "parameter": "ub_stream_count",
+      "when": {
+        "ub_speed": "FULL"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": []
+    },
+    {
+      "parameter": "ub_wbytes_per_interval",
+      "when": {
+        "ub_speed": "FULL"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": []
+    },
+    {
+      "parameter": "ub_ssp_iso_companion",
+      "when": {
+        "ub_speed": "FULL"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": []
+    },
+    {
+      "parameter": "ub_ssp_iso_max_bytes",
+      "when": {
+        "ub_speed": "FULL"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": []
+    },
+    {
+      "parameter": "ub_ssp_source",
+      "when": {
+        "ub_speed": "FULL"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": []
+    },
+    {
+      "parameter": "ub_interrupt_usage",
+      "when": {
+        "ub_speed": "FULL"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": []
+    },
+    {
+      "parameter": "ub_bmaxburst",
+      "when": {
+        "ub_speed": "HIGH"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": []
+    },
+    {
+      "parameter": "ub_burst_packets",
+      "when": {
+        "ub_speed": "HIGH"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": []
+    },
+    {
+      "parameter": "ub_mult",
+      "when": {
+        "ub_speed": "HIGH"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": []
+    },
+    {
+      "parameter": "ub_maxstreams",
+      "when": {
+        "ub_speed": "HIGH"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": []
+    },
+    {
+      "parameter": "ub_stream_count",
+      "when": {
+        "ub_speed": "HIGH"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": []
+    },
+    {
+      "parameter": "ub_wbytes_per_interval",
+      "when": {
+        "ub_speed": "HIGH"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": []
+    },
+    {
+      "parameter": "ub_ssp_iso_companion",
+      "when": {
+        "ub_speed": "HIGH"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": []
+    },
+    {
+      "parameter": "ub_ssp_iso_max_bytes",
+      "when": {
+        "ub_speed": "HIGH"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": []
+    },
+    {
+      "parameter": "ub_ssp_source",
+      "when": {
+        "ub_speed": "HIGH"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": []
+    },
+    {
+      "parameter": "ub_interrupt_usage",
+      "when": {
+        "ub_speed": "HIGH"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": []
+    },
+    {
+      "parameter": "ub_max_packet_raw",
+      "when": {
+        "ub_speed": "GEN1_X1"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "allowed": []
+    },
+    {
+      "parameter": "ub_extra_transactions",
+      "when": {
+        "ub_speed": "GEN1_X1"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "allowed": []
+    },
+    {
+      "parameter": "ub_transactions",
+      "when": {
+        "ub_speed": "GEN1_X1"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "allowed": []
+    },
+    {
+      "parameter": "ub_double_eusb2",
+      "when": {
+        "ub_speed": "GEN1_X1"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "allowed": []
+    },
+    {
+      "parameter": "ub_direct_inbox",
+      "when": {
+        "ub_speed": "GEN1_X1"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "allowed": []
+    },
+    {
+      "parameter": "ub_max_packet_raw",
+      "when": {
+        "ub_speed": "GEN1_X2"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "allowed": []
+    },
+    {
+      "parameter": "ub_extra_transactions",
+      "when": {
+        "ub_speed": "GEN1_X2"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "allowed": []
+    },
+    {
+      "parameter": "ub_transactions",
+      "when": {
+        "ub_speed": "GEN1_X2"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "allowed": []
+    },
+    {
+      "parameter": "ub_double_eusb2",
+      "when": {
+        "ub_speed": "GEN1_X2"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "allowed": []
+    },
+    {
+      "parameter": "ub_direct_inbox",
+      "when": {
+        "ub_speed": "GEN1_X2"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "allowed": []
+    },
+    {
+      "parameter": "ub_max_packet_raw",
+      "when": {
+        "ub_speed": "GEN2_X1"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "allowed": []
+    },
+    {
+      "parameter": "ub_extra_transactions",
+      "when": {
+        "ub_speed": "GEN2_X1"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "allowed": []
+    },
+    {
+      "parameter": "ub_transactions",
+      "when": {
+        "ub_speed": "GEN2_X1"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "allowed": []
+    },
+    {
+      "parameter": "ub_double_eusb2",
+      "when": {
+        "ub_speed": "GEN2_X1"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "allowed": []
+    },
+    {
+      "parameter": "ub_direct_inbox",
+      "when": {
+        "ub_speed": "GEN2_X1"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "allowed": []
+    },
+    {
+      "parameter": "ub_max_packet_raw",
+      "when": {
+        "ub_speed": "GEN2_X2"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "allowed": []
+    },
+    {
+      "parameter": "ub_extra_transactions",
+      "when": {
+        "ub_speed": "GEN2_X2"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "allowed": []
+    },
+    {
+      "parameter": "ub_transactions",
+      "when": {
+        "ub_speed": "GEN2_X2"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "allowed": []
+    },
+    {
+      "parameter": "ub_double_eusb2",
+      "when": {
+        "ub_speed": "GEN2_X2"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "allowed": []
+    },
+    {
+      "parameter": "ub_direct_inbox",
+      "when": {
+        "ub_speed": "GEN2_X2"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "allowed": []
+    },
+    {
+      "parameter": "ub_double_eusb2",
+      "when": {
+        "ub_speed": "HIGH"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "when_present": [
+        "ub_max_packet_raw"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "ub_double_eusb2",
+      "when": {
+        "ub_speed": "HIGH"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "when_present": [
+        "ub_periodic_allocation_percent"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "ub_link_bps",
+      "when": {
+        "ub_speed": "LOW"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "allowed": [
+        1500000
+      ]
+    },
+    {
+      "parameter": "ub_encoding",
+      "when": {
+        "ub_speed": "LOW"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "allowed": [
+        "NRZI_STUFF6"
+      ]
+    },
+    {
+      "parameter": "ub_frame_us",
+      "when": {
+        "ub_speed": "LOW"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "allowed": [
+        1000
+      ]
+    },
+    {
+      "parameter": "ub_link_bps",
+      "when": {
+        "ub_speed": "FULL"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "allowed": [
+        12000000
+      ]
+    },
+    {
+      "parameter": "ub_encoding",
+      "when": {
+        "ub_speed": "FULL"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "allowed": [
+        "NRZI_STUFF6"
+      ]
+    },
+    {
+      "parameter": "ub_frame_us",
+      "when": {
+        "ub_speed": "FULL"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "allowed": [
+        1000
+      ]
+    },
+    {
+      "parameter": "ub_link_bps",
+      "when": {
+        "ub_speed": "HIGH"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "allowed": [
+        480000000
+      ]
+    },
+    {
+      "parameter": "ub_encoding",
+      "when": {
+        "ub_speed": "HIGH"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "allowed": [
+        "NRZI_STUFF6"
+      ]
+    },
+    {
+      "parameter": "ub_frame_us",
+      "when": {
+        "ub_speed": "HIGH"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "allowed": [
+        125
+      ]
+    },
+    {
+      "parameter": "ub_link_bps",
+      "when": {
+        "ub_speed": "GEN1_X1"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": [
+        5000000000
+      ]
+    },
+    {
+      "parameter": "ub_lanes",
+      "when": {
+        "ub_speed": "GEN1_X1"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": [
+        1
+      ]
+    },
+    {
+      "parameter": "ub_lane_bps",
+      "when": {
+        "ub_speed": "GEN1_X1"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": [
+        5000000000
+      ]
+    },
+    {
+      "parameter": "ub_encoding",
+      "when": {
+        "ub_speed": "GEN1_X1"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": [
+        "8B10B"
+      ]
+    },
+    {
+      "parameter": "ub_frame_us",
+      "when": {
+        "ub_speed": "GEN1_X1"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": [
+        125
+      ]
+    },
+    {
+      "parameter": "ub_link_bps",
+      "when": {
+        "ub_speed": "GEN1_X2"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": [
+        10000000000
+      ]
+    },
+    {
+      "parameter": "ub_lanes",
+      "when": {
+        "ub_speed": "GEN1_X2"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": [
+        2
+      ]
+    },
+    {
+      "parameter": "ub_lane_bps",
+      "when": {
+        "ub_speed": "GEN1_X2"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": [
+        5000000000
+      ]
+    },
+    {
+      "parameter": "ub_encoding",
+      "when": {
+        "ub_speed": "GEN1_X2"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": [
+        "8B10B"
+      ]
+    },
+    {
+      "parameter": "ub_frame_us",
+      "when": {
+        "ub_speed": "GEN1_X2"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": [
+        125
+      ]
+    },
+    {
+      "parameter": "ub_link_bps",
+      "when": {
+        "ub_speed": "GEN2_X1"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": [
+        10000000000
+      ]
+    },
+    {
+      "parameter": "ub_lanes",
+      "when": {
+        "ub_speed": "GEN2_X1"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": [
+        1
+      ]
+    },
+    {
+      "parameter": "ub_lane_bps",
+      "when": {
+        "ub_speed": "GEN2_X1"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": [
+        10000000000
+      ]
+    },
+    {
+      "parameter": "ub_encoding",
+      "when": {
+        "ub_speed": "GEN2_X1"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": [
+        "128B132B"
+      ]
+    },
+    {
+      "parameter": "ub_frame_us",
+      "when": {
+        "ub_speed": "GEN2_X1"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": [
+        125
+      ]
+    },
+    {
+      "parameter": "ub_link_bps",
+      "when": {
+        "ub_speed": "GEN2_X2"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": [
+        20000000000
+      ]
+    },
+    {
+      "parameter": "ub_lanes",
+      "when": {
+        "ub_speed": "GEN2_X2"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": [
+        2
+      ]
+    },
+    {
+      "parameter": "ub_lane_bps",
+      "when": {
+        "ub_speed": "GEN2_X2"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": [
+        10000000000
+      ]
+    },
+    {
+      "parameter": "ub_encoding",
+      "when": {
+        "ub_speed": "GEN2_X2"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": [
+        "128B132B"
+      ]
+    },
+    {
+      "parameter": "ub_frame_us",
+      "when": {
+        "ub_speed": "GEN2_X2"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": [
+        125
+      ]
+    },
+    {
+      "parameter": "ub_link_bps",
+      "when": {
+        "ub_speed": "USB4_20"
+      },
+      "source": "https://www.usb.org/sites/default/files/2022-10/USB-IF%20USB%2080Gbps%20Announcement_FINAL_v2.pdf",
+      "allowed": [
+        20000000000
+      ]
+    },
+    {
+      "parameter": "ub_tunnel_source",
+      "when": {
+        "ub_speed": "USB4_20"
+      },
+      "source": "https://www.usb.org/sites/default/files/2022-10/USB-IF%20USB%2080Gbps%20Announcement_FINAL_v2.pdf",
+      "required": true
+    },
+    {
+      "parameter": "ub_registered_source",
+      "when": {
+        "ub_speed": "USB4_20"
+      },
+      "source": "https://www.usb.org/sites/default/files/2022-10/USB-IF%20USB%2080Gbps%20Announcement_FINAL_v2.pdf",
+      "required": true
+    },
+    {
+      "parameter": "ub_tunnel_allocation_bps",
+      "when": {
+        "ub_speed": "USB4_20"
+      },
+      "source": "https://www.usb.org/sites/default/files/2022-10/USB-IF%20USB%2080Gbps%20Announcement_FINAL_v2.pdf",
+      "maximum_parameter": "ub_link_bps"
+    },
+    {
+      "parameter": "ub_max_packet_raw",
+      "when": {
+        "ub_speed": "USB4_20"
+      },
+      "source": "https://www.usb.org/sites/default/files/2022-10/USB-IF%20USB%2080Gbps%20Announcement_FINAL_v2.pdf",
+      "allowed": []
+    },
+    {
+      "parameter": "ub_binterval",
+      "when": {
+        "ub_speed": "USB4_20"
+      },
+      "source": "https://www.usb.org/sites/default/files/2022-10/USB-IF%20USB%2080Gbps%20Announcement_FINAL_v2.pdf",
+      "allowed": []
+    },
+    {
+      "parameter": "ub_bmaxburst",
+      "when": {
+        "ub_speed": "USB4_20"
+      },
+      "source": "https://www.usb.org/sites/default/files/2022-10/USB-IF%20USB%2080Gbps%20Announcement_FINAL_v2.pdf",
+      "allowed": []
+    },
+    {
+      "parameter": "ub_mult",
+      "when": {
+        "ub_speed": "USB4_20"
+      },
+      "source": "https://www.usb.org/sites/default/files/2022-10/USB-IF%20USB%2080Gbps%20Announcement_FINAL_v2.pdf",
+      "allowed": []
+    },
+    {
+      "parameter": "ub_maxstreams",
+      "when": {
+        "ub_speed": "USB4_20"
+      },
+      "source": "https://www.usb.org/sites/default/files/2022-10/USB-IF%20USB%2080Gbps%20Announcement_FINAL_v2.pdf",
+      "allowed": []
+    },
+    {
+      "parameter": "ub_link_bps",
+      "when": {
+        "ub_speed": "USB4_40"
+      },
+      "source": "https://www.usb.org/sites/default/files/2022-10/USB-IF%20USB%2080Gbps%20Announcement_FINAL_v2.pdf",
+      "allowed": [
+        40000000000
+      ]
+    },
+    {
+      "parameter": "ub_tunnel_source",
+      "when": {
+        "ub_speed": "USB4_40"
+      },
+      "source": "https://www.usb.org/sites/default/files/2022-10/USB-IF%20USB%2080Gbps%20Announcement_FINAL_v2.pdf",
+      "required": true
+    },
+    {
+      "parameter": "ub_registered_source",
+      "when": {
+        "ub_speed": "USB4_40"
+      },
+      "source": "https://www.usb.org/sites/default/files/2022-10/USB-IF%20USB%2080Gbps%20Announcement_FINAL_v2.pdf",
+      "required": true
+    },
+    {
+      "parameter": "ub_tunnel_allocation_bps",
+      "when": {
+        "ub_speed": "USB4_40"
+      },
+      "source": "https://www.usb.org/sites/default/files/2022-10/USB-IF%20USB%2080Gbps%20Announcement_FINAL_v2.pdf",
+      "maximum_parameter": "ub_link_bps"
+    },
+    {
+      "parameter": "ub_max_packet_raw",
+      "when": {
+        "ub_speed": "USB4_40"
+      },
+      "source": "https://www.usb.org/sites/default/files/2022-10/USB-IF%20USB%2080Gbps%20Announcement_FINAL_v2.pdf",
+      "allowed": []
+    },
+    {
+      "parameter": "ub_binterval",
+      "when": {
+        "ub_speed": "USB4_40"
+      },
+      "source": "https://www.usb.org/sites/default/files/2022-10/USB-IF%20USB%2080Gbps%20Announcement_FINAL_v2.pdf",
+      "allowed": []
+    },
+    {
+      "parameter": "ub_bmaxburst",
+      "when": {
+        "ub_speed": "USB4_40"
+      },
+      "source": "https://www.usb.org/sites/default/files/2022-10/USB-IF%20USB%2080Gbps%20Announcement_FINAL_v2.pdf",
+      "allowed": []
+    },
+    {
+      "parameter": "ub_mult",
+      "when": {
+        "ub_speed": "USB4_40"
+      },
+      "source": "https://www.usb.org/sites/default/files/2022-10/USB-IF%20USB%2080Gbps%20Announcement_FINAL_v2.pdf",
+      "allowed": []
+    },
+    {
+      "parameter": "ub_maxstreams",
+      "when": {
+        "ub_speed": "USB4_40"
+      },
+      "source": "https://www.usb.org/sites/default/files/2022-10/USB-IF%20USB%2080Gbps%20Announcement_FINAL_v2.pdf",
+      "allowed": []
+    },
+    {
+      "parameter": "ub_link_bps",
+      "when": {
+        "ub_speed": "USB4_80"
+      },
+      "source": "https://www.usb.org/sites/default/files/2022-10/USB-IF%20USB%2080Gbps%20Announcement_FINAL_v2.pdf",
+      "allowed": [
+        80000000000
+      ]
+    },
+    {
+      "parameter": "ub_tunnel_source",
+      "when": {
+        "ub_speed": "USB4_80"
+      },
+      "source": "https://www.usb.org/sites/default/files/2022-10/USB-IF%20USB%2080Gbps%20Announcement_FINAL_v2.pdf",
+      "required": true
+    },
+    {
+      "parameter": "ub_registered_source",
+      "when": {
+        "ub_speed": "USB4_80"
+      },
+      "source": "https://www.usb.org/sites/default/files/2022-10/USB-IF%20USB%2080Gbps%20Announcement_FINAL_v2.pdf",
+      "required": true
+    },
+    {
+      "parameter": "ub_tunnel_allocation_bps",
+      "when": {
+        "ub_speed": "USB4_80"
+      },
+      "source": "https://www.usb.org/sites/default/files/2022-10/USB-IF%20USB%2080Gbps%20Announcement_FINAL_v2.pdf",
+      "maximum_parameter": "ub_link_bps"
+    },
+    {
+      "parameter": "ub_max_packet_raw",
+      "when": {
+        "ub_speed": "USB4_80"
+      },
+      "source": "https://www.usb.org/sites/default/files/2022-10/USB-IF%20USB%2080Gbps%20Announcement_FINAL_v2.pdf",
+      "allowed": []
+    },
+    {
+      "parameter": "ub_binterval",
+      "when": {
+        "ub_speed": "USB4_80"
+      },
+      "source": "https://www.usb.org/sites/default/files/2022-10/USB-IF%20USB%2080Gbps%20Announcement_FINAL_v2.pdf",
+      "allowed": []
+    },
+    {
+      "parameter": "ub_bmaxburst",
+      "when": {
+        "ub_speed": "USB4_80"
+      },
+      "source": "https://www.usb.org/sites/default/files/2022-10/USB-IF%20USB%2080Gbps%20Announcement_FINAL_v2.pdf",
+      "allowed": []
+    },
+    {
+      "parameter": "ub_mult",
+      "when": {
+        "ub_speed": "USB4_80"
+      },
+      "source": "https://www.usb.org/sites/default/files/2022-10/USB-IF%20USB%2080Gbps%20Announcement_FINAL_v2.pdf",
+      "allowed": []
+    },
+    {
+      "parameter": "ub_maxstreams",
+      "when": {
+        "ub_speed": "USB4_80"
+      },
+      "source": "https://www.usb.org/sites/default/files/2022-10/USB-IF%20USB%2080Gbps%20Announcement_FINAL_v2.pdf",
+      "allowed": []
+    },
+    {
+      "parameter": "ub_link_bps",
+      "when": {
+        "ub_speed": "USB4_ASYM_120_40"
+      },
+      "source": "https://www.usb.org/sites/default/files/2022-10/USB-IF%20USB%2080Gbps%20Announcement_FINAL_v2.pdf",
+      "allowed": [
+        120000000000
+      ]
+    },
+    {
+      "parameter": "ub_tunnel_source",
+      "when": {
+        "ub_speed": "USB4_ASYM_120_40"
+      },
+      "source": "https://www.usb.org/sites/default/files/2022-10/USB-IF%20USB%2080Gbps%20Announcement_FINAL_v2.pdf",
+      "required": true
+    },
+    {
+      "parameter": "ub_registered_source",
+      "when": {
+        "ub_speed": "USB4_ASYM_120_40"
+      },
+      "source": "https://www.usb.org/sites/default/files/2022-10/USB-IF%20USB%2080Gbps%20Announcement_FINAL_v2.pdf",
+      "required": true
+    },
+    {
+      "parameter": "ub_tunnel_allocation_bps",
+      "when": {
+        "ub_speed": "USB4_ASYM_120_40"
+      },
+      "source": "https://www.usb.org/sites/default/files/2022-10/USB-IF%20USB%2080Gbps%20Announcement_FINAL_v2.pdf",
+      "maximum_parameter": "ub_link_bps"
+    },
+    {
+      "parameter": "ub_max_packet_raw",
+      "when": {
+        "ub_speed": "USB4_ASYM_120_40"
+      },
+      "source": "https://www.usb.org/sites/default/files/2022-10/USB-IF%20USB%2080Gbps%20Announcement_FINAL_v2.pdf",
+      "allowed": []
+    },
+    {
+      "parameter": "ub_binterval",
+      "when": {
+        "ub_speed": "USB4_ASYM_120_40"
+      },
+      "source": "https://www.usb.org/sites/default/files/2022-10/USB-IF%20USB%2080Gbps%20Announcement_FINAL_v2.pdf",
+      "allowed": []
+    },
+    {
+      "parameter": "ub_bmaxburst",
+      "when": {
+        "ub_speed": "USB4_ASYM_120_40"
+      },
+      "source": "https://www.usb.org/sites/default/files/2022-10/USB-IF%20USB%2080Gbps%20Announcement_FINAL_v2.pdf",
+      "allowed": []
+    },
+    {
+      "parameter": "ub_mult",
+      "when": {
+        "ub_speed": "USB4_ASYM_120_40"
+      },
+      "source": "https://www.usb.org/sites/default/files/2022-10/USB-IF%20USB%2080Gbps%20Announcement_FINAL_v2.pdf",
+      "allowed": []
+    },
+    {
+      "parameter": "ub_maxstreams",
+      "when": {
+        "ub_speed": "USB4_ASYM_120_40"
+      },
+      "source": "https://www.usb.org/sites/default/files/2022-10/USB-IF%20USB%2080Gbps%20Announcement_FINAL_v2.pdf",
+      "allowed": []
+    },
+    {
+      "parameter": "ub_reverse_bps",
+      "when": {
+        "ub_speed": "USB4_ASYM_120_40"
+      },
+      "source": "https://www.usb.org/sites/default/files/2022-10/USB-IF%20USB%2080Gbps%20Announcement_FINAL_v2.pdf",
+      "allowed": [
+        40000000000
+      ]
+    },
+    {
+      "parameter": "ub_device_address",
+      "when": {
+        "ub_device_state": "DEFAULT"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "ub_device_address",
+      "when": {
+        "ub_device_state": "ADDRESSED"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "minimum": 1
+    },
+    {
+      "parameter": "ub_device_address",
+      "when": {
+        "ub_device_state": "CONFIGURED"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "minimum": 1
+    },
+    {
+      "parameter": "ub_transfer",
+      "when": {
+        "ub_endpoint": 0
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "allowed": [
+        "CONTROL"
+      ]
+    },
+    {
+      "parameter": "ub_direction",
+      "when": {
+        "ub_transfer": "CONTROL"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "allowed": [
+        "BIDIRECTIONAL"
+      ]
+    },
+    {
+      "parameter": "ub_endpoint_address_raw",
+      "when": {
+        "ub_direction": "IN"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "equal_expression": {
+        "sum": [
+          "ub_endpoint",
+          128
+        ]
+      }
+    },
+    {
+      "parameter": "ub_endpoint_address_raw",
+      "when": {
+        "ub_direction": "OUT"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "equal_expression": {
+        "sum": [
+          "ub_endpoint",
+          0
+        ]
+      }
+    },
+    {
+      "parameter": "ub_packet_bytes",
+      "when": {},
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "maximum_parameter": "ub_max_packet_bytes"
+    },
+    {
+      "parameter": "ub_transfer_bytes",
+      "when": {},
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "maximum_parameter": "ub_host_buffer_bytes"
+    },
+    {
+      "parameter": "ub_transfer_bytes",
+      "when": {},
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "maximum_parameter": "ub_peer_buffer_bytes"
+    },
+    {
+      "parameter": "ub_transfer",
+      "when": {
+        "ub_speed": "LOW"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "allowed": [
+        "CONTROL",
+        "INTERRUPT"
+      ]
+    },
+    {
+      "parameter": "ub_max_packet_bytes",
+      "when": {
+        "ub_speed": "LOW",
+        "ub_transfer": "CONTROL"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "allowed": [
+        8
+      ]
+    },
+    {
+      "parameter": "ub_max_packet_bytes",
+      "when": {
+        "ub_speed": "LOW",
+        "ub_transfer": "INTERRUPT"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "maximum": 8
+    },
+    {
+      "parameter": "ub_max_packet_bytes",
+      "when": {
+        "ub_speed": "FULL",
+        "ub_transfer": "INTERRUPT"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "maximum": 64
+    },
+    {
+      "parameter": "ub_max_packet_bytes",
+      "when": {
+        "ub_speed": "FULL",
+        "ub_transfer": "ISOCHRONOUS"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "maximum": 1023
+    },
+    {
+      "parameter": "ub_max_packet_bytes",
+      "when": {
+        "ub_speed": "HIGH",
+        "ub_transfer": "CONTROL"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "allowed": [
+        64
+      ]
+    },
+    {
+      "parameter": "ub_max_packet_bytes",
+      "when": {
+        "ub_speed": "HIGH",
+        "ub_transfer": "BULK"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "allowed": [
+        512
+      ]
+    },
+    {
+      "parameter": "ub_max_packet_bytes",
+      "when": {
+        "ub_speed": "HIGH",
+        "ub_transfer": "INTERRUPT"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "maximum": 1024
+    },
+    {
+      "parameter": "ub_max_packet_bytes",
+      "when": {
+        "ub_speed": "HIGH",
+        "ub_transfer": "ISOCHRONOUS"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "maximum": 1024
+    },
+    {
+      "parameter": "ub_max_packet_bytes",
+      "when": {
+        "ub_speed": "FULL",
+        "ub_transfer": "CONTROL"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "allowed": [
+        8,
+        16,
+        32,
+        64
+      ]
+    },
+    {
+      "parameter": "ub_max_packet_bytes",
+      "when": {
+        "ub_speed": "FULL",
+        "ub_transfer": "BULK"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "allowed": [
+        8,
+        16,
+        32,
+        64
+      ]
+    },
+    {
+      "parameter": "ub_extra_transactions",
+      "when": {
+        "ub_speed": "LOW",
+        "ub_transfer": "CONTROL"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "ub_transactions",
+      "when": {
+        "ub_speed": "LOW",
+        "ub_transfer": "CONTROL"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "allowed": [
+        1
+      ]
+    },
+    {
+      "parameter": "ub_max_packet_raw",
+      "when": {
+        "ub_speed": "LOW",
+        "ub_transfer": "CONTROL"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "equal_parameter": "ub_max_packet_bytes"
+    },
+    {
+      "parameter": "ub_extra_transactions",
+      "when": {
+        "ub_speed": "LOW",
+        "ub_transfer": "BULK"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "ub_transactions",
+      "when": {
+        "ub_speed": "LOW",
+        "ub_transfer": "BULK"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "allowed": [
+        1
+      ]
+    },
+    {
+      "parameter": "ub_max_packet_raw",
+      "when": {
+        "ub_speed": "LOW",
+        "ub_transfer": "BULK"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "equal_parameter": "ub_max_packet_bytes"
+    },
+    {
+      "parameter": "ub_extra_transactions",
+      "when": {
+        "ub_speed": "LOW",
+        "ub_transfer": "INTERRUPT"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "ub_transactions",
+      "when": {
+        "ub_speed": "LOW",
+        "ub_transfer": "INTERRUPT"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "allowed": [
+        1
+      ]
+    },
+    {
+      "parameter": "ub_max_packet_raw",
+      "when": {
+        "ub_speed": "LOW",
+        "ub_transfer": "INTERRUPT"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "equal_parameter": "ub_max_packet_bytes"
+    },
+    {
+      "parameter": "ub_extra_transactions",
+      "when": {
+        "ub_speed": "LOW",
+        "ub_transfer": "ISOCHRONOUS"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "ub_transactions",
+      "when": {
+        "ub_speed": "LOW",
+        "ub_transfer": "ISOCHRONOUS"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "allowed": [
+        1
+      ]
+    },
+    {
+      "parameter": "ub_max_packet_raw",
+      "when": {
+        "ub_speed": "LOW",
+        "ub_transfer": "ISOCHRONOUS"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "equal_parameter": "ub_max_packet_bytes"
+    },
+    {
+      "parameter": "ub_extra_transactions",
+      "when": {
+        "ub_speed": "FULL",
+        "ub_transfer": "CONTROL"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "ub_transactions",
+      "when": {
+        "ub_speed": "FULL",
+        "ub_transfer": "CONTROL"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "allowed": [
+        1
+      ]
+    },
+    {
+      "parameter": "ub_max_packet_raw",
+      "when": {
+        "ub_speed": "FULL",
+        "ub_transfer": "CONTROL"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "equal_parameter": "ub_max_packet_bytes"
+    },
+    {
+      "parameter": "ub_extra_transactions",
+      "when": {
+        "ub_speed": "FULL",
+        "ub_transfer": "BULK"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "ub_transactions",
+      "when": {
+        "ub_speed": "FULL",
+        "ub_transfer": "BULK"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "allowed": [
+        1
+      ]
+    },
+    {
+      "parameter": "ub_max_packet_raw",
+      "when": {
+        "ub_speed": "FULL",
+        "ub_transfer": "BULK"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "equal_parameter": "ub_max_packet_bytes"
+    },
+    {
+      "parameter": "ub_extra_transactions",
+      "when": {
+        "ub_speed": "FULL",
+        "ub_transfer": "INTERRUPT"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "ub_transactions",
+      "when": {
+        "ub_speed": "FULL",
+        "ub_transfer": "INTERRUPT"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "allowed": [
+        1
+      ]
+    },
+    {
+      "parameter": "ub_max_packet_raw",
+      "when": {
+        "ub_speed": "FULL",
+        "ub_transfer": "INTERRUPT"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "equal_parameter": "ub_max_packet_bytes"
+    },
+    {
+      "parameter": "ub_extra_transactions",
+      "when": {
+        "ub_speed": "FULL",
+        "ub_transfer": "ISOCHRONOUS"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "ub_transactions",
+      "when": {
+        "ub_speed": "FULL",
+        "ub_transfer": "ISOCHRONOUS"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "allowed": [
+        1
+      ]
+    },
+    {
+      "parameter": "ub_max_packet_raw",
+      "when": {
+        "ub_speed": "FULL",
+        "ub_transfer": "ISOCHRONOUS"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "equal_parameter": "ub_max_packet_bytes"
+    },
+    {
+      "parameter": "ub_extra_transactions",
+      "when": {
+        "ub_speed": "HIGH",
+        "ub_transfer": "CONTROL"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "ub_transactions",
+      "when": {
+        "ub_speed": "HIGH",
+        "ub_transfer": "CONTROL"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "allowed": [
+        1
+      ]
+    },
+    {
+      "parameter": "ub_max_packet_raw",
+      "when": {
+        "ub_speed": "HIGH",
+        "ub_transfer": "CONTROL"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "equal_parameter": "ub_max_packet_bytes"
+    },
+    {
+      "parameter": "ub_extra_transactions",
+      "when": {
+        "ub_speed": "HIGH",
+        "ub_transfer": "BULK"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "ub_transactions",
+      "when": {
+        "ub_speed": "HIGH",
+        "ub_transfer": "BULK"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "allowed": [
+        1
+      ]
+    },
+    {
+      "parameter": "ub_max_packet_raw",
+      "when": {
+        "ub_speed": "HIGH",
+        "ub_transfer": "BULK"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "equal_parameter": "ub_max_packet_bytes"
+    },
+    {
+      "parameter": "ub_max_packet_raw",
+      "when": {
+        "ub_speed": "HIGH",
+        "ub_double_eusb2": false
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "equal_expression": {
+        "sum": [
+          "ub_max_packet_bytes",
+          {
+            "product": [
+              2048,
+              "ub_extra_transactions"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "parameter": "ub_transactions",
+      "when": {
+        "ub_speed": "HIGH",
+        "ub_double_eusb2": false
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "equal_expression": {
+        "sum": [
+          "ub_extra_transactions",
+          1
+        ]
+      }
+    },
+    {
+      "parameter": "ub_speed",
+      "when": {
+        "ub_double_eusb2": true
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "required": true,
+      "allowed": [
+        "HIGH"
+      ]
+    },
+    {
+      "parameter": "ub_transfer",
+      "when": {
+        "ub_double_eusb2": true
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "required": true,
+      "allowed": [
+        "ISOCHRONOUS"
+      ]
+    },
+    {
+      "parameter": "ub_direction",
+      "when": {
+        "ub_double_eusb2": true
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "required": true,
+      "allowed": [
+        "IN"
+      ]
+    },
+    {
+      "parameter": "ub_direct_inbox",
+      "when": {
+        "ub_double_eusb2": true
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "required": true,
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "ub_bcdusb",
+      "when": {
+        "ub_double_eusb2": true
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "required": true,
+      "allowed": [
+        544
+      ]
+    },
+    {
+      "parameter": "ub_max_packet_raw",
+      "when": {
+        "ub_double_eusb2": true
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "required": true,
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "ub_max_packet_bytes",
+      "when": {
+        "ub_double_eusb2": true
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "required": true,
+      "allowed": [
+        1024
+      ]
+    },
+    {
+      "parameter": "ub_binterval",
+      "when": {
+        "ub_double_eusb2": true
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "required": true,
+      "allowed": [
+        1
+      ]
+    },
+    {
+      "parameter": "ub_dwbytes_per_interval",
+      "when": {
+        "ub_double_eusb2": true
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "required": true,
+      "minimum": 3073,
+      "maximum": 6144
+    },
+    {
+      "parameter": "ub_bytes_per_interval",
+      "when": {
+        "ub_double_eusb2": true
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "equal_parameter": "ub_dwbytes_per_interval"
+    },
+    {
+      "parameter": "ub_periodic_allocation_percent",
+      "when": {
+        "ub_speed": "LOW"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "maximum": 90
+    },
+    {
+      "parameter": "ub_periodic_allocation_percent",
+      "when": {
+        "ub_speed": "FULL"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "maximum": 90
+    },
+    {
+      "parameter": "ub_periodic_allocation_percent",
+      "when": {
+        "ub_speed": "HIGH",
+        "ub_double_eusb2": false
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "maximum": 80
+    },
+    {
+      "parameter": "ub_periodic_allocation_percent",
+      "when": {
+        "ub_double_eusb2": true
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "maximum": 95
+    },
+    {
+      "parameter": "ub_max_packet_bytes",
+      "when": {
+        "ub_speed": "GEN1_X1",
+        "ub_transfer": "CONTROL"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": [
+        512
+      ]
+    },
+    {
+      "parameter": "ub_binterval",
+      "when": {
+        "ub_speed": "GEN1_X1",
+        "ub_transfer": "CONTROL"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": []
+    },
+    {
+      "parameter": "ub_wbytes_per_interval",
+      "when": {
+        "ub_speed": "GEN1_X1",
+        "ub_transfer": "CONTROL"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "ub_bmaxburst",
+      "when": {
+        "ub_speed": "GEN1_X1",
+        "ub_transfer": "CONTROL"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "ub_ep0_maxpacket_raw",
+      "when": {
+        "ub_speed": "GEN1_X1",
+        "ub_transfer": "CONTROL"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": [
+        9
+      ]
+    },
+    {
+      "parameter": "ub_maxstreams",
+      "when": {
+        "ub_speed": "GEN1_X1",
+        "ub_transfer": "CONTROL"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "ub_max_packet_bytes",
+      "when": {
+        "ub_speed": "GEN1_X1",
+        "ub_transfer": "BULK"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": [
+        1024
+      ]
+    },
+    {
+      "parameter": "ub_binterval",
+      "when": {
+        "ub_speed": "GEN1_X1",
+        "ub_transfer": "BULK"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": []
+    },
+    {
+      "parameter": "ub_wbytes_per_interval",
+      "when": {
+        "ub_speed": "GEN1_X1",
+        "ub_transfer": "BULK"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "ub_max_packet_bytes",
+      "when": {
+        "ub_speed": "GEN1_X1",
+        "ub_transfer": "INTERRUPT"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "maximum": 1024,
+      "minimum": 1
+    },
+    {
+      "parameter": "ub_binterval",
+      "when": {
+        "ub_speed": "GEN1_X1",
+        "ub_transfer": "INTERRUPT"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "minimum": 1,
+      "maximum": 16
+    },
+    {
+      "parameter": "ub_max_packet_bytes",
+      "when": {
+        "ub_speed": "GEN1_X1",
+        "ub_transfer": "INTERRUPT"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "when_greater_than": {
+        "ub_bmaxburst": 0
+      },
+      "allowed": [
+        1024
+      ]
+    },
+    {
+      "parameter": "ub_bmaxburst",
+      "when": {
+        "ub_speed": "GEN1_X1",
+        "ub_transfer": "INTERRUPT"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "maximum": 2
+    },
+    {
+      "parameter": "ub_mult",
+      "when": {
+        "ub_speed": "GEN1_X1",
+        "ub_transfer": "INTERRUPT"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "ub_maxstreams",
+      "when": {
+        "ub_speed": "GEN1_X1",
+        "ub_transfer": "INTERRUPT"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "ub_maxstreams",
+      "when": {
+        "ub_speed": "GEN1_X1",
+        "ub_transfer": "INTERRUPT"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "ub_max_packet_bytes",
+      "when": {
+        "ub_speed": "GEN1_X1",
+        "ub_transfer": "ISOCHRONOUS"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "maximum": 1024,
+      "minimum": 0
+    },
+    {
+      "parameter": "ub_binterval",
+      "when": {
+        "ub_speed": "GEN1_X1",
+        "ub_transfer": "ISOCHRONOUS"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "minimum": 1,
+      "maximum": 16
+    },
+    {
+      "parameter": "ub_max_packet_bytes",
+      "when": {
+        "ub_speed": "GEN1_X1",
+        "ub_transfer": "ISOCHRONOUS"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "when_greater_than": {
+        "ub_bmaxburst": 0
+      },
+      "allowed": [
+        1024
+      ]
+    },
+    {
+      "parameter": "ub_maxstreams",
+      "when": {
+        "ub_speed": "GEN1_X1",
+        "ub_transfer": "ISOCHRONOUS"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "ub_periodic_allocation_percent",
+      "when": {
+        "ub_speed": "GEN1_X1"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "maximum": 90
+    },
+    {
+      "parameter": "ub_binterval",
+      "when": {
+        "ub_speed": "GEN1_X1",
+        "ub_interrupt_usage": "NOTIFICATION",
+        "ub_transfer": "INTERRUPT"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "minimum": 8
+    },
+    {
+      "parameter": "ub_max_packet_bytes",
+      "when": {
+        "ub_speed": "GEN1_X2",
+        "ub_transfer": "CONTROL"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": [
+        512
+      ]
+    },
+    {
+      "parameter": "ub_binterval",
+      "when": {
+        "ub_speed": "GEN1_X2",
+        "ub_transfer": "CONTROL"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": []
+    },
+    {
+      "parameter": "ub_wbytes_per_interval",
+      "when": {
+        "ub_speed": "GEN1_X2",
+        "ub_transfer": "CONTROL"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "ub_bmaxburst",
+      "when": {
+        "ub_speed": "GEN1_X2",
+        "ub_transfer": "CONTROL"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "ub_ep0_maxpacket_raw",
+      "when": {
+        "ub_speed": "GEN1_X2",
+        "ub_transfer": "CONTROL"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": [
+        9
+      ]
+    },
+    {
+      "parameter": "ub_maxstreams",
+      "when": {
+        "ub_speed": "GEN1_X2",
+        "ub_transfer": "CONTROL"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "ub_max_packet_bytes",
+      "when": {
+        "ub_speed": "GEN1_X2",
+        "ub_transfer": "BULK"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": [
+        1024
+      ]
+    },
+    {
+      "parameter": "ub_binterval",
+      "when": {
+        "ub_speed": "GEN1_X2",
+        "ub_transfer": "BULK"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": []
+    },
+    {
+      "parameter": "ub_wbytes_per_interval",
+      "when": {
+        "ub_speed": "GEN1_X2",
+        "ub_transfer": "BULK"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "ub_max_packet_bytes",
+      "when": {
+        "ub_speed": "GEN1_X2",
+        "ub_transfer": "INTERRUPT"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "maximum": 1024,
+      "minimum": 1
+    },
+    {
+      "parameter": "ub_binterval",
+      "when": {
+        "ub_speed": "GEN1_X2",
+        "ub_transfer": "INTERRUPT"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "minimum": 1,
+      "maximum": 16
+    },
+    {
+      "parameter": "ub_max_packet_bytes",
+      "when": {
+        "ub_speed": "GEN1_X2",
+        "ub_transfer": "INTERRUPT"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "when_greater_than": {
+        "ub_bmaxburst": 0
+      },
+      "allowed": [
+        1024
+      ]
+    },
+    {
+      "parameter": "ub_bmaxburst",
+      "when": {
+        "ub_speed": "GEN1_X2",
+        "ub_transfer": "INTERRUPT"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "maximum": 2
+    },
+    {
+      "parameter": "ub_mult",
+      "when": {
+        "ub_speed": "GEN1_X2",
+        "ub_transfer": "INTERRUPT"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "ub_maxstreams",
+      "when": {
+        "ub_speed": "GEN1_X2",
+        "ub_transfer": "INTERRUPT"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "ub_maxstreams",
+      "when": {
+        "ub_speed": "GEN1_X2",
+        "ub_transfer": "INTERRUPT"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "ub_max_packet_bytes",
+      "when": {
+        "ub_speed": "GEN1_X2",
+        "ub_transfer": "ISOCHRONOUS"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "maximum": 1024,
+      "minimum": 0
+    },
+    {
+      "parameter": "ub_binterval",
+      "when": {
+        "ub_speed": "GEN1_X2",
+        "ub_transfer": "ISOCHRONOUS"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "minimum": 1,
+      "maximum": 16
+    },
+    {
+      "parameter": "ub_max_packet_bytes",
+      "when": {
+        "ub_speed": "GEN1_X2",
+        "ub_transfer": "ISOCHRONOUS"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "when_greater_than": {
+        "ub_bmaxburst": 0
+      },
+      "allowed": [
+        1024
+      ]
+    },
+    {
+      "parameter": "ub_maxstreams",
+      "when": {
+        "ub_speed": "GEN1_X2",
+        "ub_transfer": "ISOCHRONOUS"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "ub_periodic_allocation_percent",
+      "when": {
+        "ub_speed": "GEN1_X2"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "maximum": 90
+    },
+    {
+      "parameter": "ub_binterval",
+      "when": {
+        "ub_speed": "GEN1_X2",
+        "ub_interrupt_usage": "NOTIFICATION",
+        "ub_transfer": "INTERRUPT"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "minimum": 8
+    },
+    {
+      "parameter": "ub_max_packet_bytes",
+      "when": {
+        "ub_speed": "GEN2_X1",
+        "ub_transfer": "CONTROL"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": [
+        512
+      ]
+    },
+    {
+      "parameter": "ub_binterval",
+      "when": {
+        "ub_speed": "GEN2_X1",
+        "ub_transfer": "CONTROL"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": []
+    },
+    {
+      "parameter": "ub_wbytes_per_interval",
+      "when": {
+        "ub_speed": "GEN2_X1",
+        "ub_transfer": "CONTROL"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "ub_bmaxburst",
+      "when": {
+        "ub_speed": "GEN2_X1",
+        "ub_transfer": "CONTROL"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "ub_ep0_maxpacket_raw",
+      "when": {
+        "ub_speed": "GEN2_X1",
+        "ub_transfer": "CONTROL"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": [
+        9
+      ]
+    },
+    {
+      "parameter": "ub_maxstreams",
+      "when": {
+        "ub_speed": "GEN2_X1",
+        "ub_transfer": "CONTROL"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "ub_max_packet_bytes",
+      "when": {
+        "ub_speed": "GEN2_X1",
+        "ub_transfer": "BULK"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": [
+        1024
+      ]
+    },
+    {
+      "parameter": "ub_binterval",
+      "when": {
+        "ub_speed": "GEN2_X1",
+        "ub_transfer": "BULK"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": []
+    },
+    {
+      "parameter": "ub_wbytes_per_interval",
+      "when": {
+        "ub_speed": "GEN2_X1",
+        "ub_transfer": "BULK"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "ub_max_packet_bytes",
+      "when": {
+        "ub_speed": "GEN2_X1",
+        "ub_transfer": "INTERRUPT"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "maximum": 1024,
+      "minimum": 1
+    },
+    {
+      "parameter": "ub_binterval",
+      "when": {
+        "ub_speed": "GEN2_X1",
+        "ub_transfer": "INTERRUPT"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "minimum": 1,
+      "maximum": 16
+    },
+    {
+      "parameter": "ub_max_packet_bytes",
+      "when": {
+        "ub_speed": "GEN2_X1",
+        "ub_transfer": "INTERRUPT"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "when_greater_than": {
+        "ub_bmaxburst": 0
+      },
+      "allowed": [
+        1024
+      ]
+    },
+    {
+      "parameter": "ub_bmaxburst",
+      "when": {
+        "ub_speed": "GEN2_X1",
+        "ub_transfer": "INTERRUPT"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "maximum": 2
+    },
+    {
+      "parameter": "ub_mult",
+      "when": {
+        "ub_speed": "GEN2_X1",
+        "ub_transfer": "INTERRUPT"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "ub_maxstreams",
+      "when": {
+        "ub_speed": "GEN2_X1",
+        "ub_transfer": "INTERRUPT"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "ub_maxstreams",
+      "when": {
+        "ub_speed": "GEN2_X1",
+        "ub_transfer": "INTERRUPT"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "ub_max_packet_bytes",
+      "when": {
+        "ub_speed": "GEN2_X1",
+        "ub_transfer": "ISOCHRONOUS"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "maximum": 1024,
+      "minimum": 0
+    },
+    {
+      "parameter": "ub_binterval",
+      "when": {
+        "ub_speed": "GEN2_X1",
+        "ub_transfer": "ISOCHRONOUS"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "minimum": 1,
+      "maximum": 16
+    },
+    {
+      "parameter": "ub_max_packet_bytes",
+      "when": {
+        "ub_speed": "GEN2_X1",
+        "ub_transfer": "ISOCHRONOUS"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "when_greater_than": {
+        "ub_bmaxburst": 0
+      },
+      "allowed": [
+        1024
+      ]
+    },
+    {
+      "parameter": "ub_maxstreams",
+      "when": {
+        "ub_speed": "GEN2_X1",
+        "ub_transfer": "ISOCHRONOUS"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "ub_periodic_allocation_percent",
+      "when": {
+        "ub_speed": "GEN2_X1"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "maximum": 90
+    },
+    {
+      "parameter": "ub_binterval",
+      "when": {
+        "ub_speed": "GEN2_X1",
+        "ub_interrupt_usage": "NOTIFICATION",
+        "ub_transfer": "INTERRUPT"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "minimum": 8
+    },
+    {
+      "parameter": "ub_max_packet_bytes",
+      "when": {
+        "ub_speed": "GEN2_X2",
+        "ub_transfer": "CONTROL"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": [
+        512
+      ]
+    },
+    {
+      "parameter": "ub_binterval",
+      "when": {
+        "ub_speed": "GEN2_X2",
+        "ub_transfer": "CONTROL"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": []
+    },
+    {
+      "parameter": "ub_wbytes_per_interval",
+      "when": {
+        "ub_speed": "GEN2_X2",
+        "ub_transfer": "CONTROL"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "ub_bmaxburst",
+      "when": {
+        "ub_speed": "GEN2_X2",
+        "ub_transfer": "CONTROL"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "ub_ep0_maxpacket_raw",
+      "when": {
+        "ub_speed": "GEN2_X2",
+        "ub_transfer": "CONTROL"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": [
+        9
+      ]
+    },
+    {
+      "parameter": "ub_maxstreams",
+      "when": {
+        "ub_speed": "GEN2_X2",
+        "ub_transfer": "CONTROL"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "ub_max_packet_bytes",
+      "when": {
+        "ub_speed": "GEN2_X2",
+        "ub_transfer": "BULK"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": [
+        1024
+      ]
+    },
+    {
+      "parameter": "ub_binterval",
+      "when": {
+        "ub_speed": "GEN2_X2",
+        "ub_transfer": "BULK"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": []
+    },
+    {
+      "parameter": "ub_wbytes_per_interval",
+      "when": {
+        "ub_speed": "GEN2_X2",
+        "ub_transfer": "BULK"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "ub_max_packet_bytes",
+      "when": {
+        "ub_speed": "GEN2_X2",
+        "ub_transfer": "INTERRUPT"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "maximum": 1024,
+      "minimum": 1
+    },
+    {
+      "parameter": "ub_binterval",
+      "when": {
+        "ub_speed": "GEN2_X2",
+        "ub_transfer": "INTERRUPT"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "minimum": 1,
+      "maximum": 16
+    },
+    {
+      "parameter": "ub_max_packet_bytes",
+      "when": {
+        "ub_speed": "GEN2_X2",
+        "ub_transfer": "INTERRUPT"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "when_greater_than": {
+        "ub_bmaxburst": 0
+      },
+      "allowed": [
+        1024
+      ]
+    },
+    {
+      "parameter": "ub_bmaxburst",
+      "when": {
+        "ub_speed": "GEN2_X2",
+        "ub_transfer": "INTERRUPT"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "maximum": 2
+    },
+    {
+      "parameter": "ub_mult",
+      "when": {
+        "ub_speed": "GEN2_X2",
+        "ub_transfer": "INTERRUPT"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "ub_maxstreams",
+      "when": {
+        "ub_speed": "GEN2_X2",
+        "ub_transfer": "INTERRUPT"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "ub_maxstreams",
+      "when": {
+        "ub_speed": "GEN2_X2",
+        "ub_transfer": "INTERRUPT"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "ub_max_packet_bytes",
+      "when": {
+        "ub_speed": "GEN2_X2",
+        "ub_transfer": "ISOCHRONOUS"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "maximum": 1024,
+      "minimum": 0
+    },
+    {
+      "parameter": "ub_binterval",
+      "when": {
+        "ub_speed": "GEN2_X2",
+        "ub_transfer": "ISOCHRONOUS"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "minimum": 1,
+      "maximum": 16
+    },
+    {
+      "parameter": "ub_max_packet_bytes",
+      "when": {
+        "ub_speed": "GEN2_X2",
+        "ub_transfer": "ISOCHRONOUS"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "when_greater_than": {
+        "ub_bmaxburst": 0
+      },
+      "allowed": [
+        1024
+      ]
+    },
+    {
+      "parameter": "ub_maxstreams",
+      "when": {
+        "ub_speed": "GEN2_X2",
+        "ub_transfer": "ISOCHRONOUS"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "ub_periodic_allocation_percent",
+      "when": {
+        "ub_speed": "GEN2_X2"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "maximum": 90
+    },
+    {
+      "parameter": "ub_binterval",
+      "when": {
+        "ub_speed": "GEN2_X2",
+        "ub_interrupt_usage": "NOTIFICATION",
+        "ub_transfer": "INTERRUPT"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "minimum": 8
+    },
+    {
+      "parameter": "ub_burst_packets",
+      "when": {},
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "equal_expression": {
+        "sum": [
+          "ub_bmaxburst",
+          1
+        ]
+      }
+    },
+    {
+      "parameter": "ub_mult",
+      "when": {
+        "ub_bmaxburst": 0,
+        "ub_ssp_iso_companion": false
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "ub_stream_count",
+      "when": {
+        "ub_maxstreams": 0
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "ub_stream_count",
+      "when": {},
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "when_ranges": {
+        "ub_maxstreams": [
+          1,
+          16
+        ]
+      },
+      "equal_expression": {
+        "power": [
+          2,
+          "ub_maxstreams"
+        ]
+      }
+    },
+    {
+      "parameter": "ub_wbytes_per_interval",
+      "when": {
+        "ub_transfer": "ISOCHRONOUS",
+        "ub_ssp_iso_companion": false
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "maximum_expression": {
+        "product": [
+          "ub_max_packet_bytes",
+          {
+            "sum": [
+              "ub_bmaxburst",
+              1
+            ]
+          },
+          {
+            "sum": [
+              "ub_mult",
+              1
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "parameter": "ub_wbytes_per_interval",
+      "when": {
+        "ub_transfer": "INTERRUPT"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "maximum_expression": {
+        "product": [
+          "ub_max_packet_bytes",
+          {
+            "sum": [
+              "ub_bmaxburst",
+              1
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "parameter": "ub_transfer",
+      "when": {
+        "ub_ssp_iso_companion": true
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "required": true,
+      "allowed": [
+        "ISOCHRONOUS"
+      ]
+    },
+    {
+      "parameter": "ub_wbytes_per_interval",
+      "when": {
+        "ub_ssp_iso_companion": true
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "required": true,
+      "allowed": [
+        1
+      ]
+    },
+    {
+      "parameter": "ub_speed",
+      "when": {
+        "ub_ssp_iso_companion": true
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": [
+        "GEN1_X2",
+        "GEN2_X1",
+        "GEN2_X2"
+      ]
+    },
+    {
+      "parameter": "ub_dwbytes_per_interval",
+      "when": {
+        "ub_ssp_iso_companion": true
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "required": true
+    },
+    {
+      "parameter": "ub_ssp_iso_max_bytes",
+      "when": {
+        "ub_ssp_iso_companion": true
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "required": true
+    },
+    {
+      "parameter": "ub_ssp_source",
+      "when": {
+        "ub_ssp_iso_companion": true
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "required": true
+    },
+    {
+      "parameter": "ub_dwbytes_per_interval",
+      "when": {
+        "ub_ssp_iso_companion": true
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "minimum": 49153,
+      "exclusive_maximum_expression": "ub_ssp_iso_max_bytes"
+    },
+    {
+      "parameter": "ub_ssp_iso_max_bytes",
+      "when": {
+        "ub_ssp_iso_companion": true,
+        "ub_speed": "GEN1_X2"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": [
+        98304
+      ]
+    },
+    {
+      "parameter": "ub_ssp_iso_max_bytes",
+      "when": {
+        "ub_ssp_iso_companion": true,
+        "ub_speed": "GEN2_X1"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": [
+        98304
+      ]
+    },
+    {
+      "parameter": "ub_ssp_iso_max_bytes",
+      "when": {
+        "ub_ssp_iso_companion": true,
+        "ub_speed": "GEN2_X2"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": [
+        196608
+      ]
+    },
+    {
+      "parameter": "ub_binterval",
+      "when": {
+        "ub_speed": "LOW",
+        "ub_transfer": "INTERRUPT"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "minimum": 10,
+      "maximum": 255
+    },
+    {
+      "parameter": "ub_binterval",
+      "when": {
+        "ub_speed": "FULL",
+        "ub_transfer": "INTERRUPT"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "minimum": 1,
+      "maximum": 255
+    },
+    {
+      "parameter": "ub_binterval",
+      "when": {
+        "ub_speed": "FULL",
+        "ub_transfer": "ISOCHRONOUS"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "minimum": 1,
+      "maximum": 16
+    },
+    {
+      "parameter": "ub_binterval",
+      "when": {
+        "ub_speed": "HIGH",
+        "ub_transfer": "INTERRUPT"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "minimum": 1,
+      "maximum": 16
+    },
+    {
+      "parameter": "ub_binterval",
+      "when": {
+        "ub_speed": "HIGH",
+        "ub_transfer": "ISOCHRONOUS"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "minimum": 1,
+      "maximum": 16
+    },
+    {
+      "parameter": "ub_interval_us",
+      "when": {
+        "ub_speed": "LOW",
+        "ub_transfer": "INTERRUPT"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "equal_expression": {
+        "product": [
+          1000,
+          "ub_binterval"
+        ]
+      }
+    },
+    {
+      "parameter": "ub_interval_us",
+      "when": {
+        "ub_speed": "FULL",
+        "ub_transfer": "INTERRUPT"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "equal_expression": {
+        "product": [
+          1000,
+          "ub_binterval"
+        ]
+      }
+    },
+    {
+      "parameter": "ub_interval_us",
+      "when": {
+        "ub_speed": "FULL",
+        "ub_transfer": "ISOCHRONOUS"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "equal_expression": {
+        "product": [
+          1000,
+          {
+            "power": [
+              2,
+              {
+                "subtract": [
+                  "ub_binterval",
+                  1
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "parameter": "ub_interval_us",
+      "when": {
+        "ub_speed": "HIGH",
+        "ub_transfer": "ISOCHRONOUS"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "equal_expression": {
+        "product": [
+          125,
+          {
+            "power": [
+              2,
+              {
+                "subtract": [
+                  "ub_binterval",
+                  1
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "parameter": "ub_interval_us",
+      "when": {
+        "ub_speed": "HIGH",
+        "ub_transfer": "INTERRUPT"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "equal_expression": {
+        "product": [
+          125,
+          {
+            "power": [
+              2,
+              {
+                "subtract": [
+                  "ub_binterval",
+                  1
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "parameter": "ub_interval_us",
+      "when": {
+        "ub_speed": "GEN1_X1",
+        "ub_transfer": "ISOCHRONOUS"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "equal_expression": {
+        "product": [
+          125,
+          {
+            "power": [
+              2,
+              {
+                "subtract": [
+                  "ub_binterval",
+                  1
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "parameter": "ub_interval_us",
+      "when": {
+        "ub_speed": "GEN1_X1",
+        "ub_transfer": "INTERRUPT"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "equal_expression": {
+        "product": [
+          125,
+          {
+            "power": [
+              2,
+              {
+                "subtract": [
+                  "ub_binterval",
+                  1
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "parameter": "ub_interval_us",
+      "when": {
+        "ub_speed": "GEN1_X2",
+        "ub_transfer": "ISOCHRONOUS"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "equal_expression": {
+        "product": [
+          125,
+          {
+            "power": [
+              2,
+              {
+                "subtract": [
+                  "ub_binterval",
+                  1
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "parameter": "ub_interval_us",
+      "when": {
+        "ub_speed": "GEN1_X2",
+        "ub_transfer": "INTERRUPT"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "equal_expression": {
+        "product": [
+          125,
+          {
+            "power": [
+              2,
+              {
+                "subtract": [
+                  "ub_binterval",
+                  1
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "parameter": "ub_interval_us",
+      "when": {
+        "ub_speed": "GEN2_X1",
+        "ub_transfer": "ISOCHRONOUS"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "equal_expression": {
+        "product": [
+          125,
+          {
+            "power": [
+              2,
+              {
+                "subtract": [
+                  "ub_binterval",
+                  1
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "parameter": "ub_interval_us",
+      "when": {
+        "ub_speed": "GEN2_X1",
+        "ub_transfer": "INTERRUPT"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "equal_expression": {
+        "product": [
+          125,
+          {
+            "power": [
+              2,
+              {
+                "subtract": [
+                  "ub_binterval",
+                  1
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "parameter": "ub_interval_us",
+      "when": {
+        "ub_speed": "GEN2_X2",
+        "ub_transfer": "ISOCHRONOUS"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "equal_expression": {
+        "product": [
+          125,
+          {
+            "power": [
+              2,
+              {
+                "subtract": [
+                  "ub_binterval",
+                  1
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "parameter": "ub_interval_us",
+      "when": {
+        "ub_speed": "GEN2_X2",
+        "ub_transfer": "INTERRUPT"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "equal_expression": {
+        "product": [
+          125,
+          {
+            "power": [
+              2,
+              {
+                "subtract": [
+                  "ub_binterval",
+                  1
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "parameter": "ub_binterval",
+      "when": {
+        "ub_speed": "HIGH",
+        "ub_double_eusb2": false
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "when_greater_than": {
+        "ub_extra_transactions": 0
+      },
+      "allowed": [
+        1
+      ]
+    },
+    {
+      "parameter": "ub_retry_enabled",
+      "when": {
+        "ub_transfer": "ISOCHRONOUS"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "allowed": [
+        false
+      ]
+    },
+    {
+      "parameter": "ub_iso_sync",
+      "when": {
+        "ub_iso_usage": "FEEDBACK"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "allowed": [
+        "NONE"
+      ]
+    },
+    {
+      "parameter": "ub_hub_levels",
+      "when": {},
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "maximum": 5
+    },
+    {
+      "parameter": "ub_unit_load_ma",
+      "when": {
+        "ub_power_profile": "USB2_LEGACY"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "allowed": [
+        100
+      ]
+    },
+    {
+      "parameter": "ub_current_ma",
+      "when": {
+        "ub_power_profile": "USB2_LEGACY",
+        "ub_device_state": "DEFAULT"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "maximum": 100
+    },
+    {
+      "parameter": "ub_current_ma",
+      "when": {
+        "ub_power_profile": "USB2_LEGACY",
+        "ub_device_state": "ADDRESSED"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "maximum": 100
+    },
+    {
+      "parameter": "ub_unit_load_ma",
+      "when": {
+        "ub_power_profile": "USB3_LEGACY_SINGLE_LANE"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": [
+        150
+      ]
+    },
+    {
+      "parameter": "ub_current_ma",
+      "when": {
+        "ub_power_profile": "USB3_LEGACY_SINGLE_LANE",
+        "ub_device_state": "DEFAULT"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "maximum": 150
+    },
+    {
+      "parameter": "ub_current_ma",
+      "when": {
+        "ub_power_profile": "USB3_LEGACY_SINGLE_LANE",
+        "ub_device_state": "ADDRESSED"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "maximum": 150
+    },
+    {
+      "parameter": "ub_unit_load_ma",
+      "when": {
+        "ub_power_profile": "USB3_LEGACY_DUAL_LANE"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "allowed": [
+        250
+      ]
+    },
+    {
+      "parameter": "ub_current_ma",
+      "when": {
+        "ub_power_profile": "USB3_LEGACY_DUAL_LANE",
+        "ub_device_state": "DEFAULT"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "maximum": 250
+    },
+    {
+      "parameter": "ub_current_ma",
+      "when": {
+        "ub_power_profile": "USB3_LEGACY_DUAL_LANE",
+        "ub_device_state": "ADDRESSED"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "maximum": 250
+    },
+    {
+      "parameter": "ub_current_ma",
+      "when": {
+        "ub_power_profile": "USB2_LEGACY",
+        "ub_device_state": "CONFIGURED"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "maximum": 500
+    },
+    {
+      "parameter": "ub_current_ma",
+      "when": {
+        "ub_power_profile": "USB3_LEGACY_SINGLE_LANE",
+        "ub_device_state": "CONFIGURED"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "maximum": 900
+    },
+    {
+      "parameter": "ub_current_ma",
+      "when": {},
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "maximum_parameter": "ub_allocated_current_ma"
+    },
+    {
+      "parameter": "ub_vbus_v",
+      "when": {
+        "ub_power_profile": "USB2_LEGACY",
+        "ub_vbus_revision": "BASE_2000"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "maximum": 5.25
+    },
+    {
+      "parameter": "ub_vbus_v",
+      "when": {
+        "ub_power_profile": "USB2_LEGACY",
+        "ub_vbus_revision": "VBUS_MAX_ECN"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "maximum": 5.5
+    },
+    {
+      "parameter": "ub_power_source",
+      "when": {
+        "ub_power_profile": "TYPE_C_ACTUAL"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "required": true
+    },
+    {
+      "parameter": "ub_power_source",
+      "when": {
+        "ub_power_profile": "PD_ACTUAL"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "required": true
+    },
+    {
+      "parameter": "ub_power_source",
+      "when": {
+        "ub_power_profile": "SELF_POWERED_ACTUAL"
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_32_202206_0.zip",
+      "required": true
+    },
+    {
+      "parameter": "ub_e2e_ms",
+      "when": {},
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "equal_expression": {
+        "sum": [
+          "ub_source_ms",
+          "ub_transport_ms",
+          "ub_use_ms"
+        ]
+      },
+      "maximum_parameter": "ub_deadline_ms"
+    },
+    {
+      "parameter": "ub_age_ms",
+      "when": {},
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "maximum_parameter": "ub_freshness_ms"
+    },
+    {
+      "parameter": "ub_source_ms",
+      "when": {},
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "when_present": [
+        "ub_e2e_ms"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "ub_transport_ms",
+      "when": {},
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "when_present": [
+        "ub_e2e_ms"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "ub_use_ms",
+      "when": {},
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "when_present": [
+        "ub_e2e_ms"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "ub_observation_source",
+      "when": {
+        "ub_data_accepted": true
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "required": true
+    },
+    {
+      "parameter": "ub_e2e_ms",
+      "when": {
+        "ub_data_accepted": true
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "required": true
+    },
+    {
+      "parameter": "ub_deadline_ms",
+      "when": {
+        "ub_data_accepted": true
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "required": true
+    },
+    {
+      "parameter": "ub_age_ms",
+      "when": {
+        "ub_data_accepted": true
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "required": true
+    },
+    {
+      "parameter": "ub_freshness_ms",
+      "when": {
+        "ub_data_accepted": true
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "required": true
+    },
+    {
+      "parameter": "ub_schedule_verified",
+      "when": {
+        "ub_data_accepted": true
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "required": true,
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "ub_path_verified",
+      "when": {
+        "ub_data_accepted": true
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "required": true,
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "ub_outcome",
+      "when": {
+        "ub_data_accepted": true
+      },
+      "source": "https://www.usb.org/sites/default/files/usb_20_20250603.zip",
+      "required": true,
+      "allowed": [
+        "ACCEPTED"
+      ]
+    }
+  ],
+  "physical_layer_profile_id": null,
+  "medium_access_model": null,
+  "native_parameter_prefixes": [
+    "ub_"
+  ],
+  "parameter_aliases": {},
+  "parameter_alias_limits": {},
+  "parameter_evidence_scope": "EXPLICIT_LAYER",
+  "rate_source_profile_id": null,
+  "arbitration_model_id": null,
+  "max_payload_bytes": null,
+  "capabilities": {
+    "supports_signals": true,
+    "supports_data_objects": true,
+    "supports_streams": true,
+    "supports_multicast": false,
+    "supports_publish_subscribe": false,
+    "supports_request_response": false,
+    "supports_cyclic": true,
+    "supports_event": true,
+    "supports_redundancy": false,
+    "supports_time_sync": false,
+    "supports_safety_profile": false,
+    "supports_segmentation": true,
+    "supports_fragmentation": false,
+    "supports_qos": true
+  },
+  "deterministic": false,
+  "overhead_bytes": 8,
+  "implementation_status": "PARTIAL",
+  "connection_type": "COMMUNICATION_TECHNOLOGY",
+  "parameter_proposals": {
+    "kind": "DEVICE_DEPENDENT",
+    "status": "REVIEW_REQUIRED",
+    "required_fields": [],
+    "note": "No universal rate is available; inspect the selected hardware/profile."
+  },
+  "capacity_evidence": {
+    "status": "MODEL_MISSING",
+    "frame_model": null,
+    "schedule_model": null,
+    "requires_confirmed_device_parameters": true
+  },
+  "components": {
+    "binding": "usb.binding",
+    "generator": "usb.generator",
+    "validator": "usb.validator",
+    "timing_model": null,
+    "load_model": null,
+    "encoder": "usb.encoder",
+    "decoder": "usb.decoder"
+  },
+  "known_limitations": "Technology-specific conformance details require a vendor/profile extension."
+}

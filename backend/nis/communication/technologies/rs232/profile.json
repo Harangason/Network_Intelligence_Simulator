@@ -1,0 +1,3176 @@
+{
+  "id": "rs232",
+  "label": "RS-232",
+  "domain": "generic_networking",
+  "layer": "PHYSICAL",
+  "transport_unit": "STREAM_CHUNK",
+  "payload_element_types": [
+    "RAW_DATA"
+  ],
+  "hardware_interface": "rs232_actual_single_ended_interchange",
+  "hardware_capability_aliases": [
+    "rs232_port"
+  ],
+  "default_stack": [
+    "rs232"
+  ],
+  "stack_variants": [
+    [
+      "rs232"
+    ]
+  ],
+  "default_bitrate": null,
+  "rate_model": {
+    "type": "RS232_ACTUAL_DEVICE_AND_CODEC_RATE",
+    "fields": []
+  },
+  "local_timing_schema": [],
+  "parameter_schema": {
+    "payload_bytes": {
+      "label": "Payload",
+      "category": "physical",
+      "scope": "message",
+      "type": "number",
+      "description": "Actual application bytes only for separately specified codec. RS232 does not define65535byte payload or automatic8N1framing.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "integer": true
+    },
+    "cycle_ms": {
+      "label": "Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "Standardperiode fuer zyklische Nachrichten.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "minimum_cycle_time_ms": {
+      "label": "Minimum Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "deadline_ms": {
+      "label": "Deadline",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "timeout_ms": {
+      "label": "Timeout",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_latency_ms": {
+      "label": "Maximum Latency",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "jitter_ms": {
+      "label": "Jitter Budget",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "freshness_ms": {
+      "label": "Data Freshness",
+      "category": "timing",
+      "scope": "signal",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "source_processing_delay_ms": {
+      "label": "Source Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_processing_delay_ms": {
+      "label": "Target Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "propagation_delay_ms": {
+      "label": "Propagation",
+      "category": "timing",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.01,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_bus_load_percent": {
+      "label": "Ziel-Buslast",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "Zielwert fuer die aus Routing, Payload, Zyklus und Bitrate berechnete Buslast.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "peak_factor": {
+      "label": "Peak Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.15,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_factor": {
+      "label": "Burst Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.5,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_window_ms": {
+      "label": "Burst Window",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "warning_threshold": {
+      "label": "Load Warning",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "critical_threshold": {
+      "label": "Load Critical",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 75,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "overload_threshold": {
+      "label": "Load Overload",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 90,
+      "unit": "%",
+      "min": 1,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "queue_size": {
+      "label": "Queue Size",
+      "category": "qos",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 256,
+      "unit": "Frames",
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "queue_policy": {
+      "label": "Queue Policy",
+      "category": "qos",
+      "scope": "network",
+      "type": "select",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": "FIFO",
+      "options": [
+        "FIFO",
+        "PRIORITY",
+        "STRICT_PRIORITY",
+        "WEIGHTED_PRIORITY",
+        "WRR",
+        "ROUND_ROBIN",
+        "TIME_TRIGGERED",
+        "TAS",
+        "CBS",
+        "CUSTOM"
+      ],
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "qos_priority": {
+      "label": "Default Priority",
+      "category": "qos",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 3,
+      "min": 0,
+      "max": 7,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "traffic_class": {
+      "label": "Traffic Class",
+      "category": "qos",
+      "scope": "route",
+      "type": "select",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": "BEST_EFFORT",
+      "options": [
+        "BEST_EFFORT",
+        "CONTROL",
+        "REALTIME",
+        "SAFETY_CRITICAL"
+      ],
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "packet_loss_probability": {
+      "label": "Packet Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "frame_loss_probability": {
+      "label": "Frame Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "bit_error_rate": {
+      "label": "Bit Error Rate",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "corruption_probability": {
+      "label": "Corruption",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duplicate_probability": {
+      "label": "Duplication",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "reordering_probability": {
+      "label": "Reordering",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "required_reliability": {
+      "label": "Required Reliability",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.999,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_offset_ms": {
+      "label": "Clock Offset",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_drift_ppm": {
+      "label": "Clock Drift",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 20,
+      "unit": "ppm",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_precision_ms": {
+      "label": "Sync Precision",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_interval_ms": {
+      "label": "Sync Interval",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1000,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_sync_error_ms": {
+      "label": "Maximum Sync Error",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_delay_ms": {
+      "label": "Gateway Processing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.2,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_queue_delay_ms": {
+      "label": "Gateway Queueing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "protocol_conversion_delay_ms": {
+      "label": "Protocol Conversion",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duration_s": {
+      "label": "Simulation Duration",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 1,
+      "unit": "s",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "seed": {
+      "label": "Random Seed",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 42,
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "max_events": {
+      "label": "Maximum Events",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 100000,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "dropout_probability": {
+      "label": "Failure Injection Dropout",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "rs232_profile": {
+      "type": "select",
+      "description": "Actual TIA232F summary envelope or independently qualified higher-rate device implementation.",
+      "options": [
+        "TIA_232_F_TI2002",
+        "DEVICE_QUALIFIED",
+        "REGISTERED_ACTUAL"
+      ],
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "label": "profile",
+      "category": "physical",
+      "scope": "route",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs232_role": {
+      "type": "select",
+      "description": "Actual DTE or DCE connector function, not automatically the same pin mapping.",
+      "options": [
+        "DTE",
+        "DCE"
+      ],
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "label": "role",
+      "category": "physical",
+      "scope": "route",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs232_peer_role": {
+      "type": "select",
+      "description": "Actual connected peer DTE/DCE role.",
+      "options": [
+        "DTE",
+        "DCE"
+      ],
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "label": "peer role",
+      "category": "physical",
+      "scope": "route",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs232_wiring": {
+      "type": "select",
+      "description": "Actual straight DTE/DCE versus crossed nullmodem or separately registered wiring.",
+      "options": [
+        "STRAIGHT",
+        "NULL_MODEM",
+        "REGISTERED_ACTUAL"
+      ],
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "label": "wiring",
+      "category": "physical",
+      "scope": "route",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs232_connector": {
+      "type": "select",
+      "description": "Actual selected signal connector;9pin is574 subset,232 standard25pin; TTLheader is not RS232.",
+      "options": [
+        "DE9_EIA574",
+        "DB25_TIA232",
+        "REGISTERED_ACTUAL"
+      ],
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "label": "connector",
+      "category": "physical",
+      "scope": "route",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs232_direction": {
+      "type": "select",
+      "description": "Actual one-way interchange versus independent Tx/Rx simultaneous communication.",
+      "options": [
+        "TX",
+        "RX",
+        "FULL_DUPLEX"
+      ],
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "label": "direction",
+      "category": "physical",
+      "scope": "route",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs232_clocking": {
+      "type": "select",
+      "description": "Actual asynchronous start/stop UART versus synchronous clocked interchange.",
+      "options": [
+        "ASYNCHRONOUS",
+        "SYNCHRONOUS",
+        "REGISTERED_ACTUAL"
+      ],
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "label": "clocking",
+      "category": "physical",
+      "scope": "route",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs232_encoding": {
+      "type": "select",
+      "description": "Actual selected higher-layer bit/framing codec; RS232 does not mandate UART8N1.",
+      "options": [
+        "START_STOP",
+        "SYNCHRONOUS_RAW",
+        "REGISTERED_ACTUAL"
+      ],
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "label": "encoding",
+      "category": "physical",
+      "scope": "route",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs232_parity": {
+      "type": "select",
+      "description": "Actual separately configured UART parity; no RS232 default.",
+      "options": [
+        "NONE",
+        "EVEN",
+        "ODD",
+        "MARK",
+        "SPACE"
+      ],
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "label": "parity",
+      "category": "physical",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs232_flow_control": {
+      "type": "select",
+      "description": "Actual configured handshake; no unlimited no-flow-control capacity assumption.",
+      "options": [
+        "NONE",
+        "RTS_CTS",
+        "DTR_DSR",
+        "XON_XOFF",
+        "REGISTERED_ACTUAL"
+      ],
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/snla037b/snla037b.pdf",
+      "source_revision": "TI SNLA037B April2013 pp2-4, ONpositive/OFFnegative control and actual handshake;2500pF capacitive load maximum.",
+      "label": "flow control",
+      "category": "physical",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs232_data_logic": {
+      "type": "select",
+      "description": "Actual interpreted RS232 data polarity; MARK1negative,SPACE0positive.",
+      "options": [
+        "MARK_1",
+        "SPACE_0"
+      ],
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "label": "data logic",
+      "category": "physical",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs232_control_state": {
+      "type": "select",
+      "description": "Actual control interchange ONpositive/OFFnegative, distinct dataMARK1negative.",
+      "options": [
+        "ON",
+        "OFF"
+      ],
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/snla037b/snla037b.pdf",
+      "source_revision": "TI SNLA037B April2013 pp2-4, ONpositive/OFFnegative control and actual handshake;2500pF capacitive load maximum.",
+      "label": "control state",
+      "category": "physical",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs232_power_state": {
+      "type": "select",
+      "description": "Actual active/poweroff/startup/highZ states, not all valid functional data.",
+      "options": [
+        "ACTIVE",
+        "POWER_OFF",
+        "STARTUP",
+        "HIGH_Z"
+      ],
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/sdaa219/sdaa219.pdf",
+      "source_revision": "TI SDAA219 March2026 pp2-7, powerup floating TTL/backbias/seriescap and bidirectionalTVS; suggested parts are not standard defaults.",
+      "label": "power state",
+      "category": "physical",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs232_ttl_bias": {
+      "type": "select",
+      "description": "Actual sourcequalified TTLside input bias; not RS232line termination or automaticLOW.",
+      "options": [
+        "INTERNAL",
+        "EXTERNAL_PULL_UP",
+        "EXTERNAL_PULL_DOWN",
+        "FLOATING",
+        "REGISTERED_ACTUAL"
+      ],
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/sdaa219/sdaa219.pdf",
+      "source_revision": "TI SDAA219 March2026 pp2-7, powerup floating TTL/backbias/seriescap and bidirectionalTVS; suggested parts are not standard defaults.",
+      "label": "ttl bias",
+      "category": "physical",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs232_tvs": {
+      "type": "select",
+      "description": "Actual protection type: bipolarRS232requiresbidirectionalTVS ifTVSused.",
+      "options": [
+        "NONE",
+        "BIDIRECTIONAL",
+        "UNIDIRECTIONAL",
+        "REGISTERED_ACTUAL"
+      ],
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/sdaa219/sdaa219.pdf",
+      "source_revision": "TI SDAA219 March2026 pp2-7, powerup floating TTL/backbias/seriescap and bidirectionalTVS; suggested parts are not standard defaults.",
+      "label": "tvs",
+      "category": "physical",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs232_outcome": {
+      "type": "select",
+      "description": "Actual framed/decoded functional result, not legalvoltage alone.",
+      "options": [
+        "ACCEPTED",
+        "FRAMING_ERROR",
+        "PARITY_ERROR",
+        "BREAK",
+        "FLOW_BLOCKED",
+        "UNKNOWN"
+      ],
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "label": "outcome",
+      "category": "physical",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs232_bitrate_bps": {
+      "type": "number",
+      "description": "Actual per-direction bit rate; standard20k upper envelope, no normative minimum/default115200.",
+      "min": 0,
+      "unit": "bit/s",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "label": "bitrate bps",
+      "category": "timing",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs232_device_max_bps": {
+      "type": "number",
+      "description": "Actual local interface capability under stated load, not catalogue typical.",
+      "min": 0,
+      "unit": "bit/s",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "label": "device max bps",
+      "category": "timing",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs232_peer_max_bps": {
+      "type": "number",
+      "description": "Actual peer interface capability under same configuration/load.",
+      "min": 0,
+      "unit": "bit/s",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "label": "peer max bps",
+      "category": "timing",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs232_driver_mark_v": {
+      "type": "number",
+      "description": "Actual loaded MARK1 output,232F -15..-5V.",
+      "unit": "V",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "label": "driver mark v",
+      "category": "physical",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs232_driver_space_v": {
+      "type": "number",
+      "description": "Actual loaded SPACE0 output,232F+5..+15V.",
+      "unit": "V",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "label": "driver space v",
+      "category": "physical",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs232_receiver_mark_v": {
+      "type": "number",
+      "description": "Actual receivedMARK1,232F-15..-3V; thresholdregion notvaliddata.",
+      "unit": "V",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "label": "receiver mark v",
+      "category": "physical",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs232_receiver_space_v": {
+      "type": "number",
+      "description": "Actual receivedSPACE0,232F+3..+15V.",
+      "unit": "V",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "label": "receiver space v",
+      "category": "physical",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs232_receiver_data_v": {
+      "type": "number",
+      "description": "Actual selected signed data level after load/groundoffset.",
+      "unit": "V",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "label": "receiver data v",
+      "category": "physical",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs232_control_v": {
+      "type": "number",
+      "description": "Actual signed control level; ONpositive/OFFnegative unlike data1.",
+      "unit": "V",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/snla037b/snla037b.pdf",
+      "source_revision": "TI SNLA037B April2013 pp2-4, ONpositive/OFFnegative control and actual handshake;2500pF capacitive load maximum.",
+      "label": "control v",
+      "category": "physical",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs232_receiver_load_ohm": {
+      "type": "number",
+      "description": "Actual receiving interchange input resistance;3k..7k standard fixture.",
+      "min": 0,
+      "unit": "ohm",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "label": "receiver load ohm",
+      "category": "physical",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs232_driver_off_impedance_ohm": {
+      "type": "number",
+      "description": "Actual unpowered driver impedance; source>300ohm.",
+      "min": 0,
+      "unit": "ohm",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "label": "driver off impedance ohm",
+      "category": "physical",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs232_total_load_pf": {
+      "type": "number",
+      "description": "Actual cable+receiver+protection/stray capacitance;2500pF envelope, not fixed15m.",
+      "min": 0,
+      "unit": "pF",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "label": "total load pf",
+      "category": "physical",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs232_receiver_cap_pf": {
+      "type": "number",
+      "description": "Actual receiver contribution, not universal20pFexample.",
+      "min": 0,
+      "unit": "pF",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "label": "receiver cap pf",
+      "category": "physical",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs232_cable_pf_m": {
+      "type": "number",
+      "description": "Actual installedcable mutual+stray capacitance per meter.",
+      "min": 0,
+      "unit": "pF/m",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "label": "cable pf m",
+      "category": "physical",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs232_cable_m": {
+      "type": "number",
+      "description": "Actual physical cable length; no later232-F universal15m maximum.",
+      "min": 0,
+      "unit": "m",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "label": "cable m",
+      "category": "physical",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs232_other_cap_pf": {
+      "type": "number",
+      "description": "Actual additional connector/protection/board capacitance.",
+      "min": 0,
+      "unit": "pF",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "label": "other cap pf",
+      "category": "physical",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs232_transition_us": {
+      "type": "number",
+      "description": "Actual transition through-3..+3V; rate-dependent4% unit interval/1mslowrate.",
+      "min": 0,
+      "unit": "us",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "label": "transition us",
+      "category": "timing",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs232_slew_v_us": {
+      "type": "number",
+      "description": "Actual driver voltage slew magnitude,232F<=30V/us.",
+      "min": 0,
+      "unit": "V/us",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "label": "slew v us",
+      "category": "physical",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs232_ground_offset_v": {
+      "type": "number",
+      "description": "Actual measured signal-reference offset, not common-mode-freeTTL.",
+      "unit": "V",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "label": "ground offset v",
+      "category": "physical",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs232_data_bits": {
+      "type": "number",
+      "description": "Actual codec data width, not inferred8bit per RS232 electrical standard.",
+      "min": 1,
+      "unit": "bit",
+      "integer": true,
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "label": "data bits",
+      "category": "physical",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs232_start_bits": {
+      "type": "number",
+      "description": "Actual START_STOPcodec start position; actual UARTusually1, not standarddefault.",
+      "min": 1,
+      "unit": "bit",
+      "integer": true,
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "label": "start bits",
+      "category": "physical",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs232_parity_bits": {
+      "type": "number",
+      "description": "Actual selected parity wirecount: NONE0otherwise1.",
+      "min": 0,
+      "max": 1,
+      "unit": "bit",
+      "integer": true,
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "label": "parity bits",
+      "category": "physical",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs232_stop_bits": {
+      "type": "number",
+      "description": "Actual UART1/1.5/2 stopbit duration selected by bothends.",
+      "min": 1,
+      "max": 2,
+      "unit": "bit",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "label": "stop bits",
+      "category": "physical",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs232_character_bits": {
+      "type": "number",
+      "description": "Actual start+data+parity+stop wirebit duration, possibly1.5stopbit.",
+      "min": 0,
+      "unit": "bit",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "label": "character bits",
+      "category": "physical",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs232_characters": {
+      "type": "number",
+      "description": "Actual bounded transaction character count, not65535byte electricalpayloadlimit.",
+      "min": 0,
+      "unit": "character",
+      "integer": true,
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "label": "characters",
+      "category": "physical",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs232_wire_bits": {
+      "type": "number",
+      "description": "Actual encoded transaction bitbound, separate electricalcharacter/flow gaps.",
+      "min": 0,
+      "unit": "bit",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "label": "wire bits",
+      "category": "physical",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs232_wire_time_ms": {
+      "type": "number",
+      "description": "Actual serialized wirebit time at actual clock; excludes flowwait/codecprocessing.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "label": "wire time ms",
+      "category": "timing",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs232_flow_wait_bound_ms": {
+      "type": "number",
+      "description": "Actual bounded hardware/software flowcontrolwait, notunlimitedautomaticbuffer.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "label": "flow wait bound ms",
+      "category": "timing",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs232_decode_bound_ms": {
+      "type": "number",
+      "description": "Actual codec/application decode processing bound.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "label": "decode bound ms",
+      "category": "timing",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs232_transaction_bound_ms": {
+      "type": "number",
+      "description": "Actual wire+flowwait+decode chain bound.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "label": "transaction bound ms",
+      "category": "timing",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs232_transaction_limit_ms": {
+      "type": "number",
+      "description": "Actual complete transaction acceptance limit.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "label": "transaction limit ms",
+      "category": "timing",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs232_age_ms": {
+      "type": "number",
+      "description": "Actual correlated decoded value age.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "label": "age ms",
+      "category": "timing",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs232_freshness_ms": {
+      "type": "number",
+      "description": "Actual consumer freshness bound; no universal500ms.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "label": "freshness ms",
+      "category": "timing",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs232_ttl_bias_ohm": {
+      "type": "number",
+      "description": "Actual externalTTLinputbias resistor;2026guide suggests4.5k..47k but dependsleakage/noise.",
+      "min": 0,
+      "unit": "ohm",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/sdaa219/sdaa219.pdf",
+      "source_revision": "TI SDAA219 March2026 pp2-7, powerup floating TTL/backbias/seriescap and bidirectionalTVS; suggested parts are not standard defaults.",
+      "label": "ttl bias ohm",
+      "category": "physical",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs232_external_series_ohm": {
+      "type": "number",
+      "description": "Actual added RS232line resistor;2026schematicadvice<=50ohm not normative232.",
+      "min": 0,
+      "unit": "ohm",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/sdaa219/sdaa219.pdf",
+      "source_revision": "TI SDAA219 March2026 pp2-7, powerup floating TTL/backbias/seriescap and bidirectionalTVS; suggested parts are not standard defaults.",
+      "label": "external series ohm",
+      "category": "physical",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs232_external_cap_pf": {
+      "type": "number",
+      "description": "Actual extra linecapacitor;2026schematicadvice<=200pF not entire2500pFbudget.",
+      "min": 0,
+      "unit": "pF",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/sdaa219/sdaa219.pdf",
+      "source_revision": "TI SDAA219 March2026 pp2-7, powerup floating TTL/backbias/seriescap and bidirectionalTVS; suggested parts are not standard defaults.",
+      "label": "external cap pf",
+      "category": "physical",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs232_chargepump_cap_voltage_v": {
+      "type": "number",
+      "description": "Actual chargepump capacitor rating, selectedpartvoltage/derating required.",
+      "min": 0,
+      "unit": "V",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/sdaa219/sdaa219.pdf",
+      "source_revision": "TI SDAA219 March2026 pp2-7, powerup floating TTL/backbias/seriescap and bidirectionalTVS; suggested parts are not standard defaults.",
+      "label": "chargepump cap voltage v",
+      "category": "physical",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs232_output_typ_abs_v": {
+      "type": "number",
+      "description": "Actual selectedpart typicalVoH/VoL magnitude for capacitorratingguideline.",
+      "min": 0,
+      "unit": "V",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/sdaa219/sdaa219.pdf",
+      "source_revision": "TI SDAA219 March2026 pp2-7, powerup floating TTL/backbias/seriescap and bidirectionalTVS; suggested parts are not standard defaults.",
+      "label": "output typ abs v",
+      "category": "physical",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs232_value_accepted": {
+      "type": "boolean",
+      "description": "Actual decoded/processed valueaccepted withfunctional/electricalprovenance.",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "label": "value accepted",
+      "category": "physical",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs232_electrical_valid": {
+      "type": "boolean",
+      "description": "Actual voltage/load/wiring/powerandnoise validated, notunconfirmeddefault.",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "label": "electrical valid",
+      "category": "physical",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs232_mapping_valid": {
+      "type": "boolean",
+      "description": "Actual dataidentity/units/scaling interpretationverified.",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "label": "mapping valid",
+      "category": "physical",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs232_codec_verified": {
+      "type": "boolean",
+      "description": "Actual peersshareframing/bitrate/flowcontrolconfiguration.",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "label": "codec verified",
+      "category": "physical",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs232_power_sequence_verified": {
+      "type": "boolean",
+      "description": "Actual startupTTLbias/backbias leakageandpowersequence checked.",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/sdaa219/sdaa219.pdf",
+      "source_revision": "TI SDAA219 March2026 pp2-7, powerup floating TTL/backbias/seriescap and bidirectionalTVS; suggested parts are not standard defaults.",
+      "label": "power sequence verified",
+      "category": "physical",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs232_cts_asserted": {
+      "type": "boolean",
+      "description": "ActualRTS_CTSpermission totransmit, notdefaultTrue.",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "label": "cts asserted",
+      "category": "physical",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs232_dsr_asserted": {
+      "type": "boolean",
+      "description": "ActualDTR_DSRpermission, notdefaultTrue.",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "label": "dsr asserted",
+      "category": "physical",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs232_device_source": {
+      "type": "text",
+      "description": "Actual exactlocalpart/serialcontroller/load/clock evidence.",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "label": "device source",
+      "category": "physical",
+      "scope": "route",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs232_peer_source": {
+      "type": "text",
+      "description": "Actual peerpart/serialcontroller/configuration evidence.",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "label": "peer source",
+      "category": "physical",
+      "scope": "route",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs232_binding_source": {
+      "type": "text",
+      "description": "Actual DTE/DCE/pin/crossedline/wiring binding.",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "label": "binding source",
+      "category": "physical",
+      "scope": "route",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs232_physical_source": {
+      "type": "text",
+      "description": "Actual voltage/load/cable/ground/protection source.",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "label": "physical source",
+      "category": "physical",
+      "scope": "route",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs232_codec_source": {
+      "type": "text",
+      "description": "Actual framing/encoding/message/flowcontrol specification, not RS232 byteguess.",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "label": "codec source",
+      "category": "physical",
+      "scope": "route",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs232_schedule_source": {
+      "type": "text",
+      "description": "Actual wiretransactions andflow/control/processing bounds.",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "label": "schedule source",
+      "category": "physical",
+      "scope": "route",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs232_acceptance_source": {
+      "type": "text",
+      "description": "Actual functionalrequirementandobservedconsumer acceptance.",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "label": "acceptance source",
+      "category": "physical",
+      "scope": "route",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs232_registered_source": {
+      "type": "text",
+      "description": "Actual independenthigher-rate/device/clock/codec specification.",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "label": "registered source",
+      "category": "physical",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs232_wave_source": {
+      "type": "text",
+      "description": "Actual electrical waveform and decoded transaction observation.",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "label": "wave source",
+      "category": "physical",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs232_clock_source": {
+      "type": "text",
+      "description": "Actualcorrelatedclockanduncertainty.",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "label": "clock source",
+      "category": "physical",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs232_power_source": {
+      "type": "text",
+      "description": "Actual powersequencing/bias/backbias assessment.",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/sdaa219/sdaa219.pdf",
+      "source_revision": "TI SDAA219 March2026 pp2-7, powerup floating TTL/backbias/seriescap and bidirectionalTVS; suggested parts are not standard defaults.",
+      "label": "power source",
+      "category": "physical",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    }
+  },
+  "mechanisms": {
+    "encoding": [
+      "ACTUAL_HIGHER_LAYER_UART_OR_SYNCHRONOUS_CODEC"
+    ],
+    "qualification": [
+      "NO_NORMATIVE_MINIMUM_BITRATE_OR_8N1",
+      "2500PF_NOT_UNIVERSAL_15M",
+      "ELECTRICAL_VALIDITY_NOT_TRANSACTION_CAPACITY"
+    ]
+  },
+  "parameter_constraints": [
+    {
+      "parameter": "local_timing_evidence",
+      "when": {},
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "allowed": []
+    },
+    {
+      "parameter": "rs232_registered_source",
+      "when": {
+        "rs232_profile": "REGISTERED_ACTUAL"
+      },
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "required": true
+    },
+    {
+      "parameter": "rs232_registered_source",
+      "when": {
+        "rs232_wiring": "REGISTERED_ACTUAL"
+      },
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "required": true
+    },
+    {
+      "parameter": "rs232_registered_source",
+      "when": {
+        "rs232_clocking": "REGISTERED_ACTUAL"
+      },
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "required": true
+    },
+    {
+      "parameter": "rs232_registered_source",
+      "when": {
+        "rs232_encoding": "REGISTERED_ACTUAL"
+      },
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "required": true
+    },
+    {
+      "parameter": "rs232_registered_source",
+      "when": {
+        "rs232_connector": "REGISTERED_ACTUAL"
+      },
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "required": true
+    },
+    {
+      "parameter": "rs232_registered_source",
+      "when": {
+        "rs232_flow_control": "REGISTERED_ACTUAL"
+      },
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "required": true
+    },
+    {
+      "parameter": "rs232_wiring",
+      "when": {
+        "rs232_role": "DTE",
+        "rs232_peer_role": "DTE"
+      },
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "allowed": [
+        "NULL_MODEM",
+        "REGISTERED_ACTUAL"
+      ]
+    },
+    {
+      "parameter": "rs232_wiring",
+      "when": {
+        "rs232_role": "DTE",
+        "rs232_peer_role": "DCE"
+      },
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "allowed": [
+        "STRAIGHT",
+        "REGISTERED_ACTUAL"
+      ]
+    },
+    {
+      "parameter": "rs232_wiring",
+      "when": {
+        "rs232_role": "DCE",
+        "rs232_peer_role": "DCE"
+      },
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "allowed": [
+        "NULL_MODEM",
+        "REGISTERED_ACTUAL"
+      ]
+    },
+    {
+      "parameter": "rs232_wiring",
+      "when": {
+        "rs232_role": "DCE",
+        "rs232_peer_role": "DTE"
+      },
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "allowed": [
+        "STRAIGHT",
+        "REGISTERED_ACTUAL"
+      ]
+    },
+    {
+      "parameter": "rs232_encoding",
+      "when": {
+        "rs232_clocking": "ASYNCHRONOUS"
+      },
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "allowed": [
+        "START_STOP",
+        "REGISTERED_ACTUAL"
+      ]
+    },
+    {
+      "parameter": "rs232_encoding",
+      "when": {
+        "rs232_clocking": "SYNCHRONOUS"
+      },
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "allowed": [
+        "SYNCHRONOUS_RAW",
+        "REGISTERED_ACTUAL"
+      ]
+    },
+    {
+      "parameter": "rs232_bitrate_bps",
+      "when": {},
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "exclusive_minimum": 0
+    },
+    {
+      "parameter": "rs232_device_max_bps",
+      "when": {},
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "exclusive_minimum": 0
+    },
+    {
+      "parameter": "rs232_peer_max_bps",
+      "when": {},
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "exclusive_minimum": 0
+    },
+    {
+      "parameter": "rs232_cable_pf_m",
+      "when": {},
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "exclusive_minimum": 0
+    },
+    {
+      "parameter": "rs232_bitrate_bps",
+      "when": {},
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "maximum_parameter": "rs232_device_max_bps"
+    },
+    {
+      "parameter": "rs232_bitrate_bps",
+      "when": {},
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "maximum_parameter": "rs232_peer_max_bps"
+    },
+    {
+      "parameter": "rs232_device_max_bps",
+      "when": {
+        "rs232_profile": "DEVICE_QUALIFIED"
+      },
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "when_present": [
+        "rs232_bitrate_bps"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "rs232_peer_max_bps",
+      "when": {
+        "rs232_profile": "DEVICE_QUALIFIED"
+      },
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "when_present": [
+        "rs232_bitrate_bps"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "rs232_registered_source",
+      "when": {
+        "rs232_profile": "DEVICE_QUALIFIED"
+      },
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "required": true
+    },
+    {
+      "parameter": "rs232_bitrate_bps",
+      "when": {
+        "rs232_profile": "TIA_232_F_TI2002"
+      },
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "maximum": 20000
+    },
+    {
+      "parameter": "rs232_driver_mark_v",
+      "when": {
+        "rs232_profile": "TIA_232_F_TI2002"
+      },
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "minimum": -15,
+      "maximum": -5
+    },
+    {
+      "parameter": "rs232_driver_space_v",
+      "when": {
+        "rs232_profile": "TIA_232_F_TI2002"
+      },
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "minimum": 5,
+      "maximum": 15
+    },
+    {
+      "parameter": "rs232_receiver_mark_v",
+      "when": {
+        "rs232_profile": "TIA_232_F_TI2002"
+      },
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "minimum": -15,
+      "maximum": -3
+    },
+    {
+      "parameter": "rs232_receiver_space_v",
+      "when": {
+        "rs232_profile": "TIA_232_F_TI2002"
+      },
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "minimum": 3,
+      "maximum": 15
+    },
+    {
+      "parameter": "rs232_receiver_load_ohm",
+      "when": {
+        "rs232_profile": "TIA_232_F_TI2002"
+      },
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "minimum": 3000,
+      "maximum": 7000
+    },
+    {
+      "parameter": "rs232_total_load_pf",
+      "when": {
+        "rs232_profile": "TIA_232_F_TI2002"
+      },
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "maximum": 2500
+    },
+    {
+      "parameter": "rs232_slew_v_us",
+      "when": {
+        "rs232_profile": "TIA_232_F_TI2002"
+      },
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "maximum": 30
+    },
+    {
+      "parameter": "rs232_driver_off_impedance_ohm",
+      "when": {
+        "rs232_profile": "TIA_232_F_TI2002"
+      },
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "exclusive_minimum": 300
+    },
+    {
+      "parameter": "rs232_receiver_data_v",
+      "when": {
+        "rs232_profile": "TIA_232_F_TI2002",
+        "rs232_data_logic": "MARK_1"
+      },
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "minimum": -15,
+      "maximum": -3
+    },
+    {
+      "parameter": "rs232_receiver_data_v",
+      "when": {
+        "rs232_profile": "TIA_232_F_TI2002",
+        "rs232_data_logic": "SPACE_0"
+      },
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "minimum": 3,
+      "maximum": 15
+    },
+    {
+      "parameter": "rs232_control_v",
+      "when": {
+        "rs232_profile": "TIA_232_F_TI2002",
+        "rs232_control_state": "ON"
+      },
+      "source": "https://www.ti.com/lit/an/snla037b/snla037b.pdf",
+      "source_revision": "TI SNLA037B April2013 pp2-4, ONpositive/OFFnegative control and actual handshake;2500pF capacitive load maximum.",
+      "minimum": 3,
+      "maximum": 15
+    },
+    {
+      "parameter": "rs232_control_v",
+      "when": {
+        "rs232_profile": "TIA_232_F_TI2002",
+        "rs232_control_state": "OFF"
+      },
+      "source": "https://www.ti.com/lit/an/snla037b/snla037b.pdf",
+      "source_revision": "TI SNLA037B April2013 pp2-4, ONpositive/OFFnegative control and actual handshake;2500pF capacitive load maximum.",
+      "minimum": -15,
+      "maximum": -3
+    },
+    {
+      "parameter": "rs232_data_logic",
+      "when": {},
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "when_present": [
+        "rs232_receiver_data_v"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "rs232_control_state",
+      "when": {},
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "when_present": [
+        "rs232_control_v"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "rs232_transition_us",
+      "when": {
+        "rs232_profile": "TIA_232_F_TI2002"
+      },
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "when_half_open_ranges": {
+        "rs232_bitrate_bps": [
+          0,
+          40
+        ]
+      },
+      "maximum": 1000
+    },
+    {
+      "parameter": "rs232_transition_us",
+      "when": {
+        "rs232_profile": "TIA_232_F_TI2002"
+      },
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "when_ranges": {
+        "rs232_bitrate_bps": [
+          40,
+          20000
+        ]
+      },
+      "maximum_expression": {
+        "product": [
+          0.04,
+          1000000,
+          {
+            "power": [
+              "rs232_bitrate_bps",
+              -1
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "parameter": "rs232_bitrate_bps",
+      "when": {},
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "when_present": [
+        "rs232_transition_us"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "rs232_total_load_pf",
+      "when": {},
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "equal_expression": {
+        "sum": [
+          {
+            "product": [
+              "rs232_cable_pf_m",
+              "rs232_cable_m"
+            ]
+          },
+          "rs232_receiver_cap_pf",
+          "rs232_other_cap_pf"
+        ]
+      }
+    },
+    {
+      "parameter": "rs232_cable_pf_m",
+      "when": {},
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "when_present": [
+        "rs232_total_load_pf"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "rs232_cable_m",
+      "when": {},
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "when_present": [
+        "rs232_total_load_pf"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "rs232_receiver_cap_pf",
+      "when": {},
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "when_present": [
+        "rs232_total_load_pf"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "rs232_other_cap_pf",
+      "when": {},
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "when_present": [
+        "rs232_total_load_pf"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "rs232_start_bits",
+      "when": {
+        "rs232_encoding": "START_STOP"
+      },
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "when_present": [
+        "rs232_character_bits"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "rs232_data_bits",
+      "when": {
+        "rs232_encoding": "START_STOP"
+      },
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "when_present": [
+        "rs232_character_bits"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "rs232_parity",
+      "when": {
+        "rs232_encoding": "START_STOP"
+      },
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "when_present": [
+        "rs232_character_bits"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "rs232_parity_bits",
+      "when": {
+        "rs232_encoding": "START_STOP"
+      },
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "when_present": [
+        "rs232_character_bits"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "rs232_stop_bits",
+      "when": {
+        "rs232_encoding": "START_STOP"
+      },
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "when_present": [
+        "rs232_character_bits"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "rs232_character_bits",
+      "when": {
+        "rs232_encoding": "START_STOP"
+      },
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "equal_expression": {
+        "sum": [
+          "rs232_start_bits",
+          "rs232_data_bits",
+          "rs232_parity_bits",
+          "rs232_stop_bits"
+        ]
+      }
+    },
+    {
+      "parameter": "rs232_stop_bits",
+      "when": {
+        "rs232_encoding": "START_STOP"
+      },
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "allowed": [
+        1,
+        1.5,
+        2
+      ]
+    },
+    {
+      "parameter": "rs232_parity_bits",
+      "when": {
+        "rs232_parity": "NONE"
+      },
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "rs232_parity_bits",
+      "when": {
+        "rs232_parity": "EVEN"
+      },
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "allowed": [
+        1
+      ]
+    },
+    {
+      "parameter": "rs232_parity_bits",
+      "when": {
+        "rs232_parity": "ODD"
+      },
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "allowed": [
+        1
+      ]
+    },
+    {
+      "parameter": "rs232_parity_bits",
+      "when": {
+        "rs232_parity": "MARK"
+      },
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "allowed": [
+        1
+      ]
+    },
+    {
+      "parameter": "rs232_parity_bits",
+      "when": {
+        "rs232_parity": "SPACE"
+      },
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "allowed": [
+        1
+      ]
+    },
+    {
+      "parameter": "rs232_wire_bits",
+      "when": {
+        "rs232_encoding": "START_STOP"
+      },
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "equal_expression": {
+        "product": [
+          "rs232_character_bits",
+          "rs232_characters"
+        ]
+      }
+    },
+    {
+      "parameter": "rs232_characters",
+      "when": {
+        "rs232_encoding": "START_STOP"
+      },
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "when_present": [
+        "rs232_wire_bits"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "rs232_character_bits",
+      "when": {
+        "rs232_encoding": "START_STOP"
+      },
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "when_present": [
+        "rs232_wire_bits"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "rs232_wire_time_ms",
+      "when": {},
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "equal_ratio": {
+        "numerator_parameter": "rs232_wire_bits",
+        "factor": 1000,
+        "denominator_product": [
+          "rs232_bitrate_bps"
+        ],
+        "denominator_offset": 1
+      }
+    },
+    {
+      "parameter": "rs232_wire_time_ms",
+      "when": {
+        "rs232_wire_bits": 0
+      },
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "rs232_bitrate_bps",
+      "when": {},
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "when_present": [
+        "rs232_wire_time_ms"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "rs232_wire_bits",
+      "when": {},
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "when_present": [
+        "rs232_wire_time_ms"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "rs232_transaction_bound_ms",
+      "when": {},
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "equal_expression": {
+        "sum": [
+          "rs232_wire_time_ms",
+          "rs232_flow_wait_bound_ms",
+          "rs232_decode_bound_ms"
+        ]
+      }
+    },
+    {
+      "parameter": "rs232_wire_time_ms",
+      "when": {},
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "when_present": [
+        "rs232_transaction_bound_ms"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "rs232_flow_wait_bound_ms",
+      "when": {},
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "when_present": [
+        "rs232_transaction_bound_ms"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "rs232_decode_bound_ms",
+      "when": {},
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "when_present": [
+        "rs232_transaction_bound_ms"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "rs232_transaction_bound_ms",
+      "when": {},
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "maximum_parameter": "rs232_transaction_limit_ms"
+    },
+    {
+      "parameter": "rs232_flow_wait_bound_ms",
+      "when": {
+        "rs232_flow_control": "NONE"
+      },
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "rs232_age_ms",
+      "when": {},
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "maximum_parameter": "rs232_freshness_ms"
+    },
+    {
+      "parameter": "rs232_tvs",
+      "when": {},
+      "source": "https://www.ti.com/lit/an/sdaa219/sdaa219.pdf",
+      "source_revision": "TI SDAA219 March2026 pp2-7, powerup floating TTL/backbias/seriescap and bidirectionalTVS; suggested parts are not standard defaults.",
+      "allowed": [
+        "NONE",
+        "BIDIRECTIONAL",
+        "REGISTERED_ACTUAL"
+      ]
+    },
+    {
+      "parameter": "rs232_ttl_bias_ohm",
+      "when": {
+        "rs232_ttl_bias": "EXTERNAL_PULL_UP"
+      },
+      "source": "https://www.ti.com/lit/an/sdaa219/sdaa219.pdf",
+      "source_revision": "TI SDAA219 March2026 pp2-7, powerup floating TTL/backbias/seriescap and bidirectionalTVS; suggested parts are not standard defaults.",
+      "required": true
+    },
+    {
+      "parameter": "rs232_power_source",
+      "when": {
+        "rs232_ttl_bias": "EXTERNAL_PULL_UP"
+      },
+      "source": "https://www.ti.com/lit/an/sdaa219/sdaa219.pdf",
+      "source_revision": "TI SDAA219 March2026 pp2-7, powerup floating TTL/backbias/seriescap and bidirectionalTVS; suggested parts are not standard defaults.",
+      "required": true
+    },
+    {
+      "parameter": "rs232_ttl_bias_ohm",
+      "when": {
+        "rs232_ttl_bias": "EXTERNAL_PULL_DOWN"
+      },
+      "source": "https://www.ti.com/lit/an/sdaa219/sdaa219.pdf",
+      "source_revision": "TI SDAA219 March2026 pp2-7, powerup floating TTL/backbias/seriescap and bidirectionalTVS; suggested parts are not standard defaults.",
+      "required": true
+    },
+    {
+      "parameter": "rs232_power_source",
+      "when": {
+        "rs232_ttl_bias": "EXTERNAL_PULL_DOWN"
+      },
+      "source": "https://www.ti.com/lit/an/sdaa219/sdaa219.pdf",
+      "source_revision": "TI SDAA219 March2026 pp2-7, powerup floating TTL/backbias/seriescap and bidirectionalTVS; suggested parts are not standard defaults.",
+      "required": true
+    },
+    {
+      "parameter": "rs232_chargepump_cap_voltage_v",
+      "when": {},
+      "source": "https://www.ti.com/lit/an/sdaa219/sdaa219.pdf",
+      "source_revision": "TI SDAA219 March2026 pp2-7, powerup floating TTL/backbias/seriescap and bidirectionalTVS; suggested parts are not standard defaults.",
+      "minimum_expression": {
+        "product": [
+          2,
+          "rs232_output_typ_abs_v"
+        ]
+      }
+    },
+    {
+      "parameter": "rs232_output_typ_abs_v",
+      "when": {},
+      "source": "https://www.ti.com/lit/an/sdaa219/sdaa219.pdf",
+      "source_revision": "TI SDAA219 March2026 pp2-7, powerup floating TTL/backbias/seriescap and bidirectionalTVS; suggested parts are not standard defaults.",
+      "when_present": [
+        "rs232_chargepump_cap_voltage_v"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "rs232_outcome",
+      "when": {
+        "rs232_value_accepted": true
+      },
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "required": true,
+      "allowed": [
+        "ACCEPTED"
+      ]
+    },
+    {
+      "parameter": "rs232_electrical_valid",
+      "when": {
+        "rs232_value_accepted": true
+      },
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "required": true,
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "rs232_mapping_valid",
+      "when": {
+        "rs232_value_accepted": true
+      },
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "required": true,
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "rs232_codec_verified",
+      "when": {
+        "rs232_value_accepted": true
+      },
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "required": true,
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "rs232_power_sequence_verified",
+      "when": {
+        "rs232_value_accepted": true
+      },
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "required": true,
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "rs232_power_state",
+      "when": {
+        "rs232_value_accepted": true
+      },
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "required": true,
+      "allowed": [
+        "ACTIVE"
+      ]
+    },
+    {
+      "parameter": "rs232_bitrate_bps",
+      "when": {
+        "rs232_value_accepted": true
+      },
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "required": true
+    },
+    {
+      "parameter": "rs232_wave_source",
+      "when": {
+        "rs232_value_accepted": true
+      },
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "required": true
+    },
+    {
+      "parameter": "rs232_clock_source",
+      "when": {
+        "rs232_value_accepted": true
+      },
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "required": true
+    },
+    {
+      "parameter": "rs232_power_source",
+      "when": {
+        "rs232_value_accepted": true
+      },
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "required": true
+    },
+    {
+      "parameter": "rs232_age_ms",
+      "when": {
+        "rs232_value_accepted": true
+      },
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "required": true
+    },
+    {
+      "parameter": "rs232_freshness_ms",
+      "when": {
+        "rs232_value_accepted": true
+      },
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "required": true
+    },
+    {
+      "parameter": "rs232_transaction_bound_ms",
+      "when": {
+        "rs232_value_accepted": true
+      },
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "required": true
+    },
+    {
+      "parameter": "rs232_transaction_limit_ms",
+      "when": {
+        "rs232_value_accepted": true
+      },
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "required": true
+    },
+    {
+      "parameter": "rs232_ttl_bias",
+      "when": {
+        "rs232_value_accepted": true
+      },
+      "source": "https://www.ti.com/lit/an/sdaa219/sdaa219.pdf",
+      "source_revision": "TI SDAA219 March2026 pp2-7, powerup floating TTL/backbias/seriescap and bidirectionalTVS; suggested parts are not standard defaults.",
+      "allowed": [
+        "INTERNAL",
+        "EXTERNAL_PULL_UP",
+        "EXTERNAL_PULL_DOWN",
+        "REGISTERED_ACTUAL"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "rs232_cts_asserted",
+      "when": {
+        "rs232_value_accepted": true,
+        "rs232_flow_control": "RTS_CTS"
+      },
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "required": true,
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "rs232_dsr_asserted",
+      "when": {
+        "rs232_value_accepted": true,
+        "rs232_flow_control": "DTR_DSR"
+      },
+      "source": "https://www.ti.com/lit/an/slla037a/slla037a.pdf",
+      "source_revision": "TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.",
+      "required": true,
+      "allowed": [
+        true
+      ]
+    }
+  ],
+  "physical_layer_profile_id": null,
+  "medium_access_model": null,
+  "native_parameter_prefixes": [
+    "rs232_"
+  ],
+  "parameter_aliases": {},
+  "parameter_alias_limits": {},
+  "parameter_evidence_scope": "EXPLICIT_LAYER",
+  "rate_source_profile_id": null,
+  "arbitration_model_id": null,
+  "max_payload_bytes": null,
+  "capabilities": {
+    "supports_signals": true,
+    "supports_data_objects": false,
+    "supports_streams": true,
+    "supports_multicast": false,
+    "supports_publish_subscribe": false,
+    "supports_request_response": false,
+    "supports_cyclic": true,
+    "supports_event": true,
+    "supports_redundancy": false,
+    "supports_time_sync": false,
+    "supports_safety_profile": false,
+    "supports_segmentation": false,
+    "supports_fragmentation": false,
+    "supports_qos": false
+  },
+  "deterministic": false,
+  "overhead_bytes": 8,
+  "implementation_status": "PARTIAL",
+  "connection_type": "COMMUNICATION_TECHNOLOGY",
+  "parameter_proposals": {
+    "kind": "DEVICE_DEPENDENT",
+    "status": "REVIEW_REQUIRED",
+    "required_fields": [],
+    "note": "No universal rate is available; inspect the selected hardware/profile."
+  },
+  "capacity_evidence": {
+    "status": "MODEL_MISSING",
+    "frame_model": null,
+    "schedule_model": null,
+    "requires_confirmed_device_parameters": true
+  },
+  "components": {
+    "binding": "rs232.binding",
+    "generator": "rs232.generator",
+    "validator": "rs232.validator",
+    "timing_model": null,
+    "load_model": null,
+    "encoder": "rs232.encoder",
+    "decoder": "rs232.decoder"
+  },
+  "known_limitations": "Technology-specific conformance details require a vendor/profile extension."
+}

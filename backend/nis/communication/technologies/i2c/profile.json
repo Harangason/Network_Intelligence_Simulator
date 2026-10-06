@@ -1,0 +1,4070 @@
+{
+  "id": "i2c",
+  "label": "I2C",
+  "domain": "generic_networking",
+  "layer": "DATA_LINK",
+  "transport_unit": "MESSAGE",
+  "payload_element_types": [
+    "REGISTER",
+    "RAW_DATA"
+  ],
+  "hardware_interface": "explicit_i2c_port",
+  "hardware_capability_aliases": [
+    "i2c_controller"
+  ],
+  "default_stack": [
+    "i2c"
+  ],
+  "stack_variants": [
+    [
+      "i2c"
+    ]
+  ],
+  "default_bitrate": null,
+  "rate_model": {
+    "type": "I2C_CONFIRMED_CLOCK",
+    "fields": [
+      "bitrate_bps"
+    ],
+    "maximum_bps": 5000000
+  },
+  "local_timing_schema": [
+    {
+      "key": "evidence_scope",
+      "label": "evidence scope",
+      "type": "select",
+      "numeric": false,
+      "boolean": false,
+      "optional": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "description": "Actual controller port, target port or complete transaction; legacy omitted scope remains transaction only.",
+      "scope": "device",
+      "options": [
+        "CONTROLLER_PORT",
+        "TARGET_PORT",
+        "TRANSACTION"
+      ]
+    },
+    {
+      "key": "master_node_id",
+      "label": "master node id",
+      "type": "text",
+      "numeric": false,
+      "boolean": false,
+      "optional": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "description": "Actual owning controller canonical identity. Not a target address.",
+      "scope": "device"
+    },
+    {
+      "key": "slave_address",
+      "label": "slave address",
+      "type": "address",
+      "numeric": false,
+      "boolean": false,
+      "optional": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "description": "Actual unshifted target integer or decimal/0x hexadecimal text, not the controller own port address.",
+      "scope": "device",
+      "required_scopes": [
+        "TARGET_PORT",
+        "TRANSACTION"
+      ]
+    },
+    {
+      "key": "address_bits",
+      "label": "address bits",
+      "type": "number",
+      "numeric": true,
+      "boolean": false,
+      "optional": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "description": "Actual7/10-bit target address width.",
+      "scope": "device",
+      "integer": true,
+      "allowed_values": [
+        7,
+        10
+      ],
+      "required_scopes": [
+        "TARGET_PORT",
+        "TRANSACTION"
+      ]
+    },
+    {
+      "key": "i2c_mode",
+      "label": "i2c mode",
+      "type": "select",
+      "numeric": false,
+      "boolean": false,
+      "optional": false,
+      "parameter_origin": "STANDARD_PROFILE_PROPOSAL",
+      "default_status": "PROPOSED",
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "description": "Standard-mode is a review proposal from UM10204, not confirmed device configuration.",
+      "scope": "device",
+      "options": [
+        "STANDARD",
+        "FAST",
+        "FAST_PLUS",
+        "HIGH_SPEED",
+        "ULTRA_FAST"
+      ],
+      "default": "STANDARD"
+    },
+    {
+      "key": "transfer_direction",
+      "label": "transfer direction",
+      "type": "select",
+      "numeric": false,
+      "boolean": false,
+      "optional": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "description": "Actual complete transaction READ/WRITE/combined direction.",
+      "scope": "device",
+      "options": [
+        "READ",
+        "WRITE",
+        "BIDIRECTIONAL"
+      ],
+      "required_scopes": [
+        "TRANSACTION"
+      ]
+    },
+    {
+      "key": "start_stop_bound_us",
+      "label": "start stop bound us",
+      "type": "number",
+      "numeric": true,
+      "boolean": false,
+      "optional": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "description": "Actual sum of START/repeatedSTART/STOP/bus-free timing for the transfer layout; no universal2us.",
+      "scope": "device",
+      "unit": "us",
+      "minimum": 0,
+      "required_scopes": [
+        "TRANSACTION"
+      ]
+    },
+    {
+      "key": "clock_stretch_limit_us",
+      "label": "clock stretch limit us",
+      "type": "number",
+      "numeric": true,
+      "boolean": false,
+      "optional": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "description": "Actual total target/controller stretch bound. I2C has no universal timeout; UFm requires zero.",
+      "scope": "device",
+      "unit": "us",
+      "minimum": 0,
+      "required_scopes": [
+        "TRANSACTION"
+      ]
+    },
+    {
+      "key": "transfer_bits_bound",
+      "label": "transfer bits bound",
+      "type": "number",
+      "numeric": true,
+      "boolean": false,
+      "optional": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "description": "Actual total data-phase clock bound including all address/data9th pulses/register overhead; HS entry separately bounded.",
+      "scope": "device",
+      "unit": "bit",
+      "minimum": 0,
+      "required_scopes": [
+        "TRANSACTION"
+      ],
+      "integer": true
+    },
+    {
+      "key": "multi_master",
+      "label": "multi master",
+      "type": "boolean",
+      "numeric": false,
+      "boolean": true,
+      "optional": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "description": "Actual competing controllers; not assumed false.",
+      "scope": "device",
+      "required_scopes": [
+        "TRANSACTION"
+      ]
+    },
+    {
+      "key": "arbitration_bound_us",
+      "label": "arbitration bound us",
+      "type": "number",
+      "numeric": true,
+      "boolean": false,
+      "optional": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "description": "Actual complete retry/competition upper bound only for multicontroller transactions; no automatic zero.",
+      "scope": "device",
+      "unit": "us",
+      "minimum": 0
+    },
+    {
+      "key": "bitrate_bps",
+      "label": "bitrate bps",
+      "type": "number",
+      "numeric": true,
+      "boolean": false,
+      "optional": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "description": "Actual data-phase bus clock, positive during active transfers; stopped0Hz is not a positive capacity rate.",
+      "scope": "device",
+      "unit": "bit/s",
+      "minimum": 0
+    },
+    {
+      "key": "hs_entry_rate_bps",
+      "label": "hs entry rate bps",
+      "type": "number",
+      "numeric": true,
+      "boolean": false,
+      "optional": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "description": "Actual HS entry F/S clock1..400k; optional outsideHS.",
+      "scope": "device",
+      "unit": "bit/s",
+      "minimum": 0,
+      "maximum": 400000
+    },
+    {
+      "key": "hs_entry_bound_us",
+      "label": "hs entry bound us",
+      "type": "number",
+      "numeric": true,
+      "boolean": false,
+      "optional": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "description": "Actual HS entry duration incl9-bit controller-code/NACK phase; not serialized at HS rate.",
+      "scope": "device",
+      "unit": "us",
+      "minimum": 0
+    },
+    {
+      "key": "bus_cap_pf",
+      "label": "bus cap pf",
+      "type": "number",
+      "numeric": true,
+      "boolean": false,
+      "optional": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "description": "Actual HS line load needed for HS timing qualification, unknown.",
+      "scope": "device",
+      "unit": "pF",
+      "minimum": 0,
+      "maximum": 400
+    },
+    {
+      "key": "hs_clock_timing_source",
+      "label": "hs clock timing source",
+      "type": "text",
+      "numeric": false,
+      "boolean": false,
+      "optional": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "description": "Actual load-interpolated HS LOW/HIGH/edge timing and current-source proof.",
+      "scope": "device"
+    },
+    {
+      "key": "address_purpose",
+      "label": "address purpose",
+      "type": "select",
+      "numeric": false,
+      "boolean": false,
+      "optional": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "description": "Actual reserved7-bit service purpose; absent legacy nonreserved target remains ordinary only.",
+      "scope": "device",
+      "options": [
+        "ORDINARY",
+        "RESERVED_SERVICE"
+      ]
+    }
+  ],
+  "parameter_schema": {
+    "bitrate_bps": {
+      "label": "I²C Bus Clock",
+      "category": "physical",
+      "scope": "network",
+      "type": "number",
+      "description": "Controller mode and confirmed bus clock are required; no unreviewed rate is assumed.",
+      "required": true,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100000,
+      "unit": "bit/s",
+      "min": 1,
+      "max": 5000000,
+      "default_review": {
+        "technology": "i2c",
+        "rate_profile": "i2c",
+        "values": {
+          "bitrate_bps": 100000
+        },
+        "basis": "STANDARD_MODE",
+        "status": "REVIEW_REQUIRED",
+        "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+        "source_revision": "UM10204 Rev. 7.0 (2021-10-01)"
+      },
+      "allowed_bps": [],
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED",
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "UM10204 Rev. 7.0 (2021-10-01)"
+    },
+    "payload_bytes": {
+      "label": "Payload",
+      "category": "physical",
+      "scope": "message",
+      "type": "number",
+      "description": "Actual encoded data octets; I2C imposes no255-byte transfer maximum. Address/register/ninth-clock/layout overhead is separate.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "integer": true
+    },
+    "cycle_ms": {
+      "label": "Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "Standardperiode fuer zyklische Nachrichten.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "minimum_cycle_time_ms": {
+      "label": "Minimum Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "deadline_ms": {
+      "label": "Deadline",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "timeout_ms": {
+      "label": "Timeout",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_latency_ms": {
+      "label": "Maximum Latency",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "jitter_ms": {
+      "label": "Jitter Budget",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "freshness_ms": {
+      "label": "Data Freshness",
+      "category": "timing",
+      "scope": "signal",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "source_processing_delay_ms": {
+      "label": "Source Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_processing_delay_ms": {
+      "label": "Target Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "propagation_delay_ms": {
+      "label": "Propagation",
+      "category": "timing",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.01,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_bus_load_percent": {
+      "label": "Ziel-Buslast",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "Zielwert fuer die aus Routing, Payload, Zyklus und Bitrate berechnete Buslast.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "peak_factor": {
+      "label": "Peak Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.15,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_factor": {
+      "label": "Burst Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.5,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_window_ms": {
+      "label": "Burst Window",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "warning_threshold": {
+      "label": "Load Warning",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "critical_threshold": {
+      "label": "Load Critical",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 75,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "overload_threshold": {
+      "label": "Load Overload",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 90,
+      "unit": "%",
+      "min": 1,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "traffic_class": {
+      "label": "Traffic Class",
+      "category": "qos",
+      "scope": "route",
+      "type": "select",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": "BEST_EFFORT",
+      "options": [
+        "BEST_EFFORT",
+        "CONTROL",
+        "REALTIME",
+        "SAFETY_CRITICAL"
+      ],
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "packet_loss_probability": {
+      "label": "Packet Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "frame_loss_probability": {
+      "label": "Frame Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "bit_error_rate": {
+      "label": "Bit Error Rate",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "corruption_probability": {
+      "label": "Corruption",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duplicate_probability": {
+      "label": "Duplication",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "reordering_probability": {
+      "label": "Reordering",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "required_reliability": {
+      "label": "Required Reliability",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.999,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_offset_ms": {
+      "label": "Clock Offset",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_drift_ppm": {
+      "label": "Clock Drift",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 20,
+      "unit": "ppm",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_precision_ms": {
+      "label": "Sync Precision",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_interval_ms": {
+      "label": "Sync Interval",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1000,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_sync_error_ms": {
+      "label": "Maximum Sync Error",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_delay_ms": {
+      "label": "Gateway Processing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.2,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_queue_delay_ms": {
+      "label": "Gateway Queueing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "protocol_conversion_delay_ms": {
+      "label": "Protocol Conversion",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duration_s": {
+      "label": "Simulation Duration",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 1,
+      "unit": "s",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "seed": {
+      "label": "Random Seed",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 42,
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "max_events": {
+      "label": "Maximum Events",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 100000,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "dropout_probability": {
+      "label": "Failure Injection Dropout",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "i2c_profile": {
+      "label": "profile",
+      "category": "communication",
+      "scope": "route",
+      "type": "select",
+      "description": "Actual electrical qualification. Section7.2 higher load requires its own proven timing/drive/segmentation and frequency bound.",
+      "required": true,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "UM10204_STANDARD_LIMITS",
+        "SECTION7_2_EXTENDED_LOAD"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15"
+    },
+    "i2c_mode": {
+      "label": "mode",
+      "category": "communication",
+      "scope": "route",
+      "type": "select",
+      "description": "Operating mode. STANDARD100kbit/s is a proposed baseline, not minimum clock frequency. UFm is a different unidirectional push-pull system.",
+      "required": true,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "STANDARD",
+        "FAST",
+        "FAST_PLUS",
+        "HIGH_SPEED",
+        "ULTRA_FAST"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_STANDARD",
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "default": "STANDARD"
+    },
+    "i2c_endpoint_role": {
+      "label": "endpoint role",
+      "category": "communication",
+      "scope": "route",
+      "type": "select",
+      "description": "Actual endpoint role. A pure controller needs no own target address; controller-target does.",
+      "required": true,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "CONTROLLER",
+        "TARGET",
+        "CONTROLLER_TARGET"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15"
+    },
+    "i2c_controller_id": {
+      "label": "controller id",
+      "category": "communication",
+      "scope": "route",
+      "type": "text",
+      "description": "Actual canonical clock-owning controller identity. No invented ECU identity or topology owner confirmation.",
+      "required": true,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15"
+    },
+    "i2c_device_source": {
+      "label": "device source",
+      "category": "communication",
+      "scope": "route",
+      "type": "text",
+      "description": "Actual controller/target datasheet revision, supported modes, pins and address constraints.",
+      "required": true,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15"
+    },
+    "i2c_binding_source": {
+      "label": "binding source",
+      "category": "communication",
+      "scope": "route",
+      "type": "text",
+      "description": "Actual matching controller-target port and segment binding, with unique addresses/multiplexing evidence.",
+      "required": true,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15"
+    },
+    "i2c_physical_source": {
+      "label": "physical source",
+      "category": "communication",
+      "scope": "route",
+      "type": "text",
+      "description": "Actual voltage/pull-up/driver/load/edge/threshold/segment evidence; nominal rate is not electrical validation.",
+      "required": true,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15"
+    },
+    "i2c_schedule_source": {
+      "label": "schedule source",
+      "category": "communication",
+      "scope": "route",
+      "type": "text",
+      "description": "Actual transactions, register/address phases, polling/retry/stretch/arbitration and functional acceptance evidence.",
+      "required": true,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15"
+    },
+    "i2c_drive": {
+      "label": "drive",
+      "category": "communication",
+      "scope": "route",
+      "type": "select",
+      "description": "Actual driver. Sm/Fm/Fm+ wired-AND open drain/collector; HS controller current source; UFm push-pull.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "OPEN_DRAIN",
+        "OPEN_COLLECTOR",
+        "HS_CURRENT_SOURCE",
+        "PUSH_PULL"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15"
+    },
+    "i2c_address_bits": {
+      "label": "address bits",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual7/10-bit target address width, no inferred7-bit hardware configuration.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "bit",
+      "min": 7,
+      "max": 10,
+      "options": [
+        7,
+        10
+      ],
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15"
+    },
+    "i2c_target_address": {
+      "label": "target address",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual unshifted target address, excluding R/W. Reserved7-bit purposes require explicit matching service evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "max": 1023,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15"
+    },
+    "i2c_address_purpose": {
+      "label": "address purpose",
+      "category": "communication",
+      "scope": "route",
+      "type": "select",
+      "description": "Actual ordinary versus reserved service addressing; general call/START/HS code/prefix are not interchangeable targets.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "ORDINARY",
+        "RESERVED_SERVICE"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15"
+    },
+    "i2c_address_source": {
+      "label": "address source",
+      "category": "communication",
+      "scope": "route",
+      "type": "text",
+      "description": "Actual device straps/register/assigned address and reserved service meaning; unknown, no automatic0x20.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15"
+    },
+    "i2c_direction": {
+      "label": "direction",
+      "category": "communication",
+      "scope": "route",
+      "type": "select",
+      "description": "Actual transaction direction. UFm accepts writes only; bidirectional requires combined address phases.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "READ",
+        "WRITE",
+        "BIDIRECTIONAL"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15"
+    },
+    "i2c_multi_controller": {
+      "label": "multi controller",
+      "category": "communication",
+      "scope": "route",
+      "type": "boolean",
+      "description": "Actual competing controller configuration. Arbitration is unnecessary for a proven single controller, not assumed false.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15"
+    },
+    "i2c_clock_stretch_supported": {
+      "label": "clock stretch supported",
+      "category": "communication",
+      "scope": "route",
+      "type": "boolean",
+      "description": "Actual matched controller/target stretching support. UFm cannot stretch; HS stretches only after ACK.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15"
+    },
+    "i2c_hs_entry_rate_bps": {
+      "label": "hs entry rate bps",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual F/S-mode HS controller-code entry clock. HS3.4M data rate cannot size this preceding phase.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "bit/s",
+      "min": 1,
+      "max": 400000,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15"
+    },
+    "i2c_hs_controller_code": {
+      "label": "hs controller code",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual reserved8-bit HS controller code00001XXX; code8 reserved test/diagnostic, not a target address.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 8,
+      "max": 15,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15"
+    },
+    "i2c_hs_diagnostic": {
+      "label": "hs diagnostic",
+      "category": "communication",
+      "scope": "route",
+      "type": "boolean",
+      "description": "Actual test/diagnostic use permitting controller code8; no implicit operational use.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15"
+    },
+    "i2c_stretch_position": {
+      "label": "stretch position",
+      "category": "communication",
+      "scope": "route",
+      "type": "select",
+      "description": "Actual stretch placement: HS only after ACK, UFm none. Stretch upper bound is device/schedule data, not a spec default.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "ANY_LOW",
+        "AFTER_ACK",
+        "NONE"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15"
+    },
+    "i2c_ack_policy": {
+      "label": "ack policy",
+      "category": "communication",
+      "scope": "route",
+      "type": "select",
+      "description": "Bidirectional ACK/NACK is not CRC or functional acceptance. UFm preserves ninth pulse HIGH without target acknowledgement.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "ACK_NACK",
+        "NINTH_HIGH_NO_ACK"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "conditional_defaults": [
+        {
+          "when": {
+            "i2c_mode": "STANDARD"
+          },
+          "value": "ACK_NACK"
+        },
+        {
+          "when": {
+            "i2c_mode": "FAST"
+          },
+          "value": "ACK_NACK"
+        },
+        {
+          "when": {
+            "i2c_mode": "FAST_PLUS"
+          },
+          "value": "ACK_NACK"
+        },
+        {
+          "when": {
+            "i2c_mode": "HIGH_SPEED"
+          },
+          "value": "ACK_NACK"
+        },
+        {
+          "when": {
+            "i2c_mode": "ULTRA_FAST"
+          },
+          "value": "NINTH_HIGH_NO_ACK"
+        }
+      ]
+    },
+    "i2c_vdd_v": {
+      "label": "vdd v",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual pull-up/driver supply domain; no universal3.3/5V.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "V",
+      "min": 0,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15"
+    },
+    "i2c_vil_max_v": {
+      "label": "vil max v",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual receiver LOW threshold, including legacy fixed-level parts and level translators.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "V",
+      "min": 0,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15"
+    },
+    "i2c_vih_min_v": {
+      "label": "vih min v",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual receiver HIGH threshold, not universally inferred from current CMOS ratios.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "V",
+      "min": 0,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15"
+    },
+    "i2c_vol_max_v": {
+      "label": "vol max v",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual worst-case driver LOW at actual current/voltage/temperature.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "V",
+      "min": 0,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15"
+    },
+    "i2c_voh_min_v": {
+      "label": "voh min v",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual UFm push-pull HIGH guarantee; passive open drain HIGH is pull-up/leakage/load evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "V",
+      "min": 0,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15"
+    },
+    "i2c_sink_bound_ma": {
+      "label": "sink bound ma",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual safe sink capability at specified VOL, not automatically3mA/20mA.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "mA",
+      "min": 0,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15"
+    },
+    "i2c_source_bound_ma": {
+      "label": "source bound ma",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual UFm source capability or HS current-source qualification; not passive pull-up current.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "mA",
+      "min": 0,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15"
+    },
+    "i2c_pullup_ohms": {
+      "label": "pullup ohms",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual passive pull-up for Sm/Fm/Fm+; Rp minimum depends on sink and VOL, maximum on rise time and capacitance. No4.7k default.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Ohm",
+      "min": 0,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15"
+    },
+    "i2c_bus_cap_pf": {
+      "label": "bus cap pf",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual per-line wire+pins+connectors capacitance. Table11 limits400/400/550pF, HS100..400 interpolated timing; UFm no generic capacitance maximum.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "pF",
+      "min": 0,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15"
+    },
+    "i2c_pin_cap_pf": {
+      "label": "pin cap pf",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual pin capacitance. Ordinary qualified device max10pF; switches/multiplexers can exceed with explicit device evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "pF",
+      "min": 0,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15"
+    },
+    "i2c_special_pin": {
+      "label": "special pin",
+      "category": "communication",
+      "scope": "route",
+      "type": "boolean",
+      "description": "Actual special switch/multiplexer exception, unknown; prevents falsely applying ordinary10pF limit.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15"
+    },
+    "i2c_extended_frequency_bound_bps": {
+      "label": "extended frequency bound bps",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual verified section7.2 load/drive/RC/segmentation frequency bound, never an automatic higher mode or unspecified relaxation.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "bit/s",
+      "min": 1,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15"
+    },
+    "i2c_extended_source": {
+      "label": "extended source",
+      "category": "communication",
+      "scope": "route",
+      "type": "text",
+      "description": "Actual section7.2 calculations/datasheet/buffer and rise/fall/voltage evidence for non-baseline electrical load.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15"
+    },
+    "i2c_bus_clear": {
+      "label": "bus clear",
+      "category": "communication",
+      "scope": "route",
+      "type": "select",
+      "description": "Actual recovery policy. Nine clocks are for SDA-stuck; SCL-stuck may require reset/power-cycle, not automatic nine-clock repair.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "NINE_CLOCKS_SDA_STUCK",
+        "HARDWARE_RESET_OR_POWER_CYCLE",
+        "DEVICE_SPECIFIC"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15"
+    },
+    "i2c_recovery_source": {
+      "label": "recovery source",
+      "category": "communication",
+      "scope": "route",
+      "type": "text",
+      "description": "Actual stuck-line/retry/recovery/acceptance limits and controller capability; recovery is extra schedule time.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15"
+    },
+    "i2c_retry_limit": {
+      "label": "retry limit",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual transaction retry budget, no universal zero or guaranteed arbitration completion.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "attempts",
+      "min": 0,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15"
+    },
+    "i2c_low_ns": {
+      "label": "low ns",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual low timing at actual load/threshold/mode. Normative mode limits are constraints, not measured default values.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "ns",
+      "min": 0,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15"
+    },
+    "i2c_high_ns": {
+      "label": "high ns",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual high timing at actual load/threshold/mode. Normative mode limits are constraints, not measured default values.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "ns",
+      "min": 0,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15"
+    },
+    "i2c_start_hold_ns": {
+      "label": "start hold ns",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual start_hold timing at actual load/threshold/mode. Normative mode limits are constraints, not measured default values.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "ns",
+      "min": 0,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15"
+    },
+    "i2c_start_setup_ns": {
+      "label": "start setup ns",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual start_setup timing at actual load/threshold/mode. Normative mode limits are constraints, not measured default values.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "ns",
+      "min": 0,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15"
+    },
+    "i2c_stop_setup_ns": {
+      "label": "stop setup ns",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual stop_setup timing at actual load/threshold/mode. Normative mode limits are constraints, not measured default values.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "ns",
+      "min": 0,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15"
+    },
+    "i2c_bus_free_ns": {
+      "label": "bus free ns",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual bus_free timing at actual load/threshold/mode. Normative mode limits are constraints, not measured default values.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "ns",
+      "min": 0,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15"
+    },
+    "i2c_data_setup_ns": {
+      "label": "data setup ns",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual data_setup timing at actual load/threshold/mode. Normative mode limits are constraints, not measured default values.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "ns",
+      "min": 0,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15"
+    },
+    "i2c_data_hold_ns": {
+      "label": "data hold ns",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual data_hold timing at actual load/threshold/mode. Normative mode limits are constraints, not measured default values.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "ns",
+      "min": 0,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15"
+    },
+    "i2c_rise_ns": {
+      "label": "rise ns",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual rise timing at actual load/threshold/mode. Normative mode limits are constraints, not measured default values.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "ns",
+      "min": 0,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15"
+    },
+    "i2c_fall_ns": {
+      "label": "fall ns",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual fall timing at actual load/threshold/mode. Normative mode limits are constraints, not measured default values.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "ns",
+      "min": 0,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15"
+    },
+    "i2c_data_valid_ns": {
+      "label": "data valid ns",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual data_valid timing at actual load/threshold/mode. Normative mode limits are constraints, not measured default values.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "ns",
+      "min": 0,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15"
+    },
+    "i2c_ack_valid_ns": {
+      "label": "ack valid ns",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual ack_valid timing at actual load/threshold/mode. Normative mode limits are constraints, not measured default values.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "ns",
+      "min": 0,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15"
+    },
+    "i2c_hs_first_rise_ns": {
+      "label": "hs first rise ns",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual hs_first_rise timing at actual load/threshold/mode. Normative mode limits are constraints, not measured default values.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "ns",
+      "min": 0,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15"
+    },
+    "i2c_hs_data_rise_ns": {
+      "label": "hs data rise ns",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual hs_data_rise timing at actual load/threshold/mode. Normative mode limits are constraints, not measured default values.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "ns",
+      "min": 0,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15"
+    },
+    "i2c_hs_data_fall_ns": {
+      "label": "hs data fall ns",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual hs_data_fall timing at actual load/threshold/mode. Normative mode limits are constraints, not measured default values.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "ns",
+      "min": 0,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15"
+    }
+  },
+  "mechanisms": {
+    "addressing": [
+      "EXPLICIT_7_OR_10_BIT_TARGET_NOT_CONTROLLER_ADDRESS"
+    ],
+    "integrity": [
+      "BIDIRECTIONAL_ACK_NACK_OR_UFM_NINTH_HIGH_NO_ACK"
+    ],
+    "arbitration": [
+      "ONLY_ACTUAL_MULTICONTROLLER_F_S_PHASE_NOT_UFM"
+    ],
+    "scope": [
+      "BUS_CONFIGURATION_PORT_ROLE_AND_TRANSACTION_EVIDENCE_SEPARATE"
+    ]
+  },
+  "parameter_constraints": [
+    {
+      "parameter": "bitrate_bps",
+      "when": {
+        "i2c_mode": "STANDARD"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "maximum": 100000
+    },
+    {
+      "parameter": "i2c_ack_policy",
+      "when": {
+        "i2c_mode": "STANDARD"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "allowed": [
+        "ACK_NACK"
+      ]
+    },
+    {
+      "parameter": "i2c_drive",
+      "when": {
+        "i2c_mode": "STANDARD"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "allowed": [
+        "OPEN_DRAIN",
+        "OPEN_COLLECTOR"
+      ]
+    },
+    {
+      "parameter": "i2c_stretch_position",
+      "when": {
+        "i2c_mode": "STANDARD"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "allowed": [
+        "ANY_LOW",
+        "NONE"
+      ]
+    },
+    {
+      "parameter": "i2c_low_ns",
+      "when": {
+        "i2c_mode": "STANDARD",
+        "i2c_profile": "UM10204_STANDARD_LIMITS"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "minimum": 4700
+    },
+    {
+      "parameter": "i2c_high_ns",
+      "when": {
+        "i2c_mode": "STANDARD",
+        "i2c_profile": "UM10204_STANDARD_LIMITS"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "minimum": 4000
+    },
+    {
+      "parameter": "i2c_start_hold_ns",
+      "when": {
+        "i2c_mode": "STANDARD",
+        "i2c_profile": "UM10204_STANDARD_LIMITS"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "minimum": 4000
+    },
+    {
+      "parameter": "i2c_start_setup_ns",
+      "when": {
+        "i2c_mode": "STANDARD",
+        "i2c_profile": "UM10204_STANDARD_LIMITS"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "minimum": 4700
+    },
+    {
+      "parameter": "i2c_stop_setup_ns",
+      "when": {
+        "i2c_mode": "STANDARD",
+        "i2c_profile": "UM10204_STANDARD_LIMITS"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "minimum": 4000
+    },
+    {
+      "parameter": "i2c_bus_free_ns",
+      "when": {
+        "i2c_mode": "STANDARD",
+        "i2c_profile": "UM10204_STANDARD_LIMITS"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "minimum": 4700
+    },
+    {
+      "parameter": "i2c_data_setup_ns",
+      "when": {
+        "i2c_mode": "STANDARD",
+        "i2c_profile": "UM10204_STANDARD_LIMITS"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "minimum": 250
+    },
+    {
+      "parameter": "i2c_data_hold_ns",
+      "when": {
+        "i2c_mode": "STANDARD",
+        "i2c_profile": "UM10204_STANDARD_LIMITS"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "minimum": 0
+    },
+    {
+      "parameter": "i2c_rise_ns",
+      "when": {
+        "i2c_mode": "STANDARD",
+        "i2c_profile": "UM10204_STANDARD_LIMITS"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "maximum": 1000
+    },
+    {
+      "parameter": "i2c_fall_ns",
+      "when": {
+        "i2c_mode": "STANDARD",
+        "i2c_profile": "UM10204_STANDARD_LIMITS"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "maximum": 300
+    },
+    {
+      "parameter": "i2c_data_valid_ns",
+      "when": {
+        "i2c_mode": "STANDARD",
+        "i2c_profile": "UM10204_STANDARD_LIMITS",
+        "i2c_clock_stretch_supported": false
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "maximum": 3450
+    },
+    {
+      "parameter": "i2c_ack_valid_ns",
+      "when": {
+        "i2c_mode": "STANDARD",
+        "i2c_profile": "UM10204_STANDARD_LIMITS",
+        "i2c_clock_stretch_supported": false
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "maximum": 3450
+    },
+    {
+      "parameter": "i2c_bus_cap_pf",
+      "when": {
+        "i2c_mode": "STANDARD",
+        "i2c_profile": "UM10204_STANDARD_LIMITS"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "maximum": 400
+    },
+    {
+      "parameter": "bitrate_bps",
+      "when": {
+        "i2c_mode": "FAST"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "maximum": 400000
+    },
+    {
+      "parameter": "i2c_ack_policy",
+      "when": {
+        "i2c_mode": "FAST"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "allowed": [
+        "ACK_NACK"
+      ]
+    },
+    {
+      "parameter": "i2c_drive",
+      "when": {
+        "i2c_mode": "FAST"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "allowed": [
+        "OPEN_DRAIN",
+        "OPEN_COLLECTOR"
+      ]
+    },
+    {
+      "parameter": "i2c_stretch_position",
+      "when": {
+        "i2c_mode": "FAST"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "allowed": [
+        "ANY_LOW",
+        "NONE"
+      ]
+    },
+    {
+      "parameter": "i2c_low_ns",
+      "when": {
+        "i2c_mode": "FAST",
+        "i2c_profile": "UM10204_STANDARD_LIMITS"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "minimum": 1300
+    },
+    {
+      "parameter": "i2c_high_ns",
+      "when": {
+        "i2c_mode": "FAST",
+        "i2c_profile": "UM10204_STANDARD_LIMITS"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "minimum": 600
+    },
+    {
+      "parameter": "i2c_start_hold_ns",
+      "when": {
+        "i2c_mode": "FAST",
+        "i2c_profile": "UM10204_STANDARD_LIMITS"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "minimum": 600
+    },
+    {
+      "parameter": "i2c_start_setup_ns",
+      "when": {
+        "i2c_mode": "FAST",
+        "i2c_profile": "UM10204_STANDARD_LIMITS"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "minimum": 600
+    },
+    {
+      "parameter": "i2c_stop_setup_ns",
+      "when": {
+        "i2c_mode": "FAST",
+        "i2c_profile": "UM10204_STANDARD_LIMITS"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "minimum": 600
+    },
+    {
+      "parameter": "i2c_bus_free_ns",
+      "when": {
+        "i2c_mode": "FAST",
+        "i2c_profile": "UM10204_STANDARD_LIMITS"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "minimum": 1300
+    },
+    {
+      "parameter": "i2c_data_setup_ns",
+      "when": {
+        "i2c_mode": "FAST",
+        "i2c_profile": "UM10204_STANDARD_LIMITS"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "minimum": 100
+    },
+    {
+      "parameter": "i2c_data_hold_ns",
+      "when": {
+        "i2c_mode": "FAST",
+        "i2c_profile": "UM10204_STANDARD_LIMITS"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "minimum": 0
+    },
+    {
+      "parameter": "i2c_rise_ns",
+      "when": {
+        "i2c_mode": "FAST",
+        "i2c_profile": "UM10204_STANDARD_LIMITS"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "minimum": 20
+    },
+    {
+      "parameter": "i2c_rise_ns",
+      "when": {
+        "i2c_mode": "FAST",
+        "i2c_profile": "UM10204_STANDARD_LIMITS"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "maximum": 300
+    },
+    {
+      "parameter": "i2c_fall_ns",
+      "when": {
+        "i2c_mode": "FAST",
+        "i2c_profile": "UM10204_STANDARD_LIMITS"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "maximum": 300
+    },
+    {
+      "parameter": "i2c_data_valid_ns",
+      "when": {
+        "i2c_mode": "FAST",
+        "i2c_profile": "UM10204_STANDARD_LIMITS",
+        "i2c_clock_stretch_supported": false
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "maximum": 900
+    },
+    {
+      "parameter": "i2c_ack_valid_ns",
+      "when": {
+        "i2c_mode": "FAST",
+        "i2c_profile": "UM10204_STANDARD_LIMITS",
+        "i2c_clock_stretch_supported": false
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "maximum": 900
+    },
+    {
+      "parameter": "i2c_bus_cap_pf",
+      "when": {
+        "i2c_mode": "FAST",
+        "i2c_profile": "UM10204_STANDARD_LIMITS"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "maximum": 400
+    },
+    {
+      "parameter": "bitrate_bps",
+      "when": {
+        "i2c_mode": "FAST_PLUS"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "maximum": 1000000
+    },
+    {
+      "parameter": "i2c_ack_policy",
+      "when": {
+        "i2c_mode": "FAST_PLUS"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "allowed": [
+        "ACK_NACK"
+      ]
+    },
+    {
+      "parameter": "i2c_drive",
+      "when": {
+        "i2c_mode": "FAST_PLUS"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "allowed": [
+        "OPEN_DRAIN",
+        "OPEN_COLLECTOR"
+      ]
+    },
+    {
+      "parameter": "i2c_stretch_position",
+      "when": {
+        "i2c_mode": "FAST_PLUS"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "allowed": [
+        "ANY_LOW",
+        "NONE"
+      ]
+    },
+    {
+      "parameter": "i2c_low_ns",
+      "when": {
+        "i2c_mode": "FAST_PLUS",
+        "i2c_profile": "UM10204_STANDARD_LIMITS"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "minimum": 500
+    },
+    {
+      "parameter": "i2c_high_ns",
+      "when": {
+        "i2c_mode": "FAST_PLUS",
+        "i2c_profile": "UM10204_STANDARD_LIMITS"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "minimum": 260
+    },
+    {
+      "parameter": "i2c_start_hold_ns",
+      "when": {
+        "i2c_mode": "FAST_PLUS",
+        "i2c_profile": "UM10204_STANDARD_LIMITS"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "minimum": 260
+    },
+    {
+      "parameter": "i2c_start_setup_ns",
+      "when": {
+        "i2c_mode": "FAST_PLUS",
+        "i2c_profile": "UM10204_STANDARD_LIMITS"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "minimum": 260
+    },
+    {
+      "parameter": "i2c_stop_setup_ns",
+      "when": {
+        "i2c_mode": "FAST_PLUS",
+        "i2c_profile": "UM10204_STANDARD_LIMITS"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "minimum": 260
+    },
+    {
+      "parameter": "i2c_bus_free_ns",
+      "when": {
+        "i2c_mode": "FAST_PLUS",
+        "i2c_profile": "UM10204_STANDARD_LIMITS"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "minimum": 500
+    },
+    {
+      "parameter": "i2c_data_setup_ns",
+      "when": {
+        "i2c_mode": "FAST_PLUS",
+        "i2c_profile": "UM10204_STANDARD_LIMITS"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "minimum": 50
+    },
+    {
+      "parameter": "i2c_data_hold_ns",
+      "when": {
+        "i2c_mode": "FAST_PLUS",
+        "i2c_profile": "UM10204_STANDARD_LIMITS"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "minimum": 0
+    },
+    {
+      "parameter": "i2c_rise_ns",
+      "when": {
+        "i2c_mode": "FAST_PLUS",
+        "i2c_profile": "UM10204_STANDARD_LIMITS"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "maximum": 120
+    },
+    {
+      "parameter": "i2c_fall_ns",
+      "when": {
+        "i2c_mode": "FAST_PLUS",
+        "i2c_profile": "UM10204_STANDARD_LIMITS"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "maximum": 120
+    },
+    {
+      "parameter": "i2c_data_valid_ns",
+      "when": {
+        "i2c_mode": "FAST_PLUS",
+        "i2c_profile": "UM10204_STANDARD_LIMITS",
+        "i2c_clock_stretch_supported": false
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "maximum": 450
+    },
+    {
+      "parameter": "i2c_ack_valid_ns",
+      "when": {
+        "i2c_mode": "FAST_PLUS",
+        "i2c_profile": "UM10204_STANDARD_LIMITS",
+        "i2c_clock_stretch_supported": false
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "maximum": 450
+    },
+    {
+      "parameter": "i2c_bus_cap_pf",
+      "when": {
+        "i2c_mode": "FAST_PLUS",
+        "i2c_profile": "UM10204_STANDARD_LIMITS"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "maximum": 550
+    },
+    {
+      "parameter": "bitrate_bps",
+      "when": {
+        "i2c_mode": "HIGH_SPEED"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "maximum": 3400000
+    },
+    {
+      "parameter": "i2c_ack_policy",
+      "when": {
+        "i2c_mode": "HIGH_SPEED"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "allowed": [
+        "ACK_NACK"
+      ]
+    },
+    {
+      "parameter": "bitrate_bps",
+      "when": {
+        "i2c_mode": "ULTRA_FAST"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "maximum": 5000000
+    },
+    {
+      "parameter": "i2c_ack_policy",
+      "when": {
+        "i2c_mode": "ULTRA_FAST"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "allowed": [
+        "NINTH_HIGH_NO_ACK"
+      ]
+    },
+    {
+      "parameter": "i2c_drive",
+      "when": {
+        "i2c_mode": "ULTRA_FAST"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "allowed": [
+        "PUSH_PULL"
+      ]
+    },
+    {
+      "parameter": "i2c_low_ns",
+      "when": {
+        "i2c_mode": "ULTRA_FAST",
+        "i2c_profile": "UM10204_STANDARD_LIMITS"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "minimum": 50
+    },
+    {
+      "parameter": "i2c_high_ns",
+      "when": {
+        "i2c_mode": "ULTRA_FAST",
+        "i2c_profile": "UM10204_STANDARD_LIMITS"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "minimum": 50
+    },
+    {
+      "parameter": "i2c_start_hold_ns",
+      "when": {
+        "i2c_mode": "ULTRA_FAST",
+        "i2c_profile": "UM10204_STANDARD_LIMITS"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "minimum": 50
+    },
+    {
+      "parameter": "i2c_start_setup_ns",
+      "when": {
+        "i2c_mode": "ULTRA_FAST",
+        "i2c_profile": "UM10204_STANDARD_LIMITS"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "minimum": 50
+    },
+    {
+      "parameter": "i2c_stop_setup_ns",
+      "when": {
+        "i2c_mode": "ULTRA_FAST",
+        "i2c_profile": "UM10204_STANDARD_LIMITS"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "minimum": 50
+    },
+    {
+      "parameter": "i2c_bus_free_ns",
+      "when": {
+        "i2c_mode": "ULTRA_FAST",
+        "i2c_profile": "UM10204_STANDARD_LIMITS"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "minimum": 80
+    },
+    {
+      "parameter": "i2c_data_setup_ns",
+      "when": {
+        "i2c_mode": "ULTRA_FAST",
+        "i2c_profile": "UM10204_STANDARD_LIMITS"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "minimum": 30
+    },
+    {
+      "parameter": "i2c_data_hold_ns",
+      "when": {
+        "i2c_mode": "ULTRA_FAST",
+        "i2c_profile": "UM10204_STANDARD_LIMITS"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "minimum": 10
+    },
+    {
+      "parameter": "i2c_rise_ns",
+      "when": {
+        "i2c_mode": "ULTRA_FAST",
+        "i2c_profile": "UM10204_STANDARD_LIMITS"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "maximum": 50
+    },
+    {
+      "parameter": "i2c_fall_ns",
+      "when": {
+        "i2c_mode": "ULTRA_FAST",
+        "i2c_profile": "UM10204_STANDARD_LIMITS"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "maximum": 50
+    },
+    {
+      "parameter": "i2c_direction",
+      "when": {
+        "i2c_mode": "ULTRA_FAST"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "allowed": [
+        "WRITE"
+      ]
+    },
+    {
+      "parameter": "i2c_multi_controller",
+      "when": {
+        "i2c_mode": "ULTRA_FAST"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "allowed": [
+        false
+      ]
+    },
+    {
+      "parameter": "i2c_clock_stretch_supported",
+      "when": {
+        "i2c_mode": "ULTRA_FAST"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "allowed": [
+        false
+      ]
+    },
+    {
+      "parameter": "i2c_stretch_position",
+      "when": {
+        "i2c_mode": "ULTRA_FAST"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "allowed": [
+        "NONE"
+      ]
+    },
+    {
+      "parameter": "i2c_stretch_position",
+      "when": {
+        "i2c_mode": "HIGH_SPEED"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "allowed": [
+        "AFTER_ACK",
+        "NONE"
+      ]
+    },
+    {
+      "parameter": "i2c_drive",
+      "when": {
+        "i2c_mode": "HIGH_SPEED"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "allowed": [
+        "OPEN_DRAIN",
+        "HS_CURRENT_SOURCE"
+      ]
+    },
+    {
+      "parameter": "i2c_target_address",
+      "when": {
+        "i2c_endpoint_role": "CONTROLLER"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "allowed": []
+    },
+    {
+      "parameter": "i2c_address_bits",
+      "when": {
+        "i2c_endpoint_role": "TARGET"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "required": true
+    },
+    {
+      "parameter": "i2c_target_address",
+      "when": {
+        "i2c_endpoint_role": "TARGET"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "required": true
+    },
+    {
+      "parameter": "i2c_address_purpose",
+      "when": {
+        "i2c_endpoint_role": "TARGET"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "required": true
+    },
+    {
+      "parameter": "i2c_address_source",
+      "when": {
+        "i2c_endpoint_role": "TARGET"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "required": true
+    },
+    {
+      "parameter": "i2c_address_bits",
+      "when": {
+        "i2c_endpoint_role": "CONTROLLER_TARGET"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "required": true
+    },
+    {
+      "parameter": "i2c_target_address",
+      "when": {
+        "i2c_endpoint_role": "CONTROLLER_TARGET"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "required": true
+    },
+    {
+      "parameter": "i2c_address_purpose",
+      "when": {
+        "i2c_endpoint_role": "CONTROLLER_TARGET"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "required": true
+    },
+    {
+      "parameter": "i2c_address_source",
+      "when": {
+        "i2c_endpoint_role": "CONTROLLER_TARGET"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "required": true
+    },
+    {
+      "parameter": "i2c_target_address",
+      "when": {
+        "i2c_address_bits": 7
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "maximum": 127
+    },
+    {
+      "parameter": "i2c_target_address",
+      "when": {
+        "i2c_address_bits": 7,
+        "i2c_address_purpose": "ORDINARY"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "minimum": 8,
+      "maximum": 119
+    },
+    {
+      "parameter": "i2c_address_bits",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "allowed": [
+        7,
+        10
+      ]
+    },
+    {
+      "parameter": "i2c_hs_controller_code",
+      "when": {
+        "i2c_mode": "HIGH_SPEED",
+        "i2c_hs_diagnostic": false
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "minimum": 9
+    },
+    {
+      "parameter": "i2c_hs_entry_rate_bps",
+      "when": {
+        "i2c_mode": "HIGH_SPEED"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "required": true
+    },
+    {
+      "parameter": "i2c_hs_entry_rate_bps",
+      "when": {
+        "i2c_mode": "STANDARD"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "allowed": []
+    },
+    {
+      "parameter": "i2c_hs_entry_rate_bps",
+      "when": {
+        "i2c_mode": "FAST"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "allowed": []
+    },
+    {
+      "parameter": "i2c_hs_entry_rate_bps",
+      "when": {
+        "i2c_mode": "FAST_PLUS"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "allowed": []
+    },
+    {
+      "parameter": "i2c_hs_entry_rate_bps",
+      "when": {
+        "i2c_mode": "ULTRA_FAST"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "allowed": []
+    },
+    {
+      "parameter": "i2c_hs_controller_code",
+      "when": {
+        "i2c_mode": "HIGH_SPEED"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "required": true
+    },
+    {
+      "parameter": "i2c_hs_controller_code",
+      "when": {
+        "i2c_mode": "STANDARD"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "allowed": []
+    },
+    {
+      "parameter": "i2c_hs_controller_code",
+      "when": {
+        "i2c_mode": "FAST"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "allowed": []
+    },
+    {
+      "parameter": "i2c_hs_controller_code",
+      "when": {
+        "i2c_mode": "FAST_PLUS"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "allowed": []
+    },
+    {
+      "parameter": "i2c_hs_controller_code",
+      "when": {
+        "i2c_mode": "ULTRA_FAST"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "allowed": []
+    },
+    {
+      "parameter": "i2c_hs_diagnostic",
+      "when": {
+        "i2c_mode": "HIGH_SPEED"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "required": true
+    },
+    {
+      "parameter": "i2c_hs_diagnostic",
+      "when": {
+        "i2c_mode": "STANDARD"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "allowed": []
+    },
+    {
+      "parameter": "i2c_hs_diagnostic",
+      "when": {
+        "i2c_mode": "FAST"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "allowed": []
+    },
+    {
+      "parameter": "i2c_hs_diagnostic",
+      "when": {
+        "i2c_mode": "FAST_PLUS"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "allowed": []
+    },
+    {
+      "parameter": "i2c_hs_diagnostic",
+      "when": {
+        "i2c_mode": "ULTRA_FAST"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "allowed": []
+    },
+    {
+      "parameter": "i2c_bus_cap_pf",
+      "when": {
+        "i2c_profile": "UM10204_STANDARD_LIMITS",
+        "i2c_mode": "HIGH_SPEED"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "maximum": 400
+    },
+    {
+      "parameter": "i2c_low_ns",
+      "when": {
+        "i2c_profile": "UM10204_STANDARD_LIMITS",
+        "i2c_mode": "HIGH_SPEED"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "when_ranges": {
+        "i2c_bus_cap_pf": [
+          100,
+          400
+        ]
+      },
+      "minimum_expression": {
+        "sum": [
+          160,
+          {
+            "product": [
+              0.5333333333333333,
+              {
+                "subtract": [
+                  "i2c_bus_cap_pf",
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "parameter": "i2c_low_ns",
+      "when": {
+        "i2c_profile": "UM10204_STANDARD_LIMITS",
+        "i2c_mode": "HIGH_SPEED"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "when_ranges": {
+        "i2c_bus_cap_pf": [
+          0,
+          100
+        ]
+      },
+      "minimum": 160
+    },
+    {
+      "parameter": "i2c_high_ns",
+      "when": {
+        "i2c_profile": "UM10204_STANDARD_LIMITS",
+        "i2c_mode": "HIGH_SPEED"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "when_ranges": {
+        "i2c_bus_cap_pf": [
+          100,
+          400
+        ]
+      },
+      "minimum_expression": {
+        "sum": [
+          60,
+          {
+            "product": [
+              0.2,
+              {
+                "subtract": [
+                  "i2c_bus_cap_pf",
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "parameter": "i2c_high_ns",
+      "when": {
+        "i2c_profile": "UM10204_STANDARD_LIMITS",
+        "i2c_mode": "HIGH_SPEED"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "when_ranges": {
+        "i2c_bus_cap_pf": [
+          0,
+          100
+        ]
+      },
+      "minimum": 60
+    },
+    {
+      "parameter": "i2c_rise_ns",
+      "when": {
+        "i2c_profile": "UM10204_STANDARD_LIMITS",
+        "i2c_mode": "HIGH_SPEED"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "when_ranges": {
+        "i2c_bus_cap_pf": [
+          100,
+          400
+        ]
+      },
+      "maximum_expression": {
+        "sum": [
+          40,
+          {
+            "product": [
+              0.13333333333333333,
+              {
+                "subtract": [
+                  "i2c_bus_cap_pf",
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "parameter": "i2c_rise_ns",
+      "when": {
+        "i2c_profile": "UM10204_STANDARD_LIMITS",
+        "i2c_mode": "HIGH_SPEED"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "when_ranges": {
+        "i2c_bus_cap_pf": [
+          0,
+          100
+        ]
+      },
+      "maximum": 40
+    },
+    {
+      "parameter": "i2c_fall_ns",
+      "when": {
+        "i2c_profile": "UM10204_STANDARD_LIMITS",
+        "i2c_mode": "HIGH_SPEED"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "when_ranges": {
+        "i2c_bus_cap_pf": [
+          100,
+          400
+        ]
+      },
+      "maximum_expression": {
+        "sum": [
+          40,
+          {
+            "product": [
+              0.13333333333333333,
+              {
+                "subtract": [
+                  "i2c_bus_cap_pf",
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "parameter": "i2c_fall_ns",
+      "when": {
+        "i2c_profile": "UM10204_STANDARD_LIMITS",
+        "i2c_mode": "HIGH_SPEED"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "when_ranges": {
+        "i2c_bus_cap_pf": [
+          0,
+          100
+        ]
+      },
+      "maximum": 40
+    },
+    {
+      "parameter": "i2c_hs_first_rise_ns",
+      "when": {
+        "i2c_profile": "UM10204_STANDARD_LIMITS",
+        "i2c_mode": "HIGH_SPEED"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "when_ranges": {
+        "i2c_bus_cap_pf": [
+          100,
+          400
+        ]
+      },
+      "maximum_expression": {
+        "sum": [
+          80,
+          {
+            "product": [
+              0.26666666666666666,
+              {
+                "subtract": [
+                  "i2c_bus_cap_pf",
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "parameter": "i2c_hs_first_rise_ns",
+      "when": {
+        "i2c_profile": "UM10204_STANDARD_LIMITS",
+        "i2c_mode": "HIGH_SPEED"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "when_ranges": {
+        "i2c_bus_cap_pf": [
+          0,
+          100
+        ]
+      },
+      "maximum": 80
+    },
+    {
+      "parameter": "i2c_hs_data_rise_ns",
+      "when": {
+        "i2c_profile": "UM10204_STANDARD_LIMITS",
+        "i2c_mode": "HIGH_SPEED"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "when_ranges": {
+        "i2c_bus_cap_pf": [
+          100,
+          400
+        ]
+      },
+      "maximum_expression": {
+        "sum": [
+          80,
+          {
+            "product": [
+              0.26666666666666666,
+              {
+                "subtract": [
+                  "i2c_bus_cap_pf",
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "parameter": "i2c_hs_data_rise_ns",
+      "when": {
+        "i2c_profile": "UM10204_STANDARD_LIMITS",
+        "i2c_mode": "HIGH_SPEED"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "when_ranges": {
+        "i2c_bus_cap_pf": [
+          0,
+          100
+        ]
+      },
+      "maximum": 80
+    },
+    {
+      "parameter": "i2c_hs_data_fall_ns",
+      "when": {
+        "i2c_profile": "UM10204_STANDARD_LIMITS",
+        "i2c_mode": "HIGH_SPEED"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "when_ranges": {
+        "i2c_bus_cap_pf": [
+          100,
+          400
+        ]
+      },
+      "maximum_expression": {
+        "sum": [
+          80,
+          {
+            "product": [
+              0.26666666666666666,
+              {
+                "subtract": [
+                  "i2c_bus_cap_pf",
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "parameter": "i2c_hs_data_fall_ns",
+      "when": {
+        "i2c_profile": "UM10204_STANDARD_LIMITS",
+        "i2c_mode": "HIGH_SPEED"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "when_ranges": {
+        "i2c_bus_cap_pf": [
+          0,
+          100
+        ]
+      },
+      "maximum": 80
+    },
+    {
+      "parameter": "i2c_data_hold_ns",
+      "when": {
+        "i2c_profile": "UM10204_STANDARD_LIMITS",
+        "i2c_mode": "HIGH_SPEED"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "when_ranges": {
+        "i2c_bus_cap_pf": [
+          100,
+          400
+        ]
+      },
+      "maximum_expression": {
+        "sum": [
+          70,
+          {
+            "product": [
+              0.26666666666666666,
+              {
+                "subtract": [
+                  "i2c_bus_cap_pf",
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "parameter": "i2c_data_hold_ns",
+      "when": {
+        "i2c_profile": "UM10204_STANDARD_LIMITS",
+        "i2c_mode": "HIGH_SPEED"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "when_ranges": {
+        "i2c_bus_cap_pf": [
+          0,
+          100
+        ]
+      },
+      "maximum": 70
+    },
+    {
+      "parameter": "i2c_start_hold_ns",
+      "when": {
+        "i2c_profile": "UM10204_STANDARD_LIMITS",
+        "i2c_mode": "HIGH_SPEED"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "minimum": 160
+    },
+    {
+      "parameter": "i2c_start_setup_ns",
+      "when": {
+        "i2c_profile": "UM10204_STANDARD_LIMITS",
+        "i2c_mode": "HIGH_SPEED"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "minimum": 160
+    },
+    {
+      "parameter": "i2c_stop_setup_ns",
+      "when": {
+        "i2c_profile": "UM10204_STANDARD_LIMITS",
+        "i2c_mode": "HIGH_SPEED"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "minimum": 160
+    },
+    {
+      "parameter": "i2c_data_setup_ns",
+      "when": {
+        "i2c_profile": "UM10204_STANDARD_LIMITS",
+        "i2c_mode": "HIGH_SPEED"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "minimum": 10
+    },
+    {
+      "parameter": "i2c_rise_ns",
+      "when": {
+        "i2c_profile": "UM10204_STANDARD_LIMITS",
+        "i2c_mode": "HIGH_SPEED"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "when_ranges": {
+        "i2c_bus_cap_pf": [
+          0,
+          100
+        ]
+      },
+      "minimum": 10
+    },
+    {
+      "parameter": "i2c_rise_ns",
+      "when": {
+        "i2c_profile": "UM10204_STANDARD_LIMITS",
+        "i2c_mode": "HIGH_SPEED"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "when_ranges": {
+        "i2c_bus_cap_pf": [
+          100,
+          400
+        ]
+      },
+      "minimum_expression": {
+        "sum": [
+          10,
+          {
+            "product": [
+              0.03333333333333333,
+              {
+                "subtract": [
+                  "i2c_bus_cap_pf",
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "parameter": "i2c_fall_ns",
+      "when": {
+        "i2c_profile": "UM10204_STANDARD_LIMITS",
+        "i2c_mode": "HIGH_SPEED"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "when_ranges": {
+        "i2c_bus_cap_pf": [
+          0,
+          100
+        ]
+      },
+      "minimum": 10
+    },
+    {
+      "parameter": "i2c_fall_ns",
+      "when": {
+        "i2c_profile": "UM10204_STANDARD_LIMITS",
+        "i2c_mode": "HIGH_SPEED"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "when_ranges": {
+        "i2c_bus_cap_pf": [
+          100,
+          400
+        ]
+      },
+      "minimum_expression": {
+        "sum": [
+          10,
+          {
+            "product": [
+              0.03333333333333333,
+              {
+                "subtract": [
+                  "i2c_bus_cap_pf",
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "parameter": "i2c_hs_first_rise_ns",
+      "when": {
+        "i2c_profile": "UM10204_STANDARD_LIMITS",
+        "i2c_mode": "HIGH_SPEED"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "when_ranges": {
+        "i2c_bus_cap_pf": [
+          0,
+          100
+        ]
+      },
+      "minimum": 10
+    },
+    {
+      "parameter": "i2c_hs_first_rise_ns",
+      "when": {
+        "i2c_profile": "UM10204_STANDARD_LIMITS",
+        "i2c_mode": "HIGH_SPEED"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "when_ranges": {
+        "i2c_bus_cap_pf": [
+          100,
+          400
+        ]
+      },
+      "minimum_expression": {
+        "sum": [
+          10,
+          {
+            "product": [
+              0.03333333333333333,
+              {
+                "subtract": [
+                  "i2c_bus_cap_pf",
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "parameter": "i2c_hs_data_rise_ns",
+      "when": {
+        "i2c_profile": "UM10204_STANDARD_LIMITS",
+        "i2c_mode": "HIGH_SPEED"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "when_ranges": {
+        "i2c_bus_cap_pf": [
+          0,
+          100
+        ]
+      },
+      "minimum": 10
+    },
+    {
+      "parameter": "i2c_hs_data_rise_ns",
+      "when": {
+        "i2c_profile": "UM10204_STANDARD_LIMITS",
+        "i2c_mode": "HIGH_SPEED"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "when_ranges": {
+        "i2c_bus_cap_pf": [
+          100,
+          400
+        ]
+      },
+      "minimum_expression": {
+        "sum": [
+          10,
+          {
+            "product": [
+              0.03333333333333333,
+              {
+                "subtract": [
+                  "i2c_bus_cap_pf",
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "parameter": "i2c_hs_data_fall_ns",
+      "when": {
+        "i2c_profile": "UM10204_STANDARD_LIMITS",
+        "i2c_mode": "HIGH_SPEED"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "when_ranges": {
+        "i2c_bus_cap_pf": [
+          0,
+          100
+        ]
+      },
+      "minimum": 10
+    },
+    {
+      "parameter": "i2c_hs_data_fall_ns",
+      "when": {
+        "i2c_profile": "UM10204_STANDARD_LIMITS",
+        "i2c_mode": "HIGH_SPEED"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "when_ranges": {
+        "i2c_bus_cap_pf": [
+          100,
+          400
+        ]
+      },
+      "minimum_expression": {
+        "sum": [
+          10,
+          {
+            "product": [
+              0.03333333333333333,
+              {
+                "subtract": [
+                  "i2c_bus_cap_pf",
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "parameter": "bitrate_bps",
+      "when": {
+        "i2c_profile": "UM10204_STANDARD_LIMITS",
+        "i2c_mode": "HIGH_SPEED"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "when_ranges": {
+        "i2c_bus_cap_pf": [
+          400,
+          400
+        ]
+      },
+      "maximum": 1700000
+    },
+    {
+      "parameter": "bitrate_bps",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "maximum_ratio": {
+        "numerator_offset": 1,
+        "denominator_sum": [
+          "i2c_low_ns",
+          "i2c_high_ns",
+          "i2c_rise_ns",
+          "i2c_fall_ns"
+        ],
+        "factor": 1000000000.0
+      }
+    },
+    {
+      "parameter": "i2c_vdd_v",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "exclusive_minimum": 0
+    },
+    {
+      "parameter": "i2c_vol_max_v",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "maximum_parameter": "i2c_vil_max_v"
+    },
+    {
+      "parameter": "i2c_vih_min_v",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "maximum_parameter": "i2c_vdd_v",
+      "minimum_parameter": "i2c_vil_max_v"
+    },
+    {
+      "parameter": "i2c_voh_min_v",
+      "when": {
+        "i2c_mode": "ULTRA_FAST"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "minimum_parameter": "i2c_vih_min_v"
+    },
+    {
+      "parameter": "i2c_pin_cap_pf",
+      "when": {
+        "i2c_profile": "UM10204_STANDARD_LIMITS",
+        "i2c_special_pin": false
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "maximum": 10
+    },
+    {
+      "parameter": "i2c_fall_ns",
+      "when": {
+        "i2c_profile": "UM10204_STANDARD_LIMITS",
+        "i2c_mode": "FAST"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "minimum_expression": {
+        "product": [
+          "i2c_vdd_v",
+          3.6363636363636362
+        ]
+      }
+    },
+    {
+      "parameter": "i2c_fall_ns",
+      "when": {
+        "i2c_profile": "UM10204_STANDARD_LIMITS",
+        "i2c_mode": "FAST_PLUS"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "minimum_expression": {
+        "product": [
+          "i2c_vdd_v",
+          3.6363636363636362
+        ]
+      }
+    },
+    {
+      "parameter": "i2c_pullup_ohms",
+      "when": {
+        "i2c_mode": "STANDARD"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "exclusive_minimum": 0
+    },
+    {
+      "parameter": "i2c_pullup_ohms",
+      "when": {
+        "i2c_mode": "STANDARD"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "maximum_ratio": {
+        "numerator_parameter": "i2c_rise_ns",
+        "denominator_product": [
+          "i2c_bus_cap_pf"
+        ],
+        "denominator_offset": 1,
+        "factor": 1180.2195208308744
+      }
+    },
+    {
+      "parameter": "i2c_vdd_v",
+      "when": {
+        "i2c_mode": "STANDARD"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "maximum_expression": {
+        "sum": [
+          "i2c_vol_max_v",
+          {
+            "product": [
+              "i2c_pullup_ohms",
+              "i2c_sink_bound_ma",
+              0.001
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "parameter": "i2c_pullup_ohms",
+      "when": {
+        "i2c_mode": "FAST"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "exclusive_minimum": 0
+    },
+    {
+      "parameter": "i2c_pullup_ohms",
+      "when": {
+        "i2c_mode": "FAST"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "maximum_ratio": {
+        "numerator_parameter": "i2c_rise_ns",
+        "denominator_product": [
+          "i2c_bus_cap_pf"
+        ],
+        "denominator_offset": 1,
+        "factor": 1180.2195208308744
+      }
+    },
+    {
+      "parameter": "i2c_vdd_v",
+      "when": {
+        "i2c_mode": "FAST"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "maximum_expression": {
+        "sum": [
+          "i2c_vol_max_v",
+          {
+            "product": [
+              "i2c_pullup_ohms",
+              "i2c_sink_bound_ma",
+              0.001
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "parameter": "i2c_pullup_ohms",
+      "when": {
+        "i2c_mode": "FAST_PLUS"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "exclusive_minimum": 0
+    },
+    {
+      "parameter": "i2c_pullup_ohms",
+      "when": {
+        "i2c_mode": "FAST_PLUS"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "maximum_ratio": {
+        "numerator_parameter": "i2c_rise_ns",
+        "denominator_product": [
+          "i2c_bus_cap_pf"
+        ],
+        "denominator_offset": 1,
+        "factor": 1180.2195208308744
+      }
+    },
+    {
+      "parameter": "i2c_vdd_v",
+      "when": {
+        "i2c_mode": "FAST_PLUS"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "maximum_expression": {
+        "sum": [
+          "i2c_vol_max_v",
+          {
+            "product": [
+              "i2c_pullup_ohms",
+              "i2c_sink_bound_ma",
+              0.001
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "parameter": "i2c_extended_source",
+      "when": {
+        "i2c_profile": "SECTION7_2_EXTENDED_LOAD"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "required": true
+    },
+    {
+      "parameter": "i2c_extended_frequency_bound_bps",
+      "when": {
+        "i2c_profile": "SECTION7_2_EXTENDED_LOAD"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "required": true
+    },
+    {
+      "parameter": "bitrate_bps",
+      "when": {
+        "i2c_profile": "SECTION7_2_EXTENDED_LOAD"
+      },
+      "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+      "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+      "maximum_parameter": "i2c_extended_frequency_bound_bps"
+    }
+  ],
+  "physical_layer_profile_id": "I2C_SDA_SCL",
+  "medium_access_model": "WIRED_AND_ARBITRATION",
+  "native_parameter_prefixes": [
+    "i2c_"
+  ],
+  "parameter_aliases": {},
+  "parameter_alias_limits": {},
+  "parameter_evidence_scope": null,
+  "rate_source_profile_id": null,
+  "arbitration_model_id": null,
+  "max_payload_bytes": null,
+  "capabilities": {
+    "supports_signals": true,
+    "supports_data_objects": false,
+    "supports_streams": false,
+    "supports_multicast": false,
+    "supports_publish_subscribe": false,
+    "supports_request_response": true,
+    "supports_cyclic": true,
+    "supports_event": true,
+    "supports_redundancy": false,
+    "supports_time_sync": false,
+    "supports_safety_profile": false,
+    "supports_segmentation": false,
+    "supports_fragmentation": false,
+    "supports_qos": false
+  },
+  "deterministic": false,
+  "overhead_bytes": 8,
+  "implementation_status": "PARTIAL",
+  "connection_type": "COMMUNICATION_TECHNOLOGY",
+  "parameter_proposals": {
+    "kind": "STANDARD_MODE_LIMITS",
+    "unit": "bit/s",
+    "options": [
+      {
+        "mode": "Standard",
+        "maximum": 100000
+      },
+      {
+        "mode": "Fast",
+        "maximum": 400000
+      },
+      {
+        "mode": "Fast Plus",
+        "maximum": 1000000
+      },
+      {
+        "mode": "High Speed",
+        "maximum": 3400000
+      },
+      {
+        "mode": "Ultra Fast",
+        "maximum": 5000000
+      }
+    ],
+    "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+    "source_revision": "UM10204 Rev. 7.0 (2021-10-01)",
+    "status": "REVIEW_REQUIRED",
+    "note": "Mode, controller, target, clock stretching and physical bus must be confirmed."
+  },
+  "capacity_evidence": {
+    "status": "MODEL_AVAILABLE",
+    "frame_model": "I2C_CONFIRMED_TRANSACTION_BOUND_V1",
+    "schedule_model": "SERIAL_MASTER_BUSY_WINDOW_V1",
+    "requires_confirmed_device_parameters": true
+  },
+  "components": {
+    "binding": "i2c.binding",
+    "generator": "i2c.generator",
+    "validator": "i2c.validator",
+    "timing_model": "i2c.timing",
+    "load_model": "i2c.load",
+    "encoder": "i2c.encoder",
+    "decoder": "i2c.decoder"
+  },
+  "known_limitations": "Technology-specific conformance details require a vendor/profile extension."
+}

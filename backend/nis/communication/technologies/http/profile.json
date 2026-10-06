@@ -1,0 +1,3556 @@
+{
+  "id": "http",
+  "label": "HTTP",
+  "domain": "generic_networking",
+  "layer": "APPLICATION",
+  "transport_unit": "MESSAGE",
+  "payload_element_types": [
+    "DATA_OBJECT",
+    "RAW_DATA"
+  ],
+  "hardware_interface": "explicit_http_transport_binding",
+  "hardware_capability_aliases": [
+    "ethernet_or_wireless_interface"
+  ],
+  "default_stack": [
+    "http"
+  ],
+  "stack_variants": [
+    [
+      "http"
+    ],
+    [
+      "ethernet",
+      "ip",
+      "tcp",
+      "http"
+    ]
+  ],
+  "default_bitrate": null,
+  "rate_model": {
+    "type": "APPLICATION_TRANSPORT_DEPENDENT",
+    "fields": []
+  },
+  "local_timing_schema": [],
+  "parameter_schema": {
+    "payload_bytes": {
+      "label": "Payload",
+      "category": "physical",
+      "scope": "message",
+      "type": "number",
+      "description": "Actual NIS application chunk octets; whole HTTP content/message/framing differ. No8-byte or65535-byte protocol default.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling",
+      "integer": true
+    },
+    "cycle_ms": {
+      "label": "Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "Standardperiode fuer zyklische Nachrichten.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "minimum_cycle_time_ms": {
+      "label": "Minimum Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "deadline_ms": {
+      "label": "Deadline",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "timeout_ms": {
+      "label": "Timeout",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_latency_ms": {
+      "label": "Maximum Latency",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "jitter_ms": {
+      "label": "Jitter Budget",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "freshness_ms": {
+      "label": "Data Freshness",
+      "category": "timing",
+      "scope": "signal",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "source_processing_delay_ms": {
+      "label": "Source Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_processing_delay_ms": {
+      "label": "Target Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "propagation_delay_ms": {
+      "label": "Propagation",
+      "category": "timing",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.01,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_bus_load_percent": {
+      "label": "Ziel-Buslast",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "Zielwert fuer die aus Routing, Payload, Zyklus und Bitrate berechnete Buslast.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "peak_factor": {
+      "label": "Peak Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.15,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_factor": {
+      "label": "Burst Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.5,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_window_ms": {
+      "label": "Burst Window",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "warning_threshold": {
+      "label": "Load Warning",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "critical_threshold": {
+      "label": "Load Critical",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 75,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "overload_threshold": {
+      "label": "Load Overload",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 90,
+      "unit": "%",
+      "min": 1,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "traffic_class": {
+      "label": "Traffic Class",
+      "category": "qos",
+      "scope": "route",
+      "type": "select",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": "BEST_EFFORT",
+      "options": [
+        "BEST_EFFORT",
+        "CONTROL",
+        "REALTIME",
+        "SAFETY_CRITICAL"
+      ],
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "packet_loss_probability": {
+      "label": "Packet Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "frame_loss_probability": {
+      "label": "Frame Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "bit_error_rate": {
+      "label": "Bit Error Rate",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "corruption_probability": {
+      "label": "Corruption",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duplicate_probability": {
+      "label": "Duplication",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "reordering_probability": {
+      "label": "Reordering",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "required_reliability": {
+      "label": "Required Reliability",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.999,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_offset_ms": {
+      "label": "Clock Offset",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_drift_ppm": {
+      "label": "Clock Drift",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 20,
+      "unit": "ppm",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_precision_ms": {
+      "label": "Sync Precision",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_interval_ms": {
+      "label": "Sync Interval",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1000,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_sync_error_ms": {
+      "label": "Maximum Sync Error",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_delay_ms": {
+      "label": "Gateway Processing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.2,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_queue_delay_ms": {
+      "label": "Gateway Queueing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "protocol_conversion_delay_ms": {
+      "label": "Protocol Conversion",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duration_s": {
+      "label": "Simulation Duration",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 1,
+      "unit": "s",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "seed": {
+      "label": "Random Seed",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 42,
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "max_events": {
+      "label": "Maximum Events",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 100000,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "dropout_probability": {
+      "label": "Failure Injection Dropout",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "http_version": {
+      "label": "version",
+      "category": "communication",
+      "scope": "route",
+      "type": "select",
+      "description": "Actual protocol version, unknown. Different text/binary/QUIC framing and flow control; no latest-version default.",
+      "required": true,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "HTTP_1_1",
+        "HTTP_2",
+        "HTTP_3"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    "http_transport": {
+      "label": "transport",
+      "category": "communication",
+      "scope": "route",
+      "type": "select",
+      "description": "Actual selected transport, unknown. HTTP2TCP and HTTP3QUIC differ; HTTP1 custom reliable transport needs matched implementation source.",
+      "required": true,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "TCP",
+        "QUIC_V1",
+        "DEVICE_SPECIFIC"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    "http_binding_source": {
+      "label": "binding source",
+      "category": "communication",
+      "scope": "route",
+      "type": "text",
+      "description": "Required actual registered TCP/TLS or QUIC/IP/physical path and peer endpoints, unknown; no automatic Ethernet100M or TCP mapping for all versions.",
+      "required": true,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    "http_implementation_source": {
+      "label": "implementation source",
+      "category": "communication",
+      "scope": "route",
+      "type": "text",
+      "description": "Required actual client/server/proxy version, supported negotiated protocol and resource limits, unknown.",
+      "required": true,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    "http_schedule_source": {
+      "label": "schedule source",
+      "category": "communication",
+      "scope": "route",
+      "type": "text",
+      "description": "Required actual handshake/application/flow-control/transport recovery/concurrency schedule evidence, unknown; HTTP defines no universal deadline.",
+      "required": true,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    "http_role": {
+      "label": "role",
+      "category": "communication",
+      "scope": "route",
+      "type": "select",
+      "description": "Actual endpoint role, unknown. Response, push and settings direction depend on role; proxy requires each actual leg.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "CLIENT",
+        "SERVER",
+        "PROXY"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    "http_message_kind": {
+      "label": "message kind",
+      "category": "communication",
+      "scope": "route",
+      "type": "select",
+      "description": "Actual message direction; method/status/body semantics differ.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "REQUEST",
+        "RESPONSE"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    "http_scheme": {
+      "label": "scheme",
+      "category": "communication",
+      "scope": "route",
+      "type": "select",
+      "description": "Actual origin scheme, unknown. Default ports80/443 are proposals only when origin has no explicit port, not all endpoints.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "http",
+        "https"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    "http_port_explicit": {
+      "label": "port explicit",
+      "category": "communication",
+      "scope": "route",
+      "type": "boolean",
+      "description": "Whether actual origin contains explicit port, unknown; false permits scheme-default proposal, never overwrites explicit13500 etc.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    "http_port": {
+      "label": "port",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual endpoint port, unknown; scheme-default80/443 proposal only when port elided.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 1,
+      "max": 65535,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling",
+      "conditional_defaults": [
+        {
+          "when": {
+            "http_scheme": "http",
+            "http_port_explicit": false
+          },
+          "value": 80
+        },
+        {
+          "when": {
+            "http_scheme": "https",
+            "http_port_explicit": false
+          },
+          "value": 443
+        }
+      ]
+    },
+    "http_origin": {
+      "label": "origin",
+      "category": "communication",
+      "scope": "route",
+      "type": "text",
+      "description": "Actual http(s) origin/resource URI, unknown; nonempty host, no embedded credentials or fragment. Request-target forms are separate.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling",
+      "format": "ABSOLUTE_URI",
+      "allowed_schemes": [
+        "http",
+        "https"
+      ]
+    },
+    "http_method": {
+      "label": "method",
+      "category": "communication",
+      "scope": "route",
+      "type": "text",
+      "description": "Actual case-sensitive method token, unknown; extension tokens allowed, no universal GET command.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling",
+      "pattern": "[!#$%&'*+.^_`|~0-9A-Za-z-]+"
+    },
+    "http_status": {
+      "label": "status",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual response status100..599; unknown/reserved3-digit statuses retain class semantics. Not mandatory for requests.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 100,
+      "max": 599,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    "http_target_form": {
+      "label": "target form",
+      "category": "communication",
+      "scope": "route",
+      "type": "select",
+      "description": "Actual HTTP1 request-target form. CONNECT authority, OPTIONS asterisk and proxy absolute target differ from HTTP2/3 pseudoheaders.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "ORIGIN",
+        "ABSOLUTE",
+        "AUTHORITY",
+        "ASTERISK"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    "http_target_source": {
+      "label": "target source",
+      "category": "communication",
+      "scope": "route",
+      "type": "text",
+      "description": "Actual URI/Host/:authority/:scheme/:path and target normalization/route evidence, unknown; no automatic URL constructed from device name.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    "http_tls_version": {
+      "label": "tls version",
+      "category": "communication",
+      "scope": "route",
+      "type": "select",
+      "description": "Actual negotiated security version, unknown. HTTP3 QUICv1 TLS1.3; HTTP2TLS at least1.2; actual certificate/ALPN acceptance separate.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "TLS_1_2",
+        "TLS_1_3",
+        "DEVICE_SPECIFIC"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    "http_security_source": {
+      "label": "security source",
+      "category": "communication",
+      "scope": "route",
+      "type": "text",
+      "description": "Actual negotiated TLS/QUIC certificate/origin authentication/ALPN/cipher/0RTT policy evidence, unknown.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    "http_framing": {
+      "label": "framing",
+      "category": "communication",
+      "scope": "route",
+      "type": "select",
+      "description": "Actual selected message framing. HTTP1 chunk/close differ from HTTP2/3 stream framing; successful CONNECT becomes tunnel.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "NONE",
+        "CONTENT_LENGTH",
+        "CHUNKED",
+        "CLOSE_DELIMITED",
+        "TUNNEL",
+        "MULTIPLEXED"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    "http_transfer_encoding": {
+      "label": "transfer encoding",
+      "category": "communication",
+      "scope": "route",
+      "type": "select",
+      "description": "Actual HTTP1 Transfer-Encoding final coding; not content compression. HTTP2/3 forbid Transfer-Encoding, though TE:trailers differs.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "NONE",
+        "CHUNKED",
+        "OTHER"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    "http_transfer_source": {
+      "label": "transfer source",
+      "category": "communication",
+      "scope": "route",
+      "type": "text",
+      "description": "Actual transfer coding chain/chunk extensions/final terminator/trailers source, unknown; raw byte parsing not proven by counters.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    "http_content_length_present": {
+      "label": "content length present",
+      "category": "communication",
+      "scope": "route",
+      "type": "boolean",
+      "description": "Actual presence of Content-Length, unknown. Sender must not combine with Transfer-Encoding; HEAD/304 may report selected-representation length.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    "http_content_length": {
+      "label": "content length",
+      "category": "communication",
+      "scope": "route",
+      "type": "text",
+      "description": "Actual nonnegative decimal Content-Length with no protocol-wide upper bound; text preserves arbitrary exact digits without JS precision loss.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling",
+      "pattern": "[0-9]+"
+    },
+    "http_length_semantics": {
+      "label": "length semantics",
+      "category": "communication",
+      "scope": "route",
+      "type": "select",
+      "description": "Actual Content-Length semantic target, unknown; HEAD/304 metadata can differ from transmitted empty content.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "MESSAGE_BODY",
+        "SELECTED_REPRESENTATION"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    "http_body_bytes": {
+      "label": "body bytes",
+      "category": "communication",
+      "scope": "route",
+      "type": "text",
+      "description": "Actual transmitted content octets as exact decimal text. No65535 maximum or8-byte default; excludes chunk framing and HTTP2 padding.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling",
+      "pattern": "[0-9]+"
+    },
+    "http_wire_message_bytes": {
+      "label": "wire message bytes",
+      "category": "communication",
+      "scope": "route",
+      "type": "text",
+      "description": "Actual whole encoded HTTP message/stream octets as exact decimal text, unknown. Compression/headers/chunks/frame boundaries are not inferred from content.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling",
+      "pattern": "[0-9]+"
+    },
+    "http_encoding_source": {
+      "label": "encoding source",
+      "category": "communication",
+      "scope": "route",
+      "type": "text",
+      "description": "Actual encoded content/header/trailer/chunk/HPACK/QPACK representation and whole message evidence, unknown.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    "http_acceptance_source": {
+      "label": "acceptance source",
+      "category": "communication",
+      "scope": "route",
+      "type": "text",
+      "description": "Actual application acceptance/units/idempotence/retries/cache/proxy/response correlation evidence, unknown; transport delivery is not functional acceptance.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    "http_request_timeout_ms": {
+      "label": "request timeout ms",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual implementation/application request deadline, unknown; no universal HTTP100/500ms standard.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "ms",
+      "min": 0,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    "http_retry_limit": {
+      "label": "retry limit",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual application retry policy and idempotence/source evidence, unknown; HTTP retries differ from TCP/QUIC retransmission.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "attempts",
+      "min": 0,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    "http_retry_source": {
+      "label": "retry source",
+      "category": "communication",
+      "scope": "route",
+      "type": "text",
+      "description": "Actual method idempotence/replay/partial-processing and retry acceptance evidence, unknown. A lost response does not prove request was not applied.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    "http_transition_optimistic": {
+      "label": "transition optimistic",
+      "category": "communication",
+      "scope": "route",
+      "type": "boolean",
+      "description": "Actual optimistic HTTP1 Upgrade/CONNECT behavior, unknown; RFC9931 requires explicit safety relative to possible HTTP misinterpretation.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc9931.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    "http_transition_source": {
+      "label": "transition source",
+      "category": "communication",
+      "scope": "route",
+      "type": "text",
+      "description": "Actual negotiated transition/confirmation and harmless-prefix/smuggling risk evidence per RFC9931, unknown; tunnel is not auto-safe.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc9931.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    "http2_frame_type": {
+      "label": "http2 frame type",
+      "category": "communication",
+      "scope": "route",
+      "type": "select",
+      "description": "Actual HTTP2 frame type, unknown; fixed-type payloads and stream scope differ.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "DATA",
+        "HEADERS",
+        "PRIORITY",
+        "RST_STREAM",
+        "SETTINGS",
+        "PUSH_PROMISE",
+        "PING",
+        "GOAWAY",
+        "WINDOW_UPDATE",
+        "CONTINUATION",
+        "EXTENSION"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc9113.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling",
+      "schema_when": {
+        "http_version": "HTTP_2"
+      }
+    },
+    "http2_stream_id": {
+      "label": "http2 stream id",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual31-bit HTTP2 stream ID; DATA/HEADERS on nonzero streams; connection frames stream0. No defaultassigned stream1.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "max": 2147483647,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc9113.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling",
+      "schema_when": {
+        "http_version": "HTTP_2"
+      }
+    },
+    "http2_frame_header_bytes": {
+      "label": "http2 frame header bytes",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "HTTP2 fixed9-octet header proposal only for actual HTTP2. Excluded from SETTINGS_MAX_FRAME_SIZE.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 9,
+      "max": 9,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "source": "https://www.rfc-editor.org/rfc/rfc9113.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling",
+      "schema_when": {
+        "http_version": "HTTP_2"
+      },
+      "conditional_defaults": [
+        {
+          "when": {
+            "http_version": "HTTP_2"
+          },
+          "value": 9
+        }
+      ]
+    },
+    "http2_frame_payload_bytes": {
+      "label": "http2 frame payload bytes",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual24-bit HTTP2 frame payload, incl padding/pad length if used; at most actual receiver-advertised max, distinct from content/message.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "max": 16777215,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc9113.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling",
+      "schema_when": {
+        "http_version": "HTTP_2"
+      }
+    },
+    "http2_frame_bytes": {
+      "label": "http2 frame bytes",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual HTTP2 frame9+payload octets; not TCP segment or Ethernet frame length.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 9,
+      "max": 16777224,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc9113.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling",
+      "schema_when": {
+        "http_version": "HTTP_2"
+      }
+    },
+    "http2_settings_phase": {
+      "label": "http2 settings phase",
+      "category": "communication",
+      "scope": "route",
+      "type": "select",
+      "description": "Actual settings state. Normative initial values can be proposed only before peer values are supplied; never overwrite peer advertisements.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "INITIAL_DEFAULTS",
+        "PEER_ADVERTISED"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc9113.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling",
+      "schema_when": {
+        "http_version": "HTTP_2"
+      }
+    },
+    "http2_max_frame_size": {
+      "label": "http2 max frame size",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual peer SETTINGS_MAX_FRAME_SIZE range16384..16777215; initial16384 proposal. Not message-body maximum.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 16384,
+      "max": 16777215,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "source": "https://www.rfc-editor.org/rfc/rfc9113.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling",
+      "schema_when": {
+        "http_version": "HTTP_2"
+      },
+      "conditional_defaults": [
+        {
+          "when": {
+            "http_version": "HTTP_2",
+            "http2_settings_phase": "INITIAL_DEFAULTS"
+          },
+          "value": 16384
+        }
+      ]
+    },
+    "http2_header_table_size": {
+      "label": "http2 header table size",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual HPACK SETTINGS_HEADER_TABLE_SIZE uint32, initial4096 proposal; negotiated decoder context differs from uncompressed field size.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "max": 4294967295,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "source": "https://www.rfc-editor.org/rfc/rfc9113.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling",
+      "schema_when": {
+        "http_version": "HTTP_2"
+      },
+      "conditional_defaults": [
+        {
+          "when": {
+            "http_version": "HTTP_2",
+            "http2_settings_phase": "INITIAL_DEFAULTS"
+          },
+          "value": 4096
+        }
+      ]
+    },
+    "http2_initial_window_size": {
+      "label": "http2 initial window size",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual SETTINGS_INITIAL_WINDOW_SIZE stream limit, initial65535 proposal; current stream/connection windows change independently.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "max": 2147483647,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "source": "https://www.rfc-editor.org/rfc/rfc9113.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling",
+      "schema_when": {
+        "http_version": "HTTP_2"
+      },
+      "conditional_defaults": [
+        {
+          "when": {
+            "http_version": "HTTP_2",
+            "http2_settings_phase": "INITIAL_DEFAULTS"
+          },
+          "value": 65535
+        }
+      ]
+    },
+    "http2_current_stream_window": {
+      "label": "http2 current stream window",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual remaining stream flow-control window. Can be negative after SETTINGS decrease; negative window permits no DATA, no unsigned fallback.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "max": 2147483647,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc9113.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling",
+      "schema_when": {
+        "http_version": "HTTP_2"
+      }
+    },
+    "http2_current_connection_window": {
+      "label": "http2 current connection window",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual remaining connection DATA window; initial65535, WINDOW_UPDATE changes it. Not changed by stream SETTINGS.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "max": 2147483647,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc9113.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling",
+      "schema_when": {
+        "http_version": "HTTP_2"
+      }
+    },
+    "http2_enable_push": {
+      "label": "http2 enable push",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual SETTINGS_ENABLE_PUSH0/1; initialclient1, serverinitial value has no effect equivalent0. Actual support/state required.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "max": 1,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "source": "https://www.rfc-editor.org/rfc/rfc9113.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling",
+      "schema_when": {
+        "http_version": "HTTP_2"
+      },
+      "conditional_defaults": [
+        {
+          "when": {
+            "http_version": "HTTP_2",
+            "http2_settings_phase": "INITIAL_DEFAULTS",
+            "http_role": "CLIENT"
+          },
+          "value": 1
+        },
+        {
+          "when": {
+            "http_version": "HTTP_2",
+            "http2_settings_phase": "INITIAL_DEFAULTS",
+            "http_role": "SERVER"
+          },
+          "value": 0
+        }
+      ]
+    },
+    "http2_max_concurrent_streams": {
+      "label": "http2 max concurrent streams",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual advertised uint32 limit, initially unlimited if absent; no fabricated100/256-stream maximum.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "max": 4294967295,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc9113.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling",
+      "schema_when": {
+        "http_version": "HTTP_2"
+      }
+    },
+    "http2_max_header_list_bytes": {
+      "label": "http2 max header list bytes",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual advisory uncompressed field-list limit incl32bytes per field; initially unlimited if absent, not a zero-byte default.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "max": 4294967295,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc9113.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling",
+      "schema_when": {
+        "http_version": "HTTP_2"
+      }
+    },
+    "http2_pad_length_present": {
+      "label": "http2 pad length present",
+      "category": "communication",
+      "scope": "route",
+      "type": "boolean",
+      "description": "Actual PADDED flag and one-byte PadLength presence for DATA/HEADERS/PUSH_PROMISE, unknown.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc9113.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling",
+      "schema_when": {
+        "http_version": "HTTP_2"
+      }
+    },
+    "http2_padding_bytes": {
+      "label": "http2 padding bytes",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual padding octets0..255 when PADDED, excluding1-byte PadLength; all are part of frame payload and DATA flow-control cost.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "max": 255,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc9113.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling",
+      "schema_when": {
+        "http_version": "HTTP_2"
+      }
+    },
+    "http2_data_bytes": {
+      "label": "http2 data bytes",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual content inside DATA frame excluding padding/PadLength; distinct from complete message content and receiver window cost.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "max": 16777215,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc9113.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling",
+      "schema_when": {
+        "http_version": "HTTP_2"
+      }
+    },
+    "http3_frame_type": {
+      "label": "http3 frame type",
+      "category": "communication",
+      "scope": "route",
+      "type": "text",
+      "description": "Actual QUIC-varint HTTP3 frame type0..2^62-1 as exact decimal text. Separate registry from HTTP2.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc9114.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling",
+      "schema_when": {
+        "http_version": "HTTP_3"
+      },
+      "pattern": "0|[1-9][0-9]*",
+      "integer_text_maximum": 4611686018427387903
+    },
+    "http3_frame_length": {
+      "label": "http3 frame length",
+      "category": "communication",
+      "scope": "route",
+      "type": "text",
+      "description": "Actual QUIC-varint HTTP3 frame payload length0..2^62-1 as exact decimal text; no9-byte header or16384 maximum inherited from HTTP2.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc9114.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling",
+      "schema_when": {
+        "http_version": "HTTP_3"
+      },
+      "pattern": "0|[1-9][0-9]*",
+      "integer_text_maximum": 4611686018427387903
+    },
+    "http3_stream_kind": {
+      "label": "http3 stream kind",
+      "category": "communication",
+      "scope": "route",
+      "type": "select",
+      "description": "Actual QUIC stream kind: DATA/HEADERS request or push; SETTINGS control. QPACK streams are independent byte streams.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "REQUEST",
+        "CONTROL",
+        "PUSH",
+        "QPACK_ENCODER",
+        "QPACK_DECODER",
+        "EXTENSION"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc9114.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling",
+      "schema_when": {
+        "http_version": "HTTP_3"
+      }
+    },
+    "http3_qpack_max_table": {
+      "label": "http3 qpack max table",
+      "category": "communication",
+      "scope": "route",
+      "type": "text",
+      "description": "Actual SETTINGS_QPACK_MAX_TABLE_CAPACITY uint62 as exact decimal text, initial0; not HTTP2 HPACK4096 default.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "source": "https://www.rfc-editor.org/rfc/rfc9204.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling",
+      "schema_when": {
+        "http_version": "HTTP_3"
+      },
+      "pattern": "0|[1-9][0-9]*",
+      "integer_text_maximum": 4611686018427387903,
+      "conditional_defaults": [
+        {
+          "when": {
+            "http_version": "HTTP_3",
+            "http3_settings_phase": "INITIAL_1RTT"
+          },
+          "value": "0"
+        }
+      ]
+    },
+    "http3_qpack_blocked_streams": {
+      "label": "http3 qpack blocked streams",
+      "category": "communication",
+      "scope": "route",
+      "type": "text",
+      "description": "Actual SETTINGS_QPACK_BLOCKED_STREAMS uint62 as exact decimal text, initial0; blocking/recovery remains actual QUIC/QPACK schedule.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "source": "https://www.rfc-editor.org/rfc/rfc9204.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling",
+      "schema_when": {
+        "http_version": "HTTP_3"
+      },
+      "pattern": "0|[1-9][0-9]*",
+      "integer_text_maximum": 4611686018427387903,
+      "conditional_defaults": [
+        {
+          "when": {
+            "http_version": "HTTP_3",
+            "http3_settings_phase": "INITIAL_1RTT"
+          },
+          "value": "0"
+        }
+      ]
+    },
+    "http3_max_field_section_bytes": {
+      "label": "http3 max field section bytes",
+      "category": "communication",
+      "scope": "route",
+      "type": "text",
+      "description": "Actual advertised uint62 maximum field-section size as exact decimal text; absent means unlimited, not0 or HTTP2 frame-size limit.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc9114.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling",
+      "schema_when": {
+        "http_version": "HTTP_3"
+      },
+      "pattern": "0|[1-9][0-9]*",
+      "integer_text_maximum": 4611686018427387903
+    },
+    "http3_settings_phase": {
+      "label": "http3 settings phase",
+      "category": "communication",
+      "scope": "route",
+      "type": "select",
+      "description": "Actual HTTP3 settings state.1RTT initial defaults differ from remembered0RTT peer values; do not overwrite remembered settings.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "INITIAL_1RTT",
+        "PEER_ADVERTISED",
+        "RESUMED_0RTT"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc9114.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling",
+      "schema_when": {
+        "http_version": "HTTP_3"
+      }
+    },
+    "http3_quic_source": {
+      "label": "http3 quic source",
+      "category": "communication",
+      "scope": "route",
+      "type": "text",
+      "description": "Actual QUIC version, varint widths, stream limits, flow control, recovery and congestion/pacing source, unknown; no assumed TCP schedule.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc9114.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling",
+      "schema_when": {
+        "http_version": "HTTP_3"
+      }
+    },
+    "http_transition_token": {
+      "label": "transition token",
+      "category": "communication",
+      "scope": "route",
+      "type": "select",
+      "description": "Actual upgrade/CONNECT protocol, unknown. RFC9931 distinguishes TLS, WebSocket, UDP/IP tunneling and untrusted TCP CONNECT; source alone does not override prohibited optimistic sending.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "TLS",
+        "WEBSOCKET",
+        "CONNECT_UDP",
+        "CONNECT_IP",
+        "CONNECT_TCP",
+        "DEVICE_SPECIFIC"
+      ],
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc9931.html",
+      "source_revision": "RFC9931 March2026 sections6/8"
+    },
+    "http_connect_untrusted": {
+      "label": "connect untrusted",
+      "category": "communication",
+      "scope": "route",
+      "type": "boolean",
+      "description": "Actual CONNECT forwarding on behalf of untrusted TCP client, unknown. Do not assume trusted false; wait-success or Connection:close required for HTTP1.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc9931.html",
+      "source_revision": "RFC9931 March2026 sections6/8"
+    },
+    "http_wait_success": {
+      "label": "wait success",
+      "category": "communication",
+      "scope": "route",
+      "type": "boolean",
+      "description": "Actual proxy waits for successful2xx before forwarding TCP payload, unknown. Distinct from application deadline and declared source text.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc9931.html",
+      "source_revision": "RFC9931 March2026 sections6/8"
+    },
+    "http_connection_close": {
+      "label": "connection close",
+      "category": "communication",
+      "scope": "route",
+      "type": "boolean",
+      "description": "Actual Connection:close request/rejection connection behavior. HTTP1 untrusted CONNECT requires close or wait; rejecting proxy must close underlying connection under RFC9931.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc9931.html",
+      "source_revision": "RFC9931 March2026 sections6/8"
+    },
+    "http_transition_rejected": {
+      "label": "transition rejected",
+      "category": "communication",
+      "scope": "route",
+      "type": "boolean",
+      "description": "Actual CONNECT transition rejection state, unknown. Underlying connection must be closed by HTTP1 rejecting proxy without processing further requests.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc9931.html",
+      "source_revision": "RFC9931 March2026 sections6/8"
+    }
+  },
+  "mechanisms": {
+    "access": [
+      "ACTUAL_HTTP1_ORDERING_HTTP2_STREAMS_OR_HTTP3_QUIC"
+    ],
+    "integrity": [
+      "ACTUAL_TRANSPORT_TLS_QUIC_AND_APPLICATION_ACCEPTANCE"
+    ],
+    "scope": [
+      "VERSION_SPECIFIC_APPLICATION_NOT_UNIVERSAL_ETHERNET_TCP_STACK"
+    ]
+  },
+  "parameter_constraints": [
+    {
+      "when": {
+        "http_version": "HTTP_1_1"
+      },
+      "parameter": "http2_frame_type",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_1_1"
+      },
+      "parameter": "http2_stream_id",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_1_1"
+      },
+      "parameter": "http2_frame_header_bytes",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_1_1"
+      },
+      "parameter": "http2_frame_payload_bytes",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_1_1"
+      },
+      "parameter": "http2_frame_bytes",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_1_1"
+      },
+      "parameter": "http2_settings_phase",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_1_1"
+      },
+      "parameter": "http2_max_frame_size",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_1_1"
+      },
+      "parameter": "http2_header_table_size",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_1_1"
+      },
+      "parameter": "http2_initial_window_size",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_1_1"
+      },
+      "parameter": "http2_current_stream_window",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_1_1"
+      },
+      "parameter": "http2_current_connection_window",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_1_1"
+      },
+      "parameter": "http2_enable_push",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_1_1"
+      },
+      "parameter": "http2_max_concurrent_streams",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_1_1"
+      },
+      "parameter": "http2_max_header_list_bytes",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_1_1"
+      },
+      "parameter": "http2_pad_length_present",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_1_1"
+      },
+      "parameter": "http2_padding_bytes",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_1_1"
+      },
+      "parameter": "http2_data_bytes",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_1_1"
+      },
+      "parameter": "http3_frame_type",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_1_1"
+      },
+      "parameter": "http3_frame_length",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_1_1"
+      },
+      "parameter": "http3_stream_kind",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_1_1"
+      },
+      "parameter": "http3_qpack_max_table",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_1_1"
+      },
+      "parameter": "http3_qpack_blocked_streams",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_1_1"
+      },
+      "parameter": "http3_max_field_section_bytes",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_1_1"
+      },
+      "parameter": "http3_settings_phase",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_1_1"
+      },
+      "parameter": "http3_quic_source",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_2"
+      },
+      "parameter": "http3_frame_type",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_2"
+      },
+      "parameter": "http3_frame_length",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_2"
+      },
+      "parameter": "http3_stream_kind",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_2"
+      },
+      "parameter": "http3_qpack_max_table",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_2"
+      },
+      "parameter": "http3_qpack_blocked_streams",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_2"
+      },
+      "parameter": "http3_max_field_section_bytes",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_2"
+      },
+      "parameter": "http3_settings_phase",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_2"
+      },
+      "parameter": "http3_quic_source",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_3"
+      },
+      "parameter": "http2_frame_type",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_3"
+      },
+      "parameter": "http2_stream_id",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_3"
+      },
+      "parameter": "http2_frame_header_bytes",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_3"
+      },
+      "parameter": "http2_frame_payload_bytes",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_3"
+      },
+      "parameter": "http2_frame_bytes",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_3"
+      },
+      "parameter": "http2_settings_phase",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_3"
+      },
+      "parameter": "http2_max_frame_size",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_3"
+      },
+      "parameter": "http2_header_table_size",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_3"
+      },
+      "parameter": "http2_initial_window_size",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_3"
+      },
+      "parameter": "http2_current_stream_window",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_3"
+      },
+      "parameter": "http2_current_connection_window",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_3"
+      },
+      "parameter": "http2_enable_push",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_3"
+      },
+      "parameter": "http2_max_concurrent_streams",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_3"
+      },
+      "parameter": "http2_max_header_list_bytes",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_3"
+      },
+      "parameter": "http2_pad_length_present",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_3"
+      },
+      "parameter": "http2_padding_bytes",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_3"
+      },
+      "parameter": "http2_data_bytes",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_2"
+      },
+      "parameter": "http_transport",
+      "allowed": [
+        "TCP"
+      ],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_3"
+      },
+      "parameter": "http_transport",
+      "allowed": [
+        "QUIC_V1"
+      ],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_3"
+      },
+      "parameter": "http_tls_version",
+      "allowed": [
+        "TLS_1_3"
+      ],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_3"
+      },
+      "parameter": "http_security_source",
+      "required": true,
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_3"
+      },
+      "parameter": "http3_quic_source",
+      "required": true,
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_scheme": "https"
+      },
+      "parameter": "http_security_source",
+      "required": true,
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_scheme": "https"
+      },
+      "parameter": "http_tls_version",
+      "required": true,
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_message_kind": "REQUEST"
+      },
+      "parameter": "http_method",
+      "required": true,
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_message_kind": "RESPONSE"
+      },
+      "parameter": "http_status",
+      "required": true,
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_message_kind": "REQUEST"
+      },
+      "parameter": "http_status",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_message_kind": "REQUEST"
+      },
+      "parameter": "http_framing",
+      "allowed": [
+        "NONE",
+        "CONTENT_LENGTH",
+        "CHUNKED",
+        "MULTIPLEXED"
+      ],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_target_form": "AUTHORITY"
+      },
+      "parameter": "http_method",
+      "allowed": [
+        "CONNECT"
+      ],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_target_form": "ASTERISK"
+      },
+      "parameter": "http_method",
+      "allowed": [
+        "OPTIONS"
+      ],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_1_1",
+        "http_method": "CONNECT",
+        "http_message_kind": "REQUEST"
+      },
+      "parameter": "http_target_form",
+      "allowed": [
+        "AUTHORITY"
+      ],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_2"
+      },
+      "parameter": "http_target_form",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_2"
+      },
+      "parameter": "http_transfer_encoding",
+      "allowed": [
+        "NONE"
+      ],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_2"
+      },
+      "parameter": "http_framing",
+      "allowed": [
+        "NONE",
+        "MULTIPLEXED",
+        "TUNNEL"
+      ],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_3"
+      },
+      "parameter": "http_target_form",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_3"
+      },
+      "parameter": "http_transfer_encoding",
+      "allowed": [
+        "NONE"
+      ],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_3"
+      },
+      "parameter": "http_framing",
+      "allowed": [
+        "NONE",
+        "MULTIPLEXED",
+        "TUNNEL"
+      ],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {},
+      "parameter": "http_content_length_present",
+      "when_present": [
+        "http_content_length"
+      ],
+      "allowed": [
+        true
+      ],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_content_length_present": false
+      },
+      "parameter": "http_content_length",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_content_length_present": true
+      },
+      "parameter": "http_content_length",
+      "required": true,
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_content_length_present": true
+      },
+      "parameter": "http_length_semantics",
+      "required": true,
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_length_semantics": "MESSAGE_BODY"
+      },
+      "parameter": "http_content_length",
+      "equal_decimal_parameter": "http_body_bytes",
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_transfer_encoding": "CHUNKED"
+      },
+      "parameter": "http_content_length_present",
+      "allowed": [
+        false
+      ],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_transfer_encoding": "CHUNKED"
+      },
+      "parameter": "http_content_length",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_transfer_encoding": "CHUNKED"
+      },
+      "parameter": "http_transfer_source",
+      "required": true,
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_transfer_encoding": "OTHER"
+      },
+      "parameter": "http_content_length_present",
+      "allowed": [
+        false
+      ],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_transfer_encoding": "OTHER"
+      },
+      "parameter": "http_content_length",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_transfer_encoding": "OTHER"
+      },
+      "parameter": "http_transfer_source",
+      "required": true,
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_framing": "CHUNKED"
+      },
+      "parameter": "http_framing",
+      "when_present": [
+        "http_transfer_encoding"
+      ],
+      "allowed": [
+        "CHUNKED"
+      ],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_1_1",
+        "http_framing": "CHUNKED"
+      },
+      "parameter": "http_transfer_encoding",
+      "allowed": [
+        "CHUNKED"
+      ],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_1_1",
+        "http_framing": "CHUNKED"
+      },
+      "parameter": "http_transfer_encoding",
+      "required": true,
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_1_1",
+        "http_framing": "CONTENT_LENGTH"
+      },
+      "parameter": "http_content_length_present",
+      "allowed": [
+        true
+      ],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_1_1",
+        "http_framing": "CONTENT_LENGTH"
+      },
+      "parameter": "http_content_length_present",
+      "required": true,
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_message_kind": "RESPONSE",
+        "http_method": "HEAD"
+      },
+      "parameter": "http_body_bytes",
+      "pattern": "0+",
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_message_kind": "RESPONSE",
+        "http_status": 204
+      },
+      "parameter": "http_body_bytes",
+      "pattern": "0+",
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_message_kind": "RESPONSE",
+        "http_status": 205
+      },
+      "parameter": "http_body_bytes",
+      "pattern": "0+",
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_message_kind": "RESPONSE",
+        "http_status": 304
+      },
+      "parameter": "http_body_bytes",
+      "pattern": "0+",
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_message_kind": "RESPONSE"
+      },
+      "parameter": "http_body_bytes",
+      "when_ranges": {
+        "http_status": [
+          100,
+          199
+        ]
+      },
+      "pattern": "0+",
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_message_kind": "RESPONSE",
+        "http_status": 204
+      },
+      "parameter": "http_content_length",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_message_kind": "RESPONSE"
+      },
+      "parameter": "http_content_length",
+      "when_ranges": {
+        "http_status": [
+          100,
+          199
+        ]
+      },
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_message_kind": "RESPONSE",
+        "http_status": 204
+      },
+      "parameter": "http_transfer_encoding",
+      "allowed": [
+        "NONE"
+      ],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_message_kind": "RESPONSE"
+      },
+      "parameter": "http_transfer_encoding",
+      "when_ranges": {
+        "http_status": [
+          100,
+          199
+        ]
+      },
+      "allowed": [
+        "NONE"
+      ],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_message_kind": "REQUEST"
+      },
+      "parameter": "http_length_semantics",
+      "allowed": [
+        "MESSAGE_BODY"
+      ],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_message_kind": "RESPONSE",
+        "http_method": "CONNECT"
+      },
+      "parameter": "http_content_length",
+      "when_ranges": {
+        "http_status": [
+          200,
+          299
+        ]
+      },
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_message_kind": "RESPONSE",
+        "http_method": "CONNECT"
+      },
+      "parameter": "http_transfer_encoding",
+      "when_ranges": {
+        "http_status": [
+          200,
+          299
+        ]
+      },
+      "allowed": [
+        "NONE"
+      ],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_transition_optimistic": true
+      },
+      "parameter": "http_transition_source",
+      "required": true,
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {},
+      "parameter": "http_retry_source",
+      "when_positive": [
+        "http_retry_limit"
+      ],
+      "required": true,
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_2"
+      },
+      "parameter": "http2_frame_bytes",
+      "equal_sum": [
+        {
+          "parameter": "http2_frame_header_bytes"
+        },
+        {
+          "parameter": "http2_frame_payload_bytes"
+        }
+      ],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_2"
+      },
+      "parameter": "http2_frame_payload_bytes",
+      "maximum_parameter": "http2_max_frame_size",
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_2",
+        "http2_frame_type": "DATA"
+      },
+      "parameter": "http2_stream_id",
+      "exclusive_minimum": 0,
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_2",
+        "http2_frame_type": "HEADERS"
+      },
+      "parameter": "http2_stream_id",
+      "exclusive_minimum": 0,
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_2",
+        "http2_frame_type": "PRIORITY"
+      },
+      "parameter": "http2_stream_id",
+      "exclusive_minimum": 0,
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_2",
+        "http2_frame_type": "RST_STREAM"
+      },
+      "parameter": "http2_stream_id",
+      "exclusive_minimum": 0,
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_2",
+        "http2_frame_type": "PUSH_PROMISE"
+      },
+      "parameter": "http2_stream_id",
+      "exclusive_minimum": 0,
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_2",
+        "http2_frame_type": "CONTINUATION"
+      },
+      "parameter": "http2_stream_id",
+      "exclusive_minimum": 0,
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_2",
+        "http2_frame_type": "SETTINGS"
+      },
+      "parameter": "http2_stream_id",
+      "allowed": [
+        0
+      ],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_2",
+        "http2_frame_type": "PING"
+      },
+      "parameter": "http2_stream_id",
+      "allowed": [
+        0
+      ],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_2",
+        "http2_frame_type": "GOAWAY"
+      },
+      "parameter": "http2_stream_id",
+      "allowed": [
+        0
+      ],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_2",
+        "http2_frame_type": "PING"
+      },
+      "parameter": "http2_frame_payload_bytes",
+      "allowed": [
+        8
+      ],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_2",
+        "http2_frame_type": "PRIORITY"
+      },
+      "parameter": "http2_frame_payload_bytes",
+      "allowed": [
+        5
+      ],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_2",
+        "http2_frame_type": "RST_STREAM"
+      },
+      "parameter": "http2_frame_payload_bytes",
+      "allowed": [
+        4
+      ],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_2",
+        "http2_frame_type": "WINDOW_UPDATE"
+      },
+      "parameter": "http2_frame_payload_bytes",
+      "allowed": [
+        4
+      ],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_2",
+        "http2_frame_type": "GOAWAY"
+      },
+      "parameter": "http2_frame_payload_bytes",
+      "minimum": 8,
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_2",
+        "http2_frame_type": "SETTINGS"
+      },
+      "parameter": "http2_frame_payload_bytes",
+      "multiple_of": 6,
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_2",
+        "http2_frame_type": "DATA"
+      },
+      "parameter": "http2_frame_payload_bytes",
+      "when_positive": [
+        "http2_frame_payload_bytes"
+      ],
+      "maximum_parameter": "http2_current_stream_window",
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_2",
+        "http2_frame_type": "DATA"
+      },
+      "parameter": "http2_frame_payload_bytes",
+      "when_positive": [
+        "http2_frame_payload_bytes"
+      ],
+      "maximum_parameter": "http2_current_connection_window",
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_2",
+        "http2_frame_type": "DATA",
+        "http2_pad_length_present": false
+      },
+      "parameter": "http2_frame_payload_bytes",
+      "equal_sum": [
+        {
+          "parameter": "http2_data_bytes"
+        },
+        {
+          "parameter": "http2_padding_bytes"
+        }
+      ],
+      "equal_sum_offset": 0,
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_2",
+        "http2_frame_type": "DATA",
+        "http2_pad_length_present": true
+      },
+      "parameter": "http2_frame_payload_bytes",
+      "equal_sum": [
+        {
+          "parameter": "http2_data_bytes"
+        },
+        {
+          "parameter": "http2_padding_bytes"
+        }
+      ],
+      "equal_sum_offset": 1,
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_2",
+        "http2_pad_length_present": false
+      },
+      "parameter": "http2_padding_bytes",
+      "allowed": [
+        0
+      ],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_2",
+        "http_role": "SERVER"
+      },
+      "parameter": "http2_enable_push",
+      "allowed": [
+        0
+      ],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_3",
+        "http3_stream_kind": "CONTROL"
+      },
+      "parameter": "http3_frame_type",
+      "forbidden": [
+        "0",
+        "1",
+        "5"
+      ],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_3",
+        "http3_stream_kind": "QPACK_ENCODER"
+      },
+      "parameter": "http3_frame_type",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_3",
+        "http3_stream_kind": "QPACK_DECODER"
+      },
+      "parameter": "http3_frame_type",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_3",
+        "http3_stream_kind": "REQUEST"
+      },
+      "parameter": "http3_frame_type",
+      "forbidden": [
+        "3",
+        "4",
+        "7",
+        "13"
+      ],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_3",
+        "http3_stream_kind": "PUSH"
+      },
+      "parameter": "http3_frame_type",
+      "forbidden": [
+        "3",
+        "4",
+        "7",
+        "13"
+      ],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_message_kind": "RESPONSE"
+      },
+      "when_not": {
+        "http_method": "HEAD",
+        "http_status": 304
+      },
+      "parameter": "http_length_semantics",
+      "allowed": [
+        "MESSAGE_BODY"
+      ],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_transition_optimistic": true
+      },
+      "parameter": "http_transition_token",
+      "required": true,
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_transition_token": "WEBSOCKET"
+      },
+      "parameter": "http_transition_optimistic",
+      "allowed": [
+        false
+      ],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_1_1",
+        "http_transition_token": "CONNECT_UDP"
+      },
+      "parameter": "http_transition_optimistic",
+      "allowed": [
+        false
+      ],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_1_1",
+        "http_transition_token": "CONNECT_IP"
+      },
+      "parameter": "http_transition_optimistic",
+      "allowed": [
+        false
+      ],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_1_1",
+        "http_transition_token": "CONNECT_TCP",
+        "http_connect_untrusted": true
+      },
+      "when_not": {
+        "http_connection_close": true
+      },
+      "parameter": "http_wait_success",
+      "required": true,
+      "allowed": [
+        true
+      ],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_1_1",
+        "http_transition_token": "CONNECT_TCP",
+        "http_transition_rejected": true,
+        "http_role": "PROXY"
+      },
+      "parameter": "http_connection_close",
+      "required": true,
+      "allowed": [
+        true
+      ],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_3",
+        "http_role": "CLIENT"
+      },
+      "parameter": "http3_frame_type",
+      "forbidden": [
+        "5"
+      ],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    },
+    {
+      "when": {
+        "http_version": "HTTP_3",
+        "http_role": "SERVER"
+      },
+      "parameter": "http3_frame_type",
+      "forbidden": [
+        "13"
+      ],
+      "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling"
+    }
+  ],
+  "physical_layer_profile_id": null,
+  "medium_access_model": null,
+  "native_parameter_prefixes": [
+    "http_",
+    "http2_",
+    "http3_"
+  ],
+  "parameter_aliases": {},
+  "parameter_alias_limits": {},
+  "parameter_evidence_scope": null,
+  "rate_source_profile_id": null,
+  "arbitration_model_id": null,
+  "max_payload_bytes": null,
+  "capabilities": {
+    "supports_signals": true,
+    "supports_data_objects": true,
+    "supports_streams": true,
+    "supports_multicast": false,
+    "supports_publish_subscribe": false,
+    "supports_request_response": true,
+    "supports_cyclic": true,
+    "supports_event": true,
+    "supports_redundancy": false,
+    "supports_time_sync": false,
+    "supports_safety_profile": false,
+    "supports_segmentation": true,
+    "supports_fragmentation": false,
+    "supports_qos": false
+  },
+  "deterministic": false,
+  "overhead_bytes": 8,
+  "implementation_status": "EXPERIMENTAL",
+  "connection_type": "COMMUNICATION_TECHNOLOGY",
+  "parameter_proposals": {
+    "kind": "APPLICATION_TRANSPORT_DEPENDENT",
+    "status": "REVIEW_REQUIRED",
+    "source": "https://www.rfc-editor.org/rfc/rfc9110.html",
+    "source_revision": "RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling",
+    "note": "No own physical rate or universal HTTP65535-byte message cap. Version-specific initialsettings proposals only until actual peer advertisements; actual explicit transport binding required."
+  },
+  "capacity_evidence": {
+    "status": "MODEL_MISSING",
+    "frame_model": null,
+    "schedule_model": null,
+    "requires_confirmed_device_parameters": true
+  },
+  "components": {
+    "binding": "http.binding",
+    "generator": "http.generator",
+    "validator": "http.validator",
+    "timing_model": null,
+    "load_model": null,
+    "encoder": "http.encoder",
+    "decoder": "http.decoder"
+  },
+  "known_limitations": "Technology-specific conformance details require a vendor/profile extension."
+}

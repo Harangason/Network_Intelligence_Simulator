@@ -1,0 +1,681 @@
+"""Human-facing agent/review API. Approval is intentionally absent from MCP."""
+from __future__ import annotations
+
+import asyncio
+from backend.nis.agent.context.limits import MAX_REQUIREMENT_LENGTH
+from concurrent.futures import ThreadPoolExecutor
+import hmac
+import json
+import os
+from queue import Queue, Empty
+import secrets
+import threading
+from urllib.parse import urlparse
+from uuid import uuid4
+from flask import Blueprint, Response, jsonify, request, stream_with_context
+from pydantic import ValidationError
+from backend.nis.agent.context.agent_context import AgentContext
+from backend.nis.agent.core.engineering_agent import EngineeringAgent
+from backend.nis.agent.api.mcp_client import EngineeringMCPClient
+from backend.nis.agent.api.tool_contract import Permission
+from backend.nis.agent.api.tool_contract import ToolResult
+from backend.nis.agent.api.tool_contract import ToolStatus
+from backend.nis.agent.orchestration.local_reasoner import LocalEngineeringReasoner
+from backend.nis.interfaces.mcp.server import create_server
+from backend.nis.infrastructure.persistence.db import ConcurrentUpdateError
+from backend.nis.engineering.projects.project_context import normalize_context_project_id
+from backend.nis.engineering.projects.project_context import activate_project
+from backend.nis.engineering.projects.project_context import reset_project
+from backend.nis.agent.tools.runtime import ToolAuthority
+from backend.nis.agent.tools.runtime import DEFAULT_PERMISSIONS
+from backend.nis.agent.tools.runtime import execute
+from backend.nis.agent.tools.services import TOOLS
+from backend.nis.agent.tools import proposal_service as proposals
+from backend.nis.agent.tools import conversation as conversation
+from backend.nis.agent.tools.run_status import WizardExecutionTracker
+from backend.nis.agent.tools.run_status import extract_wizard_run_id
+from backend.nis.agent.tools.run_status import reconcile_model_apply
+from backend.nis.agent.tools.run_status import restore_wizard_continuation_prompt
+from backend.nis.agent.tools.cancellation import RunCancellation
+from backend.nis.agent.tools.cancellation import request_cancel
+from backend.nis.workflow.services.service import WorkflowStatusService
+from datetime import datetime, timezone
+from backend.nis.agent.api.agent_response import validate_response
+
+agent_api = Blueprint("engineering_agent_api", __name__)
+_executor = ThreadPoolExecutor(max_workers=4, thread_name_prefix="engineering-agent")
+_slots = threading.BoundedSemaphore(4)
+_HEARTBEAT_SECONDS = 30.0
+COOKIE = "engineering_review_csrf"
+_PROPOSAL_STATUS_FIELDS = (
+    "proposal_id", "proposal_type", "revision", "status", "validation_result", "canonical_ids", "workload_id",
+    "dependent_results",
+)
+_WIZARD_REVIEW_PROPOSAL_TYPES = {
+    "WIZARD_ENGINEERING_MODEL",
+    "WIZARD_ROUTING",
+    "WIZARD_NETWORK_TOPOLOGY",
+    "CAPACITY_NETWORK_REPAIR",
+}
+
+
+def renew_conversation_lease(authority: ToolAuthority, run_id: str) -> None:
+    """Renew the scoped lease without competing for the model mutation lock.
+
+    The dedicated heartbeat thread has its own connection. The conditional
+    update in renew still checks both project and run ownership atomically.
+    """
+    token = activate_project(authority.project_id)
+    try:
+        if not conversation.renew(run_id):
+            raise ConcurrentUpdateError('Der Agentenlauf besitzt dieses Gespräch nicht mehr.')
+    finally:
+        reset_project(token)
+
+
+def _project() -> str:
+    return normalize_context_project_id(request.headers.get("X-Project-ID") or request.args.get("project") or "default")
+
+
+@agent_api.get('/capabilities')
+def assistant_capabilities():
+    authority = ToolAuthority(_project())
+    result = execute(authority, 'inspect_assistant_capabilities', Permission.READ_MODEL,
+        {'capability_id': request.args.get('id')}, TOOLS['inspect_assistant_capabilities'].handler)
+    return jsonify(result.model_dump(mode='json')), 200 if result.success else 400
+
+
+def agent_failure_message(error):
+    import httpx
+    errors = [error]
+    while errors:
+        item = errors.pop()
+        errors.extend(getattr(item, 'exceptions', []))
+        if isinstance(item, httpx.ConnectError):
+            return 'Der konfigurierte lokale KI-Dienst ist nicht erreichbar. Ollama starten und erneut versuchen. Fähigkeiten und Wizards bleiben verfügbar.'
+        if isinstance(item, (httpx.TimeoutException, asyncio.TimeoutError)):
+            return 'Der KI-Lauf hat sein Zeitlimit erreicht. Bitte den Modelldienst prüfen oder den Auftrag eingrenzen.'
+        if isinstance(item, RuntimeError) and str(item).startswith('Lokaler KI-Dienst: HTTP'):
+            return 'Der lokale KI-Dienst hat die Anfrage abgelehnt. Bitte prüfen, ob das konfigurierte Modell geladen und verfügbar ist.'
+    return 'Der Agentenlauf konnte nicht fortgesetzt werden. Projekt- und Modelldienste prüfen.'
+
+
+@agent_api.post('/attachments/preview')
+def attachment_preview():
+    from backend.nis.agent.tools.documents import extract_document
+    from backend.nis.agent.tools.documents import MAX_FILE_BYTES
+    # Bound multipart parsing as well as the extracted file. This endpoint does
+    # not access the model, conversation, database or inference service.
+    request.max_content_length = MAX_FILE_BYTES + 64 * 1024
+    upload = request.files.get('file')
+    if upload is None or not upload.filename:
+        return jsonify({'error': 'Bitte eine Datei auswählen.'}), 400
+    try:
+        result = extract_document(upload.filename, upload.stream.read(MAX_FILE_BYTES + 1))
+    except ValueError as exc:
+        return jsonify({'error': str(exc)}), 400
+    response = jsonify(result)
+    response.headers['Cache-Control'] = 'no-store'
+    return response
+
+
+@agent_api.get("/review-session")
+def review_session():
+    token = secrets.token_urlsafe(32)
+    response = jsonify({"csrf_token": token})
+    response.set_cookie(COOKIE,token,httponly=True,samesite="Strict",secure=request.is_secure,path="/api/engineering/agent",max_age=1800)
+    response.headers["Cache-Control"] = "no-store"
+    return response
+
+
+def _human_intent() -> bool:
+    cookie, supplied = request.cookies.get(COOKIE,""), request.headers.get("X-Review-CSRF", "")
+    origin = request.headers.get("Origin")
+    if origin and urlparse(origin).hostname not in {"localhost", "127.0.0.1", "::1", request.host.split(":")[0]}:
+        return False
+    return bool(cookie and supplied and hmac.compare_digest(cookie,supplied)) and request.headers.get("X-Human-Review")=="confirmed"
+
+
+def _proposal_status_payload(result) -> dict:
+    """Keep polling and mutation responses small even for topology proposals."""
+    payload = result.model_dump(mode="json")
+    if isinstance(result.data, dict):
+        payload["data"] = {key: result.data[key] for key in _PROPOSAL_STATUS_FIELDS if key in result.data}
+    return payload
+
+
+@agent_api.route('/project-draft', methods=['GET', 'POST'])
+def project_draft():
+    """Shared draft endpoint; browser writes carry an explicit human action."""
+    from backend.nis.agent.tools import project_draft as drafts
+    authority = ToolAuthority(_project(), 'local-human')
+    if request.method == 'GET':
+        result = execute(authority, 'inspect_project_draft', Permission.READ_MODEL, {}, drafts.inspect)
+    else:
+        if not _human_intent():
+            return jsonify({'error': 'Bitte die Entwurfsänderung ausdrücklich bestätigen.'}), 403
+        result = execute(authority, 'update_project_draft', Permission.GENERATE_PROPOSAL,
+                         request.get_json(silent=True) or {}, drafts.command)
+    response = jsonify(result.model_dump(mode='json'))
+    response.headers['Cache-Control'] = 'no-store'
+    return response, 200 if result.success else 409
+
+
+@agent_api.post('/project-draft/create-project')
+def create_project_from_draft():
+    from backend.nis.agent.tools import project_creation as project_creation
+    if not _human_intent():
+        return jsonify({'error': 'Die Projektanlage muss ausdrücklich angefordert werden.'}), 403
+    result = execute(ToolAuthority(_project(), 'local-human'), 'create_project_from_draft',
+                     Permission.GENERATE_PROPOSAL, request.get_json(silent=True) or {}, project_creation.create)
+    return jsonify(result.model_dump(mode='json')), 200 if result.success else 409
+
+
+@agent_api.post('/project-draft/plan')
+def plan_project_draft():
+    from backend.nis.agent.tools import project_draft as drafts
+    from pydantic import BaseModel, ConfigDict, Field
+    class PlanRequest(BaseModel):
+        model_config = ConfigDict(extra='forbid')
+        draft_id: str = Field(min_length=1, max_length=80)
+        revision: int = Field(ge=1)
+    if not _human_intent():
+        return jsonify({'error': 'Die Planung muss ausdrücklich angefordert werden.'}), 403
+    def plan(arguments):
+        payload = PlanRequest.model_validate({k: v for k, v in arguments.items() if not k.startswith('_')})
+        return drafts.plan_model(payload.model_dump())
+    result = execute(ToolAuthority(_project(), 'local-human'), 'plan_project_draft',
+                     Permission.GENERATE_PROPOSAL, request.get_json(silent=True) or {}, plan)
+    return jsonify(result.model_dump(mode='json')), 200 if result.success else 409
+
+
+@agent_api.post('/project-draft/confirm-model')
+def confirm_project_draft_model():
+    from backend.nis.agent.tools import project_draft as drafts
+    from pydantic import BaseModel, ConfigDict, Field
+    class ConfirmRequest(BaseModel):
+        model_config = ConfigDict(extra='forbid')
+        draft_id: str = Field(min_length=1, max_length=80)
+        revision: int = Field(ge=1)
+        operation_id: str = Field(min_length=8, max_length=120)
+    if not _human_intent():
+        return jsonify({'error': 'Die Modellbestätigung muss ausdrücklich angefordert werden.'}), 403
+    def confirm(arguments):
+        payload = ConfirmRequest.model_validate({k: v for k, v in arguments.items() if not k.startswith('_')})
+        return drafts.confirm_model(payload.model_dump())
+    result = execute(ToolAuthority(_project(), 'local-human'), 'confirm_project_draft_model',
+                     Permission.GENERATE_PROPOSAL, request.get_json(silent=True) or {}, confirm)
+    return jsonify(result.model_dump(mode='json')), 200 if result.success else 409
+
+
+@agent_api.post('/project-draft/workflow-request')
+def prepare_draft_workflow():
+    definition = TOOLS['prepare_draft_workflow']
+    def prepare(arguments):
+        data = definition.input_model.model_validate({k: v for k, v in arguments.items() if not k.startswith('_')})
+        return definition.handler(data.model_dump(mode='json'))
+    result = execute(ToolAuthority(_project()), definition.name, definition.permission,
+                     request.get_json(silent=True) or {}, prepare)
+    return jsonify(result.model_dump(mode='json')), 200 if result.success else 409
+
+
+@agent_api.route('/execution-goals/<workload_id>/hardware-facts', methods=['GET', 'POST'])
+def goal_hardware_facts(workload_id):
+    from backend.nis.engineering.goal_execution import hardware_facts as hardware_facts
+    authority = ToolAuthority(_project(), 'local-human')
+    if request.method == 'GET':
+        result = execute(authority, 'inspect_goal_hardware_facts', Permission.READ_MODEL, {}, lambda _: hardware_facts.inspect(workload_id))
+    else:
+        if not _human_intent():
+            return jsonify({'error': 'Hardwaredaten müssen im Assistenten bewusst bestätigt werden.'}), 403
+        data = request.get_json(silent=True) or {}
+        def confirm_facts(_):
+            state = conversation.read()
+            if state.get('active_workload') != workload_id or state.get('run_id') and state.get('lease_until', '') > datetime.now(timezone.utc).isoformat():
+                raise ConcurrentUpdateError('Dieser Anschlussauftrag ist nicht mehr der aktuelle wartende Auftrag.')
+            result = hardware_facts.record(workload_id, data, actor=authority.actor)
+            for question in state['questions'].values():
+                if question['status'] == 'OPEN': question['status'] = 'OUTDATED'
+            state['current_question'] = None
+            conversation.write(state)
+            return result
+        result = execute(authority, 'confirm_goal_hardware_facts', Permission.READ_MODEL, {}, confirm_facts)
+    response = jsonify(result.model_dump(mode='json')); response.headers['Cache-Control'] = 'no-store'
+    return response, 200 if result.success else 409
+
+
+@agent_api.get('/execution-goals/<workload_id>/response')
+def goal_response(workload_id):
+    from backend.nis.engineering.goal_execution.service import get_goal
+    from backend.nis.engineering.goal_execution.tools import result as goal_result
+    result = execute(ToolAuthority(_project()), 'read_goal_response', Permission.READ_MODEL, {},
+        lambda _: goal_result(get_goal(workload_id)))
+    response = jsonify(result.model_dump(mode='json')); response.headers['Cache-Control'] = 'no-store'
+    return response, 200 if result.success else 404
+
+
+@agent_api.get("/proposals/<proposal_id>")
+def proposal_get(proposal_id):
+    authority = ToolAuthority(_project(),"review-ui")
+    result = execute(authority,"inspect_proposal",Permission.READ_MODEL,{"proposal_id":proposal_id},lambda a:proposals.latest(a["proposal_id"]))
+    payload = _proposal_status_payload(result) if request.args.get("view") == "status" else result.model_dump(mode="json")
+    return jsonify(payload), 200 if result.success else 404
+
+
+@agent_api.post("/proposals/<proposal_id>/review")
+def proposal_review(proposal_id):
+    if not _human_intent():
+        return jsonify({"error":"Die bewusste Freigabe in der Review-Oberfläche ist erforderlich."}),403
+    data = request.get_json(silent=True) or {}
+    authority = ToolAuthority(_project(),"local-human")
+    result = execute(authority,"human_review",Permission.READ_MODEL,{},lambda a:proposals.review(proposal_id,
+        revision=str(data.get("revision") or ""),decision=str(data.get("decision") or ""),actor=authority.actor,trace_id=a["_trace_id"]))
+    return jsonify(result.model_dump(mode="json")),200 if result.success else 409
+
+
+@agent_api.post("/proposals/<proposal_id>/apply")
+def proposal_apply(proposal_id):
+    if not _human_intent():
+        return jsonify({"error":"Die bewusste Übernahme in der Review-Oberfläche ist erforderlich."}),403
+    authority = ToolAuthority(_project(),"local-human",DEFAULT_PERMISSIONS|{Permission.APPLY_APPROVED_PROPOSAL})
+    def apply_and_reconcile(args):
+        proposal = proposals.apply(args["proposal_id"], actor=authority.actor, trace_id=args["_trace_id"])
+        # One transaction: an applied model must never leave the wizard at its
+        # old review gate if updating the durable continuation state fails.
+        reconcile_model_apply(authority.project_id, proposal)
+        conversation.reconcile_runtime_model_apply(proposal)
+        return proposal
+    result = execute(authority,"apply_approved_proposal",Permission.APPLY_APPROVED_PROPOSAL,{"proposal_id":proposal_id},
+                     apply_and_reconcile)
+    payload = _proposal_status_payload(result) if request.args.get("view") == "status" else result.model_dump(mode="json")
+    return jsonify(payload),200 if result.success else 409
+
+
+@agent_api.post("/proposals/<proposal_id>/approve-apply")
+def proposal_approve_apply(proposal_id):
+    """Commit one explicit wizard review as approval and apply atomically.
+
+    The two governed lifecycle transitions remain separate in the audit trail,
+    but the reviewer does not have to confirm the same proposal twice.  This
+    endpoint is intentionally limited to proposals surfaced by the wizard; the
+    generic review UI keeps its existing two-step contract.
+    """
+    if not _human_intent():
+        return jsonify({"error":"Die bewusste Freigabe und Übernahme in der Wizard-Oberfläche ist erforderlich."}),403
+    data = request.get_json(silent=True) or {}
+    revision = str(data.get("revision") or "")
+    authority = ToolAuthority(_project(),"local-human",DEFAULT_PERMISSIONS|{Permission.APPLY_APPROVED_PROPOSAL})
+
+    def approve_apply_and_reconcile(args):
+        current = proposals.get(args["proposal_id"])
+        if current.get("proposal_type") not in _WIZARD_REVIEW_PROPOSAL_TYPES:
+            raise PermissionError("Die Ein-Klick-Freigabe ist ausschließlich für Wizard-Vorschläge zulässig.")
+        # A lost HTTP response must not cause a second write.  APPLIED is the
+        # durable success record of the original reviewed action.
+        if current.get("status") == "APPLIED":
+            return current
+        if revision != current.get("revision"):
+            raise ConcurrentUpdateError("Der Vorschlag wurde inzwischen geändert.")
+        if current.get("status") == "VALIDATED":
+            current = proposals.review(
+                args["proposal_id"], revision=revision, decision="approve",
+                actor=authority.actor, trace_id=args["_trace_id"],
+            )
+        if current.get("status") != "APPROVED":
+            return current
+        proposal = proposals.apply(args["proposal_id"], actor=authority.actor, trace_id=args["_trace_id"])
+        # Keep proposal mutation and durable wizard continuation in the same
+        # project transaction.  A reconciliation failure rolls both back.
+        reconcile_model_apply(authority.project_id, proposal)
+        return proposal
+
+    result = execute(
+        authority,
+        "human_review_and_apply",
+        Permission.APPLY_APPROVED_PROPOSAL,
+        {"proposal_id":proposal_id},
+        approve_apply_and_reconcile,
+    )
+    payload = _proposal_status_payload(result) if request.args.get("view") == "status" else result.model_dump(mode="json")
+    return jsonify(payload),200 if result.success else 409
+
+
+@agent_api.post("/proposals/<proposal_id>/validate")
+def proposal_validate(proposal_id):
+    authority = ToolAuthority(_project(),"review-ui")
+    result = execute(authority,"validate_proposal",Permission.VALIDATE,{"proposal_id":proposal_id},lambda a:proposals.validate(a["proposal_id"]))
+    return jsonify(result.model_dump(mode="json")),200 if result.success else 409
+
+
+@agent_api.post('/proposals/<proposal_id>/revise')
+def proposal_revise(proposal_id):
+    if not _human_intent():
+        return jsonify({'error': 'Eine bewusste Bearbeitung in der Oberfläche ist erforderlich.'}), 403
+    data = request.get_json(silent=True) or {}
+    def revise(args):
+        old = proposals.get(proposal_id)
+        if old['status'] in {'APPLIED', 'REJECTED'} or old['revision'] != data.get('revision'):
+            raise ValueError('Dieser Vorschlag kann in diesem Stand nicht bearbeitet werden.')
+        names = data.get('names')
+        if not isinstance(names, dict) or len(names) > len(old['changes']):
+            raise ValueError('Ungültige Änderungsnamen.')
+        if set(names) - {change['local_ref'] for change in old['changes'] if change['action'] in {'CREATE','UPDATE'} and (change.get('data') or {}).get('name')}:
+            raise ValueError('Nur Namen vorhandener Anlege- oder Änderungsvorschläge sind editierbar.')
+        for change in old['changes']:
+            ref = change['local_ref']
+            if ref in names:
+                name = names[ref]
+                if not isinstance(name, str) or not 1 <= len(name.strip()) <= 200:
+                    raise ValueError('Objektnamen benötigen 1 bis 200 Zeichen.')
+                change.setdefault('data', {})['name'] = name.strip()
+        rationale = data.get('rationale', old['rationale'])
+        if not isinstance(rationale, str) or not 1 <= len(rationale.strip()) <= 30000:
+            raise ValueError('Eine Beschreibung der Änderung ist erforderlich.')
+        revised = proposals.create(old['proposal_type'], old['changes'], rationale, assumptions=old['assumptions'],
+            evidence=[{'source':'human_revision','previous_proposal_id':proposal_id}])
+        proposals.review(proposal_id, revision=old['revision'], decision='reject', actor='local-human', trace_id=args['_trace_id'])
+        proposals.set_replacement(proposal_id, revised['proposal_id'])
+        state = conversation.read()
+        state['active_proposal'] = revised['proposal_id']
+        state['pending_approvals'] = list(dict.fromkeys([*state['pending_approvals'], revised['proposal_id']]))[-100:]
+        conversation.write(state)
+        return proposals.validate(revised['proposal_id'])
+    result = execute(ToolAuthority(_project(), 'local-human'), 'revise_proposal', Permission.GENERATE_PROPOSAL, {}, revise)
+    return jsonify(result.model_dump(mode='json')), 200 if result.success else 409
+
+
+@agent_api.post('/runs/<wizard_run_id>/cancel')
+def cancel_wizard(wizard_run_id):
+    data = request.get_json(silent=True) or {}
+    if data.get('confirmed') is not True:
+        return jsonify({'error': 'Bitte den Abbruch ausdrücklich bestätigen.'}), 400
+    project_id = _project()
+    def cancel(_):
+        service = WorkflowStatusService(project_id)
+        workflow = service.get(summary=True)
+        context = workflow.get('context') or {}
+        execution = context.get('agent_execution') or {}
+        wizard = context.get('agent_wizard_status') or {}
+        saved_request = context.get('wizard_request') or {}
+        if saved_request.get('version') == 2 and data.get('request_revision') != saved_request.get('revision'):
+            raise ConcurrentUpdateError('Die Auftragsrevision hat sich geändert. Bitte den aktuellen Auftrag vor dem Abbruch laden.')
+        if wizard_run_id != (execution.get('run_id') or wizard.get('run_id')):
+            raise ValueError('Dieser Auftrag ist nicht mehr der aktuelle Projektauftrag.')
+        state = conversation.read()
+        if state.get('run_id') and extract_wizard_run_id(state.get('current_requirement', '')) != wizard_run_id:
+            raise ValueError('Ein anderer Auftrag läuft; dieser wird nicht abgebrochen.')
+        running_here = request_cancel(project_id, wizard_run_id)
+        if not running_here and state.get('run_id'):
+            conversation.finish(state['run_id'])
+        if state.get('active_workload') and extract_wizard_run_id(state.get('current_requirement', '')) == wizard_run_id:
+            from backend.nis.engineering.workloads import EngineeringWorkloadOrchestrator
+            workloads = EngineeringWorkloadOrchestrator(project_id)
+            if workloads.get_workload(state['active_workload'])['status'] not in {'COMPLETED', 'CANCELED'}:
+                workloads.cancel(state['active_workload'], actor='local-human')
+        now = datetime.now(timezone.utc).isoformat()
+        updated = {'agent_execution': {**execution, 'run_id': wizard_run_id, 'state': 'CANCELED',
+            'step': execution.get('step') or workflow['active_step'],
+            'completed': execution.get('completed', 0), 'total': execution.get('total', 0),
+            'message': 'Auftrag abgebrochen. Bereits übernommene Modelldaten bleiben erhalten.', 'updated_at': now}}
+        if wizard.get('run_id') == wizard_run_id:
+            updated['agent_wizard_status'] = {**wizard, 'status': 'CANCELED', 'canceled_at': now}
+        return service.set_context(updated, summary=True)
+    result = execute(ToolAuthority(project_id, 'local-human'), 'cancel_wizard_run', Permission.READ_MODEL, {}, cancel)
+    return jsonify(result.model_dump(mode='json')), 200 if result.success else 409
+
+
+@agent_api.post('/runs/<wizard_run_id>/finish')
+def finish_wizard(wizard_run_id):
+    data = request.get_json(silent=True) or {}
+    project_id = _project()
+    def finish(_):
+        service = WorkflowStatusService(project_id)
+        workflow = service.get(summary=True)
+        context = workflow.get('context') or {}
+        wizard = context.get('agent_wizard_status') or {}
+        saved = context.get('wizard_request') or {}
+        if wizard.get('run_id') != wizard_run_id:
+            raise ConcurrentUpdateError('Dieser Wizardauftrag ist nicht mehr aktuell.')
+        if saved.get('version') == 2 and data.get('request_revision') != saved.get('revision'):
+            raise ConcurrentUpdateError('Die Auftragsrevision hat sich geändert. Bitte aktuellen Stand laden.')
+        state = conversation.inspect()
+        if state.get('run_id') or context.get('agent_execution', {}).get('state') == 'RUNNING':
+            raise ConcurrentUpdateError('Der Auftrag läuft noch.')
+        question = (state.get('questions') or {}).get(state.get('current_question'))
+        if question and question.get('status') == 'OPEN':
+            raise ConcurrentUpdateError('Der Auftrag enthält noch eine offene Rückfrage.')
+        if state.get('pending_approvals'):
+            raise ConcurrentUpdateError('Der Auftrag enthält noch nicht übernommene Vorschläge.')
+        if saved.get('version') == 2 and wizard.get('model_request_revision') != saved.get('revision'):
+            raise ConcurrentUpdateError('Das Modell ist für die aktuelle Auftragsrevision noch nicht bestätigt.')
+        if context.get('agent_execution', {}).get('state') in {'BLOCKED', 'FAILED', 'CANCELED', 'REVIEW_REQUIRED'}:
+            raise ConcurrentUpdateError('Der Auftrag ist angehalten und kann noch nicht abgeschlossen werden.')
+        selected = wizard.get('scope_ids') or []
+        if not selected or any(workflow['statuses'].get(step) not in {'COMPLETE', 'APPROVED', 'WARNING'} for step in selected):
+            raise ValueError('Die beauftragten Workflow-Schritte sind noch nicht vollständig abgeschlossen.')
+        return service.set_context({'agent_wizard_status': None}, summary=True)
+    result = execute(ToolAuthority(project_id, 'conversation-ui'), 'finish_wizard', Permission.READ_MODEL, {}, finish)
+    return jsonify(result.data if result.success else result.model_dump(mode='json')), 200 if result.success else 409
+
+
+@agent_api.post("/chat")
+def chat():
+    payload = request.get_json(silent=True)
+    if not isinstance(payload,dict) or (not payload.get('input') and not payload.get('wizard_command') and (not isinstance(payload.get("prompt"),str) or not payload["prompt"].strip())):
+        return jsonify({"error":"Eine Anforderung als prompt ist erforderlich."}),400
+    payload.setdefault('prompt', '')
+    from backend.nis.agent.api.input_output import SUPPORTED_INPUTS
+    if payload.get('input_type', 'TEXT') not in SUPPORTED_INPUTS:
+        return jsonify({'error': 'Für diesen Eingabetyp ist noch kein ausführbarer Adapter verfügbar.',
+                        'status': 'NOT_SUPPORTED', 'supported_input_types': list(SUPPORTED_INPUTS)}), 422
+    history = payload.get("history") or []
+    if not isinstance(history, list) or len(history) > 12 or any(not isinstance(item, dict) or item.get("role") not in {"user", "assistant"} or not isinstance(item.get("content"), str) or len(item["content"]) > 8000 for item in history):
+        return jsonify({"error":"Ungültiger Gesprächskontext."}),400
+    history = [{"role":item["role"], "content":item["content"]} for item in history]
+    project_id = _project()
+    workflow = WorkflowStatusService(project_id).get(summary=True)
+    if payload.get('wizard_command') is None:
+        payload['prompt'] = restore_wizard_continuation_prompt(
+            payload['prompt'], (workflow.get('context') or {}).get('agent_wizard_status'))
+    raw_context = payload.get("context") or {}
+    if not isinstance(raw_context, dict) or not isinstance(payload['prompt'], str) or len(payload["prompt"]) > MAX_REQUIREMENT_LENGTH:
+        return jsonify({"error":"Ungültiger Kontext oder zu lange Anforderung."}),400
+    if raw_context.get("active_project_id") and normalize_context_project_id(raw_context["active_project_id"]) != project_id:
+        return jsonify({"error":"Projekt in Header und Kontext stimmt nicht überein."}),409
+    try:
+        context = AgentContext.model_validate({**raw_context,"active_project_id":project_id, 'wizard_request': None, 'input_envelope': None,
+            "permissions":[p.value for p in DEFAULT_PERMISSIONS]})
+    except ValidationError as error:
+        return jsonify({"error":str(error)}),400
+    if not _slots.acquire(blocking=False):
+        return jsonify({"error":"Alle Agentenplätze sind belegt. Bitte gleich erneut versuchen."}),429
+    authority = ToolAuthority(project_id, 'conversation-ui')
+    started = execute(authority, 'begin_conversation_turn', Permission.READ_MODEL, {},
+        lambda _: conversation.begin(payload['prompt'], context, payload.get('input'), payload.get('wizard_command')))
+    if not started.success:
+        _slots.release()
+        return jsonify(started.model_dump(mode='json')), 409 if started.status.value == 'CONFLICT' else 400
+    if started.data.get('duplicate'):
+        _slots.release()
+        event = {'type': 'CONTEXT', 'context': started.data['context'], 'status': 'ACCEPTED',
+                 'wizard_receipt': started.data['wizard_receipt']}
+        return Response(json.dumps(event, ensure_ascii=False) + '\n', mimetype='application/x-ndjson',
+                        headers={'Cache-Control': 'no-store', 'X-Accel-Buffering': 'no'})
+    run_id = started.data['run_id']
+    context = AgentContext.model_validate(started.data['context'])
+    queue: Queue = Queue()
+    if started.data.get('wizard_receipt'):
+        queue.put({'type': 'CONTEXT', 'context': started.data['context'], 'status': 'ACCEPTED',
+                   'wizard_receipt': started.data['wizard_receipt']})
+    wizard_run_id = extract_wizard_run_id(started.data['prompt'])
+    tracker = WizardExecutionTracker(project_id, wizard_run_id, owner_turn_id=run_id) if wizard_run_id else None
+    if tracker and not started.data.get('wizard_receipt'):
+        try:
+            tracker.started()
+        except Exception:
+            import logging
+            logging.getLogger(__name__).exception('Wizard execution status could not be started (%s)', wizard_run_id)
+            execute(authority, 'finish_conversation_turn', Permission.READ_MODEL, {}, lambda _: conversation.finish(run_id))
+            _slots.release()
+            return jsonify({"error":"Der serverseitige Laufstatus konnte nicht angelegt werden."}),503
+    cancellation = RunCancellation(project_id, wizard_run_id or run_id)
+    def emit(event):
+        cancellation.check()
+        if event['type'] != 'CONTEXT':
+            event = validate_response(event)
+            saved = execute(authority, 'record_conversation_response', Permission.READ_MODEL, {},
+                lambda _: conversation.record_event(run_id, event))
+            if not saved.success:
+                raise RuntimeError('Gesprächszustand konnte nicht gespeichert werden.')
+            event = saved.data
+            if tracker:
+                tracker.event(event)
+        queue.put(event)
+    def goal_progress(event):
+        # The canonical batch holds the project lock. Stream progress directly;
+        # writing a second transaction here would deadlock that same project.
+        cancellation.check()
+        queue.put(validate_response(event))
+    async def run():
+        cancellation.bind()
+        if tracker:
+            current = WorkflowStatusService(project_id).get(summary=True).get('context', {}).get('agent_execution', {})
+            if current.get('run_id') == wizard_run_id and current.get('state') == 'CANCELED':
+                raise asyncio.CancelledError()
+        reasoner = LocalEngineeringReasoner()
+        try:
+            async with EngineeringMCPClient(create_server(ToolAuthority(project_id, progress_callback=goal_progress))) as client:
+                from backend.nis.agent.runtime import EngineeringAssistantService
+                def persist_workload(workload):
+                    saved = execute(authority, 'persist_engineering_runtime_workload', Permission.READ_MODEL, {},
+                        lambda _: conversation.save_runtime_workload(run_id, workload))
+                    if not saved.success:
+                        raise RuntimeError('Engineering-Workload konnte nicht dauerhaft gespeichert werden.')
+                runtime = EngineeringAssistantService(client, reasoner=reasoner, agent_factory=EngineeringAgent,
+                    persist=persist_workload)
+                saved_state = conversation.snapshot(project_id)
+                result = await runtime.execute(started.data['prompt'],context,emit=emit,history=history,saved_state=saved_state)
+                emit({"type":"CONTEXT","context":result["context"],"status":result["status"]})
+                return result
+        finally:
+            await reasoner.close()
+    def worker():
+        heartbeat_stop = threading.Event()
+        heartbeat_failure = []
+        def terminal(event):
+            event = validate_response(event)
+            saved = execute(authority, 'record_conversation_response', Permission.READ_MODEL, {},
+                lambda _: conversation.record_event(run_id, event))
+            queue.put(saved.data if saved.success else event)
+        def heartbeat():
+            while not heartbeat_stop.wait(_HEARTBEAT_SECONDS):
+                if cancellation.cancelled.is_set():
+                    return
+                try:
+                    renew_conversation_lease(authority, run_id)
+                    if tracker:
+                        tracker.heartbeat()
+                except Exception:
+                    import logging
+                    logging.getLogger(__name__).exception('Agent heartbeat failed (%s)', run_id)
+                    heartbeat_failure.append('Die Gesprächssperre konnte nicht bestätigt werden. Der Hintergrundlauf wurde angehalten; bitte den aktuellen Gesprächsstand laden.')
+                    request_cancel(project_id, wizard_run_id or run_id)
+                    return
+        heartbeat_thread = threading.Thread(target=heartbeat, name=f"agent-heartbeat-{run_id[:8]}", daemon=True)
+        heartbeat_thread.start()
+        try:
+            result = asyncio.run(asyncio.wait_for(run(), timeout=max(300, min(int(os.environ.get('ENGINEERING_AGENT_RUN_TIMEOUT_SECONDS', '1800')), 7200))))
+            heartbeat_stop.set()
+            heartbeat_thread.join(timeout=1)
+            if tracker:
+                tracker.finished(result)
+        except asyncio.CancelledError:
+            if heartbeat_failure:
+                if tracker:
+                    tracker.failed(heartbeat_failure[0])
+                terminal({'type': 'ERROR', 'status': 'BLOCKED',
+                    'text': heartbeat_failure[0], 'metadata': {'run_id': run_id}})
+            else:
+                terminal({'type': 'RESULT', 'status': 'CANCELED',
+                    'text': 'Auftrag abgebrochen. Bereits übernommene Modelldaten bleiben erhalten.'})
+        except Exception as error:
+            import logging
+            logging.getLogger(__name__).exception('Agent conversation failed (%s)', run_id)
+            from backend.nis.agent.runtime.recovery import RecoveryManager
+            failure = RecoveryManager().classify(error)
+            message = failure['message']
+            if tracker:
+                tracker.failed(message)
+            terminal({"type":"ERROR","status":failure['status'],"text":message,
+                "metadata":{"run_id":run_id,"failure_code":failure['code'],"failure_category":failure['category'],
+                            "retryable":failure['retryable']},
+                "actions":[{"type":"RETRY","label":"Gespeicherten Auftrag fortsetzen"}] if failure['retryable'] else []})
+        finally:
+            cancellation.close()
+            heartbeat_stop.set()
+            heartbeat_thread.join(timeout=1)
+            execute(authority, 'finish_conversation_turn', Permission.READ_MODEL, {}, lambda _: conversation.finish(run_id))
+            _slots.release()
+            queue.put(None)
+    _executor.submit(worker)
+    @stream_with_context
+    def stream():
+        try:
+            while True:
+                try:
+                    item = queue.get(timeout=15)
+                except Empty:
+                    yield json.dumps({"type":"HEARTBEAT"})+"\n"
+                    continue
+                if item is None:
+                    break
+                yield json.dumps(item,ensure_ascii=False,default=str)+"\n"
+        finally:
+            # The server-owned worker intentionally survives a browser or proxy
+            # disconnect. Its durable status is read through the workflow API.
+            pass
+    return Response(stream(),mimetype="application/x-ndjson",headers={"Cache-Control":"no-store","X-Accel-Buffering":"no"})
+
+
+@agent_api.get('/conversation')
+def conversation_get():
+    # execute() intentionally serializes and audits mutations. A status GET
+    # must instead read the committed conversation without taking those locks.
+    try:
+        result = ToolResult(data=conversation.snapshot(_project()))
+    except Exception:
+        import logging
+        logging.getLogger(__name__).exception('Conversation snapshot could not be read')
+        result = ToolResult(success=False, status=ToolStatus.INTERNAL_ERROR,
+            findings=[{'severity': 'ERROR', 'message': 'Der Gesprächsstand konnte nicht geladen werden.'}])
+    response = jsonify(result.model_dump(mode='json'))
+    response.headers['Cache-Control'] = 'no-store'
+    return response, 200 if result.success else 503
+
+
+@agent_api.get('/responses/<response_id>')
+def response_detail(response_id):
+    result = execute(ToolAuthority(_project(), 'conversation-ui'), 'response_detail', Permission.READ_MODEL, {}, lambda _: conversation.response_detail(response_id))
+    return jsonify(result.model_dump(mode='json')), 200 if result.success else 404
+
+
+@agent_api.route('/history', methods=['GET', 'PUT', 'DELETE'])
+def conversation_history():
+    if request.content_length and request.content_length > 5_000_000:
+        return jsonify({'error':'Der Verlauf ist zu groß.'}), 413
+    data = request.get_json(silent=True) or {}
+    if request.method == 'PUT' and not isinstance(data.get('messages'), list):
+        return jsonify({'error':'Nachrichtenliste fehlt.'}), 400
+    result = execute(ToolAuthority(_project(), 'conversation-ui'), 'conversation_history', Permission.READ_MODEL, {},
+        lambda _: conversation.history(data.get('messages') if request.method == 'PUT' else None, clear=request.method == 'DELETE'))
+    return jsonify(result.data if result.success else result.model_dump(mode='json')), 200 if result.success else 400
+
+
+@agent_api.post('/findings/<finding_id>/decision')
+def finding_decision(finding_id):
+    if not _human_intent():
+        return jsonify({'error': 'Eine bewusste Entscheidung in der Oberfläche ist erforderlich.'}), 403
+    data = request.get_json(silent=True) or {}
+    result = execute(ToolAuthority(_project(), 'local-human'), 'finding_decision', Permission.READ_MODEL, {},
+        lambda _: conversation.decide(finding_id, data.get('decision'), data.get('rationale', ''), data.get('review_on_change', True)))
+    return jsonify(result.model_dump(mode='json')), 200 if result.success else 400

@@ -1,0 +1,3231 @@
+{
+  "id": "ethernet_ip",
+  "label": "EtherNet/IP",
+  "domain": "generic_networking",
+  "layer": "APPLICATION",
+  "transport_unit": "PDU",
+  "payload_element_types": [
+    "FIELD",
+    "DATA_OBJECT"
+  ],
+  "hardware_interface": "explicit_ip_transport_binding",
+  "hardware_capability_aliases": [
+    "ethernet_port"
+  ],
+  "default_stack": [
+    "ethernet_ip"
+  ],
+  "stack_variants": [
+    [
+      "ethernet_ip"
+    ],
+    [
+      "ethernet",
+      "ip",
+      "udp",
+      "ethernet_ip"
+    ]
+  ],
+  "default_bitrate": null,
+  "rate_model": {
+    "type": "APPLICATION_TRANSPORT_DEPENDENT",
+    "fields": []
+  },
+  "local_timing_schema": [],
+  "parameter_schema": {
+    "payload_bytes": {
+      "label": "Payload",
+      "category": "physical",
+      "scope": "message",
+      "type": "number",
+      "description": "Actual CPF data-item octets including selected class sequence and optional Run/Idle header. Not application-only bytes, entire CIP logical message, Ethernet MTU or a universal1400-byte limit.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "max": 65535,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read.",
+      "integer": true
+    },
+    "cycle_ms": {
+      "label": "Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "Standardperiode fuer zyklische Nachrichten.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "minimum_cycle_time_ms": {
+      "label": "Minimum Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "deadline_ms": {
+      "label": "Deadline",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "timeout_ms": {
+      "label": "Timeout",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_latency_ms": {
+      "label": "Maximum Latency",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "jitter_ms": {
+      "label": "Jitter Budget",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "freshness_ms": {
+      "label": "Data Freshness",
+      "category": "timing",
+      "scope": "signal",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "source_processing_delay_ms": {
+      "label": "Source Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_processing_delay_ms": {
+      "label": "Target Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "propagation_delay_ms": {
+      "label": "Propagation",
+      "category": "timing",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.01,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_bus_load_percent": {
+      "label": "Ziel-Buslast",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "Zielwert fuer die aus Routing, Payload, Zyklus und Bitrate berechnete Buslast.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "peak_factor": {
+      "label": "Peak Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.15,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_factor": {
+      "label": "Burst Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.5,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_window_ms": {
+      "label": "Burst Window",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "warning_threshold": {
+      "label": "Load Warning",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "critical_threshold": {
+      "label": "Load Critical",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 75,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "overload_threshold": {
+      "label": "Load Overload",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 90,
+      "unit": "%",
+      "min": 1,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "queue_size": {
+      "label": "Queue Size",
+      "category": "qos",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 256,
+      "unit": "Frames",
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1",
+      "integer": true
+    },
+    "queue_policy": {
+      "label": "Queue Policy",
+      "category": "qos",
+      "scope": "network",
+      "type": "select",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": "FIFO",
+      "options": [
+        "FIFO",
+        "PRIORITY",
+        "CUSTOM"
+      ],
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "traffic_class": {
+      "label": "Traffic Class",
+      "category": "qos",
+      "scope": "route",
+      "type": "select",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": "BEST_EFFORT",
+      "options": [
+        "BEST_EFFORT",
+        "CONTROL",
+        "REALTIME",
+        "SAFETY_CRITICAL"
+      ],
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "packet_loss_probability": {
+      "label": "Packet Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "frame_loss_probability": {
+      "label": "Frame Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "bit_error_rate": {
+      "label": "Bit Error Rate",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "corruption_probability": {
+      "label": "Corruption",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duplicate_probability": {
+      "label": "Duplication",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "reordering_probability": {
+      "label": "Reordering",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "required_reliability": {
+      "label": "Required Reliability",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.999,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_offset_ms": {
+      "label": "Clock Offset",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_drift_ppm": {
+      "label": "Clock Drift",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 20,
+      "unit": "ppm",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_precision_ms": {
+      "label": "Sync Precision",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_interval_ms": {
+      "label": "Sync Interval",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1000,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_sync_error_ms": {
+      "label": "Maximum Sync Error",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_delay_ms": {
+      "label": "Gateway Processing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.2,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_queue_delay_ms": {
+      "label": "Gateway Queueing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "protocol_conversion_delay_ms": {
+      "label": "Protocol Conversion",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duration_s": {
+      "label": "Simulation Duration",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 1,
+      "unit": "s",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "seed": {
+      "label": "Random Seed",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 42,
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "max_events": {
+      "label": "Maximum Events",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 100000,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "dropout_probability": {
+      "label": "Failure Injection Dropout",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "eip_mode": {
+      "label": "Actual EtherNet/IP message mode",
+      "category": "physical",
+      "scope": "route",
+      "type": "select",
+      "description": "Base EtherNet/IP declaration; exact edition/EDS/implementation and selected TCP/UDP/IP/link path remain required. Scalar validity is not connection execution or capacity evidence.",
+      "required": true,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "IMPLICIT_IO",
+        "CONNECTED_EXPLICIT",
+        "UNCONNECTED_EXPLICIT",
+        "DISCOVERY"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    "eip_transport": {
+      "label": "Actual selected message transport",
+      "category": "physical",
+      "scope": "route",
+      "type": "select",
+      "description": "Base EtherNet/IP declaration; exact edition/EDS/implementation and selected TCP/UDP/IP/link path remain required. Scalar validity is not connection execution or capacity evidence.",
+      "required": true,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "TCP",
+        "UDP"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    "eip_transport_binding": {
+      "label": "Actual IP/transport/link profile reference",
+      "category": "physical",
+      "scope": "route",
+      "type": "text",
+      "description": "Base EtherNet/IP declaration; exact edition/EDS/implementation and selected TCP/UDP/IP/link path remain required. Scalar validity is not connection execution or capacity evidence.",
+      "required": true,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    "eip_configuration_source": {
+      "label": "Actual EDS/device/edition/firmware/connection configuration",
+      "category": "physical",
+      "scope": "route",
+      "type": "text",
+      "description": "Base EtherNet/IP declaration; exact edition/EDS/implementation and selected TCP/UDP/IP/link path remain required. Scalar validity is not connection execution or capacity evidence.",
+      "required": true,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    "eip_baseline_profile": {
+      "label": "Source-qualified parameter proposal profile",
+      "category": "physical",
+      "scope": "route",
+      "type": "select",
+      "description": "Base EtherNet/IP declaration; exact edition/EDS/implementation and selected TCP/UDP/IP/link path remain required. Scalar validity is not connection execution or capacity evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": "ODVA_INTEROP_V9",
+      "options": [
+        "ODVA_INTEROP_V9",
+        "DEVICE_SPECIFIC"
+      ],
+      "integer": false,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED",
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    "eip_class": {
+      "label": "Actual selected supported CIP transport class",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Base EtherNet/IP declaration; exact edition/EDS/implementation and selected TCP/UDP/IP/link path remain required. Scalar validity is not connection execution or capacity evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "max": 3,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read.",
+      "allowed_values": [
+        0,
+        1,
+        3
+      ]
+    },
+    "eip_port": {
+      "label": "Actual selected transport port",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Explicit/discovery standard port44818; implicit UDP2222 recommended unicast and required multicast. Actual unicast socket may be negotiated.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 1,
+      "max": 65535,
+      "integer": true,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read.",
+      "conditional_defaults": [
+        {
+          "when": {
+            "eip_mode": "IMPLICIT_IO"
+          },
+          "value": 2222
+        },
+        {
+          "when": {
+            "eip_mode": "CONNECTED_EXPLICIT"
+          },
+          "value": 44818
+        },
+        {
+          "when": {
+            "eip_mode": "UNCONNECTED_EXPLICIT"
+          },
+          "value": 44818
+        },
+        {
+          "when": {
+            "eip_mode": "DISCOVERY"
+          },
+          "value": 44818
+        }
+      ]
+    },
+    "eip_command": {
+      "label": "Actual encapsulation command",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Base EtherNet/IP declaration; exact edition/EDS/implementation and selected TCP/UDP/IP/link path remain required. Scalar validity is not connection execution or capacity evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "max": 65535,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    "eip_encap_version": {
+      "label": "RegisterSession encapsulation version",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Base EtherNet/IP declaration; exact edition/EDS/implementation and selected TCP/UDP/IP/link path remain required. Scalar validity is not connection execution or capacity evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1,
+      "min": 1,
+      "max": 1,
+      "integer": true,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED",
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    "eip_encap_options": {
+      "label": "Supported base encapsulation options",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Base EtherNet/IP declaration; exact edition/EDS/implementation and selected TCP/UDP/IP/link path remain required. Scalar validity is not connection execution or capacity evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 0,
+      "integer": true,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED",
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    "eip_encap_length": {
+      "label": "Encapsulation bytes following24-byte header",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Base EtherNet/IP declaration; exact edition/EDS/implementation and selected TCP/UDP/IP/link path remain required. Scalar validity is not connection execution or capacity evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "max": 65535,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    "eip_encap_status": {
+      "label": "Actual encapsulation status code",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Base EtherNet/IP declaration; exact edition/EDS/implementation and selected TCP/UDP/IP/link path remain required. Scalar validity is not connection execution or capacity evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "max": 4294967295,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    "eip_session": {
+      "label": "Actual registered session handle",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Base EtherNet/IP declaration; exact edition/EDS/implementation and selected TCP/UDP/IP/link path remain required. Scalar validity is not connection execution or capacity evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "max": 4294967295,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    "eip_cpf_layout": {
+      "label": "Actual common-packet item layout",
+      "category": "physical",
+      "scope": "route",
+      "type": "select",
+      "description": "Base EtherNet/IP declaration; exact edition/EDS/implementation and selected TCP/UDP/IP/link path remain required. Scalar validity is not connection execution or capacity evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "TWO_ITEM",
+        "EXTENDED_DEVICE"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    "eip_address_bytes": {
+      "label": "Actual CPF address-item data length",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Base EtherNet/IP declaration; exact edition/EDS/implementation and selected TCP/UDP/IP/link path remain required. Scalar validity is not connection execution or capacity evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "max": 65535,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    "eip_class_sequence_bytes": {
+      "label": "Actual class-specific sequence prefix length",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Base EtherNet/IP declaration; exact edition/EDS/implementation and selected TCP/UDP/IP/link path remain required. Scalar validity is not connection execution or capacity evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "max": 2,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read.",
+      "allowed_values": [
+        0,
+        2
+      ]
+    },
+    "eip_application_bytes": {
+      "label": "Actual application bytes excluding class and Run/Idle prefixes",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Base EtherNet/IP declaration; exact edition/EDS/implementation and selected TCP/UDP/IP/link path remain required. Scalar validity is not connection execution or capacity evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "max": 65535,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    "eip_run_idle_present": {
+      "label": "Actual selected32-bit Run/Idle header presence",
+      "category": "physical",
+      "scope": "route",
+      "type": "boolean",
+      "description": "Base EtherNet/IP declaration; exact edition/EDS/implementation and selected TCP/UDP/IP/link path remain required. Scalar validity is not connection execution or capacity evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    "eip_run_idle_bytes": {
+      "label": "Actual selected Run/Idle prefix length",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Base EtherNet/IP declaration; exact edition/EDS/implementation and selected TCP/UDP/IP/link path remain required. Scalar validity is not connection execution or capacity evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "max": 4,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read.",
+      "allowed_values": [
+        0,
+        4
+      ]
+    },
+    "eip_cpf_bytes": {
+      "label": "Actual complete Common Packet Format size",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Base EtherNet/IP declaration; exact edition/EDS/implementation and selected TCP/UDP/IP/link path remain required. Scalar validity is not connection execution or capacity evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 2,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    "eip_packet_bytes": {
+      "label": "Actual EtherNet/IP transport-payload size",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Base EtherNet/IP declaration; exact edition/EDS/implementation and selected TCP/UDP/IP/link path remain required. Scalar validity is not connection execution or capacity evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    "eip_io_sequence": {
+      "label": "Actual implicit sequenced-address counter",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Base EtherNet/IP declaration; exact edition/EDS/implementation and selected TCP/UDP/IP/link path remain required. Scalar validity is not connection execution or capacity evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "max": 4294967295,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    "eip_class_sequence": {
+      "label": "Actual class1/3 sequence counter",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Base EtherNet/IP declaration; exact edition/EDS/implementation and selected TCP/UDP/IP/link path remain required. Scalar validity is not connection execution or capacity evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "max": 65535,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    "eip_delivery": {
+      "label": "Actual implicit delivery",
+      "category": "physical",
+      "scope": "route",
+      "type": "select",
+      "description": "Base EtherNet/IP declaration; exact edition/EDS/implementation and selected TCP/UDP/IP/link path remain required. Scalar validity is not connection execution or capacity evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "UNICAST",
+        "MULTICAST"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    "eip_ip_address": {
+      "label": "Actual selected peer/group IP address",
+      "category": "physical",
+      "scope": "route",
+      "type": "text",
+      "description": "Base EtherNet/IP declaration; exact edition/EDS/implementation and selected TCP/UDP/IP/link path remain required. Scalar validity is not connection execution or capacity evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read.",
+      "format": "IP_ADDRESS"
+    },
+    "eip_forward_open": {
+      "label": "Actual ForwardOpen encoding",
+      "category": "physical",
+      "scope": "route",
+      "type": "select",
+      "description": "Base EtherNet/IP declaration; exact edition/EDS/implementation and selected TCP/UDP/IP/link path remain required. Scalar validity is not connection execution or capacity evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "STANDARD",
+        "LARGE"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    "eip_o_to_t_size": {
+      "label": "Actual accepted Originator-to-Target connection size",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Base EtherNet/IP declaration; exact edition/EDS/implementation and selected TCP/UDP/IP/link path remain required. Scalar validity is not connection execution or capacity evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "max": 65535,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    "eip_t_to_o_size": {
+      "label": "Actual accepted Target-to-Originator connection size",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Base EtherNet/IP declaration; exact edition/EDS/implementation and selected TCP/UDP/IP/link path remain required. Scalar validity is not connection execution or capacity evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "max": 65535,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    "eip_size_direction": {
+      "label": "Actual packet direction",
+      "category": "physical",
+      "scope": "route",
+      "type": "select",
+      "description": "Base EtherNet/IP declaration; exact edition/EDS/implementation and selected TCP/UDP/IP/link path remain required. Scalar validity is not connection execution or capacity evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "O_TO_T",
+        "T_TO_O"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    "eip_size_mode": {
+      "label": "Actual selected direction fixed/variable size",
+      "category": "physical",
+      "scope": "route",
+      "type": "select",
+      "description": "Base EtherNet/IP declaration; exact edition/EDS/implementation and selected TCP/UDP/IP/link path remain required. Scalar validity is not connection execution or capacity evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "FIXED",
+        "VARIABLE"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    "eip_size_definition": {
+      "label": "Actual negotiated-size measurement boundary",
+      "category": "physical",
+      "scope": "route",
+      "type": "select",
+      "description": "Base EtherNet/IP declaration; exact edition/EDS/implementation and selected TCP/UDP/IP/link path remain required. Scalar validity is not connection execution or capacity evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "OPENER_CPF_DATA",
+        "DEVICE_SPECIFIC"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    "eip_o_to_t_rpi_us": {
+      "label": "Requested Originator-to-Target packet interval",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "Base EtherNet/IP declaration; exact edition/EDS/implementation and selected TCP/UDP/IP/link path remain required. Scalar validity is not connection execution or capacity evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "us",
+      "min": 1,
+      "max": 4294967295,
+      "integer": true,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "source": "https://www.odva.org/wp-content/uploads/2020/05/PUB00095_PF-Test-Procedure-v9.pdf",
+      "source_revision": "PUB00095 Version9 PR002 sectionsP9/P12; proposals scoped to ODVA interoperability profile, actual EDS and negotiated API required",
+      "conditional_defaults": [
+        {
+          "when": {
+            "eip_baseline_profile": "ODVA_INTEROP_V9",
+            "eip_class": 1
+          },
+          "value": 100000
+        },
+        {
+          "when": {
+            "eip_baseline_profile": "ODVA_INTEROP_V9",
+            "eip_class": 3
+          },
+          "value": 250000
+        }
+      ]
+    },
+    "eip_t_to_o_rpi_us": {
+      "label": "Requested Target-to-Originator packet interval",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "Base EtherNet/IP declaration; exact edition/EDS/implementation and selected TCP/UDP/IP/link path remain required. Scalar validity is not connection execution or capacity evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "us",
+      "min": 1,
+      "max": 4294967295,
+      "integer": true,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "source": "https://www.odva.org/wp-content/uploads/2020/05/PUB00095_PF-Test-Procedure-v9.pdf",
+      "source_revision": "PUB00095 Version9 PR002 sectionsP9/P12; proposals scoped to ODVA interoperability profile, actual EDS and negotiated API required",
+      "conditional_defaults": [
+        {
+          "when": {
+            "eip_baseline_profile": "ODVA_INTEROP_V9",
+            "eip_class": 1
+          },
+          "value": 100000
+        },
+        {
+          "when": {
+            "eip_baseline_profile": "ODVA_INTEROP_V9",
+            "eip_class": 3
+          },
+          "value": 250000
+        }
+      ]
+    },
+    "eip_o_to_t_api_us": {
+      "label": "Accepted Originator-to-Target packet interval",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "Base EtherNet/IP declaration; exact edition/EDS/implementation and selected TCP/UDP/IP/link path remain required. Scalar validity is not connection execution or capacity evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "us",
+      "min": 1,
+      "max": 4294967295,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    "eip_t_to_o_api_us": {
+      "label": "Accepted Target-to-Originator packet interval",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "Base EtherNet/IP declaration; exact edition/EDS/implementation and selected TCP/UDP/IP/link path remain required. Scalar validity is not connection execution or capacity evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "us",
+      "min": 1,
+      "max": 4294967295,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    "eip_timeout_code": {
+      "label": "Actual base connection-timeout multiplier encoding",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Base EtherNet/IP declaration; exact edition/EDS/implementation and selected TCP/UDP/IP/link path remain required. Scalar validity is not connection execution or capacity evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "max": 7,
+      "integer": true,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "source": "https://www.odva.org/wp-content/uploads/2020/05/PUB00095_PF-Test-Procedure-v9.pdf",
+      "source_revision": "PUB00095 Version9 PR002 sectionsP9/P12; proposals scoped to ODVA interoperability profile, actual EDS and negotiated API required",
+      "conditional_defaults": [
+        {
+          "when": {
+            "eip_baseline_profile": "ODVA_INTEROP_V9",
+            "eip_class": 1
+          },
+          "value": 0
+        },
+        {
+          "when": {
+            "eip_baseline_profile": "ODVA_INTEROP_V9",
+            "eip_class": 3
+          },
+          "value": 0
+        }
+      ]
+    },
+    "eip_watchdog_profile": {
+      "label": "Actual consuming watchdog calculation profile",
+      "category": "physical",
+      "scope": "route",
+      "type": "select",
+      "description": "Base EtherNet/IP declaration; exact edition/EDS/implementation and selected TCP/UDP/IP/link path remain required. Scalar validity is not connection execution or capacity evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "ACCEPTED_API",
+        "OPENER_MILLISECOND",
+        "DEVICE_SPECIFIC"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    "eip_watchdog_us": {
+      "label": "Actual regular consuming watchdog duration",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "Base EtherNet/IP declaration; exact edition/EDS/implementation and selected TCP/UDP/IP/link path remain required. Scalar validity is not connection execution or capacity evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "us",
+      "min": 0,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    "eip_initial_watchdog_us": {
+      "label": "Actual first-consumption watchdog duration",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "Base EtherNet/IP declaration; exact edition/EDS/implementation and selected TCP/UDP/IP/link path remain required. Scalar validity is not connection execution or capacity evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "us",
+      "min": 0,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    "eip_timer_source": {
+      "label": "Actual negotiated intervals/timer resolution/watchdog evidence",
+      "category": "physical",
+      "scope": "route",
+      "type": "text",
+      "description": "Base EtherNet/IP declaration; exact edition/EDS/implementation and selected TCP/UDP/IP/link path remain required. Scalar validity is not connection execution or capacity evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    "eip_trigger": {
+      "label": "Actual production trigger",
+      "category": "physical",
+      "scope": "route",
+      "type": "select",
+      "description": "Base EtherNet/IP declaration; exact edition/EDS/implementation and selected TCP/UDP/IP/link path remain required. Scalar validity is not connection execution or capacity evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "CYCLIC",
+        "CHANGE_OF_STATE",
+        "APPLICATION"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    "eip_inhibit_profile": {
+      "label": "Actual production-inhibit validation profile",
+      "category": "physical",
+      "scope": "route",
+      "type": "select",
+      "description": "Base EtherNet/IP declaration; exact edition/EDS/implementation and selected TCP/UDP/IP/link path remain required. Scalar validity is not connection execution or capacity evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "OPENER_CYCLIC",
+        "DEVICE_SPECIFIC"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    "eip_inhibit_ms": {
+      "label": "Actual production-inhibit interval",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "Base EtherNet/IP declaration; exact edition/EDS/implementation and selected TCP/UDP/IP/link path remain required. Scalar validity is not connection execution or capacity evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "ms",
+      "min": 0,
+      "max": 65535,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    "eip_o_to_t_priority": {
+      "label": "Actual Originator-to-Target CIP priority",
+      "category": "physical",
+      "scope": "route",
+      "type": "select",
+      "description": "Base EtherNet/IP declaration; exact edition/EDS/implementation and selected TCP/UDP/IP/link path remain required. Scalar validity is not connection execution or capacity evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "LOW",
+        "HIGH",
+        "SCHEDULED",
+        "URGENT"
+      ],
+      "integer": false,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "source": "https://www.odva.org/wp-content/uploads/2020/05/PUB00095_PF-Test-Procedure-v9.pdf",
+      "source_revision": "PUB00095 Version9 PR002 sectionsP9/P12; proposals scoped to ODVA interoperability profile, actual EDS and negotiated API required",
+      "conditional_defaults": [
+        {
+          "when": {
+            "eip_baseline_profile": "ODVA_INTEROP_V9",
+            "eip_class": 1
+          },
+          "value": "SCHEDULED"
+        },
+        {
+          "when": {
+            "eip_baseline_profile": "ODVA_INTEROP_V9",
+            "eip_class": 3
+          },
+          "value": "LOW"
+        }
+      ]
+    },
+    "eip_t_to_o_priority": {
+      "label": "Actual Target-to-Originator CIP priority",
+      "category": "physical",
+      "scope": "route",
+      "type": "select",
+      "description": "Base EtherNet/IP declaration; exact edition/EDS/implementation and selected TCP/UDP/IP/link path remain required. Scalar validity is not connection execution or capacity evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "LOW",
+        "HIGH",
+        "SCHEDULED",
+        "URGENT"
+      ],
+      "integer": false,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "source": "https://www.odva.org/wp-content/uploads/2020/05/PUB00095_PF-Test-Procedure-v9.pdf",
+      "source_revision": "PUB00095 Version9 PR002 sectionsP9/P12; proposals scoped to ODVA interoperability profile, actual EDS and negotiated API required",
+      "conditional_defaults": [
+        {
+          "when": {
+            "eip_baseline_profile": "ODVA_INTEROP_V9",
+            "eip_class": 1
+          },
+          "value": "SCHEDULED"
+        },
+        {
+          "when": {
+            "eip_baseline_profile": "ODVA_INTEROP_V9",
+            "eip_class": 3
+          },
+          "value": "LOW"
+        }
+      ]
+    },
+    "eip_o_to_t_type": {
+      "label": "Actual Originator-to-Target connection type",
+      "category": "physical",
+      "scope": "route",
+      "type": "select",
+      "description": "Base EtherNet/IP declaration; exact edition/EDS/implementation and selected TCP/UDP/IP/link path remain required. Scalar validity is not connection execution or capacity evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "NULL",
+        "MULTICAST",
+        "POINT_TO_POINT"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    "eip_t_to_o_type": {
+      "label": "Actual Target-to-Originator connection type",
+      "category": "physical",
+      "scope": "route",
+      "type": "select",
+      "description": "Base EtherNet/IP declaration; exact edition/EDS/implementation and selected TCP/UDP/IP/link path remain required. Scalar validity is not connection execution or capacity evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "NULL",
+        "MULTICAST",
+        "POINT_TO_POINT"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    "eip_owner_mode": {
+      "label": "Actual application connection ownership",
+      "category": "physical",
+      "scope": "route",
+      "type": "select",
+      "description": "Base EtherNet/IP declaration; exact edition/EDS/implementation and selected TCP/UDP/IP/link path remain required. Scalar validity is not connection execution or capacity evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "EXCLUSIVE_OWNER",
+        "INPUT_ONLY",
+        "LISTEN_ONLY",
+        "REDUNDANT_OWNER"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    "eip_owner_source": {
+      "label": "Actual connection path/owner/listen dependency evidence",
+      "category": "physical",
+      "scope": "route",
+      "type": "text",
+      "description": "Base EtherNet/IP declaration; exact edition/EDS/implementation and selected TCP/UDP/IP/link path remain required. Scalar validity is not connection execution or capacity evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    "eip_connection_path": {
+      "label": "Actual encoded CIP connection/object/assembly path reference",
+      "category": "physical",
+      "scope": "route",
+      "type": "text",
+      "description": "Base EtherNet/IP declaration; exact edition/EDS/implementation and selected TCP/UDP/IP/link path remain required. Scalar validity is not connection execution or capacity evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    "eip_o_to_t_id": {
+      "label": "Actual Originator-to-Target connection identifier",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Base EtherNet/IP declaration; exact edition/EDS/implementation and selected TCP/UDP/IP/link path remain required. Scalar validity is not connection execution or capacity evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "max": 4294967295,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    "eip_t_to_o_id": {
+      "label": "Actual Target-to-Originator connection identifier",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Base EtherNet/IP declaration; exact edition/EDS/implementation and selected TCP/UDP/IP/link path remain required. Scalar validity is not connection execution or capacity evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "max": 4294967295,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    "eip_established": {
+      "label": "Actual accepted and active CIP connection",
+      "category": "physical",
+      "scope": "route",
+      "type": "boolean",
+      "description": "Base EtherNet/IP declaration; exact edition/EDS/implementation and selected TCP/UDP/IP/link path remain required. Scalar validity is not connection execution or capacity evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    "eip_peer_source": {
+      "label": "Actual accepted sizes/connection IDs/IP/sockets/state evidence",
+      "category": "physical",
+      "scope": "route",
+      "type": "text",
+      "description": "Base EtherNet/IP declaration; exact edition/EDS/implementation and selected TCP/UDP/IP/link path remain required. Scalar validity is not connection execution or capacity evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    }
+  },
+  "mechanisms": {
+    "transport": [
+      "TCP_EXPLICIT_ENCAPSULATION",
+      "UDP_CLASS_0_OR_1_IO",
+      "TCP_OR_UDP_DISCOVERY"
+    ],
+    "connection": [
+      "FORWARD_OPEN_NEGOTIATED_DIRECTIONAL_RPI_AND_SIZE",
+      "CONNECTED_OR_UCMM"
+    ],
+    "integrity": [
+      "SELECTED_LOWER_TRANSPORT",
+      "CPF_LENGTH_AND_SEQUENCE"
+    ],
+    "optional_services": [
+      "CIP_SAFETY_SYNC_MOTION_SECURITY_REQUIRE_SEPARATE_PROFILES"
+    ]
+  },
+  "parameter_constraints": [
+    {
+      "when": {
+        "eip_mode": "IMPLICIT_IO"
+      },
+      "parameter": "eip_transport",
+      "allowed": [
+        "UDP"
+      ],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "CONNECTED_EXPLICIT"
+      },
+      "parameter": "eip_transport",
+      "allowed": [
+        "TCP"
+      ],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "UNCONNECTED_EXPLICIT"
+      },
+      "parameter": "eip_transport",
+      "allowed": [
+        "TCP"
+      ],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "DISCOVERY"
+      },
+      "parameter": "eip_transport",
+      "allowed": [
+        "TCP",
+        "UDP"
+      ],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "IMPLICIT_IO"
+      },
+      "parameter": "eip_class",
+      "allowed": [
+        0,
+        1
+      ],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "CONNECTED_EXPLICIT"
+      },
+      "parameter": "eip_class",
+      "allowed": [
+        3
+      ],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "UNCONNECTED_EXPLICIT"
+      },
+      "parameter": "eip_class",
+      "allowed": [],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "DISCOVERY"
+      },
+      "parameter": "eip_class",
+      "allowed": [],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "IMPLICIT_IO"
+      },
+      "parameter": "eip_command",
+      "allowed": [],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "CONNECTED_EXPLICIT"
+      },
+      "parameter": "eip_command",
+      "allowed": [
+        112
+      ],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "UNCONNECTED_EXPLICIT"
+      },
+      "parameter": "eip_command",
+      "allowed": [
+        111
+      ],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "DISCOVERY"
+      },
+      "parameter": "eip_command",
+      "allowed": [
+        4,
+        99,
+        100
+      ],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "UNCONNECTED_EXPLICIT"
+      },
+      "parameter": "eip_o_to_t_rpi_us",
+      "allowed": [],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "UNCONNECTED_EXPLICIT"
+      },
+      "parameter": "eip_t_to_o_rpi_us",
+      "allowed": [],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "UNCONNECTED_EXPLICIT"
+      },
+      "parameter": "eip_timeout_code",
+      "allowed": [],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "UNCONNECTED_EXPLICIT"
+      },
+      "parameter": "eip_watchdog_us",
+      "allowed": [],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "UNCONNECTED_EXPLICIT"
+      },
+      "parameter": "eip_initial_watchdog_us",
+      "allowed": [],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "UNCONNECTED_EXPLICIT"
+      },
+      "parameter": "eip_inhibit_ms",
+      "allowed": [],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "UNCONNECTED_EXPLICIT"
+      },
+      "parameter": "eip_trigger",
+      "allowed": [],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "UNCONNECTED_EXPLICIT"
+      },
+      "parameter": "eip_forward_open",
+      "allowed": [],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "UNCONNECTED_EXPLICIT"
+      },
+      "parameter": "eip_o_to_t_size",
+      "allowed": [],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "UNCONNECTED_EXPLICIT"
+      },
+      "parameter": "eip_t_to_o_size",
+      "allowed": [],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "UNCONNECTED_EXPLICIT"
+      },
+      "parameter": "eip_established",
+      "allowed": [],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "UNCONNECTED_EXPLICIT"
+      },
+      "parameter": "eip_class_sequence",
+      "allowed": [],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "DISCOVERY"
+      },
+      "parameter": "eip_o_to_t_rpi_us",
+      "allowed": [],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "DISCOVERY"
+      },
+      "parameter": "eip_t_to_o_rpi_us",
+      "allowed": [],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "DISCOVERY"
+      },
+      "parameter": "eip_timeout_code",
+      "allowed": [],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "DISCOVERY"
+      },
+      "parameter": "eip_watchdog_us",
+      "allowed": [],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "DISCOVERY"
+      },
+      "parameter": "eip_initial_watchdog_us",
+      "allowed": [],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "DISCOVERY"
+      },
+      "parameter": "eip_inhibit_ms",
+      "allowed": [],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "DISCOVERY"
+      },
+      "parameter": "eip_trigger",
+      "allowed": [],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "DISCOVERY"
+      },
+      "parameter": "eip_forward_open",
+      "allowed": [],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "DISCOVERY"
+      },
+      "parameter": "eip_o_to_t_size",
+      "allowed": [],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "DISCOVERY"
+      },
+      "parameter": "eip_t_to_o_size",
+      "allowed": [],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "DISCOVERY"
+      },
+      "parameter": "eip_established",
+      "allowed": [],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "DISCOVERY"
+      },
+      "parameter": "eip_class_sequence",
+      "allowed": [],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "CONNECTED_EXPLICIT"
+      },
+      "parameter": "eip_run_idle_present",
+      "allowed": [],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "CONNECTED_EXPLICIT"
+      },
+      "parameter": "eip_run_idle_bytes",
+      "allowed": [],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "CONNECTED_EXPLICIT"
+      },
+      "parameter": "eip_io_sequence",
+      "allowed": [],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "CONNECTED_EXPLICIT"
+      },
+      "parameter": "eip_delivery",
+      "allowed": [],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "UNCONNECTED_EXPLICIT"
+      },
+      "parameter": "eip_run_idle_present",
+      "allowed": [],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "UNCONNECTED_EXPLICIT"
+      },
+      "parameter": "eip_run_idle_bytes",
+      "allowed": [],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "UNCONNECTED_EXPLICIT"
+      },
+      "parameter": "eip_io_sequence",
+      "allowed": [],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "UNCONNECTED_EXPLICIT"
+      },
+      "parameter": "eip_delivery",
+      "allowed": [],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "DISCOVERY"
+      },
+      "parameter": "eip_run_idle_present",
+      "allowed": [],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "DISCOVERY"
+      },
+      "parameter": "eip_run_idle_bytes",
+      "allowed": [],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "DISCOVERY"
+      },
+      "parameter": "eip_io_sequence",
+      "allowed": [],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "DISCOVERY"
+      },
+      "parameter": "eip_delivery",
+      "allowed": [],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "IMPLICIT_IO"
+      },
+      "parameter": "eip_encap_version",
+      "allowed": [],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "IMPLICIT_IO"
+      },
+      "parameter": "eip_encap_options",
+      "allowed": [],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "IMPLICIT_IO"
+      },
+      "parameter": "eip_encap_length",
+      "allowed": [],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "IMPLICIT_IO"
+      },
+      "parameter": "eip_session",
+      "allowed": [],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "IMPLICIT_IO"
+      },
+      "parameter": "eip_encap_status",
+      "allowed": [],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "IMPLICIT_IO"
+      },
+      "parameter": "eip_address_bytes",
+      "allowed": [
+        8
+      ],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "CONNECTED_EXPLICIT"
+      },
+      "parameter": "eip_address_bytes",
+      "allowed": [
+        4
+      ],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "UNCONNECTED_EXPLICIT"
+      },
+      "parameter": "eip_address_bytes",
+      "allowed": [
+        0
+      ],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_class": 0
+      },
+      "parameter": "eip_class_sequence_bytes",
+      "allowed": [
+        0
+      ],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_class": 1
+      },
+      "parameter": "eip_class_sequence_bytes",
+      "allowed": [
+        2
+      ],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_class": 3
+      },
+      "parameter": "eip_class_sequence_bytes",
+      "allowed": [
+        2
+      ],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "UNCONNECTED_EXPLICIT"
+      },
+      "parameter": "eip_class_sequence_bytes",
+      "allowed": [
+        0
+      ],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_run_idle_present": false
+      },
+      "parameter": "eip_run_idle_bytes",
+      "allowed": [
+        0
+      ],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_run_idle_present": true
+      },
+      "parameter": "eip_run_idle_bytes",
+      "allowed": [
+        4
+      ],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "CONNECTED_EXPLICIT"
+      },
+      "parameter": "payload_bytes",
+      "equal_expression": {
+        "sum": [
+          "eip_application_bytes",
+          "eip_class_sequence_bytes",
+          0
+        ]
+      },
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "UNCONNECTED_EXPLICIT"
+      },
+      "parameter": "payload_bytes",
+      "equal_expression": {
+        "sum": [
+          "eip_application_bytes",
+          "eip_class_sequence_bytes",
+          0
+        ]
+      },
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "IMPLICIT_IO"
+      },
+      "parameter": "payload_bytes",
+      "equal_expression": {
+        "sum": [
+          "eip_application_bytes",
+          "eip_class_sequence_bytes",
+          "eip_run_idle_bytes"
+        ]
+      },
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_cpf_layout": "TWO_ITEM"
+      },
+      "parameter": "eip_cpf_bytes",
+      "equal_expression": {
+        "sum": [
+          10,
+          "eip_address_bytes",
+          "payload_bytes"
+        ]
+      },
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "CONNECTED_EXPLICIT"
+      },
+      "parameter": "eip_encap_length",
+      "equal_expression": {
+        "sum": [
+          6,
+          "eip_cpf_bytes"
+        ]
+      },
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "UNCONNECTED_EXPLICIT"
+      },
+      "parameter": "eip_encap_length",
+      "equal_expression": {
+        "sum": [
+          6,
+          "eip_cpf_bytes"
+        ]
+      },
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "CONNECTED_EXPLICIT"
+      },
+      "parameter": "eip_packet_bytes",
+      "equal_expression": {
+        "sum": [
+          24,
+          "eip_encap_length"
+        ]
+      },
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "UNCONNECTED_EXPLICIT"
+      },
+      "parameter": "eip_packet_bytes",
+      "equal_expression": {
+        "sum": [
+          24,
+          "eip_encap_length"
+        ]
+      },
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "DISCOVERY"
+      },
+      "parameter": "eip_packet_bytes",
+      "equal_expression": {
+        "sum": [
+          24,
+          "eip_encap_length"
+        ]
+      },
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "IMPLICIT_IO"
+      },
+      "parameter": "eip_packet_bytes",
+      "equal_parameter": "eip_cpf_bytes",
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_delivery": "MULTICAST"
+      },
+      "parameter": "eip_port",
+      "allowed": [
+        2222
+      ],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_forward_open": "STANDARD"
+      },
+      "parameter": "eip_o_to_t_size",
+      "maximum": 511,
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_forward_open": "STANDARD"
+      },
+      "parameter": "eip_t_to_o_size",
+      "maximum": 511,
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_watchdog_profile": "ACCEPTED_API"
+      },
+      "parameter": "eip_watchdog_us",
+      "equal_expression": {
+        "product": [
+          "eip_o_to_t_api_us",
+          {
+            "power": [
+              2,
+              {
+                "sum": [
+                  2,
+                  "eip_timeout_code"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_watchdog_profile": "OPENER_MILLISECOND"
+      },
+      "parameter": "eip_watchdog_us",
+      "equal_expression": {
+        "product": [
+          1000,
+          {
+            "subtract": [
+              0,
+              {
+                "ceiling": [
+                  {
+                    "product": [
+                      -0.001,
+                      "eip_o_to_t_rpi_us"
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "power": [
+              2,
+              {
+                "sum": [
+                  2,
+                  "eip_timeout_code"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_watchdog_profile": "OPENER_MILLISECOND"
+      },
+      "parameter": "eip_initial_watchdog_us",
+      "equal_expression": {
+        "maximum": [
+          10000000,
+          "eip_watchdog_us"
+        ]
+      },
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_trigger": "CYCLIC",
+        "eip_inhibit_profile": "OPENER_CYCLIC"
+      },
+      "parameter": "eip_inhibit_ms",
+      "maximum_expression": {
+        "product": [
+          0.001,
+          "eip_t_to_o_rpi_us"
+        ]
+      },
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "CONNECTED_EXPLICIT"
+      },
+      "parameter": "eip_trigger",
+      "allowed": [
+        "APPLICATION"
+      ],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "UNCONNECTED_EXPLICIT"
+      },
+      "parameter": "eip_o_to_t_api_us",
+      "allowed": [],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "UNCONNECTED_EXPLICIT"
+      },
+      "parameter": "eip_t_to_o_api_us",
+      "allowed": [],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "UNCONNECTED_EXPLICIT"
+      },
+      "parameter": "eip_watchdog_profile",
+      "allowed": [],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "UNCONNECTED_EXPLICIT"
+      },
+      "parameter": "eip_inhibit_profile",
+      "allowed": [],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "UNCONNECTED_EXPLICIT"
+      },
+      "parameter": "eip_o_to_t_priority",
+      "allowed": [],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "UNCONNECTED_EXPLICIT"
+      },
+      "parameter": "eip_t_to_o_priority",
+      "allowed": [],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "UNCONNECTED_EXPLICIT"
+      },
+      "parameter": "eip_o_to_t_type",
+      "allowed": [],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "UNCONNECTED_EXPLICIT"
+      },
+      "parameter": "eip_t_to_o_type",
+      "allowed": [],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "UNCONNECTED_EXPLICIT"
+      },
+      "parameter": "eip_owner_mode",
+      "allowed": [],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "UNCONNECTED_EXPLICIT"
+      },
+      "parameter": "eip_owner_source",
+      "allowed": [],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "UNCONNECTED_EXPLICIT"
+      },
+      "parameter": "eip_o_to_t_id",
+      "allowed": [],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "UNCONNECTED_EXPLICIT"
+      },
+      "parameter": "eip_t_to_o_id",
+      "allowed": [],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "UNCONNECTED_EXPLICIT"
+      },
+      "parameter": "eip_size_mode",
+      "allowed": [],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "UNCONNECTED_EXPLICIT"
+      },
+      "parameter": "eip_size_direction",
+      "allowed": [],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "UNCONNECTED_EXPLICIT"
+      },
+      "parameter": "eip_size_definition",
+      "allowed": [],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "DISCOVERY"
+      },
+      "parameter": "eip_o_to_t_api_us",
+      "allowed": [],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "DISCOVERY"
+      },
+      "parameter": "eip_t_to_o_api_us",
+      "allowed": [],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "DISCOVERY"
+      },
+      "parameter": "eip_watchdog_profile",
+      "allowed": [],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "DISCOVERY"
+      },
+      "parameter": "eip_inhibit_profile",
+      "allowed": [],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "DISCOVERY"
+      },
+      "parameter": "eip_o_to_t_priority",
+      "allowed": [],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "DISCOVERY"
+      },
+      "parameter": "eip_t_to_o_priority",
+      "allowed": [],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "DISCOVERY"
+      },
+      "parameter": "eip_o_to_t_type",
+      "allowed": [],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "DISCOVERY"
+      },
+      "parameter": "eip_t_to_o_type",
+      "allowed": [],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "DISCOVERY"
+      },
+      "parameter": "eip_owner_mode",
+      "allowed": [],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "DISCOVERY"
+      },
+      "parameter": "eip_owner_source",
+      "allowed": [],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "DISCOVERY"
+      },
+      "parameter": "eip_o_to_t_id",
+      "allowed": [],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "DISCOVERY"
+      },
+      "parameter": "eip_t_to_o_id",
+      "allowed": [],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "DISCOVERY"
+      },
+      "parameter": "eip_size_mode",
+      "allowed": [],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "DISCOVERY"
+      },
+      "parameter": "eip_size_direction",
+      "allowed": [],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "DISCOVERY"
+      },
+      "parameter": "eip_size_definition",
+      "allowed": [],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "DISCOVERY"
+      },
+      "parameter": "eip_application_bytes",
+      "allowed": [],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "DISCOVERY"
+      },
+      "parameter": "payload_bytes",
+      "allowed": [],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "DISCOVERY"
+      },
+      "parameter": "eip_class_sequence_bytes",
+      "allowed": [],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "DISCOVERY"
+      },
+      "parameter": "eip_cpf_layout",
+      "allowed": [],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "DISCOVERY"
+      },
+      "parameter": "eip_address_bytes",
+      "allowed": [],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "DISCOVERY"
+      },
+      "parameter": "eip_cpf_bytes",
+      "allowed": [],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "DISCOVERY"
+      },
+      "parameter": "eip_connection_path",
+      "allowed": [],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_class": 0
+      },
+      "parameter": "eip_class_sequence",
+      "allowed": [],
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "IMPLICIT_IO",
+        "eip_size_direction": "O_TO_T",
+        "eip_size_mode": "FIXED",
+        "eip_size_definition": "OPENER_CPF_DATA"
+      },
+      "parameter": "payload_bytes",
+      "equal_parameter": "eip_o_to_t_size",
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "IMPLICIT_IO",
+        "eip_size_direction": "T_TO_O",
+        "eip_size_mode": "FIXED",
+        "eip_size_definition": "OPENER_CPF_DATA"
+      },
+      "parameter": "payload_bytes",
+      "equal_parameter": "eip_t_to_o_size",
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "IMPLICIT_IO",
+        "eip_size_direction": "O_TO_T",
+        "eip_size_mode": "VARIABLE",
+        "eip_size_definition": "OPENER_CPF_DATA"
+      },
+      "parameter": "payload_bytes",
+      "maximum_parameter": "eip_o_to_t_size",
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    },
+    {
+      "when": {
+        "eip_mode": "IMPLICIT_IO",
+        "eip_size_direction": "T_TO_O",
+        "eip_size_mode": "VARIABLE",
+        "eip_size_definition": "OPENER_CPF_DATA"
+      },
+      "parameter": "payload_bytes",
+      "maximum_parameter": "eip_t_to_o_size",
+      "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+      "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read."
+    }
+  ],
+  "physical_layer_profile_id": "ETHERNET_PHY_EXPLICIT",
+  "medium_access_model": "VARIANT_DEPENDENT",
+  "native_parameter_prefixes": [],
+  "parameter_aliases": {},
+  "parameter_alias_limits": {},
+  "parameter_evidence_scope": null,
+  "rate_source_profile_id": null,
+  "arbitration_model_id": null,
+  "max_payload_bytes": 65535,
+  "capabilities": {
+    "supports_signals": true,
+    "supports_data_objects": true,
+    "supports_streams": false,
+    "supports_multicast": false,
+    "supports_publish_subscribe": true,
+    "supports_request_response": true,
+    "supports_cyclic": true,
+    "supports_event": true,
+    "supports_redundancy": false,
+    "supports_time_sync": false,
+    "supports_safety_profile": false,
+    "supports_segmentation": false,
+    "supports_fragmentation": false,
+    "supports_qos": false
+  },
+  "deterministic": false,
+  "overhead_bytes": 8,
+  "implementation_status": "PARTIAL",
+  "connection_type": "COMMUNICATION_TECHNOLOGY",
+  "parameter_proposals": {
+    "kind": "APPLICATION_TRANSPORT_DEPENDENT",
+    "status": "REVIEW_REQUIRED",
+    "source": "https://www.odva.org/publication_download/ethernet-ip-technology-overview/",
+    "source_revision": "ODVA PUB00138; PUB00095 Version9 PR002; Volume1 v3.40 / Volume2 v1.36 publisher April2026. Public OpENer implementation accessed2026-10-01; licensed specification not read.",
+    "note": "EtherNet/IP has no own physical bitrate or universal1400-byte I/O limit. TCP explicit/UDP implicit/discovery require separate actual bindings. RPI100ms/Class1 or250ms/Class3 and multiplier4 are qualified ODVA interoperability test proposals, not universal installed-device defaults."
+  },
+  "capacity_evidence": {
+    "status": "MODEL_MISSING",
+    "frame_model": null,
+    "schedule_model": null,
+    "requires_confirmed_device_parameters": true
+  },
+  "components": {
+    "binding": "ethernet_ip.binding",
+    "generator": "ethernet_ip.generator",
+    "validator": "ethernet_ip.validator",
+    "timing_model": null,
+    "load_model": null,
+    "encoder": "ethernet_ip.encoder",
+    "decoder": "ethernet_ip.decoder"
+  },
+  "known_limitations": "Technology-specific conformance details require a vendor/profile extension."
+}

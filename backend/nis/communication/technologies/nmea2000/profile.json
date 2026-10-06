@@ -1,0 +1,3701 @@
+{
+  "id": "nmea2000",
+  "label": "NMEA 2000",
+  "domain": "generic_networking",
+  "layer": "INDUSTRY_PROFILE",
+  "transport_unit": "MESSAGE",
+  "payload_element_types": [
+    "FIELD",
+    "SIGNAL"
+  ],
+  "hardware_interface": "nmea2000_can_cc_250k_qualified_topology",
+  "hardware_capability_aliases": [
+    "can_controller"
+  ],
+  "default_stack": [
+    "nmea2000"
+  ],
+  "stack_variants": [
+    [
+      "nmea2000"
+    ],
+    [
+      "can",
+      "nmea2000"
+    ]
+  ],
+  "default_bitrate": 250000,
+  "rate_model": {
+    "type": "FIXED_LINK_RATE",
+    "fields": [
+      "bitrate_bps"
+    ],
+    "fixed_bps": 250000
+  },
+  "local_timing_schema": [],
+  "parameter_schema": {
+    "bitrate_bps": {
+      "label": "Bitrate",
+      "category": "physical",
+      "scope": "network",
+      "type": "number",
+      "description": "Technology-profiled network rate.",
+      "required": true,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 250000,
+      "unit": "bit/s",
+      "min": 1,
+      "default_review": {
+        "technology": "nmea2000",
+        "rate_profile": "nmea2000",
+        "values": {
+          "bitrate_bps": 250000
+        },
+        "basis": "FIXED_PROFILE_RATE",
+        "status": "REVIEW_REQUIRED",
+        "source": "https://www.can-cia.org/fileadmin/cia/documents/publications/cnlm/june_2024/cnlm_24-1_p9_nmea_2000_conformance_testing_and_product_certification_dr_chris_quigley_warwick_control_technologies.pdf",
+        "source_revision": "Warwick Control Technologies author DrChrisQuigley CANNewsletter2/2024 pp9-11: 250k,50physicaldevices,85..90% samplepoint,auto retransmission,isolation and actual certification/interoperability scope."
+      },
+      "allowed_bps": [
+        250000
+      ],
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED",
+      "source": "https://www.can-cia.org/fileadmin/cia/documents/publications/cnlm/june_2024/cnlm_24-1_p9_nmea_2000_conformance_testing_and_product_certification_dr_chris_quigley_warwick_control_technologies.pdf",
+      "source_revision": "Warwick Control Technologies author DrChrisQuigley CANNewsletter2/2024 pp9-11: 250k,50physicaldevices,85..90% samplepoint,auto retransmission,isolation and actual certification/interoperability scope."
+    },
+    "payload_bytes": {
+      "label": "Payload",
+      "category": "physical",
+      "scope": "message",
+      "type": "number",
+      "description": "Actual complete PGN encodeddata: SINGLE<=8, FAST<=223, source-qualified ISOtransport<=1785 plusmanagementframes. No fixed8byte default or223globalmaximum.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://simmasoftware.com/assets/images/nmea-2000-users-manual.pdf",
+      "source_revision": "Simma ssNMEA2000-Multi manual1.3 April23 2013: pp6-11 CAN/NAME,16-22 packet/API,24-25 selected implementation buffers/tick. Public manual only, no software package/license acceptance.",
+      "integer": true
+    },
+    "cycle_ms": {
+      "label": "Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "Standardperiode fuer zyklische Nachrichten.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "minimum_cycle_time_ms": {
+      "label": "Minimum Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "deadline_ms": {
+      "label": "Deadline",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "timeout_ms": {
+      "label": "Timeout",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_latency_ms": {
+      "label": "Maximum Latency",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "jitter_ms": {
+      "label": "Jitter Budget",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "freshness_ms": {
+      "label": "Data Freshness",
+      "category": "timing",
+      "scope": "signal",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "source_processing_delay_ms": {
+      "label": "Source Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_processing_delay_ms": {
+      "label": "Target Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "propagation_delay_ms": {
+      "label": "Propagation",
+      "category": "timing",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.01,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_bus_load_percent": {
+      "label": "Ziel-Buslast",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "Zielwert fuer die aus Routing, Payload, Zyklus und Bitrate berechnete Buslast.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "peak_factor": {
+      "label": "Peak Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.15,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_factor": {
+      "label": "Burst Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.5,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_window_ms": {
+      "label": "Burst Window",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "warning_threshold": {
+      "label": "Load Warning",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "critical_threshold": {
+      "label": "Load Critical",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 75,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "overload_threshold": {
+      "label": "Load Overload",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 90,
+      "unit": "%",
+      "min": 1,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "traffic_class": {
+      "label": "Traffic Class",
+      "category": "qos",
+      "scope": "route",
+      "type": "select",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": "BEST_EFFORT",
+      "options": [
+        "BEST_EFFORT",
+        "CONTROL",
+        "REALTIME",
+        "SAFETY_CRITICAL"
+      ],
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "packet_loss_probability": {
+      "label": "Packet Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "frame_loss_probability": {
+      "label": "Frame Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "bit_error_rate": {
+      "label": "Bit Error Rate",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "corruption_probability": {
+      "label": "Corruption",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duplicate_probability": {
+      "label": "Duplication",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "reordering_probability": {
+      "label": "Reordering",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "retransmission_enabled": {
+      "label": "Retransmission",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "boolean",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": false,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "retransmission_rate": {
+      "label": "Retransmission Rate",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "required_reliability": {
+      "label": "Required Reliability",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.999,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_offset_ms": {
+      "label": "Clock Offset",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_drift_ppm": {
+      "label": "Clock Drift",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 20,
+      "unit": "ppm",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_precision_ms": {
+      "label": "Sync Precision",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_interval_ms": {
+      "label": "Sync Interval",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1000,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_sync_error_ms": {
+      "label": "Maximum Sync Error",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_delay_ms": {
+      "label": "Gateway Processing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.2,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_queue_delay_ms": {
+      "label": "Gateway Queueing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "protocol_conversion_delay_ms": {
+      "label": "Protocol Conversion",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_maximum_throughput": {
+      "label": "Gateway Throughput",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100000000,
+      "unit": "bit/s",
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_input_buffer": {
+      "label": "Gateway Input Buffer",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 256,
+      "unit": "Frames",
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_output_buffer": {
+      "label": "Gateway Output Buffer",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 256,
+      "unit": "Frames",
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_maximum_routes": {
+      "label": "Gateway Maximum Routes",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 10000,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_maximum_messages_s": {
+      "label": "Gateway Messages per Second",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100000,
+      "unit": "msg/s",
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duration_s": {
+      "label": "Simulation Duration",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 1,
+      "unit": "s",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "seed": {
+      "label": "Random Seed",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 42,
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "max_events": {
+      "label": "Maximum Events",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 100000,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "dropout_probability": {
+      "label": "Failure Injection Dropout",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "n2_implementation": {
+      "type": "select",
+      "description": "Actual current installed stack/device, not inferred from project industry.",
+      "options": [
+        "TIMO_PINNED",
+        "SIMMA_1_3",
+        "REGISTERED"
+      ],
+      "source": "https://raw.githubusercontent.com/ttlappalainen/NMEA2000/5b7b9fc3ccc18e30ebfba92da6486cffc6251595/src/NMEA2000.cpp",
+      "source_revision": "TimoLappalainen implementation pinned 5b7b9fc3ccc18e30ebfba92da6486cffc6251595: ID PDU1/PDU2, fastpacket6+31*7, sequence0..7, actual buffers/transport support.",
+      "integer": false,
+      "label": "implementation",
+      "category": "communication",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "n2_edition": {
+      "type": "select",
+      "description": "Actual implemented Main/Appendix/PGN edition; latest publisher metadata does not certify hardware.",
+      "options": [
+        "3.000",
+        "REGISTERED"
+      ],
+      "source": "https://www.nmea.org/nmea-2000.html",
+      "source_revision": "NMEA publisher version3.000 with amendments overview, retrieved2026-10-02. Licensed Main/Appendices A/B/C not read.",
+      "integer": false,
+      "label": "edition",
+      "category": "communication",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "n2_packet_class": {
+      "type": "select",
+      "description": "Actual PGN transport registration: length alone does not select single or fast packet. ISO transport separate.",
+      "options": [
+        "SINGLE",
+        "FAST_PACKET",
+        "ISO_TP_BAM",
+        "ISO_TP_RTS_CTS",
+        "REGISTERED"
+      ],
+      "source": "https://raw.githubusercontent.com/ttlappalainen/NMEA2000/5b7b9fc3ccc18e30ebfba92da6486cffc6251595/src/NMEA2000.cpp",
+      "source_revision": "TimoLappalainen implementation pinned 5b7b9fc3ccc18e30ebfba92da6486cffc6251595: ID PDU1/PDU2, fastpacket6+31*7, sequence0..7, actual buffers/transport support.",
+      "integer": false,
+      "label": "packet class",
+      "category": "communication",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "n2_claim_status": {
+      "type": "select",
+      "description": "Actual latest address claim state and NAME collision outcome, not a proposed source address.",
+      "options": [
+        "CLAIMED",
+        "CANNOT_CLAIM",
+        "LISTEN_ONLY",
+        "UNVERIFIED"
+      ],
+      "source": "https://raw.githubusercontent.com/ttlappalainen/NMEA2000/5b7b9fc3ccc18e30ebfba92da6486cffc6251595/src/NMEA2000.h",
+      "source_revision": "TimoLappalainen header pinned 5b7b9fc3ccc18e30ebfba92da6486cffc6251595: maxsource251, null254,100ms buffer timeout,60s heartbeat are implementation settings, not generic J1939 defaults.",
+      "integer": false,
+      "label": "claim status",
+      "category": "communication",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "n2_role": {
+      "type": "select",
+      "description": "Actual active CAN participant versus silent receive-only monitor; silent monitor does not retransmit.",
+      "options": [
+        "ACTIVE",
+        "SILENT_MONITOR"
+      ],
+      "source": "https://raw.githubusercontent.com/ttlappalainen/NMEA2000/5b7b9fc3ccc18e30ebfba92da6486cffc6251595/src/NMEA2000.h",
+      "source_revision": "TimoLappalainen header pinned 5b7b9fc3ccc18e30ebfba92da6486cffc6251595: maxsource251, null254,100ms buffer timeout,60s heartbeat are implementation settings, not generic J1939 defaults.",
+      "integer": false,
+      "label": "role",
+      "category": "communication",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "n2_cable": {
+      "type": "select",
+      "description": "Actual installed backbone cable grade; drop cable restrictions distinct.",
+      "options": [
+        "MICRO_LITE",
+        "MID",
+        "MINI_HEAVY",
+        "REGISTERED"
+      ],
+      "source": "https://actisense.com/wp-content/uploads/2021/08/Complete-Guide-to-NMEA-2000_Revision_4_2021.pdf",
+      "source_revision": "Actisense Complete Guide Rev4 2021: network/cable/power/termination pp4-10, device24V compatibility not standard9..16V.",
+      "integer": false,
+      "label": "cable",
+      "category": "communication",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "n2_cable_catalog": {
+      "type": "select",
+      "description": "Actual cable/connector rating revision; 2021 catalog current limits must not be universal.",
+      "options": [
+        "ACTISENSE_2021",
+        "REGISTERED"
+      ],
+      "source": "https://actisense.com/wp-content/uploads/2021/08/Complete-Guide-to-NMEA-2000_Revision_4_2021.pdf",
+      "source_revision": "Actisense Complete Guide Rev4 2021: network/cable/power/termination pp4-10, device24V compatibility not standard9..16V.",
+      "integer": false,
+      "label": "cable catalog",
+      "category": "communication",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "n2_power_profile": {
+      "type": "select",
+      "description": "Actual standard9..16V versus separately device-qualified extended24V installation.",
+      "options": [
+        "STANDARD_9_16",
+        "DEVICE_24V_REGISTERED"
+      ],
+      "source": "https://actisense.com/wp-content/uploads/2021/08/Complete-Guide-to-NMEA-2000_Revision_4_2021.pdf",
+      "source_revision": "Actisense Complete Guide Rev4 2021: network/cable/power/termination pp4-10, device24V compatibility not standard9..16V.",
+      "integer": false,
+      "label": "power profile",
+      "category": "communication",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "n2_power_method": {
+      "type": "select",
+      "description": "Actual bus power versus separately powered auxiliary device circuitry.",
+      "options": [
+        "BUS_ONLY",
+        "AUXILIARY_SEPARATE"
+      ],
+      "source": "https://actisense.com/wp-content/uploads/2021/08/Complete-Guide-to-NMEA-2000_Revision_4_2021.pdf",
+      "source_revision": "Actisense Complete Guide Rev4 2021: network/cable/power/termination pp4-10, device24V compatibility not standard9..16V.",
+      "integer": false,
+      "label": "power method",
+      "category": "communication",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "n2_device_source": {
+      "type": "text",
+      "description": "Actual product/firmware/controller/physical compatibility proof.",
+      "source": "https://www.can-cia.org/fileadmin/cia/documents/publications/cnlm/june_2024/cnlm_24-1_p9_nmea_2000_conformance_testing_and_product_certification_dr_chris_quigley_warwick_control_technologies.pdf",
+      "source_revision": "Warwick Control Technologies author DrChrisQuigley CANNewsletter2/2024 pp9-11: 250k,50physicaldevices,85..90% samplepoint,auto retransmission,isolation and actual certification/interoperability scope.",
+      "integer": false,
+      "label": "device source",
+      "category": "communication",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "n2_edition_source": {
+      "type": "text",
+      "description": "Actual licensed PGN edition/source and applicable amendments/fields/scaling.",
+      "source": "https://www.nmea.org/nmea-2000.html",
+      "source_revision": "NMEA publisher version3.000 with amendments overview, retrieved2026-10-02. Licensed Main/Appendices A/B/C not read.",
+      "integer": false,
+      "label": "edition source",
+      "category": "communication",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "n2_codec_source": {
+      "type": "text",
+      "description": "Actual PGN field encoding, unavailable/reserved values, units and supported RX/TX lists.",
+      "source": "https://www.nmea.org/nmea-2000.html",
+      "source_revision": "NMEA publisher version3.000 with amendments overview, retrieved2026-10-02. Licensed Main/Appendices A/B/C not read.",
+      "integer": false,
+      "label": "codec source",
+      "category": "communication",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "n2_transport_mapping_source": {
+      "type": "text",
+      "description": "Actual PGN SINGLE/FAST/ISO-TP and supported reassembly registration.",
+      "source": "https://raw.githubusercontent.com/ttlappalainen/NMEA2000/5b7b9fc3ccc18e30ebfba92da6486cffc6251595/src/NMEA2000.cpp",
+      "source_revision": "TimoLappalainen implementation pinned 5b7b9fc3ccc18e30ebfba92da6486cffc6251595: ID PDU1/PDU2, fastpacket6+31*7, sequence0..7, actual buffers/transport support.",
+      "integer": false,
+      "label": "transport mapping source",
+      "category": "communication",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "n2_claim_source": {
+      "type": "text",
+      "description": "Actual NAME/address claim response, competing devices and persistent last source.",
+      "source": "https://raw.githubusercontent.com/ttlappalainen/NMEA2000/5b7b9fc3ccc18e30ebfba92da6486cffc6251595/src/NMEA2000.h",
+      "source_revision": "TimoLappalainen header pinned 5b7b9fc3ccc18e30ebfba92da6486cffc6251595: maxsource251, null254,100ms buffer timeout,60s heartbeat are implementation settings, not generic J1939 defaults.",
+      "integer": false,
+      "label": "claim source",
+      "category": "communication",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "n2_schedule_source": {
+      "type": "text",
+      "description": "Actual PGNs/rates/priorities/all network traffic, CAN errors/automatic retries and interference bound.",
+      "source": "https://www.can-cia.org/fileadmin/cia/documents/publications/cnlm/june_2024/cnlm_24-1_p9_nmea_2000_conformance_testing_and_product_certification_dr_chris_quigley_warwick_control_technologies.pdf",
+      "source_revision": "Warwick Control Technologies author DrChrisQuigley CANNewsletter2/2024 pp9-11: 250k,50physicaldevices,85..90% samplepoint,auto retransmission,isolation and actual certification/interoperability scope.",
+      "integer": false,
+      "label": "schedule source",
+      "category": "communication",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "n2_physical_source": {
+      "type": "text",
+      "description": "Actual cable topology/connectors/termination/signal/samplepoint/isolation/loading proof.",
+      "source": "https://actisense.com/wp-content/uploads/2021/08/Complete-Guide-to-NMEA-2000_Revision_4_2021.pdf",
+      "source_revision": "Actisense Complete Guide Rev4 2021: network/cable/power/termination pp4-10, device24V compatibility not standard9..16V.",
+      "integer": false,
+      "label": "physical source",
+      "category": "communication",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "n2_power_source": {
+      "type": "text",
+      "description": "Actual supply/fuse/ground/branch currents and both conductors of voltage-drop path.",
+      "source": "https://actisense.com/wp-content/uploads/2021/08/Complete-Guide-to-NMEA-2000_Revision_4_2021.pdf",
+      "source_revision": "Actisense Complete Guide Rev4 2021: network/cable/power/termination pp4-10, device24V compatibility not standard9..16V.",
+      "integer": false,
+      "label": "power source",
+      "category": "communication",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "n2_acceptance_source": {
+      "type": "text",
+      "description": "Actual application freshness/deadline/quality/interoperability acceptance separate from CAN CRC.",
+      "source": "https://www.can-cia.org/fileadmin/cia/documents/publications/cnlm/june_2024/cnlm_24-1_p9_nmea_2000_conformance_testing_and_product_certification_dr_chris_quigley_warwick_control_technologies.pdf",
+      "source_revision": "Warwick Control Technologies author DrChrisQuigley CANNewsletter2/2024 pp9-11: 250k,50physicaldevices,85..90% samplepoint,auto retransmission,isolation and actual certification/interoperability scope.",
+      "integer": false,
+      "label": "acceptance source",
+      "category": "communication",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "n2_registered_source": {
+      "type": "text",
+      "description": "Actual alternative stack/cable/power/transport specification and revision.",
+      "source": "https://www.nmea.org/nmea-2000.html",
+      "source_revision": "NMEA publisher version3.000 with amendments overview, retrieved2026-10-02. Licensed Main/Appendices A/B/C not read.",
+      "integer": false,
+      "label": "registered source",
+      "category": "communication",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "n2_name_hex": {
+      "type": "text",
+      "description": "Actual lossless64bit unique NAME as16hex characters; never JavaScript floating point ID.",
+      "source": "https://simmasoftware.com/assets/images/nmea-2000-users-manual.pdf",
+      "source_revision": "Simma ssNMEA2000-Multi manual1.3 April23 2013: pp6-11 CAN/NAME,16-22 packet/API,24-25 selected implementation buffers/tick. Public manual only, no software package/license acceptance.",
+      "integer": false,
+      "label": "name hex",
+      "category": "communication",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "n2_tx_pgn_source": {
+      "type": "text",
+      "description": "Actual declared transmit PGNs and timing/priority/instance configuration services.",
+      "source": "https://www.can-cia.org/fileadmin/cia/documents/publications/cnlm/june_2024/cnlm_24-1_p9_nmea_2000_conformance_testing_and_product_certification_dr_chris_quigley_warwick_control_technologies.pdf",
+      "source_revision": "Warwick Control Technologies author DrChrisQuigley CANNewsletter2/2024 pp9-11: 250k,50physicaldevices,85..90% samplepoint,auto retransmission,isolation and actual certification/interoperability scope.",
+      "integer": false,
+      "label": "tx pgn source",
+      "category": "communication",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "n2_rx_pgn_source": {
+      "type": "text",
+      "description": "Actual declared receive PGNs, filters and reassembly concurrency.",
+      "source": "https://www.can-cia.org/fileadmin/cia/documents/publications/cnlm/june_2024/cnlm_24-1_p9_nmea_2000_conformance_testing_and_product_certification_dr_chris_quigley_warwick_control_technologies.pdf",
+      "source_revision": "Warwick Control Technologies author DrChrisQuigley CANNewsletter2/2024 pp9-11: 250k,50physicaldevices,85..90% samplepoint,auto retransmission,isolation and actual certification/interoperability scope.",
+      "integer": false,
+      "label": "rx pgn source",
+      "category": "communication",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "n2_certification_source": {
+      "type": "text",
+      "description": "Actual product-specific NMEA certification evidence. Library presence is not certification.",
+      "source": "https://www.nmea.org/nmea-2000.html",
+      "source_revision": "NMEA publisher version3.000 with amendments overview, retrieved2026-10-02. Licensed Main/Appendices A/B/C not read.",
+      "integer": false,
+      "label": "certification source",
+      "category": "communication",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "n2_model_id": {
+      "type": "text",
+      "description": "Actual registered product model, not placeholder productcode666.",
+      "source": "https://raw.githubusercontent.com/ttlappalainen/NMEA2000/5b7b9fc3ccc18e30ebfba92da6486cffc6251595/src/NMEA2000.h",
+      "source_revision": "TimoLappalainen header pinned 5b7b9fc3ccc18e30ebfba92da6486cffc6251595: maxsource251, null254,100ms buffer timeout,60s heartbeat are implementation settings, not generic J1939 defaults.",
+      "integer": false,
+      "label": "model id",
+      "category": "communication",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "n2_software_version": {
+      "type": "text",
+      "description": "Actual current installed product software version, separate from edition.",
+      "source": "https://raw.githubusercontent.com/ttlappalainen/NMEA2000/5b7b9fc3ccc18e30ebfba92da6486cffc6251595/src/NMEA2000.h",
+      "source_revision": "TimoLappalainen header pinned 5b7b9fc3ccc18e30ebfba92da6486cffc6251595: maxsource251, null254,100ms buffer timeout,60s heartbeat are implementation settings, not generic J1939 defaults.",
+      "integer": false,
+      "label": "software version",
+      "category": "communication",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "n2_serial_code": {
+      "type": "text",
+      "description": "Actual unique product serial string, no manufacturer example copied.",
+      "source": "https://raw.githubusercontent.com/ttlappalainen/NMEA2000/5b7b9fc3ccc18e30ebfba92da6486cffc6251595/src/NMEA2000.h",
+      "source_revision": "TimoLappalainen header pinned 5b7b9fc3ccc18e30ebfba92da6486cffc6251595: maxsource251, null254,100ms buffer timeout,60s heartbeat are implementation settings, not generic J1939 defaults.",
+      "integer": false,
+      "label": "serial code",
+      "category": "communication",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "n2_priority": {
+      "type": "number",
+      "description": "Actual3bit identifier priority; PGN-specific default requires actual edition.",
+      "min": 0,
+      "max": 7,
+      "source": "https://raw.githubusercontent.com/ttlappalainen/NMEA2000/5b7b9fc3ccc18e30ebfba92da6486cffc6251595/src/NMEA2000.cpp",
+      "source_revision": "TimoLappalainen implementation pinned 5b7b9fc3ccc18e30ebfba92da6486cffc6251595: ID PDU1/PDU2, fastpacket6+31*7, sequence0..7, actual buffers/transport support.",
+      "integer": true,
+      "label": "priority",
+      "category": "communication",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "n2_dp": {
+      "type": "number",
+      "description": "Actual data page bit in pinned classic NMEA identifier, not J1939 extended-page variants.",
+      "min": 0,
+      "max": 1,
+      "source": "https://raw.githubusercontent.com/ttlappalainen/NMEA2000/5b7b9fc3ccc18e30ebfba92da6486cffc6251595/src/NMEA2000.cpp",
+      "source_revision": "TimoLappalainen implementation pinned 5b7b9fc3ccc18e30ebfba92da6486cffc6251595: ID PDU1/PDU2, fastpacket6+31*7, sequence0..7, actual buffers/transport support.",
+      "integer": true,
+      "label": "dp",
+      "category": "communication",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "n2_edp": {
+      "type": "number",
+      "description": "Actual reserved extended page bit; reviewed classic NMEA binding0.",
+      "min": 0,
+      "max": 0,
+      "source": "https://raw.githubusercontent.com/ttlappalainen/NMEA2000/5b7b9fc3ccc18e30ebfba92da6486cffc6251595/src/NMEA2000.cpp",
+      "source_revision": "TimoLappalainen implementation pinned 5b7b9fc3ccc18e30ebfba92da6486cffc6251595: ID PDU1/PDU2, fastpacket6+31*7, sequence0..7, actual buffers/transport support.",
+      "integer": true,
+      "label": "edp",
+      "category": "communication",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "n2_role": "ACTIVE"
+          },
+          "value": 0,
+          "source": "https://raw.githubusercontent.com/ttlappalainen/NMEA2000/5b7b9fc3ccc18e30ebfba92da6486cffc6251595/src/NMEA2000.cpp",
+          "source_revision": "TimoLappalainen implementation pinned 5b7b9fc3ccc18e30ebfba92da6486cffc6251595: ID PDU1/PDU2, fastpacket6+31*7, sequence0..7, actual buffers/transport support."
+        }
+      ]
+    },
+    "n2_pf": {
+      "type": "number",
+      "description": "Actual PDU format octet: below240 addressedPDU1, otherwisePGN group extension.",
+      "min": 0,
+      "max": 255,
+      "source": "https://raw.githubusercontent.com/ttlappalainen/NMEA2000/5b7b9fc3ccc18e30ebfba92da6486cffc6251595/src/NMEA2000.cpp",
+      "source_revision": "TimoLappalainen implementation pinned 5b7b9fc3ccc18e30ebfba92da6486cffc6251595: ID PDU1/PDU2, fastpacket6+31*7, sequence0..7, actual buffers/transport support.",
+      "integer": true,
+      "label": "pf",
+      "category": "communication",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "n2_ps": {
+      "type": "number",
+      "description": "Actual PDU-specific octet: destination forPDU1 orPGN extension forPDU2.",
+      "min": 0,
+      "max": 255,
+      "source": "https://raw.githubusercontent.com/ttlappalainen/NMEA2000/5b7b9fc3ccc18e30ebfba92da6486cffc6251595/src/NMEA2000.cpp",
+      "source_revision": "TimoLappalainen implementation pinned 5b7b9fc3ccc18e30ebfba92da6486cffc6251595: ID PDU1/PDU2, fastpacket6+31*7, sequence0..7, actual buffers/transport support.",
+      "integer": true,
+      "label": "ps",
+      "category": "communication",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "n2_source_address": {
+      "type": "number",
+      "description": "Actual wire source. Claimed current pinned stack<=251, null254 special; no arbitrary CAN node default.",
+      "min": 0,
+      "max": 255,
+      "source": "https://raw.githubusercontent.com/ttlappalainen/NMEA2000/5b7b9fc3ccc18e30ebfba92da6486cffc6251595/src/NMEA2000.h",
+      "source_revision": "TimoLappalainen header pinned 5b7b9fc3ccc18e30ebfba92da6486cffc6251595: maxsource251, null254,100ms buffer timeout,60s heartbeat are implementation settings, not generic J1939 defaults.",
+      "integer": true,
+      "label": "source address",
+      "category": "communication",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "n2_destination": {
+      "type": "number",
+      "description": "Actual PDU1 destination or255 implicitglobal forPDU2.",
+      "min": 0,
+      "max": 255,
+      "source": "https://raw.githubusercontent.com/ttlappalainen/NMEA2000/5b7b9fc3ccc18e30ebfba92da6486cffc6251595/src/NMEA2000.cpp",
+      "source_revision": "TimoLappalainen implementation pinned 5b7b9fc3ccc18e30ebfba92da6486cffc6251595: ID PDU1/PDU2, fastpacket6+31*7, sequence0..7, actual buffers/transport support.",
+      "integer": true,
+      "label": "destination",
+      "category": "communication",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "n2_pgn": {
+      "type": "number",
+      "description": "Actual PGN1data-page/PF/group-extension number; PDU1lowoctet0.",
+      "min": 0,
+      "max": 131071,
+      "source": "https://raw.githubusercontent.com/ttlappalainen/NMEA2000/5b7b9fc3ccc18e30ebfba92da6486cffc6251595/src/NMEA2000.cpp",
+      "source_revision": "TimoLappalainen implementation pinned 5b7b9fc3ccc18e30ebfba92da6486cffc6251595: ID PDU1/PDU2, fastpacket6+31*7, sequence0..7, actual buffers/transport support.",
+      "integer": true,
+      "label": "pgn",
+      "category": "communication",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "n2_can_id": {
+      "type": "number",
+      "description": "Actual29bit extended classicCAN identifier reconstructed frompriority/DP/PF/PS/source.",
+      "min": 0,
+      "max": 536870911,
+      "source": "https://raw.githubusercontent.com/ttlappalainen/NMEA2000/5b7b9fc3ccc18e30ebfba92da6486cffc6251595/src/NMEA2000.cpp",
+      "source_revision": "TimoLappalainen implementation pinned 5b7b9fc3ccc18e30ebfba92da6486cffc6251595: ID PDU1/PDU2, fastpacket6+31*7, sequence0..7, actual buffers/transport support.",
+      "integer": true,
+      "label": "can id",
+      "category": "communication",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "n2_id_bits": {
+      "type": "number",
+      "description": "Actual extended CAN29bit identifier, not11bitCAN or CANFD/BRS.",
+      "min": 29,
+      "max": 29,
+      "unit": "bit",
+      "source": "https://raw.githubusercontent.com/ttlappalainen/NMEA2000/5b7b9fc3ccc18e30ebfba92da6486cffc6251595/src/NMEA2000.cpp",
+      "source_revision": "TimoLappalainen implementation pinned 5b7b9fc3ccc18e30ebfba92da6486cffc6251595: ID PDU1/PDU2, fastpacket6+31*7, sequence0..7, actual buffers/transport support.",
+      "integer": true,
+      "label": "id bits",
+      "category": "communication",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "n2_role": "ACTIVE"
+          },
+          "value": 29,
+          "source": "https://raw.githubusercontent.com/ttlappalainen/NMEA2000/5b7b9fc3ccc18e30ebfba92da6486cffc6251595/src/NMEA2000.cpp",
+          "source_revision": "TimoLappalainen implementation pinned 5b7b9fc3ccc18e30ebfba92da6486cffc6251595: ID PDU1/PDU2, fastpacket6+31*7, sequence0..7, actual buffers/transport support."
+        }
+      ]
+    },
+    "n2_frame_bytes": {
+      "type": "number",
+      "description": "Actual classicCAN DLC0..8, not application message length223.",
+      "min": 0,
+      "max": 8,
+      "unit": "byte",
+      "source": "https://simmasoftware.com/assets/images/nmea-2000-users-manual.pdf",
+      "source_revision": "Simma ssNMEA2000-Multi manual1.3 April23 2013: pp6-11 CAN/NAME,16-22 packet/API,24-25 selected implementation buffers/tick. Public manual only, no software package/license acceptance.",
+      "integer": true,
+      "label": "frame bytes",
+      "category": "communication",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "n2_data_bytes": {
+      "type": "number",
+      "description": "Actual complete PGN encoded application bytes, selected transport/storage dependent.",
+      "min": 0,
+      "max": 1785,
+      "unit": "byte",
+      "source": "https://simmasoftware.com/assets/images/nmea-2000-users-manual.pdf",
+      "source_revision": "Simma ssNMEA2000-Multi manual1.3 April23 2013: pp6-11 CAN/NAME,16-22 packet/API,24-25 selected implementation buffers/tick. Public manual only, no software package/license acceptance.",
+      "integer": true,
+      "label": "data bytes",
+      "category": "communication",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "n2_packet_frames": {
+      "type": "number",
+      "description": "Actual number of data CAN frames; TP management frames are additional.",
+      "min": 1,
+      "max": 255,
+      "source": "https://simmasoftware.com/assets/images/nmea-2000-users-manual.pdf",
+      "source_revision": "Simma ssNMEA2000-Multi manual1.3 April23 2013: pp6-11 CAN/NAME,16-22 packet/API,24-25 selected implementation buffers/tick. Public manual only, no software package/license acceptance.",
+      "integer": true,
+      "label": "packet frames",
+      "category": "communication",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "n2_fast_sequence": {
+      "type": "number",
+      "description": "Actual wire3bit sequence perPGN; Simma API8bit argument is not wire255.",
+      "min": 0,
+      "max": 7,
+      "source": "https://raw.githubusercontent.com/ttlappalainen/NMEA2000/5b7b9fc3ccc18e30ebfba92da6486cffc6251595/src/NMEA2000.cpp",
+      "source_revision": "TimoLappalainen implementation pinned 5b7b9fc3ccc18e30ebfba92da6486cffc6251595: ID PDU1/PDU2, fastpacket6+31*7, sequence0..7, actual buffers/transport support.",
+      "integer": true,
+      "label": "fast sequence",
+      "category": "communication",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "n2_fast_frame_index": {
+      "type": "number",
+      "description": "Actual wire5bit frame index0..31, lastframe must matchmessage packetcount.",
+      "min": 0,
+      "max": 31,
+      "source": "https://raw.githubusercontent.com/ttlappalainen/NMEA2000/5b7b9fc3ccc18e30ebfba92da6486cffc6251595/src/NMEA2000.cpp",
+      "source_revision": "TimoLappalainen implementation pinned 5b7b9fc3ccc18e30ebfba92da6486cffc6251595: ID PDU1/PDU2, fastpacket6+31*7, sequence0..7, actual buffers/transport support.",
+      "integer": true,
+      "label": "fast frame index",
+      "category": "communication",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "n2_fast_header": {
+      "type": "number",
+      "description": "Actual fastpacket firstoctet32*sequence+frameindex.",
+      "min": 0,
+      "max": 255,
+      "source": "https://raw.githubusercontent.com/ttlappalainen/NMEA2000/5b7b9fc3ccc18e30ebfba92da6486cffc6251595/src/NMEA2000.cpp",
+      "source_revision": "TimoLappalainen implementation pinned 5b7b9fc3ccc18e30ebfba92da6486cffc6251595: ID PDU1/PDU2, fastpacket6+31*7, sequence0..7, actual buffers/transport support.",
+      "integer": true,
+      "label": "fast header",
+      "category": "communication",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "n2_tp_packet_sequence": {
+      "type": "number",
+      "description": "Actual ISO transport data sequence1..255, separate FastPacket0..31.",
+      "min": 1,
+      "max": 255,
+      "source": "https://simmasoftware.com/assets/images/nmea-2000-users-manual.pdf",
+      "source_revision": "Simma ssNMEA2000-Multi manual1.3 April23 2013: pp6-11 CAN/NAME,16-22 packet/API,24-25 selected implementation buffers/tick. Public manual only, no software package/license acceptance.",
+      "integer": true,
+      "label": "tp packet sequence",
+      "category": "communication",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "n2_reassembly_ms": {
+      "type": "number",
+      "description": "Actual selected stack timeout bound; not general recovery or100ms appdeadline.",
+      "min": 0,
+      "unit": "ms",
+      "source": "https://raw.githubusercontent.com/ttlappalainen/NMEA2000/5b7b9fc3ccc18e30ebfba92da6486cffc6251595/src/NMEA2000.h",
+      "source_revision": "TimoLappalainen header pinned 5b7b9fc3ccc18e30ebfba92da6486cffc6251595: maxsource251, null254,100ms buffer timeout,60s heartbeat are implementation settings, not generic J1939 defaults.",
+      "integer": false,
+      "label": "reassembly ms",
+      "category": "communication",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "n2_implementation": "TIMO_PINNED"
+          },
+          "value": 100,
+          "source": "https://raw.githubusercontent.com/ttlappalainen/NMEA2000/5b7b9fc3ccc18e30ebfba92da6486cffc6251595/src/NMEA2000.h",
+          "source_revision": "TimoLappalainen header pinned 5b7b9fc3ccc18e30ebfba92da6486cffc6251595: maxsource251, null254,100ms buffer timeout,60s heartbeat are implementation settings, not generic J1939 defaults."
+        }
+      ]
+    },
+    "n2_sample_point_percent": {
+      "type": "number",
+      "description": "Actual controller samplepoint after bit-timing configuration.",
+      "min": 85,
+      "max": 90,
+      "unit": "%",
+      "source": "https://www.can-cia.org/fileadmin/cia/documents/publications/cnlm/june_2024/cnlm_24-1_p9_nmea_2000_conformance_testing_and_product_certification_dr_chris_quigley_warwick_control_technologies.pdf",
+      "source_revision": "Warwick Control Technologies author DrChrisQuigley CANNewsletter2/2024 pp9-11: 250k,50physicaldevices,85..90% samplepoint,auto retransmission,isolation and actual certification/interoperability scope.",
+      "integer": false,
+      "label": "sample point percent",
+      "category": "communication",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "n2_implementation": "SIMMA_1_3"
+          },
+          "value": 87.5,
+          "source": "https://simmasoftware.com/assets/images/nmea-2000-users-manual.pdf",
+          "source_revision": "Simma ssNMEA2000-Multi manual1.3 April23 2013: pp6-11 CAN/NAME,16-22 packet/API,24-25 selected implementation buffers/tick. Public manual only, no software package/license acceptance."
+        }
+      ]
+    },
+    "n2_node_count": {
+      "type": "number",
+      "description": "Actual physical devices onone network, not multiplelogical NAMEinstances.",
+      "min": 1,
+      "max": 50,
+      "source": "https://www.can-cia.org/fileadmin/cia/documents/publications/cnlm/june_2024/cnlm_24-1_p9_nmea_2000_conformance_testing_and_product_certification_dr_chris_quigley_warwick_control_technologies.pdf",
+      "source_revision": "Warwick Control Technologies author DrChrisQuigley CANNewsletter2/2024 pp9-11: 250k,50physicaldevices,85..90% samplepoint,auto retransmission,isolation and actual certification/interoperability scope.",
+      "integer": true,
+      "label": "node count",
+      "category": "communication",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "n2_backbone_m": {
+      "type": "number",
+      "description": "Actual terminator-to-terminator length ofselectedcable.",
+      "min": 0,
+      "unit": "m",
+      "source": "https://actisense.com/wp-content/uploads/2021/08/Complete-Guide-to-NMEA-2000_Revision_4_2021.pdf",
+      "source_revision": "Actisense Complete Guide Rev4 2021: network/cable/power/termination pp4-10, device24V compatibility not standard9..16V.",
+      "integer": false,
+      "label": "backbone m",
+      "category": "communication",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "n2_drop_m": {
+      "type": "number",
+      "description": "Actual longest instrumentdrop<=6m, distinct backbone extension.",
+      "min": 0,
+      "max": 6,
+      "unit": "m",
+      "source": "https://actisense.com/wp-content/uploads/2021/08/Complete-Guide-to-NMEA-2000_Revision_4_2021.pdf",
+      "source_revision": "Actisense Complete Guide Rev4 2021: network/cable/power/termination pp4-10, device24V compatibility not standard9..16V.",
+      "integer": false,
+      "label": "drop m",
+      "category": "communication",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "n2_sum_drops_m": {
+      "type": "number",
+      "description": "Actual sum ofall instrumentdrops<=78m.",
+      "min": 0,
+      "max": 78,
+      "unit": "m",
+      "source": "https://actisense.com/wp-content/uploads/2021/08/Complete-Guide-to-NMEA-2000_Revision_4_2021.pdf",
+      "source_revision": "Actisense Complete Guide Rev4 2021: network/cable/power/termination pp4-10, device24V compatibility not standard9..16V.",
+      "integer": false,
+      "label": "sum drops m",
+      "category": "communication",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "n2_termination_count": {
+      "type": "number",
+      "description": "Actual external harness end terminators, never soldered insidedevice.",
+      "min": 2,
+      "max": 2,
+      "source": "https://actisense.com/wp-content/uploads/2021/08/Complete-Guide-to-NMEA-2000_Revision_4_2021.pdf",
+      "source_revision": "Actisense Complete Guide Rev4 2021: network/cable/power/termination pp4-10, device24V compatibility not standard9..16V.",
+      "integer": true,
+      "label": "termination count",
+      "category": "communication",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "n2_termination_ohm": {
+      "type": "number",
+      "description": "Actual nominalindividual end resistor120ohm; measured tolerance has own proof.",
+      "min": 120,
+      "max": 120,
+      "unit": "ohm",
+      "source": "https://actisense.com/wp-content/uploads/2021/08/Complete-Guide-to-NMEA-2000_Revision_4_2021.pdf",
+      "source_revision": "Actisense Complete Guide Rev4 2021: network/cable/power/termination pp4-10, device24V compatibility not standard9..16V.",
+      "integer": false,
+      "label": "termination ohm",
+      "category": "communication",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "n2_nominal_parallel_ohm": {
+      "type": "number",
+      "description": "Nominal120/2=60 equivalent, not fabricated measuredresistance.",
+      "min": 60,
+      "max": 60,
+      "unit": "ohm",
+      "source": "https://actisense.com/wp-content/uploads/2021/08/Complete-Guide-to-NMEA-2000_Revision_4_2021.pdf",
+      "source_revision": "Actisense Complete Guide Rev4 2021: network/cable/power/termination pp4-10, device24V compatibility not standard9..16V.",
+      "integer": false,
+      "label": "nominal parallel ohm",
+      "category": "communication",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "n2_power_feed_v": {
+      "type": "number",
+      "description": "Actual sourcepower feed voltage includingselectedextendedproof.",
+      "min": 0,
+      "unit": "V",
+      "source": "https://actisense.com/wp-content/uploads/2021/08/Complete-Guide-to-NMEA-2000_Revision_4_2021.pdf",
+      "source_revision": "Actisense Complete Guide Rev4 2021: network/cable/power/termination pp4-10, device24V compatibility not standard9..16V.",
+      "integer": false,
+      "label": "power feed v",
+      "category": "communication",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "n2_device_v": {
+      "type": "number",
+      "description": "Actual deviceTconnector voltage after loadedbranch drop.",
+      "min": 0,
+      "unit": "V",
+      "source": "https://actisense.com/wp-content/uploads/2021/08/Complete-Guide-to-NMEA-2000_Revision_4_2021.pdf",
+      "source_revision": "Actisense Complete Guide Rev4 2021: network/cable/power/termination pp4-10, device24V compatibility not standard9..16V.",
+      "integer": false,
+      "label": "device v",
+      "category": "communication",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "n2_loop_ohm": {
+      "type": "number",
+      "description": "Actual totalpositive+return branch resistance, not one conductor only.",
+      "min": 0,
+      "unit": "ohm",
+      "source": "https://actisense.com/wp-content/uploads/2021/08/Complete-Guide-to-NMEA-2000_Revision_4_2021.pdf",
+      "source_revision": "Actisense Complete Guide Rev4 2021: network/cable/power/termination pp4-10, device24V compatibility not standard9..16V.",
+      "integer": false,
+      "label": "loop ohm",
+      "category": "communication",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "n2_branch_current_a": {
+      "type": "number",
+      "description": "Actual sumdraw onthis cable/connector branch, not one deviceLEN only.",
+      "min": 0,
+      "unit": "A",
+      "source": "https://actisense.com/wp-content/uploads/2021/08/Complete-Guide-to-NMEA-2000_Revision_4_2021.pdf",
+      "source_revision": "Actisense Complete Guide Rev4 2021: network/cable/power/termination pp4-10, device24V compatibility not standard9..16V.",
+      "integer": false,
+      "label": "branch current a",
+      "category": "communication",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "n2_len": {
+      "type": "number",
+      "description": "Actualdeclared LoadEquivalencyNumber;1LEN50mA isupperallocation, not measurement.",
+      "min": 0,
+      "max": 255,
+      "source": "https://actisense.com/wp-content/uploads/2021/08/Complete-Guide-to-NMEA-2000_Revision_4_2021.pdf",
+      "source_revision": "Actisense Complete Guide Rev4 2021: network/cable/power/termination pp4-10, device24V compatibility not standard9..16V.",
+      "integer": true,
+      "label": "len",
+      "category": "communication",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "n2_device_bus_current_ma": {
+      "type": "number",
+      "description": "Actual maximum current fromNMEA supply; separateaux currentexcluded.",
+      "min": 0,
+      "unit": "mA",
+      "source": "https://actisense.com/wp-content/uploads/2021/08/Complete-Guide-to-NMEA-2000_Revision_4_2021.pdf",
+      "source_revision": "Actisense Complete Guide Rev4 2021: network/cable/power/termination pp4-10, device24V compatibility not standard9..16V.",
+      "integer": false,
+      "label": "device bus current ma",
+      "category": "communication",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "n2_ground_points": {
+      "type": "number",
+      "description": "Actual singleground point for networkpower, independent isolatedaux I/O.",
+      "min": 1,
+      "max": 1,
+      "source": "https://actisense.com/wp-content/uploads/2021/08/Complete-Guide-to-NMEA-2000_Revision_4_2021.pdf",
+      "source_revision": "Actisense Complete Guide Rev4 2021: network/cable/power/termination pp4-10, device24V compatibility not standard9..16V.",
+      "integer": true,
+      "label": "ground points",
+      "category": "communication",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "n2_product_code": {
+      "type": "number",
+      "description": "Actual NMEA-assigned productcode; no library default666 auto-confirmation.",
+      "min": 0,
+      "max": 65535,
+      "source": "https://simmasoftware.com/assets/images/nmea-2000-users-manual.pdf",
+      "source_revision": "Simma ssNMEA2000-Multi manual1.3 April23 2013: pp6-11 CAN/NAME,16-22 packet/API,24-25 selected implementation buffers/tick. Public manual only, no software package/license acceptance.",
+      "integer": true,
+      "label": "product code",
+      "category": "communication",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "n2_manufacturer_code": {
+      "type": "number",
+      "description": "Actual registered11bit NAMEmanufacturer code, no example402.",
+      "min": 0,
+      "max": 2047,
+      "source": "https://simmasoftware.com/assets/images/nmea-2000-users-manual.pdf",
+      "source_revision": "Simma ssNMEA2000-Multi manual1.3 April23 2013: pp6-11 CAN/NAME,16-22 packet/API,24-25 selected implementation buffers/tick. Public manual only, no software package/license acceptance.",
+      "integer": true,
+      "label": "manufacturer code",
+      "category": "communication",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "n2_identity_number": {
+      "type": "number",
+      "description": "Actual assigned21bit NAMEidentity number, unique undermanufacturer.",
+      "min": 0,
+      "max": 2097151,
+      "source": "https://simmasoftware.com/assets/images/nmea-2000-users-manual.pdf",
+      "source_revision": "Simma ssNMEA2000-Multi manual1.3 April23 2013: pp6-11 CAN/NAME,16-22 packet/API,24-25 selected implementation buffers/tick. Public manual only, no software package/license acceptance.",
+      "integer": true,
+      "label": "identity number",
+      "category": "communication",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "n2_industry_group": {
+      "type": "number",
+      "description": "Actual3bit NAMEfield; project industry andbusprotocolindependent.",
+      "min": 0,
+      "max": 7,
+      "source": "https://simmasoftware.com/assets/images/nmea-2000-users-manual.pdf",
+      "source_revision": "Simma ssNMEA2000-Multi manual1.3 April23 2013: pp6-11 CAN/NAME,16-22 packet/API,24-25 selected implementation buffers/tick. Public manual only, no software package/license acceptance.",
+      "integer": true,
+      "label": "industry group",
+      "category": "communication",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "n2_device_class": {
+      "type": "number",
+      "description": "Actual7bit NAMEdeviceclass.",
+      "min": 0,
+      "max": 127,
+      "source": "https://simmasoftware.com/assets/images/nmea-2000-users-manual.pdf",
+      "source_revision": "Simma ssNMEA2000-Multi manual1.3 April23 2013: pp6-11 CAN/NAME,16-22 packet/API,24-25 selected implementation buffers/tick. Public manual only, no software package/license acceptance.",
+      "integer": true,
+      "label": "device class",
+      "category": "communication",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "n2_class_instance": {
+      "type": "number",
+      "description": "Actual4bit classinstance.",
+      "min": 0,
+      "max": 15,
+      "source": "https://simmasoftware.com/assets/images/nmea-2000-users-manual.pdf",
+      "source_revision": "Simma ssNMEA2000-Multi manual1.3 April23 2013: pp6-11 CAN/NAME,16-22 packet/API,24-25 selected implementation buffers/tick. Public manual only, no software package/license acceptance.",
+      "integer": true,
+      "label": "class instance",
+      "category": "communication",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "n2_function": {
+      "type": "number",
+      "description": "Actual8bit devicefunction.",
+      "min": 0,
+      "max": 255,
+      "source": "https://simmasoftware.com/assets/images/nmea-2000-users-manual.pdf",
+      "source_revision": "Simma ssNMEA2000-Multi manual1.3 April23 2013: pp6-11 CAN/NAME,16-22 packet/API,24-25 selected implementation buffers/tick. Public manual only, no software package/license acceptance.",
+      "integer": true,
+      "label": "function",
+      "category": "communication",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "n2_function_instance": {
+      "type": "number",
+      "description": "Actual5bit functioninstance.",
+      "min": 0,
+      "max": 31,
+      "source": "https://simmasoftware.com/assets/images/nmea-2000-users-manual.pdf",
+      "source_revision": "Simma ssNMEA2000-Multi manual1.3 April23 2013: pp6-11 CAN/NAME,16-22 packet/API,24-25 selected implementation buffers/tick. Public manual only, no software package/license acceptance.",
+      "integer": true,
+      "label": "function instance",
+      "category": "communication",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "n2_ecu_instance": {
+      "type": "number",
+      "description": "Actual3bit deviceinstance.",
+      "min": 0,
+      "max": 7,
+      "source": "https://simmasoftware.com/assets/images/nmea-2000-users-manual.pdf",
+      "source_revision": "Simma ssNMEA2000-Multi manual1.3 April23 2013: pp6-11 CAN/NAME,16-22 packet/API,24-25 selected implementation buffers/tick. Public manual only, no software package/license acceptance.",
+      "integer": true,
+      "label": "ecu instance",
+      "category": "communication",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "n2_heartbeat_ms": {
+      "type": "number",
+      "description": "Actual configuredheartbeat, library60s proposal onlyselectedstack.",
+      "min": 0,
+      "unit": "ms",
+      "source": "https://raw.githubusercontent.com/ttlappalainen/NMEA2000/5b7b9fc3ccc18e30ebfba92da6486cffc6251595/src/NMEA2000.h",
+      "source_revision": "TimoLappalainen header pinned 5b7b9fc3ccc18e30ebfba92da6486cffc6251595: maxsource251, null254,100ms buffer timeout,60s heartbeat are implementation settings, not generic J1939 defaults.",
+      "integer": false,
+      "label": "heartbeat ms",
+      "category": "communication",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "n2_implementation": "TIMO_PINNED"
+          },
+          "value": 60000,
+          "source": "https://raw.githubusercontent.com/ttlappalainen/NMEA2000/5b7b9fc3ccc18e30ebfba92da6486cffc6251595/src/NMEA2000.h",
+          "source_revision": "TimoLappalainen header pinned 5b7b9fc3ccc18e30ebfba92da6486cffc6251595: maxsource251, null254,100ms buffer timeout,60s heartbeat are implementation settings, not generic J1939 defaults."
+        }
+      ]
+    },
+    "n2_tick_ms": {
+      "type": "number",
+      "description": "Actual fixedSimma updatecallperiod, default10msnot10ms buscycle.",
+      "min": 0,
+      "unit": "ms",
+      "source": "https://simmasoftware.com/assets/images/nmea-2000-users-manual.pdf",
+      "source_revision": "Simma ssNMEA2000-Multi manual1.3 April23 2013: pp6-11 CAN/NAME,16-22 packet/API,24-25 selected implementation buffers/tick. Public manual only, no software package/license acceptance.",
+      "integer": false,
+      "label": "tick ms",
+      "category": "communication",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "n2_implementation": "SIMMA_1_3"
+          },
+          "value": 10,
+          "source": "https://simmasoftware.com/assets/images/nmea-2000-users-manual.pdf",
+          "source_revision": "Simma ssNMEA2000-Multi manual1.3 April23 2013: pp6-11 CAN/NAME,16-22 packet/API,24-25 selected implementation buffers/tick. Public manual only, no software package/license acceptance."
+        }
+      ]
+    },
+    "n2_bip_percent": {
+      "type": "number",
+      "description": "ActualSimma allowabletransmit percentage;100 disablesprotection, not assuredcapacity.",
+      "min": 0,
+      "max": 100,
+      "unit": "%",
+      "source": "https://simmasoftware.com/assets/images/nmea-2000-users-manual.pdf",
+      "source_revision": "Simma ssNMEA2000-Multi manual1.3 April23 2013: pp6-11 CAN/NAME,16-22 packet/API,24-25 selected implementation buffers/tick. Public manual only, no software package/license acceptance.",
+      "integer": false,
+      "label": "bip percent",
+      "category": "communication",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "n2_implementation": "SIMMA_1_3"
+          },
+          "value": 25,
+          "source": "https://simmasoftware.com/assets/images/nmea-2000-users-manual.pdf",
+          "source_revision": "Simma ssNMEA2000-Multi manual1.3 April23 2013: pp6-11 CAN/NAME,16-22 packet/API,24-25 selected implementation buffers/tick. Public manual only, no software package/license acceptance."
+        }
+      ]
+    },
+    "n2_bip_window_ms": {
+      "type": "number",
+      "description": "ActualSimma250ms monitoringwindow, not universalwatchdog.",
+      "min": 250,
+      "max": 250,
+      "unit": "ms",
+      "source": "https://simmasoftware.com/assets/images/nmea-2000-users-manual.pdf",
+      "source_revision": "Simma ssNMEA2000-Multi manual1.3 April23 2013: pp6-11 CAN/NAME,16-22 packet/API,24-25 selected implementation buffers/tick. Public manual only, no software package/license acceptance.",
+      "integer": false,
+      "label": "bip window ms",
+      "category": "communication",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "n2_implementation": "SIMMA_1_3"
+          },
+          "value": 250,
+          "source": "https://simmasoftware.com/assets/images/nmea-2000-users-manual.pdf",
+          "source_revision": "Simma ssNMEA2000-Multi manual1.3 April23 2013: pp6-11 CAN/NAME,16-22 packet/API,24-25 selected implementation buffers/tick. Public manual only, no software package/license acceptance."
+        }
+      ]
+    },
+    "n2_tp_rx_buffers": {
+      "type": "number",
+      "description": "ActualSimma simultaneousincomingISOtransport buffers, default10device-qualified.",
+      "min": 0,
+      "source": "https://simmasoftware.com/assets/images/nmea-2000-users-manual.pdf",
+      "source_revision": "Simma ssNMEA2000-Multi manual1.3 April23 2013: pp6-11 CAN/NAME,16-22 packet/API,24-25 selected implementation buffers/tick. Public manual only, no software package/license acceptance.",
+      "integer": true,
+      "label": "tp rx buffers",
+      "category": "communication",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "n2_implementation": "SIMMA_1_3"
+          },
+          "value": 10,
+          "source": "https://simmasoftware.com/assets/images/nmea-2000-users-manual.pdf",
+          "source_revision": "Simma ssNMEA2000-Multi manual1.3 April23 2013: pp6-11 CAN/NAME,16-22 packet/API,24-25 selected implementation buffers/tick. Public manual only, no software package/license acceptance."
+        }
+      ]
+    },
+    "n2_tp_tx_buffers": {
+      "type": "number",
+      "description": "ActualSimma simultaneousoutgoingISOtransport buffers, default3device-qualified.",
+      "min": 0,
+      "source": "https://simmasoftware.com/assets/images/nmea-2000-users-manual.pdf",
+      "source_revision": "Simma ssNMEA2000-Multi manual1.3 April23 2013: pp6-11 CAN/NAME,16-22 packet/API,24-25 selected implementation buffers/tick. Public manual only, no software package/license acceptance.",
+      "integer": true,
+      "label": "tp tx buffers",
+      "category": "communication",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "n2_implementation": "SIMMA_1_3"
+          },
+          "value": 3,
+          "source": "https://simmasoftware.com/assets/images/nmea-2000-users-manual.pdf",
+          "source_revision": "Simma ssNMEA2000-Multi manual1.3 April23 2013: pp6-11 CAN/NAME,16-22 packet/API,24-25 selected implementation buffers/tick. Public manual only, no software package/license acceptance."
+        }
+      ]
+    },
+    "n2_tp_rx_bytes": {
+      "type": "number",
+      "description": "ActualSimma ISOreceivebuffer<=1785; factory128nottransportmaximum.",
+      "min": 0,
+      "max": 1785,
+      "unit": "byte",
+      "source": "https://simmasoftware.com/assets/images/nmea-2000-users-manual.pdf",
+      "source_revision": "Simma ssNMEA2000-Multi manual1.3 April23 2013: pp6-11 CAN/NAME,16-22 packet/API,24-25 selected implementation buffers/tick. Public manual only, no software package/license acceptance.",
+      "integer": true,
+      "label": "tp rx bytes",
+      "category": "communication",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "n2_implementation": "SIMMA_1_3"
+          },
+          "value": 128,
+          "source": "https://simmasoftware.com/assets/images/nmea-2000-users-manual.pdf",
+          "source_revision": "Simma ssNMEA2000-Multi manual1.3 April23 2013: pp6-11 CAN/NAME,16-22 packet/API,24-25 selected implementation buffers/tick. Public manual only, no software package/license acceptance."
+        }
+      ]
+    },
+    "n2_tp_tx_bytes": {
+      "type": "number",
+      "description": "ActualSimma ISOtransmitbuffer<=1785; factory128nottransportmaximum.",
+      "min": 0,
+      "max": 1785,
+      "unit": "byte",
+      "source": "https://simmasoftware.com/assets/images/nmea-2000-users-manual.pdf",
+      "source_revision": "Simma ssNMEA2000-Multi manual1.3 April23 2013: pp6-11 CAN/NAME,16-22 packet/API,24-25 selected implementation buffers/tick. Public manual only, no software package/license acceptance.",
+      "integer": true,
+      "label": "tp tx bytes",
+      "category": "communication",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "n2_implementation": "SIMMA_1_3"
+          },
+          "value": 128,
+          "source": "https://simmasoftware.com/assets/images/nmea-2000-users-manual.pdf",
+          "source_revision": "Simma ssNMEA2000-Multi manual1.3 April23 2013: pp6-11 CAN/NAME,16-22 packet/API,24-25 selected implementation buffers/tick. Public manual only, no software package/license acceptance."
+        }
+      ]
+    },
+    "n2_fp_rx_bytes": {
+      "type": "number",
+      "description": "ActualSimmaFastPacket receivebuffer<=223; factory128not223guarantee.",
+      "min": 0,
+      "max": 223,
+      "unit": "byte",
+      "source": "https://simmasoftware.com/assets/images/nmea-2000-users-manual.pdf",
+      "source_revision": "Simma ssNMEA2000-Multi manual1.3 April23 2013: pp6-11 CAN/NAME,16-22 packet/API,24-25 selected implementation buffers/tick. Public manual only, no software package/license acceptance.",
+      "integer": true,
+      "label": "fp rx bytes",
+      "category": "communication",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "n2_implementation": "SIMMA_1_3"
+          },
+          "value": 128,
+          "source": "https://simmasoftware.com/assets/images/nmea-2000-users-manual.pdf",
+          "source_revision": "Simma ssNMEA2000-Multi manual1.3 April23 2013: pp6-11 CAN/NAME,16-22 packet/API,24-25 selected implementation buffers/tick. Public manual only, no software package/license acceptance."
+        }
+      ]
+    },
+    "n2_message_buffer_bytes": {
+      "type": "number",
+      "description": "Actualselectedreassemblystorage, pinnedTimo223 notISO1785 universalstorage.",
+      "min": 0,
+      "unit": "byte",
+      "source": "https://raw.githubusercontent.com/ttlappalainen/NMEA2000/5b7b9fc3ccc18e30ebfba92da6486cffc6251595/src/N2kMsg.h",
+      "source_revision": "TimoLappalainen N2kMsg pinned 5b7b9fc3ccc18e30ebfba92da6486cffc6251595: current storage223 bytes, application data may exceed8; physical CAN frame remains<=8.",
+      "integer": true,
+      "label": "message buffer bytes",
+      "category": "communication",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "n2_retry_bound_ms": {
+      "type": "number",
+      "description": "Actual CAN error/retransmission servicebound; mandatoryautomaticretrydoesnotprovefinite bound.",
+      "min": 0,
+      "unit": "ms",
+      "source": "https://www.can-cia.org/fileadmin/cia/documents/publications/cnlm/june_2024/cnlm_24-1_p9_nmea_2000_conformance_testing_and_product_certification_dr_chris_quigley_warwick_control_technologies.pdf",
+      "source_revision": "Warwick Control Technologies author DrChrisQuigley CANNewsletter2/2024 pp9-11: 250k,50physicaldevices,85..90% samplepoint,auto retransmission,isolation and actual certification/interoperability scope.",
+      "integer": false,
+      "label": "retry bound ms",
+      "category": "communication",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "n2_age_ms": {
+      "type": "number",
+      "description": "Actual ageofacceptedPGNdata, unrelated reassembly/heartbeat.",
+      "min": 0,
+      "unit": "ms",
+      "source": "https://www.can-cia.org/fileadmin/cia/documents/publications/cnlm/june_2024/cnlm_24-1_p9_nmea_2000_conformance_testing_and_product_certification_dr_chris_quigley_warwick_control_technologies.pdf",
+      "source_revision": "Warwick Control Technologies author DrChrisQuigley CANNewsletter2/2024 pp9-11: 250k,50physicaldevices,85..90% samplepoint,auto retransmission,isolation and actual certification/interoperability scope.",
+      "integer": false,
+      "label": "age ms",
+      "category": "communication",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "n2_freshness_limit_ms": {
+      "type": "number",
+      "description": "Actual applicationdeadline/freshness requirement, no CAN100ms fallback.",
+      "min": 0,
+      "unit": "ms",
+      "source": "https://www.can-cia.org/fileadmin/cia/documents/publications/cnlm/june_2024/cnlm_24-1_p9_nmea_2000_conformance_testing_and_product_certification_dr_chris_quigley_warwick_control_technologies.pdf",
+      "source_revision": "Warwick Control Technologies author DrChrisQuigley CANNewsletter2/2024 pp9-11: 250k,50physicaldevices,85..90% samplepoint,auto retransmission,isolation and actual certification/interoperability scope.",
+      "integer": false,
+      "label": "freshness limit ms",
+      "category": "communication",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "n2_fd": {
+      "type": "boolean",
+      "description": "Actual CANFD false inreviewed classic NMEA2000.",
+      "source": "https://raw.githubusercontent.com/ttlappalainen/NMEA2000/5b7b9fc3ccc18e30ebfba92da6486cffc6251595/src/NMEA2000.cpp",
+      "source_revision": "TimoLappalainen implementation pinned 5b7b9fc3ccc18e30ebfba92da6486cffc6251595: ID PDU1/PDU2, fastpacket6+31*7, sequence0..7, actual buffers/transport support.",
+      "integer": false,
+      "label": "fd",
+      "category": "communication",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "n2_role": "ACTIVE"
+          },
+          "value": false,
+          "source": "https://raw.githubusercontent.com/ttlappalainen/NMEA2000/5b7b9fc3ccc18e30ebfba92da6486cffc6251595/src/NMEA2000.cpp",
+          "source_revision": "TimoLappalainen implementation pinned 5b7b9fc3ccc18e30ebfba92da6486cffc6251595: ID PDU1/PDU2, fastpacket6+31*7, sequence0..7, actual buffers/transport support."
+        }
+      ]
+    },
+    "n2_brs": {
+      "type": "boolean",
+      "description": "Actual BRS false inclassicNMEA2000.",
+      "source": "https://raw.githubusercontent.com/ttlappalainen/NMEA2000/5b7b9fc3ccc18e30ebfba92da6486cffc6251595/src/NMEA2000.cpp",
+      "source_revision": "TimoLappalainen implementation pinned 5b7b9fc3ccc18e30ebfba92da6486cffc6251595: ID PDU1/PDU2, fastpacket6+31*7, sequence0..7, actual buffers/transport support.",
+      "integer": false,
+      "label": "brs",
+      "category": "communication",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "n2_role": "ACTIVE"
+          },
+          "value": false,
+          "source": "https://raw.githubusercontent.com/ttlappalainen/NMEA2000/5b7b9fc3ccc18e30ebfba92da6486cffc6251595/src/NMEA2000.cpp",
+          "source_revision": "TimoLappalainen implementation pinned 5b7b9fc3ccc18e30ebfba92da6486cffc6251595: ID PDU1/PDU2, fastpacket6+31*7, sequence0..7, actual buffers/transport support."
+        }
+      ]
+    },
+    "n2_automatic_retransmission": {
+      "type": "boolean",
+      "description": "Actual activeCAN automaticretransmission mandatory, separatefrom upperpacketretry.",
+      "source": "https://www.can-cia.org/fileadmin/cia/documents/publications/cnlm/june_2024/cnlm_24-1_p9_nmea_2000_conformance_testing_and_product_certification_dr_chris_quigley_warwick_control_technologies.pdf",
+      "source_revision": "Warwick Control Technologies author DrChrisQuigley CANNewsletter2/2024 pp9-11: 250k,50physicaldevices,85..90% samplepoint,auto retransmission,isolation and actual certification/interoperability scope.",
+      "integer": false,
+      "label": "automatic retransmission",
+      "category": "communication",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "n2_role": "ACTIVE"
+          },
+          "value": true,
+          "source": "https://www.can-cia.org/fileadmin/cia/documents/publications/cnlm/june_2024/cnlm_24-1_p9_nmea_2000_conformance_testing_and_product_certification_dr_chris_quigley_warwick_control_technologies.pdf",
+          "source_revision": "Warwick Control Technologies author DrChrisQuigley CANNewsletter2/2024 pp9-11: 250k,50physicaldevices,85..90% samplepoint,auto retransmission,isolation and actual certification/interoperability scope."
+        }
+      ]
+    },
+    "n2_built_in_termination": {
+      "type": "boolean",
+      "description": "Actual deviceinternaltermination notallowed forcertifiableNMEAdevice.",
+      "source": "https://www.can-cia.org/fileadmin/cia/documents/publications/cnlm/june_2024/cnlm_24-1_p9_nmea_2000_conformance_testing_and_product_certification_dr_chris_quigley_warwick_control_technologies.pdf",
+      "source_revision": "Warwick Control Technologies author DrChrisQuigley CANNewsletter2/2024 pp9-11: 250k,50physicaldevices,85..90% samplepoint,auto retransmission,isolation and actual certification/interoperability scope.",
+      "integer": false,
+      "label": "built in termination",
+      "category": "communication",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "n2_role": "ACTIVE"
+          },
+          "value": false,
+          "source": "https://raw.githubusercontent.com/ttlappalainen/NMEA2000/5b7b9fc3ccc18e30ebfba92da6486cffc6251595/src/NMEA2000.cpp",
+          "source_revision": "TimoLappalainen implementation pinned 5b7b9fc3ccc18e30ebfba92da6486cffc6251595: ID PDU1/PDU2, fastpacket6+31*7, sequence0..7, actual buffers/transport support."
+        }
+      ]
+    },
+    "n2_arbitrary_address_capable": {
+      "type": "boolean",
+      "description": "Actual1bit NAMEcapability, not achievedaddressclaim.",
+      "source": "https://simmasoftware.com/assets/images/nmea-2000-users-manual.pdf",
+      "source_revision": "Simma ssNMEA2000-Multi manual1.3 April23 2013: pp6-11 CAN/NAME,16-22 packet/API,24-25 selected implementation buffers/tick. Public manual only, no software package/license acceptance.",
+      "integer": false,
+      "label": "arbitrary address capable",
+      "category": "communication",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "n2_isolated_io": {
+      "type": "boolean",
+      "description": "Actual current AC/DC isolation proof, not catalognameassumedTrue.",
+      "source": "https://www.can-cia.org/fileadmin/cia/documents/publications/cnlm/june_2024/cnlm_24-1_p9_nmea_2000_conformance_testing_and_product_certification_dr_chris_quigley_warwick_control_technologies.pdf",
+      "source_revision": "Warwick Control Technologies author DrChrisQuigley CANNewsletter2/2024 pp9-11: 250k,50physicaldevices,85..90% samplepoint,auto retransmission,isolation and actual certification/interoperability scope.",
+      "integer": false,
+      "label": "isolated io",
+      "category": "communication",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "n2_certified": {
+      "type": "boolean",
+      "description": "Actual productcertification evidence, not certification ofthisparameterchecker.",
+      "source": "https://www.nmea.org/nmea-2000.html",
+      "source_revision": "NMEA publisher version3.000 with amendments overview, retrieved2026-10-02. Licensed Main/Appendices A/B/C not read.",
+      "integer": false,
+      "label": "certified",
+      "category": "communication",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "n2_extended_power_warning": {
+      "type": "boolean",
+      "description": "Actual24V compatibility warning plusallconnecteddevicelimits.",
+      "source": "https://actisense.com/wp-content/uploads/2021/08/Complete-Guide-to-NMEA-2000_Revision_4_2021.pdf",
+      "source_revision": "Actisense Complete Guide Rev4 2021: network/cable/power/termination pp4-10, device24V compatibility not standard9..16V.",
+      "integer": false,
+      "label": "extended power warning",
+      "category": "communication",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    }
+  },
+  "mechanisms": {
+    "framing": [
+      "CLASSIC_CAN_EXTENDED_29",
+      "SINGLE_FAST_PACKET_REGISTERED_PGN_ISO_TP"
+    ],
+    "addressing": [
+      "ACTUAL_UNIQUE_64BIT_NAME_ADDRESS_CLAIM",
+      "ACTUAL_PGN_TX_RX_CODEC"
+    ],
+    "physical": [
+      "QUALIFIED_BACKBONE_DROP_TERMINATION_POWER_ISOLATION"
+    ],
+    "qualification": [
+      "NO_GENERIC_J1939_OR_ETHERNET_PARAMETER_FALLBACK",
+      "CERTIFICATION_INTEROPERABILITY_AND_E2E_SEPARATE"
+    ]
+  },
+  "parameter_constraints": [
+    {
+      "parameter": "n2_implementation",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/ttlappalainen/NMEA2000/5b7b9fc3ccc18e30ebfba92da6486cffc6251595/src/NMEA2000.cpp",
+      "source_revision": "TimoLappalainen implementation pinned 5b7b9fc3ccc18e30ebfba92da6486cffc6251595: ID PDU1/PDU2, fastpacket6+31*7, sequence0..7, actual buffers/transport support.",
+      "required": true
+    },
+    {
+      "parameter": "n2_edition",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/ttlappalainen/NMEA2000/5b7b9fc3ccc18e30ebfba92da6486cffc6251595/src/NMEA2000.cpp",
+      "source_revision": "TimoLappalainen implementation pinned 5b7b9fc3ccc18e30ebfba92da6486cffc6251595: ID PDU1/PDU2, fastpacket6+31*7, sequence0..7, actual buffers/transport support.",
+      "required": true
+    },
+    {
+      "parameter": "n2_packet_class",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/ttlappalainen/NMEA2000/5b7b9fc3ccc18e30ebfba92da6486cffc6251595/src/NMEA2000.cpp",
+      "source_revision": "TimoLappalainen implementation pinned 5b7b9fc3ccc18e30ebfba92da6486cffc6251595: ID PDU1/PDU2, fastpacket6+31*7, sequence0..7, actual buffers/transport support.",
+      "required": true
+    },
+    {
+      "parameter": "n2_role",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/ttlappalainen/NMEA2000/5b7b9fc3ccc18e30ebfba92da6486cffc6251595/src/NMEA2000.cpp",
+      "source_revision": "TimoLappalainen implementation pinned 5b7b9fc3ccc18e30ebfba92da6486cffc6251595: ID PDU1/PDU2, fastpacket6+31*7, sequence0..7, actual buffers/transport support.",
+      "required": true
+    },
+    {
+      "parameter": "n2_device_source",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/ttlappalainen/NMEA2000/5b7b9fc3ccc18e30ebfba92da6486cffc6251595/src/NMEA2000.cpp",
+      "source_revision": "TimoLappalainen implementation pinned 5b7b9fc3ccc18e30ebfba92da6486cffc6251595: ID PDU1/PDU2, fastpacket6+31*7, sequence0..7, actual buffers/transport support.",
+      "required": true
+    },
+    {
+      "parameter": "n2_edition_source",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/ttlappalainen/NMEA2000/5b7b9fc3ccc18e30ebfba92da6486cffc6251595/src/NMEA2000.cpp",
+      "source_revision": "TimoLappalainen implementation pinned 5b7b9fc3ccc18e30ebfba92da6486cffc6251595: ID PDU1/PDU2, fastpacket6+31*7, sequence0..7, actual buffers/transport support.",
+      "required": true
+    },
+    {
+      "parameter": "n2_codec_source",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/ttlappalainen/NMEA2000/5b7b9fc3ccc18e30ebfba92da6486cffc6251595/src/NMEA2000.cpp",
+      "source_revision": "TimoLappalainen implementation pinned 5b7b9fc3ccc18e30ebfba92da6486cffc6251595: ID PDU1/PDU2, fastpacket6+31*7, sequence0..7, actual buffers/transport support.",
+      "required": true
+    },
+    {
+      "parameter": "n2_transport_mapping_source",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/ttlappalainen/NMEA2000/5b7b9fc3ccc18e30ebfba92da6486cffc6251595/src/NMEA2000.cpp",
+      "source_revision": "TimoLappalainen implementation pinned 5b7b9fc3ccc18e30ebfba92da6486cffc6251595: ID PDU1/PDU2, fastpacket6+31*7, sequence0..7, actual buffers/transport support.",
+      "required": true
+    },
+    {
+      "parameter": "n2_schedule_source",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/ttlappalainen/NMEA2000/5b7b9fc3ccc18e30ebfba92da6486cffc6251595/src/NMEA2000.cpp",
+      "source_revision": "TimoLappalainen implementation pinned 5b7b9fc3ccc18e30ebfba92da6486cffc6251595: ID PDU1/PDU2, fastpacket6+31*7, sequence0..7, actual buffers/transport support.",
+      "required": true
+    },
+    {
+      "parameter": "n2_acceptance_source",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/ttlappalainen/NMEA2000/5b7b9fc3ccc18e30ebfba92da6486cffc6251595/src/NMEA2000.cpp",
+      "source_revision": "TimoLappalainen implementation pinned 5b7b9fc3ccc18e30ebfba92da6486cffc6251595: ID PDU1/PDU2, fastpacket6+31*7, sequence0..7, actual buffers/transport support.",
+      "required": true
+    },
+    {
+      "parameter": "local_timing_evidence",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/ttlappalainen/NMEA2000/5b7b9fc3ccc18e30ebfba92da6486cffc6251595/src/NMEA2000.cpp",
+      "source_revision": "TimoLappalainen implementation pinned 5b7b9fc3ccc18e30ebfba92da6486cffc6251595: ID PDU1/PDU2, fastpacket6+31*7, sequence0..7, actual buffers/transport support.",
+      "allowed": []
+    },
+    {
+      "parameter": "n2_fd",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/ttlappalainen/NMEA2000/5b7b9fc3ccc18e30ebfba92da6486cffc6251595/src/NMEA2000.cpp",
+      "source_revision": "TimoLappalainen implementation pinned 5b7b9fc3ccc18e30ebfba92da6486cffc6251595: ID PDU1/PDU2, fastpacket6+31*7, sequence0..7, actual buffers/transport support.",
+      "allowed": [
+        false
+      ]
+    },
+    {
+      "parameter": "n2_brs",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/ttlappalainen/NMEA2000/5b7b9fc3ccc18e30ebfba92da6486cffc6251595/src/NMEA2000.cpp",
+      "source_revision": "TimoLappalainen implementation pinned 5b7b9fc3ccc18e30ebfba92da6486cffc6251595: ID PDU1/PDU2, fastpacket6+31*7, sequence0..7, actual buffers/transport support.",
+      "allowed": [
+        false
+      ]
+    },
+    {
+      "parameter": "n2_built_in_termination",
+      "when": {},
+      "source": "https://www.can-cia.org/fileadmin/cia/documents/publications/cnlm/june_2024/cnlm_24-1_p9_nmea_2000_conformance_testing_and_product_certification_dr_chris_quigley_warwick_control_technologies.pdf",
+      "source_revision": "Warwick Control Technologies author DrChrisQuigley CANNewsletter2/2024 pp9-11: 250k,50physicaldevices,85..90% samplepoint,auto retransmission,isolation and actual certification/interoperability scope.",
+      "allowed": [
+        false
+      ]
+    },
+    {
+      "parameter": "n2_registered_source",
+      "when": {
+        "n2_implementation": "REGISTERED"
+      },
+      "source": "https://www.nmea.org/nmea-2000.html",
+      "source_revision": "NMEA publisher version3.000 with amendments overview, retrieved2026-10-02. Licensed Main/Appendices A/B/C not read.",
+      "required": true
+    },
+    {
+      "parameter": "n2_automatic_retransmission",
+      "when": {
+        "n2_role": "ACTIVE"
+      },
+      "source": "https://www.can-cia.org/fileadmin/cia/documents/publications/cnlm/june_2024/cnlm_24-1_p9_nmea_2000_conformance_testing_and_product_certification_dr_chris_quigley_warwick_control_technologies.pdf",
+      "source_revision": "Warwick Control Technologies author DrChrisQuigley CANNewsletter2/2024 pp9-11: 250k,50physicaldevices,85..90% samplepoint,auto retransmission,isolation and actual certification/interoperability scope.",
+      "required": true
+    },
+    {
+      "parameter": "n2_claim_status",
+      "when": {
+        "n2_role": "ACTIVE"
+      },
+      "source": "https://www.can-cia.org/fileadmin/cia/documents/publications/cnlm/june_2024/cnlm_24-1_p9_nmea_2000_conformance_testing_and_product_certification_dr_chris_quigley_warwick_control_technologies.pdf",
+      "source_revision": "Warwick Control Technologies author DrChrisQuigley CANNewsletter2/2024 pp9-11: 250k,50physicaldevices,85..90% samplepoint,auto retransmission,isolation and actual certification/interoperability scope.",
+      "required": true
+    },
+    {
+      "parameter": "n2_claim_source",
+      "when": {
+        "n2_role": "ACTIVE"
+      },
+      "source": "https://www.can-cia.org/fileadmin/cia/documents/publications/cnlm/june_2024/cnlm_24-1_p9_nmea_2000_conformance_testing_and_product_certification_dr_chris_quigley_warwick_control_technologies.pdf",
+      "source_revision": "Warwick Control Technologies author DrChrisQuigley CANNewsletter2/2024 pp9-11: 250k,50physicaldevices,85..90% samplepoint,auto retransmission,isolation and actual certification/interoperability scope.",
+      "required": true
+    },
+    {
+      "parameter": "n2_name_hex",
+      "when": {
+        "n2_role": "ACTIVE"
+      },
+      "source": "https://www.can-cia.org/fileadmin/cia/documents/publications/cnlm/june_2024/cnlm_24-1_p9_nmea_2000_conformance_testing_and_product_certification_dr_chris_quigley_warwick_control_technologies.pdf",
+      "source_revision": "Warwick Control Technologies author DrChrisQuigley CANNewsletter2/2024 pp9-11: 250k,50physicaldevices,85..90% samplepoint,auto retransmission,isolation and actual certification/interoperability scope.",
+      "required": true
+    },
+    {
+      "parameter": "n2_source_address",
+      "when": {
+        "n2_role": "ACTIVE"
+      },
+      "source": "https://www.can-cia.org/fileadmin/cia/documents/publications/cnlm/june_2024/cnlm_24-1_p9_nmea_2000_conformance_testing_and_product_certification_dr_chris_quigley_warwick_control_technologies.pdf",
+      "source_revision": "Warwick Control Technologies author DrChrisQuigley CANNewsletter2/2024 pp9-11: 250k,50physicaldevices,85..90% samplepoint,auto retransmission,isolation and actual certification/interoperability scope.",
+      "required": true
+    },
+    {
+      "parameter": "n2_automatic_retransmission",
+      "when": {
+        "n2_role": "ACTIVE"
+      },
+      "source": "https://www.can-cia.org/fileadmin/cia/documents/publications/cnlm/june_2024/cnlm_24-1_p9_nmea_2000_conformance_testing_and_product_certification_dr_chris_quigley_warwick_control_technologies.pdf",
+      "source_revision": "Warwick Control Technologies author DrChrisQuigley CANNewsletter2/2024 pp9-11: 250k,50physicaldevices,85..90% samplepoint,auto retransmission,isolation and actual certification/interoperability scope.",
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "n2_claim_status",
+      "when": {
+        "n2_role": "SILENT_MONITOR"
+      },
+      "source": "https://raw.githubusercontent.com/ttlappalainen/NMEA2000/5b7b9fc3ccc18e30ebfba92da6486cffc6251595/src/NMEA2000.h",
+      "source_revision": "TimoLappalainen header pinned 5b7b9fc3ccc18e30ebfba92da6486cffc6251595: maxsource251, null254,100ms buffer timeout,60s heartbeat are implementation settings, not generic J1939 defaults.",
+      "allowed": [
+        "LISTEN_ONLY"
+      ]
+    },
+    {
+      "parameter": "n2_automatic_retransmission",
+      "when": {
+        "n2_role": "SILENT_MONITOR"
+      },
+      "source": "https://raw.githubusercontent.com/ttlappalainen/NMEA2000/5b7b9fc3ccc18e30ebfba92da6486cffc6251595/src/NMEA2000.h",
+      "source_revision": "TimoLappalainen header pinned 5b7b9fc3ccc18e30ebfba92da6486cffc6251595: maxsource251, null254,100ms buffer timeout,60s heartbeat are implementation settings, not generic J1939 defaults.",
+      "allowed": [
+        false
+      ]
+    },
+    {
+      "parameter": "n2_source_address",
+      "when": {
+        "n2_claim_status": "CLAIMED",
+        "n2_implementation": "TIMO_PINNED"
+      },
+      "source": "https://raw.githubusercontent.com/ttlappalainen/NMEA2000/5b7b9fc3ccc18e30ebfba92da6486cffc6251595/src/NMEA2000.h",
+      "source_revision": "TimoLappalainen header pinned 5b7b9fc3ccc18e30ebfba92da6486cffc6251595: maxsource251, null254,100ms buffer timeout,60s heartbeat are implementation settings, not generic J1939 defaults.",
+      "maximum": 251
+    },
+    {
+      "parameter": "n2_source_address",
+      "when": {
+        "n2_claim_status": "CANNOT_CLAIM"
+      },
+      "source": "https://raw.githubusercontent.com/ttlappalainen/NMEA2000/5b7b9fc3ccc18e30ebfba92da6486cffc6251595/src/NMEA2000.h",
+      "source_revision": "TimoLappalainen header pinned 5b7b9fc3ccc18e30ebfba92da6486cffc6251595: maxsource251, null254,100ms buffer timeout,60s heartbeat are implementation settings, not generic J1939 defaults.",
+      "allowed": [
+        254
+      ]
+    },
+    {
+      "parameter": "n2_name_hex",
+      "when": {},
+      "source": "https://simmasoftware.com/assets/images/nmea-2000-users-manual.pdf",
+      "source_revision": "Simma ssNMEA2000-Multi manual1.3 April23 2013: pp6-11 CAN/NAME,16-22 packet/API,24-25 selected implementation buffers/tick. Public manual only, no software package/license acceptance.",
+      "pattern": "[0-9A-Fa-f]{16}"
+    },
+    {
+      "parameter": "n2_priority",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/ttlappalainen/NMEA2000/5b7b9fc3ccc18e30ebfba92da6486cffc6251595/src/NMEA2000.cpp",
+      "source_revision": "TimoLappalainen implementation pinned 5b7b9fc3ccc18e30ebfba92da6486cffc6251595: ID PDU1/PDU2, fastpacket6+31*7, sequence0..7, actual buffers/transport support.",
+      "when_present": [
+        "n2_can_id"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "n2_dp",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/ttlappalainen/NMEA2000/5b7b9fc3ccc18e30ebfba92da6486cffc6251595/src/NMEA2000.cpp",
+      "source_revision": "TimoLappalainen implementation pinned 5b7b9fc3ccc18e30ebfba92da6486cffc6251595: ID PDU1/PDU2, fastpacket6+31*7, sequence0..7, actual buffers/transport support.",
+      "when_present": [
+        "n2_can_id"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "n2_pf",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/ttlappalainen/NMEA2000/5b7b9fc3ccc18e30ebfba92da6486cffc6251595/src/NMEA2000.cpp",
+      "source_revision": "TimoLappalainen implementation pinned 5b7b9fc3ccc18e30ebfba92da6486cffc6251595: ID PDU1/PDU2, fastpacket6+31*7, sequence0..7, actual buffers/transport support.",
+      "when_present": [
+        "n2_can_id"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "n2_ps",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/ttlappalainen/NMEA2000/5b7b9fc3ccc18e30ebfba92da6486cffc6251595/src/NMEA2000.cpp",
+      "source_revision": "TimoLappalainen implementation pinned 5b7b9fc3ccc18e30ebfba92da6486cffc6251595: ID PDU1/PDU2, fastpacket6+31*7, sequence0..7, actual buffers/transport support.",
+      "when_present": [
+        "n2_can_id"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "n2_source_address",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/ttlappalainen/NMEA2000/5b7b9fc3ccc18e30ebfba92da6486cffc6251595/src/NMEA2000.cpp",
+      "source_revision": "TimoLappalainen implementation pinned 5b7b9fc3ccc18e30ebfba92da6486cffc6251595: ID PDU1/PDU2, fastpacket6+31*7, sequence0..7, actual buffers/transport support.",
+      "when_present": [
+        "n2_can_id"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "n2_can_id",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/ttlappalainen/NMEA2000/5b7b9fc3ccc18e30ebfba92da6486cffc6251595/src/NMEA2000.cpp",
+      "source_revision": "TimoLappalainen implementation pinned 5b7b9fc3ccc18e30ebfba92da6486cffc6251595: ID PDU1/PDU2, fastpacket6+31*7, sequence0..7, actual buffers/transport support.",
+      "equal_expression": {
+        "sum": [
+          {
+            "product": [
+              "n2_priority",
+              67108864
+            ]
+          },
+          {
+            "product": [
+              "n2_dp",
+              16777216
+            ]
+          },
+          {
+            "product": [
+              "n2_pf",
+              65536
+            ]
+          },
+          {
+            "product": [
+              "n2_ps",
+              256
+            ]
+          },
+          "n2_source_address"
+        ]
+      }
+    },
+    {
+      "parameter": "n2_pgn",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/ttlappalainen/NMEA2000/5b7b9fc3ccc18e30ebfba92da6486cffc6251595/src/NMEA2000.cpp",
+      "source_revision": "TimoLappalainen implementation pinned 5b7b9fc3ccc18e30ebfba92da6486cffc6251595: ID PDU1/PDU2, fastpacket6+31*7, sequence0..7, actual buffers/transport support.",
+      "when_ranges": {
+        "n2_pf": [
+          0,
+          239
+        ]
+      },
+      "equal_expression": {
+        "sum": [
+          {
+            "product": [
+              "n2_dp",
+              65536
+            ]
+          },
+          {
+            "product": [
+              "n2_pf",
+              256
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "parameter": "n2_destination",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/ttlappalainen/NMEA2000/5b7b9fc3ccc18e30ebfba92da6486cffc6251595/src/NMEA2000.cpp",
+      "source_revision": "TimoLappalainen implementation pinned 5b7b9fc3ccc18e30ebfba92da6486cffc6251595: ID PDU1/PDU2, fastpacket6+31*7, sequence0..7, actual buffers/transport support.",
+      "when_ranges": {
+        "n2_pf": [
+          0,
+          239
+        ]
+      },
+      "equal_parameter": "n2_ps"
+    },
+    {
+      "parameter": "n2_pgn",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/ttlappalainen/NMEA2000/5b7b9fc3ccc18e30ebfba92da6486cffc6251595/src/NMEA2000.cpp",
+      "source_revision": "TimoLappalainen implementation pinned 5b7b9fc3ccc18e30ebfba92da6486cffc6251595: ID PDU1/PDU2, fastpacket6+31*7, sequence0..7, actual buffers/transport support.",
+      "when_ranges": {
+        "n2_pf": [
+          240,
+          255
+        ]
+      },
+      "equal_expression": {
+        "sum": [
+          {
+            "product": [
+              "n2_dp",
+              65536
+            ]
+          },
+          {
+            "product": [
+              "n2_pf",
+              256
+            ]
+          },
+          "n2_ps"
+        ]
+      }
+    },
+    {
+      "parameter": "n2_destination",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/ttlappalainen/NMEA2000/5b7b9fc3ccc18e30ebfba92da6486cffc6251595/src/NMEA2000.cpp",
+      "source_revision": "TimoLappalainen implementation pinned 5b7b9fc3ccc18e30ebfba92da6486cffc6251595: ID PDU1/PDU2, fastpacket6+31*7, sequence0..7, actual buffers/transport support.",
+      "when_ranges": {
+        "n2_pf": [
+          240,
+          255
+        ]
+      },
+      "allowed": [
+        255
+      ]
+    },
+    {
+      "parameter": "n2_dp",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/ttlappalainen/NMEA2000/5b7b9fc3ccc18e30ebfba92da6486cffc6251595/src/NMEA2000.cpp",
+      "source_revision": "TimoLappalainen implementation pinned 5b7b9fc3ccc18e30ebfba92da6486cffc6251595: ID PDU1/PDU2, fastpacket6+31*7, sequence0..7, actual buffers/transport support.",
+      "when_present": [
+        "n2_pgn"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "n2_pf",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/ttlappalainen/NMEA2000/5b7b9fc3ccc18e30ebfba92da6486cffc6251595/src/NMEA2000.cpp",
+      "source_revision": "TimoLappalainen implementation pinned 5b7b9fc3ccc18e30ebfba92da6486cffc6251595: ID PDU1/PDU2, fastpacket6+31*7, sequence0..7, actual buffers/transport support.",
+      "when_present": [
+        "n2_pgn"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "n2_ps",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/ttlappalainen/NMEA2000/5b7b9fc3ccc18e30ebfba92da6486cffc6251595/src/NMEA2000.cpp",
+      "source_revision": "TimoLappalainen implementation pinned 5b7b9fc3ccc18e30ebfba92da6486cffc6251595: ID PDU1/PDU2, fastpacket6+31*7, sequence0..7, actual buffers/transport support.",
+      "when_present": [
+        "n2_pgn"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "n2_data_bytes",
+      "when": {},
+      "source": "https://simmasoftware.com/assets/images/nmea-2000-users-manual.pdf",
+      "source_revision": "Simma ssNMEA2000-Multi manual1.3 April23 2013: pp6-11 CAN/NAME,16-22 packet/API,24-25 selected implementation buffers/tick. Public manual only, no software package/license acceptance.",
+      "when_present": [
+        "payload_bytes"
+      ],
+      "required": true,
+      "equal_parameter": "payload_bytes"
+    },
+    {
+      "parameter": "n2_data_bytes",
+      "when": {
+        "n2_packet_class": "SINGLE"
+      },
+      "source": "https://simmasoftware.com/assets/images/nmea-2000-users-manual.pdf",
+      "source_revision": "Simma ssNMEA2000-Multi manual1.3 April23 2013: pp6-11 CAN/NAME,16-22 packet/API,24-25 selected implementation buffers/tick. Public manual only, no software package/license acceptance.",
+      "maximum": 8
+    },
+    {
+      "parameter": "n2_packet_frames",
+      "when": {
+        "n2_packet_class": "SINGLE"
+      },
+      "source": "https://simmasoftware.com/assets/images/nmea-2000-users-manual.pdf",
+      "source_revision": "Simma ssNMEA2000-Multi manual1.3 April23 2013: pp6-11 CAN/NAME,16-22 packet/API,24-25 selected implementation buffers/tick. Public manual only, no software package/license acceptance.",
+      "allowed": [
+        1
+      ]
+    },
+    {
+      "parameter": "n2_frame_bytes",
+      "when": {
+        "n2_packet_class": "SINGLE"
+      },
+      "source": "https://simmasoftware.com/assets/images/nmea-2000-users-manual.pdf",
+      "source_revision": "Simma ssNMEA2000-Multi manual1.3 April23 2013: pp6-11 CAN/NAME,16-22 packet/API,24-25 selected implementation buffers/tick. Public manual only, no software package/license acceptance.",
+      "equal_parameter": "n2_data_bytes"
+    },
+    {
+      "parameter": "n2_data_bytes",
+      "when": {
+        "n2_packet_class": "FAST_PACKET"
+      },
+      "source": "https://raw.githubusercontent.com/ttlappalainen/NMEA2000/5b7b9fc3ccc18e30ebfba92da6486cffc6251595/src/N2kMsg.h",
+      "source_revision": "TimoLappalainen N2kMsg pinned 5b7b9fc3ccc18e30ebfba92da6486cffc6251595: current storage223 bytes, application data may exceed8; physical CAN frame remains<=8.",
+      "maximum": 223
+    },
+    {
+      "parameter": "n2_packet_frames",
+      "when": {
+        "n2_packet_class": "FAST_PACKET"
+      },
+      "source": "https://raw.githubusercontent.com/ttlappalainen/NMEA2000/5b7b9fc3ccc18e30ebfba92da6486cffc6251595/src/NMEA2000.cpp",
+      "source_revision": "TimoLappalainen implementation pinned 5b7b9fc3ccc18e30ebfba92da6486cffc6251595: ID PDU1/PDU2, fastpacket6+31*7, sequence0..7, actual buffers/transport support.",
+      "equal_expression": {
+        "sum": [
+          1,
+          {
+            "ceiling": [
+              {
+                "product": [
+                  {
+                    "maximum": [
+                      0,
+                      {
+                        "subtract": [
+                          "n2_data_bytes",
+                          6
+                        ]
+                      }
+                    ]
+                  },
+                  0.14285714285714285
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "parameter": "n2_frame_bytes",
+      "when": {
+        "n2_packet_class": "FAST_PACKET"
+      },
+      "source": "https://raw.githubusercontent.com/ttlappalainen/NMEA2000/5b7b9fc3ccc18e30ebfba92da6486cffc6251595/src/NMEA2000.cpp",
+      "source_revision": "TimoLappalainen implementation pinned 5b7b9fc3ccc18e30ebfba92da6486cffc6251595: ID PDU1/PDU2, fastpacket6+31*7, sequence0..7, actual buffers/transport support.",
+      "allowed": [
+        8
+      ]
+    },
+    {
+      "parameter": "n2_fast_frame_index",
+      "when": {
+        "n2_packet_class": "FAST_PACKET"
+      },
+      "source": "https://raw.githubusercontent.com/ttlappalainen/NMEA2000/5b7b9fc3ccc18e30ebfba92da6486cffc6251595/src/NMEA2000.cpp",
+      "source_revision": "TimoLappalainen implementation pinned 5b7b9fc3ccc18e30ebfba92da6486cffc6251595: ID PDU1/PDU2, fastpacket6+31*7, sequence0..7, actual buffers/transport support.",
+      "exclusive_maximum_expression": "n2_packet_frames"
+    },
+    {
+      "parameter": "n2_fast_header",
+      "when": {
+        "n2_packet_class": "FAST_PACKET"
+      },
+      "source": "https://raw.githubusercontent.com/ttlappalainen/NMEA2000/5b7b9fc3ccc18e30ebfba92da6486cffc6251595/src/NMEA2000.cpp",
+      "source_revision": "TimoLappalainen implementation pinned 5b7b9fc3ccc18e30ebfba92da6486cffc6251595: ID PDU1/PDU2, fastpacket6+31*7, sequence0..7, actual buffers/transport support.",
+      "equal_expression": {
+        "sum": [
+          {
+            "product": [
+              "n2_fast_sequence",
+              32
+            ]
+          },
+          "n2_fast_frame_index"
+        ]
+      }
+    },
+    {
+      "parameter": "n2_fast_sequence",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/ttlappalainen/NMEA2000/5b7b9fc3ccc18e30ebfba92da6486cffc6251595/src/NMEA2000.cpp",
+      "source_revision": "TimoLappalainen implementation pinned 5b7b9fc3ccc18e30ebfba92da6486cffc6251595: ID PDU1/PDU2, fastpacket6+31*7, sequence0..7, actual buffers/transport support.",
+      "when_present": [
+        "n2_fast_header"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "n2_fast_frame_index",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/ttlappalainen/NMEA2000/5b7b9fc3ccc18e30ebfba92da6486cffc6251595/src/NMEA2000.cpp",
+      "source_revision": "TimoLappalainen implementation pinned 5b7b9fc3ccc18e30ebfba92da6486cffc6251595: ID PDU1/PDU2, fastpacket6+31*7, sequence0..7, actual buffers/transport support.",
+      "when_present": [
+        "n2_fast_header"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "n2_data_bytes",
+      "when": {
+        "n2_packet_class": "ISO_TP_BAM"
+      },
+      "source": "https://simmasoftware.com/assets/images/nmea-2000-users-manual.pdf",
+      "source_revision": "Simma ssNMEA2000-Multi manual1.3 April23 2013: pp6-11 CAN/NAME,16-22 packet/API,24-25 selected implementation buffers/tick. Public manual only, no software package/license acceptance.",
+      "minimum": 9,
+      "maximum": 1785
+    },
+    {
+      "parameter": "n2_packet_frames",
+      "when": {
+        "n2_packet_class": "ISO_TP_BAM"
+      },
+      "source": "https://simmasoftware.com/assets/images/nmea-2000-users-manual.pdf",
+      "source_revision": "Simma ssNMEA2000-Multi manual1.3 April23 2013: pp6-11 CAN/NAME,16-22 packet/API,24-25 selected implementation buffers/tick. Public manual only, no software package/license acceptance.",
+      "equal_expression": {
+        "ceiling": [
+          {
+            "product": [
+              "n2_data_bytes",
+              0.14285714285714285
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "parameter": "n2_data_bytes",
+      "when": {
+        "n2_packet_class": "ISO_TP_BAM",
+        "n2_implementation": "TIMO_PINNED"
+      },
+      "source": "https://raw.githubusercontent.com/ttlappalainen/NMEA2000/5b7b9fc3ccc18e30ebfba92da6486cffc6251595/src/N2kMsg.h",
+      "source_revision": "TimoLappalainen N2kMsg pinned 5b7b9fc3ccc18e30ebfba92da6486cffc6251595: current storage223 bytes, application data may exceed8; physical CAN frame remains<=8.",
+      "maximum": 223
+    },
+    {
+      "parameter": "n2_data_bytes",
+      "when": {
+        "n2_packet_class": "ISO_TP_RTS_CTS"
+      },
+      "source": "https://simmasoftware.com/assets/images/nmea-2000-users-manual.pdf",
+      "source_revision": "Simma ssNMEA2000-Multi manual1.3 April23 2013: pp6-11 CAN/NAME,16-22 packet/API,24-25 selected implementation buffers/tick. Public manual only, no software package/license acceptance.",
+      "minimum": 9,
+      "maximum": 1785
+    },
+    {
+      "parameter": "n2_packet_frames",
+      "when": {
+        "n2_packet_class": "ISO_TP_RTS_CTS"
+      },
+      "source": "https://simmasoftware.com/assets/images/nmea-2000-users-manual.pdf",
+      "source_revision": "Simma ssNMEA2000-Multi manual1.3 April23 2013: pp6-11 CAN/NAME,16-22 packet/API,24-25 selected implementation buffers/tick. Public manual only, no software package/license acceptance.",
+      "equal_expression": {
+        "ceiling": [
+          {
+            "product": [
+              "n2_data_bytes",
+              0.14285714285714285
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "parameter": "n2_data_bytes",
+      "when": {
+        "n2_packet_class": "ISO_TP_RTS_CTS",
+        "n2_implementation": "TIMO_PINNED"
+      },
+      "source": "https://raw.githubusercontent.com/ttlappalainen/NMEA2000/5b7b9fc3ccc18e30ebfba92da6486cffc6251595/src/N2kMsg.h",
+      "source_revision": "TimoLappalainen N2kMsg pinned 5b7b9fc3ccc18e30ebfba92da6486cffc6251595: current storage223 bytes, application data may exceed8; physical CAN frame remains<=8.",
+      "maximum": 223
+    },
+    {
+      "parameter": "n2_destination",
+      "when": {
+        "n2_packet_class": "ISO_TP_BAM"
+      },
+      "source": "https://simmasoftware.com/assets/images/nmea-2000-users-manual.pdf",
+      "source_revision": "Simma ssNMEA2000-Multi manual1.3 April23 2013: pp6-11 CAN/NAME,16-22 packet/API,24-25 selected implementation buffers/tick. Public manual only, no software package/license acceptance.",
+      "allowed": [
+        255
+      ]
+    },
+    {
+      "parameter": "n2_destination",
+      "when": {
+        "n2_packet_class": "ISO_TP_RTS_CTS"
+      },
+      "source": "https://simmasoftware.com/assets/images/nmea-2000-users-manual.pdf",
+      "source_revision": "Simma ssNMEA2000-Multi manual1.3 April23 2013: pp6-11 CAN/NAME,16-22 packet/API,24-25 selected implementation buffers/tick. Public manual only, no software package/license acceptance.",
+      "maximum": 253
+    },
+    {
+      "parameter": "n2_tp_packet_sequence",
+      "when": {},
+      "source": "https://simmasoftware.com/assets/images/nmea-2000-users-manual.pdf",
+      "source_revision": "Simma ssNMEA2000-Multi manual1.3 April23 2013: pp6-11 CAN/NAME,16-22 packet/API,24-25 selected implementation buffers/tick. Public manual only, no software package/license acceptance.",
+      "maximum_parameter": "n2_packet_frames"
+    },
+    {
+      "parameter": "n2_message_buffer_bytes",
+      "when": {
+        "n2_implementation": "TIMO_PINNED"
+      },
+      "source": "https://raw.githubusercontent.com/ttlappalainen/NMEA2000/5b7b9fc3ccc18e30ebfba92da6486cffc6251595/src/N2kMsg.h",
+      "source_revision": "TimoLappalainen N2kMsg pinned 5b7b9fc3ccc18e30ebfba92da6486cffc6251595: current storage223 bytes, application data may exceed8; physical CAN frame remains<=8.",
+      "maximum": 223
+    },
+    {
+      "parameter": "n2_cable",
+      "when": {},
+      "source": "https://actisense.com/wp-content/uploads/2021/08/Complete-Guide-to-NMEA-2000_Revision_4_2021.pdf",
+      "source_revision": "Actisense Complete Guide Rev4 2021: network/cable/power/termination pp4-10, device24V compatibility not standard9..16V.",
+      "when_present": [
+        "n2_backbone_m"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "n2_physical_source",
+      "when": {},
+      "source": "https://actisense.com/wp-content/uploads/2021/08/Complete-Guide-to-NMEA-2000_Revision_4_2021.pdf",
+      "source_revision": "Actisense Complete Guide Rev4 2021: network/cable/power/termination pp4-10, device24V compatibility not standard9..16V.",
+      "when_present": [
+        "n2_backbone_m"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "n2_registered_source",
+      "when": {
+        "n2_cable": "REGISTERED"
+      },
+      "source": "https://actisense.com/wp-content/uploads/2021/08/Complete-Guide-to-NMEA-2000_Revision_4_2021.pdf",
+      "source_revision": "Actisense Complete Guide Rev4 2021: network/cable/power/termination pp4-10, device24V compatibility not standard9..16V.",
+      "required": true
+    },
+    {
+      "parameter": "n2_registered_source",
+      "when": {
+        "n2_cable_catalog": "REGISTERED"
+      },
+      "source": "https://actisense.com/wp-content/uploads/2021/08/Complete-Guide-to-NMEA-2000_Revision_4_2021.pdf",
+      "source_revision": "Actisense Complete Guide Rev4 2021: network/cable/power/termination pp4-10, device24V compatibility not standard9..16V.",
+      "required": true
+    },
+    {
+      "parameter": "n2_cable_catalog",
+      "when": {},
+      "source": "https://actisense.com/wp-content/uploads/2021/08/Complete-Guide-to-NMEA-2000_Revision_4_2021.pdf",
+      "source_revision": "Actisense Complete Guide Rev4 2021: network/cable/power/termination pp4-10, device24V compatibility not standard9..16V.",
+      "when_present": [
+        "n2_branch_current_a"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "n2_power_profile",
+      "when": {},
+      "source": "https://actisense.com/wp-content/uploads/2021/08/Complete-Guide-to-NMEA-2000_Revision_4_2021.pdf",
+      "source_revision": "Actisense Complete Guide Rev4 2021: network/cable/power/termination pp4-10, device24V compatibility not standard9..16V.",
+      "when_present": [
+        "n2_device_v"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "n2_backbone_m",
+      "when": {
+        "n2_cable": "MICRO_LITE"
+      },
+      "source": "https://actisense.com/wp-content/uploads/2021/08/Complete-Guide-to-NMEA-2000_Revision_4_2021.pdf",
+      "source_revision": "Actisense Complete Guide Rev4 2021: network/cable/power/termination pp4-10, device24V compatibility not standard9..16V.",
+      "maximum": 100
+    },
+    {
+      "parameter": "n2_backbone_m",
+      "when": {
+        "n2_cable": "MID"
+      },
+      "source": "https://actisense.com/wp-content/uploads/2021/08/Complete-Guide-to-NMEA-2000_Revision_4_2021.pdf",
+      "source_revision": "Actisense Complete Guide Rev4 2021: network/cable/power/termination pp4-10, device24V compatibility not standard9..16V.",
+      "maximum": 250
+    },
+    {
+      "parameter": "n2_backbone_m",
+      "when": {
+        "n2_cable": "MINI_HEAVY"
+      },
+      "source": "https://actisense.com/wp-content/uploads/2021/08/Complete-Guide-to-NMEA-2000_Revision_4_2021.pdf",
+      "source_revision": "Actisense Complete Guide Rev4 2021: network/cable/power/termination pp4-10, device24V compatibility not standard9..16V.",
+      "maximum": 250
+    },
+    {
+      "parameter": "n2_branch_current_a",
+      "when": {
+        "n2_cable": "MICRO_LITE",
+        "n2_cable_catalog": "ACTISENSE_2021"
+      },
+      "source": "https://actisense.com/wp-content/uploads/2021/08/Complete-Guide-to-NMEA-2000_Revision_4_2021.pdf",
+      "source_revision": "Actisense Complete Guide Rev4 2021: network/cable/power/termination pp4-10, device24V compatibility not standard9..16V.",
+      "maximum": 3
+    },
+    {
+      "parameter": "n2_branch_current_a",
+      "when": {
+        "n2_cable": "MID",
+        "n2_cable_catalog": "ACTISENSE_2021"
+      },
+      "source": "https://actisense.com/wp-content/uploads/2021/08/Complete-Guide-to-NMEA-2000_Revision_4_2021.pdf",
+      "source_revision": "Actisense Complete Guide Rev4 2021: network/cable/power/termination pp4-10, device24V compatibility not standard9..16V.",
+      "maximum": 4
+    },
+    {
+      "parameter": "n2_branch_current_a",
+      "when": {
+        "n2_cable": "MINI_HEAVY",
+        "n2_cable_catalog": "ACTISENSE_2021"
+      },
+      "source": "https://actisense.com/wp-content/uploads/2021/08/Complete-Guide-to-NMEA-2000_Revision_4_2021.pdf",
+      "source_revision": "Actisense Complete Guide Rev4 2021: network/cable/power/termination pp4-10, device24V compatibility not standard9..16V.",
+      "maximum": 8
+    },
+    {
+      "parameter": "n2_power_feed_v",
+      "when": {
+        "n2_power_profile": "STANDARD_9_16"
+      },
+      "source": "https://actisense.com/wp-content/uploads/2021/08/Complete-Guide-to-NMEA-2000_Revision_4_2021.pdf",
+      "source_revision": "Actisense Complete Guide Rev4 2021: network/cable/power/termination pp4-10, device24V compatibility not standard9..16V.",
+      "minimum": 9,
+      "maximum": 16
+    },
+    {
+      "parameter": "n2_device_v",
+      "when": {
+        "n2_power_profile": "STANDARD_9_16"
+      },
+      "source": "https://actisense.com/wp-content/uploads/2021/08/Complete-Guide-to-NMEA-2000_Revision_4_2021.pdf",
+      "source_revision": "Actisense Complete Guide Rev4 2021: network/cable/power/termination pp4-10, device24V compatibility not standard9..16V.",
+      "minimum": 9,
+      "maximum": 16
+    },
+    {
+      "parameter": "n2_registered_source",
+      "when": {
+        "n2_power_profile": "DEVICE_24V_REGISTERED"
+      },
+      "source": "https://actisense.com/wp-content/uploads/2021/08/Complete-Guide-to-NMEA-2000_Revision_4_2021.pdf",
+      "source_revision": "Actisense Complete Guide Rev4 2021: network/cable/power/termination pp4-10, device24V compatibility not standard9..16V.",
+      "required": true
+    },
+    {
+      "parameter": "n2_extended_power_warning",
+      "when": {
+        "n2_power_profile": "DEVICE_24V_REGISTERED"
+      },
+      "source": "https://actisense.com/wp-content/uploads/2021/08/Complete-Guide-to-NMEA-2000_Revision_4_2021.pdf",
+      "source_revision": "Actisense Complete Guide Rev4 2021: network/cable/power/termination pp4-10, device24V compatibility not standard9..16V.",
+      "required": true
+    },
+    {
+      "parameter": "n2_extended_power_warning",
+      "when": {
+        "n2_power_profile": "DEVICE_24V_REGISTERED"
+      },
+      "source": "https://actisense.com/wp-content/uploads/2021/08/Complete-Guide-to-NMEA-2000_Revision_4_2021.pdf",
+      "source_revision": "Actisense Complete Guide Rev4 2021: network/cable/power/termination pp4-10, device24V compatibility not standard9..16V.",
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "n2_device_v",
+      "when": {},
+      "source": "https://actisense.com/wp-content/uploads/2021/08/Complete-Guide-to-NMEA-2000_Revision_4_2021.pdf",
+      "source_revision": "Actisense Complete Guide Rev4 2021: network/cable/power/termination pp4-10, device24V compatibility not standard9..16V.",
+      "equal_expression": {
+        "subtract": [
+          "n2_power_feed_v",
+          {
+            "product": [
+              "n2_loop_ohm",
+              "n2_branch_current_a"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "parameter": "n2_power_feed_v",
+      "when": {},
+      "source": "https://actisense.com/wp-content/uploads/2021/08/Complete-Guide-to-NMEA-2000_Revision_4_2021.pdf",
+      "source_revision": "Actisense Complete Guide Rev4 2021: network/cable/power/termination pp4-10, device24V compatibility not standard9..16V.",
+      "when_present": [
+        "n2_device_v"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "n2_loop_ohm",
+      "when": {},
+      "source": "https://actisense.com/wp-content/uploads/2021/08/Complete-Guide-to-NMEA-2000_Revision_4_2021.pdf",
+      "source_revision": "Actisense Complete Guide Rev4 2021: network/cable/power/termination pp4-10, device24V compatibility not standard9..16V.",
+      "when_present": [
+        "n2_device_v"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "n2_branch_current_a",
+      "when": {},
+      "source": "https://actisense.com/wp-content/uploads/2021/08/Complete-Guide-to-NMEA-2000_Revision_4_2021.pdf",
+      "source_revision": "Actisense Complete Guide Rev4 2021: network/cable/power/termination pp4-10, device24V compatibility not standard9..16V.",
+      "when_present": [
+        "n2_device_v"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "n2_power_source",
+      "when": {},
+      "source": "https://actisense.com/wp-content/uploads/2021/08/Complete-Guide-to-NMEA-2000_Revision_4_2021.pdf",
+      "source_revision": "Actisense Complete Guide Rev4 2021: network/cable/power/termination pp4-10, device24V compatibility not standard9..16V.",
+      "when_present": [
+        "n2_device_v"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "n2_device_bus_current_ma",
+      "when": {},
+      "source": "https://actisense.com/wp-content/uploads/2021/08/Complete-Guide-to-NMEA-2000_Revision_4_2021.pdf",
+      "source_revision": "Actisense Complete Guide Rev4 2021: network/cable/power/termination pp4-10, device24V compatibility not standard9..16V.",
+      "maximum_expression": {
+        "product": [
+          "n2_len",
+          50
+        ]
+      }
+    },
+    {
+      "parameter": "n2_len",
+      "when": {
+        "n2_power_method": "BUS_ONLY"
+      },
+      "source": "https://actisense.com/wp-content/uploads/2021/08/Complete-Guide-to-NMEA-2000_Revision_4_2021.pdf",
+      "source_revision": "Actisense Complete Guide Rev4 2021: network/cable/power/termination pp4-10, device24V compatibility not standard9..16V.",
+      "maximum": 20
+    },
+    {
+      "parameter": "n2_len",
+      "when": {},
+      "source": "https://actisense.com/wp-content/uploads/2021/08/Complete-Guide-to-NMEA-2000_Revision_4_2021.pdf",
+      "source_revision": "Actisense Complete Guide Rev4 2021: network/cable/power/termination pp4-10, device24V compatibility not standard9..16V.",
+      "when_present": [
+        "n2_device_bus_current_ma"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "n2_certification_source",
+      "when": {
+        "n2_certified": true
+      },
+      "source": "https://www.nmea.org/nmea-2000.html",
+      "source_revision": "NMEA publisher version3.000 with amendments overview, retrieved2026-10-02. Licensed Main/Appendices A/B/C not read.",
+      "required": true
+    },
+    {
+      "parameter": "n2_physical_source",
+      "when": {
+        "n2_isolated_io": true
+      },
+      "source": "https://www.can-cia.org/fileadmin/cia/documents/publications/cnlm/june_2024/cnlm_24-1_p9_nmea_2000_conformance_testing_and_product_certification_dr_chris_quigley_warwick_control_technologies.pdf",
+      "source_revision": "Warwick Control Technologies author DrChrisQuigley CANNewsletter2/2024 pp9-11: 250k,50physicaldevices,85..90% samplepoint,auto retransmission,isolation and actual certification/interoperability scope.",
+      "required": true
+    },
+    {
+      "parameter": "n2_age_ms",
+      "when": {},
+      "source": "https://www.can-cia.org/fileadmin/cia/documents/publications/cnlm/june_2024/cnlm_24-1_p9_nmea_2000_conformance_testing_and_product_certification_dr_chris_quigley_warwick_control_technologies.pdf",
+      "source_revision": "Warwick Control Technologies author DrChrisQuigley CANNewsletter2/2024 pp9-11: 250k,50physicaldevices,85..90% samplepoint,auto retransmission,isolation and actual certification/interoperability scope.",
+      "maximum_parameter": "n2_freshness_limit_ms"
+    },
+    {
+      "parameter": "n2_freshness_limit_ms",
+      "when": {},
+      "source": "https://www.can-cia.org/fileadmin/cia/documents/publications/cnlm/june_2024/cnlm_24-1_p9_nmea_2000_conformance_testing_and_product_certification_dr_chris_quigley_warwick_control_technologies.pdf",
+      "source_revision": "Warwick Control Technologies author DrChrisQuigley CANNewsletter2/2024 pp9-11: 250k,50physicaldevices,85..90% samplepoint,auto retransmission,isolation and actual certification/interoperability scope.",
+      "when_present": [
+        "n2_age_ms"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "n2_acceptance_source",
+      "when": {},
+      "source": "https://www.can-cia.org/fileadmin/cia/documents/publications/cnlm/june_2024/cnlm_24-1_p9_nmea_2000_conformance_testing_and_product_certification_dr_chris_quigley_warwick_control_technologies.pdf",
+      "source_revision": "Warwick Control Technologies author DrChrisQuigley CANNewsletter2/2024 pp9-11: 250k,50physicaldevices,85..90% samplepoint,auto retransmission,isolation and actual certification/interoperability scope.",
+      "when_present": [
+        "n2_age_ms"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "n2_sample_point_percent",
+      "when": {
+        "n2_implementation": "SIMMA_1_3"
+      },
+      "source": "https://simmasoftware.com/assets/images/nmea-2000-users-manual.pdf",
+      "source_revision": "Simma ssNMEA2000-Multi manual1.3 April23 2013: pp6-11 CAN/NAME,16-22 packet/API,24-25 selected implementation buffers/tick. Public manual only, no software package/license acceptance.",
+      "maximum": 87.5
+    },
+    {
+      "parameter": "n2_tick_ms",
+      "when": {
+        "n2_implementation": "SIMMA_1_3"
+      },
+      "source": "https://simmasoftware.com/assets/images/nmea-2000-users-manual.pdf",
+      "source_revision": "Simma ssNMEA2000-Multi manual1.3 April23 2013: pp6-11 CAN/NAME,16-22 packet/API,24-25 selected implementation buffers/tick. Public manual only, no software package/license acceptance.",
+      "exclusive_minimum": 0,
+      "maximum": 25
+    }
+  ],
+  "physical_layer_profile_id": "CAN_DIFFERENTIAL_PAIR",
+  "medium_access_model": "BITWISE_PRIORITY",
+  "native_parameter_prefixes": [
+    "n2_"
+  ],
+  "parameter_aliases": {},
+  "parameter_alias_limits": {},
+  "parameter_evidence_scope": "EXPLICIT_LAYER",
+  "rate_source_profile_id": null,
+  "arbitration_model_id": "CAN_NON_DESTRUCTIVE",
+  "max_payload_bytes": null,
+  "capabilities": {
+    "supports_signals": true,
+    "supports_data_objects": false,
+    "supports_streams": false,
+    "supports_multicast": true,
+    "supports_publish_subscribe": false,
+    "supports_request_response": false,
+    "supports_cyclic": true,
+    "supports_event": true,
+    "supports_redundancy": false,
+    "supports_time_sync": false,
+    "supports_safety_profile": false,
+    "supports_segmentation": true,
+    "supports_fragmentation": false,
+    "supports_qos": false
+  },
+  "deterministic": true,
+  "overhead_bytes": 8,
+  "implementation_status": "PARTIAL",
+  "connection_type": "COMMUNICATION_TECHNOLOGY",
+  "parameter_proposals": {
+    "kind": "FIXED_STANDARD_BASELINE",
+    "default_bps": 250000,
+    "status": "REVIEW_REQUIRED",
+    "source": "https://www.can-cia.org/fileadmin/cia/documents/publications/cnlm/june_2024/cnlm_24-1_p9_nmea_2000_conformance_testing_and_product_certification_dr_chris_quigley_warwick_control_technologies.pdf",
+    "source_revision": "Warwick Control Technologies author DrChrisQuigley CANNewsletter2/2024 pp9-11: 250k,50physicaldevices,85..90% samplepoint,auto retransmission,isolation and actual certification/interoperability scope.",
+    "note": "NMEA2000 fixed250k CAN-CC. Actual PGN transport/name/addressclaim/physical/power/device timing required. Fast223 differsSINGLE8 andqualifiedISO1785. No NMEA0183 or genericJ1939 parameter fallback."
+  },
+  "capacity_evidence": {
+    "status": "MODEL_MISSING",
+    "frame_model": null,
+    "schedule_model": null,
+    "requires_confirmed_device_parameters": true
+  },
+  "components": {
+    "binding": "nmea2000.binding",
+    "generator": "nmea2000.generator",
+    "validator": "nmea2000.validator",
+    "timing_model": null,
+    "load_model": null,
+    "encoder": "nmea2000.encoder",
+    "decoder": "nmea2000.decoder"
+  },
+  "known_limitations": "Technology-specific conformance details require a vendor/profile extension."
+}

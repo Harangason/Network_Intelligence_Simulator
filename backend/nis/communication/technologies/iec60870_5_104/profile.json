@@ -1,0 +1,3368 @@
+{
+  "id": "iec60870_5_104",
+  "label": "IEC 60870-5-104",
+  "domain": "generic_networking",
+  "layer": "APPLICATION",
+  "transport_unit": "PDU",
+  "payload_element_types": [
+    "DATA_OBJECT",
+    "STATUS",
+    "QUALITY"
+  ],
+  "hardware_interface": "explicit_iec104_tcp_path",
+  "hardware_capability_aliases": [
+    "ethernet_port"
+  ],
+  "default_stack": [
+    "iec60870_5_104"
+  ],
+  "stack_variants": [
+    [
+      "iec60870_5_104"
+    ],
+    [
+      "ethernet",
+      "ip",
+      "tcp",
+      "iec60870_5_104"
+    ]
+  ],
+  "default_bitrate": null,
+  "rate_model": {
+    "type": "IEC104_BOUND_TRANSPORT",
+    "fields": []
+  },
+  "local_timing_schema": [],
+  "parameter_schema": {
+    "payload_bytes": {
+      "label": "Payload",
+      "category": "physical",
+      "scope": "message",
+      "type": "number",
+      "description": "Actual encoded application data. ASDU encoding, APCI length-L, complete APDU and TCP/TLS framing remain distinct.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs101/cs101_asdu.c",
+      "source_revision": "lib60870C tagv2.3.2 shared application-layer ASDU encoder; IEC104 TCP framing remains independent",
+      "integer": true
+    },
+    "cycle_ms": {
+      "label": "Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "Standardperiode fuer zyklische Nachrichten.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "minimum_cycle_time_ms": {
+      "label": "Minimum Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "deadline_ms": {
+      "label": "Deadline",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "timeout_ms": {
+      "label": "Timeout",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_latency_ms": {
+      "label": "Maximum Latency",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "jitter_ms": {
+      "label": "Jitter Budget",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "freshness_ms": {
+      "label": "Data Freshness",
+      "category": "timing",
+      "scope": "signal",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "source_processing_delay_ms": {
+      "label": "Source Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_processing_delay_ms": {
+      "label": "Target Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "propagation_delay_ms": {
+      "label": "Propagation",
+      "category": "timing",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.01,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_bus_load_percent": {
+      "label": "Ziel-Buslast",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "Zielwert fuer die aus Routing, Payload, Zyklus und Bitrate berechnete Buslast.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "peak_factor": {
+      "label": "Peak Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.15,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_factor": {
+      "label": "Burst Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.5,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_window_ms": {
+      "label": "Burst Window",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "warning_threshold": {
+      "label": "Load Warning",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "critical_threshold": {
+      "label": "Load Critical",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 75,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "overload_threshold": {
+      "label": "Load Overload",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 90,
+      "unit": "%",
+      "min": 1,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "traffic_class": {
+      "label": "Traffic Class",
+      "category": "qos",
+      "scope": "route",
+      "type": "select",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": "BEST_EFFORT",
+      "options": [
+        "BEST_EFFORT",
+        "CONTROL",
+        "REALTIME",
+        "SAFETY_CRITICAL"
+      ],
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "packet_loss_probability": {
+      "label": "Packet Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "frame_loss_probability": {
+      "label": "Frame Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "bit_error_rate": {
+      "label": "Bit Error Rate",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "corruption_probability": {
+      "label": "Corruption",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duplicate_probability": {
+      "label": "Duplication",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "reordering_probability": {
+      "label": "Reordering",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "required_reliability": {
+      "label": "Required Reliability",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.999,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_offset_ms": {
+      "label": "Clock Offset",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_drift_ppm": {
+      "label": "Clock Drift",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 20,
+      "unit": "ppm",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_precision_ms": {
+      "label": "Sync Precision",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_interval_ms": {
+      "label": "Sync Interval",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1000,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_sync_error_ms": {
+      "label": "Maximum Sync Error",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_delay_ms": {
+      "label": "Gateway Processing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.2,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_queue_delay_ms": {
+      "label": "Gateway Queueing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "protocol_conversion_delay_ms": {
+      "label": "Protocol Conversion",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duration_s": {
+      "label": "Simulation Duration",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 1,
+      "unit": "s",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "seed": {
+      "label": "Random Seed",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 42,
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "max_events": {
+      "label": "Maximum Events",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 100000,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "dropout_probability": {
+      "label": "Failure Injection Dropout",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "iec104_implementation": {
+      "type": "select",
+      "description": "Actual device/library revision. Industry does not select protocol transport or timers.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs104/cs104_connection.c",
+      "source_revision": "lib60870C pinned tagv2.3.2 CS104 client/APCI defaults and frame/state counters",
+      "options": [
+        "ACTUAL_DEVICE",
+        "LIB60870_C_2_3_2",
+        "ABB_COM600_3_5"
+      ],
+      "label": "implementation",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec104_parameter_profile": {
+      "type": "select",
+      "description": "Baseline interoperability proposals versus actual configured device/factory profile; no overwriting confirmed settings.",
+      "source": "https://library.e.abb.com/public/61bef3eada2edfb8c1257b130056cca1/COM600_3.5_IEC_60870-5-104_Master_OPC_usg_756704_ENc.pdf",
+      "source_revision": "COM6003.5 1MRS756704C 2011-06-30 sections3.4.3/3.4.4 and interoperability appendix pp69-70; vendor configuration versus baseline recommendations",
+      "options": [
+        "INTEROPERABILITY_BASELINE",
+        "CONFIGURED_DEVICE",
+        "FACTORY_PROFILE"
+      ],
+      "default": "INTEROPERABILITY_BASELINE",
+      "label": "parameter profile",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_STANDARD",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec104_role": {
+      "type": "select",
+      "description": "Actual controlling TCP client or controlled TCP listener; distinct from active/standby redundancy state.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/user_guide.adoc",
+      "source_revision": "lib60870C tagv2.3.2 user guide labelledv2.3.0 CS104 transport/ASDU/command/redundancy",
+      "options": [
+        "CONTROLLING",
+        "CONTROLLED"
+      ],
+      "label": "role",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec104_transport": {
+      "type": "select",
+      "description": "Actual plain TCP versus TLS/TCP binding. No UDP path inferred merely from IANA registration.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/user_guide.adoc",
+      "source_revision": "lib60870C tagv2.3.2 user guide labelledv2.3.0 CS104 transport/ASDU/command/redundancy",
+      "options": [
+        "TCP",
+        "TLS_TCP"
+      ],
+      "label": "transport",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec104_ip_version": {
+      "type": "select",
+      "description": "Actual IPv4/IPv6 addressing of the bound TCP path.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/user_guide.adoc",
+      "source_revision": "lib60870C tagv2.3.2 user guide labelledv2.3.0 CS104 transport/ASDU/command/redundancy",
+      "options": [
+        "IPV4",
+        "IPV6"
+      ],
+      "label": "ip version",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec104_port": {
+      "type": "number",
+      "description": "Actual remote/listening service port.2404 and19998 are transport-qualified proposals, not physical bit rates.",
+      "source": "https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.xhtml?search=60870",
+      "source_revision": "IANA IEC1042404 TCP/UDP registrations and secure19998TCP registration accessed2026-10-01; registration alone does not validate a UDP transport model",
+      "min": 1,
+      "max": 65535,
+      "label": "port",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "iec104_transport": "TCP"
+          },
+          "value": 2404,
+          "source": "https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.xhtml?search=60870"
+        },
+        {
+          "when": {
+            "iec104_transport": "TLS_TCP"
+          },
+          "value": 19998,
+          "source": "https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.xhtml?search=60870"
+        }
+      ]
+    },
+    "iec104_local_port": {
+      "type": "number",
+      "description": "Actual local TCP port; ephemeral allocation must be represented by its policy, never guessed as the service port.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/user_guide.adoc",
+      "source_revision": "lib60870C tagv2.3.2 user guide labelledv2.3.0 CS104 transport/ASDU/command/redundancy",
+      "min": 1,
+      "max": 65535,
+      "label": "local port",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec104_lib_int_bits": {
+      "type": "number",
+      "description": "Actual C ABI signed-int width for the pinned library. Timer multiplication must fit before unsigned casts; no invented32-bit ABI.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/inc/api/iec60870_common.h",
+      "source_revision": "lib60870C tagv2.3.2 application/APCI parameter declarations and units",
+      "min": 16,
+      "max": 64,
+      "label": "lib int bits",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec104_abi_source": {
+      "type": "text",
+      "description": "Actual compiler/target ABI evidence for lib60870 integer timer arithmetic.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/inc/api/iec60870_common.h",
+      "source_revision": "lib60870C tagv2.3.2 application/APCI parameter declarations and units",
+      "label": "abi source",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec104_peer_endpoint": {
+      "type": "text",
+      "description": "Actual configured remote hostname/IP and connection identity.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/user_guide.adoc",
+      "source_revision": "lib60870C tagv2.3.2 user guide labelledv2.3.0 CS104 transport/ASDU/command/redundancy",
+      "label": "peer endpoint",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec104_local_endpoint": {
+      "type": "text",
+      "description": "Actual local address/interface/listener binding, not loopback example.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/user_guide.adoc",
+      "source_revision": "lib60870C tagv2.3.2 user guide labelledv2.3.0 CS104 transport/ASDU/command/redundancy",
+      "label": "local endpoint",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec104_transport_binding": {
+      "type": "text",
+      "description": "Actual registered lower-layer TCP/IP/physical path, each layer with its own technology profile.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/user_guide.adoc",
+      "source_revision": "lib60870C tagv2.3.2 user guide labelledv2.3.0 CS104 transport/ASDU/command/redundancy",
+      "label": "transport binding",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec104_device_source": {
+      "type": "text",
+      "description": "Actual device/library/firmware capabilities and accepted settings.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/user_guide.adoc",
+      "source_revision": "lib60870C tagv2.3.2 user guide labelledv2.3.0 CS104 transport/ASDU/command/redundancy",
+      "label": "device source",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec104_interoperability_source": {
+      "type": "text",
+      "description": "Actual shared ASDU sizes/types/addressing/security agreement with peers.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/user_guide.adoc",
+      "source_revision": "lib60870C tagv2.3.2 user guide labelledv2.3.0 CS104 transport/ASDU/command/redundancy",
+      "label": "interoperability source",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec104_physical_source": {
+      "type": "text",
+      "description": "Actual underlying link/route/PHY/MTU/propagation facts; IEC104 has no universal Ethernet speed.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/user_guide.adoc",
+      "source_revision": "lib60870C tagv2.3.2 user guide labelledv2.3.0 CS104 transport/ASDU/command/redundancy",
+      "label": "physical source",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec104_schedule_source": {
+      "type": "text",
+      "description": "Actual traffic/APCI windows/ACK/TCP recovery and redundancy schedule.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/user_guide.adoc",
+      "source_revision": "lib60870C tagv2.3.2 user guide labelledv2.3.0 CS104 transport/ASDU/command/redundancy",
+      "label": "schedule source",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec104_type_source": {
+      "type": "text",
+      "description": "Actual type-specific information object/quality/time/private ASDU encoding.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/user_guide.adoc",
+      "source_revision": "lib60870C tagv2.3.2 user guide labelledv2.3.0 CS104 transport/ASDU/command/redundancy",
+      "label": "type source",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec104_address_source": {
+      "type": "text",
+      "description": "Actual common address/originator/IOA assignment, not constructor0/1 examples.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/user_guide.adoc",
+      "source_revision": "lib60870C tagv2.3.2 user guide labelledv2.3.0 CS104 transport/ASDU/command/redundancy",
+      "label": "address source",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec104_command_source": {
+      "type": "text",
+      "description": "Actual direct/select/execute/cancel and ACT_CON/ACT_TERM acceptance; separate from TCP/APCI ACK.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/user_guide.adoc",
+      "source_revision": "lib60870C tagv2.3.2 user guide labelledv2.3.0 CS104 transport/ASDU/command/redundancy",
+      "label": "command source",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec104_tls_source": {
+      "type": "text",
+      "description": "Actual TLS security edition, negotiated version/ciphers/certificates/trust/authorization and record layout.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/user_guide.adoc",
+      "source_revision": "lib60870C tagv2.3.2 user guide labelledv2.3.0 CS104 transport/ASDU/command/redundancy",
+      "label": "tls source",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec104_redundancy_source": {
+      "type": "text",
+      "description": "Actual approved redundancy groups, client assignments, active connection and event retention.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/user_guide.adoc",
+      "source_revision": "lib60870C tagv2.3.2 user guide labelledv2.3.0 CS104 transport/ASDU/command/redundancy",
+      "label": "redundancy source",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec104_time_source": {
+      "type": "text",
+      "description": "Actual CP24/CP56 clock/time-zone/invalid/rollover/synchronization and freshness handling.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/user_guide.adoc",
+      "source_revision": "lib60870C tagv2.3.2 user guide labelledv2.3.0 CS104 transport/ASDU/command/redundancy",
+      "label": "time source",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec104_k": {
+      "type": "number",
+      "description": "Actual maximum outstanding I-format APDUs before APCI acknowledgment, not a generic Ethernet queue.",
+      "source": "https://library.e.abb.com/public/61bef3eada2edfb8c1257b130056cca1/COM600_3.5_IEC_60870-5-104_Master_OPC_usg_756704_ENc.pdf",
+      "source_revision": "COM6003.5 1MRS756704C 2011-06-30 sections3.4.3/3.4.4 and interoperability appendix pp69-70; vendor configuration versus baseline recommendations",
+      "unit": "APDU",
+      "min": 1,
+      "max": 32767,
+      "label": "k",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "iec104_parameter_profile": "INTEROPERABILITY_BASELINE"
+          },
+          "value": 12,
+          "source": "https://library.e.abb.com/public/61bef3eada2edfb8c1257b130056cca1/COM600_3.5_IEC_60870-5-104_Master_OPC_usg_756704_ENc.pdf",
+          "source_revision": "COM6003.5 1MRS756704C 2011-06-30 sections3.4.3/3.4.4 and interoperability appendix pp69-70; vendor configuration versus baseline recommendations"
+        },
+        {
+          "when": {
+            "iec104_implementation": "LIB60870_C_2_3_2",
+            "iec104_parameter_profile": "FACTORY_PROFILE"
+          },
+          "value": 12,
+          "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs104/cs104_connection.c",
+          "source_revision": "lib60870C pinned tagv2.3.2 CS104 client/APCI defaults and frame/state counters"
+        },
+        {
+          "when": {
+            "iec104_implementation": "ABB_COM600_3_5",
+            "iec104_parameter_profile": "FACTORY_PROFILE"
+          },
+          "value": 12,
+          "source": "https://library.e.abb.com/public/61bef3eada2edfb8c1257b130056cca1/COM600_3.5_IEC_60870-5-104_Master_OPC_usg_756704_ENc.pdf",
+          "source_revision": "COM6003.5 1MRS756704C 2011-06-30 sections3.4.3/3.4.4 and interoperability appendix pp69-70; vendor configuration versus baseline recommendations"
+        }
+      ]
+    },
+    "iec104_w": {
+      "type": "number",
+      "description": "Actual latest acknowledgment after receiving this many I-format APDUs;2/3k is a recommendation, not a hard format bound.",
+      "source": "https://library.e.abb.com/public/61bef3eada2edfb8c1257b130056cca1/COM600_3.5_IEC_60870-5-104_Master_OPC_usg_756704_ENc.pdf",
+      "source_revision": "COM6003.5 1MRS756704C 2011-06-30 sections3.4.3/3.4.4 and interoperability appendix pp69-70; vendor configuration versus baseline recommendations",
+      "unit": "APDU",
+      "min": 1,
+      "max": 32767,
+      "label": "w",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "iec104_parameter_profile": "INTEROPERABILITY_BASELINE"
+          },
+          "value": 8,
+          "source": "https://library.e.abb.com/public/61bef3eada2edfb8c1257b130056cca1/COM600_3.5_IEC_60870-5-104_Master_OPC_usg_756704_ENc.pdf",
+          "source_revision": "COM6003.5 1MRS756704C 2011-06-30 sections3.4.3/3.4.4 and interoperability appendix pp69-70; vendor configuration versus baseline recommendations"
+        },
+        {
+          "when": {
+            "iec104_implementation": "LIB60870_C_2_3_2",
+            "iec104_parameter_profile": "FACTORY_PROFILE"
+          },
+          "value": 8,
+          "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs104/cs104_connection.c",
+          "source_revision": "lib60870C pinned tagv2.3.2 CS104 client/APCI defaults and frame/state counters"
+        },
+        {
+          "when": {
+            "iec104_implementation": "ABB_COM600_3_5",
+            "iec104_parameter_profile": "FACTORY_PROFILE"
+          },
+          "value": 8,
+          "source": "https://library.e.abb.com/public/61bef3eada2edfb8c1257b130056cca1/COM600_3.5_IEC_60870-5-104_Master_OPC_usg_756704_ENc.pdf",
+          "source_revision": "COM6003.5 1MRS756704C 2011-06-30 sections3.4.3/3.4.4 and interoperability appendix pp69-70; vendor configuration versus baseline recommendations"
+        }
+      ]
+    },
+    "iec104_t0_ms": {
+      "type": "number",
+      "description": "Actual Connection establishment timeout, separate from reconnect interval. Baseline and factory t0 differ.",
+      "source": "https://library.e.abb.com/public/61bef3eada2edfb8c1257b130056cca1/COM600_3.5_IEC_60870-5-104_Master_OPC_usg_756704_ENc.pdf",
+      "source_revision": "COM6003.5 1MRS756704C 2011-06-30 sections3.4.3/3.4.4 and interoperability appendix pp69-70; vendor configuration versus baseline recommendations",
+      "unit": "ms",
+      "min": 0,
+      "label": "t0 ms",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "iec104_parameter_profile": "INTEROPERABILITY_BASELINE"
+          },
+          "value": 30000,
+          "source": "https://library.e.abb.com/public/61bef3eada2edfb8c1257b130056cca1/COM600_3.5_IEC_60870-5-104_Master_OPC_usg_756704_ENc.pdf",
+          "source_revision": "COM6003.5 1MRS756704C 2011-06-30 sections3.4.3/3.4.4 and interoperability appendix pp69-70; vendor configuration versus baseline recommendations"
+        },
+        {
+          "when": {
+            "iec104_implementation": "LIB60870_C_2_3_2",
+            "iec104_parameter_profile": "FACTORY_PROFILE"
+          },
+          "value": 10000,
+          "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs104/cs104_connection.c",
+          "source_revision": "lib60870C pinned tagv2.3.2 CS104 client/APCI defaults and frame/state counters"
+        }
+      ]
+    },
+    "iec104_t1_ms": {
+      "type": "number",
+      "description": "Actual I-format/U-test acknowledgment timeout; not application command acceptance. Baseline and factory t0 differ.",
+      "source": "https://library.e.abb.com/public/61bef3eada2edfb8c1257b130056cca1/COM600_3.5_IEC_60870-5-104_Master_OPC_usg_756704_ENc.pdf",
+      "source_revision": "COM6003.5 1MRS756704C 2011-06-30 sections3.4.3/3.4.4 and interoperability appendix pp69-70; vendor configuration versus baseline recommendations",
+      "unit": "ms",
+      "min": 0,
+      "label": "t1 ms",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "iec104_parameter_profile": "INTEROPERABILITY_BASELINE"
+          },
+          "value": 15000,
+          "source": "https://library.e.abb.com/public/61bef3eada2edfb8c1257b130056cca1/COM600_3.5_IEC_60870-5-104_Master_OPC_usg_756704_ENc.pdf",
+          "source_revision": "COM6003.5 1MRS756704C 2011-06-30 sections3.4.3/3.4.4 and interoperability appendix pp69-70; vendor configuration versus baseline recommendations"
+        },
+        {
+          "when": {
+            "iec104_implementation": "LIB60870_C_2_3_2",
+            "iec104_parameter_profile": "FACTORY_PROFILE"
+          },
+          "value": 15000,
+          "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs104/cs104_connection.c",
+          "source_revision": "lib60870C pinned tagv2.3.2 CS104 client/APCI defaults and frame/state counters"
+        },
+        {
+          "when": {
+            "iec104_implementation": "ABB_COM600_3_5",
+            "iec104_parameter_profile": "FACTORY_PROFILE"
+          },
+          "value": 15000,
+          "source": "https://library.e.abb.com/public/61bef3eada2edfb8c1257b130056cca1/COM600_3.5_IEC_60870-5-104_Master_OPC_usg_756704_ENc.pdf",
+          "source_revision": "COM6003.5 1MRS756704C 2011-06-30 sections3.4.3/3.4.4 and interoperability appendix pp69-70; vendor configuration versus baseline recommendations"
+        }
+      ]
+    },
+    "iec104_t2_ms": {
+      "type": "number",
+      "description": "Actual Delayed I-format acknowledgment timeout, strictly less than t1. Baseline and factory t0 differ.",
+      "source": "https://library.e.abb.com/public/61bef3eada2edfb8c1257b130056cca1/COM600_3.5_IEC_60870-5-104_Master_OPC_usg_756704_ENc.pdf",
+      "source_revision": "COM6003.5 1MRS756704C 2011-06-30 sections3.4.3/3.4.4 and interoperability appendix pp69-70; vendor configuration versus baseline recommendations",
+      "unit": "ms",
+      "min": 0,
+      "label": "t2 ms",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "iec104_parameter_profile": "INTEROPERABILITY_BASELINE"
+          },
+          "value": 10000,
+          "source": "https://library.e.abb.com/public/61bef3eada2edfb8c1257b130056cca1/COM600_3.5_IEC_60870-5-104_Master_OPC_usg_756704_ENc.pdf",
+          "source_revision": "COM6003.5 1MRS756704C 2011-06-30 sections3.4.3/3.4.4 and interoperability appendix pp69-70; vendor configuration versus baseline recommendations"
+        },
+        {
+          "when": {
+            "iec104_implementation": "LIB60870_C_2_3_2",
+            "iec104_parameter_profile": "FACTORY_PROFILE"
+          },
+          "value": 10000,
+          "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs104/cs104_connection.c",
+          "source_revision": "lib60870C pinned tagv2.3.2 CS104 client/APCI defaults and frame/state counters"
+        },
+        {
+          "when": {
+            "iec104_implementation": "ABB_COM600_3_5",
+            "iec104_parameter_profile": "FACTORY_PROFILE"
+          },
+          "value": 10000,
+          "source": "https://library.e.abb.com/public/61bef3eada2edfb8c1257b130056cca1/COM600_3.5_IEC_60870-5-104_Master_OPC_usg_756704_ENc.pdf",
+          "source_revision": "COM6003.5 1MRS756704C 2011-06-30 sections3.4.3/3.4.4 and interoperability appendix pp69-70; vendor configuration versus baseline recommendations"
+        }
+      ]
+    },
+    "iec104_t3_ms": {
+      "type": "number",
+      "description": "Actual Idle link-test interval; disabling tests requires a device-qualified policy. Baseline and factory t0 differ.",
+      "source": "https://library.e.abb.com/public/61bef3eada2edfb8c1257b130056cca1/COM600_3.5_IEC_60870-5-104_Master_OPC_usg_756704_ENc.pdf",
+      "source_revision": "COM6003.5 1MRS756704C 2011-06-30 sections3.4.3/3.4.4 and interoperability appendix pp69-70; vendor configuration versus baseline recommendations",
+      "unit": "ms",
+      "min": 0,
+      "label": "t3 ms",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "iec104_parameter_profile": "INTEROPERABILITY_BASELINE"
+          },
+          "value": 20000,
+          "source": "https://library.e.abb.com/public/61bef3eada2edfb8c1257b130056cca1/COM600_3.5_IEC_60870-5-104_Master_OPC_usg_756704_ENc.pdf",
+          "source_revision": "COM6003.5 1MRS756704C 2011-06-30 sections3.4.3/3.4.4 and interoperability appendix pp69-70; vendor configuration versus baseline recommendations"
+        },
+        {
+          "when": {
+            "iec104_implementation": "LIB60870_C_2_3_2",
+            "iec104_parameter_profile": "FACTORY_PROFILE"
+          },
+          "value": 20000,
+          "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs104/cs104_connection.c",
+          "source_revision": "lib60870C pinned tagv2.3.2 CS104 client/APCI defaults and frame/state counters"
+        },
+        {
+          "when": {
+            "iec104_implementation": "ABB_COM600_3_5",
+            "iec104_parameter_profile": "FACTORY_PROFILE"
+          },
+          "value": 20000,
+          "source": "https://library.e.abb.com/public/61bef3eada2edfb8c1257b130056cca1/COM600_3.5_IEC_60870-5-104_Master_OPC_usg_756704_ENc.pdf",
+          "source_revision": "COM6003.5 1MRS756704C 2011-06-30 sections3.4.3/3.4.4 and interoperability appendix pp69-70; vendor configuration versus baseline recommendations"
+        }
+      ]
+    },
+    "iec104_reconnect_ms": {
+      "type": "number",
+      "description": "Actual connection retry interval, distinct from t0 and TCP retransmission.",
+      "source": "https://library.e.abb.com/public/61bef3eada2edfb8c1257b130056cca1/COM600_3.5_IEC_60870-5-104_Master_OPC_usg_756704_ENc.pdf",
+      "source_revision": "COM6003.5 1MRS756704C 2011-06-30 sections3.4.3/3.4.4 and interoperability appendix pp69-70; vendor configuration versus baseline recommendations",
+      "unit": "ms",
+      "min": 0,
+      "label": "reconnect ms",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "iec104_implementation": "ABB_COM600_3_5",
+            "iec104_parameter_profile": "FACTORY_PROFILE"
+          },
+          "value": 30000,
+          "source": "https://library.e.abb.com/public/61bef3eada2edfb8c1257b130056cca1/COM600_3.5_IEC_60870-5-104_Master_OPC_usg_756704_ENc.pdf",
+          "source_revision": "COM6003.5 1MRS756704C 2011-06-30 sections3.4.3/3.4.4 and interoperability appendix pp69-70; vendor configuration versus baseline recommendations"
+        }
+      ]
+    },
+    "iec104_command_confirmation_ms": {
+      "type": "number",
+      "description": "Actual application ACT_CON response bound, not t1.",
+      "source": "https://library.e.abb.com/public/61bef3eada2edfb8c1257b130056cca1/COM600_3.5_IEC_60870-5-104_Master_OPC_usg_756704_ENc.pdf",
+      "source_revision": "COM6003.5 1MRS756704C 2011-06-30 sections3.4.3/3.4.4 and interoperability appendix pp69-70; vendor configuration versus baseline recommendations",
+      "unit": "ms",
+      "min": 0,
+      "label": "command confirmation ms",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "iec104_implementation": "ABB_COM600_3_5",
+            "iec104_parameter_profile": "FACTORY_PROFILE"
+          },
+          "value": 10000,
+          "source": "https://library.e.abb.com/public/61bef3eada2edfb8c1257b130056cca1/COM600_3.5_IEC_60870-5-104_Master_OPC_usg_756704_ENc.pdf",
+          "source_revision": "COM6003.5 1MRS756704C 2011-06-30 sections3.4.3/3.4.4 and interoperability appendix pp69-70; vendor configuration versus baseline recommendations"
+        }
+      ]
+    },
+    "iec104_command_termination_ms": {
+      "type": "number",
+      "description": "Actual application ACT_TERM bound when termination is required.",
+      "source": "https://library.e.abb.com/public/61bef3eada2edfb8c1257b130056cca1/COM600_3.5_IEC_60870-5-104_Master_OPC_usg_756704_ENc.pdf",
+      "source_revision": "COM6003.5 1MRS756704C 2011-06-30 sections3.4.3/3.4.4 and interoperability appendix pp69-70; vendor configuration versus baseline recommendations",
+      "unit": "ms",
+      "min": 0,
+      "label": "command termination ms",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "iec104_implementation": "ABB_COM600_3_5",
+            "iec104_parameter_profile": "FACTORY_PROFILE"
+          },
+          "value": 60000,
+          "source": "https://library.e.abb.com/public/61bef3eada2edfb8c1257b130056cca1/COM600_3.5_IEC_60870-5-104_Master_OPC_usg_756704_ENc.pdf",
+          "source_revision": "COM6003.5 1MRS756704C 2011-06-30 sections3.4.3/3.4.4 and interoperability appendix pp69-70; vendor configuration versus baseline recommendations"
+        }
+      ]
+    },
+    "iec104_termination_required": {
+      "type": "boolean",
+      "description": "Actual application procedure expects ACT_TERM; omission needs peer/device evidence.",
+      "source": "https://library.e.abb.com/public/61bef3eada2edfb8c1257b130056cca1/COM600_3.5_IEC_60870-5-104_Master_OPC_usg_756704_ENc.pdf",
+      "source_revision": "COM6003.5 1MRS756704C 2011-06-30 sections3.4.3/3.4.4 and interoperability appendix pp69-70; vendor configuration versus baseline recommendations",
+      "label": "termination required",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "iec104_implementation": "ABB_COM600_3_5",
+            "iec104_parameter_profile": "FACTORY_PROFILE"
+          },
+          "value": true,
+          "source": "https://library.e.abb.com/public/61bef3eada2edfb8c1257b130056cca1/COM600_3.5_IEC_60870-5-104_Master_OPC_usg_756704_ENc.pdf",
+          "source_revision": "COM6003.5 1MRS756704C 2011-06-30 sections3.4.3/3.4.4 and interoperability appendix pp69-70; vendor configuration versus baseline recommendations"
+        }
+      ]
+    },
+    "iec104_parallel_commands": {
+      "type": "boolean",
+      "description": "Actual allowed concurrent application commands, independent from APCI k window.",
+      "source": "https://library.e.abb.com/public/61bef3eada2edfb8c1257b130056cca1/COM600_3.5_IEC_60870-5-104_Master_OPC_usg_756704_ENc.pdf",
+      "source_revision": "COM6003.5 1MRS756704C 2011-06-30 sections3.4.3/3.4.4 and interoperability appendix pp69-70; vendor configuration versus baseline recommendations",
+      "label": "parallel commands",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "iec104_implementation": "ABB_COM600_3_5",
+            "iec104_parameter_profile": "FACTORY_PROFILE"
+          },
+          "value": false,
+          "source": "https://library.e.abb.com/public/61bef3eada2edfb8c1257b130056cca1/COM600_3.5_IEC_60870-5-104_Master_OPC_usg_756704_ENc.pdf",
+          "source_revision": "COM6003.5 1MRS756704C 2011-06-30 sections3.4.3/3.4.4 and interoperability appendix pp69-70; vendor configuration versus baseline recommendations"
+        }
+      ]
+    },
+    "iec104_format": {
+      "type": "select",
+      "description": "Actual I-data, S-acknowledgment or U-control APCI format with own sequence/content rules.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs104/cs104_connection.c",
+      "source_revision": "lib60870C pinned tagv2.3.2 CS104 client/APCI defaults and frame/state counters",
+      "options": [
+        "I",
+        "S",
+        "U"
+      ],
+      "label": "format",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec104_u_function": {
+      "type": "select",
+      "description": "Actual STARTDT/STOPDT/TESTFR activation/confirmation, never equivalent to functional completion.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs104/cs104_connection.c",
+      "source_revision": "lib60870C pinned tagv2.3.2 CS104 client/APCI defaults and frame/state counters",
+      "options": [
+        "STARTDT_ACT",
+        "STARTDT_CON",
+        "STOPDT_ACT",
+        "STOPDT_CON",
+        "TESTFR_ACT",
+        "TESTFR_CON"
+      ],
+      "label": "u function",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec104_transfer_state": {
+      "type": "select",
+      "description": "Actual stopped/starting/started/stopping connection data state.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs104/cs104_connection.c",
+      "source_revision": "lib60870C pinned tagv2.3.2 CS104 client/APCI defaults and frame/state counters",
+      "options": [
+        "STOPPED",
+        "STARTING",
+        "STARTED",
+        "STOPPING"
+      ],
+      "label": "transfer state",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec104_send_sequence": {
+      "type": "number",
+      "description": "Actual15-bit N(S) modulo32768; not CAN arbitration identifier.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs104/cs104_connection.c",
+      "source_revision": "lib60870C pinned tagv2.3.2 CS104 client/APCI defaults and frame/state counters",
+      "min": 0,
+      "max": 32767,
+      "label": "send sequence",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec104_receive_sequence": {
+      "type": "number",
+      "description": "Actual15-bit N(R) modulo32768; acknowledgment refers to APCI sequence, not application acceptance.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs104/cs104_connection.c",
+      "source_revision": "lib60870C pinned tagv2.3.2 CS104 client/APCI defaults and frame/state counters",
+      "min": 0,
+      "max": 32767,
+      "label": "receive sequence",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec104_outstanding_apdus": {
+      "type": "number",
+      "description": "Actual unacknowledged I APDUs bounded by configured k.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs104/cs104_connection.c",
+      "source_revision": "lib60870C pinned tagv2.3.2 CS104 client/APCI defaults and frame/state counters",
+      "min": 0,
+      "max": 32767,
+      "label": "outstanding apdus",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec104_unacknowledged_received": {
+      "type": "number",
+      "description": "Actual receive count awaiting acknowledgment; instantaneous count need not be a queue capacity.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs104/cs104_connection.c",
+      "source_revision": "lib60870C pinned tagv2.3.2 CS104 client/APCI defaults and frame/state counters",
+      "min": 0,
+      "max": 32767,
+      "label": "unacknowledged received",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec104_length_l": {
+      "type": "number",
+      "description": "Actual one-byte length covers4 APCI control bytes plus ASDU; bounded253, separate from2-byte start/length prefix.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs104/cs104_connection.c",
+      "source_revision": "lib60870C pinned tagv2.3.2 CS104 client/APCI defaults and frame/state counters",
+      "unit": "Byte",
+      "min": 4,
+      "max": 253,
+      "label": "length l",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec104_length_limit": {
+      "type": "number",
+      "description": "Actual peer accepted APCI length-L limit; reduced negotiated limit may differ from protocol ceiling253.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs104/cs104_connection.c",
+      "source_revision": "lib60870C pinned tagv2.3.2 CS104 client/APCI defaults and frame/state counters",
+      "unit": "Byte",
+      "min": 4,
+      "max": 253,
+      "label": "length limit",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec104_apdu_bytes": {
+      "type": "number",
+      "description": "Actual complete APDU stream bytes: lengthL+2, at most255; not Ethernet frame or ASDU size.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs104/cs104_connection.c",
+      "source_revision": "lib60870C pinned tagv2.3.2 CS104 client/APCI defaults and frame/state counters",
+      "unit": "Byte",
+      "min": 6,
+      "max": 255,
+      "label": "apdu bytes",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec104_type_id_bytes": {
+      "type": "number",
+      "description": "Actual agreed type_id_bytes width. Baseline1/1/2/2/3; device-agreed reductions need their own interoperability profile.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs101/cs101_asdu.c",
+      "source_revision": "lib60870C tagv2.3.2 shared application-layer ASDU encoder; IEC104 TCP framing remains independent",
+      "unit": "Byte",
+      "min": 1,
+      "max": 1,
+      "label": "type id bytes",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "iec104_implementation": "LIB60870_C_2_3_2",
+            "iec104_parameter_profile": "FACTORY_PROFILE"
+          },
+          "value": 1,
+          "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs104/cs104_connection.c",
+          "source_revision": "lib60870C pinned tagv2.3.2 CS104 client/APCI defaults and frame/state counters"
+        }
+      ]
+    },
+    "iec104_vsq_bytes": {
+      "type": "number",
+      "description": "Actual agreed vsq_bytes width. Baseline1/1/2/2/3; device-agreed reductions need their own interoperability profile.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs101/cs101_asdu.c",
+      "source_revision": "lib60870C tagv2.3.2 shared application-layer ASDU encoder; IEC104 TCP framing remains independent",
+      "unit": "Byte",
+      "min": 1,
+      "max": 1,
+      "label": "vsq bytes",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "iec104_implementation": "LIB60870_C_2_3_2",
+            "iec104_parameter_profile": "FACTORY_PROFILE"
+          },
+          "value": 1,
+          "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs104/cs104_connection.c",
+          "source_revision": "lib60870C pinned tagv2.3.2 CS104 client/APCI defaults and frame/state counters"
+        }
+      ]
+    },
+    "iec104_cot_bytes": {
+      "type": "number",
+      "description": "Actual agreed cot_bytes width. Baseline1/1/2/2/3; device-agreed reductions need their own interoperability profile.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs101/cs101_asdu.c",
+      "source_revision": "lib60870C tagv2.3.2 shared application-layer ASDU encoder; IEC104 TCP framing remains independent",
+      "unit": "Byte",
+      "min": 1,
+      "max": 2,
+      "label": "cot bytes",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "iec104_implementation": "LIB60870_C_2_3_2",
+            "iec104_parameter_profile": "FACTORY_PROFILE"
+          },
+          "value": 2,
+          "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs104/cs104_connection.c",
+          "source_revision": "lib60870C pinned tagv2.3.2 CS104 client/APCI defaults and frame/state counters"
+        },
+        {
+          "when": {
+            "iec104_implementation": "ABB_COM600_3_5",
+            "iec104_parameter_profile": "FACTORY_PROFILE"
+          },
+          "value": 2,
+          "source": "https://library.e.abb.com/public/61bef3eada2edfb8c1257b130056cca1/COM600_3.5_IEC_60870-5-104_Master_OPC_usg_756704_ENc.pdf",
+          "source_revision": "COM6003.5 1MRS756704C 2011-06-30 sections3.4.3/3.4.4 and interoperability appendix pp69-70; vendor configuration versus baseline recommendations"
+        }
+      ]
+    },
+    "iec104_ca_bytes": {
+      "type": "number",
+      "description": "Actual agreed ca_bytes width. Baseline1/1/2/2/3; device-agreed reductions need their own interoperability profile.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs101/cs101_asdu.c",
+      "source_revision": "lib60870C tagv2.3.2 shared application-layer ASDU encoder; IEC104 TCP framing remains independent",
+      "unit": "Byte",
+      "min": 1,
+      "max": 2,
+      "label": "ca bytes",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "iec104_implementation": "LIB60870_C_2_3_2",
+            "iec104_parameter_profile": "FACTORY_PROFILE"
+          },
+          "value": 2,
+          "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs104/cs104_connection.c",
+          "source_revision": "lib60870C pinned tagv2.3.2 CS104 client/APCI defaults and frame/state counters"
+        },
+        {
+          "when": {
+            "iec104_implementation": "ABB_COM600_3_5",
+            "iec104_parameter_profile": "FACTORY_PROFILE"
+          },
+          "value": 2,
+          "source": "https://library.e.abb.com/public/61bef3eada2edfb8c1257b130056cca1/COM600_3.5_IEC_60870-5-104_Master_OPC_usg_756704_ENc.pdf",
+          "source_revision": "COM6003.5 1MRS756704C 2011-06-30 sections3.4.3/3.4.4 and interoperability appendix pp69-70; vendor configuration versus baseline recommendations"
+        }
+      ]
+    },
+    "iec104_ioa_bytes": {
+      "type": "number",
+      "description": "Actual agreed ioa_bytes width. Baseline1/1/2/2/3; device-agreed reductions need their own interoperability profile.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs101/cs101_asdu.c",
+      "source_revision": "lib60870C tagv2.3.2 shared application-layer ASDU encoder; IEC104 TCP framing remains independent",
+      "unit": "Byte",
+      "min": 1,
+      "max": 3,
+      "label": "ioa bytes",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "iec104_implementation": "LIB60870_C_2_3_2",
+            "iec104_parameter_profile": "FACTORY_PROFILE"
+          },
+          "value": 3,
+          "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs104/cs104_connection.c",
+          "source_revision": "lib60870C pinned tagv2.3.2 CS104 client/APCI defaults and frame/state counters"
+        },
+        {
+          "when": {
+            "iec104_implementation": "ABB_COM600_3_5",
+            "iec104_parameter_profile": "FACTORY_PROFILE"
+          },
+          "value": 3,
+          "source": "https://library.e.abb.com/public/61bef3eada2edfb8c1257b130056cca1/COM600_3.5_IEC_60870-5-104_Master_OPC_usg_756704_ENc.pdf",
+          "source_revision": "COM6003.5 1MRS756704C 2011-06-30 sections3.4.3/3.4.4 and interoperability appendix pp69-70; vendor configuration versus baseline recommendations"
+        }
+      ]
+    },
+    "iec104_common_address": {
+      "type": "number",
+      "description": "Actual ASDU common address for configured width.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs101/cs101_asdu.c",
+      "source_revision": "lib60870C tagv2.3.2 shared application-layer ASDU encoder; IEC104 TCP framing remains independent",
+      "min": 0,
+      "max": 65535,
+      "label": "common address",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec104_originator": {
+      "type": "number",
+      "description": "Actual originator when COT2; absent under COT1.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs101/cs101_asdu.c",
+      "source_revision": "lib60870C tagv2.3.2 shared application-layer ASDU encoder; IEC104 TCP framing remains independent",
+      "min": 0,
+      "max": 255,
+      "label": "originator",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec104_first_ioa": {
+      "type": "number",
+      "description": "Actual first information object address for configured1/2/3-byte width.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs101/cs101_asdu.c",
+      "source_revision": "lib60870C tagv2.3.2 shared application-layer ASDU encoder; IEC104 TCP framing remains independent",
+      "min": 0,
+      "max": 16777215,
+      "label": "first ioa",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec104_type_id": {
+      "type": "number",
+      "description": "Actual ASDU type ID/private type with encoding evidence.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs101/cs101_asdu.c",
+      "source_revision": "lib60870C tagv2.3.2 shared application-layer ASDU encoder; IEC104 TCP framing remains independent",
+      "min": 1,
+      "max": 255,
+      "label": "type id",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec104_cot": {
+      "type": "number",
+      "description": "Actual6-bit cause of transmission; negative/test flags remain separate.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs101/cs101_asdu.c",
+      "source_revision": "lib60870C tagv2.3.2 shared application-layer ASDU encoder; IEC104 TCP framing remains independent",
+      "min": 0,
+      "max": 63,
+      "label": "cot",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec104_object_count": {
+      "type": "number",
+      "description": "Actual VSQ7-bit information object count; SQ sequence addresses must remain within width.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs101/cs101_asdu.c",
+      "source_revision": "lib60870C tagv2.3.2 shared application-layer ASDU encoder; IEC104 TCP framing remains independent",
+      "min": 0,
+      "max": 127,
+      "label": "object count",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec104_test": {
+      "type": "boolean",
+      "description": "Actual ASDU test flag.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs101/cs101_asdu.c",
+      "source_revision": "lib60870C tagv2.3.2 shared application-layer ASDU encoder; IEC104 TCP framing remains independent",
+      "label": "test",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec104_negative": {
+      "type": "boolean",
+      "description": "Actual ASDU negative-confirmation flag.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs101/cs101_asdu.c",
+      "source_revision": "lib60870C tagv2.3.2 shared application-layer ASDU encoder; IEC104 TCP framing remains independent",
+      "label": "negative",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec104_sequence": {
+      "type": "boolean",
+      "description": "Actual SQ contiguous objects/one IOA versus individually addressed objects.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs101/cs101_asdu.c",
+      "source_revision": "lib60870C tagv2.3.2 shared application-layer ASDU encoder; IEC104 TCP framing remains independent",
+      "label": "sequence",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec104_object_layout": {
+      "type": "select",
+      "description": "Actual fixed-size objects versus explicitly encoded private/variable objects.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs101/cs101_asdu.c",
+      "source_revision": "lib60870C tagv2.3.2 shared application-layer ASDU encoder; IEC104 TCP framing remains independent",
+      "options": [
+        "FIXED_OBJECT_SIZE",
+        "EXPLICIT_ENCODED"
+      ],
+      "label": "object layout",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec104_object_bytes": {
+      "type": "number",
+      "description": "Actual encoded fixed object size including quality/time, excluding IOA.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs101/cs101_asdu.c",
+      "source_revision": "lib60870C tagv2.3.2 shared application-layer ASDU encoder; IEC104 TCP framing remains independent",
+      "unit": "Byte",
+      "min": 0,
+      "label": "object bytes",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec104_objects_encoded_bytes": {
+      "type": "number",
+      "description": "Actual full object encoding including required IOAs.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs101/cs101_asdu.c",
+      "source_revision": "lib60870C tagv2.3.2 shared application-layer ASDU encoder; IEC104 TCP framing remains independent",
+      "unit": "Byte",
+      "min": 0,
+      "label": "objects encoded bytes",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec104_asdu_bytes": {
+      "type": "number",
+      "description": "Actual ASDU header plus information objects; max249 separate from lengthL253/APDU255.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs101/cs101_asdu.c",
+      "source_revision": "lib60870C tagv2.3.2 shared application-layer ASDU encoder; IEC104 TCP framing remains independent",
+      "unit": "Byte",
+      "min": 0,
+      "max": 249,
+      "label": "asdu bytes",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec104_asdu_limit": {
+      "type": "number",
+      "description": "Actual peer accepted ASDU limit; constructor249 does not prove a custom peer supports that value.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs104/cs104_connection.c",
+      "source_revision": "lib60870C pinned tagv2.3.2 CS104 client/APCI defaults and frame/state counters",
+      "unit": "Byte",
+      "min": 1,
+      "max": 249,
+      "label": "asdu limit",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "iec104_implementation": "LIB60870_C_2_3_2",
+            "iec104_parameter_profile": "FACTORY_PROFILE"
+          },
+          "value": 249,
+          "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs104/cs104_connection.c",
+          "source_revision": "lib60870C pinned tagv2.3.2 CS104 client/APCI defaults and frame/state counters"
+        }
+      ]
+    },
+    "iec104_abb_message_limit_bytes": {
+      "type": "number",
+      "description": "Actual COM600 Maximum Message Length setting; documentation gives230 default but does not resolve full-APDU versus length-L versus ASDU scope.",
+      "source": "https://library.e.abb.com/public/61bef3eada2edfb8c1257b130056cca1/COM600_3.5_IEC_60870-5-104_Master_OPC_usg_756704_ENc.pdf",
+      "source_revision": "COM6003.5 1MRS756704C 2011-06-30 sections3.4.3/3.4.4 and interoperability appendix pp69-70; vendor configuration versus baseline recommendations",
+      "unit": "Byte",
+      "min": 20,
+      "max": 255,
+      "label": "abb message limit bytes",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "iec104_implementation": "ABB_COM600_3_5",
+            "iec104_parameter_profile": "FACTORY_PROFILE"
+          },
+          "value": 230,
+          "source": "https://library.e.abb.com/public/61bef3eada2edfb8c1257b130056cca1/COM600_3.5_IEC_60870-5-104_Master_OPC_usg_756704_ENc.pdf",
+          "source_revision": "COM6003.5 1MRS756704C 2011-06-30 sections3.4.3/3.4.4 and interoperability appendix pp69-70; vendor configuration versus baseline recommendations"
+        }
+      ]
+    },
+    "iec104_abb_message_scope": {
+      "type": "select",
+      "description": "Actual proven mapping of the vendor message length setting; unresolved scope prevents a capacity claim.",
+      "source": "https://library.e.abb.com/public/61bef3eada2edfb8c1257b130056cca1/COM600_3.5_IEC_60870-5-104_Master_OPC_usg_756704_ENc.pdf",
+      "source_revision": "COM6003.5 1MRS756704C 2011-06-30 sections3.4.3/3.4.4 and interoperability appendix pp69-70; vendor configuration versus baseline recommendations",
+      "options": [
+        "UNRESOLVED",
+        "LENGTH_L",
+        "FULL_APDU",
+        "ASDU"
+      ],
+      "label": "abb message scope",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec104_abb_message_scope_source": {
+      "type": "text",
+      "description": "Actual device/revision proof of vendor message-length scope; no silent255-byte payload conversion.",
+      "source": "https://library.e.abb.com/public/61bef3eada2edfb8c1257b130056cca1/COM600_3.5_IEC_60870-5-104_Master_OPC_usg_756704_ENc.pdf",
+      "source_revision": "COM6003.5 1MRS756704C 2011-06-30 sections3.4.3/3.4.4 and interoperability appendix pp69-70; vendor configuration versus baseline recommendations",
+      "label": "abb message scope source",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec104_byte_order": {
+      "type": "select",
+      "description": "Application Mode1 least-significant octet first; type-specific float/text representations still require evidence.",
+      "source": "https://library.e.abb.com/public/61bef3eada2edfb8c1257b130056cca1/COM600_3.5_IEC_60870-5-104_Master_OPC_usg_756704_ENc.pdf",
+      "source_revision": "COM6003.5 1MRS756704C 2011-06-30 sections3.4.3/3.4.4 and interoperability appendix pp69-70; vendor configuration versus baseline recommendations",
+      "options": [
+        "LITTLE_ENDIAN_MODE1"
+      ],
+      "default": "LITTLE_ENDIAN_MODE1",
+      "label": "byte order",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_STANDARD",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec104_time_format": {
+      "type": "select",
+      "description": "Actual NONE/CP24/CP56 ASDU representation, including validity and synchronization semantics.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/user_guide.adoc",
+      "source_revision": "lib60870C tagv2.3.2 user guide labelledv2.3.0 CS104 transport/ASDU/command/redundancy",
+      "options": [
+        "NONE",
+        "CP24TIME2A",
+        "CP56TIME2A"
+      ],
+      "label": "time format",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec104_command_procedure": {
+      "type": "select",
+      "description": "Actual direct-execute or select-before-operate matching both stations.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/user_guide.adoc",
+      "source_revision": "lib60870C tagv2.3.2 user guide labelledv2.3.0 CS104 transport/ASDU/command/redundancy",
+      "options": [
+        "DIRECT_EXECUTE",
+        "SELECT_BEFORE_OPERATE"
+      ],
+      "label": "command procedure",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec104_server_mode": {
+      "type": "select",
+      "description": "Actual library single/per-connection/multiple redundancy groups and distinct queue-retention semantics.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/user_guide.adoc",
+      "source_revision": "lib60870C tagv2.3.2 user guide labelledv2.3.0 CS104 transport/ASDU/command/redundancy",
+      "options": [
+        "SINGLE_REDUNDANCY_GROUP",
+        "CONNECTION_IS_GROUP",
+        "MULTIPLE_REDUNDANCY_GROUPS"
+      ],
+      "label": "server mode",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "iec104_implementation": "LIB60870_C_2_3_2",
+            "iec104_parameter_profile": "FACTORY_PROFILE",
+            "iec104_role": "CONTROLLED"
+          },
+          "value": "SINGLE_REDUNDANCY_GROUP",
+          "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs104/cs104_slave.c"
+        }
+      ]
+    },
+    "iec104_group_count": {
+      "type": "number",
+      "description": "Actual group_count for configured server/group; no queue256, topology or connection count fabricated.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs104/cs104_slave.c",
+      "source_revision": "lib60870C pinned tagv2.3.2 CS104 server defaults, TLS port and redundancy queues",
+      "min": 0,
+      "label": "group count",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec104_active_connections": {
+      "type": "number",
+      "description": "Actual active_connections for configured server/group; no queue256, topology or connection count fabricated.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs104/cs104_slave.c",
+      "source_revision": "lib60870C pinned tagv2.3.2 CS104 server defaults, TLS port and redundancy queues",
+      "min": 0,
+      "label": "active connections",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec104_active_per_group": {
+      "type": "number",
+      "description": "Actual active_per_group for configured server/group; no queue256, topology or connection count fabricated.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs104/cs104_slave.c",
+      "source_revision": "lib60870C pinned tagv2.3.2 CS104 server defaults, TLS port and redundancy queues",
+      "min": 0,
+      "label": "active per group",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec104_max_connections": {
+      "type": "number",
+      "description": "Actual max_connections for configured server/group; no queue256, topology or connection count fabricated.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs104/cs104_slave.c",
+      "source_revision": "lib60870C pinned tagv2.3.2 CS104 server defaults, TLS port and redundancy queues",
+      "min": 0,
+      "label": "max connections",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec104_low_queue": {
+      "type": "number",
+      "description": "Actual low_queue for configured server/group; no queue256, topology or connection count fabricated.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs104/cs104_slave.c",
+      "source_revision": "lib60870C pinned tagv2.3.2 CS104 server defaults, TLS port and redundancy queues",
+      "min": 0,
+      "label": "low queue",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec104_high_queue": {
+      "type": "number",
+      "description": "Actual high_queue for configured server/group; no queue256, topology or connection count fabricated.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs104/cs104_slave.c",
+      "source_revision": "lib60870C pinned tagv2.3.2 CS104 server defaults, TLS port and redundancy queues",
+      "min": 0,
+      "label": "high queue",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec104_low_queue_overflow": {
+      "type": "select",
+      "description": "Actual event retention/overflow policy; lib drops oldest low-priority event when full.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/user_guide.adoc",
+      "source_revision": "lib60870C tagv2.3.2 user guide labelledv2.3.0 CS104 transport/ASDU/command/redundancy",
+      "options": [
+        "DROP_OLDEST",
+        "DEVICE_POLICY"
+      ],
+      "label": "low queue overflow",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "iec104_implementation": "LIB60870_C_2_3_2",
+            "iec104_parameter_profile": "FACTORY_PROFILE",
+            "iec104_role": "CONTROLLED"
+          },
+          "value": "DROP_OLDEST",
+          "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/user_guide.adoc"
+        }
+      ]
+    },
+    "iec104_tcp_segment_bytes": {
+      "type": "number",
+      "description": "Actual stream segmentation/reassembly bound from lower TCP profile; APDUs may span/coalesce segments.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/user_guide.adoc",
+      "source_revision": "lib60870C tagv2.3.2 user guide labelledv2.3.0 CS104 transport/ASDU/command/redundancy",
+      "unit": "Byte",
+      "min": 1,
+      "label": "tcp segment bytes",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec104_tls_record_bytes": {
+      "type": "number",
+      "description": "Actual negotiated TLS wire record size including security overhead; not constant Ethernet overhead.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/user_guide.adoc",
+      "source_revision": "lib60870C tagv2.3.2 user guide labelledv2.3.0 CS104 transport/ASDU/command/redundancy",
+      "unit": "Byte",
+      "min": 1,
+      "label": "tls record bytes",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    }
+  },
+  "mechanisms": {
+    "framing": [
+      "APCI_I_S_U_AND_EXPLICIT_ASDU"
+    ],
+    "addressing": [
+      "TCP_ENDPOINT_AND_CA_IOA_SEPARATE"
+    ],
+    "arbitration": [
+      "BOUND_TCP_PATH_AND_APCI_WINDOWS"
+    ],
+    "integrity": [
+      "BOUND_TCP_TLS_AND_APPLICATION_QUALITY"
+    ],
+    "acceptance": [
+      "TCP_ACK_APCI_ACK_ACT_CON_ACT_TERM_SEPARATE"
+    ]
+  },
+  "parameter_constraints": [
+    {
+      "parameter": "iec104_t2_ms",
+      "when": {},
+      "source": "https://library.e.abb.com/public/61bef3eada2edfb8c1257b130056cca1/COM600_3.5_IEC_60870-5-104_Master_OPC_usg_756704_ENc.pdf",
+      "source_revision": "COM6003.5 1MRS756704C 2011-06-30 sections3.4.3/3.4.4 and interoperability appendix pp69-70; vendor configuration versus baseline recommendations",
+      "maximum_expression": {
+        "subtract": [
+          "iec104_t1_ms",
+          1
+        ]
+      }
+    },
+    {
+      "parameter": "iec104_lib_int_bits",
+      "when": {
+        "iec104_implementation": "LIB60870_C_2_3_2"
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/inc/api/iec60870_common.h",
+      "source_revision": "lib60870C tagv2.3.2 application/APCI parameter declarations and units",
+      "required": true,
+      "allowed": [
+        16,
+        32,
+        64
+      ]
+    },
+    {
+      "parameter": "iec104_abi_source",
+      "when": {
+        "iec104_implementation": "LIB60870_C_2_3_2"
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/inc/api/iec60870_common.h",
+      "source_revision": "lib60870C tagv2.3.2 application/APCI parameter declarations and units",
+      "required": true
+    },
+    {
+      "parameter": "iec104_t0_ms",
+      "when": {
+        "iec104_parameter_profile": "INTEROPERABILITY_BASELINE"
+      },
+      "source": "https://library.e.abb.com/public/61bef3eada2edfb8c1257b130056cca1/COM600_3.5_IEC_60870-5-104_Master_OPC_usg_756704_ENc.pdf",
+      "source_revision": "COM6003.5 1MRS756704C 2011-06-30 sections3.4.3/3.4.4 and interoperability appendix pp69-70; vendor configuration versus baseline recommendations",
+      "minimum": 1000,
+      "maximum": 255000,
+      "multiple_of": 1000
+    },
+    {
+      "parameter": "iec104_t0_ms",
+      "when": {
+        "iec104_implementation": "LIB60870_C_2_3_2"
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs104/cs104_connection.c",
+      "source_revision": "lib60870C pinned tagv2.3.2 CS104 client/APCI defaults and frame/state counters",
+      "minimum": 1000,
+      "multiple_of": 1000
+    },
+    {
+      "parameter": "iec104_t0_ms",
+      "when": {
+        "iec104_implementation": "LIB60870_C_2_3_2",
+        "iec104_lib_int_bits": 16
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/inc/api/iec60870_common.h",
+      "source_revision": "lib60870C tagv2.3.2 application/APCI parameter declarations and units",
+      "maximum": 32767
+    },
+    {
+      "parameter": "iec104_t0_ms",
+      "when": {
+        "iec104_implementation": "LIB60870_C_2_3_2",
+        "iec104_lib_int_bits": 32
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/inc/api/iec60870_common.h",
+      "source_revision": "lib60870C tagv2.3.2 application/APCI parameter declarations and units",
+      "maximum": 2147483647
+    },
+    {
+      "parameter": "iec104_t0_ms",
+      "when": {
+        "iec104_implementation": "LIB60870_C_2_3_2",
+        "iec104_lib_int_bits": 64
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/inc/api/iec60870_common.h",
+      "source_revision": "lib60870C tagv2.3.2 application/APCI parameter declarations and units",
+      "maximum": 9223372036854775807
+    },
+    {
+      "parameter": "iec104_t1_ms",
+      "when": {
+        "iec104_parameter_profile": "INTEROPERABILITY_BASELINE"
+      },
+      "source": "https://library.e.abb.com/public/61bef3eada2edfb8c1257b130056cca1/COM600_3.5_IEC_60870-5-104_Master_OPC_usg_756704_ENc.pdf",
+      "source_revision": "COM6003.5 1MRS756704C 2011-06-30 sections3.4.3/3.4.4 and interoperability appendix pp69-70; vendor configuration versus baseline recommendations",
+      "minimum": 1000,
+      "maximum": 255000,
+      "multiple_of": 1000
+    },
+    {
+      "parameter": "iec104_t1_ms",
+      "when": {
+        "iec104_implementation": "LIB60870_C_2_3_2"
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs104/cs104_connection.c",
+      "source_revision": "lib60870C pinned tagv2.3.2 CS104 client/APCI defaults and frame/state counters",
+      "minimum": 1000,
+      "multiple_of": 1000
+    },
+    {
+      "parameter": "iec104_t1_ms",
+      "when": {
+        "iec104_implementation": "LIB60870_C_2_3_2",
+        "iec104_lib_int_bits": 16
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/inc/api/iec60870_common.h",
+      "source_revision": "lib60870C tagv2.3.2 application/APCI parameter declarations and units",
+      "maximum": 32767
+    },
+    {
+      "parameter": "iec104_t1_ms",
+      "when": {
+        "iec104_implementation": "LIB60870_C_2_3_2",
+        "iec104_lib_int_bits": 32
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/inc/api/iec60870_common.h",
+      "source_revision": "lib60870C tagv2.3.2 application/APCI parameter declarations and units",
+      "maximum": 2147483647
+    },
+    {
+      "parameter": "iec104_t1_ms",
+      "when": {
+        "iec104_implementation": "LIB60870_C_2_3_2",
+        "iec104_lib_int_bits": 64
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/inc/api/iec60870_common.h",
+      "source_revision": "lib60870C tagv2.3.2 application/APCI parameter declarations and units",
+      "maximum": 9223372036854775807
+    },
+    {
+      "parameter": "iec104_t2_ms",
+      "when": {
+        "iec104_parameter_profile": "INTEROPERABILITY_BASELINE"
+      },
+      "source": "https://library.e.abb.com/public/61bef3eada2edfb8c1257b130056cca1/COM600_3.5_IEC_60870-5-104_Master_OPC_usg_756704_ENc.pdf",
+      "source_revision": "COM6003.5 1MRS756704C 2011-06-30 sections3.4.3/3.4.4 and interoperability appendix pp69-70; vendor configuration versus baseline recommendations",
+      "minimum": 1000,
+      "maximum": 255000,
+      "multiple_of": 1000
+    },
+    {
+      "parameter": "iec104_t2_ms",
+      "when": {
+        "iec104_implementation": "LIB60870_C_2_3_2"
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs104/cs104_connection.c",
+      "source_revision": "lib60870C pinned tagv2.3.2 CS104 client/APCI defaults and frame/state counters",
+      "minimum": 1000,
+      "multiple_of": 1000
+    },
+    {
+      "parameter": "iec104_t2_ms",
+      "when": {
+        "iec104_implementation": "LIB60870_C_2_3_2",
+        "iec104_lib_int_bits": 16
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/inc/api/iec60870_common.h",
+      "source_revision": "lib60870C tagv2.3.2 application/APCI parameter declarations and units",
+      "maximum": 32767
+    },
+    {
+      "parameter": "iec104_t2_ms",
+      "when": {
+        "iec104_implementation": "LIB60870_C_2_3_2",
+        "iec104_lib_int_bits": 32
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/inc/api/iec60870_common.h",
+      "source_revision": "lib60870C tagv2.3.2 application/APCI parameter declarations and units",
+      "maximum": 2147483647
+    },
+    {
+      "parameter": "iec104_t2_ms",
+      "when": {
+        "iec104_implementation": "LIB60870_C_2_3_2",
+        "iec104_lib_int_bits": 64
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/inc/api/iec60870_common.h",
+      "source_revision": "lib60870C tagv2.3.2 application/APCI parameter declarations and units",
+      "maximum": 9223372036854775807
+    },
+    {
+      "parameter": "iec104_t3_ms",
+      "when": {
+        "iec104_parameter_profile": "INTEROPERABILITY_BASELINE"
+      },
+      "source": "https://library.e.abb.com/public/61bef3eada2edfb8c1257b130056cca1/COM600_3.5_IEC_60870-5-104_Master_OPC_usg_756704_ENc.pdf",
+      "source_revision": "COM6003.5 1MRS756704C 2011-06-30 sections3.4.3/3.4.4 and interoperability appendix pp69-70; vendor configuration versus baseline recommendations",
+      "minimum": 1000,
+      "maximum": 255000,
+      "multiple_of": 1000
+    },
+    {
+      "parameter": "iec104_t3_ms",
+      "when": {
+        "iec104_implementation": "LIB60870_C_2_3_2"
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs104/cs104_connection.c",
+      "source_revision": "lib60870C pinned tagv2.3.2 CS104 client/APCI defaults and frame/state counters",
+      "minimum": 1000,
+      "multiple_of": 1000
+    },
+    {
+      "parameter": "iec104_t3_ms",
+      "when": {
+        "iec104_implementation": "LIB60870_C_2_3_2",
+        "iec104_lib_int_bits": 16
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/inc/api/iec60870_common.h",
+      "source_revision": "lib60870C tagv2.3.2 application/APCI parameter declarations and units",
+      "maximum": 32767
+    },
+    {
+      "parameter": "iec104_t3_ms",
+      "when": {
+        "iec104_implementation": "LIB60870_C_2_3_2",
+        "iec104_lib_int_bits": 32
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/inc/api/iec60870_common.h",
+      "source_revision": "lib60870C tagv2.3.2 application/APCI parameter declarations and units",
+      "maximum": 2147483647
+    },
+    {
+      "parameter": "iec104_t3_ms",
+      "when": {
+        "iec104_implementation": "LIB60870_C_2_3_2",
+        "iec104_lib_int_bits": 64
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/inc/api/iec60870_common.h",
+      "source_revision": "lib60870C tagv2.3.2 application/APCI parameter declarations and units",
+      "maximum": 9223372036854775807
+    },
+    {
+      "parameter": "iec104_t0_ms",
+      "when": {
+        "iec104_implementation": "ABB_COM600_3_5"
+      },
+      "source": "https://library.e.abb.com/public/61bef3eada2edfb8c1257b130056cca1/COM600_3.5_IEC_60870-5-104_Master_OPC_usg_756704_ENc.pdf",
+      "source_revision": "COM6003.5 1MRS756704C 2011-06-30 sections3.4.3/3.4.4 and interoperability appendix pp69-70; vendor configuration versus baseline recommendations",
+      "maximum": 65535,
+      "multiple_of": 1
+    },
+    {
+      "parameter": "iec104_t1_ms",
+      "when": {
+        "iec104_implementation": "ABB_COM600_3_5"
+      },
+      "source": "https://library.e.abb.com/public/61bef3eada2edfb8c1257b130056cca1/COM600_3.5_IEC_60870-5-104_Master_OPC_usg_756704_ENc.pdf",
+      "source_revision": "COM6003.5 1MRS756704C 2011-06-30 sections3.4.3/3.4.4 and interoperability appendix pp69-70; vendor configuration versus baseline recommendations",
+      "maximum": 255000,
+      "multiple_of": 1000
+    },
+    {
+      "parameter": "iec104_t2_ms",
+      "when": {
+        "iec104_implementation": "ABB_COM600_3_5"
+      },
+      "source": "https://library.e.abb.com/public/61bef3eada2edfb8c1257b130056cca1/COM600_3.5_IEC_60870-5-104_Master_OPC_usg_756704_ENc.pdf",
+      "source_revision": "COM6003.5 1MRS756704C 2011-06-30 sections3.4.3/3.4.4 and interoperability appendix pp69-70; vendor configuration versus baseline recommendations",
+      "maximum": 100000,
+      "multiple_of": 1000
+    },
+    {
+      "parameter": "iec104_t3_ms",
+      "when": {
+        "iec104_implementation": "ABB_COM600_3_5"
+      },
+      "source": "https://library.e.abb.com/public/61bef3eada2edfb8c1257b130056cca1/COM600_3.5_IEC_60870-5-104_Master_OPC_usg_756704_ENc.pdf",
+      "source_revision": "COM6003.5 1MRS756704C 2011-06-30 sections3.4.3/3.4.4 and interoperability appendix pp69-70; vendor configuration versus baseline recommendations",
+      "maximum": 65535000,
+      "multiple_of": 1000
+    },
+    {
+      "parameter": "iec104_reconnect_ms",
+      "when": {
+        "iec104_implementation": "ABB_COM600_3_5"
+      },
+      "source": "https://library.e.abb.com/public/61bef3eada2edfb8c1257b130056cca1/COM600_3.5_IEC_60870-5-104_Master_OPC_usg_756704_ENc.pdf",
+      "source_revision": "COM6003.5 1MRS756704C 2011-06-30 sections3.4.3/3.4.4 and interoperability appendix pp69-70; vendor configuration versus baseline recommendations",
+      "maximum": 255000,
+      "multiple_of": 1000
+    },
+    {
+      "parameter": "iec104_command_confirmation_ms",
+      "when": {
+        "iec104_implementation": "ABB_COM600_3_5"
+      },
+      "source": "https://library.e.abb.com/public/61bef3eada2edfb8c1257b130056cca1/COM600_3.5_IEC_60870-5-104_Master_OPC_usg_756704_ENc.pdf",
+      "source_revision": "COM6003.5 1MRS756704C 2011-06-30 sections3.4.3/3.4.4 and interoperability appendix pp69-70; vendor configuration versus baseline recommendations",
+      "maximum": 255000,
+      "multiple_of": 1000
+    },
+    {
+      "parameter": "iec104_command_termination_ms",
+      "when": {
+        "iec104_implementation": "ABB_COM600_3_5"
+      },
+      "source": "https://library.e.abb.com/public/61bef3eada2edfb8c1257b130056cca1/COM600_3.5_IEC_60870-5-104_Master_OPC_usg_756704_ENc.pdf",
+      "source_revision": "COM6003.5 1MRS756704C 2011-06-30 sections3.4.3/3.4.4 and interoperability appendix pp69-70; vendor configuration versus baseline recommendations",
+      "maximum": 255000,
+      "multiple_of": 1000
+    },
+    {
+      "parameter": "iec104_outstanding_apdus",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs104/cs104_connection.c",
+      "source_revision": "lib60870C pinned tagv2.3.2 CS104 client/APCI defaults and frame/state counters",
+      "maximum_parameter": "iec104_k"
+    },
+    {
+      "parameter": "iec104_length_l",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs104/cs104_connection.c",
+      "source_revision": "lib60870C pinned tagv2.3.2 CS104 client/APCI defaults and frame/state counters",
+      "maximum_parameter": "iec104_length_limit"
+    },
+    {
+      "parameter": "iec104_apdu_bytes",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs104/cs104_connection.c",
+      "source_revision": "lib60870C pinned tagv2.3.2 CS104 client/APCI defaults and frame/state counters",
+      "equal_expression": {
+        "sum": [
+          2,
+          "iec104_length_l"
+        ]
+      }
+    },
+    {
+      "parameter": "iec104_length_l",
+      "when": {
+        "iec104_format": "I"
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs104/cs104_connection.c",
+      "source_revision": "lib60870C pinned tagv2.3.2 CS104 client/APCI defaults and frame/state counters",
+      "equal_expression": {
+        "sum": [
+          4,
+          "iec104_asdu_bytes"
+        ]
+      }
+    },
+    {
+      "parameter": "iec104_transfer_state",
+      "when": {
+        "iec104_format": "I"
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs104/cs104_connection.c",
+      "source_revision": "lib60870C pinned tagv2.3.2 CS104 client/APCI defaults and frame/state counters",
+      "required": true,
+      "allowed": [
+        "STARTED"
+      ]
+    },
+    {
+      "parameter": "iec104_u_function",
+      "when": {
+        "iec104_format": "I"
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs104/cs104_connection.c",
+      "source_revision": "lib60870C pinned tagv2.3.2 CS104 client/APCI defaults and frame/state counters",
+      "allowed": []
+    },
+    {
+      "parameter": "iec104_u_function",
+      "when": {
+        "iec104_format": "S"
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs104/cs104_connection.c",
+      "source_revision": "lib60870C pinned tagv2.3.2 CS104 client/APCI defaults and frame/state counters",
+      "allowed": []
+    },
+    {
+      "parameter": "iec104_u_function",
+      "when": {
+        "iec104_format": "U"
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs104/cs104_connection.c",
+      "source_revision": "lib60870C pinned tagv2.3.2 CS104 client/APCI defaults and frame/state counters",
+      "required": true
+    },
+    {
+      "parameter": "iec104_send_sequence",
+      "when": {
+        "iec104_format": "S"
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs104/cs104_connection.c",
+      "source_revision": "lib60870C pinned tagv2.3.2 CS104 client/APCI defaults and frame/state counters",
+      "allowed": []
+    },
+    {
+      "parameter": "iec104_length_l",
+      "when": {
+        "iec104_format": "S"
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs104/cs104_connection.c",
+      "source_revision": "lib60870C pinned tagv2.3.2 CS104 client/APCI defaults and frame/state counters",
+      "allowed": [
+        4
+      ]
+    },
+    {
+      "parameter": "iec104_asdu_bytes",
+      "when": {
+        "iec104_format": "S"
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs104/cs104_connection.c",
+      "source_revision": "lib60870C pinned tagv2.3.2 CS104 client/APCI defaults and frame/state counters",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "iec104_length_l",
+      "when": {
+        "iec104_format": "U"
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs104/cs104_connection.c",
+      "source_revision": "lib60870C pinned tagv2.3.2 CS104 client/APCI defaults and frame/state counters",
+      "allowed": [
+        4
+      ]
+    },
+    {
+      "parameter": "iec104_asdu_bytes",
+      "when": {
+        "iec104_format": "U"
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs104/cs104_connection.c",
+      "source_revision": "lib60870C pinned tagv2.3.2 CS104 client/APCI defaults and frame/state counters",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "iec104_send_sequence",
+      "when": {
+        "iec104_format": "U"
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs104/cs104_connection.c",
+      "source_revision": "lib60870C pinned tagv2.3.2 CS104 client/APCI defaults and frame/state counters",
+      "allowed": []
+    },
+    {
+      "parameter": "iec104_receive_sequence",
+      "when": {
+        "iec104_format": "U"
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs104/cs104_connection.c",
+      "source_revision": "lib60870C pinned tagv2.3.2 CS104 client/APCI defaults and frame/state counters",
+      "allowed": []
+    },
+    {
+      "parameter": "iec104_common_address",
+      "when": {
+        "iec104_ca_bytes": 1
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs101/cs101_asdu.c",
+      "source_revision": "lib60870C tagv2.3.2 shared application-layer ASDU encoder; IEC104 TCP framing remains independent",
+      "maximum": 255
+    },
+    {
+      "parameter": "iec104_common_address",
+      "when": {
+        "iec104_ca_bytes": 2
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs101/cs101_asdu.c",
+      "source_revision": "lib60870C tagv2.3.2 shared application-layer ASDU encoder; IEC104 TCP framing remains independent",
+      "maximum": 65535
+    },
+    {
+      "parameter": "iec104_originator",
+      "when": {
+        "iec104_cot_bytes": 1
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs101/cs101_asdu.c",
+      "source_revision": "lib60870C tagv2.3.2 shared application-layer ASDU encoder; IEC104 TCP framing remains independent",
+      "allowed": []
+    },
+    {
+      "parameter": "iec104_first_ioa",
+      "when": {
+        "iec104_ioa_bytes": 1
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs101/cs101_asdu.c",
+      "source_revision": "lib60870C tagv2.3.2 shared application-layer ASDU encoder; IEC104 TCP framing remains independent",
+      "maximum": 255
+    },
+    {
+      "parameter": "iec104_first_ioa",
+      "when": {
+        "iec104_ioa_bytes": 1,
+        "iec104_sequence": true
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs101/cs101_asdu.c",
+      "source_revision": "lib60870C tagv2.3.2 shared application-layer ASDU encoder; IEC104 TCP framing remains independent",
+      "maximum_expression": {
+        "subtract": [
+          256,
+          "iec104_object_count"
+        ]
+      }
+    },
+    {
+      "parameter": "iec104_first_ioa",
+      "when": {
+        "iec104_ioa_bytes": 2
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs101/cs101_asdu.c",
+      "source_revision": "lib60870C tagv2.3.2 shared application-layer ASDU encoder; IEC104 TCP framing remains independent",
+      "maximum": 65535
+    },
+    {
+      "parameter": "iec104_first_ioa",
+      "when": {
+        "iec104_ioa_bytes": 2,
+        "iec104_sequence": true
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs101/cs101_asdu.c",
+      "source_revision": "lib60870C tagv2.3.2 shared application-layer ASDU encoder; IEC104 TCP framing remains independent",
+      "maximum_expression": {
+        "subtract": [
+          65536,
+          "iec104_object_count"
+        ]
+      }
+    },
+    {
+      "parameter": "iec104_first_ioa",
+      "when": {
+        "iec104_ioa_bytes": 3
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs101/cs101_asdu.c",
+      "source_revision": "lib60870C tagv2.3.2 shared application-layer ASDU encoder; IEC104 TCP framing remains independent",
+      "maximum": 16777215
+    },
+    {
+      "parameter": "iec104_first_ioa",
+      "when": {
+        "iec104_ioa_bytes": 3,
+        "iec104_sequence": true
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs101/cs101_asdu.c",
+      "source_revision": "lib60870C tagv2.3.2 shared application-layer ASDU encoder; IEC104 TCP framing remains independent",
+      "maximum_expression": {
+        "subtract": [
+          16777216,
+          "iec104_object_count"
+        ]
+      }
+    },
+    {
+      "parameter": "iec104_objects_encoded_bytes",
+      "when": {
+        "iec104_object_layout": "FIXED_OBJECT_SIZE",
+        "iec104_object_count": 0
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs101/cs101_asdu.c",
+      "source_revision": "lib60870C tagv2.3.2 shared application-layer ASDU encoder; IEC104 TCP framing remains independent",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "iec104_objects_encoded_bytes",
+      "when": {
+        "iec104_object_layout": "FIXED_OBJECT_SIZE",
+        "iec104_sequence": true
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs101/cs101_asdu.c",
+      "source_revision": "lib60870C tagv2.3.2 shared application-layer ASDU encoder; IEC104 TCP framing remains independent",
+      "when_positive": [
+        "iec104_object_count"
+      ],
+      "equal_expression": {
+        "sum": [
+          "iec104_ioa_bytes",
+          {
+            "product": [
+              "iec104_object_count",
+              "iec104_object_bytes"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "parameter": "iec104_objects_encoded_bytes",
+      "when": {
+        "iec104_object_layout": "FIXED_OBJECT_SIZE",
+        "iec104_sequence": false
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs101/cs101_asdu.c",
+      "source_revision": "lib60870C tagv2.3.2 shared application-layer ASDU encoder; IEC104 TCP framing remains independent",
+      "equal_expression": {
+        "product": [
+          "iec104_object_count",
+          {
+            "sum": [
+              "iec104_ioa_bytes",
+              "iec104_object_bytes"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "parameter": "iec104_asdu_bytes",
+      "when": {
+        "iec104_format": "I"
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs101/cs101_asdu.c",
+      "source_revision": "lib60870C tagv2.3.2 shared application-layer ASDU encoder; IEC104 TCP framing remains independent",
+      "equal_expression": {
+        "sum": [
+          2,
+          "iec104_cot_bytes",
+          "iec104_ca_bytes",
+          "iec104_objects_encoded_bytes"
+        ]
+      }
+    },
+    {
+      "parameter": "iec104_asdu_bytes",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs101/cs101_asdu.c",
+      "source_revision": "lib60870C tagv2.3.2 shared application-layer ASDU encoder; IEC104 TCP framing remains independent",
+      "maximum_parameter": "iec104_asdu_limit"
+    },
+    {
+      "parameter": "iec104_length_l",
+      "when": {
+        "iec104_implementation": "ABB_COM600_3_5",
+        "iec104_abb_message_scope": "LENGTH_L"
+      },
+      "source": "https://library.e.abb.com/public/61bef3eada2edfb8c1257b130056cca1/COM600_3.5_IEC_60870-5-104_Master_OPC_usg_756704_ENc.pdf",
+      "source_revision": "COM6003.5 1MRS756704C 2011-06-30 sections3.4.3/3.4.4 and interoperability appendix pp69-70; vendor configuration versus baseline recommendations",
+      "maximum_parameter": "iec104_abb_message_limit_bytes"
+    },
+    {
+      "parameter": "iec104_abb_message_scope_source",
+      "when": {
+        "iec104_implementation": "ABB_COM600_3_5",
+        "iec104_abb_message_scope": "LENGTH_L"
+      },
+      "source": "https://library.e.abb.com/public/61bef3eada2edfb8c1257b130056cca1/COM600_3.5_IEC_60870-5-104_Master_OPC_usg_756704_ENc.pdf",
+      "source_revision": "COM6003.5 1MRS756704C 2011-06-30 sections3.4.3/3.4.4 and interoperability appendix pp69-70; vendor configuration versus baseline recommendations",
+      "required": true
+    },
+    {
+      "parameter": "iec104_apdu_bytes",
+      "when": {
+        "iec104_implementation": "ABB_COM600_3_5",
+        "iec104_abb_message_scope": "FULL_APDU"
+      },
+      "source": "https://library.e.abb.com/public/61bef3eada2edfb8c1257b130056cca1/COM600_3.5_IEC_60870-5-104_Master_OPC_usg_756704_ENc.pdf",
+      "source_revision": "COM6003.5 1MRS756704C 2011-06-30 sections3.4.3/3.4.4 and interoperability appendix pp69-70; vendor configuration versus baseline recommendations",
+      "maximum_parameter": "iec104_abb_message_limit_bytes"
+    },
+    {
+      "parameter": "iec104_abb_message_scope_source",
+      "when": {
+        "iec104_implementation": "ABB_COM600_3_5",
+        "iec104_abb_message_scope": "FULL_APDU"
+      },
+      "source": "https://library.e.abb.com/public/61bef3eada2edfb8c1257b130056cca1/COM600_3.5_IEC_60870-5-104_Master_OPC_usg_756704_ENc.pdf",
+      "source_revision": "COM6003.5 1MRS756704C 2011-06-30 sections3.4.3/3.4.4 and interoperability appendix pp69-70; vendor configuration versus baseline recommendations",
+      "required": true
+    },
+    {
+      "parameter": "iec104_asdu_bytes",
+      "when": {
+        "iec104_implementation": "ABB_COM600_3_5",
+        "iec104_abb_message_scope": "ASDU"
+      },
+      "source": "https://library.e.abb.com/public/61bef3eada2edfb8c1257b130056cca1/COM600_3.5_IEC_60870-5-104_Master_OPC_usg_756704_ENc.pdf",
+      "source_revision": "COM6003.5 1MRS756704C 2011-06-30 sections3.4.3/3.4.4 and interoperability appendix pp69-70; vendor configuration versus baseline recommendations",
+      "maximum_parameter": "iec104_abb_message_limit_bytes"
+    },
+    {
+      "parameter": "iec104_abb_message_scope_source",
+      "when": {
+        "iec104_implementation": "ABB_COM600_3_5",
+        "iec104_abb_message_scope": "ASDU"
+      },
+      "source": "https://library.e.abb.com/public/61bef3eada2edfb8c1257b130056cca1/COM600_3.5_IEC_60870-5-104_Master_OPC_usg_756704_ENc.pdf",
+      "source_revision": "COM6003.5 1MRS756704C 2011-06-30 sections3.4.3/3.4.4 and interoperability appendix pp69-70; vendor configuration versus baseline recommendations",
+      "required": true
+    },
+    {
+      "parameter": "iec104_type_source",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs101/cs101_asdu.c",
+      "source_revision": "lib60870C tagv2.3.2 shared application-layer ASDU encoder; IEC104 TCP framing remains independent",
+      "when_present": [
+        "iec104_type_id"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "iec104_tls_source",
+      "when": {
+        "iec104_transport": "TLS_TCP"
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/user_guide.adoc",
+      "source_revision": "lib60870C tagv2.3.2 user guide labelledv2.3.0 CS104 transport/ASDU/command/redundancy",
+      "required": true
+    },
+    {
+      "parameter": "iec104_tls_record_bytes",
+      "when": {
+        "iec104_transport": "TCP"
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/user_guide.adoc",
+      "source_revision": "lib60870C tagv2.3.2 user guide labelledv2.3.0 CS104 transport/ASDU/command/redundancy",
+      "allowed": []
+    },
+    {
+      "parameter": "iec104_command_source",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/user_guide.adoc",
+      "source_revision": "lib60870C tagv2.3.2 user guide labelledv2.3.0 CS104 transport/ASDU/command/redundancy",
+      "when_present": [
+        "iec104_command_procedure"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "iec104_time_source",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/user_guide.adoc",
+      "source_revision": "lib60870C tagv2.3.2 user guide labelledv2.3.0 CS104 transport/ASDU/command/redundancy",
+      "when_present": [
+        "iec104_time_format"
+      ],
+      "when_not": {
+        "iec104_time_format": "NONE"
+      },
+      "required": true
+    },
+    {
+      "parameter": "iec104_active_per_group",
+      "when": {
+        "iec104_server_mode": "SINGLE_REDUNDANCY_GROUP"
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/user_guide.adoc",
+      "source_revision": "lib60870C tagv2.3.2 user guide labelledv2.3.0 CS104 transport/ASDU/command/redundancy",
+      "maximum": 1
+    },
+    {
+      "parameter": "iec104_active_per_group",
+      "when": {
+        "iec104_server_mode": "MULTIPLE_REDUNDANCY_GROUPS"
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/user_guide.adoc",
+      "source_revision": "lib60870C tagv2.3.2 user guide labelledv2.3.0 CS104 transport/ASDU/command/redundancy",
+      "maximum": 1
+    },
+    {
+      "parameter": "iec104_active_connections",
+      "when": {
+        "iec104_server_mode": "SINGLE_REDUNDANCY_GROUP"
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/user_guide.adoc",
+      "source_revision": "lib60870C tagv2.3.2 user guide labelledv2.3.0 CS104 transport/ASDU/command/redundancy",
+      "maximum": 1
+    },
+    {
+      "parameter": "iec104_active_connections",
+      "when": {
+        "iec104_server_mode": "MULTIPLE_REDUNDANCY_GROUPS"
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/user_guide.adoc",
+      "source_revision": "lib60870C tagv2.3.2 user guide labelledv2.3.0 CS104 transport/ASDU/command/redundancy",
+      "maximum_parameter": "iec104_group_count"
+    },
+    {
+      "parameter": "iec104_active_connections",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/user_guide.adoc",
+      "source_revision": "lib60870C tagv2.3.2 user guide labelledv2.3.0 CS104 transport/ASDU/command/redundancy",
+      "maximum_parameter": "iec104_max_connections"
+    },
+    {
+      "parameter": "iec104_redundancy_source",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/user_guide.adoc",
+      "source_revision": "lib60870C tagv2.3.2 user guide labelledv2.3.0 CS104 transport/ASDU/command/redundancy",
+      "when_present": [
+        "iec104_server_mode"
+      ],
+      "required": true
+    }
+  ],
+  "physical_layer_profile_id": null,
+  "medium_access_model": null,
+  "native_parameter_prefixes": [
+    "iec104_"
+  ],
+  "parameter_aliases": {},
+  "parameter_alias_limits": {},
+  "parameter_evidence_scope": null,
+  "rate_source_profile_id": null,
+  "arbitration_model_id": null,
+  "max_payload_bytes": null,
+  "capabilities": {
+    "supports_signals": true,
+    "supports_data_objects": true,
+    "supports_streams": false,
+    "supports_multicast": false,
+    "supports_publish_subscribe": false,
+    "supports_request_response": true,
+    "supports_cyclic": true,
+    "supports_event": true,
+    "supports_redundancy": false,
+    "supports_time_sync": false,
+    "supports_safety_profile": false,
+    "supports_segmentation": false,
+    "supports_fragmentation": false,
+    "supports_qos": false
+  },
+  "deterministic": false,
+  "overhead_bytes": 8,
+  "implementation_status": "PARTIAL",
+  "connection_type": "COMMUNICATION_TECHNOLOGY",
+  "parameter_proposals": {
+    "kind": "DEVICE_DEPENDENT",
+    "status": "REVIEW_REQUIRED",
+    "required_fields": [],
+    "note": "No universal rate is available; inspect the selected hardware/profile."
+  },
+  "capacity_evidence": {
+    "status": "MODEL_MISSING",
+    "frame_model": null,
+    "schedule_model": null,
+    "requires_confirmed_device_parameters": true
+  },
+  "components": {
+    "binding": "iec60870_5_104.binding",
+    "generator": "iec60870_5_104.generator",
+    "validator": "iec60870_5_104.validator",
+    "timing_model": null,
+    "load_model": null,
+    "encoder": "iec60870_5_104.encoder",
+    "decoder": "iec60870_5_104.decoder"
+  },
+  "known_limitations": "Technology-specific conformance details require a vendor/profile extension."
+}

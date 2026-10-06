@@ -38,6 +38,9 @@ class ReturningConnection(FakeConnection):
 def test_reset_workspace_clears_project_scoped_data(monkeypatch) -> None:
     connection = FakeConnection()
     monkeypatch.setattr(project_bundle, "get_connection", lambda: connection)
+    staged_files = []
+    monkeypatch.setattr(project_bundle, 'stage_user_defined_values',
+                        lambda project, values, sql: staged_files.append((project, values, sql)))
     monkeypatch.setattr(
         project_bundle.ProjectBundleService,
         "_refresh_sequences",
@@ -46,6 +49,7 @@ def test_reset_workspace_clears_project_scoped_data(monkeypatch) -> None:
     monkeypatch.setattr(project_bundle.WorkflowStatusService, "get", lambda _self: {"active_step": 1})
 
     result = project_bundle.ProjectBundleService().reset_workspace("test-project")
+    assert staged_files == [('test-project', None, connection)]
 
     project_deletes = [
         (str(query), params)

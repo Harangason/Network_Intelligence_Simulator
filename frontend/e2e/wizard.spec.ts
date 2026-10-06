@@ -57,8 +57,14 @@ async function assertEngineeringPageHealthy(page: Page) {
 
 async function readProject(page: Page, project: string, path: string) {
   const result = await page.request.get(path, { headers: { 'X-Project-ID': project }, timeout: 60_000 });
-  if (!result.ok()) throw new Error(`${path}: HTTP ${result.status()} ${(await result.text()).slice(0, 4000)}`);
-  return result.json();
+  try {
+    if (!result.ok()) throw new Error(`${path}: HTTP ${result.status()} ${(await result.text()).slice(0, 4000)}`);
+    return await result.json();
+  } finally {
+    // Playwright otherwise retains every polled response until context teardown.
+    // Keep the parsed evidence, release its duplicate transport body immediately.
+    await result.dispose();
+  }
 }
 
 async function readWarningReviewState(page: Page, project: string) {
@@ -147,13 +153,19 @@ async function verifySignalContracts(page: Page, project: string, expected: Reco
 }
 
 async function verifyArtifacts(page: Page, project: string, minimumCanonicalSignals: number, internalController?: string) {
-  const workflow = await readProject(page, project, '/api/engineering/workflow?view=summary');
+  // The completed model is stable; these independent reads need no serial waits.
+  const [workflow, jobList, snapshots, signals, messages] = await Promise.all([
+    readProject(page, project, '/api/engineering/workflow?view=summary'),
+    readProject(page, project, '/api/simulations'),
+    readProject(page, project, '/api/engineering/workflow/snapshots'),
+    allObjects(page, project, 'signals'),
+    allObjects(page, project, 'messages'),
+  ]);
   expect(Object.keys(workflow.statuses).sort()).toEqual([...steps].sort());
   for (const step of steps) expect(done.has(workflow.statuses[step]), `${step}: ${workflow.statuses[step]}`).toBeTruthy();
-  const jobs = (await readProject(page, project, '/api/simulations')).jobs;
+  const jobs = jobList.jobs;
   expect(jobs).toHaveLength(1);
   expect(jobs[0].status).toBe('completed');
-  const snapshots = await readProject(page, project, '/api/engineering/workflow/snapshots');
   const snapshot = snapshots.simulations.find((item: { job_id: string }) => item.job_id === jobs[0].id);
   expect(snapshot).toBeTruthy();
   const full = await readProject(page, project, `/api/engineering/workflow/simulation-snapshots/${snapshot.id}`);
@@ -162,10 +174,8 @@ async function verifyArtifacts(page: Page, project: string, minimumCanonicalSign
   expect(assessment.scope_coverage.complete).toBe(true);
   expect(assessment.conformance).toBe('PASS');
   expect(assessment.failed_route_count).toBe(0);
-  const signals = await allObjects(page, project, 'signals');
   expect(signals.length, 'The full canonical signal inventory must survive generation.').toBeGreaterThanOrEqual(minimumCanonicalSignals);
   const excluded = assessment.scope_coverage.transport_exclusions ?? [];
-  const messages = await allObjects(page, project, 'messages');
   for (const item of excluded) {
     const message = messages.find(row => row.id === item.message_id);
     expect(message, `Excluded message ${item.message_id} must exist.`).toBeTruthy();

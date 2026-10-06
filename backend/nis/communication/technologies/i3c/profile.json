@@ -1,0 +1,4274 @@
+{
+  "id": "i3c",
+  "label": "I3C",
+  "domain": "generic_networking",
+  "layer": "DATA_LINK",
+  "transport_unit": "MESSAGE",
+  "payload_element_types": [
+    "REGISTER",
+    "RAW_DATA"
+  ],
+  "hardware_interface": "explicit_i3c_port",
+  "hardware_capability_aliases": [
+    "i3c_controller"
+  ],
+  "default_stack": [
+    "i3c"
+  ],
+  "stack_variants": [
+    [
+      "i3c"
+    ]
+  ],
+  "default_bitrate": null,
+  "rate_model": {
+    "type": "I3C_PHASE_CLOCKS",
+    "fields": []
+  },
+  "local_timing_schema": [],
+  "parameter_schema": {
+    "payload_bytes": {
+      "label": "Payload",
+      "category": "physical",
+      "scope": "message",
+      "type": "number",
+      "description": "Actual meaningful data; no universal65535B transfer. Negotiated limits, padding, CCC/IBI and phase layout are separate.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "integer": true
+    },
+    "cycle_ms": {
+      "label": "Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "Standardperiode fuer zyklische Nachrichten.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "minimum_cycle_time_ms": {
+      "label": "Minimum Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "deadline_ms": {
+      "label": "Deadline",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "timeout_ms": {
+      "label": "Timeout",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_latency_ms": {
+      "label": "Maximum Latency",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "jitter_ms": {
+      "label": "Jitter Budget",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "freshness_ms": {
+      "label": "Data Freshness",
+      "category": "timing",
+      "scope": "signal",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "source_processing_delay_ms": {
+      "label": "Source Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_processing_delay_ms": {
+      "label": "Target Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "propagation_delay_ms": {
+      "label": "Propagation",
+      "category": "timing",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.01,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_bus_load_percent": {
+      "label": "Ziel-Buslast",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "Zielwert fuer die aus Routing, Payload, Zyklus und Bitrate berechnete Buslast.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "peak_factor": {
+      "label": "Peak Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.15,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_factor": {
+      "label": "Burst Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.5,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_window_ms": {
+      "label": "Burst Window",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "warning_threshold": {
+      "label": "Load Warning",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "critical_threshold": {
+      "label": "Load Critical",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 75,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "overload_threshold": {
+      "label": "Load Overload",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 90,
+      "unit": "%",
+      "min": 1,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "traffic_class": {
+      "label": "Traffic Class",
+      "category": "qos",
+      "scope": "route",
+      "type": "select",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": "BEST_EFFORT",
+      "options": [
+        "BEST_EFFORT",
+        "CONTROL",
+        "REALTIME",
+        "SAFETY_CRITICAL"
+      ],
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "packet_loss_probability": {
+      "label": "Packet Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "frame_loss_probability": {
+      "label": "Frame Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "bit_error_rate": {
+      "label": "Bit Error Rate",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "corruption_probability": {
+      "label": "Corruption",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duplicate_probability": {
+      "label": "Duplication",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "reordering_probability": {
+      "label": "Reordering",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "required_reliability": {
+      "label": "Required Reliability",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.999,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_offset_ms": {
+      "label": "Clock Offset",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_drift_ppm": {
+      "label": "Clock Drift",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 20,
+      "unit": "ppm",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_precision_ms": {
+      "label": "Sync Precision",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_interval_ms": {
+      "label": "Sync Interval",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1000,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_sync_error_ms": {
+      "label": "Maximum Sync Error",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_delay_ms": {
+      "label": "Gateway Processing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.2,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_queue_delay_ms": {
+      "label": "Gateway Queueing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "protocol_conversion_delay_ms": {
+      "label": "Protocol Conversion",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duration_s": {
+      "label": "Simulation Duration",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 1,
+      "unit": "s",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "seed": {
+      "label": "Random Seed",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 42,
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "max_events": {
+      "label": "Maximum Events",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 100000,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "dropout_probability": {
+      "label": "Failure Injection Dropout",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "i3c_version": {
+      "type": "select",
+      "description": "Actual bus specification flavour and revision; Basic and full features/errata differ.",
+      "options": [
+        "BASIC_1_0",
+        "BASIC_1_1_1",
+        "BASIC_1_2",
+        "FULL_1_0",
+        "FULL_1_1",
+        "FULL_1_1_1",
+        "FULL_1_2"
+      ],
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "label": "version",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "integer": false,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN"
+    },
+    "i3c_mode": {
+      "type": "select",
+      "description": "SDR is the baseline mode proposal; optional HDR requires negotiated matching device capabilities.",
+      "options": [
+        "SDR",
+        "HDR_DDR",
+        "HDR_TSP",
+        "HDR_TSL",
+        "HDR_BT",
+        "LEGACY_I2C"
+      ],
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "default": "SDR",
+      "label": "mode",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "integer": false,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_STANDARD"
+    },
+    "i3c_implementation": {
+      "type": "select",
+      "description": "Actual implementation, not inferred from industry. MCU defaults and electrical limits apply only to their named devices.",
+      "options": [
+        "MIPI_DEVICE",
+        "MCUX_SDK_2_14",
+        "STM32_AN5879",
+        "PIC18_Q20"
+      ],
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "label": "implementation",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "integer": false,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN"
+    },
+    "i3c_configuration_phase": {
+      "type": "select",
+      "description": "Factory proposal versus actual configured installation. SDK factory settings are not confirmed peer facts.",
+      "options": [
+        "SDK_DEFAULT_CONFIG",
+        "CONFIGURED"
+      ],
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "label": "configuration phase",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN"
+    },
+    "i3c_role": {
+      "type": "select",
+      "description": "Actual active controller, secondary controller, I3C target or legacy target; one active clock owner.",
+      "options": [
+        "ACTIVE_CONTROLLER",
+        "SECONDARY_CONTROLLER",
+        "TARGET",
+        "LEGACY_TARGET"
+      ],
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "label": "role",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "integer": false,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN"
+    },
+    "i3c_bus_kind": {
+      "type": "select",
+      "description": "Actual pure versus legacy mixed bus. Mixed requirements cannot be inferred from an industry name.",
+      "options": [
+        "PURE",
+        "MIXED_FM",
+        "MIXED_FM_PLUS"
+      ],
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "label": "bus kind",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "integer": false,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN"
+    },
+    "i3c_controller_id": {
+      "type": "text",
+      "description": "Actual canonical active controller identity; handoff changes ownership explicitly.",
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "label": "controller id",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "integer": false,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN"
+    },
+    "i3c_device_source": {
+      "type": "text",
+      "description": "Actual device model/datasheet/revision and limits.",
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "label": "device source",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "integer": false,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN"
+    },
+    "i3c_capability_source": {
+      "type": "text",
+      "description": "Actual matching GETCAPS/BCR/DCR/GETMXDS support and optional mode negotiation.",
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "label": "capability source",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "integer": false,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN"
+    },
+    "i3c_binding_source": {
+      "type": "text",
+      "description": "Actual controller/target ports, bus segment and unique assigned addresses.",
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "label": "binding source",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "integer": false,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN"
+    },
+    "i3c_physical_source": {
+      "type": "text",
+      "description": "Actual voltage, driver, keeper/pull-up, capacitance, stubs and edge timing proof.",
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "label": "physical source",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "integer": false,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN"
+    },
+    "i3c_schedule_source": {
+      "type": "text",
+      "description": "Actual initialization, address arbitration, IBI, handoff, retries, transfer layout and deadlines.",
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "label": "schedule source",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "integer": false,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN"
+    },
+    "i3c_transaction_source": {
+      "type": "text",
+      "description": "Actual per-mode command/register/content-protocol, padding/integrity and transfer bound.",
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "label": "transaction source",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "integer": false,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN"
+    },
+    "i3c_clock_source": {
+      "type": "text",
+      "description": "Actual clock register/divider and measured/configured phase clocks, not maximum wire data rate.",
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "label": "clock source",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "integer": false,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN"
+    },
+    "i3c_pp_clock_hz": {
+      "type": "number",
+      "description": "Actual Push-pull SDR/data-phase clock. Phase rates and protocol overhead are separate; no universal operating default.",
+      "unit": "Hz",
+      "min": 1,
+      "max": 12500000,
+      "source": "https://mcuxpresso.nxp.com/api_doc/dev/3802/a00037.html",
+      "source_revision": "MCUXpresso SDK2.14.0 I3C_GetDefaultConfig implementation defaults",
+      "label": "pp clock hz",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "integer": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "conditional_defaults": [
+        {
+          "when": {
+            "i3c_implementation": "MCUX_SDK_2_14",
+            "i3c_configuration_phase": "SDK_DEFAULT_CONFIG"
+          },
+          "value": 12500000
+        }
+      ]
+    },
+    "i3c_od_clock_hz": {
+      "type": "number",
+      "description": "Actual Open-drain address/arbitration phase clock. Phase rates and protocol overhead are separate; no universal operating default.",
+      "unit": "Hz",
+      "min": 1,
+      "source": "https://mcuxpresso.nxp.com/api_doc/dev/3802/a00037.html",
+      "source_revision": "MCUXpresso SDK2.14.0 I3C_GetDefaultConfig implementation defaults",
+      "label": "od clock hz",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "integer": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "conditional_defaults": [
+        {
+          "when": {
+            "i3c_implementation": "MCUX_SDK_2_14",
+            "i3c_configuration_phase": "SDK_DEFAULT_CONFIG"
+          },
+          "value": 2500000
+        }
+      ]
+    },
+    "i3c_legacy_clock_hz": {
+      "type": "number",
+      "description": "Actual Legacy I2C target phase clock. Phase rates and protocol overhead are separate; no universal operating default.",
+      "unit": "Hz",
+      "min": 1,
+      "max": 1000000,
+      "source": "https://mcuxpresso.nxp.com/api_doc/dev/3802/a00037.html",
+      "source_revision": "MCUXpresso SDK2.14.0 I3C_GetDefaultConfig implementation defaults",
+      "label": "legacy clock hz",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "conditional_defaults": [
+        {
+          "when": {
+            "i3c_implementation": "MCUX_SDK_2_14",
+            "i3c_configuration_phase": "SDK_DEFAULT_CONFIG"
+          },
+          "value": 400000
+        }
+      ]
+    },
+    "i3c_initial_clock_hz": {
+      "type": "number",
+      "description": "Actual First broadcast disabling spike filters clock. Phase rates and protocol overhead are separate; no universal operating default.",
+      "unit": "Hz",
+      "min": 1,
+      "max": 2500000,
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "label": "initial clock hz",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN"
+    },
+    "i3c_initial_header": {
+      "type": "select",
+      "description": "First broadcast normally uses Fm/Fm+ timing. Faster/omitted header requires actual spike-filter evidence.",
+      "options": [
+        "FM_FM_PLUS",
+        "ACCURATE_FILTER_2_5M",
+        "NO_FILTER_OMIT"
+      ],
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "label": "initial header",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN"
+    },
+    "i3c_initial_filter_source": {
+      "type": "text",
+      "description": "Actual all-target accurate-filter or no-filter evidence; no automatic omission of first broadcast.",
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "label": "initial filter source",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN"
+    },
+    "i3c_lanes": {
+      "type": "number",
+      "description": "Actual negotiated data lanes; SDR multilane belongs to full I3C, not Basic.",
+      "options": [
+        1,
+        2,
+        4
+      ],
+      "min": 1,
+      "max": 4,
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "label": "lanes",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN"
+    },
+    "i3c_hdr_supported": {
+      "type": "boolean",
+      "description": "Actual matched controller-target support for selected HDR mode, not capability of a different part.",
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "label": "hdr supported",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN"
+    },
+    "i3c_scl_drive": {
+      "type": "select",
+      "description": "Actual clock drive: SDR controller push-pull; mode-specific clock handoff requires actual capability.",
+      "options": [
+        "PUSH_PULL",
+        "MODE_SPECIFIC_HANDOFF"
+      ],
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "label": "scl drive",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN"
+    },
+    "i3c_sda_phase": {
+      "type": "select",
+      "description": "Actual phase-specific SDA drive; OD arbitration/address is separate from PP data.",
+      "options": [
+        "OPEN_DRAIN_ADDRESS_PUSH_PULL_DATA",
+        "LEGACY_OPEN_DRAIN",
+        "HDR_MODE_SPECIFIC"
+      ],
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "label": "sda phase",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN"
+    },
+    "i3c_target_stretch": {
+      "type": "boolean",
+      "description": "I3C targets and compatible legacy targets cannot stretch SCL; controller low extension is different.",
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "label": "target stretch",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN"
+    },
+    "i3c_legacy_filter_50ns": {
+      "type": "boolean",
+      "description": "Actual legacy target 50ns spike filter, required for supported mixed buses.",
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "label": "legacy filter 50ns",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN"
+    },
+    "i3c_legacy_controller_present": {
+      "type": "boolean",
+      "description": "Legacy I2C controllers cannot share an I3C bus.",
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "label": "legacy controller present",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN"
+    },
+    "i3c_legacy_mode": {
+      "type": "select",
+      "description": "Actual compatible legacy Fast/Fast+ target mode, not Standard/HS/UFm.",
+      "options": [
+        "FAST",
+        "FAST_PLUS"
+      ],
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "label": "legacy mode",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN"
+    },
+    "i3c_direction": {
+      "type": "select",
+      "description": "Actual private/CCC/legacy transfer direction; no generic Ethernet duplex.",
+      "options": [
+        "READ",
+        "WRITE",
+        "BIDIRECTIONAL"
+      ],
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "label": "direction",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN"
+    },
+    "i3c_address_method": {
+      "type": "select",
+      "description": "Actual dynamic assignment method. SETDASA/SETAASA need static addresses; Hot-Join needs ENTDAA.",
+      "options": [
+        "ENTDAA",
+        "SETDASA",
+        "SETAASA",
+        "ASSIGNED"
+      ],
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "label": "address method",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN"
+    },
+    "i3c_dynamic_address": {
+      "type": "number",
+      "description": "Actual unshifted 7-bit unique target address. Broadcast/Hamming neighbours and legacy conflicts are excluded.",
+      "min": 0,
+      "max": 127,
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "label": "dynamic address",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN"
+    },
+    "i3c_static_address": {
+      "type": "number",
+      "description": "Actual optional legacy/static 7-bit address; pure I3C targets need not have one.",
+      "min": 0,
+      "max": 127,
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "label": "static address",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN"
+    },
+    "i3c_address_purpose": {
+      "type": "select",
+      "description": "Ordinary dynamic address or explicitly proven legacy exception; not automatic0x0A.",
+      "options": [
+        "ORDINARY",
+        "LEGACY_EXCEPTION"
+      ],
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "label": "address purpose",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN"
+    },
+    "i3c_address_source": {
+      "type": "text",
+      "description": "Actual assignment and conflict-free address allocation, excluding R/W/parity bits.",
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "label": "address source",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN"
+    },
+    "i3c_no_legacy_hs": {
+      "type": "boolean",
+      "description": "Actual absence of conflicting legacy HS targets, needed for exceptional03/04 addresses.",
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "label": "no legacy hs",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN"
+    },
+    "i3c_no_legacy_10bit": {
+      "type": "boolean",
+      "description": "Actual absence of conflicting legacy10-bit address prefix, needed for78/79/7B.",
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "label": "no legacy 10bit",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN"
+    },
+    "i3c_no_legacy_device_id": {
+      "type": "boolean",
+      "description": "Actual absence of conflicting legacy DeviceID use, needed for7D.",
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "label": "no legacy device id",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN"
+    },
+    "i3c_pid": {
+      "type": "text",
+      "description": "Actual48-bit provisional device ID for ENTDAA, unique identity/arbitration; no vendor placeholder.",
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "pattern": "[0-9a-fA-F]{12}",
+      "label": "pid",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN"
+    },
+    "i3c_bcr": {
+      "type": "number",
+      "description": "Actual8-bit BCR device capability register, not factory placeholder.",
+      "min": 0,
+      "max": 255,
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "label": "bcr",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN"
+    },
+    "i3c_dcr": {
+      "type": "number",
+      "description": "Actual8-bit DCR device capability register, not factory placeholder.",
+      "min": 0,
+      "max": 255,
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "label": "dcr",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN"
+    },
+    "i3c_tsco_ns": {
+      "type": "number",
+      "description": "Actual target turnaround. Older limits12ns and v1.2 limit20ns differ; larger values need limitation/private agreement.",
+      "unit": "ns",
+      "min": 0,
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "label": "tsco ns",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN"
+    },
+    "i3c_bcr_speed_limited": {
+      "type": "boolean",
+      "description": "Actual BCR limitation bit advertised by target.",
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "label": "bcr speed limited",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN"
+    },
+    "i3c_maxrd_tsco_code": {
+      "type": "number",
+      "description": "Actual GETMXDS maxRD turnaround field; private agreement uses code7.",
+      "min": 0,
+      "max": 7,
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "label": "maxrd tsco code",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN"
+    },
+    "i3c_tsco_source": {
+      "type": "text",
+      "description": "Actual target datasheet/private turnaround agreement and revision-qualified measurement definition.",
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "label": "tsco source",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN"
+    },
+    "i3c_read_low_ns": {
+      "type": "number",
+      "description": "Actual controller read low duration must exceed turnaround plus SDA edge and setup budget.",
+      "unit": "ns",
+      "min": 0,
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "label": "read low ns",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN"
+    },
+    "i3c_read_propagation_ns": {
+      "type": "number",
+      "description": "Actual extra target-to-controller propagation/layout delay, not default zero.",
+      "unit": "ns",
+      "min": 0,
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "label": "read propagation ns",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN"
+    },
+    "i3c_read_setup_ns": {
+      "type": "number",
+      "description": "Actual receiver setup budget at least3ns per public timing guidance.",
+      "unit": "ns",
+      "min": 3,
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "label": "read setup ns",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN"
+    },
+    "i3c_read_sda_edge_ns": {
+      "type": "number",
+      "description": "Actual target SDA rise/fall budget for read sampling.",
+      "unit": "ns",
+      "min": 0,
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "label": "read sda edge ns",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN"
+    },
+    "i3c_max_read_bytes": {
+      "type": "number",
+      "description": "Actual negotiated meaningful-data limit; absent is unbounded by protocol, not65535-byte default. HDR padding is separate.",
+      "unit": "Byte",
+      "min": 0,
+      "max": 65535,
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "label": "max read bytes",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN"
+    },
+    "i3c_max_write_bytes": {
+      "type": "number",
+      "description": "Actual negotiated meaningful-data limit; absent is unbounded by protocol, not65535-byte default. HDR padding is separate.",
+      "unit": "Byte",
+      "min": 0,
+      "max": 65535,
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "label": "max write bytes",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN"
+    },
+    "i3c_length_source": {
+      "type": "text",
+      "description": "Actual accepted SETMRL/SETMWL and content-protocol minimum/rejected-value policy; no universal minimum.",
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "label": "length source",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN"
+    },
+    "i3c_ccc_scope": {
+      "type": "select",
+      "description": "Actual broadcast versus directed command namespace; support/content depends on version.",
+      "options": [
+        "BROADCAST",
+        "DIRECTED"
+      ],
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "label": "ccc scope",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN"
+    },
+    "i3c_ccc_code": {
+      "type": "number",
+      "description": "Actual common command byte; unknown optional/reserved commands require explicit matching revision and capability.",
+      "min": 0,
+      "max": 254,
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "label": "ccc code",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN"
+    },
+    "i3c_ccc_source": {
+      "type": "text",
+      "description": "Actual command/defining-byte/sub-command format, target support and version/errata.",
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "label": "ccc source",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN"
+    },
+    "i3c_ccc_defining_byte": {
+      "type": "number",
+      "description": "Actual optional command-specific defining byte, not generic payload header.",
+      "min": 0,
+      "max": 255,
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "label": "ccc defining byte",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN"
+    },
+    "i3c_hot_join": {
+      "type": "boolean",
+      "description": "Actual supported/enabled Hot-Join, reserved request address02 is not an assigned target.",
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "label": "hot join",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN"
+    },
+    "i3c_ibi_data_supported": {
+      "type": "boolean",
+      "description": "Actual BCR support for IBI with data; then first byte is mandatory data byte.",
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "label": "ibi data supported",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN"
+    },
+    "i3c_ibi_bytes": {
+      "type": "number",
+      "description": "Actual IBI meaningful data bytes, including mandatory data byte when data supported.",
+      "unit": "Byte",
+      "min": 0,
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "label": "ibi bytes",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN"
+    },
+    "i3c_ibi_source": {
+      "type": "text",
+      "description": "Actual IBI capability/data format, maximum rate, arbitration and acceptance bounds.",
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "label": "ibi source",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN"
+    },
+    "i3c_handoff": {
+      "type": "boolean",
+      "description": "Actual enabled secondary-controller role handoff, not I2C multicontroller arbitration.",
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "label": "handoff",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN"
+    },
+    "i3c_handoff_source": {
+      "type": "text",
+      "description": "Actual handoff/DEFTGTS/GETACCCR capabilities, current owner and latency.",
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "label": "handoff source",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN"
+    },
+    "i3c_reset_action": {
+      "type": "select",
+      "description": "Actual target-reset action differs from HDR exit and address reset.",
+      "options": [
+        "PERIPHERAL_RESET",
+        "WHOLE_TARGET_RESET",
+        "DEVICE_SPECIFIC"
+      ],
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "label": "reset action",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN"
+    },
+    "i3c_recovery_source": {
+      "type": "text",
+      "description": "Actual reset/recovery/IBI retry and error policy with peer support and bounded schedule.",
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "label": "recovery source",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN"
+    },
+    "i3c_retry_limit": {
+      "type": "number",
+      "description": "Actual software/device retry budget; protocol does not promise universal completion.",
+      "unit": "attempts",
+      "min": 0,
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "label": "retry limit",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN"
+    },
+    "i3c_hdr_padding_bytes": {
+      "type": "number",
+      "description": "Actual mode/lanes-specific padding; DDR CRC includes pad, HDR-BT CRC excludes last-block pad.",
+      "unit": "Byte",
+      "min": 0,
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "label": "hdr padding bytes",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN"
+    },
+    "i3c_hdr_crc_policy": {
+      "type": "select",
+      "description": "Actual mode integrity framing; never ordinary CAN CRC or universal packet overhead.",
+      "options": [
+        "DDR_CRC5_INCLUDES_PAD",
+        "BT_CRC_VALID_DATA",
+        "TERNARY_SPECIFIC"
+      ],
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "label": "hdr crc policy",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN"
+    },
+    "i3c_hdr_termination_crc": {
+      "type": "boolean",
+      "description": "Actual negotiated ENDXFER CRC-on-early-termination; initial/new-version default disabled, older peers may not support it.",
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "label": "hdr termination crc",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN"
+    },
+    "i3c_timing_control": {
+      "type": "select",
+      "description": "Actual optional timing capability; Basic1.0 absent, later Basic Async0 only.",
+      "options": [
+        "NONE",
+        "ASYNC_0",
+        "ASYNC_1",
+        "ASYNC_2",
+        "ASYNC_3",
+        "SYNCHRONOUS"
+      ],
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "label": "timing control",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN"
+    },
+    "i3c_timing_control_source": {
+      "type": "text",
+      "description": "Actual timestamp/ODR/context capability, selected revision and functional acceptance.",
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "label": "timing control source",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN"
+    },
+    "i3c_kernel_clock_hz": {
+      "type": "number",
+      "description": "Actual STM32 kernel clock, strictly more than2x SCL, not inferred from peripheral type.",
+      "unit": "Hz",
+      "min": 1,
+      "source": "https://www.st.com/resource/en/application_note/an5879-introduction-to-i3c-for-stm32-mcus-stmicroelectronics.pdf",
+      "source_revision": "AN5879 Rev6 June2026 sections2/4/6/7/8, SDR-only implementation",
+      "label": "kernel clock hz",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN"
+    },
+    "i3c_period_cycles": {
+      "type": "number",
+      "description": "Actual integer STM32 SCL period in kernel clock cycles;96MHz/8 gives12MHz, not12.5.",
+      "min": 1,
+      "source": "https://www.st.com/resource/en/application_note/an5879-introduction-to-i3c-for-stm32-mcus-stmicroelectronics.pdf",
+      "source_revision": "AN5879 Rev6 June2026 sections2/4/6/7/8, SDR-only implementation",
+      "label": "period cycles",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN"
+    },
+    "i3c_bus_cap_pf": {
+      "type": "number",
+      "description": "Actual total line capacitance and device/board operating constraints;50pF typical is not a universal maximum.",
+      "unit": "pF",
+      "min": 0,
+      "source": "https://www.st.com/resource/en/application_note/an5879-introduction-to-i3c-for-stm32-mcus-stmicroelectronics.pdf",
+      "source_revision": "AN5879 Rev6 June2026 sections2/4/6/7/8, SDR-only implementation",
+      "label": "bus cap pf",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN"
+    },
+    "i3c_vdd_v": {
+      "type": "number",
+      "description": "Actual I/O voltage and device/board operating constraints;50pF typical is not a universal maximum.",
+      "unit": "V",
+      "min": 0,
+      "source": "https://www.st.com/resource/en/application_note/an5879-introduction-to-i3c-for-stm32-mcus-stmicroelectronics.pdf",
+      "source_revision": "AN5879 Rev6 June2026 sections2/4/6/7/8, SDR-only implementation",
+      "label": "vdd v",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN"
+    },
+    "i3c_od_low_ns": {
+      "type": "number",
+      "description": "Actual od_low_ns; qualified PIC18Q20 table limit only, not a universal I3C/default measurement.",
+      "unit": "ns",
+      "min": 0,
+      "source": "https://onlinedocs.microchip.com/oxy/GUID-20DC4AC0-78C3-43D4-B405-15D8B752B254-en-US-5/GUID-5770D42B-5331-416C-A1BE-AE3586BC832A.html",
+      "source_revision": "PIC18F04/05/14/15Q20 online edition5 Table45-21; verify exact device PDF",
+      "label": "od low ns",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN"
+    },
+    "i3c_initial_high_ns": {
+      "type": "number",
+      "description": "Actual initial_high_ns; qualified PIC18Q20 table limit only, not a universal I3C/default measurement.",
+      "unit": "ns",
+      "min": 0,
+      "source": "https://onlinedocs.microchip.com/oxy/GUID-20DC4AC0-78C3-43D4-B405-15D8B752B254-en-US-5/GUID-5770D42B-5331-416C-A1BE-AE3586BC832A.html",
+      "source_revision": "PIC18F04/05/14/15Q20 online edition5 Table45-21; verify exact device PDF",
+      "label": "initial high ns",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN"
+    },
+    "i3c_od_high_ns": {
+      "type": "number",
+      "description": "Actual od_high_ns; qualified PIC18Q20 table limit only, not a universal I3C/default measurement.",
+      "unit": "ns",
+      "min": 0,
+      "source": "https://onlinedocs.microchip.com/oxy/GUID-20DC4AC0-78C3-43D4-B405-15D8B752B254-en-US-5/GUID-5770D42B-5331-416C-A1BE-AE3586BC832A.html",
+      "source_revision": "PIC18F04/05/14/15Q20 online edition5 Table45-21; verify exact device PDF",
+      "label": "od high ns",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN"
+    },
+    "i3c_od_digital_high_ns": {
+      "type": "number",
+      "description": "Actual od_digital_high_ns; qualified PIC18Q20 table limit only, not a universal I3C/default measurement.",
+      "unit": "ns",
+      "min": 0,
+      "source": "https://onlinedocs.microchip.com/oxy/GUID-20DC4AC0-78C3-43D4-B405-15D8B752B254-en-US-5/GUID-5770D42B-5331-416C-A1BE-AE3586BC832A.html",
+      "source_revision": "PIC18F04/05/14/15Q20 online edition5 Table45-21; verify exact device PDF",
+      "label": "od digital high ns",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN"
+    },
+    "i3c_od_sda_rise_ns": {
+      "type": "number",
+      "description": "Actual od_sda_rise_ns; qualified PIC18Q20 table limit only, not a universal I3C/default measurement.",
+      "unit": "ns",
+      "min": 0,
+      "source": "https://onlinedocs.microchip.com/oxy/GUID-20DC4AC0-78C3-43D4-B405-15D8B752B254-en-US-5/GUID-5770D42B-5331-416C-A1BE-AE3586BC832A.html",
+      "source_revision": "PIC18F04/05/14/15Q20 online edition5 Table45-21; verify exact device PDF",
+      "label": "od sda rise ns",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN"
+    },
+    "i3c_od_sda_fall_ns": {
+      "type": "number",
+      "description": "Actual od_sda_fall_ns; qualified PIC18Q20 table limit only, not a universal I3C/default measurement.",
+      "unit": "ns",
+      "min": 0,
+      "source": "https://onlinedocs.microchip.com/oxy/GUID-20DC4AC0-78C3-43D4-B405-15D8B752B254-en-US-5/GUID-5770D42B-5331-416C-A1BE-AE3586BC832A.html",
+      "source_revision": "PIC18F04/05/14/15Q20 online edition5 Table45-21; verify exact device PDF",
+      "label": "od sda fall ns",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN"
+    },
+    "i3c_od_setup_ns": {
+      "type": "number",
+      "description": "Actual od_setup_ns; qualified PIC18Q20 table limit only, not a universal I3C/default measurement.",
+      "unit": "ns",
+      "min": 0,
+      "source": "https://onlinedocs.microchip.com/oxy/GUID-20DC4AC0-78C3-43D4-B405-15D8B752B254-en-US-5/GUID-5770D42B-5331-416C-A1BE-AE3586BC832A.html",
+      "source_revision": "PIC18F04/05/14/15Q20 online edition5 Table45-21; verify exact device PDF",
+      "label": "od setup ns",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN"
+    },
+    "i3c_start_ns": {
+      "type": "number",
+      "description": "Actual start_ns; qualified PIC18Q20 table limit only, not a universal I3C/default measurement.",
+      "unit": "ns",
+      "min": 0,
+      "source": "https://onlinedocs.microchip.com/oxy/GUID-20DC4AC0-78C3-43D4-B405-15D8B752B254-en-US-5/GUID-5770D42B-5331-416C-A1BE-AE3586BC832A.html",
+      "source_revision": "PIC18F04/05/14/15Q20 online edition5 Table45-21; verify exact device PDF",
+      "label": "start ns",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN"
+    },
+    "i3c_stop_ns": {
+      "type": "number",
+      "description": "Actual stop_ns; qualified PIC18Q20 table limit only, not a universal I3C/default measurement.",
+      "unit": "ns",
+      "min": 0,
+      "source": "https://onlinedocs.microchip.com/oxy/GUID-20DC4AC0-78C3-43D4-B405-15D8B752B254-en-US-5/GUID-5770D42B-5331-416C-A1BE-AE3586BC832A.html",
+      "source_revision": "PIC18F04/05/14/15Q20 online edition5 Table45-21; verify exact device PDF",
+      "label": "stop ns",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN"
+    },
+    "i3c_bus_free_ns": {
+      "type": "number",
+      "description": "Actual bus_free_ns; qualified PIC18Q20 table limit only, not a universal I3C/default measurement.",
+      "unit": "ns",
+      "min": 0,
+      "source": "https://onlinedocs.microchip.com/oxy/GUID-20DC4AC0-78C3-43D4-B405-15D8B752B254-en-US-5/GUID-5770D42B-5331-416C-A1BE-AE3586BC832A.html",
+      "source_revision": "PIC18F04/05/14/15Q20 online edition5 Table45-21; verify exact device PDF",
+      "label": "bus free ns",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN"
+    },
+    "i3c_bus_available_us": {
+      "type": "number",
+      "description": "Actual bus_available_us; qualified PIC18Q20 table limit only, not a universal I3C/default measurement.",
+      "unit": "us",
+      "min": 0,
+      "source": "https://onlinedocs.microchip.com/oxy/GUID-20DC4AC0-78C3-43D4-B405-15D8B752B254-en-US-5/GUID-5770D42B-5331-416C-A1BE-AE3586BC832A.html",
+      "source_revision": "PIC18F04/05/14/15Q20 online edition5 Table45-21; verify exact device PDF",
+      "label": "bus available us",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN"
+    },
+    "i3c_bus_idle_us": {
+      "type": "number",
+      "description": "Actual bus_idle_us; qualified PIC18Q20 table limit only, not a universal I3C/default measurement.",
+      "unit": "us",
+      "min": 0,
+      "source": "https://onlinedocs.microchip.com/oxy/GUID-20DC4AC0-78C3-43D4-B405-15D8B752B254-en-US-5/GUID-5770D42B-5331-416C-A1BE-AE3586BC832A.html",
+      "source_revision": "PIC18F04/05/14/15Q20 online edition5 Table45-21; verify exact device PDF",
+      "label": "bus idle us",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN"
+    },
+    "i3c_lv_startup_us": {
+      "type": "number",
+      "description": "Actual lv_startup_us; qualified PIC18Q20 table limit only, not a universal I3C/default measurement.",
+      "unit": "us",
+      "min": 0,
+      "source": "https://onlinedocs.microchip.com/oxy/GUID-20DC4AC0-78C3-43D4-B405-15D8B752B254-en-US-5/GUID-5770D42B-5331-416C-A1BE-AE3586BC832A.html",
+      "source_revision": "PIC18F04/05/14/15Q20 online edition5 Table45-21; verify exact device PDF",
+      "label": "lv startup us",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN"
+    },
+    "i3c_pp_low_ns": {
+      "type": "number",
+      "description": "Actual pp_low_ns; qualified PIC18Q20 table limit only, not a universal I3C/default measurement.",
+      "unit": "ns",
+      "min": 0,
+      "source": "https://onlinedocs.microchip.com/oxy/GUID-20DC4AC0-78C3-43D4-B405-15D8B752B254-en-US-5/GUID-7A28C34D-4E86-4948-B1AD-706E9862619D.html",
+      "source_revision": "PIC18F04/05/14/15Q20 online edition5 Table45-22; verify exact device PDF",
+      "label": "pp low ns",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN"
+    },
+    "i3c_pp_digital_low_ns": {
+      "type": "number",
+      "description": "Actual pp_digital_low_ns; qualified PIC18Q20 table limit only, not a universal I3C/default measurement.",
+      "unit": "ns",
+      "min": 0,
+      "source": "https://onlinedocs.microchip.com/oxy/GUID-20DC4AC0-78C3-43D4-B405-15D8B752B254-en-US-5/GUID-7A28C34D-4E86-4948-B1AD-706E9862619D.html",
+      "source_revision": "PIC18F04/05/14/15Q20 online edition5 Table45-22; verify exact device PDF",
+      "label": "pp digital low ns",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN"
+    },
+    "i3c_pp_high_ns": {
+      "type": "number",
+      "description": "Actual pp_high_ns; qualified PIC18Q20 table limit only, not a universal I3C/default measurement.",
+      "unit": "ns",
+      "min": 0,
+      "source": "https://onlinedocs.microchip.com/oxy/GUID-20DC4AC0-78C3-43D4-B405-15D8B752B254-en-US-5/GUID-7A28C34D-4E86-4948-B1AD-706E9862619D.html",
+      "source_revision": "PIC18F04/05/14/15Q20 online edition5 Table45-22; verify exact device PDF",
+      "label": "pp high ns",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN"
+    },
+    "i3c_pp_digital_high_ns": {
+      "type": "number",
+      "description": "Actual pp_digital_high_ns; qualified PIC18Q20 table limit only, not a universal I3C/default measurement.",
+      "unit": "ns",
+      "min": 0,
+      "source": "https://onlinedocs.microchip.com/oxy/GUID-20DC4AC0-78C3-43D4-B405-15D8B752B254-en-US-5/GUID-7A28C34D-4E86-4948-B1AD-706E9862619D.html",
+      "source_revision": "PIC18F04/05/14/15Q20 online edition5 Table45-22; verify exact device PDF",
+      "label": "pp digital high ns",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN"
+    },
+    "i3c_scl_rise_ns": {
+      "type": "number",
+      "description": "Actual scl_rise_ns; qualified PIC18Q20 table limit only, not a universal I3C/default measurement.",
+      "unit": "ns",
+      "min": 0,
+      "source": "https://onlinedocs.microchip.com/oxy/GUID-20DC4AC0-78C3-43D4-B405-15D8B752B254-en-US-5/GUID-7A28C34D-4E86-4948-B1AD-706E9862619D.html",
+      "source_revision": "PIC18F04/05/14/15Q20 online edition5 Table45-22; verify exact device PDF",
+      "label": "scl rise ns",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN"
+    },
+    "i3c_scl_fall_ns": {
+      "type": "number",
+      "description": "Actual scl_fall_ns; qualified PIC18Q20 table limit only, not a universal I3C/default measurement.",
+      "unit": "ns",
+      "min": 0,
+      "source": "https://onlinedocs.microchip.com/oxy/GUID-20DC4AC0-78C3-43D4-B405-15D8B752B254-en-US-5/GUID-7A28C34D-4E86-4948-B1AD-706E9862619D.html",
+      "source_revision": "PIC18F04/05/14/15Q20 online edition5 Table45-22; verify exact device PDF",
+      "label": "scl fall ns",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN"
+    },
+    "i3c_pp_data_hold_ns": {
+      "type": "number",
+      "description": "Actual pp_data_hold_ns; qualified PIC18Q20 table limit only, not a universal I3C/default measurement.",
+      "unit": "ns",
+      "min": 0,
+      "source": "https://onlinedocs.microchip.com/oxy/GUID-20DC4AC0-78C3-43D4-B405-15D8B752B254-en-US-5/GUID-7A28C34D-4E86-4948-B1AD-706E9862619D.html",
+      "source_revision": "PIC18F04/05/14/15Q20 online edition5 Table45-22; verify exact device PDF",
+      "label": "pp data hold ns",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN"
+    },
+    "i3c_pp_setup_ns": {
+      "type": "number",
+      "description": "Actual pp_setup_ns; qualified PIC18Q20 table limit only, not a universal I3C/default measurement.",
+      "unit": "ns",
+      "min": 0,
+      "source": "https://onlinedocs.microchip.com/oxy/GUID-20DC4AC0-78C3-43D4-B405-15D8B752B254-en-US-5/GUID-7A28C34D-4E86-4948-B1AD-706E9862619D.html",
+      "source_revision": "PIC18F04/05/14/15Q20 online edition5 Table45-22; verify exact device PDF",
+      "label": "pp setup ns",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN"
+    },
+    "i3c_restart_after_ns": {
+      "type": "number",
+      "description": "Actual restart_after_ns; qualified PIC18Q20 table limit only, not a universal I3C/default measurement.",
+      "unit": "ns",
+      "min": 0,
+      "source": "https://onlinedocs.microchip.com/oxy/GUID-20DC4AC0-78C3-43D4-B405-15D8B752B254-en-US-5/GUID-7A28C34D-4E86-4948-B1AD-706E9862619D.html",
+      "source_revision": "PIC18F04/05/14/15Q20 online edition5 Table45-22; verify exact device PDF",
+      "label": "restart after ns",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN"
+    },
+    "i3c_restart_before_ns": {
+      "type": "number",
+      "description": "Actual restart_before_ns; qualified PIC18Q20 table limit only, not a universal I3C/default measurement.",
+      "unit": "ns",
+      "min": 0,
+      "source": "https://onlinedocs.microchip.com/oxy/GUID-20DC4AC0-78C3-43D4-B405-15D8B752B254-en-US-5/GUID-7A28C34D-4E86-4948-B1AD-706E9862619D.html",
+      "source_revision": "PIC18F04/05/14/15Q20 online edition5 Table45-22; verify exact device PDF",
+      "label": "restart before ns",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN"
+    }
+  },
+  "mechanisms": {
+    "addressing": [
+      "VERSION_QUALIFIED_DYNAMIC_AND_OPTIONAL_STATIC_7BIT"
+    ],
+    "integrity": [
+      "SDR_ODD_PARITY_TBIT_OR_READ_END_TBIT_MODE_SPECIFIC_HDR"
+    ],
+    "arbitration": [
+      "OD_ADDRESS_DAA_IBI_AND_EXPLICIT_CONTROLLER_HANDOFF"
+    ],
+    "timing": [
+      "OD_PP_LEGACY_PHASES_AND_ACTUAL_TARGET_READ_BUDGET_SEPARATE"
+    ]
+  },
+  "parameter_constraints": [
+    {
+      "parameter": "i3c_legacy_filter_50ns",
+      "when": {
+        "i3c_bus_kind": "MIXED_FM"
+      },
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "required": true,
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "i3c_legacy_controller_present",
+      "when": {
+        "i3c_bus_kind": "MIXED_FM"
+      },
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "required": true,
+      "allowed": [
+        false
+      ]
+    },
+    {
+      "parameter": "i3c_target_stretch",
+      "when": {
+        "i3c_bus_kind": "MIXED_FM"
+      },
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "required": true,
+      "allowed": [
+        false
+      ]
+    },
+    {
+      "parameter": "i3c_legacy_mode",
+      "when": {
+        "i3c_bus_kind": "MIXED_FM"
+      },
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "required": true,
+      "allowed": [
+        "FAST"
+      ]
+    },
+    {
+      "parameter": "i3c_legacy_clock_hz",
+      "when": {
+        "i3c_bus_kind": "MIXED_FM"
+      },
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "required": true,
+      "maximum": 400000
+    },
+    {
+      "parameter": "i3c_legacy_filter_50ns",
+      "when": {
+        "i3c_bus_kind": "MIXED_FM_PLUS"
+      },
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "required": true,
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "i3c_legacy_controller_present",
+      "when": {
+        "i3c_bus_kind": "MIXED_FM_PLUS"
+      },
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "required": true,
+      "allowed": [
+        false
+      ]
+    },
+    {
+      "parameter": "i3c_target_stretch",
+      "when": {
+        "i3c_bus_kind": "MIXED_FM_PLUS"
+      },
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "required": true,
+      "allowed": [
+        false
+      ]
+    },
+    {
+      "parameter": "i3c_legacy_mode",
+      "when": {
+        "i3c_bus_kind": "MIXED_FM_PLUS"
+      },
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "required": true,
+      "allowed": [
+        "FAST_PLUS"
+      ]
+    },
+    {
+      "parameter": "i3c_legacy_clock_hz",
+      "when": {
+        "i3c_bus_kind": "MIXED_FM_PLUS"
+      },
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "required": true,
+      "maximum": 1000000
+    },
+    {
+      "parameter": "i3c_target_stretch",
+      "when": {},
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "allowed": [
+        false
+      ]
+    },
+    {
+      "parameter": "i3c_legacy_controller_present",
+      "when": {},
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "allowed": [
+        false
+      ]
+    },
+    {
+      "parameter": "i3c_role",
+      "when": {
+        "i3c_bus_kind": "PURE"
+      },
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "forbidden": [
+        "LEGACY_TARGET"
+      ]
+    },
+    {
+      "parameter": "i3c_mode",
+      "when": {
+        "i3c_bus_kind": "PURE"
+      },
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "forbidden": [
+        "LEGACY_I2C"
+      ]
+    },
+    {
+      "parameter": "i3c_lanes",
+      "when": {},
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "allowed": [
+        1,
+        2,
+        4
+      ]
+    },
+    {
+      "parameter": "i3c_bus_kind",
+      "when": {
+        "i3c_mode": "HDR_TSP"
+      },
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "allowed": [
+        "PURE"
+      ]
+    },
+    {
+      "parameter": "i3c_mode",
+      "when": {
+        "i3c_version": "BASIC_1_0"
+      },
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "allowed": [
+        "SDR",
+        "LEGACY_I2C"
+      ]
+    },
+    {
+      "parameter": "i3c_mode",
+      "when": {
+        "i3c_version": "BASIC_1_0"
+      },
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "forbidden": [
+        "HDR_TSP",
+        "HDR_TSL"
+      ]
+    },
+    {
+      "parameter": "i3c_lanes",
+      "when": {
+        "i3c_version": "BASIC_1_0"
+      },
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "allowed": [
+        1
+      ]
+    },
+    {
+      "parameter": "i3c_timing_control",
+      "when": {
+        "i3c_version": "BASIC_1_0"
+      },
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "allowed": [
+        "NONE"
+      ]
+    },
+    {
+      "parameter": "i3c_lanes",
+      "when": {
+        "i3c_version": "BASIC_1_0",
+        "i3c_mode": "SDR"
+      },
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "allowed": [
+        1
+      ]
+    },
+    {
+      "parameter": "i3c_bcr_speed_limited",
+      "when": {
+        "i3c_version": "BASIC_1_0"
+      },
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "when_greater_than": {
+        "i3c_tsco_ns": 12
+      },
+      "required": true,
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "i3c_maxrd_tsco_code",
+      "when": {
+        "i3c_version": "BASIC_1_0"
+      },
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "when_greater_than": {
+        "i3c_tsco_ns": 12
+      },
+      "required": true,
+      "allowed": [
+        7
+      ]
+    },
+    {
+      "parameter": "i3c_tsco_source",
+      "when": {
+        "i3c_version": "BASIC_1_0"
+      },
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "when_greater_than": {
+        "i3c_tsco_ns": 12
+      },
+      "required": true
+    },
+    {
+      "parameter": "i3c_mode",
+      "when": {
+        "i3c_version": "BASIC_1_1_1"
+      },
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "forbidden": [
+        "HDR_TSP",
+        "HDR_TSL"
+      ]
+    },
+    {
+      "parameter": "i3c_timing_control",
+      "when": {
+        "i3c_version": "BASIC_1_1_1"
+      },
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "allowed": [
+        "NONE",
+        "ASYNC_0"
+      ]
+    },
+    {
+      "parameter": "i3c_lanes",
+      "when": {
+        "i3c_version": "BASIC_1_1_1",
+        "i3c_mode": "SDR"
+      },
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "allowed": [
+        1
+      ]
+    },
+    {
+      "parameter": "i3c_ccc_code",
+      "when": {
+        "i3c_version": "BASIC_1_1_1",
+        "i3c_ccc_scope": "DIRECTED"
+      },
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "forbidden": [
+        134
+      ]
+    },
+    {
+      "parameter": "i3c_bcr_speed_limited",
+      "when": {
+        "i3c_version": "BASIC_1_1_1"
+      },
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "when_greater_than": {
+        "i3c_tsco_ns": 12
+      },
+      "required": true,
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "i3c_maxrd_tsco_code",
+      "when": {
+        "i3c_version": "BASIC_1_1_1"
+      },
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "when_greater_than": {
+        "i3c_tsco_ns": 12
+      },
+      "required": true,
+      "allowed": [
+        7
+      ]
+    },
+    {
+      "parameter": "i3c_tsco_source",
+      "when": {
+        "i3c_version": "BASIC_1_1_1"
+      },
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "when_greater_than": {
+        "i3c_tsco_ns": 12
+      },
+      "required": true
+    },
+    {
+      "parameter": "i3c_mode",
+      "when": {
+        "i3c_version": "BASIC_1_2"
+      },
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "forbidden": [
+        "HDR_TSP",
+        "HDR_TSL"
+      ]
+    },
+    {
+      "parameter": "i3c_timing_control",
+      "when": {
+        "i3c_version": "BASIC_1_2"
+      },
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "allowed": [
+        "NONE",
+        "ASYNC_0"
+      ]
+    },
+    {
+      "parameter": "i3c_lanes",
+      "when": {
+        "i3c_version": "BASIC_1_2",
+        "i3c_mode": "SDR"
+      },
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "allowed": [
+        1
+      ]
+    },
+    {
+      "parameter": "i3c_ccc_code",
+      "when": {
+        "i3c_version": "BASIC_1_2",
+        "i3c_ccc_scope": "DIRECTED"
+      },
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "forbidden": [
+        134
+      ]
+    },
+    {
+      "parameter": "i3c_bcr_speed_limited",
+      "when": {
+        "i3c_version": "BASIC_1_2"
+      },
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "when_greater_than": {
+        "i3c_tsco_ns": 20
+      },
+      "required": true,
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "i3c_maxrd_tsco_code",
+      "when": {
+        "i3c_version": "BASIC_1_2"
+      },
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "when_greater_than": {
+        "i3c_tsco_ns": 20
+      },
+      "required": true,
+      "allowed": [
+        7
+      ]
+    },
+    {
+      "parameter": "i3c_tsco_source",
+      "when": {
+        "i3c_version": "BASIC_1_2"
+      },
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "when_greater_than": {
+        "i3c_tsco_ns": 20
+      },
+      "required": true
+    },
+    {
+      "parameter": "i3c_mode",
+      "when": {
+        "i3c_version": "FULL_1_0"
+      },
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "forbidden": [
+        "HDR_BT"
+      ]
+    },
+    {
+      "parameter": "i3c_lanes",
+      "when": {
+        "i3c_version": "FULL_1_0"
+      },
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "allowed": [
+        1
+      ]
+    },
+    {
+      "parameter": "i3c_bcr_speed_limited",
+      "when": {
+        "i3c_version": "FULL_1_0"
+      },
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "when_greater_than": {
+        "i3c_tsco_ns": 12
+      },
+      "required": true,
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "i3c_maxrd_tsco_code",
+      "when": {
+        "i3c_version": "FULL_1_0"
+      },
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "when_greater_than": {
+        "i3c_tsco_ns": 12
+      },
+      "required": true,
+      "allowed": [
+        7
+      ]
+    },
+    {
+      "parameter": "i3c_tsco_source",
+      "when": {
+        "i3c_version": "FULL_1_0"
+      },
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "when_greater_than": {
+        "i3c_tsco_ns": 12
+      },
+      "required": true
+    },
+    {
+      "parameter": "i3c_ccc_code",
+      "when": {
+        "i3c_version": "FULL_1_1",
+        "i3c_ccc_scope": "DIRECTED"
+      },
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "forbidden": [
+        134
+      ]
+    },
+    {
+      "parameter": "i3c_bcr_speed_limited",
+      "when": {
+        "i3c_version": "FULL_1_1"
+      },
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "when_greater_than": {
+        "i3c_tsco_ns": 12
+      },
+      "required": true,
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "i3c_maxrd_tsco_code",
+      "when": {
+        "i3c_version": "FULL_1_1"
+      },
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "when_greater_than": {
+        "i3c_tsco_ns": 12
+      },
+      "required": true,
+      "allowed": [
+        7
+      ]
+    },
+    {
+      "parameter": "i3c_tsco_source",
+      "when": {
+        "i3c_version": "FULL_1_1"
+      },
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "when_greater_than": {
+        "i3c_tsco_ns": 12
+      },
+      "required": true
+    },
+    {
+      "parameter": "i3c_ccc_code",
+      "when": {
+        "i3c_version": "FULL_1_1_1",
+        "i3c_ccc_scope": "DIRECTED"
+      },
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "forbidden": [
+        134
+      ]
+    },
+    {
+      "parameter": "i3c_bcr_speed_limited",
+      "when": {
+        "i3c_version": "FULL_1_1_1"
+      },
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "when_greater_than": {
+        "i3c_tsco_ns": 12
+      },
+      "required": true,
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "i3c_maxrd_tsco_code",
+      "when": {
+        "i3c_version": "FULL_1_1_1"
+      },
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "when_greater_than": {
+        "i3c_tsco_ns": 12
+      },
+      "required": true,
+      "allowed": [
+        7
+      ]
+    },
+    {
+      "parameter": "i3c_tsco_source",
+      "when": {
+        "i3c_version": "FULL_1_1_1"
+      },
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "when_greater_than": {
+        "i3c_tsco_ns": 12
+      },
+      "required": true
+    },
+    {
+      "parameter": "i3c_ccc_code",
+      "when": {
+        "i3c_version": "FULL_1_2",
+        "i3c_ccc_scope": "DIRECTED"
+      },
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "forbidden": [
+        134
+      ]
+    },
+    {
+      "parameter": "i3c_bcr_speed_limited",
+      "when": {
+        "i3c_version": "FULL_1_2"
+      },
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "when_greater_than": {
+        "i3c_tsco_ns": 20
+      },
+      "required": true,
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "i3c_maxrd_tsco_code",
+      "when": {
+        "i3c_version": "FULL_1_2"
+      },
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "when_greater_than": {
+        "i3c_tsco_ns": 20
+      },
+      "required": true,
+      "allowed": [
+        7
+      ]
+    },
+    {
+      "parameter": "i3c_tsco_source",
+      "when": {
+        "i3c_version": "FULL_1_2"
+      },
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "when_greater_than": {
+        "i3c_tsco_ns": 20
+      },
+      "required": true
+    },
+    {
+      "parameter": "i3c_hdr_supported",
+      "when": {
+        "i3c_mode": "HDR_DDR"
+      },
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "required": true,
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "i3c_hdr_crc_policy",
+      "when": {
+        "i3c_mode": "HDR_DDR"
+      },
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "required": true,
+      "allowed": [
+        "DDR_CRC5_INCLUDES_PAD"
+      ]
+    },
+    {
+      "parameter": "i3c_hdr_supported",
+      "when": {
+        "i3c_mode": "HDR_TSP"
+      },
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "required": true,
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "i3c_hdr_crc_policy",
+      "when": {
+        "i3c_mode": "HDR_TSP"
+      },
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "required": true,
+      "allowed": [
+        "TERNARY_SPECIFIC"
+      ]
+    },
+    {
+      "parameter": "i3c_hdr_supported",
+      "when": {
+        "i3c_mode": "HDR_TSL"
+      },
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "required": true,
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "i3c_hdr_crc_policy",
+      "when": {
+        "i3c_mode": "HDR_TSL"
+      },
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "required": true,
+      "allowed": [
+        "TERNARY_SPECIFIC"
+      ]
+    },
+    {
+      "parameter": "i3c_hdr_supported",
+      "when": {
+        "i3c_mode": "HDR_BT"
+      },
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "required": true,
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "i3c_hdr_crc_policy",
+      "when": {
+        "i3c_mode": "HDR_BT"
+      },
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "required": true,
+      "allowed": [
+        "BT_CRC_VALID_DATA"
+      ]
+    },
+    {
+      "parameter": "i3c_hdr_termination_crc",
+      "when": {
+        "i3c_version": "BASIC_1_0"
+      },
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "allowed": [
+        false
+      ]
+    },
+    {
+      "parameter": "i3c_hdr_termination_crc",
+      "when": {
+        "i3c_version": "FULL_1_0"
+      },
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "allowed": [
+        false
+      ]
+    },
+    {
+      "parameter": "i3c_scl_drive",
+      "when": {
+        "i3c_mode": "SDR"
+      },
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "allowed": [
+        "PUSH_PULL"
+      ]
+    },
+    {
+      "parameter": "i3c_sda_phase",
+      "when": {
+        "i3c_mode": "SDR"
+      },
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "allowed": [
+        "OPEN_DRAIN_ADDRESS_PUSH_PULL_DATA"
+      ]
+    },
+    {
+      "parameter": "i3c_sda_phase",
+      "when": {
+        "i3c_mode": "LEGACY_I2C"
+      },
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "allowed": [
+        "LEGACY_OPEN_DRAIN"
+      ]
+    },
+    {
+      "parameter": "i3c_mode",
+      "when": {
+        "i3c_implementation": "STM32_AN5879"
+      },
+      "source": "https://www.st.com/resource/en/application_note/an5879-introduction-to-i3c-for-stm32-mcus-stmicroelectronics.pdf",
+      "source_revision": "AN5879 Rev6 June2026 sections2/4/6/7/8, SDR-only implementation",
+      "allowed": [
+        "SDR",
+        "LEGACY_I2C"
+      ]
+    },
+    {
+      "parameter": "i3c_od_clock_hz",
+      "when": {
+        "i3c_implementation": "STM32_AN5879"
+      },
+      "source": "https://www.st.com/resource/en/application_note/an5879-introduction-to-i3c-for-stm32-mcus-stmicroelectronics.pdf",
+      "source_revision": "AN5879 Rev6 June2026 sections2/4/6/7/8, SDR-only implementation",
+      "maximum": 4000000
+    },
+    {
+      "parameter": "i3c_mode",
+      "when": {
+        "i3c_implementation": "PIC18_Q20"
+      },
+      "source": "https://onlinedocs.microchip.com/oxy/GUID-20DC4AC0-78C3-43D4-B405-15D8B752B254-en-US-5/GUID-7A28C34D-4E86-4948-B1AD-706E9862619D.html",
+      "source_revision": "PIC18F04/05/14/15Q20 online edition5 Table45-22; verify exact device PDF",
+      "allowed": [
+        "SDR",
+        "LEGACY_I2C"
+      ]
+    },
+    {
+      "parameter": "i3c_role",
+      "when": {
+        "i3c_implementation": "PIC18_Q20"
+      },
+      "source": "https://onlinedocs.microchip.com/oxy/GUID-20DC4AC0-78C3-43D4-B405-15D8B752B254-en-US-5/GUID-7A28C34D-4E86-4948-B1AD-706E9862619D.html",
+      "source_revision": "PIC18F04/05/14/15Q20 online edition5 Table45-22; verify exact device PDF",
+      "allowed": [
+        "TARGET",
+        "LEGACY_TARGET"
+      ]
+    },
+    {
+      "parameter": "i3c_static_address",
+      "when": {
+        "i3c_address_method": "SETDASA"
+      },
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "required": true
+    },
+    {
+      "parameter": "i3c_static_address",
+      "when": {
+        "i3c_address_method": "SETAASA"
+      },
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "required": true
+    },
+    {
+      "parameter": "i3c_address_method",
+      "when": {
+        "i3c_hot_join": true
+      },
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "required": true,
+      "allowed": [
+        "ENTDAA"
+      ]
+    },
+    {
+      "parameter": "i3c_pid",
+      "when": {
+        "i3c_address_method": "ENTDAA"
+      },
+      "source": "https://www.st.com/resource/en/application_note/an5879-introduction-to-i3c-for-stm32-mcus-stmicroelectronics.pdf",
+      "source_revision": "AN5879 Rev6 June2026 sections2/4/6/7/8, SDR-only implementation",
+      "required": true
+    },
+    {
+      "parameter": "i3c_bcr",
+      "when": {
+        "i3c_address_method": "ENTDAA"
+      },
+      "source": "https://www.st.com/resource/en/application_note/an5879-introduction-to-i3c-for-stm32-mcus-stmicroelectronics.pdf",
+      "source_revision": "AN5879 Rev6 June2026 sections2/4/6/7/8, SDR-only implementation",
+      "required": true
+    },
+    {
+      "parameter": "i3c_dcr",
+      "when": {
+        "i3c_address_method": "ENTDAA"
+      },
+      "source": "https://www.st.com/resource/en/application_note/an5879-introduction-to-i3c-for-stm32-mcus-stmicroelectronics.pdf",
+      "source_revision": "AN5879 Rev6 June2026 sections2/4/6/7/8, SDR-only implementation",
+      "required": true
+    },
+    {
+      "parameter": "i3c_dynamic_address",
+      "when": {
+        "i3c_role": "TARGET"
+      },
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "required": true
+    },
+    {
+      "parameter": "i3c_address_purpose",
+      "when": {
+        "i3c_role": "TARGET"
+      },
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "required": true
+    },
+    {
+      "parameter": "i3c_address_source",
+      "when": {
+        "i3c_role": "TARGET"
+      },
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "required": true
+    },
+    {
+      "parameter": "i3c_dynamic_address",
+      "when": {
+        "i3c_role": "SECONDARY_CONTROLLER"
+      },
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "required": true
+    },
+    {
+      "parameter": "i3c_address_purpose",
+      "when": {
+        "i3c_role": "SECONDARY_CONTROLLER"
+      },
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "required": true
+    },
+    {
+      "parameter": "i3c_address_source",
+      "when": {
+        "i3c_role": "SECONDARY_CONTROLLER"
+      },
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "required": true
+    },
+    {
+      "parameter": "i3c_dynamic_address",
+      "when": {},
+      "source": "https://www.st.com/resource/en/application_note/an5879-introduction-to-i3c-for-stm32-mcus-stmicroelectronics.pdf",
+      "source_revision": "AN5879 Rev6 June2026 sections2/4/6/7/8, SDR-only implementation",
+      "forbidden": [
+        0,
+        1,
+        2,
+        5,
+        6,
+        7,
+        62,
+        94,
+        110,
+        118,
+        122,
+        124,
+        126,
+        127
+      ]
+    },
+    {
+      "parameter": "i3c_dynamic_address",
+      "when": {
+        "i3c_address_purpose": "ORDINARY"
+      },
+      "source": "https://www.st.com/resource/en/application_note/an5879-introduction-to-i3c-for-stm32-mcus-stmicroelectronics.pdf",
+      "source_revision": "AN5879 Rev6 June2026 sections2/4/6/7/8, SDR-only implementation",
+      "minimum": 8,
+      "maximum": 119
+    },
+    {
+      "parameter": "i3c_address_purpose",
+      "when": {
+        "i3c_dynamic_address": 3
+      },
+      "source": "https://www.st.com/resource/en/application_note/an5879-introduction-to-i3c-for-stm32-mcus-stmicroelectronics.pdf",
+      "source_revision": "AN5879 Rev6 June2026 sections2/4/6/7/8, SDR-only implementation",
+      "required": true,
+      "allowed": [
+        "LEGACY_EXCEPTION"
+      ]
+    },
+    {
+      "parameter": "i3c_no_legacy_hs",
+      "when": {
+        "i3c_dynamic_address": 3
+      },
+      "source": "https://www.st.com/resource/en/application_note/an5879-introduction-to-i3c-for-stm32-mcus-stmicroelectronics.pdf",
+      "source_revision": "AN5879 Rev6 June2026 sections2/4/6/7/8, SDR-only implementation",
+      "required": true,
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "i3c_address_source",
+      "when": {
+        "i3c_dynamic_address": 3
+      },
+      "source": "https://www.st.com/resource/en/application_note/an5879-introduction-to-i3c-for-stm32-mcus-stmicroelectronics.pdf",
+      "source_revision": "AN5879 Rev6 June2026 sections2/4/6/7/8, SDR-only implementation",
+      "required": true
+    },
+    {
+      "parameter": "i3c_address_purpose",
+      "when": {
+        "i3c_dynamic_address": 4
+      },
+      "source": "https://www.st.com/resource/en/application_note/an5879-introduction-to-i3c-for-stm32-mcus-stmicroelectronics.pdf",
+      "source_revision": "AN5879 Rev6 June2026 sections2/4/6/7/8, SDR-only implementation",
+      "required": true,
+      "allowed": [
+        "LEGACY_EXCEPTION"
+      ]
+    },
+    {
+      "parameter": "i3c_no_legacy_hs",
+      "when": {
+        "i3c_dynamic_address": 4
+      },
+      "source": "https://www.st.com/resource/en/application_note/an5879-introduction-to-i3c-for-stm32-mcus-stmicroelectronics.pdf",
+      "source_revision": "AN5879 Rev6 June2026 sections2/4/6/7/8, SDR-only implementation",
+      "required": true,
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "i3c_address_source",
+      "when": {
+        "i3c_dynamic_address": 4
+      },
+      "source": "https://www.st.com/resource/en/application_note/an5879-introduction-to-i3c-for-stm32-mcus-stmicroelectronics.pdf",
+      "source_revision": "AN5879 Rev6 June2026 sections2/4/6/7/8, SDR-only implementation",
+      "required": true
+    },
+    {
+      "parameter": "i3c_address_purpose",
+      "when": {
+        "i3c_dynamic_address": 120
+      },
+      "source": "https://www.st.com/resource/en/application_note/an5879-introduction-to-i3c-for-stm32-mcus-stmicroelectronics.pdf",
+      "source_revision": "AN5879 Rev6 June2026 sections2/4/6/7/8, SDR-only implementation",
+      "required": true,
+      "allowed": [
+        "LEGACY_EXCEPTION"
+      ]
+    },
+    {
+      "parameter": "i3c_no_legacy_10bit",
+      "when": {
+        "i3c_dynamic_address": 120
+      },
+      "source": "https://www.st.com/resource/en/application_note/an5879-introduction-to-i3c-for-stm32-mcus-stmicroelectronics.pdf",
+      "source_revision": "AN5879 Rev6 June2026 sections2/4/6/7/8, SDR-only implementation",
+      "required": true,
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "i3c_address_source",
+      "when": {
+        "i3c_dynamic_address": 120
+      },
+      "source": "https://www.st.com/resource/en/application_note/an5879-introduction-to-i3c-for-stm32-mcus-stmicroelectronics.pdf",
+      "source_revision": "AN5879 Rev6 June2026 sections2/4/6/7/8, SDR-only implementation",
+      "required": true
+    },
+    {
+      "parameter": "i3c_address_purpose",
+      "when": {
+        "i3c_dynamic_address": 121
+      },
+      "source": "https://www.st.com/resource/en/application_note/an5879-introduction-to-i3c-for-stm32-mcus-stmicroelectronics.pdf",
+      "source_revision": "AN5879 Rev6 June2026 sections2/4/6/7/8, SDR-only implementation",
+      "required": true,
+      "allowed": [
+        "LEGACY_EXCEPTION"
+      ]
+    },
+    {
+      "parameter": "i3c_no_legacy_10bit",
+      "when": {
+        "i3c_dynamic_address": 121
+      },
+      "source": "https://www.st.com/resource/en/application_note/an5879-introduction-to-i3c-for-stm32-mcus-stmicroelectronics.pdf",
+      "source_revision": "AN5879 Rev6 June2026 sections2/4/6/7/8, SDR-only implementation",
+      "required": true,
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "i3c_address_source",
+      "when": {
+        "i3c_dynamic_address": 121
+      },
+      "source": "https://www.st.com/resource/en/application_note/an5879-introduction-to-i3c-for-stm32-mcus-stmicroelectronics.pdf",
+      "source_revision": "AN5879 Rev6 June2026 sections2/4/6/7/8, SDR-only implementation",
+      "required": true
+    },
+    {
+      "parameter": "i3c_address_purpose",
+      "when": {
+        "i3c_dynamic_address": 123
+      },
+      "source": "https://www.st.com/resource/en/application_note/an5879-introduction-to-i3c-for-stm32-mcus-stmicroelectronics.pdf",
+      "source_revision": "AN5879 Rev6 June2026 sections2/4/6/7/8, SDR-only implementation",
+      "required": true,
+      "allowed": [
+        "LEGACY_EXCEPTION"
+      ]
+    },
+    {
+      "parameter": "i3c_no_legacy_10bit",
+      "when": {
+        "i3c_dynamic_address": 123
+      },
+      "source": "https://www.st.com/resource/en/application_note/an5879-introduction-to-i3c-for-stm32-mcus-stmicroelectronics.pdf",
+      "source_revision": "AN5879 Rev6 June2026 sections2/4/6/7/8, SDR-only implementation",
+      "required": true,
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "i3c_address_source",
+      "when": {
+        "i3c_dynamic_address": 123
+      },
+      "source": "https://www.st.com/resource/en/application_note/an5879-introduction-to-i3c-for-stm32-mcus-stmicroelectronics.pdf",
+      "source_revision": "AN5879 Rev6 June2026 sections2/4/6/7/8, SDR-only implementation",
+      "required": true
+    },
+    {
+      "parameter": "i3c_address_purpose",
+      "when": {
+        "i3c_dynamic_address": 125
+      },
+      "source": "https://www.st.com/resource/en/application_note/an5879-introduction-to-i3c-for-stm32-mcus-stmicroelectronics.pdf",
+      "source_revision": "AN5879 Rev6 June2026 sections2/4/6/7/8, SDR-only implementation",
+      "required": true,
+      "allowed": [
+        "LEGACY_EXCEPTION"
+      ]
+    },
+    {
+      "parameter": "i3c_no_legacy_device_id",
+      "when": {
+        "i3c_dynamic_address": 125
+      },
+      "source": "https://www.st.com/resource/en/application_note/an5879-introduction-to-i3c-for-stm32-mcus-stmicroelectronics.pdf",
+      "source_revision": "AN5879 Rev6 June2026 sections2/4/6/7/8, SDR-only implementation",
+      "required": true,
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "i3c_address_source",
+      "when": {
+        "i3c_dynamic_address": 125
+      },
+      "source": "https://www.st.com/resource/en/application_note/an5879-introduction-to-i3c-for-stm32-mcus-stmicroelectronics.pdf",
+      "source_revision": "AN5879 Rev6 June2026 sections2/4/6/7/8, SDR-only implementation",
+      "required": true
+    },
+    {
+      "parameter": "i3c_ccc_code",
+      "when": {
+        "i3c_ccc_scope": "BROADCAST"
+      },
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "maximum": 127
+    },
+    {
+      "parameter": "i3c_ccc_code",
+      "when": {
+        "i3c_ccc_scope": "DIRECTED"
+      },
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "minimum": 128
+    },
+    {
+      "parameter": "i3c_ccc_source",
+      "when": {},
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "when_present": [
+        "i3c_ccc_code"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "i3c_ibi_bytes",
+      "when": {
+        "i3c_ibi_data_supported": true
+      },
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "required": true,
+      "minimum": 1
+    },
+    {
+      "parameter": "i3c_ibi_bytes",
+      "when": {
+        "i3c_ibi_data_supported": false
+      },
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "i3c_ibi_source",
+      "when": {},
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "when_present": [
+        "i3c_ibi_bytes"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "i3c_handoff_source",
+      "when": {
+        "i3c_handoff": true
+      },
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "required": true
+    },
+    {
+      "parameter": "i3c_length_source",
+      "when": {},
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "when_present": [
+        "i3c_max_read_bytes"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "i3c_length_source",
+      "when": {},
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "when_present": [
+        "i3c_max_write_bytes"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "i3c_timing_control_source",
+      "when": {},
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "when_not": {
+        "i3c_timing_control": "NONE"
+      },
+      "when_present": [
+        "i3c_timing_control"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "i3c_read_low_ns",
+      "when": {},
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "exclusive_minimum_expression": {
+        "sum": [
+          "i3c_tsco_ns",
+          "i3c_read_sda_edge_ns",
+          "i3c_read_setup_ns",
+          "i3c_read_propagation_ns"
+        ]
+      }
+    },
+    {
+      "parameter": "i3c_od_low_ns",
+      "when": {
+        "i3c_implementation": "PIC18_Q20"
+      },
+      "source": "https://onlinedocs.microchip.com/oxy/GUID-20DC4AC0-78C3-43D4-B405-15D8B752B254-en-US-5/GUID-5770D42B-5331-416C-A1BE-AE3586BC832A.html",
+      "source_revision": "PIC18F04/05/14/15Q20 online edition5 Table45-21; verify exact device PDF",
+      "minimum": 200
+    },
+    {
+      "parameter": "i3c_initial_high_ns",
+      "when": {
+        "i3c_implementation": "PIC18_Q20"
+      },
+      "source": "https://onlinedocs.microchip.com/oxy/GUID-20DC4AC0-78C3-43D4-B405-15D8B752B254-en-US-5/GUID-5770D42B-5331-416C-A1BE-AE3586BC832A.html",
+      "source_revision": "PIC18F04/05/14/15Q20 online edition5 Table45-21; verify exact device PDF",
+      "minimum": 200
+    },
+    {
+      "parameter": "i3c_od_high_ns",
+      "when": {
+        "i3c_implementation": "PIC18_Q20"
+      },
+      "source": "https://onlinedocs.microchip.com/oxy/GUID-20DC4AC0-78C3-43D4-B405-15D8B752B254-en-US-5/GUID-5770D42B-5331-416C-A1BE-AE3586BC832A.html",
+      "source_revision": "PIC18F04/05/14/15Q20 online edition5 Table45-21; verify exact device PDF"
+    },
+    {
+      "parameter": "i3c_od_digital_high_ns",
+      "when": {
+        "i3c_implementation": "PIC18_Q20"
+      },
+      "source": "https://onlinedocs.microchip.com/oxy/GUID-20DC4AC0-78C3-43D4-B405-15D8B752B254-en-US-5/GUID-5770D42B-5331-416C-A1BE-AE3586BC832A.html",
+      "source_revision": "PIC18F04/05/14/15Q20 online edition5 Table45-21; verify exact device PDF",
+      "minimum": 32
+    },
+    {
+      "parameter": "i3c_od_sda_rise_ns",
+      "when": {
+        "i3c_implementation": "PIC18_Q20"
+      },
+      "source": "https://onlinedocs.microchip.com/oxy/GUID-20DC4AC0-78C3-43D4-B405-15D8B752B254-en-US-5/GUID-5770D42B-5331-416C-A1BE-AE3586BC832A.html",
+      "source_revision": "PIC18F04/05/14/15Q20 online edition5 Table45-21; verify exact device PDF",
+      "maximum": 300
+    },
+    {
+      "parameter": "i3c_od_sda_fall_ns",
+      "when": {
+        "i3c_implementation": "PIC18_Q20"
+      },
+      "source": "https://onlinedocs.microchip.com/oxy/GUID-20DC4AC0-78C3-43D4-B405-15D8B752B254-en-US-5/GUID-5770D42B-5331-416C-A1BE-AE3586BC832A.html",
+      "source_revision": "PIC18F04/05/14/15Q20 online edition5 Table45-21; verify exact device PDF",
+      "maximum": 12
+    },
+    {
+      "parameter": "i3c_od_setup_ns",
+      "when": {
+        "i3c_implementation": "PIC18_Q20"
+      },
+      "source": "https://onlinedocs.microchip.com/oxy/GUID-20DC4AC0-78C3-43D4-B405-15D8B752B254-en-US-5/GUID-5770D42B-5331-416C-A1BE-AE3586BC832A.html",
+      "source_revision": "PIC18F04/05/14/15Q20 online edition5 Table45-21; verify exact device PDF",
+      "minimum": 3
+    },
+    {
+      "parameter": "i3c_start_ns",
+      "when": {
+        "i3c_implementation": "PIC18_Q20"
+      },
+      "source": "https://onlinedocs.microchip.com/oxy/GUID-20DC4AC0-78C3-43D4-B405-15D8B752B254-en-US-5/GUID-5770D42B-5331-416C-A1BE-AE3586BC832A.html",
+      "source_revision": "PIC18F04/05/14/15Q20 online edition5 Table45-21; verify exact device PDF",
+      "minimum": 38.4,
+      "maximum": 50000000
+    },
+    {
+      "parameter": "i3c_stop_ns",
+      "when": {
+        "i3c_implementation": "PIC18_Q20"
+      },
+      "source": "https://onlinedocs.microchip.com/oxy/GUID-20DC4AC0-78C3-43D4-B405-15D8B752B254-en-US-5/GUID-5770D42B-5331-416C-A1BE-AE3586BC832A.html",
+      "source_revision": "PIC18F04/05/14/15Q20 online edition5 Table45-21; verify exact device PDF",
+      "minimum": 19.2
+    },
+    {
+      "parameter": "i3c_bus_free_ns",
+      "when": {
+        "i3c_implementation": "PIC18_Q20"
+      },
+      "source": "https://onlinedocs.microchip.com/oxy/GUID-20DC4AC0-78C3-43D4-B405-15D8B752B254-en-US-5/GUID-5770D42B-5331-416C-A1BE-AE3586BC832A.html",
+      "source_revision": "PIC18F04/05/14/15Q20 online edition5 Table45-21; verify exact device PDF"
+    },
+    {
+      "parameter": "i3c_bus_available_us",
+      "when": {
+        "i3c_implementation": "PIC18_Q20"
+      },
+      "source": "https://onlinedocs.microchip.com/oxy/GUID-20DC4AC0-78C3-43D4-B405-15D8B752B254-en-US-5/GUID-5770D42B-5331-416C-A1BE-AE3586BC832A.html",
+      "source_revision": "PIC18F04/05/14/15Q20 online edition5 Table45-21; verify exact device PDF",
+      "minimum": 1
+    },
+    {
+      "parameter": "i3c_bus_idle_us",
+      "when": {
+        "i3c_implementation": "PIC18_Q20"
+      },
+      "source": "https://onlinedocs.microchip.com/oxy/GUID-20DC4AC0-78C3-43D4-B405-15D8B752B254-en-US-5/GUID-5770D42B-5331-416C-A1BE-AE3586BC832A.html",
+      "source_revision": "PIC18F04/05/14/15Q20 online edition5 Table45-21; verify exact device PDF",
+      "minimum": 200
+    },
+    {
+      "parameter": "i3c_lv_startup_us",
+      "when": {
+        "i3c_implementation": "PIC18_Q20"
+      },
+      "source": "https://onlinedocs.microchip.com/oxy/GUID-20DC4AC0-78C3-43D4-B405-15D8B752B254-en-US-5/GUID-5770D42B-5331-416C-A1BE-AE3586BC832A.html",
+      "source_revision": "PIC18F04/05/14/15Q20 online edition5 Table45-21; verify exact device PDF",
+      "maximum": 630
+    },
+    {
+      "parameter": "i3c_pp_low_ns",
+      "when": {
+        "i3c_implementation": "PIC18_Q20"
+      },
+      "source": "https://onlinedocs.microchip.com/oxy/GUID-20DC4AC0-78C3-43D4-B405-15D8B752B254-en-US-5/GUID-7A28C34D-4E86-4948-B1AD-706E9862619D.html",
+      "source_revision": "PIC18F04/05/14/15Q20 online edition5 Table45-22; verify exact device PDF",
+      "minimum": 24
+    },
+    {
+      "parameter": "i3c_pp_digital_low_ns",
+      "when": {
+        "i3c_implementation": "PIC18_Q20"
+      },
+      "source": "https://onlinedocs.microchip.com/oxy/GUID-20DC4AC0-78C3-43D4-B405-15D8B752B254-en-US-5/GUID-7A28C34D-4E86-4948-B1AD-706E9862619D.html",
+      "source_revision": "PIC18F04/05/14/15Q20 online edition5 Table45-22; verify exact device PDF",
+      "minimum": 32
+    },
+    {
+      "parameter": "i3c_pp_high_ns",
+      "when": {
+        "i3c_implementation": "PIC18_Q20"
+      },
+      "source": "https://onlinedocs.microchip.com/oxy/GUID-20DC4AC0-78C3-43D4-B405-15D8B752B254-en-US-5/GUID-7A28C34D-4E86-4948-B1AD-706E9862619D.html",
+      "source_revision": "PIC18F04/05/14/15Q20 online edition5 Table45-22; verify exact device PDF",
+      "minimum": 24
+    },
+    {
+      "parameter": "i3c_pp_digital_high_ns",
+      "when": {
+        "i3c_implementation": "PIC18_Q20"
+      },
+      "source": "https://onlinedocs.microchip.com/oxy/GUID-20DC4AC0-78C3-43D4-B405-15D8B752B254-en-US-5/GUID-7A28C34D-4E86-4948-B1AD-706E9862619D.html",
+      "source_revision": "PIC18F04/05/14/15Q20 online edition5 Table45-22; verify exact device PDF",
+      "minimum": 32
+    },
+    {
+      "parameter": "i3c_scl_rise_ns",
+      "when": {
+        "i3c_implementation": "PIC18_Q20"
+      },
+      "source": "https://onlinedocs.microchip.com/oxy/GUID-20DC4AC0-78C3-43D4-B405-15D8B752B254-en-US-5/GUID-7A28C34D-4E86-4948-B1AD-706E9862619D.html",
+      "source_revision": "PIC18F04/05/14/15Q20 online edition5 Table45-22; verify exact device PDF",
+      "maximum": 60
+    },
+    {
+      "parameter": "i3c_scl_fall_ns",
+      "when": {
+        "i3c_implementation": "PIC18_Q20"
+      },
+      "source": "https://onlinedocs.microchip.com/oxy/GUID-20DC4AC0-78C3-43D4-B405-15D8B752B254-en-US-5/GUID-7A28C34D-4E86-4948-B1AD-706E9862619D.html",
+      "source_revision": "PIC18F04/05/14/15Q20 online edition5 Table45-22; verify exact device PDF",
+      "maximum": 60
+    },
+    {
+      "parameter": "i3c_pp_data_hold_ns",
+      "when": {
+        "i3c_implementation": "PIC18_Q20"
+      },
+      "source": "https://onlinedocs.microchip.com/oxy/GUID-20DC4AC0-78C3-43D4-B405-15D8B752B254-en-US-5/GUID-7A28C34D-4E86-4948-B1AD-706E9862619D.html",
+      "source_revision": "PIC18F04/05/14/15Q20 online edition5 Table45-22; verify exact device PDF",
+      "minimum": 0
+    },
+    {
+      "parameter": "i3c_pp_setup_ns",
+      "when": {
+        "i3c_implementation": "PIC18_Q20"
+      },
+      "source": "https://onlinedocs.microchip.com/oxy/GUID-20DC4AC0-78C3-43D4-B405-15D8B752B254-en-US-5/GUID-7A28C34D-4E86-4948-B1AD-706E9862619D.html",
+      "source_revision": "PIC18F04/05/14/15Q20 online edition5 Table45-22; verify exact device PDF",
+      "minimum": 3
+    },
+    {
+      "parameter": "i3c_restart_after_ns",
+      "when": {
+        "i3c_implementation": "PIC18_Q20"
+      },
+      "source": "https://onlinedocs.microchip.com/oxy/GUID-20DC4AC0-78C3-43D4-B405-15D8B752B254-en-US-5/GUID-7A28C34D-4E86-4948-B1AD-706E9862619D.html",
+      "source_revision": "PIC18F04/05/14/15Q20 online edition5 Table45-22; verify exact device PDF",
+      "minimum": 19.2
+    },
+    {
+      "parameter": "i3c_restart_before_ns",
+      "when": {
+        "i3c_implementation": "PIC18_Q20"
+      },
+      "source": "https://onlinedocs.microchip.com/oxy/GUID-20DC4AC0-78C3-43D4-B405-15D8B752B254-en-US-5/GUID-7A28C34D-4E86-4948-B1AD-706E9862619D.html",
+      "source_revision": "PIC18F04/05/14/15Q20 online edition5 Table45-22; verify exact device PDF",
+      "minimum": 19.2
+    },
+    {
+      "parameter": "i3c_bus_cap_pf",
+      "when": {
+        "i3c_implementation": "PIC18_Q20"
+      },
+      "source": "https://onlinedocs.microchip.com/oxy/GUID-20DC4AC0-78C3-43D4-B405-15D8B752B254-en-US-5/GUID-7A28C34D-4E86-4948-B1AD-706E9862619D.html",
+      "source_revision": "PIC18F04/05/14/15Q20 online edition5 Table45-22; verify exact device PDF",
+      "maximum": 50
+    },
+    {
+      "parameter": "i3c_tsco_ns",
+      "when": {
+        "i3c_implementation": "PIC18_Q20"
+      },
+      "source": "https://onlinedocs.microchip.com/oxy/GUID-20DC4AC0-78C3-43D4-B405-15D8B752B254-en-US-5/GUID-7A28C34D-4E86-4948-B1AD-706E9862619D.html",
+      "source_revision": "PIC18F04/05/14/15Q20 online edition5 Table45-22; verify exact device PDF",
+      "maximum": 12
+    },
+    {
+      "parameter": "i3c_pp_clock_hz",
+      "when": {
+        "i3c_implementation": "PIC18_Q20"
+      },
+      "source": "https://onlinedocs.microchip.com/oxy/GUID-20DC4AC0-78C3-43D4-B405-15D8B752B254-en-US-5/GUID-7A28C34D-4E86-4948-B1AD-706E9862619D.html",
+      "source_revision": "PIC18F04/05/14/15Q20 online edition5 Table45-22; verify exact device PDF",
+      "minimum": 10000
+    },
+    {
+      "parameter": "i3c_bus_free_ns",
+      "when": {
+        "i3c_implementation": "PIC18_Q20",
+        "i3c_bus_kind": "PURE"
+      },
+      "source": "https://onlinedocs.microchip.com/oxy/GUID-20DC4AC0-78C3-43D4-B405-15D8B752B254-en-US-5/GUID-5770D42B-5331-416C-A1BE-AE3586BC832A.html",
+      "source_revision": "PIC18F04/05/14/15Q20 online edition5 Table45-21; verify exact device PDF",
+      "minimum": 38.4
+    },
+    {
+      "parameter": "i3c_od_high_ns",
+      "when": {
+        "i3c_implementation": "PIC18_Q20",
+        "i3c_bus_kind": "PURE"
+      },
+      "source": "https://onlinedocs.microchip.com/oxy/GUID-20DC4AC0-78C3-43D4-B405-15D8B752B254-en-US-5/GUID-5770D42B-5331-416C-A1BE-AE3586BC832A.html",
+      "source_revision": "PIC18F04/05/14/15Q20 online edition5 Table45-21; verify exact device PDF",
+      "minimum": 24
+    },
+    {
+      "parameter": "i3c_bus_free_ns",
+      "when": {
+        "i3c_implementation": "PIC18_Q20",
+        "i3c_bus_kind": "MIXED_FM"
+      },
+      "source": "https://onlinedocs.microchip.com/oxy/GUID-20DC4AC0-78C3-43D4-B405-15D8B752B254-en-US-5/GUID-5770D42B-5331-416C-A1BE-AE3586BC832A.html",
+      "source_revision": "PIC18F04/05/14/15Q20 online edition5 Table45-21; verify exact device PDF",
+      "minimum": 1300
+    },
+    {
+      "parameter": "i3c_od_high_ns",
+      "when": {
+        "i3c_implementation": "PIC18_Q20",
+        "i3c_bus_kind": "MIXED_FM"
+      },
+      "source": "https://onlinedocs.microchip.com/oxy/GUID-20DC4AC0-78C3-43D4-B405-15D8B752B254-en-US-5/GUID-5770D42B-5331-416C-A1BE-AE3586BC832A.html",
+      "source_revision": "PIC18F04/05/14/15Q20 online edition5 Table45-21; verify exact device PDF",
+      "maximum": 41
+    },
+    {
+      "parameter": "i3c_pp_digital_high_ns",
+      "when": {
+        "i3c_implementation": "PIC18_Q20",
+        "i3c_bus_kind": "MIXED_FM"
+      },
+      "source": "https://onlinedocs.microchip.com/oxy/GUID-20DC4AC0-78C3-43D4-B405-15D8B752B254-en-US-5/GUID-7A28C34D-4E86-4948-B1AD-706E9862619D.html",
+      "source_revision": "PIC18F04/05/14/15Q20 online edition5 Table45-22; verify exact device PDF",
+      "maximum": 45
+    },
+    {
+      "parameter": "i3c_bus_free_ns",
+      "when": {
+        "i3c_implementation": "PIC18_Q20",
+        "i3c_bus_kind": "MIXED_FM_PLUS"
+      },
+      "source": "https://onlinedocs.microchip.com/oxy/GUID-20DC4AC0-78C3-43D4-B405-15D8B752B254-en-US-5/GUID-5770D42B-5331-416C-A1BE-AE3586BC832A.html",
+      "source_revision": "PIC18F04/05/14/15Q20 online edition5 Table45-21; verify exact device PDF",
+      "minimum": 500
+    },
+    {
+      "parameter": "i3c_od_high_ns",
+      "when": {
+        "i3c_implementation": "PIC18_Q20",
+        "i3c_bus_kind": "MIXED_FM_PLUS"
+      },
+      "source": "https://onlinedocs.microchip.com/oxy/GUID-20DC4AC0-78C3-43D4-B405-15D8B752B254-en-US-5/GUID-5770D42B-5331-416C-A1BE-AE3586BC832A.html",
+      "source_revision": "PIC18F04/05/14/15Q20 online edition5 Table45-21; verify exact device PDF",
+      "maximum": 41
+    },
+    {
+      "parameter": "i3c_pp_digital_high_ns",
+      "when": {
+        "i3c_implementation": "PIC18_Q20",
+        "i3c_bus_kind": "MIXED_FM_PLUS"
+      },
+      "source": "https://onlinedocs.microchip.com/oxy/GUID-20DC4AC0-78C3-43D4-B405-15D8B752B254-en-US-5/GUID-7A28C34D-4E86-4948-B1AD-706E9862619D.html",
+      "source_revision": "PIC18F04/05/14/15Q20 online edition5 Table45-22; verify exact device PDF",
+      "maximum": 45
+    },
+    {
+      "parameter": "i3c_pp_clock_hz",
+      "when": {
+        "i3c_implementation": "STM32_AN5879"
+      },
+      "source": "https://www.st.com/resource/en/application_note/an5879-introduction-to-i3c-for-stm32-mcus-stmicroelectronics.pdf",
+      "source_revision": "AN5879 Rev6 June2026 sections2/4/6/7/8, SDR-only implementation",
+      "maximum_ratio": {
+        "numerator_parameter": "i3c_kernel_clock_hz",
+        "denominator_offset": 2
+      },
+      "exclusive_maximum_ratio": true
+    },
+    {
+      "parameter": "i3c_pp_clock_hz",
+      "when": {
+        "i3c_implementation": "STM32_AN5879"
+      },
+      "source": "https://www.st.com/resource/en/application_note/an5879-introduction-to-i3c-for-stm32-mcus-stmicroelectronics.pdf",
+      "source_revision": "AN5879 Rev6 June2026 sections2/4/6/7/8, SDR-only implementation",
+      "equal_ratio": {
+        "numerator_parameter": "i3c_kernel_clock_hz",
+        "denominator_product": [
+          "i3c_period_cycles"
+        ],
+        "denominator_offset": 1
+      }
+    },
+    {
+      "parameter": "i3c_initial_filter_source",
+      "when": {
+        "i3c_initial_header": "ACCURATE_FILTER_2_5M"
+      },
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "required": true
+    },
+    {
+      "parameter": "i3c_initial_filter_source",
+      "when": {
+        "i3c_initial_header": "NO_FILTER_OMIT"
+      },
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "required": true
+    },
+    {
+      "parameter": "i3c_initial_clock_hz",
+      "when": {
+        "i3c_initial_header": "FM_FM_PLUS"
+      },
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification",
+      "maximum": 1000000
+    },
+    {
+      "parameter": "payload_bytes",
+      "when": {
+        "i3c_direction": "READ"
+      },
+      "maximum_parameter": "i3c_max_read_bytes",
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification"
+    },
+    {
+      "parameter": "payload_bytes",
+      "when": {
+        "i3c_direction": "WRITE"
+      },
+      "maximum_parameter": "i3c_max_write_bytes",
+      "source": "https://www.mipi.org/resources/I3C-frequently-asked-questions",
+      "source_revision": "Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification"
+    }
+  ],
+  "physical_layer_profile_id": null,
+  "medium_access_model": null,
+  "native_parameter_prefixes": [
+    "i3c_"
+  ],
+  "parameter_aliases": {},
+  "parameter_alias_limits": {},
+  "parameter_evidence_scope": null,
+  "rate_source_profile_id": null,
+  "arbitration_model_id": null,
+  "max_payload_bytes": null,
+  "capabilities": {
+    "supports_signals": true,
+    "supports_data_objects": false,
+    "supports_streams": false,
+    "supports_multicast": false,
+    "supports_publish_subscribe": false,
+    "supports_request_response": true,
+    "supports_cyclic": true,
+    "supports_event": true,
+    "supports_redundancy": false,
+    "supports_time_sync": false,
+    "supports_safety_profile": false,
+    "supports_segmentation": false,
+    "supports_fragmentation": false,
+    "supports_qos": false
+  },
+  "deterministic": false,
+  "overhead_bytes": 8,
+  "implementation_status": "EXPERIMENTAL",
+  "connection_type": "COMMUNICATION_TECHNOLOGY",
+  "parameter_proposals": {
+    "kind": "DEVICE_DEPENDENT",
+    "status": "REVIEW_REQUIRED",
+    "required_fields": [],
+    "note": "No universal rate is available; inspect the selected hardware/profile."
+  },
+  "capacity_evidence": {
+    "status": "MODEL_MISSING",
+    "frame_model": null,
+    "schedule_model": null,
+    "requires_confirmed_device_parameters": true
+  },
+  "components": {
+    "binding": "i3c.binding",
+    "generator": "i3c.generator",
+    "validator": "i3c.validator",
+    "timing_model": null,
+    "load_model": null,
+    "encoder": "i3c.encoder",
+    "decoder": "i3c.decoder"
+  },
+  "known_limitations": "Technology-specific conformance details require a vendor/profile extension."
+}

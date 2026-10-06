@@ -1,0 +1,4372 @@
+{
+  "id": "knx_tp",
+  "label": "KNX TP",
+  "domain": "generic_networking",
+  "layer": "INDUSTRY_PROFILE",
+  "transport_unit": "TELEGRAM",
+  "payload_element_types": [
+    "DATA_OBJECT",
+    "FIELD"
+  ],
+  "hardware_interface": "knx_tp_qualified_interface",
+  "hardware_capability_aliases": [
+    "knx_tp_interface"
+  ],
+  "default_stack": [
+    "knx_tp"
+  ],
+  "stack_variants": [
+    [
+      "knx_tp"
+    ]
+  ],
+  "default_bitrate": null,
+  "rate_model": {
+    "type": "EXPLICIT_TP1_WIRE_AND_SEPARATE_HOST",
+    "fields": []
+  },
+  "local_timing_schema": [],
+  "parameter_schema": {
+    "payload_bytes": {
+      "label": "Payload",
+      "category": "physical",
+      "scope": "message",
+      "type": "number",
+      "description": "Actual DPT/application bytes, distinct from TPDU, wire telegram parity/check, TP ACK and separate PHY-host framing.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.ti.com/lit/an/swra497/swra497.pdf",
+      "source_revision": "TI SWRA497, December2015; reviewed TP wire/telegram/timing/address/check sections pp6-13, overview expressly not full KNX specification",
+      "integer": true
+    },
+    "cycle_ms": {
+      "label": "Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "Standardperiode fuer zyklische Nachrichten.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "minimum_cycle_time_ms": {
+      "label": "Minimum Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "deadline_ms": {
+      "label": "Deadline",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "timeout_ms": {
+      "label": "Timeout",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_latency_ms": {
+      "label": "Maximum Latency",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "jitter_ms": {
+      "label": "Jitter Budget",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "freshness_ms": {
+      "label": "Data Freshness",
+      "category": "timing",
+      "scope": "signal",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "source_processing_delay_ms": {
+      "label": "Source Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_processing_delay_ms": {
+      "label": "Target Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "propagation_delay_ms": {
+      "label": "Propagation",
+      "category": "timing",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.01,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_bus_load_percent": {
+      "label": "Ziel-Buslast",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "Zielwert fuer die aus Routing, Payload, Zyklus und Bitrate berechnete Buslast.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "peak_factor": {
+      "label": "Peak Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.15,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_factor": {
+      "label": "Burst Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.5,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_window_ms": {
+      "label": "Burst Window",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "warning_threshold": {
+      "label": "Load Warning",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "critical_threshold": {
+      "label": "Load Critical",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 75,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "overload_threshold": {
+      "label": "Load Overload",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 90,
+      "unit": "%",
+      "min": 1,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "traffic_class": {
+      "label": "Traffic Class",
+      "category": "qos",
+      "scope": "route",
+      "type": "select",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": "BEST_EFFORT",
+      "options": [
+        "BEST_EFFORT",
+        "CONTROL",
+        "REALTIME",
+        "SAFETY_CRITICAL"
+      ],
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "packet_loss_probability": {
+      "label": "Packet Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "frame_loss_probability": {
+      "label": "Frame Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "bit_error_rate": {
+      "label": "Bit Error Rate",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "corruption_probability": {
+      "label": "Corruption",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duplicate_probability": {
+      "label": "Duplication",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "reordering_probability": {
+      "label": "Reordering",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "required_reliability": {
+      "label": "Required Reliability",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.999,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_offset_ms": {
+      "label": "Clock Offset",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_drift_ppm": {
+      "label": "Clock Drift",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 20,
+      "unit": "ppm",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_precision_ms": {
+      "label": "Sync Precision",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_interval_ms": {
+      "label": "Sync Interval",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1000,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_sync_error_ms": {
+      "label": "Maximum Sync Error",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_delay_ms": {
+      "label": "Gateway Processing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.2,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_queue_delay_ms": {
+      "label": "Gateway Queueing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "protocol_conversion_delay_ms": {
+      "label": "Protocol Conversion",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duration_s": {
+      "label": "Simulation Duration",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 1,
+      "unit": "s",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "seed": {
+      "label": "Random Seed",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 42,
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "max_events": {
+      "label": "Maximum Events",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 100000,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "dropout_probability": {
+      "label": "Failure Injection Dropout",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "ktp_profile": {
+      "type": "select",
+      "description": "Actual reviewed TP implementation: TI overview does not qualify a chip or full standard.",
+      "source": "https://www.ti.com/lit/an/swra497/swra497.pdf",
+      "source_revision": "TI SWRA497, December2015; reviewed TP wire/telegram/timing/address/check sections pp6-13, overview expressly not full KNX specification",
+      "options": [
+        "TP1_DEVICE_QUALIFIED",
+        "NCN5120_REV8",
+        "REGISTERED_TP_PROFILE"
+      ],
+      "integer": false,
+      "label": "profile",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ktp_role": {
+      "type": "select",
+      "description": "Actual endpoint/repeater/line-area coupler/monitor; each segment and other medium independent.",
+      "source": "https://www.knx.org/news/new-knx-tp1-256-topology-more-devices-and-fewer-line-repeaters",
+      "source_revision": "KNX Association2019-07-10 TP1-64/256 fan-in formula, independent supply loading",
+      "options": [
+        "END_DEVICE",
+        "REPEATER",
+        "COUPLER",
+        "BUS_MONITOR"
+      ],
+      "integer": false,
+      "label": "role",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ktp_frame_kind": {
+      "type": "select",
+      "description": "Actual standard versus extended data versus ACK versus polling; distinct lengths/bit slots.",
+      "source": "https://www.ti.com/lit/an/swra497/swra497.pdf",
+      "source_revision": "TI SWRA497, December2015; reviewed TP wire/telegram/timing/address/check sections pp6-13, overview expressly not full KNX specification",
+      "options": [
+        "STANDARD_DATA",
+        "EXTENDED_DATA",
+        "ACK",
+        "POLLING",
+        "REGISTERED_SERVICE"
+      ],
+      "integer": false,
+      "label": "frame kind",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ktp_host_kind": {
+      "type": "select",
+      "description": "Actual selected PHY-host link, not the9600bit/s TP line.",
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "options": [
+        "UART8",
+        "UART9",
+        "SPI",
+        "ANALOG",
+        "REGISTERED_HOST"
+      ],
+      "integer": false,
+      "label": "host kind",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ktp_host_parity": {
+      "type": "select",
+      "description": "Actual host UART parity, separate from TP per-character even parity.",
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "options": [
+        "NONE",
+        "EVEN",
+        "REGISTERED_PARITY"
+      ],
+      "integer": false,
+      "label": "host parity",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "ktp_profile": "NCN5120_REV8",
+            "ktp_host_kind": "UART8"
+          },
+          "value": "NONE",
+          "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+          "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY"
+        },
+        {
+          "when": {
+            "ktp_profile": "NCN5120_REV8",
+            "ktp_host_kind": "UART9"
+          },
+          "value": "EVEN",
+          "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+          "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY"
+        }
+      ]
+    },
+    "ktp_host_order": {
+      "type": "select",
+      "description": "Actual PHY-host bit order, distinct from address byte order.",
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "options": [
+        "LSB_FIRST",
+        "MSB_FIRST"
+      ],
+      "integer": false,
+      "label": "host order",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "ktp_profile": "NCN5120_REV8",
+            "ktp_host_kind": "UART8"
+          },
+          "value": "LSB_FIRST",
+          "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+          "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY"
+        },
+        {
+          "when": {
+            "ktp_profile": "NCN5120_REV8",
+            "ktp_host_kind": "UART9"
+          },
+          "value": "LSB_FIRST",
+          "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+          "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY"
+        },
+        {
+          "when": {
+            "ktp_profile": "NCN5120_REV8",
+            "ktp_host_kind": "SPI"
+          },
+          "value": "LSB_FIRST",
+          "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+          "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY"
+        }
+      ]
+    },
+    "ktp_host_frame_end": {
+      "type": "select",
+      "description": "Actual NCN host silence versus escaped marker framing.",
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "options": [
+        "SILENCE",
+        "MARKER",
+        "REGISTERED_FRAME_END"
+      ],
+      "integer": false,
+      "label": "host frame end",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ktp_spi_master": {
+      "type": "select",
+      "description": "Actual clock owner on the PHY-host link; NCN5120 is SPI master.",
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "options": [
+        "PHY",
+        "HOST",
+        "REGISTERED_OWNER"
+      ],
+      "integer": false,
+      "label": "spi master",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "ktp_profile": "NCN5120_REV8",
+            "ktp_host_kind": "SPI"
+          },
+          "value": "PHY",
+          "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+          "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY"
+        }
+      ]
+    },
+    "ktp_device_state": {
+      "type": "select",
+      "description": "Actual NCN state; NORMAL alone allows TP communication.",
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "options": [
+        "RESET",
+        "POWER_UP",
+        "SYNC",
+        "STOP",
+        "NORMAL"
+      ],
+      "integer": false,
+      "label": "device state",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ktp_address_kind": {
+      "type": "select",
+      "description": "Actual individual versus group versus broadcast destination.",
+      "source": "https://www.ti.com/lit/an/swra497/swra497.pdf",
+      "source_revision": "TI SWRA497, December2015; reviewed TP wire/telegram/timing/address/check sections pp6-13, overview expressly not full KNX specification",
+      "options": [
+        "INDIVIDUAL",
+        "GROUP",
+        "BROADCAST"
+      ],
+      "integer": false,
+      "label": "address kind",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ktp_group_edition": {
+      "type": "select",
+      "description": "Actual legacy15bit overview versus pinned/current qualified16bit group layout.",
+      "source": "https://raw.githubusercontent.com/calimero-project/calimero-core/61360088c59fd5f593608c971059437b37e0a836/src/tuwien/auto/calimero/GroupAddress.java",
+      "source_revision": "Calimero v2.6 exact61360088c59fd5f593608c971059437b37e0a836 GroupAddress.java;16bit address/5bitmain versus TI2015 legacy15bit overview",
+      "options": [
+        "TI2015_LEGACY_15BIT",
+        "CALIMERO_V2_6_16BIT",
+        "REGISTERED_GROUP_LAYOUT"
+      ],
+      "integer": false,
+      "label": "group edition",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ktp_group_style": {
+      "type": "select",
+      "description": "Actual raw/two/three-level view of same group address.",
+      "source": "https://raw.githubusercontent.com/calimero-project/calimero-core/61360088c59fd5f593608c971059437b37e0a836/src/tuwien/auto/calimero/GroupAddress.java",
+      "source_revision": "Calimero v2.6 exact61360088c59fd5f593608c971059437b37e0a836 GroupAddress.java;16bit address/5bitmain versus TI2015 legacy15bit overview",
+      "options": [
+        "RAW",
+        "TWO_LEVEL",
+        "THREE_LEVEL"
+      ],
+      "integer": false,
+      "label": "group style",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ktp_power_basis": {
+      "type": "select",
+      "description": "Actual measured/datasheet load versus explicitly estimated ETS fallback.",
+      "source": "https://support.knx.org/hc/en-us/articles/360022048579-Topology-panel-Detailed",
+      "source_revision": "KNX Association topology detailed, updated2026-09-01; actual manufacturer current versus explicitly estimated10mA device/320mA supply",
+      "options": [
+        "MEASURED",
+        "DATASHEET",
+        "ETS_ESTIMATE"
+      ],
+      "integer": false,
+      "label": "power basis",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ktp_cable_profile": {
+      "type": "select",
+      "description": "Actual approved0.8mm TP cable versus separately qualified realization.",
+      "source": "https://www.knx.org/news/trade-talk-knx-twisted-pair-its-not-just-little-piece-wire",
+      "source_revision": "KNX Association2018-12-05 approved0.8mm cable,1000m segment/350m PSU-device, actual device voltage evidence still required",
+      "options": [
+        "KNX_APPROVED_0_8",
+        "REGISTERED_CABLE"
+      ],
+      "integer": false,
+      "label": "cable profile",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ktp_ack_kind": {
+      "type": "select",
+      "description": "Actual observed positive ACK/NACK/BUSY/no response; no default positive acknowledgment.",
+      "source": "https://www.ti.com/lit/an/swra497/swra497.pdf",
+      "source_revision": "TI SWRA497, December2015; reviewed TP wire/telegram/timing/address/check sections pp6-13, overview expressly not full KNX specification",
+      "options": [
+        "ACK",
+        "NACK",
+        "BUSY",
+        "NONE",
+        "INVALID"
+      ],
+      "integer": false,
+      "label": "ack kind",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ktp_revision": {
+      "type": "text",
+      "description": "Actual full selected KNX TP1 link/application/security edition, not generic CAN parameters.",
+      "source": "https://www.ti.com/lit/an/swra497/swra497.pdf",
+      "source_revision": "TI SWRA497, December2015; reviewed TP wire/telegram/timing/address/check sections pp6-13, overview expressly not full KNX specification",
+      "integer": false,
+      "label": "revision",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ktp_device_source": {
+      "type": "text",
+      "description": "Actual chip/board/firmware capabilities and qualified standard/extended frames.",
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "integer": false,
+      "label": "device source",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ktp_physical_source": {
+      "type": "text",
+      "description": "Actual approved cable/PSU/choke/pulse/equalization/oscillator/EMC realization.",
+      "source": "https://www.knx.org/news/trade-talk-knx-twisted-pair-its-not-just-little-piece-wire",
+      "source_revision": "KNX Association2018-12-05 approved0.8mm cable,1000m segment/350m PSU-device, actual device voltage evidence still required",
+      "integer": false,
+      "label": "physical source",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ktp_binding_source": {
+      "type": "text",
+      "description": "Actual canonical independent TP port/segment; hostUART/SPI or couplerIP/RF has its own registered path.",
+      "source": "https://raw.githubusercontent.com/calimero-project/calimero-core/61360088c59fd5f593608c971059437b37e0a836/src/tuwien/auto/calimero/link/medium/KNXMediumSettings.java",
+      "source_revision": "Calimero same pinned v2.6 KNXMediumSettings.java; TP1 medium code2/9600bits per second; constructorzero address not allocated identity",
+      "integer": false,
+      "label": "binding source",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ktp_commissioning_source": {
+      "type": "text",
+      "description": "Actual ETS physical/group address/filter/object/DPT configuration; no zero-address placeholder.",
+      "source": "https://support.knx.org/hc/en-us/articles/360022048579-Topology-panel-Detailed",
+      "source_revision": "KNX Association topology detailed, updated2026-09-01; actual manufacturer current versus explicitly estimated10mA device/320mA supply",
+      "integer": false,
+      "label": "commissioning source",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ktp_application_source": {
+      "type": "text",
+      "description": "Actual DPT/APCI/TPCI/application codec and bytes;ACK is not execution completion.",
+      "source": "https://www.ti.com/lit/an/swra497/swra497.pdf",
+      "source_revision": "TI SWRA497, December2015; reviewed TP wire/telegram/timing/address/check sections pp6-13, overview expressly not full KNX specification",
+      "integer": false,
+      "label": "application source",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ktp_encoding_source": {
+      "type": "text",
+      "description": "Actual standard/extended telegram,per-byte parity/odd column check;not RF FT3 CRC.",
+      "source": "https://www.ti.com/lit/an/swra497/swra497.pdf",
+      "source_revision": "TI SWRA497, December2015; reviewed TP wire/telegram/timing/address/check sections pp6-13, overview expressly not full KNX specification",
+      "integer": false,
+      "label": "encoding source",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ktp_schedule_source": {
+      "type": "text",
+      "description": "Actual shared TP contention,priority,byte pauses,repetitions/ACK/polling and all traffic.",
+      "source": "https://www.ti.com/lit/an/swra497/swra497.pdf",
+      "source_revision": "TI SWRA497, December2015; reviewed TP wire/telegram/timing/address/check sections pp6-13, overview expressly not full KNX specification",
+      "integer": false,
+      "label": "schedule source",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ktp_capacity_source": {
+      "type": "text",
+      "description": "Actual TP capacity plus independently sized UART/SPI/coupler paths and approved load.",
+      "source": "https://www.knx.org/news/new-knx-tp1-256-topology-more-devices-and-fewer-line-repeaters",
+      "source_revision": "KNX Association2019-07-10 TP1-64/256 fan-in formula, independent supply loading",
+      "integer": false,
+      "label": "capacity source",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ktp_acceptance_source": {
+      "type": "text",
+      "description": "Actual functional E2E/freshness/safety distinct from positive local L_Data.con.",
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "integer": false,
+      "label": "acceptance source",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ktp_host_source": {
+      "type": "text",
+      "description": "Actual selected PHY-host baudrate,UART/SPI mode/owner/frame buffer/service/escaping.",
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "integer": false,
+      "label": "host source",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ktp_host_buffer_source": {
+      "type": "text",
+      "description": "Actual implementation send-offset/frame buffer limits and extended-frame acceptance.",
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "integer": false,
+      "label": "host buffer source",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ktp_address_source": {
+      "type": "text",
+      "description": "Actual selected edition-specific group layout/allocated address and coupler filters.",
+      "source": "https://raw.githubusercontent.com/calimero-project/calimero-core/61360088c59fd5f593608c971059437b37e0a836/src/tuwien/auto/calimero/GroupAddress.java",
+      "source_revision": "Calimero v2.6 exact61360088c59fd5f593608c971059437b37e0a836 GroupAddress.java;16bit address/5bitmain versus TI2015 legacy15bit overview",
+      "integer": false,
+      "label": "address source",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ktp_power_source": {
+      "type": "text",
+      "description": "Actual approved PSU/voltage/current derating/all device loads; ETS estimates remain estimates.",
+      "source": "https://support.knx.org/hc/en-us/articles/360022048579-Topology-panel-Detailed",
+      "source_revision": "KNX Association topology detailed, updated2026-09-01; actual manufacturer current versus explicitly estimated10mA device/320mA supply",
+      "integer": false,
+      "label": "power source",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ktp_checksum_source": {
+      "type": "text",
+      "description": "Actual complete wire bytes/odd column check and parity decoding, no invented checksum.",
+      "source": "https://www.ti.com/lit/an/swra497/swra497.pdf",
+      "source_revision": "TI SWRA497, December2015; reviewed TP wire/telegram/timing/address/check sections pp6-13, overview expressly not full KNX specification",
+      "integer": false,
+      "label": "checksum source",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ktp_coupler_source": {
+      "type": "text",
+      "description": "Actual filtering/hop/repeater rules,translation and independently qualified other medium.",
+      "source": "https://www.knx.org/news/new-knx-tp1-256-topology-more-devices-and-fewer-line-repeaters",
+      "source_revision": "KNX Association2019-07-10 TP1-64/256 fan-in formula, independent supply loading",
+      "integer": false,
+      "label": "coupler source",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ktp_polling_source": {
+      "type": "text",
+      "description": "Actual polling master/slave slots/state and service codec, not regular dataframe.",
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "integer": false,
+      "label": "polling source",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ktp_registered_profile_source": {
+      "type": "text",
+      "description": "Actual alternate registered TP/host/service schema,implementation and test proof.",
+      "source": "https://www.ti.com/lit/an/swra497/swra497.pdf",
+      "source_revision": "TI SWRA497, December2015; reviewed TP wire/telegram/timing/address/check sections pp6-13, overview expressly not full KNX specification",
+      "integer": false,
+      "label": "registered profile source",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ktp_security_source": {
+      "type": "text",
+      "description": "Actual Data Secure endpoint/group commissioning and protected keys, no IP Secure copy.",
+      "source": "https://support.knx.org/hc/en-us/articles/360012689639-KNX-Data-Secure",
+      "source_revision": "KNX Association Data Secure, updated2026-09-23; separately commissioned AES128 per group/end device",
+      "integer": false,
+      "label": "security source",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ktp_group_key_ref": {
+      "type": "text",
+      "description": "Actual protected Data Secure group key reference,not secret/defaultkey.",
+      "source": "https://support.knx.org/hc/en-us/articles/360012689639-KNX-Data-Secure",
+      "source_revision": "KNX Association Data Secure, updated2026-09-23; separately commissioned AES128 per group/end device",
+      "integer": false,
+      "label": "group key ref",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ktp_bitrate_bps": {
+      "type": "number",
+      "description": "TP1 information rate9600bit/s,independent of hostSPI/UART clock.",
+      "source": "https://raw.githubusercontent.com/calimero-project/calimero-core/61360088c59fd5f593608c971059437b37e0a836/src/tuwien/auto/calimero/link/medium/KNXMediumSettings.java",
+      "source_revision": "Calimero same pinned v2.6 KNXMediumSettings.java; TP1 medium code2/9600bits per second; constructorzero address not allocated identity",
+      "min": 9600,
+      "max": 9600,
+      "unit": "bit/s",
+      "integer": true,
+      "label": "bitrate bps",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_STANDARD",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "default": 9600
+    },
+    "ktp_start_bits": {
+      "type": "number",
+      "description": "TP character start bit count1.",
+      "source": "https://www.ti.com/lit/an/swra497/swra497.pdf",
+      "source_revision": "TI SWRA497, December2015; reviewed TP wire/telegram/timing/address/check sections pp6-13, overview expressly not full KNX specification",
+      "min": 1,
+      "max": 1,
+      "unit": "bit",
+      "integer": true,
+      "label": "start bits",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_STANDARD",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "default": 1
+    },
+    "ktp_data_bits": {
+      "type": "number",
+      "description": "TP character8data bits,not UART9mode9data bits.",
+      "source": "https://www.ti.com/lit/an/swra497/swra497.pdf",
+      "source_revision": "TI SWRA497, December2015; reviewed TP wire/telegram/timing/address/check sections pp6-13, overview expressly not full KNX specification",
+      "min": 8,
+      "max": 8,
+      "unit": "bit",
+      "integer": true,
+      "label": "data bits",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_STANDARD",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "default": 8
+    },
+    "ktp_parity_bits": {
+      "type": "number",
+      "description": "TP character1evenparitybit.",
+      "source": "https://www.ti.com/lit/an/swra497/swra497.pdf",
+      "source_revision": "TI SWRA497, December2015; reviewed TP wire/telegram/timing/address/check sections pp6-13, overview expressly not full KNX specification",
+      "min": 1,
+      "max": 1,
+      "unit": "bit",
+      "integer": true,
+      "label": "parity bits",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_STANDARD",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "default": 1
+    },
+    "ktp_stop_bits": {
+      "type": "number",
+      "description": "TP character1stopbit.",
+      "source": "https://www.ti.com/lit/an/swra497/swra497.pdf",
+      "source_revision": "TI SWRA497, December2015; reviewed TP wire/telegram/timing/address/check sections pp6-13, overview expressly not full KNX specification",
+      "min": 1,
+      "max": 1,
+      "unit": "bit",
+      "integer": true,
+      "label": "stop bits",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_STANDARD",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "default": 1
+    },
+    "ktp_pause_bits": {
+      "type": "number",
+      "description": "TP inter-character pause2bitperiods,not UART additionalstopbits.",
+      "source": "https://www.ti.com/lit/an/swra497/swra497.pdf",
+      "source_revision": "TI SWRA497, December2015; reviewed TP wire/telegram/timing/address/check sections pp6-13, overview expressly not full KNX specification",
+      "min": 2,
+      "max": 2,
+      "unit": "bit",
+      "integer": true,
+      "label": "pause bits",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_STANDARD",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "default": 2
+    },
+    "ktp_character_bits": {
+      "type": "number",
+      "description": "TP byte occupies13bits including2bitpause.",
+      "source": "https://www.ti.com/lit/an/swra497/swra497.pdf",
+      "source_revision": "TI SWRA497, December2015; reviewed TP wire/telegram/timing/address/check sections pp6-13, overview expressly not full KNX specification",
+      "min": 13,
+      "max": 13,
+      "unit": "bit",
+      "integer": true,
+      "label": "character bits",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_STANDARD",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "default": 13
+    },
+    "ktp_idle_bits": {
+      "type": "number",
+      "description": "Actual initial free medium wait at least50TP bitperiods;5.2ms overviewrounded.",
+      "source": "https://www.ti.com/lit/an/swra497/swra497.pdf",
+      "source_revision": "TI SWRA497, December2015; reviewed TP wire/telegram/timing/address/check sections pp6-13, overview expressly not full KNX specification",
+      "min": 50,
+      "unit": "bit",
+      "integer": true,
+      "label": "idle bits",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ktp_idle_ms": {
+      "type": "number",
+      "description": "Actual free medium wait converted from exact9600bit/s,not rounded5.2ms equality.",
+      "source": "https://www.ti.com/lit/an/swra497/swra497.pdf",
+      "source_revision": "TI SWRA497, December2015; reviewed TP wire/telegram/timing/address/check sections pp6-13, overview expressly not full KNX specification",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "label": "idle ms",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ktp_ack_bound_ms": {
+      "type": "number",
+      "description": "Actual ACK-response bound;overview1.56ms rounded,15TPbitperiods is1.5625ms.",
+      "source": "https://www.ti.com/lit/an/swra497/swra497.pdf",
+      "source_revision": "TI SWRA497, December2015; reviewed TP wire/telegram/timing/address/check sections pp6-13, overview expressly not full KNX specification",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "label": "ack bound ms",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ktp_active_pulse_us": {
+      "type": "number",
+      "description": "Actual qualified active-zero pulse,overview35us nominal not full tolerance proof.",
+      "source": "https://www.ti.com/lit/an/swra497/swra497.pdf",
+      "source_revision": "TI SWRA497, December2015; reviewed TP wire/telegram/timing/address/check sections pp6-13, overview expressly not full KNX specification",
+      "min": 0,
+      "unit": "us",
+      "integer": false,
+      "label": "active pulse us",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ktp_equalization_us": {
+      "type": "number",
+      "description": "Actual qualified equalization pulse,overview69us rounded nominal.",
+      "source": "https://www.ti.com/lit/an/swra497/swra497.pdf",
+      "source_revision": "TI SWRA497, December2015; reviewed TP wire/telegram/timing/address/check sections pp6-13, overview expressly not full KNX specification",
+      "min": 0,
+      "unit": "us",
+      "integer": false,
+      "label": "equalization us",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ktp_pulse_drop_v": {
+      "type": "number",
+      "description": "Actual active voltage drop,overviewapproximately6..9V; requires measured PHY evidence.",
+      "source": "https://www.ti.com/lit/an/swra497/swra497.pdf",
+      "source_revision": "TI SWRA497, December2015; reviewed TP wire/telegram/timing/address/check sections pp6-13, overview expressly not full KNX specification",
+      "min": 0,
+      "unit": "V",
+      "integer": false,
+      "label": "pulse drop v",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ktp_supply_nominal_v": {
+      "type": "number",
+      "description": "Actual approvedPSU nominal voltage,association29V proposal not measurednodevoltage.",
+      "source": "https://www.knx.org/news/trade-talk-knx-twisted-pair-its-not-just-little-piece-wire",
+      "source_revision": "KNX Association2018-12-05 approved0.8mm cable,1000m segment/350m PSU-device, actual device voltage evidence still required",
+      "min": 0,
+      "unit": "V",
+      "integer": false,
+      "label": "supply nominal v",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "ktp_cable_profile": "KNX_APPROVED_0_8"
+          },
+          "value": 29,
+          "source": "https://www.knx.org/news/trade-talk-knx-twisted-pair-its-not-just-little-piece-wire",
+          "source_revision": "KNX Association2018-12-05 approved0.8mm cable,1000m segment/350m PSU-device, actual device voltage evidence still required"
+        }
+      ]
+    },
+    "ktp_bus_voltage_v": {
+      "type": "number",
+      "description": "Actual local devicebusvoltage under load and signaltransients.",
+      "source": "https://www.knx.org/news/trade-talk-knx-twisted-pair-its-not-just-little-piece-wire",
+      "source_revision": "KNX Association2018-12-05 approved0.8mm cable,1000m segment/350m PSU-device, actual device voltage evidence still required",
+      "min": 0,
+      "unit": "V",
+      "integer": false,
+      "label": "bus voltage v",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ktp_device_min_v": {
+      "type": "number",
+      "description": "Actual selecteddevice voltage minimum,not universalTI20vsassociation21V assumption.",
+      "source": "https://www.knx.org/news/trade-talk-knx-twisted-pair-its-not-just-little-piece-wire",
+      "source_revision": "KNX Association2018-12-05 approved0.8mm cable,1000m segment/350m PSU-device, actual device voltage evidence still required",
+      "min": 0,
+      "unit": "V",
+      "integer": false,
+      "label": "device min v",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ktp_device_max_v": {
+      "type": "number",
+      "description": "Actual selecteddevice voltage maximum.",
+      "source": "https://www.knx.org/news/trade-talk-knx-twisted-pair-its-not-just-little-piece-wire",
+      "source_revision": "KNX Association2018-12-05 approved0.8mm cable,1000m segment/350m PSU-device, actual device voltage evidence still required",
+      "min": 0,
+      "unit": "V",
+      "integer": false,
+      "label": "device max v",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ktp_supply_current_ma": {
+      "type": "number",
+      "description": "Actual qualified availablecurrent or explicitly estimatedETS320mA,not universal640mA.",
+      "source": "https://support.knx.org/hc/en-us/articles/360022048579-Topology-panel-Detailed",
+      "source_revision": "KNX Association topology detailed, updated2026-09-01; actual manufacturer current versus explicitly estimated10mA device/320mA supply",
+      "min": 0,
+      "unit": "mA",
+      "integer": false,
+      "label": "supply current ma",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "ktp_power_basis": "ETS_ESTIMATE"
+          },
+          "value": 320,
+          "source": "https://support.knx.org/hc/en-us/articles/360022048579-Topology-panel-Detailed",
+          "source_revision": "KNX Association topology detailed, updated2026-09-01; actual manufacturer current versus explicitly estimated10mA device/320mA supply"
+        }
+      ]
+    },
+    "ktp_device_current_ma": {
+      "type": "number",
+      "description": "Actual individualdevicebuscurrent or explicitly estimatedETS10mA.",
+      "source": "https://support.knx.org/hc/en-us/articles/360022048579-Topology-panel-Detailed",
+      "source_revision": "KNX Association topology detailed, updated2026-09-01; actual manufacturer current versus explicitly estimated10mA device/320mA supply",
+      "min": 0,
+      "unit": "mA",
+      "integer": false,
+      "label": "device current ma",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "ktp_power_basis": "ETS_ESTIMATE"
+          },
+          "value": 10,
+          "source": "https://support.knx.org/hc/en-us/articles/360022048579-Topology-panel-Detailed",
+          "source_revision": "KNX Association topology detailed, updated2026-09-01; actual manufacturer current versus explicitly estimated10mA device/320mA supply"
+        }
+      ]
+    },
+    "ktp_segment_load_ma": {
+      "type": "number",
+      "description": "Actual sum of all device/coupler current on this segment,not one device*guessedcount.",
+      "source": "https://support.knx.org/hc/en-us/articles/360022048579-Topology-panel-Detailed",
+      "source_revision": "KNX Association topology detailed, updated2026-09-01; actual manufacturer current versus explicitly estimated10mA device/320mA supply",
+      "min": 0,
+      "unit": "mA",
+      "integer": false,
+      "label": "segment load ma",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ktp_tp64_count": {
+      "type": "number",
+      "description": "Actual legacyTP1-64 electricalfan-in4 devicesincludingcouplers.",
+      "source": "https://www.knx.org/news/new-knx-tp1-256-topology-more-devices-and-fewer-line-repeaters",
+      "source_revision": "KNX Association2019-07-10 TP1-64/256 fan-in formula, independent supply loading",
+      "min": 0,
+      "max": 256,
+      "integer": true,
+      "label": "tp64 count",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ktp_tp256_count": {
+      "type": "number",
+      "description": "ActualTP1-256 electricalfan-in1 devicesincludingcouplers.",
+      "source": "https://www.knx.org/news/new-knx-tp1-256-topology-more-devices-and-fewer-line-repeaters",
+      "source_revision": "KNX Association2019-07-10 TP1-64/256 fan-in formula, independent supply loading",
+      "min": 0,
+      "max": 256,
+      "integer": true,
+      "label": "tp256 count",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ktp_fan_in": {
+      "type": "number",
+      "description": "Actualweightedfan-in4*n64+n256,max256;notpowerproof.",
+      "source": "https://www.knx.org/news/new-knx-tp1-256-topology-more-devices-and-fewer-line-repeaters",
+      "source_revision": "KNX Association2019-07-10 TP1-64/256 fan-in formula, independent supply loading",
+      "min": 0,
+      "max": 256,
+      "integer": true,
+      "label": "fan in",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ktp_segment_length_m": {
+      "type": "number",
+      "description": "ActualtotalcablelengthonapprovedTPsegment,max1000m not operating default.",
+      "source": "https://www.knx.org/news/trade-talk-knx-twisted-pair-its-not-just-little-piece-wire",
+      "source_revision": "KNX Association2018-12-05 approved0.8mm cable,1000m segment/350m PSU-device, actual device voltage evidence still required",
+      "min": 0,
+      "max": 1000,
+      "unit": "m",
+      "integer": false,
+      "label": "segment length m",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ktp_psu_device_distance_m": {
+      "type": "number",
+      "description": "Actualcabledistancefrompowerupplytodevice,max350m.",
+      "source": "https://www.knx.org/news/trade-talk-knx-twisted-pair-its-not-just-little-piece-wire",
+      "source_revision": "KNX Association2018-12-05 approved0.8mm cable,1000m segment/350m PSU-device, actual device voltage evidence still required",
+      "min": 0,
+      "max": 350,
+      "unit": "m",
+      "integer": false,
+      "label": "psu device distance m",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ktp_cable_diameter_mm": {
+      "type": "number",
+      "description": "Actualapprovedsolidconductor0.8mm versus independentlyqualifiedcable.",
+      "source": "https://www.knx.org/news/trade-talk-knx-twisted-pair-its-not-just-little-piece-wire",
+      "source_revision": "KNX Association2018-12-05 approved0.8mm cable,1000m segment/350m PSU-device, actual device voltage evidence still required",
+      "min": 0,
+      "unit": "mm",
+      "integer": false,
+      "label": "cable diameter mm",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "ktp_cable_profile": "KNX_APPROVED_0_8"
+          },
+          "value": 0.8,
+          "source": "https://www.knx.org/news/trade-talk-knx-twisted-pair-its-not-just-little-piece-wire",
+          "source_revision": "KNX Association2018-12-05 approved0.8mm cable,1000m segment/350m PSU-device, actual device voltage evidence still required"
+        }
+      ]
+    },
+    "ktp_source_address": {
+      "type": "number",
+      "description": "Actual16bitallocatedindividualaddress,not constructor0.0.0.",
+      "source": "https://www.ti.com/lit/an/swra497/swra497.pdf",
+      "source_revision": "TI SWRA497, December2015; reviewed TP wire/telegram/timing/address/check sections pp6-13, overview expressly not full KNX specification",
+      "min": 0,
+      "max": 65535,
+      "integer": true,
+      "label": "source address",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ktp_area": {
+      "type": "number",
+      "description": "Actualindividualaddressarea4bits.",
+      "source": "https://www.ti.com/lit/an/swra497/swra497.pdf",
+      "source_revision": "TI SWRA497, December2015; reviewed TP wire/telegram/timing/address/check sections pp6-13, overview expressly not full KNX specification",
+      "min": 0,
+      "max": 15,
+      "integer": true,
+      "label": "area",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ktp_line": {
+      "type": "number",
+      "description": "Actualindividualaddressline4bits.",
+      "source": "https://www.ti.com/lit/an/swra497/swra497.pdf",
+      "source_revision": "TI SWRA497, December2015; reviewed TP wire/telegram/timing/address/check sections pp6-13, overview expressly not full KNX specification",
+      "min": 0,
+      "max": 15,
+      "integer": true,
+      "label": "line",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ktp_device_number": {
+      "type": "number",
+      "description": "Actualindividualaddressdevice8bits.",
+      "source": "https://www.ti.com/lit/an/swra497/swra497.pdf",
+      "source_revision": "TI SWRA497, December2015; reviewed TP wire/telegram/timing/address/check sections pp6-13, overview expressly not full KNX specification",
+      "min": 0,
+      "max": 255,
+      "integer": true,
+      "label": "device number",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ktp_destination_address": {
+      "type": "number",
+      "description": "Actual16bitwiregroup/individualdestination,legacygroup15bitswhenexplicit.",
+      "source": "https://raw.githubusercontent.com/calimero-project/calimero-core/61360088c59fd5f593608c971059437b37e0a836/src/tuwien/auto/calimero/GroupAddress.java",
+      "source_revision": "Calimero v2.6 exact61360088c59fd5f593608c971059437b37e0a836 GroupAddress.java;16bit address/5bitmain versus TI2015 legacy15bit overview",
+      "min": 0,
+      "max": 65535,
+      "integer": true,
+      "label": "destination address",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ktp_group_main": {
+      "type": "number",
+      "description": "Actualmain group4legacy/5current bits.",
+      "source": "https://raw.githubusercontent.com/calimero-project/calimero-core/61360088c59fd5f593608c971059437b37e0a836/src/tuwien/auto/calimero/GroupAddress.java",
+      "source_revision": "Calimero v2.6 exact61360088c59fd5f593608c971059437b37e0a836 GroupAddress.java;16bit address/5bitmain versus TI2015 legacy15bit overview",
+      "min": 0,
+      "max": 31,
+      "integer": true,
+      "label": "group main",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ktp_group_middle": {
+      "type": "number",
+      "description": "Actualthree-levelmiddlegroup3bits.",
+      "source": "https://raw.githubusercontent.com/calimero-project/calimero-core/61360088c59fd5f593608c971059437b37e0a836/src/tuwien/auto/calimero/GroupAddress.java",
+      "source_revision": "Calimero v2.6 exact61360088c59fd5f593608c971059437b37e0a836 GroupAddress.java;16bit address/5bitmain versus TI2015 legacy15bit overview",
+      "min": 0,
+      "max": 7,
+      "integer": true,
+      "label": "group middle",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ktp_group_sub": {
+      "type": "number",
+      "description": "Actualthree-levelsubgroup8bits versus two-level11bits.",
+      "source": "https://raw.githubusercontent.com/calimero-project/calimero-core/61360088c59fd5f593608c971059437b37e0a836/src/tuwien/auto/calimero/GroupAddress.java",
+      "source_revision": "Calimero v2.6 exact61360088c59fd5f593608c971059437b37e0a836 GroupAddress.java;16bit address/5bitmain versus TI2015 legacy15bit overview",
+      "min": 0,
+      "max": 2047,
+      "integer": true,
+      "label": "group sub",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ktp_hop_count": {
+      "type": "number",
+      "description": "ActualKNX3bitnetworkroutingcounter,7specialnondecrementforwarding,not IP TTL.",
+      "source": "https://www.ti.com/lit/an/swra497/swra497.pdf",
+      "source_revision": "TI SWRA497, December2015; reviewed TP wire/telegram/timing/address/check sections pp6-13, overview expressly not full KNX specification",
+      "min": 0,
+      "max": 7,
+      "integer": true,
+      "label": "hop count",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ktp_priority_code": {
+      "type": "number",
+      "description": "Actual2bitTPpriority code,notCANidentifierorpriority0..7.",
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "min": 0,
+      "max": 3,
+      "integer": true,
+      "label": "priority code",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ktp_repeat_bit": {
+      "type": "number",
+      "description": "ActualTPcontrolrepeatbit1original/0repeated.",
+      "source": "https://www.ti.com/lit/an/swra497/swra497.pdf",
+      "source_revision": "TI SWRA497, December2015; reviewed TP wire/telegram/timing/address/check sections pp6-13, overview expressly not full KNX specification",
+      "min": 0,
+      "max": 1,
+      "integer": true,
+      "label": "repeat bit",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ktp_tpdu_octets": {
+      "type": "number",
+      "description": "ActualselectedTPDUlength1..16standard;extended buffer/device supports independently proven.",
+      "source": "https://www.ti.com/lit/an/swra497/swra497.pdf",
+      "source_revision": "TI SWRA497, December2015; reviewed TP wire/telegram/timing/address/check sections pp6-13, overview expressly not full KNX specification",
+      "min": 1,
+      "max": 255,
+      "unit": "Byte",
+      "integer": true,
+      "label": "tpdu octets",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ktp_length_field": {
+      "type": "number",
+      "description": "ActualencodedTPDUlengthminus1,standard4bitsversusextended8bits.",
+      "source": "https://www.ti.com/lit/an/swra497/swra497.pdf",
+      "source_revision": "TI SWRA497, December2015; reviewed TP wire/telegram/timing/address/check sections pp6-13, overview expressly not full KNX specification",
+      "min": 0,
+      "max": 254,
+      "unit": "Byte",
+      "integer": true,
+      "label": "length field",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ktp_frame_octets": {
+      "type": "number",
+      "description": "ActualcompleteTPwiretelegramincluding7standard/8extended overheadoctets.",
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "min": 1,
+      "unit": "Byte",
+      "integer": true,
+      "label": "frame octets",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ktp_wire_checksum": {
+      "type": "number",
+      "description": "Actualoddcolumnparitycheckbyte,notCRCCCITT/FT3CRC16.",
+      "source": "https://www.ti.com/lit/an/swra497/swra497.pdf",
+      "source_revision": "TI SWRA497, December2015; reviewed TP wire/telegram/timing/address/check sections pp6-13, overview expressly not full KNX specification",
+      "min": 0,
+      "max": 255,
+      "integer": true,
+      "label": "wire checksum",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ktp_host_bitrate_bps": {
+      "type": "number",
+      "description": "ActualNCN UART19200/38400 orSPI125000/500000,not9600TPline.",
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "min": 1,
+      "unit": "bit/s",
+      "integer": true,
+      "label": "host bitrate bps",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "ktp_profile": "NCN5120_REV8",
+            "ktp_host_kind": "UART8"
+          },
+          "value": 19200,
+          "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+          "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY"
+        },
+        {
+          "when": {
+            "ktp_profile": "NCN5120_REV8",
+            "ktp_host_kind": "UART9"
+          },
+          "value": 19200,
+          "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+          "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY"
+        },
+        {
+          "when": {
+            "ktp_profile": "NCN5120_REV8",
+            "ktp_host_kind": "SPI"
+          },
+          "value": 125000,
+          "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+          "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY"
+        }
+      ]
+    },
+    "ktp_host_data_bits": {
+      "type": "number",
+      "description": "ActualUART8data bitsinboth8/9bitNCNmodes,9thbitisparity.",
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "min": 1,
+      "unit": "bit",
+      "integer": true,
+      "label": "host data bits",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "ktp_profile": "NCN5120_REV8",
+            "ktp_host_kind": "UART8"
+          },
+          "value": 8,
+          "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+          "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY"
+        },
+        {
+          "when": {
+            "ktp_profile": "NCN5120_REV8",
+            "ktp_host_kind": "UART9"
+          },
+          "value": 8,
+          "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+          "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY"
+        }
+      ]
+    },
+    "ktp_host_stop_bits": {
+      "type": "number",
+      "description": "ActualUART1stopbit,notTP2bitpause.",
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "min": 1,
+      "unit": "bit",
+      "integer": true,
+      "label": "host stop bits",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "ktp_profile": "NCN5120_REV8",
+            "ktp_host_kind": "UART8"
+          },
+          "value": 1,
+          "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+          "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY"
+        },
+        {
+          "when": {
+            "ktp_profile": "NCN5120_REV8",
+            "ktp_host_kind": "UART9"
+          },
+          "value": 1,
+          "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+          "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY"
+        }
+      ]
+    },
+    "ktp_host_cpol": {
+      "type": "number",
+      "description": "ActualselectedNCN SPI mode0CPOL.",
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "min": 0,
+      "max": 1,
+      "integer": true,
+      "label": "host cpol",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "ktp_profile": "NCN5120_REV8",
+            "ktp_host_kind": "SPI"
+          },
+          "value": 0,
+          "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+          "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY"
+        }
+      ]
+    },
+    "ktp_host_cpha": {
+      "type": "number",
+      "description": "ActualselectedNCN SPI mode0CPHA.",
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "min": 0,
+      "max": 1,
+      "integer": true,
+      "label": "host cpha",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "ktp_profile": "NCN5120_REV8",
+            "ktp_host_kind": "SPI"
+          },
+          "value": 0,
+          "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+          "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY"
+        }
+      ]
+    },
+    "ktp_host_crc_octets": {
+      "type": "number",
+      "description": "ActualoptionalhostCRC2bytes,notTPwireFCS.",
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "min": 0,
+      "unit": "Byte",
+      "integer": true,
+      "label": "host crc octets",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "ktp_profile": "NCN5120_REV8",
+            "ktp_host_crc_enabled": true
+          },
+          "value": 2,
+          "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+          "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY"
+        }
+      ]
+    },
+    "ktp_host_crc_polynomial": {
+      "type": "number",
+      "description": "ActualhostCRC16CCITT0x1021.",
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "min": 0,
+      "max": 65535,
+      "integer": true,
+      "label": "host crc polynomial",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "ktp_profile": "NCN5120_REV8",
+            "ktp_host_crc_enabled": true
+          },
+          "value": 4129,
+          "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+          "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY"
+        }
+      ]
+    },
+    "ktp_host_crc_initial": {
+      "type": "number",
+      "description": "ActualhostCRCinitial0xffff.",
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "min": 0,
+      "max": 65535,
+      "integer": true,
+      "label": "host crc initial",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "ktp_profile": "NCN5120_REV8",
+            "ktp_host_crc_enabled": true
+          },
+          "value": 65535,
+          "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+          "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY"
+        }
+      ]
+    },
+    "ktp_host_crc_xorout": {
+      "type": "number",
+      "description": "ActualhostCRCfinalxor0.",
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "min": 0,
+      "max": 65535,
+      "integer": true,
+      "label": "host crc xorout",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "ktp_profile": "NCN5120_REV8",
+            "ktp_host_crc_enabled": true
+          },
+          "value": 0,
+          "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+          "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY"
+        }
+      ]
+    },
+    "ktp_host_end_silence_ms": {
+      "type": "number",
+      "description": "ActualNCN hostenddetector2.6ms,notTPidleschedule.",
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "label": "host end silence ms",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "ktp_profile": "NCN5120_REV8",
+            "ktp_host_frame_end": "SILENCE"
+          },
+          "value": 2.6,
+          "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+          "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY"
+        }
+      ]
+    },
+    "ktp_host_marker": {
+      "type": "number",
+      "description": "ActualNCN hostmarker0xCB,escapedbydoublingwhenoccursindata.",
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "min": 0,
+      "max": 255,
+      "integer": true,
+      "label": "host marker",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "ktp_profile": "NCN5120_REV8",
+            "ktp_host_frame_end": "MARKER"
+          },
+          "value": 203,
+          "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+          "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY"
+        }
+      ]
+    },
+    "ktp_busy_retries": {
+      "type": "number",
+      "description": "ActualNCN3bitBUSYretrycounterdefault3,notsharedNACKcounter.",
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "min": 0,
+      "max": 7,
+      "integer": true,
+      "label": "busy retries",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "ktp_profile": "NCN5120_REV8"
+          },
+          "value": 3,
+          "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+          "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY"
+        }
+      ]
+    },
+    "ktp_nack_retries": {
+      "type": "number",
+      "description": "ActualNCN3bitNACKretrycounterdefault3.",
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "min": 0,
+      "max": 7,
+      "integer": true,
+      "label": "nack retries",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "ktp_profile": "NCN5120_REV8"
+          },
+          "value": 3,
+          "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+          "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY"
+        }
+      ]
+    },
+    "ktp_worst_attempts": {
+      "type": "number",
+      "description": "ActualNCNworstNACK+BUSY+1 whenretriesenabled,notCANretrylimit.",
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "min": 1,
+      "integer": true,
+      "label": "worst attempts",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ktp_busy_idle_bits": {
+      "type": "number",
+      "description": "ActualNCNwaitatleast150TPbitperiodsafterBUSY.",
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "min": 0,
+      "unit": "bit",
+      "integer": true,
+      "label": "busy idle bits",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "ktp_profile": "NCN5120_REV8"
+          },
+          "value": 150,
+          "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+          "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY"
+        }
+      ]
+    },
+    "ktp_nack_idle_bits": {
+      "type": "number",
+      "description": "ActualNCNwaitatleast50TPbitperiodsafterNACK/error/noACK.",
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "min": 0,
+      "unit": "bit",
+      "integer": true,
+      "label": "nack idle bits",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "ktp_profile": "NCN5120_REV8"
+          },
+          "value": 50,
+          "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+          "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY"
+        }
+      ]
+    },
+    "ktp_ack_timeout_bits": {
+      "type": "number",
+      "description": "ActualNCNnoACKtimeout30TPbitperiods,distinctfromreceiverACKresponsebound.",
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "min": 0,
+      "unit": "bit",
+      "integer": true,
+      "label": "ack timeout bits",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "ktp_profile": "NCN5120_REV8"
+          },
+          "value": 30,
+          "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+          "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY"
+        }
+      ]
+    },
+    "ktp_sync_idle_bits": {
+      "type": "number",
+      "description": "ActualNCNstartupSYNC40freeTPbitperiods,notnormalTX50.",
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "min": 0,
+      "unit": "bit",
+      "integer": true,
+      "label": "sync idle bits",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "ktp_profile": "NCN5120_REV8"
+          },
+          "value": 40,
+          "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+          "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY"
+        }
+      ]
+    },
+    "ktp_poll_slot": {
+      "type": "number",
+      "description": "ActualNCNslavepollingindex0..14,notgroupallocatedidentity.",
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "min": 0,
+      "max": 14,
+      "integer": true,
+      "label": "poll slot",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ktp_data_secure_key_octets": {
+      "type": "number",
+      "description": "ActualAES128DataSecurekey16bytes,notsecretvalue.",
+      "source": "https://support.knx.org/hc/en-us/articles/360012689639-KNX-Data-Secure",
+      "source_revision": "KNX Association Data Secure, updated2026-09-23; separately commissioned AES128 per group/end device",
+      "min": 16,
+      "max": 16,
+      "unit": "Byte",
+      "integer": true,
+      "label": "data secure key octets",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "ktp_data_secure": true
+          },
+          "value": 16,
+          "source": "https://support.knx.org/hc/en-us/articles/360012689639-KNX-Data-Secure",
+          "source_revision": "KNX Association Data Secure, updated2026-09-23; separately commissioned AES128 per group/end device"
+        }
+      ]
+    },
+    "ktp_functional_bound_ms": {
+      "type": "number",
+      "description": "ActualfunctionalE2EbudgetindependentofTPACK/retry/localconfirmation.",
+      "source": "https://www.ti.com/lit/an/swra497/swra497.pdf",
+      "source_revision": "TI SWRA497, December2015; reviewed TP wire/telegram/timing/address/check sections pp6-13, overview expressly not full KNX specification",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "label": "functional bound ms",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ktp_repeated": {
+      "type": "boolean",
+      "description": "Actual retransmission state used to decode invertedrepeatbit.",
+      "source": "https://www.ti.com/lit/an/swra497/swra497.pdf",
+      "source_revision": "TI SWRA497, December2015; reviewed TP wire/telegram/timing/address/check sections pp6-13, overview expressly not full KNX specification",
+      "integer": false,
+      "label": "repeated",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ktp_tx_enabled": {
+      "type": "boolean",
+      "description": "Actual enabled transmission,notassumedvalidwhileNCNpowerup/sync/stop.",
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "integer": false,
+      "label": "tx enabled",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ktp_host_crc_enabled": {
+      "type": "boolean",
+      "description": "Actual selected optionalPHY-hostCRCCCITT.",
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "integer": false,
+      "label": "host crc enabled",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ktp_retries_enabled": {
+      "type": "boolean",
+      "description": "ActualNCNrepeatflag,disabledmeansoneattempt.",
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "integer": false,
+      "label": "retries enabled",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ktp_auto_ack": {
+      "type": "boolean",
+      "description": "ActualNCNautoACKenabledonlywithcommissionedphysicaladdress;reset-onlydeactivation.",
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "integer": false,
+      "label": "auto ack",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ktp_power_confirmed": {
+      "type": "boolean",
+      "description": "Actual power loadingverified,ETSestimateneverconfirmedactual.",
+      "source": "https://support.knx.org/hc/en-us/articles/360022048579-Topology-panel-Detailed",
+      "source_revision": "KNX Association topology detailed, updated2026-09-01; actual manufacturer current versus explicitly estimated10mA device/320mA supply",
+      "integer": false,
+      "label": "power confirmed",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ktp_data_secure": {
+      "type": "boolean",
+      "description": "ActualindependentlycommissionedDataSecureendpoint/groups.",
+      "source": "https://support.knx.org/hc/en-us/articles/360012689639-KNX-Data-Secure",
+      "source_revision": "KNX Association Data Secure, updated2026-09-23; separately commissioned AES128 per group/end device",
+      "integer": false,
+      "label": "data secure",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ktp_security_confirmed": {
+      "type": "boolean",
+      "description": "Actualsecurecommissioningverified.",
+      "source": "https://support.knx.org/hc/en-us/articles/360012689639-KNX-Data-Secure",
+      "source_revision": "KNX Association Data Secure, updated2026-09-23; separately commissioned AES128 per group/end device",
+      "integer": false,
+      "label": "security confirmed",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ktp_capacity_confirmed": {
+      "type": "boolean",
+      "description": "ActualwholeTPcapacityandscheduleverified.",
+      "source": "https://www.ti.com/lit/an/swra497/swra497.pdf",
+      "source_revision": "TI SWRA497, December2015; reviewed TP wire/telegram/timing/address/check sections pp6-13, overview expressly not full KNX specification",
+      "integer": false,
+      "label": "capacity confirmed",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    }
+  },
+  "mechanisms": {
+    "framing": [
+      "TP_CHARACTER_PARITY_AND_ODD_COLUMN_CHECK_NOT_RF_CRC"
+    ],
+    "arbitration": [
+      "TP1_DOMINANT_ZERO_COLLISION_AND_NATIVE_PRIORITY"
+    ],
+    "physical": [
+      "SEGMENT_FAN_IN_AND_POWER_BUDGET_SEPARATE"
+    ],
+    "flow_control": [
+      "TP_ACK_BUSY_NACK_REPEAT_VERSUS_PHY_HOST_CONFIRMATION"
+    ],
+    "acceptance": [
+      "LOCAL_ACK_AND_APPLICATION_E2E_SEPARATE"
+    ]
+  },
+  "parameter_constraints": [
+    {
+      "parameter": "local_timing_evidence",
+      "allowed": [],
+      "source": "docs/GENERATION_RULE_MANAGER.md",
+      "source_revision": "TP1 native link evidence is not I2C transaction evidence"
+    },
+    {
+      "parameter": "ktp_registered_profile_source",
+      "when": {
+        "ktp_profile": "REGISTERED_TP_PROFILE"
+      },
+      "source": "https://www.ti.com/lit/an/swra497/swra497.pdf",
+      "source_revision": "TI SWRA497, December2015; reviewed TP wire/telegram/timing/address/check sections pp6-13, overview expressly not full KNX specification",
+      "required": true
+    },
+    {
+      "parameter": "ktp_registered_profile_source",
+      "when": {
+        "ktp_frame_kind": "REGISTERED_SERVICE"
+      },
+      "source": "https://www.ti.com/lit/an/swra497/swra497.pdf",
+      "source_revision": "TI SWRA497, December2015; reviewed TP wire/telegram/timing/address/check sections pp6-13, overview expressly not full KNX specification",
+      "required": true
+    },
+    {
+      "parameter": "ktp_registered_profile_source",
+      "when": {
+        "ktp_host_kind": "REGISTERED_HOST"
+      },
+      "source": "https://www.ti.com/lit/an/swra497/swra497.pdf",
+      "source_revision": "TI SWRA497, December2015; reviewed TP wire/telegram/timing/address/check sections pp6-13, overview expressly not full KNX specification",
+      "required": true
+    },
+    {
+      "parameter": "ktp_registered_profile_source",
+      "when": {
+        "ktp_group_edition": "REGISTERED_GROUP_LAYOUT"
+      },
+      "source": "https://www.ti.com/lit/an/swra497/swra497.pdf",
+      "source_revision": "TI SWRA497, December2015; reviewed TP wire/telegram/timing/address/check sections pp6-13, overview expressly not full KNX specification",
+      "required": true
+    },
+    {
+      "parameter": "ktp_host_source",
+      "when": {},
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "when_present": [
+        "ktp_host_kind"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "ktp_idle_ms",
+      "when": {},
+      "source": "https://www.ti.com/lit/an/swra497/swra497.pdf",
+      "source_revision": "TI SWRA497, December2015; reviewed TP wire/telegram/timing/address/check sections pp6-13, overview expressly not full KNX specification",
+      "equal_expression": {
+        "product": [
+          "ktp_idle_bits",
+          0.10416666666666667
+        ]
+      }
+    },
+    {
+      "parameter": "ktp_ack_bound_ms",
+      "when": {},
+      "source": "https://www.ti.com/lit/an/swra497/swra497.pdf",
+      "source_revision": "TI SWRA497, December2015; reviewed TP wire/telegram/timing/address/check sections pp6-13, overview expressly not full KNX specification",
+      "maximum": 1.5625
+    },
+    {
+      "parameter": "ktp_source_address",
+      "when": {},
+      "source": "https://www.ti.com/lit/an/swra497/swra497.pdf",
+      "source_revision": "TI SWRA497, December2015; reviewed TP wire/telegram/timing/address/check sections pp6-13, overview expressly not full KNX specification",
+      "equal_expression": {
+        "sum": [
+          {
+            "product": [
+              "ktp_area",
+              4096
+            ]
+          },
+          {
+            "product": [
+              "ktp_line",
+              256
+            ]
+          },
+          "ktp_device_number"
+        ]
+      }
+    },
+    {
+      "parameter": "ktp_length_field",
+      "when": {},
+      "source": "https://www.ti.com/lit/an/swra497/swra497.pdf",
+      "source_revision": "TI SWRA497, December2015; reviewed TP wire/telegram/timing/address/check sections pp6-13, overview expressly not full KNX specification",
+      "equal_expression": {
+        "subtract": [
+          "ktp_tpdu_octets",
+          1
+        ]
+      }
+    },
+    {
+      "parameter": "ktp_tpdu_octets",
+      "when": {
+        "ktp_frame_kind": "STANDARD_DATA"
+      },
+      "source": "https://www.ti.com/lit/an/swra497/swra497.pdf",
+      "source_revision": "TI SWRA497, December2015; reviewed TP wire/telegram/timing/address/check sections pp6-13, overview expressly not full KNX specification",
+      "maximum": 16
+    },
+    {
+      "parameter": "ktp_length_field",
+      "when": {
+        "ktp_frame_kind": "STANDARD_DATA"
+      },
+      "source": "https://www.ti.com/lit/an/swra497/swra497.pdf",
+      "source_revision": "TI SWRA497, December2015; reviewed TP wire/telegram/timing/address/check sections pp6-13, overview expressly not full KNX specification",
+      "maximum": 15
+    },
+    {
+      "parameter": "ktp_frame_octets",
+      "when": {
+        "ktp_frame_kind": "STANDARD_DATA"
+      },
+      "source": "https://www.ti.com/lit/an/swra497/swra497.pdf",
+      "source_revision": "TI SWRA497, December2015; reviewed TP wire/telegram/timing/address/check sections pp6-13, overview expressly not full KNX specification",
+      "equal_expression": {
+        "sum": [
+          "ktp_tpdu_octets",
+          7
+        ]
+      }
+    },
+    {
+      "parameter": "ktp_tpdu_octets",
+      "when": {
+        "ktp_frame_kind": "EXTENDED_DATA"
+      },
+      "source": "https://www.ti.com/lit/an/swra497/swra497.pdf",
+      "source_revision": "TI SWRA497, December2015; reviewed TP wire/telegram/timing/address/check sections pp6-13, overview expressly not full KNX specification",
+      "maximum": 255
+    },
+    {
+      "parameter": "ktp_length_field",
+      "when": {
+        "ktp_frame_kind": "EXTENDED_DATA"
+      },
+      "source": "https://www.ti.com/lit/an/swra497/swra497.pdf",
+      "source_revision": "TI SWRA497, December2015; reviewed TP wire/telegram/timing/address/check sections pp6-13, overview expressly not full KNX specification",
+      "maximum": 254
+    },
+    {
+      "parameter": "ktp_frame_octets",
+      "when": {
+        "ktp_frame_kind": "EXTENDED_DATA"
+      },
+      "source": "https://www.ti.com/lit/an/swra497/swra497.pdf",
+      "source_revision": "TI SWRA497, December2015; reviewed TP wire/telegram/timing/address/check sections pp6-13, overview expressly not full KNX specification",
+      "equal_expression": {
+        "sum": [
+          "ktp_tpdu_octets",
+          8
+        ]
+      }
+    },
+    {
+      "parameter": "ktp_repeat_bit",
+      "when": {
+        "ktp_repeated": true
+      },
+      "source": "https://www.ti.com/lit/an/swra497/swra497.pdf",
+      "source_revision": "TI SWRA497, December2015; reviewed TP wire/telegram/timing/address/check sections pp6-13, overview expressly not full KNX specification",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "ktp_repeat_bit",
+      "when": {
+        "ktp_repeated": false
+      },
+      "source": "https://www.ti.com/lit/an/swra497/swra497.pdf",
+      "source_revision": "TI SWRA497, December2015; reviewed TP wire/telegram/timing/address/check sections pp6-13, overview expressly not full KNX specification",
+      "allowed": [
+        1
+      ]
+    },
+    {
+      "parameter": "ktp_destination_address",
+      "when": {
+        "ktp_address_kind": "BROADCAST"
+      },
+      "source": "https://www.ti.com/lit/an/swra497/swra497.pdf",
+      "source_revision": "TI SWRA497, December2015; reviewed TP wire/telegram/timing/address/check sections pp6-13, overview expressly not full KNX specification",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "ktp_destination_address",
+      "when": {
+        "ktp_address_kind": "GROUP",
+        "ktp_group_edition": "TI2015_LEGACY_15BIT"
+      },
+      "source": "https://www.ti.com/lit/an/swra497/swra497.pdf",
+      "source_revision": "TI SWRA497, December2015; reviewed TP wire/telegram/timing/address/check sections pp6-13, overview expressly not full KNX specification",
+      "maximum": 32767
+    },
+    {
+      "parameter": "ktp_group_main",
+      "when": {
+        "ktp_group_edition": "TI2015_LEGACY_15BIT"
+      },
+      "source": "https://www.ti.com/lit/an/swra497/swra497.pdf",
+      "source_revision": "TI SWRA497, December2015; reviewed TP wire/telegram/timing/address/check sections pp6-13, overview expressly not full KNX specification",
+      "maximum": 15
+    },
+    {
+      "parameter": "ktp_group_sub",
+      "when": {
+        "ktp_group_style": "THREE_LEVEL"
+      },
+      "source": "https://www.ti.com/lit/an/swra497/swra497.pdf",
+      "source_revision": "TI SWRA497, December2015; reviewed TP wire/telegram/timing/address/check sections pp6-13, overview expressly not full KNX specification",
+      "maximum": 255
+    },
+    {
+      "parameter": "ktp_group_middle",
+      "when": {
+        "ktp_group_style": "TWO_LEVEL"
+      },
+      "source": "https://www.ti.com/lit/an/swra497/swra497.pdf",
+      "source_revision": "TI SWRA497, December2015; reviewed TP wire/telegram/timing/address/check sections pp6-13, overview expressly not full KNX specification",
+      "allowed": []
+    },
+    {
+      "parameter": "ktp_destination_address",
+      "when": {
+        "ktp_address_kind": "GROUP",
+        "ktp_group_style": "THREE_LEVEL"
+      },
+      "source": "https://www.ti.com/lit/an/swra497/swra497.pdf",
+      "source_revision": "TI SWRA497, December2015; reviewed TP wire/telegram/timing/address/check sections pp6-13, overview expressly not full KNX specification",
+      "equal_expression": {
+        "sum": [
+          {
+            "product": [
+              "ktp_group_main",
+              2048
+            ]
+          },
+          {
+            "product": [
+              "ktp_group_middle",
+              256
+            ]
+          },
+          "ktp_group_sub"
+        ]
+      }
+    },
+    {
+      "parameter": "ktp_destination_address",
+      "when": {
+        "ktp_address_kind": "GROUP",
+        "ktp_group_style": "TWO_LEVEL"
+      },
+      "source": "https://www.ti.com/lit/an/swra497/swra497.pdf",
+      "source_revision": "TI SWRA497, December2015; reviewed TP wire/telegram/timing/address/check sections pp6-13, overview expressly not full KNX specification",
+      "equal_expression": {
+        "sum": [
+          {
+            "product": [
+              "ktp_group_main",
+              2048
+            ]
+          },
+          "ktp_group_sub"
+        ]
+      }
+    },
+    {
+      "parameter": "ktp_address_source",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/calimero-project/calimero-core/61360088c59fd5f593608c971059437b37e0a836/src/tuwien/auto/calimero/GroupAddress.java",
+      "source_revision": "Calimero v2.6 exact61360088c59fd5f593608c971059437b37e0a836 GroupAddress.java;16bit address/5bitmain versus TI2015 legacy15bit overview",
+      "when_present": [
+        "ktp_group_edition"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "ktp_fan_in",
+      "when": {},
+      "source": "https://www.knx.org/news/new-knx-tp1-256-topology-more-devices-and-fewer-line-repeaters",
+      "source_revision": "KNX Association2019-07-10 TP1-64/256 fan-in formula, independent supply loading",
+      "equal_expression": {
+        "sum": [
+          {
+            "product": [
+              "ktp_tp64_count",
+              4
+            ]
+          },
+          "ktp_tp256_count"
+        ]
+      }
+    },
+    {
+      "parameter": "ktp_segment_load_ma",
+      "when": {},
+      "source": "https://support.knx.org/hc/en-us/articles/360022048579-Topology-panel-Detailed",
+      "source_revision": "KNX Association topology detailed, updated2026-09-01; actual manufacturer current versus explicitly estimated10mA device/320mA supply",
+      "maximum_parameter": "ktp_supply_current_ma"
+    },
+    {
+      "parameter": "ktp_bus_voltage_v",
+      "when": {},
+      "source": "https://www.knx.org/news/trade-talk-knx-twisted-pair-its-not-just-little-piece-wire",
+      "source_revision": "KNX Association2018-12-05 approved0.8mm cable,1000m segment/350m PSU-device, actual device voltage evidence still required",
+      "minimum_parameter": "ktp_device_min_v",
+      "maximum_parameter": "ktp_device_max_v"
+    },
+    {
+      "parameter": "ktp_device_min_v",
+      "when": {},
+      "source": "https://www.knx.org/news/trade-talk-knx-twisted-pair-its-not-just-little-piece-wire",
+      "source_revision": "KNX Association2018-12-05 approved0.8mm cable,1000m segment/350m PSU-device, actual device voltage evidence still required",
+      "maximum_parameter": "ktp_device_max_v"
+    },
+    {
+      "parameter": "ktp_power_source",
+      "when": {},
+      "source": "https://support.knx.org/hc/en-us/articles/360022048579-Topology-panel-Detailed",
+      "source_revision": "KNX Association topology detailed, updated2026-09-01; actual manufacturer current versus explicitly estimated10mA device/320mA supply",
+      "when_present": [
+        "ktp_power_basis"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "ktp_power_confirmed",
+      "when": {
+        "ktp_power_basis": "ETS_ESTIMATE"
+      },
+      "source": "https://support.knx.org/hc/en-us/articles/360022048579-Topology-panel-Detailed",
+      "source_revision": "KNX Association topology detailed, updated2026-09-01; actual manufacturer current versus explicitly estimated10mA device/320mA supply",
+      "allowed": [
+        false
+      ]
+    },
+    {
+      "parameter": "ktp_cable_diameter_mm",
+      "when": {
+        "ktp_cable_profile": "KNX_APPROVED_0_8"
+      },
+      "source": "https://www.knx.org/news/trade-talk-knx-twisted-pair-its-not-just-little-piece-wire",
+      "source_revision": "KNX Association2018-12-05 approved0.8mm cable,1000m segment/350m PSU-device, actual device voltage evidence still required",
+      "allowed": [
+        0.8
+      ]
+    },
+    {
+      "parameter": "ktp_coupler_source",
+      "when": {
+        "ktp_role": "COUPLER"
+      },
+      "source": "https://www.knx.org/news/new-knx-tp1-256-topology-more-devices-and-fewer-line-repeaters",
+      "source_revision": "KNX Association2019-07-10 TP1-64/256 fan-in formula, independent supply loading",
+      "required": true
+    },
+    {
+      "parameter": "ktp_polling_source",
+      "when": {
+        "ktp_frame_kind": "POLLING"
+      },
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "required": true
+    },
+    {
+      "parameter": "ktp_tpdu_octets",
+      "when": {
+        "ktp_frame_kind": "ACK"
+      },
+      "source": "https://www.ti.com/lit/an/swra497/swra497.pdf",
+      "source_revision": "TI SWRA497, December2015; reviewed TP wire/telegram/timing/address/check sections pp6-13, overview expressly not full KNX specification",
+      "allowed": []
+    },
+    {
+      "parameter": "ktp_length_field",
+      "when": {
+        "ktp_frame_kind": "ACK"
+      },
+      "source": "https://www.ti.com/lit/an/swra497/swra497.pdf",
+      "source_revision": "TI SWRA497, December2015; reviewed TP wire/telegram/timing/address/check sections pp6-13, overview expressly not full KNX specification",
+      "allowed": []
+    },
+    {
+      "parameter": "ktp_tpdu_octets",
+      "when": {
+        "ktp_frame_kind": "POLLING"
+      },
+      "source": "https://www.ti.com/lit/an/swra497/swra497.pdf",
+      "source_revision": "TI SWRA497, December2015; reviewed TP wire/telegram/timing/address/check sections pp6-13, overview expressly not full KNX specification",
+      "allowed": []
+    },
+    {
+      "parameter": "ktp_length_field",
+      "when": {
+        "ktp_frame_kind": "POLLING"
+      },
+      "source": "https://www.ti.com/lit/an/swra497/swra497.pdf",
+      "source_revision": "TI SWRA497, December2015; reviewed TP wire/telegram/timing/address/check sections pp6-13, overview expressly not full KNX specification",
+      "allowed": []
+    },
+    {
+      "parameter": "ktp_host_source",
+      "when": {
+        "ktp_profile": "NCN5120_REV8"
+      },
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "required": true
+    },
+    {
+      "parameter": "ktp_host_kind",
+      "when": {
+        "ktp_profile": "NCN5120_REV8"
+      },
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "required": true
+    },
+    {
+      "parameter": "ktp_host_bitrate_bps",
+      "when": {
+        "ktp_profile": "NCN5120_REV8",
+        "ktp_host_kind": "UART8"
+      },
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "allowed": [
+        19200,
+        38400
+      ]
+    },
+    {
+      "parameter": "ktp_host_data_bits",
+      "when": {
+        "ktp_profile": "NCN5120_REV8",
+        "ktp_host_kind": "UART8"
+      },
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "allowed": [
+        8
+      ]
+    },
+    {
+      "parameter": "ktp_host_stop_bits",
+      "when": {
+        "ktp_profile": "NCN5120_REV8",
+        "ktp_host_kind": "UART8"
+      },
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "allowed": [
+        1
+      ]
+    },
+    {
+      "parameter": "ktp_host_parity",
+      "when": {
+        "ktp_profile": "NCN5120_REV8",
+        "ktp_host_kind": "UART8"
+      },
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "allowed": [
+        "NONE"
+      ]
+    },
+    {
+      "parameter": "ktp_host_order",
+      "when": {
+        "ktp_profile": "NCN5120_REV8",
+        "ktp_host_kind": "UART8"
+      },
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "allowed": [
+        "LSB_FIRST"
+      ]
+    },
+    {
+      "parameter": "ktp_host_cpol",
+      "when": {
+        "ktp_profile": "NCN5120_REV8",
+        "ktp_host_kind": "UART8"
+      },
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "allowed": []
+    },
+    {
+      "parameter": "ktp_host_cpha",
+      "when": {
+        "ktp_profile": "NCN5120_REV8",
+        "ktp_host_kind": "UART8"
+      },
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "allowed": []
+    },
+    {
+      "parameter": "ktp_spi_master",
+      "when": {
+        "ktp_profile": "NCN5120_REV8",
+        "ktp_host_kind": "UART8"
+      },
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "allowed": []
+    },
+    {
+      "parameter": "ktp_host_bitrate_bps",
+      "when": {
+        "ktp_profile": "NCN5120_REV8",
+        "ktp_host_kind": "UART9"
+      },
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "allowed": [
+        19200,
+        38400
+      ]
+    },
+    {
+      "parameter": "ktp_host_data_bits",
+      "when": {
+        "ktp_profile": "NCN5120_REV8",
+        "ktp_host_kind": "UART9"
+      },
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "allowed": [
+        8
+      ]
+    },
+    {
+      "parameter": "ktp_host_stop_bits",
+      "when": {
+        "ktp_profile": "NCN5120_REV8",
+        "ktp_host_kind": "UART9"
+      },
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "allowed": [
+        1
+      ]
+    },
+    {
+      "parameter": "ktp_host_parity",
+      "when": {
+        "ktp_profile": "NCN5120_REV8",
+        "ktp_host_kind": "UART9"
+      },
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "allowed": [
+        "EVEN"
+      ]
+    },
+    {
+      "parameter": "ktp_host_order",
+      "when": {
+        "ktp_profile": "NCN5120_REV8",
+        "ktp_host_kind": "UART9"
+      },
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "allowed": [
+        "LSB_FIRST"
+      ]
+    },
+    {
+      "parameter": "ktp_host_cpol",
+      "when": {
+        "ktp_profile": "NCN5120_REV8",
+        "ktp_host_kind": "UART9"
+      },
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "allowed": []
+    },
+    {
+      "parameter": "ktp_host_cpha",
+      "when": {
+        "ktp_profile": "NCN5120_REV8",
+        "ktp_host_kind": "UART9"
+      },
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "allowed": []
+    },
+    {
+      "parameter": "ktp_spi_master",
+      "when": {
+        "ktp_profile": "NCN5120_REV8",
+        "ktp_host_kind": "UART9"
+      },
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "allowed": []
+    },
+    {
+      "parameter": "ktp_host_bitrate_bps",
+      "when": {
+        "ktp_profile": "NCN5120_REV8",
+        "ktp_host_kind": "SPI"
+      },
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "allowed": [
+        125000,
+        500000
+      ]
+    },
+    {
+      "parameter": "ktp_host_cpol",
+      "when": {
+        "ktp_profile": "NCN5120_REV8",
+        "ktp_host_kind": "SPI"
+      },
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "ktp_host_cpha",
+      "when": {
+        "ktp_profile": "NCN5120_REV8",
+        "ktp_host_kind": "SPI"
+      },
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "ktp_host_order",
+      "when": {
+        "ktp_profile": "NCN5120_REV8",
+        "ktp_host_kind": "SPI"
+      },
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "allowed": [
+        "LSB_FIRST"
+      ]
+    },
+    {
+      "parameter": "ktp_spi_master",
+      "when": {
+        "ktp_profile": "NCN5120_REV8",
+        "ktp_host_kind": "SPI"
+      },
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "allowed": [
+        "PHY"
+      ]
+    },
+    {
+      "parameter": "ktp_host_data_bits",
+      "when": {
+        "ktp_profile": "NCN5120_REV8",
+        "ktp_host_kind": "SPI"
+      },
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "allowed": []
+    },
+    {
+      "parameter": "ktp_host_stop_bits",
+      "when": {
+        "ktp_profile": "NCN5120_REV8",
+        "ktp_host_kind": "SPI"
+      },
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "allowed": []
+    },
+    {
+      "parameter": "ktp_host_parity",
+      "when": {
+        "ktp_profile": "NCN5120_REV8",
+        "ktp_host_kind": "SPI"
+      },
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "allowed": []
+    },
+    {
+      "parameter": "ktp_host_bitrate_bps",
+      "when": {
+        "ktp_profile": "NCN5120_REV8",
+        "ktp_host_kind": "ANALOG"
+      },
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "allowed": []
+    },
+    {
+      "parameter": "ktp_host_data_bits",
+      "when": {
+        "ktp_profile": "NCN5120_REV8",
+        "ktp_host_kind": "ANALOG"
+      },
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "allowed": []
+    },
+    {
+      "parameter": "ktp_host_stop_bits",
+      "when": {
+        "ktp_profile": "NCN5120_REV8",
+        "ktp_host_kind": "ANALOG"
+      },
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "allowed": []
+    },
+    {
+      "parameter": "ktp_host_parity",
+      "when": {
+        "ktp_profile": "NCN5120_REV8",
+        "ktp_host_kind": "ANALOG"
+      },
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "allowed": []
+    },
+    {
+      "parameter": "ktp_host_cpol",
+      "when": {
+        "ktp_profile": "NCN5120_REV8",
+        "ktp_host_kind": "ANALOG"
+      },
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "allowed": []
+    },
+    {
+      "parameter": "ktp_host_cpha",
+      "when": {
+        "ktp_profile": "NCN5120_REV8",
+        "ktp_host_kind": "ANALOG"
+      },
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "allowed": []
+    },
+    {
+      "parameter": "ktp_spi_master",
+      "when": {
+        "ktp_profile": "NCN5120_REV8",
+        "ktp_host_kind": "ANALOG"
+      },
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "allowed": []
+    },
+    {
+      "parameter": "ktp_host_crc_enabled",
+      "when": {
+        "ktp_profile": "NCN5120_REV8",
+        "ktp_host_kind": "ANALOG"
+      },
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "allowed": []
+    },
+    {
+      "parameter": "ktp_host_crc_octets",
+      "when": {
+        "ktp_profile": "NCN5120_REV8",
+        "ktp_host_kind": "ANALOG"
+      },
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "allowed": []
+    },
+    {
+      "parameter": "ktp_host_crc_polynomial",
+      "when": {
+        "ktp_profile": "NCN5120_REV8",
+        "ktp_host_kind": "ANALOG"
+      },
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "allowed": []
+    },
+    {
+      "parameter": "ktp_host_crc_initial",
+      "when": {
+        "ktp_profile": "NCN5120_REV8",
+        "ktp_host_kind": "ANALOG"
+      },
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "allowed": []
+    },
+    {
+      "parameter": "ktp_host_crc_xorout",
+      "when": {
+        "ktp_profile": "NCN5120_REV8",
+        "ktp_host_kind": "ANALOG"
+      },
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "allowed": []
+    },
+    {
+      "parameter": "ktp_host_end_silence_ms",
+      "when": {
+        "ktp_profile": "NCN5120_REV8",
+        "ktp_host_kind": "ANALOG"
+      },
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "allowed": []
+    },
+    {
+      "parameter": "ktp_host_marker",
+      "when": {
+        "ktp_profile": "NCN5120_REV8",
+        "ktp_host_kind": "ANALOG"
+      },
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "allowed": []
+    },
+    {
+      "parameter": "ktp_host_frame_end",
+      "when": {
+        "ktp_profile": "NCN5120_REV8",
+        "ktp_host_kind": "ANALOG"
+      },
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "allowed": []
+    },
+    {
+      "parameter": "ktp_device_state",
+      "when": {
+        "ktp_profile": "NCN5120_REV8",
+        "ktp_host_kind": "ANALOG"
+      },
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "allowed": []
+    },
+    {
+      "parameter": "ktp_busy_retries",
+      "when": {
+        "ktp_profile": "NCN5120_REV8",
+        "ktp_host_kind": "ANALOG"
+      },
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "allowed": []
+    },
+    {
+      "parameter": "ktp_nack_retries",
+      "when": {
+        "ktp_profile": "NCN5120_REV8",
+        "ktp_host_kind": "ANALOG"
+      },
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "allowed": []
+    },
+    {
+      "parameter": "ktp_worst_attempts",
+      "when": {
+        "ktp_profile": "NCN5120_REV8",
+        "ktp_host_kind": "ANALOG"
+      },
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "allowed": []
+    },
+    {
+      "parameter": "ktp_retries_enabled",
+      "when": {
+        "ktp_profile": "NCN5120_REV8",
+        "ktp_host_kind": "ANALOG"
+      },
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "allowed": []
+    },
+    {
+      "parameter": "ktp_auto_ack",
+      "when": {
+        "ktp_profile": "NCN5120_REV8",
+        "ktp_host_kind": "ANALOG"
+      },
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "allowed": []
+    },
+    {
+      "parameter": "ktp_busy_idle_bits",
+      "when": {
+        "ktp_profile": "NCN5120_REV8",
+        "ktp_host_kind": "ANALOG"
+      },
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "allowed": []
+    },
+    {
+      "parameter": "ktp_nack_idle_bits",
+      "when": {
+        "ktp_profile": "NCN5120_REV8",
+        "ktp_host_kind": "ANALOG"
+      },
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "allowed": []
+    },
+    {
+      "parameter": "ktp_ack_timeout_bits",
+      "when": {
+        "ktp_profile": "NCN5120_REV8",
+        "ktp_host_kind": "ANALOG"
+      },
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "allowed": []
+    },
+    {
+      "parameter": "ktp_sync_idle_bits",
+      "when": {
+        "ktp_profile": "NCN5120_REV8",
+        "ktp_host_kind": "ANALOG"
+      },
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "allowed": []
+    },
+    {
+      "parameter": "ktp_poll_slot",
+      "when": {
+        "ktp_profile": "NCN5120_REV8",
+        "ktp_host_kind": "ANALOG"
+      },
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "allowed": []
+    },
+    {
+      "parameter": "ktp_frame_octets",
+      "when": {
+        "ktp_profile": "NCN5120_REV8",
+        "ktp_host_kind": "UART8"
+      },
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "maximum": 64
+    },
+    {
+      "parameter": "ktp_frame_octets",
+      "when": {
+        "ktp_profile": "NCN5120_REV8",
+        "ktp_host_kind": "UART9"
+      },
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "maximum": 64
+    },
+    {
+      "parameter": "ktp_frame_octets",
+      "when": {
+        "ktp_profile": "NCN5120_REV8",
+        "ktp_host_kind": "SPI"
+      },
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "maximum": 64
+    },
+    {
+      "parameter": "ktp_host_buffer_source",
+      "when": {
+        "ktp_profile": "NCN5120_REV8"
+      },
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "when_present": [
+        "ktp_frame_octets"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "ktp_tx_enabled",
+      "when": {
+        "ktp_profile": "NCN5120_REV8"
+      },
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "when_not": {
+        "ktp_device_state": "NORMAL"
+      },
+      "allowed": [
+        false
+      ]
+    },
+    {
+      "parameter": "ktp_worst_attempts",
+      "when": {
+        "ktp_profile": "NCN5120_REV8",
+        "ktp_retries_enabled": true
+      },
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "equal_expression": {
+        "sum": [
+          "ktp_busy_retries",
+          "ktp_nack_retries",
+          1
+        ]
+      }
+    },
+    {
+      "parameter": "ktp_worst_attempts",
+      "when": {
+        "ktp_profile": "NCN5120_REV8",
+        "ktp_retries_enabled": false
+      },
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "allowed": [
+        1
+      ]
+    },
+    {
+      "parameter": "ktp_busy_idle_bits",
+      "when": {
+        "ktp_profile": "NCN5120_REV8"
+      },
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "minimum": 150
+    },
+    {
+      "parameter": "ktp_nack_idle_bits",
+      "when": {
+        "ktp_profile": "NCN5120_REV8"
+      },
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "minimum": 50
+    },
+    {
+      "parameter": "ktp_ack_timeout_bits",
+      "when": {
+        "ktp_profile": "NCN5120_REV8"
+      },
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "allowed": [
+        30
+      ]
+    },
+    {
+      "parameter": "ktp_sync_idle_bits",
+      "when": {
+        "ktp_profile": "NCN5120_REV8"
+      },
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "allowed": [
+        40
+      ]
+    },
+    {
+      "parameter": "ktp_host_crc_octets",
+      "when": {
+        "ktp_profile": "NCN5120_REV8",
+        "ktp_host_crc_enabled": true
+      },
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "allowed": [
+        2
+      ]
+    },
+    {
+      "parameter": "ktp_host_crc_octets",
+      "when": {
+        "ktp_host_crc_enabled": false
+      },
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "allowed": []
+    },
+    {
+      "parameter": "ktp_host_crc_enabled",
+      "when": {},
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "when_present": [
+        "ktp_host_crc_octets"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "ktp_host_crc_polynomial",
+      "when": {
+        "ktp_profile": "NCN5120_REV8",
+        "ktp_host_crc_enabled": true
+      },
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "allowed": [
+        4129
+      ]
+    },
+    {
+      "parameter": "ktp_host_crc_polynomial",
+      "when": {
+        "ktp_host_crc_enabled": false
+      },
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "allowed": []
+    },
+    {
+      "parameter": "ktp_host_crc_enabled",
+      "when": {},
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "when_present": [
+        "ktp_host_crc_polynomial"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "ktp_host_crc_initial",
+      "when": {
+        "ktp_profile": "NCN5120_REV8",
+        "ktp_host_crc_enabled": true
+      },
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "allowed": [
+        65535
+      ]
+    },
+    {
+      "parameter": "ktp_host_crc_initial",
+      "when": {
+        "ktp_host_crc_enabled": false
+      },
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "allowed": []
+    },
+    {
+      "parameter": "ktp_host_crc_enabled",
+      "when": {},
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "when_present": [
+        "ktp_host_crc_initial"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "ktp_host_crc_xorout",
+      "when": {
+        "ktp_profile": "NCN5120_REV8",
+        "ktp_host_crc_enabled": true
+      },
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "ktp_host_crc_xorout",
+      "when": {
+        "ktp_host_crc_enabled": false
+      },
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "allowed": []
+    },
+    {
+      "parameter": "ktp_host_crc_enabled",
+      "when": {},
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "when_present": [
+        "ktp_host_crc_xorout"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "ktp_host_end_silence_ms",
+      "when": {
+        "ktp_profile": "NCN5120_REV8",
+        "ktp_host_frame_end": "SILENCE"
+      },
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "allowed": [
+        2.6
+      ]
+    },
+    {
+      "parameter": "ktp_host_marker",
+      "when": {
+        "ktp_profile": "NCN5120_REV8",
+        "ktp_host_frame_end": "MARKER"
+      },
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "allowed": [
+        203
+      ]
+    },
+    {
+      "parameter": "ktp_host_marker",
+      "when": {
+        "ktp_host_frame_end": "SILENCE"
+      },
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "allowed": []
+    },
+    {
+      "parameter": "ktp_host_end_silence_ms",
+      "when": {
+        "ktp_host_frame_end": "MARKER"
+      },
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "allowed": []
+    },
+    {
+      "parameter": "ktp_source_address",
+      "when": {
+        "ktp_profile": "NCN5120_REV8",
+        "ktp_auto_ack": true
+      },
+      "source": "https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf",
+      "source_revision": "ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY",
+      "required": true
+    },
+    {
+      "parameter": "ktp_security_source",
+      "when": {
+        "ktp_data_secure": true
+      },
+      "source": "https://support.knx.org/hc/en-us/articles/360012689639-KNX-Data-Secure",
+      "source_revision": "KNX Association Data Secure, updated2026-09-23; separately commissioned AES128 per group/end device",
+      "required": true
+    },
+    {
+      "parameter": "ktp_group_key_ref",
+      "when": {
+        "ktp_data_secure": true
+      },
+      "source": "https://support.knx.org/hc/en-us/articles/360012689639-KNX-Data-Secure",
+      "source_revision": "KNX Association Data Secure, updated2026-09-23; separately commissioned AES128 per group/end device",
+      "required": true
+    },
+    {
+      "parameter": "ktp_data_secure_key_octets",
+      "when": {
+        "ktp_data_secure": true
+      },
+      "source": "https://support.knx.org/hc/en-us/articles/360012689639-KNX-Data-Secure",
+      "source_revision": "KNX Association Data Secure, updated2026-09-23; separately commissioned AES128 per group/end device",
+      "required": true
+    },
+    {
+      "parameter": "ktp_security_source",
+      "when": {
+        "ktp_data_secure": false
+      },
+      "source": "https://support.knx.org/hc/en-us/articles/360012689639-KNX-Data-Secure",
+      "source_revision": "KNX Association Data Secure, updated2026-09-23; separately commissioned AES128 per group/end device",
+      "allowed": []
+    },
+    {
+      "parameter": "ktp_group_key_ref",
+      "when": {
+        "ktp_data_secure": false
+      },
+      "source": "https://support.knx.org/hc/en-us/articles/360012689639-KNX-Data-Secure",
+      "source_revision": "KNX Association Data Secure, updated2026-09-23; separately commissioned AES128 per group/end device",
+      "allowed": []
+    },
+    {
+      "parameter": "ktp_data_secure_key_octets",
+      "when": {
+        "ktp_data_secure": false
+      },
+      "source": "https://support.knx.org/hc/en-us/articles/360012689639-KNX-Data-Secure",
+      "source_revision": "KNX Association Data Secure, updated2026-09-23; separately commissioned AES128 per group/end device",
+      "allowed": []
+    },
+    {
+      "parameter": "ktp_security_confirmed",
+      "when": {
+        "ktp_data_secure": false
+      },
+      "source": "https://support.knx.org/hc/en-us/articles/360012689639-KNX-Data-Secure",
+      "source_revision": "KNX Association Data Secure, updated2026-09-23; separately commissioned AES128 per group/end device",
+      "allowed": []
+    }
+  ],
+  "physical_layer_profile_id": null,
+  "medium_access_model": null,
+  "native_parameter_prefixes": [
+    "ktp_"
+  ],
+  "parameter_aliases": {},
+  "parameter_alias_limits": {},
+  "parameter_evidence_scope": null,
+  "rate_source_profile_id": null,
+  "arbitration_model_id": null,
+  "max_payload_bytes": null,
+  "capabilities": {
+    "supports_signals": true,
+    "supports_data_objects": true,
+    "supports_streams": false,
+    "supports_multicast": true,
+    "supports_publish_subscribe": true,
+    "supports_request_response": false,
+    "supports_cyclic": true,
+    "supports_event": true,
+    "supports_redundancy": false,
+    "supports_time_sync": false,
+    "supports_safety_profile": false,
+    "supports_segmentation": false,
+    "supports_fragmentation": false,
+    "supports_qos": false
+  },
+  "deterministic": false,
+  "overhead_bytes": 8,
+  "implementation_status": "PARTIAL",
+  "connection_type": "COMMUNICATION_TECHNOLOGY",
+  "parameter_proposals": {
+    "kind": "DEVICE_DEPENDENT",
+    "status": "REVIEW_REQUIRED",
+    "required_fields": [],
+    "note": "No universal rate is available; inspect the selected hardware/profile."
+  },
+  "capacity_evidence": {
+    "status": "MODEL_MISSING",
+    "frame_model": null,
+    "schedule_model": null,
+    "requires_confirmed_device_parameters": true
+  },
+  "components": {
+    "binding": "knx_tp.binding",
+    "generator": "knx_tp.generator",
+    "validator": "knx_tp.validator",
+    "timing_model": null,
+    "load_model": null,
+    "encoder": "knx_tp.encoder",
+    "decoder": "knx_tp.decoder"
+  },
+  "known_limitations": "Technology-specific conformance details require a vendor/profile extension."
+}

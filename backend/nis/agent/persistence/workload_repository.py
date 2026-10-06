@@ -1,0 +1,13 @@
+from __future__ import annotations
+
+from typing import Any, Protocol
+
+
+class WorkloadRepository(Protocol):
+    def create(self, workload: dict[str, Any]) -> dict[str, Any]: ...
+
+    def get(self, workload_id: str) -> dict[str, Any]: ...
+
+    def list(self, *, status: str | None = None, workload_type: str | None = None) -> list[dict[str, Any]]: ...
+
+    def update(self, workload_id: str, changes: dict[str, Any]) -> dict[str, Any]: ...

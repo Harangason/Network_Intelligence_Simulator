@@ -1,0 +1,4645 @@
+{
+  "id": "trdp",
+  "label": "TRDP",
+  "domain": "generic_networking",
+  "layer": "APPLICATION",
+  "transport_unit": "PROCESS_DATA",
+  "payload_element_types": [
+    "FIELD",
+    "STATUS"
+  ],
+  "hardware_interface": "explicit_pd_udp_or_md_udp_tcp_path",
+  "hardware_capability_aliases": [
+    "ethernet_port"
+  ],
+  "default_stack": [
+    "trdp"
+  ],
+  "stack_variants": [
+    [
+      "trdp"
+    ],
+    [
+      "ethernet",
+      "ip",
+      "udp",
+      "trdp"
+    ]
+  ],
+  "default_bitrate": null,
+  "rate_model": {
+    "type": "EXPLICIT_TRANSPORT_BINDING",
+    "fields": []
+  },
+  "local_timing_schema": [],
+  "parameter_schema": {
+    "payload_bytes": {
+      "label": "Payload",
+      "category": "physical",
+      "scope": "message",
+      "type": "number",
+      "description": "Actual applicationencoded bytes. PD1432/MD65388 are selectedTCNOpen3.0 dataset limits; headers40/116,padding and IP/PHY constraints separate.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "integer": true
+    },
+    "cycle_ms": {
+      "label": "Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "Standardperiode fuer zyklische Nachrichten.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "minimum_cycle_time_ms": {
+      "label": "Minimum Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "deadline_ms": {
+      "label": "Deadline",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "timeout_ms": {
+      "label": "Timeout",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_latency_ms": {
+      "label": "Maximum Latency",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "jitter_ms": {
+      "label": "Jitter Budget",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "freshness_ms": {
+      "label": "Data Freshness",
+      "category": "timing",
+      "scope": "signal",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "source_processing_delay_ms": {
+      "label": "Source Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_processing_delay_ms": {
+      "label": "Target Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "propagation_delay_ms": {
+      "label": "Propagation",
+      "category": "timing",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.01,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_bus_load_percent": {
+      "label": "Ziel-Buslast",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "Zielwert fuer die aus Routing, Payload, Zyklus und Bitrate berechnete Buslast.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "peak_factor": {
+      "label": "Peak Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.15,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_factor": {
+      "label": "Burst Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.5,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_window_ms": {
+      "label": "Burst Window",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "warning_threshold": {
+      "label": "Load Warning",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "critical_threshold": {
+      "label": "Load Critical",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 75,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "overload_threshold": {
+      "label": "Load Overload",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 90,
+      "unit": "%",
+      "min": 1,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "queue_size": {
+      "label": "Queue Size",
+      "category": "qos",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 256,
+      "unit": "Frames",
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "queue_policy": {
+      "label": "Queue Policy",
+      "category": "qos",
+      "scope": "network",
+      "type": "select",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": "FIFO",
+      "options": [
+        "FIFO",
+        "PRIORITY",
+        "STRICT_PRIORITY",
+        "WEIGHTED_PRIORITY",
+        "WRR",
+        "ROUND_ROBIN",
+        "TIME_TRIGGERED",
+        "TAS",
+        "CBS",
+        "CUSTOM"
+      ],
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "qos_priority": {
+      "label": "Default Priority",
+      "category": "qos",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 3,
+      "min": 0,
+      "max": 7,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "traffic_class": {
+      "label": "Traffic Class",
+      "category": "qos",
+      "scope": "route",
+      "type": "select",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": "BEST_EFFORT",
+      "options": [
+        "BEST_EFFORT",
+        "CONTROL",
+        "REALTIME",
+        "SAFETY_CRITICAL"
+      ],
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "packet_loss_probability": {
+      "label": "Packet Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "frame_loss_probability": {
+      "label": "Frame Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "bit_error_rate": {
+      "label": "Bit Error Rate",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "corruption_probability": {
+      "label": "Corruption",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duplicate_probability": {
+      "label": "Duplication",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "reordering_probability": {
+      "label": "Reordering",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "required_reliability": {
+      "label": "Required Reliability",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.999,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_offset_ms": {
+      "label": "Clock Offset",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_drift_ppm": {
+      "label": "Clock Drift",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 20,
+      "unit": "ppm",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_precision_ms": {
+      "label": "Sync Precision",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_interval_ms": {
+      "label": "Sync Interval",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1000,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_sync_error_ms": {
+      "label": "Maximum Sync Error",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_delay_ms": {
+      "label": "Gateway Processing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.2,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_queue_delay_ms": {
+      "label": "Gateway Queueing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "protocol_conversion_delay_ms": {
+      "label": "Protocol Conversion",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duration_s": {
+      "label": "Simulation Duration",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 1,
+      "unit": "s",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "seed": {
+      "label": "Random Seed",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 42,
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "max_events": {
+      "label": "Maximum Events",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 100000,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "dropout_probability": {
+      "label": "Failure Injection Dropout",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "tr_review_profile": {
+      "type": "select",
+      "description": "Reviewed implementation baseline or separately registered actual edition.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "options": [
+        "TCNOPEN_3_0_0",
+        "REGISTERED_ACTUAL"
+      ],
+      "label": "tr review profile",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "tr_proposal_mode": {
+      "type": "select",
+      "description": "Source library proposals separate from actual commissioned values.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "options": [
+        "SOURCE_BASELINE",
+        "ACTUAL_CONFIG"
+      ],
+      "label": "tr proposal mode",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "tr_mode": {
+      "type": "select",
+      "description": "Process data and message data have different headers/limits/timers.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "options": [
+        "PD",
+        "MD"
+      ],
+      "label": "tr mode",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "tr_transport": {
+      "type": "select",
+      "description": "Actual transport binding; PD UDP, MD UDP or TCP.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "options": [
+        "UDP",
+        "TCP"
+      ],
+      "label": "tr transport",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "tr_phase": {
+      "type": "select",
+      "description": "Actual header emission versus received compatibility checks.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "options": [
+        "SEND",
+        "RECEIVE"
+      ],
+      "label": "tr phase",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      }
+    },
+    "tr_variant": {
+      "type": "select",
+      "description": "Actual SOA build uses protocolminor1; base uses minor0.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "options": [
+        "BASE",
+        "SOA"
+      ],
+      "label": "tr variant",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      }
+    },
+    "tr_message_type": {
+      "type": "select",
+      "description": "Actual TRDP PD/MD message kind, not MQTT publication.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "options": [
+        "Pd",
+        "Pp",
+        "Pr",
+        "Pe",
+        "Pt",
+        "Mn",
+        "Mr",
+        "Mp",
+        "Mq",
+        "Mc",
+        "Me"
+      ],
+      "label": "tr message type",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      }
+    },
+    "tr_socket_profile": {
+      "type": "select",
+      "description": "Actual VOS platform mapping, not every platform identical.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "options": [
+        "POSIX_DSCP",
+        "REGISTERED_ACTUAL"
+      ],
+      "label": "tr socket profile",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      }
+    },
+    "tr_timeout_behavior": {
+      "type": "select",
+      "description": "PD timeout behavior: zero means inherit actual session setting.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "options": [
+        "INHERIT",
+        "SET_TO_ZERO",
+        "KEEP_LAST_VALUE"
+      ],
+      "label": "tr timeout behavior",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      }
+    },
+    "tr_outcome": {
+      "type": "select",
+      "description": "Actual correlated functional result; old/zeroed data is not fresh.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "options": [
+        "ACCEPTED",
+        "STALE",
+        "ERROR",
+        "UNKNOWN"
+      ],
+      "label": "tr outcome",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      }
+    },
+    "tr_port": {
+      "type": "number",
+      "description": "Actual 16bit UDP/TCP destination port;17224PD/17225MD are library proposals.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "min": 1,
+      "max": 65535,
+      "integer": true,
+      "label": "tr port",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "tr_review_profile": "TCNOPEN_3_0_0",
+            "tr_proposal_mode": "SOURCE_BASELINE",
+            "tr_mode": "PD"
+          },
+          "value": 17224,
+          "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+          "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified."
+        },
+        {
+          "when": {
+            "tr_review_profile": "TCNOPEN_3_0_0",
+            "tr_proposal_mode": "SOURCE_BASELINE",
+            "tr_mode": "MD"
+          },
+          "value": 17225,
+          "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+          "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified."
+        }
+      ],
+      "schema_when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      }
+    },
+    "tr_qos": {
+      "type": "number",
+      "description": "Actual API uint8 priority; POSIX mapping only0..7, not generic CAN priority.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "min": 0,
+      "max": 255,
+      "integer": true,
+      "label": "tr qos",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "tr_review_profile": "TCNOPEN_3_0_0",
+            "tr_proposal_mode": "SOURCE_BASELINE",
+            "tr_mode": "PD"
+          },
+          "value": 5,
+          "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+          "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified."
+        },
+        {
+          "when": {
+            "tr_review_profile": "TCNOPEN_3_0_0",
+            "tr_proposal_mode": "SOURCE_BASELINE",
+            "tr_mode": "MD"
+          },
+          "value": 3,
+          "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+          "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified."
+        }
+      ],
+      "schema_when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      }
+    },
+    "tr_ds_field": {
+      "type": "number",
+      "description": "Actual POSIX IPv4 DS byte when QoS1..7 is applied, qos<<5 and ECN0.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "min": 0,
+      "max": 255,
+      "integer": true,
+      "label": "tr ds field",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      }
+    },
+    "tr_ttl": {
+      "type": "number",
+      "description": "Actual configured API TTL0 means socket default/inherit, not zero remaining hops.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "min": 0,
+      "max": 255,
+      "integer": true,
+      "label": "tr ttl",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "tr_review_profile": "TCNOPEN_3_0_0",
+            "tr_proposal_mode": "SOURCE_BASELINE"
+          },
+          "value": 64,
+          "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+          "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified."
+        }
+      ],
+      "schema_when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      }
+    },
+    "tr_retries": {
+      "type": "number",
+      "description": "Actual API resend limit; not equivalent to TCP retries or all multicast retries.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "min": 0,
+      "max": 255,
+      "integer": true,
+      "label": "tr retries",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "tr_review_profile": "TCNOPEN_3_0_0",
+            "tr_proposal_mode": "SOURCE_BASELINE",
+            "tr_mode": "PD"
+          },
+          "value": 0,
+          "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+          "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified."
+        },
+        {
+          "when": {
+            "tr_review_profile": "TCNOPEN_3_0_0",
+            "tr_proposal_mode": "SOURCE_BASELINE",
+            "tr_mode": "MD"
+          },
+          "value": 2,
+          "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+          "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified."
+        }
+      ],
+      "schema_when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      }
+    },
+    "tr_effective_retries": {
+      "type": "number",
+      "description": "Actual retries only UDP unicast with configured expectedreply1; otherwise0.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "min": 0,
+      "max": 255,
+      "integer": true,
+      "label": "tr effective retries",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      }
+    },
+    "tr_expected_replies": {
+      "type": "number",
+      "description": "Actual effective MD request count; unicast1, multicast0 means unknown count.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "min": 0,
+      "max": 4294967295,
+      "integer": true,
+      "label": "tr expected replies",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      }
+    },
+    "tr_configured_expected_replies": {
+      "type": "number",
+      "description": "Actual input expected replies before unicast request normalization.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "min": 0,
+      "max": 4294967295,
+      "integer": true,
+      "label": "tr configured expected replies",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      }
+    },
+    "tr_replies_received": {
+      "type": "number",
+      "description": "Actual matching reply count; unknown expected0 is not zero completeness.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "min": 0,
+      "max": 4294967295,
+      "integer": true,
+      "label": "tr replies received",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      }
+    },
+    "tr_header_bytes": {
+      "type": "number",
+      "description": "Actual PD40/MD116 header, distinct IP/UDP/TCP/Ethernet overhead.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "min": 0,
+      "unit": "byte",
+      "integer": true,
+      "label": "tr header bytes",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "tr_review_profile": "TCNOPEN_3_0_0",
+            "tr_proposal_mode": "SOURCE_BASELINE",
+            "tr_mode": "PD"
+          },
+          "value": 40,
+          "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+          "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified."
+        },
+        {
+          "when": {
+            "tr_review_profile": "TCNOPEN_3_0_0",
+            "tr_proposal_mode": "SOURCE_BASELINE",
+            "tr_mode": "MD"
+          },
+          "value": 116,
+          "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+          "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified."
+        }
+      ],
+      "schema_when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      }
+    },
+    "tr_data_bytes": {
+      "type": "number",
+      "description": "Actual wire dataset length excludes header and4byte packet padding.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "min": 0,
+      "max": 4294967295,
+      "unit": "byte",
+      "integer": true,
+      "label": "tr data bytes",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      }
+    },
+    "tr_padding_bytes": {
+      "type": "number",
+      "description": "Actual packet padding to4octets, not application data.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "min": 0,
+      "max": 3,
+      "unit": "byte",
+      "integer": true,
+      "label": "tr padding bytes",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      }
+    },
+    "tr_packet_bytes": {
+      "type": "number",
+      "description": "Actual complete TRDP header+dataset+padding.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "min": 0,
+      "unit": "byte",
+      "integer": true,
+      "label": "tr packet bytes",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      }
+    },
+    "tr_peer_max_data_bytes": {
+      "type": "number",
+      "description": "Actual independently qualified peer dataset maximum.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "min": 0,
+      "unit": "byte",
+      "integer": true,
+      "label": "tr peer max data bytes",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      }
+    },
+    "tr_sequence": {
+      "type": "number",
+      "description": "Actual stream/session sequence32bit; PD and pulledPD counters separate.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "min": 0,
+      "max": 4294967295,
+      "integer": true,
+      "label": "tr sequence",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      }
+    },
+    "tr_next_sequence": {
+      "type": "number",
+      "description": "Actual counter increment modulo2^32;0 can indicate PD reset.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "min": 0,
+      "max": 4294967295,
+      "integer": true,
+      "label": "tr next sequence",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      }
+    },
+    "tr_protocol_version": {
+      "type": "number",
+      "description": "Actual version16bit; receive checks majorFF00, not blanketminor0.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "min": 0,
+      "max": 65535,
+      "integer": true,
+      "label": "tr protocol version",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      }
+    },
+    "tr_message_code": {
+      "type": "number",
+      "description": "Actual bigendian twocharacter message type value.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "min": 0,
+      "max": 65535,
+      "integer": true,
+      "label": "tr message code",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      }
+    },
+    "tr_com_id": {
+      "type": "number",
+      "description": "Actual32bit communication identifier bound to dataset mapping.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "min": 0,
+      "max": 4294967295,
+      "integer": true,
+      "label": "tr com id",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      }
+    },
+    "tr_etb_topology": {
+      "type": "number",
+      "description": "Actual ETB topology counter, zero local consist only when appropriate.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "min": 0,
+      "max": 4294967295,
+      "integer": true,
+      "label": "tr etb topology",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      }
+    },
+    "tr_operational_topology": {
+      "type": "number",
+      "description": "Actual operation/direction/side topology counter.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "min": 0,
+      "max": 4294967295,
+      "integer": true,
+      "label": "tr operational topology",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      }
+    },
+    "tr_etb_filter": {
+      "type": "number",
+      "description": "Actual topology comparison filter; filter0 wildcard, not everycounter0 wildcard.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "min": 0,
+      "max": 4294967295,
+      "integer": true,
+      "label": "tr etb filter",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      }
+    },
+    "tr_operational_filter": {
+      "type": "number",
+      "description": "Actual explicit filter for this comparison role.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "min": 0,
+      "max": 4294967295,
+      "integer": true,
+      "label": "tr operational filter",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      }
+    },
+    "tr_reserved": {
+      "type": "number",
+      "description": "Actual PD reserved field0 in BASE; SOA service/instance encoding separately qualified.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "min": 0,
+      "max": 4294967295,
+      "integer": true,
+      "label": "tr reserved",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      }
+    },
+    "tr_reply_com_id": {
+      "type": "number",
+      "description": "Actual PD request replyComId32bit, not inherited receiveComId.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "min": 0,
+      "max": 4294967295,
+      "integer": true,
+      "label": "tr reply com id",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      }
+    },
+    "tr_reply_ip_raw": {
+      "type": "number",
+      "description": "Actual PD request IPv4 replyaddress32bit encoding.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "min": 0,
+      "max": 4294967295,
+      "integer": true,
+      "label": "tr reply ip raw",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      }
+    },
+    "tr_reply_status": {
+      "type": "number",
+      "description": "Actual signed MD replystatus; negative protocol errors distinct nonnegativeuser status.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "min": -2147483648,
+      "max": 2147483647,
+      "integer": true,
+      "label": "tr reply status",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      }
+    },
+    "tr_header_crc": {
+      "type": "number",
+      "description": "Actual IEEE reflected CRC32 over header excluding FCS, transmitted little endian.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "min": 0,
+      "max": 4294967295,
+      "integer": true,
+      "label": "tr header crc",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      }
+    },
+    "tr_source_uri_bytes": {
+      "type": "number",
+      "description": "Actual user part wire32octets, not host/global URI.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "min": 0,
+      "max": 32,
+      "unit": "byte",
+      "integer": true,
+      "label": "tr source uri bytes",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      }
+    },
+    "tr_destination_uri_bytes": {
+      "type": "number",
+      "description": "Actual destinationuser wire32octets; API buffer33 includes terminator.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "min": 0,
+      "max": 32,
+      "unit": "byte",
+      "integer": true,
+      "label": "tr destination uri bytes",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      }
+    },
+    "tr_reply_timeout_us": {
+      "type": "number",
+      "description": "Actual MD request wire timeout0 means infinite only forMr.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "min": 0,
+      "max": 4294967295,
+      "unit": "us",
+      "integer": true,
+      "label": "tr reply timeout us",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "tr_review_profile": "TCNOPEN_3_0_0",
+            "tr_proposal_mode": "SOURCE_BASELINE",
+            "tr_mode": "MD"
+          },
+          "value": 5000000,
+          "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+          "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified."
+        }
+      ],
+      "schema_when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      }
+    },
+    "tr_api_reply_timeout_us": {
+      "type": "number",
+      "description": "Actual API timeout;0xffffffff sentinel differs from infinite wire0.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "min": 0,
+      "max": 4294967295,
+      "unit": "us",
+      "integer": true,
+      "label": "tr api reply timeout us",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      }
+    },
+    "tr_confirm_timeout_us": {
+      "type": "number",
+      "description": "Actual MD confirmation timeout;source1s proposal not functionaldeadline.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "min": 0,
+      "max": 4294967295,
+      "unit": "us",
+      "integer": true,
+      "label": "tr confirm timeout us",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "tr_review_profile": "TCNOPEN_3_0_0",
+            "tr_proposal_mode": "SOURCE_BASELINE",
+            "tr_mode": "MD"
+          },
+          "value": 1000000,
+          "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+          "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified."
+        }
+      ],
+      "schema_when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      }
+    },
+    "tr_connection_timeout_us": {
+      "type": "number",
+      "description": "Actual TCP idle connection timeout, not perpacket latency.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "min": 0,
+      "max": 4294967295,
+      "unit": "us",
+      "integer": true,
+      "label": "tr connection timeout us",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "tr_review_profile": "TCNOPEN_3_0_0",
+            "tr_proposal_mode": "SOURCE_BASELINE",
+            "tr_mode": "MD",
+            "tr_transport": "TCP"
+          },
+          "value": 60000000,
+          "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+          "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified."
+        }
+      ],
+      "schema_when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      }
+    },
+    "tr_sending_timeout_us": {
+      "type": "number",
+      "description": "Actual MD sending timeout, separate TCPconnect and replywait.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "min": 0,
+      "max": 4294967295,
+      "unit": "us",
+      "integer": true,
+      "label": "tr sending timeout us",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "tr_review_profile": "TCNOPEN_3_0_0",
+            "tr_proposal_mode": "SOURCE_BASELINE",
+            "tr_mode": "MD"
+          },
+          "value": 5000000,
+          "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+          "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified."
+        }
+      ],
+      "schema_when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      }
+    },
+    "tr_pd_timeout_us": {
+      "type": "number",
+      "description": "Actual receiver PD timeout, behavior independently selected.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "min": 0,
+      "max": 4294967295,
+      "unit": "us",
+      "integer": true,
+      "label": "tr pd timeout us",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "tr_review_profile": "TCNOPEN_3_0_0",
+            "tr_proposal_mode": "SOURCE_BASELINE",
+            "tr_mode": "PD"
+          },
+          "value": 100000,
+          "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+          "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified."
+        }
+      ],
+      "schema_when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      }
+    },
+    "tr_library_process_cycle_us": {
+      "type": "number",
+      "description": "Actual session worker process cadence, not every dataset periodminimum.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "min": 1,
+      "unit": "us",
+      "integer": true,
+      "label": "tr library process cycle us",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "tr_review_profile": "TCNOPEN_3_0_0",
+            "tr_proposal_mode": "SOURCE_BASELINE"
+          },
+          "value": 10000,
+          "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+          "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified."
+        }
+      ],
+      "schema_when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      }
+    },
+    "tr_publish_cycle_us": {
+      "type": "number",
+      "description": "Actual configured PD period,0 means noncyclic/onrequest.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "min": 0,
+      "max": 4294967295,
+      "unit": "us",
+      "integer": true,
+      "label": "tr publish cycle us",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      }
+    },
+    "tr_timer_granularity_us": {
+      "type": "number",
+      "description": "Actual compiled timer resolution500us indexed/TSN else5000.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "min": 1,
+      "unit": "us",
+      "integer": true,
+      "label": "tr timer granularity us",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "tr_review_profile": "TCNOPEN_3_0_0",
+            "tr_proposal_mode": "SOURCE_BASELINE",
+            "tr_indexed_build": true
+          },
+          "value": 500,
+          "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+          "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified."
+        },
+        {
+          "when": {
+            "tr_review_profile": "TCNOPEN_3_0_0",
+            "tr_proposal_mode": "SOURCE_BASELINE",
+            "tr_tsn_build": true
+          },
+          "value": 500,
+          "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+          "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified."
+        },
+        {
+          "when": {
+            "tr_review_profile": "TCNOPEN_3_0_0",
+            "tr_proposal_mode": "SOURCE_BASELINE",
+            "tr_indexed_build": false,
+            "tr_tsn_build": false
+          },
+          "value": 5000,
+          "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+          "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified."
+        }
+      ],
+      "schema_when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      }
+    },
+    "tr_dataset_id": {
+      "type": "number",
+      "description": "Actual registry dataset id; custom ids>1000, managedids actual mapping.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "min": 0,
+      "max": 4294967295,
+      "integer": true,
+      "label": "tr dataset id",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      }
+    },
+    "tr_dataset_reserved": {
+      "type": "number",
+      "description": "Actual dataset descriptor reserved16bit must0.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "min": 0,
+      "max": 65535,
+      "integer": true,
+      "label": "tr dataset reserved",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      }
+    },
+    "tr_dataset_elements": {
+      "type": "number",
+      "description": "Actual descriptor elementcount16bit.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "min": 0,
+      "max": 65535,
+      "integer": true,
+      "label": "tr dataset elements",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      }
+    },
+    "tr_element_type": {
+      "type": "number",
+      "description": "Actual scalarid1..16 or qualified composite>30;17..30 reserved, managed31..1000 need registeredmap.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "min": 0,
+      "max": 4294967295,
+      "integer": true,
+      "label": "tr element type",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      }
+    },
+    "tr_element_size": {
+      "type": "number",
+      "description": "Actual descriptor element itemcount;0means variable, not empty encodeddata.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "min": 0,
+      "max": 4294967295,
+      "integer": true,
+      "label": "tr element size",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      }
+    },
+    "tr_element_count": {
+      "type": "number",
+      "description": "Actual resolved itemcount from actual codec/precedingcount, not guessed0.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "min": 0,
+      "max": 4294967295,
+      "integer": true,
+      "label": "tr element count",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      }
+    },
+    "tr_element_width_bytes": {
+      "type": "number",
+      "description": "Actual scalar wirewidth or complete composite width; not C memoryalignment.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "min": 0,
+      "unit": "byte",
+      "integer": true,
+      "label": "tr element width bytes",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      }
+    },
+    "tr_element_bytes": {
+      "type": "number",
+      "description": "Actual complete array bytes for resolved count.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "min": 0,
+      "unit": "byte",
+      "integer": true,
+      "label": "tr element bytes",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      }
+    },
+    "tr_scale": {
+      "type": "number",
+      "description": "Actual visualization scaling factor, not wire-value type conversion.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "integer": false,
+      "label": "tr scale",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      }
+    },
+    "tr_offset": {
+      "type": "number",
+      "description": "Actual visualization signed32offset.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "min": -2147483648,
+      "max": 2147483647,
+      "integer": true,
+      "label": "tr offset",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      }
+    },
+    "tr_raw_value": {
+      "type": "number",
+      "description": "Actual independently decoded numerical scalar;64bit lossless rawencoding separately required.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "integer": false,
+      "label": "tr raw value",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      }
+    },
+    "tr_display_value": {
+      "type": "number",
+      "description": "Actual visualization scale*raw+offset.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "integer": false,
+      "label": "tr display value",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      }
+    },
+    "tr_time_microseconds": {
+      "type": "number",
+      "description": "Actual TIMEDATE64 fractional microseconds, not unconstrained32bit scalar.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "min": 0,
+      "max": 999999,
+      "unit": "us",
+      "integer": true,
+      "label": "tr time microseconds",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      }
+    },
+    "tr_source_ms": {
+      "type": "number",
+      "description": "Actual producer/encode/queue envelope.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "label": "tr source ms",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      }
+    },
+    "tr_transport_ms": {
+      "type": "number",
+      "description": "Actual IP/PHY/switch/queue/reply/confirm envelope.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "label": "tr transport ms",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      }
+    },
+    "tr_consumer_ms": {
+      "type": "number",
+      "description": "Actual decode/use envelope.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "label": "tr consumer ms",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      }
+    },
+    "tr_e2e_ms": {
+      "type": "number",
+      "description": "Actual whole source+transport+consumer envelope.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "label": "tr e2e ms",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      }
+    },
+    "tr_deadline_ms": {
+      "type": "number",
+      "description": "Actual independently specified functional deadline.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "label": "tr deadline ms",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      }
+    },
+    "tr_age_ms": {
+      "type": "number",
+      "description": "Actual correlated source-to-use age.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "label": "tr age ms",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      }
+    },
+    "tr_freshness_ms": {
+      "type": "number",
+      "description": "Actual independently specified acceptable dataage.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "label": "tr freshness ms",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      }
+    },
+    "tr_multicast": {
+      "type": "boolean",
+      "description": "Actual destination classification checked against commissioned IPv4 address.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "label": "tr multicast",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      }
+    },
+    "tr_tsn_build": {
+      "type": "boolean",
+      "description": "Actual TSN_SUPPORT build available, not TSNschedule evidence.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "label": "tr tsn build",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      }
+    },
+    "tr_indexed_build": {
+      "type": "boolean",
+      "description": "Actual HIGH_PERF_INDEXED build available.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "label": "tr indexed build",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      }
+    },
+    "tr_custom_dataset": {
+      "type": "boolean",
+      "description": "Actual application-owned dataset namespace rather than managed definition.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "label": "tr custom dataset",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      }
+    },
+    "tr_marshalling": {
+      "type": "boolean",
+      "description": "Actual library marshalling enabled; raw caller encoding still needs codec source.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "label": "tr marshalling",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      }
+    },
+    "tr_pd_expired": {
+      "type": "boolean",
+      "description": "Actual receiver deadline expired; old or zero data cannot qualify fresh acceptance.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "label": "tr pd expired",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      }
+    },
+    "tr_header_verified": {
+      "type": "boolean",
+      "description": "Actual complete packet/header/version/FCS checked.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "label": "tr header verified",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      }
+    },
+    "tr_dataset_verified": {
+      "type": "boolean",
+      "description": "Actual full encoding/length/comId mapping checked independently of headerCRC.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "label": "tr dataset verified",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      }
+    },
+    "tr_path_verified": {
+      "type": "boolean",
+      "description": "Actual complete IP/PHY/queue/loss/schedule bounded.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "label": "tr path verified",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      }
+    },
+    "tr_topology_verified": {
+      "type": "boolean",
+      "description": "Actual applicable ETB/operation counter comparison validated.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "label": "tr topology verified",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      }
+    },
+    "tr_replies_complete": {
+      "type": "boolean",
+      "description": "Actual correlated required replies complete, not count0 assumption.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "label": "tr replies complete",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      }
+    },
+    "tr_confirmation_received": {
+      "type": "boolean",
+      "description": "Actual matchingMq/Mc session confirmation received.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "label": "tr confirmation received",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      }
+    },
+    "tr_data_accepted": {
+      "type": "boolean",
+      "description": "Actual consumer accepted the correlated current dataset.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "label": "tr data accepted",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      }
+    },
+    "tr_revision": {
+      "type": "text",
+      "description": "Actual implementation/IEC edition and build revision.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "label": "tr revision",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "tr_configuration_source": {
+      "type": "text",
+      "description": "Actual PD/MD transport/socket/default resolution evidence.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "label": "tr configuration source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "tr_codec_source": {
+      "type": "text",
+      "description": "Actual dataset/comId/scalar/nesting/variablelength/marshalling qualification.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "label": "tr codec source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "tr_path_source": {
+      "type": "text",
+      "description": "Actual bound IP/PHY/switch/queue/capacity path.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "label": "tr path source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "tr_schedule_source": {
+      "type": "text",
+      "description": "Actual publication/reply/confirmation/timeout/processing schedule.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "label": "tr schedule source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "tr_acceptance_source": {
+      "type": "text",
+      "description": "Actual independent function/deadline/freshness contract.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "label": "tr acceptance source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "tr_registered_source": {
+      "type": "text",
+      "description": "Actual independent variant/edition extension qualification.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "label": "tr registered source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "tr_observation_source": {
+      "type": "text",
+      "description": "Actual correlated dataset/header/sequence/session/source-to-use trace.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "label": "tr observation source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      }
+    },
+    "tr_socket_source": {
+      "type": "text",
+      "description": "Actual platform socket DSCP/TTL/transport mapping.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "label": "tr socket source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      }
+    },
+    "tr_composite_source": {
+      "type": "text",
+      "description": "Actual nested/managed dataset mapping and recursivewirecodec.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "label": "tr composite source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      }
+    },
+    "tr_variable_count_source": {
+      "type": "text",
+      "description": "Actual count-bearing precedingfield and array bounds.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "label": "tr variable count source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      }
+    },
+    "tr_tsn_source": {
+      "type": "text",
+      "description": "Actual TSN scheduling/PHY/device realization;Ptflag alone is insufficient.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "label": "tr tsn source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      }
+    },
+    "tr_source_address": {
+      "type": "text",
+      "description": "Actual IPv4 sourcebinding.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "format": "IP_ADDRESS",
+      "label": "tr source address",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      }
+    },
+    "tr_destination_address": {
+      "type": "text",
+      "description": "Actual IPv4 destinationbinding.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "format": "IP_ADDRESS",
+      "label": "tr destination address",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      }
+    },
+    "tr_header_hex": {
+      "type": "text",
+      "description": "Actual complete header wireoctets, not payload CRC.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "label": "tr header hex",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      }
+    },
+    "tr_session_hex": {
+      "type": "text",
+      "description": "Actual16byte UUID encoded without fabricated default.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "label": "tr session hex",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      }
+    },
+    "tr_source_uri": {
+      "type": "text",
+      "description": "Actual32octet userURIpart encoded using commissioned codec.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "label": "tr source uri",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      }
+    },
+    "tr_destination_uri": {
+      "type": "text",
+      "description": "Actual32octet destination userURIpart.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "label": "tr destination uri",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      }
+    },
+    "tr_scalar_hex": {
+      "type": "text",
+      "description": "Actual lossless scalar wireencoding, independent of JavaScript64bit floating precision.",
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "source_revision": "Official TCNOpen release3.0.0.0: src/api/iec61375-2-3.h/trdp_types.h; src/common/trdp_private.h,pdcom,mdcom,utils,tau_marshall; VOS crc32 and POSIX QoS. Actual build/platform behavior remains independently qualified.",
+      "label": "tr scalar hex",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      }
+    }
+  },
+  "mechanisms": {
+    "application": [
+      "PD_CYCLIC_PULL_TIMEOUT",
+      "MD_REQUEST_REPLY_CONFIRM_SESSION"
+    ],
+    "timing": [
+      "ACTUAL_TRANSPORT_DATASET_SCHEDULE",
+      "HEADER_CRC_NOT_PAYLOAD_OR_SAFETY_PROOF",
+      "CONSUMER_FRESHNESS_SEPARATE"
+    ]
+  },
+  "parameter_constraints": [
+    {
+      "parameter": "tr_registered_source",
+      "when": {
+        "tr_review_profile": "REGISTERED_ACTUAL"
+      },
+      "required": true,
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip"
+    },
+    {
+      "parameter": "bitrate",
+      "when": {},
+      "allowed": [],
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip"
+    },
+    {
+      "parameter": "reserved_bandwidth_percent",
+      "when": {},
+      "allowed": [],
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip"
+    },
+    {
+      "parameter": "sync_method",
+      "when": {},
+      "allowed": [],
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip"
+    },
+    {
+      "parameter": "retransmission_enabled",
+      "when": {},
+      "allowed": [],
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip"
+    },
+    {
+      "parameter": "retransmission_rate",
+      "when": {},
+      "allowed": [],
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip"
+    },
+    {
+      "parameter": "retry_limit",
+      "when": {},
+      "allowed": [],
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip"
+    },
+    {
+      "parameter": "retransmission_delay_ms",
+      "when": {},
+      "allowed": [],
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip"
+    },
+    {
+      "parameter": "gateway_maximum_throughput",
+      "when": {},
+      "allowed": [],
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip"
+    },
+    {
+      "parameter": "gateway_input_buffer",
+      "when": {},
+      "allowed": [],
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip"
+    },
+    {
+      "parameter": "gateway_output_buffer",
+      "when": {},
+      "allowed": [],
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip"
+    },
+    {
+      "parameter": "gateway_maximum_routes",
+      "when": {},
+      "allowed": [],
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip"
+    },
+    {
+      "parameter": "gateway_maximum_messages_s",
+      "when": {},
+      "allowed": [],
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip"
+    },
+    {
+      "parameter": "mtu_bytes",
+      "when": {},
+      "allowed": [],
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip"
+    },
+    {
+      "parameter": "duplex",
+      "when": {},
+      "allowed": [],
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip"
+    },
+    {
+      "parameter": "vlan_id",
+      "when": {},
+      "allowed": [],
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip"
+    },
+    {
+      "parameter": "rate_limit_bit_s",
+      "when": {},
+      "allowed": [],
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip"
+    },
+    {
+      "parameter": "tr_transport",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_mode": "PD"
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "allowed": [
+        "UDP"
+      ]
+    },
+    {
+      "parameter": "tr_message_type",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_mode": "PD"
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "allowed": [
+        "Pd",
+        "Pp",
+        "Pr",
+        "Pe",
+        "Pt"
+      ]
+    },
+    {
+      "parameter": "tr_message_type",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_mode": "MD"
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "allowed": [
+        "Mn",
+        "Mr",
+        "Mp",
+        "Mq",
+        "Mc",
+        "Me"
+      ]
+    },
+    {
+      "parameter": "tr_tsn_build",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_message_type": "Pt"
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "required": true,
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "tr_tsn_source",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_message_type": "Pt"
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "required": true
+    },
+    {
+      "parameter": "tr_protocol_version",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_phase": "SEND",
+        "tr_variant": "BASE"
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "allowed": [
+        256
+      ]
+    },
+    {
+      "parameter": "tr_protocol_version",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_phase": "SEND",
+        "tr_variant": "SOA"
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "allowed": [
+        257
+      ]
+    },
+    {
+      "parameter": "tr_protocol_version",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_phase": "RECEIVE"
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "minimum": 256,
+      "maximum": 511
+    },
+    {
+      "parameter": "tr_reserved",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_variant": "BASE",
+        "tr_mode": "PD",
+        "tr_phase": "SEND"
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "tr_message_code",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_message_type": "Pd"
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "allowed": [
+        20580
+      ]
+    },
+    {
+      "parameter": "tr_message_code",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_message_type": "Pp"
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "allowed": [
+        20592
+      ]
+    },
+    {
+      "parameter": "tr_message_code",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_message_type": "Pr"
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "allowed": [
+        20594
+      ]
+    },
+    {
+      "parameter": "tr_message_code",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_message_type": "Pe"
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "allowed": [
+        20581
+      ]
+    },
+    {
+      "parameter": "tr_message_code",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_message_type": "Pt"
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "allowed": [
+        20596
+      ]
+    },
+    {
+      "parameter": "tr_message_code",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_message_type": "Mn"
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "allowed": [
+        19822
+      ]
+    },
+    {
+      "parameter": "tr_message_code",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_message_type": "Mr"
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "allowed": [
+        19826
+      ]
+    },
+    {
+      "parameter": "tr_message_code",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_message_type": "Mp"
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "allowed": [
+        19824
+      ]
+    },
+    {
+      "parameter": "tr_message_code",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_message_type": "Mq"
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "allowed": [
+        19825
+      ]
+    },
+    {
+      "parameter": "tr_message_code",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_message_type": "Mc"
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "allowed": [
+        19811
+      ]
+    },
+    {
+      "parameter": "tr_message_code",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_message_type": "Me"
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "allowed": [
+        19813
+      ]
+    },
+    {
+      "parameter": "tr_header_bytes",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_mode": "PD"
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "allowed": [
+        40
+      ]
+    },
+    {
+      "parameter": "tr_data_bytes",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_mode": "PD"
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "maximum": 1432
+    },
+    {
+      "parameter": "tr_header_hex",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_mode": "PD"
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "hex_bytes_parameter": "tr_header_bytes",
+      "hex_crc32_ieee_parameter": "tr_header_crc",
+      "hex_crc32_prefix_bytes": 36,
+      "hex_octets": [
+        {
+          "parameter": "tr_sequence",
+          "offset": 0,
+          "width": 4
+        },
+        {
+          "parameter": "tr_protocol_version",
+          "offset": 4,
+          "width": 2
+        },
+        {
+          "parameter": "tr_message_code",
+          "offset": 6,
+          "width": 2
+        },
+        {
+          "parameter": "tr_com_id",
+          "offset": 8,
+          "width": 4
+        },
+        {
+          "parameter": "tr_etb_topology",
+          "offset": 12,
+          "width": 4
+        },
+        {
+          "parameter": "tr_operational_topology",
+          "offset": 16,
+          "width": 4
+        },
+        {
+          "parameter": "tr_data_bytes",
+          "offset": 20,
+          "width": 4
+        },
+        {
+          "parameter": "tr_reserved",
+          "offset": 24,
+          "width": 4
+        },
+        {
+          "parameter": "tr_reply_com_id",
+          "offset": 28,
+          "width": 4
+        },
+        {
+          "parameter": "tr_reply_ip_raw",
+          "offset": 32,
+          "width": 4
+        },
+        {
+          "parameter": "tr_header_crc",
+          "offset": 36,
+          "width": 4,
+          "byte_order": "little"
+        }
+      ]
+    },
+    {
+      "parameter": "tr_header_bytes",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_mode": "MD"
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "allowed": [
+        116
+      ]
+    },
+    {
+      "parameter": "tr_data_bytes",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_mode": "MD"
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "maximum": 65388
+    },
+    {
+      "parameter": "tr_header_hex",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_mode": "MD"
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "hex_bytes_parameter": "tr_header_bytes",
+      "hex_crc32_ieee_parameter": "tr_header_crc",
+      "hex_crc32_prefix_bytes": 112,
+      "hex_octets": [
+        {
+          "parameter": "tr_sequence",
+          "offset": 0,
+          "width": 4
+        },
+        {
+          "parameter": "tr_protocol_version",
+          "offset": 4,
+          "width": 2
+        },
+        {
+          "parameter": "tr_message_code",
+          "offset": 6,
+          "width": 2
+        },
+        {
+          "parameter": "tr_com_id",
+          "offset": 8,
+          "width": 4
+        },
+        {
+          "parameter": "tr_etb_topology",
+          "offset": 12,
+          "width": 4
+        },
+        {
+          "parameter": "tr_operational_topology",
+          "offset": 16,
+          "width": 4
+        },
+        {
+          "parameter": "tr_data_bytes",
+          "offset": 20,
+          "width": 4
+        },
+        {
+          "parameter": "tr_reply_status",
+          "offset": 24,
+          "width": 4,
+          "signed": true
+        },
+        {
+          "parameter": "tr_reply_timeout_us",
+          "offset": 44,
+          "width": 4
+        },
+        {
+          "parameter": "tr_header_crc",
+          "offset": 112,
+          "width": 4,
+          "byte_order": "little"
+        }
+      ]
+    },
+    {
+      "parameter": "tr_data_bytes",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "maximum_parameter": "tr_peer_max_data_bytes"
+    },
+    {
+      "parameter": "tr_header_bytes",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "when_present": [
+        "tr_header_hex"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "tr_header_crc",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "when_present": [
+        "tr_header_hex"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "tr_protocol_version",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "when_present": [
+        "tr_header_hex"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "tr_message_code",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "when_present": [
+        "tr_header_hex"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "tr_sequence",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "when_present": [
+        "tr_header_hex"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "tr_com_id",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "when_present": [
+        "tr_header_hex"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "tr_data_bytes",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "when_present": [
+        "tr_header_hex"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "tr_padding_bytes",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "equal_expression": {
+        "integer_remainder": [
+          {
+            "subtract": [
+              4,
+              {
+                "integer_remainder": [
+                  "tr_data_bytes",
+                  4
+                ]
+              }
+            ]
+          },
+          4
+        ]
+      }
+    },
+    {
+      "parameter": "tr_packet_bytes",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "equal_expression": {
+        "sum": [
+          "tr_header_bytes",
+          "tr_data_bytes",
+          "tr_padding_bytes"
+        ]
+      }
+    },
+    {
+      "parameter": "tr_next_sequence",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "equal_expression": {
+        "integer_remainder": [
+          {
+            "sum": [
+              "tr_sequence",
+              1
+            ]
+          },
+          4294967296
+        ]
+      }
+    },
+    {
+      "parameter": "tr_source_address",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "ip_address_version": 4
+    },
+    {
+      "parameter": "tr_destination_address",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "ip_address_version": 4
+    },
+    {
+      "parameter": "tr_session_hex",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "pattern": "[0-9A-Fa-f]{32}"
+    },
+    {
+      "parameter": "tr_source_uri",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "text_encoding": "utf-8",
+      "encoded_bytes_parameter": "tr_source_uri_bytes"
+    },
+    {
+      "parameter": "tr_destination_uri",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "text_encoding": "utf-8",
+      "encoded_bytes_parameter": "tr_destination_uri_bytes"
+    },
+    {
+      "parameter": "tr_qos",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_socket_profile": "POSIX_DSCP"
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "maximum": 7
+    },
+    {
+      "parameter": "tr_socket_source",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "when_present": [
+        "tr_socket_profile"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "tr_ds_field",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_socket_profile": "POSIX_DSCP"
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "when_ranges": {
+        "tr_qos": [
+          1,
+          7
+        ]
+      },
+      "equal_expression": {
+        "product": [
+          "tr_qos",
+          32
+        ]
+      }
+    },
+    {
+      "parameter": "tr_timer_granularity_us",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_indexed_build": true
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "allowed": [
+        500
+      ]
+    },
+    {
+      "parameter": "tr_timer_granularity_us",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_tsn_build": true
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "allowed": [
+        500
+      ]
+    },
+    {
+      "parameter": "tr_timer_granularity_us",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_indexed_build": false,
+        "tr_tsn_build": false
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "allowed": [
+        5000
+      ]
+    },
+    {
+      "parameter": "tr_expected_replies",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_mode": "MD",
+        "tr_message_type": "Mr",
+        "tr_multicast": false
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "allowed": [
+        1
+      ]
+    },
+    {
+      "parameter": "tr_effective_retries",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_mode": "MD",
+        "tr_transport": "TCP"
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "tr_effective_retries",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_mode": "MD",
+        "tr_multicast": true
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "tr_effective_retries",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_mode": "MD",
+        "tr_transport": "UDP",
+        "tr_multicast": false,
+        "tr_configured_expected_replies": 1
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "equal_parameter": "tr_retries"
+    },
+    {
+      "parameter": "tr_effective_retries",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_mode": "MD",
+        "tr_transport": "UDP",
+        "tr_multicast": false
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "when_present": [
+        "tr_configured_expected_replies"
+      ],
+      "when_not": {
+        "tr_configured_expected_replies": 1
+      },
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "tr_replies_received",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_replies_complete": true
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "when_greater_than": {
+        "tr_expected_replies": 0
+      },
+      "minimum_parameter": "tr_expected_replies"
+    },
+    {
+      "parameter": "tr_reply_timeout_us",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_message_type": "Mr",
+        "tr_api_reply_timeout_us": 4294967295
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "tr_reply_timeout_us",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_message_type": "Mr"
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "when_present": [
+        "tr_api_reply_timeout_us"
+      ],
+      "when_not": {
+        "tr_api_reply_timeout_us": 4294967295
+      },
+      "equal_parameter": "tr_api_reply_timeout_us"
+    },
+    {
+      "parameter": "tr_etb_topology",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_topology_verified": true
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "when_greater_than": {
+        "tr_etb_filter": 0
+      },
+      "equal_parameter": "tr_etb_filter"
+    },
+    {
+      "parameter": "tr_operational_topology",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_topology_verified": true
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "when_greater_than": {
+        "tr_operational_filter": 0
+      },
+      "equal_parameter": "tr_operational_filter"
+    },
+    {
+      "parameter": "tr_dataset_reserved",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "tr_dataset_id",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_custom_dataset": true
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "minimum": 1001
+    },
+    {
+      "parameter": "tr_element_type",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "when_ranges": {
+        "tr_element_type": [
+          17,
+          30
+        ]
+      },
+      "allowed": []
+    },
+    {
+      "parameter": "tr_composite_source",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "when_greater_than": {
+        "tr_element_type": 30
+      },
+      "required": true
+    },
+    {
+      "parameter": "tr_variable_count_source",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_element_size": 0
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "required": true
+    },
+    {
+      "parameter": "tr_element_count",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_element_size": 0
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "required": true
+    },
+    {
+      "parameter": "tr_element_count",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "when_greater_than": {
+        "tr_element_size": 0
+      },
+      "equal_parameter": "tr_element_size"
+    },
+    {
+      "parameter": "tr_element_width_bytes",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_element_type": 1
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "allowed": [
+        1
+      ]
+    },
+    {
+      "parameter": "tr_element_width_bytes",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_element_type": 2
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "allowed": [
+        1
+      ]
+    },
+    {
+      "parameter": "tr_element_width_bytes",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_element_type": 3
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "allowed": [
+        2
+      ]
+    },
+    {
+      "parameter": "tr_element_width_bytes",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_element_type": 4
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "allowed": [
+        1
+      ]
+    },
+    {
+      "parameter": "tr_element_width_bytes",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_element_type": 5
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "allowed": [
+        2
+      ]
+    },
+    {
+      "parameter": "tr_element_width_bytes",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_element_type": 6
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "allowed": [
+        4
+      ]
+    },
+    {
+      "parameter": "tr_element_width_bytes",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_element_type": 7
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "allowed": [
+        8
+      ]
+    },
+    {
+      "parameter": "tr_element_width_bytes",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_element_type": 8
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "allowed": [
+        1
+      ]
+    },
+    {
+      "parameter": "tr_element_width_bytes",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_element_type": 9
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "allowed": [
+        2
+      ]
+    },
+    {
+      "parameter": "tr_element_width_bytes",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_element_type": 10
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "allowed": [
+        4
+      ]
+    },
+    {
+      "parameter": "tr_element_width_bytes",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_element_type": 11
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "allowed": [
+        8
+      ]
+    },
+    {
+      "parameter": "tr_element_width_bytes",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_element_type": 12
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "allowed": [
+        4
+      ]
+    },
+    {
+      "parameter": "tr_element_width_bytes",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_element_type": 13
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "allowed": [
+        8
+      ]
+    },
+    {
+      "parameter": "tr_element_width_bytes",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_element_type": 14
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "allowed": [
+        4
+      ]
+    },
+    {
+      "parameter": "tr_element_width_bytes",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_element_type": 15
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "allowed": [
+        6
+      ]
+    },
+    {
+      "parameter": "tr_element_width_bytes",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_element_type": 16
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "allowed": [
+        8
+      ]
+    },
+    {
+      "parameter": "tr_element_bytes",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "equal_expression": {
+        "product": [
+          "tr_element_width_bytes",
+          "tr_element_count"
+        ]
+      }
+    },
+    {
+      "parameter": "tr_display_value",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "equal_expression": {
+        "sum": [
+          {
+            "product": [
+              "tr_scale",
+              "tr_raw_value"
+            ]
+          },
+          "tr_offset"
+        ]
+      }
+    },
+    {
+      "parameter": "tr_scalar_hex",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_element_type": 1
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "pattern": "[0-9a-fA-F]{2}"
+    },
+    {
+      "parameter": "tr_scalar_hex",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_element_type": 2
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "pattern": "[0-9a-fA-F]{2}"
+    },
+    {
+      "parameter": "tr_scalar_hex",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_element_type": 3
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "pattern": "[0-9a-fA-F]{4}"
+    },
+    {
+      "parameter": "tr_scalar_hex",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_element_type": 4
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "pattern": "[0-9a-fA-F]{2}"
+    },
+    {
+      "parameter": "tr_scalar_hex",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_element_type": 5
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "pattern": "[0-9a-fA-F]{4}"
+    },
+    {
+      "parameter": "tr_scalar_hex",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_element_type": 6
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "pattern": "[0-9a-fA-F]{8}"
+    },
+    {
+      "parameter": "tr_scalar_hex",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_element_type": 7
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "pattern": "[0-9a-fA-F]{16}"
+    },
+    {
+      "parameter": "tr_scalar_hex",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_element_type": 8
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "pattern": "[0-9a-fA-F]{2}"
+    },
+    {
+      "parameter": "tr_scalar_hex",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_element_type": 9
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "pattern": "[0-9a-fA-F]{4}"
+    },
+    {
+      "parameter": "tr_scalar_hex",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_element_type": 10
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "pattern": "[0-9a-fA-F]{8}"
+    },
+    {
+      "parameter": "tr_scalar_hex",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_element_type": 11
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "pattern": "[0-9a-fA-F]{16}"
+    },
+    {
+      "parameter": "tr_scalar_hex",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_element_type": 12
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "pattern": "[0-9a-fA-F]{8}"
+    },
+    {
+      "parameter": "tr_scalar_hex",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_element_type": 13
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "pattern": "[0-9a-fA-F]{16}"
+    },
+    {
+      "parameter": "tr_scalar_hex",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_element_type": 14
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "pattern": "[0-9a-fA-F]{8}"
+    },
+    {
+      "parameter": "tr_scalar_hex",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_element_type": 15
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "pattern": "[0-9a-fA-F]{12}"
+    },
+    {
+      "parameter": "tr_scalar_hex",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_element_type": 16
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "pattern": "[0-9a-fA-F]{16}"
+    },
+    {
+      "parameter": "tr_scalar_hex",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_element_type": 7
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "when_present": [
+        "tr_raw_value"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "tr_scalar_hex",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_element_type": 11
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "when_present": [
+        "tr_raw_value"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "tr_scalar_hex",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_element_type": 13
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "when_present": [
+        "tr_raw_value"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "tr_e2e_ms",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "equal_expression": {
+        "sum": [
+          "tr_source_ms",
+          "tr_transport_ms",
+          "tr_consumer_ms"
+        ]
+      },
+      "maximum_parameter": "tr_deadline_ms"
+    },
+    {
+      "parameter": "tr_age_ms",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "maximum_parameter": "tr_freshness_ms"
+    },
+    {
+      "parameter": "tr_source_ms",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "when_present": [
+        "tr_e2e_ms"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "tr_transport_ms",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "when_present": [
+        "tr_e2e_ms"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "tr_consumer_ms",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0"
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "when_present": [
+        "tr_e2e_ms"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "tr_source_address",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_data_accepted": true
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "required": true
+    },
+    {
+      "parameter": "tr_destination_address",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_data_accepted": true
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "required": true
+    },
+    {
+      "parameter": "tr_port",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_data_accepted": true
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "required": true
+    },
+    {
+      "parameter": "tr_message_type",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_data_accepted": true
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "required": true
+    },
+    {
+      "parameter": "tr_observation_source",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_data_accepted": true
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "required": true
+    },
+    {
+      "parameter": "tr_e2e_ms",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_data_accepted": true
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "required": true
+    },
+    {
+      "parameter": "tr_deadline_ms",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_data_accepted": true
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "required": true
+    },
+    {
+      "parameter": "tr_age_ms",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_data_accepted": true
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "required": true
+    },
+    {
+      "parameter": "tr_freshness_ms",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_data_accepted": true
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "required": true
+    },
+    {
+      "parameter": "tr_header_verified",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_data_accepted": true
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "required": true,
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "tr_dataset_verified",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_data_accepted": true
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "required": true,
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "tr_path_verified",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_data_accepted": true
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "required": true,
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "tr_topology_verified",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_data_accepted": true
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "required": true,
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "tr_pd_expired",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_data_accepted": true
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "required": true,
+      "allowed": [
+        false
+      ]
+    },
+    {
+      "parameter": "tr_outcome",
+      "when": {
+        "tr_review_profile": "TCNOPEN_3_0_0",
+        "tr_data_accepted": true
+      },
+      "source": "https://downloads.sourceforge.net/project/tcnopen/TRDP/3.0.0.0/3.0.0.0.zip",
+      "required": true,
+      "allowed": [
+        "ACCEPTED"
+      ]
+    }
+  ],
+  "physical_layer_profile_id": null,
+  "medium_access_model": null,
+  "native_parameter_prefixes": [
+    "tr_"
+  ],
+  "parameter_aliases": {},
+  "parameter_alias_limits": {},
+  "parameter_evidence_scope": "EXPLICIT_LAYER",
+  "rate_source_profile_id": null,
+  "arbitration_model_id": null,
+  "max_payload_bytes": null,
+  "capabilities": {
+    "supports_signals": true,
+    "supports_data_objects": true,
+    "supports_streams": false,
+    "supports_multicast": true,
+    "supports_publish_subscribe": true,
+    "supports_request_response": true,
+    "supports_cyclic": true,
+    "supports_event": true,
+    "supports_redundancy": false,
+    "supports_time_sync": false,
+    "supports_safety_profile": false,
+    "supports_segmentation": false,
+    "supports_fragmentation": false,
+    "supports_qos": true
+  },
+  "deterministic": false,
+  "overhead_bytes": 8,
+  "implementation_status": "PARTIAL",
+  "connection_type": "COMMUNICATION_TECHNOLOGY",
+  "parameter_proposals": {
+    "kind": "DEVICE_DEPENDENT",
+    "status": "REVIEW_REQUIRED",
+    "required_fields": [],
+    "note": "No universal rate is available; inspect the selected hardware/profile."
+  },
+  "capacity_evidence": {
+    "status": "MODEL_MISSING",
+    "frame_model": null,
+    "schedule_model": null,
+    "requires_confirmed_device_parameters": true
+  },
+  "components": {
+    "binding": "trdp.binding",
+    "generator": "trdp.generator",
+    "validator": "trdp.validator",
+    "timing_model": null,
+    "load_model": null,
+    "encoder": "trdp.encoder",
+    "decoder": "trdp.decoder"
+  },
+  "known_limitations": "Technology-specific conformance details require a vendor/profile extension."
+}

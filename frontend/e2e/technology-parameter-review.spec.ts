@@ -74,6 +74,47 @@ test('unconfirmed project can select every registered bus without an Automotive 
   await expect(clock).toHaveValue('400000');
 });
 
+test('CAN-FD scenario defaults survive real save and reload without hardware confirmation @technology-review', async ({page}) => {
+  const project = 'nis-e2e-simulation-defaults-' + randomUUID();
+  const headers = {'X-Project-ID':project};
+  const legacy = await page.request.patch('/api/engineering/workflow/parameters',{headers,data:{parameters:{can_clock_hz:40000000,
+    parameter_provenance:{can_clock_hz:{source:'TECHNOLOGY_DEFAULT',status:'REVIEW_REQUIRED',value:40000000}}}}});
+  expect(legacy.ok(),await legacy.text()).toBe(true);
+  await page.goto(`/studio?mode=parameters&project=${project}`);
+  await page.getByLabel('Bus / Protokoll auswählen').selectOption('can_fd');
+  await page.getByLabel('Anwendungsbereich auswählen').selectOption('automotive');
+  await expect(page.locator('[name="arbitration_bitrate"]')).toHaveValue('500000');
+  await expect(page.locator('[name="data_bitrate"]')).toHaveValue('500000');
+  await expect(page.locator('[name="payload_bytes"]')).toHaveValue('8');
+  const clock = page.locator('[name="can_clock_hz"]');
+  await expect(clock).toHaveValue('40000000');
+  await expect(page.getByText('SIMULATIONSANNAHME · Kein Gerätenachweis').first()).toBeVisible();
+  await page.getByRole('button', {name:'Parameter speichern →',exact:true}).click();
+  await expect(page.getByText('Technologie- und Timing-Parameter gespeichert.')).toBeVisible();
+  const saved = await (await page.request.get('/api/engineering/workflow/parameters',{headers})).json();
+  const assumptions = saved.parameters.simulation_parameter_assumptions.can_fd;
+  expect(assumptions.values).toMatchObject({arbitration_bitrate:500000,data_bitrate:500000,can_clock_hz:40000000,payload_bytes:8});
+  expect(assumptions.provenance.can_clock_hz).toMatchObject({source:'NIS_SIMULATION_ASSUMPTION',status:'ASSUMED',technology:'can_fd',hardware_evidence:false,value:40000000});
+  expect(saved.parameters.technology_parameters.can_fd.values.can_clock_hz).toBeUndefined();
+  expect(saved.parameters.can_clock_hz).toBeUndefined();
+  await page.reload();
+  await expect(clock).toHaveValue('40000000');
+  await clock.fill('80000000');
+  await page.getByRole('button', {name:'Parameter speichern →',exact:true}).click();
+  await expect(page.getByText('Technologie- und Timing-Parameter gespeichert.')).toBeVisible();
+  await page.reload();
+  await expect(clock).toHaveValue('80000000');
+  const updated = await (await page.request.get('/api/engineering/workflow/parameters',{headers})).json();
+  expect(updated.parameters.simulation_parameter_assumptions.can_fd.provenance.can_clock_hz.hardware_evidence).toBe(false);
+  expect(updated.parameter_storage.source).toBe('PROJECT_USER_DEFINED_VALUES');
+  const userValues = await (await page.request.get('/api/engineering/workflow/parameters/user-defined-values',{headers})).json();
+  expect(userValues.project_id).toBe(project);
+  expect(userValues.value_origin).toBe('USER_DEFINED_VALUE');
+  expect(userValues.parameters.simulation_parameter_assumptions.can_fd.values.can_clock_hz).toBe(80000000);
+  expect(userValues.parameters.technology_defaults).toBeUndefined();
+  expect(userValues.parameters.defaults_source).toBeUndefined();
+});
+
 test('saved confirmed wizard context proposes its bus without inventing parameter confirmation @technology-review', async ({ page }) => {
   const project = 'nis-e2e-wizard-bus-' + randomUUID();
   const headers = { 'X-Project-ID': project };
@@ -108,7 +149,7 @@ test('mixed project shows exact LIN profile, rejects 2M and preserves CAN-FD whi
   await page.goto(`/studio?mode=parameters&project=${project}`);
   await expect(page.locator('#technology')).toHaveValue('can_fd');
   await page.locator('#technology').selectOption('lin');
-  await expect(page.locator('input[name="lin_bitrate_bps"]')).toHaveValue('');
+  await expect(page.locator('input[name="lin_bitrate_bps"]')).not.toHaveValue('');
   await page.locator('select[name="lin_edition"]').selectOption('LIN_2_2A_2010');
   await page.locator('select[name="lin_physical_profile"]').selectOption('LIN_2_2A_SINGLE_WIRE');
   await page.locator('div[title]').filter({has:page.locator('#lin_bitrate_bps')})
@@ -128,8 +169,8 @@ test('mixed project shows exact LIN profile, rejects 2M and preserves CAN-FD whi
   expect(saved.parameters.networks).toEqual(parameters.networks);
   expect(saved.parameters.technology).toBe('can_fd');
   expect(saved.parameters.data_bitrate).toBe(2000000);
-  expect(saved.parameters.technology_parameters.lin.values.lin_bitrate_bps).toBe(9600);
-  expect(saved.parameters.technology_parameters.lin.provenance.lin_bitrate_bps.status).toBe('CONFIRMED');
+  expect(saved.parameters.simulation_parameter_assumptions.lin.values.lin_bitrate_bps).toBe(9600);
+  expect(saved.parameters.simulation_parameter_assumptions.lin.provenance.lin_bitrate_bps).toMatchObject({status:'ASSUMED',hardware_evidence:false});
   await page.reload();
   await expect(page.locator('#technology')).toHaveValue('can_fd');
   await page.locator('#technology').selectOption('lin');
@@ -165,9 +206,15 @@ test('every bus exposes its own server defaults in the actual parameter form @te
     await page.locator('#technology').selectOption(id);
     for (const field of profile.parameter_schema.filter((item: any) => ['bitrate', 'arbitration_bitrate', 'data_bitrate'].includes(item.key))) {
       const input = page.locator(`input[name="${field.key}"]`);
-      await expect(input, `${id}/${field.key}`).toHaveValue(field.default === undefined ? '' : String(field.default));
-      if (field.default !== undefined) expect(await input.evaluate((el: HTMLInputElement) => el.checkValidity()), `${id}/${field.key}`).toBe(true);
+      await expect(input, `${id}/${field.key}`).not.toHaveValue('');
+      expect(await input.evaluate((el: HTMLInputElement) => el.checkValidity()), `${id}/${field.key}`).toBe(true);
     }
+    const empty = await page.locator('form.config-panel .parameter-groups').evaluate(groups =>
+      [...groups.querySelectorAll('input,select,textarea')]
+        .filter(element => (element instanceof HTMLInputElement || element instanceof HTMLSelectElement || element instanceof HTMLTextAreaElement)
+          && element.type !== 'checkbox' && element.value === '')
+        .map(element => (element as HTMLInputElement).name));
+    expect(empty, id).toEqual([]);
     if (id === 'nmea2000') {
       await expect(page.locator('input[name="bitrate"]')).toHaveValue('250000');
       await expect(page.locator('input[name="mtu_bytes"]')).toHaveCount(0);
@@ -184,24 +231,25 @@ test('hardware editor uses the selected profile and saves proposals without inve
   const nodeResponse = await page.request.post('/api/engineering/hardware-nodes', {headers, data:{name:'Review Controller', device_type:'EmbeddedController', domain:'embedded_systems'}});
   expect(nodeResponse.ok(), await nodeResponse.text()).toBe(true);
   const node = await nodeResponse.json();
-  const portResponse = await page.request.post('/api/engineering/hardware-interfaces', {headers, data:{name:'Device Review Port', hardware_node_id:node.id, technology:'I2C'}});
+  const portResponse = await page.request.post('/api/engineering/hardware-interfaces', {headers, data:{name:'Device Review Port', hardware_node_id:node.id, technology:'I2C',
+    capabilities:{local_timing_evidence:{slave_address:'',confirmed:false}}}});
   expect(portResponse.ok(), await portResponse.text()).toBe(true);
   const port = await portResponse.json();
   await page.goto(`/studio/engineering?project=${project}&resource=hardware-interfaces&object=${port.id}&edit=1`);
   await expect(page.locator('#edit_local_i2c_mode')).toHaveValue('STANDARD');
   await expect(page.locator('#edit_local_bitrate_bps')).toHaveValue('100000');
   await expect(page.locator('#edit_data_bitrate')).toHaveCount(0);
-  await expect(page.locator('#edit_local_slave_address')).toHaveValue('');
+  await expect(page.locator('#edit_local_slave_address')).not.toHaveValue('');
   await page.locator('#edit_technology').selectOption('SPI');
   await expect(page.locator('#edit_local_i2c_mode')).toHaveCount(0);
-  await expect(page.locator('#edit_local_chip_select')).toHaveValue('');
-  await expect(page.locator('#edit_local_bitrate_bps')).toHaveValue('');
+  await expect(page.locator('#edit_local_chip_select')).not.toHaveValue('');
+  await expect(page.locator('#edit_local_bitrate_bps')).not.toHaveValue('');
   await page.locator('#edit_technology').selectOption('CAN_FD');
   await expect(page.locator('#edit_local_chip_select')).toHaveCount(0);
-  // CAN-FD phase rates depend on the actual controller configuration; neither
-  // the previous I2C clock nor an unsourced generic data rate is a default.
-  await expect(page.locator('#edit_bitrate')).toHaveValue('');
-  await expect(page.locator('#edit_data_bitrate')).toHaveValue('');
+  // Explicit scenario proposals do not reuse the previous I2C device setting.
+  await expect(page.locator('#edit_bitrate')).toHaveValue('500000');
+  await expect(page.locator('#edit_data_bitrate')).toHaveValue('500000');
+  await expect(page.locator('[name="edit_local_confirmed"]')).toHaveCount(0);
   await page.locator('#edit_technology').selectOption('I2C');
   await page.getByRole('button', {name:'Änderungen speichern',exact:true}).click();
   await expect(page.locator('#edit_technology')).toHaveCount(0);
@@ -210,6 +258,7 @@ test('hardware editor uses the selected profile and saves proposals without inve
   expect(saved.data_bitrate).toBeNull();
   expect(saved.capabilities.local_timing_evidence).toMatchObject({technology:'I2C', i2c_mode:'STANDARD', bitrate_bps:100000, confirmed:false});
   expect(saved.capabilities.local_timing_evidence.slave_address).toBeNull();
+  expect(saved.capabilities.simulation_parameter_assumptions.i2c.provenance.slave_address.hardware_evidence).toBe(false);
   // Existing verified device facts outrank standard proposals. A changed
   // device setting cannot silently reuse the old confirmation.
   const actual = await page.request.patch(`/api/engineering/hardware-interfaces/${port.id}`, {headers,
@@ -225,6 +274,8 @@ test('hardware editor uses the selected profile and saves proposals without inve
   await expect(page.locator('#edit_technology')).toHaveCount(0);
   const preserved = await (await page.request.get(`/api/engineering/hardware-interfaces/${port.id}`, {headers})).json();
   expect(preserved.capabilities.local_timing_evidence).toMatchObject({i2c_mode:'FAST',bitrate_bps:400000,confirmed:true});
+  expect(preserved.capabilities.local_timing_evidence.slave_address).toBeNull();
+  expect(preserved.capabilities.simulation_parameter_assumptions.i2c.provenance.slave_address.hardware_evidence).toBe(false);
   await page.goto(`/studio/engineering?project=${project}&resource=hardware-interfaces&object=${port.id}&edit=1`);
   await page.locator('#edit_local_i2c_mode').selectOption('FAST_PLUS');
   await expect(page.locator('[name="edit_local_confirmed"]')).not.toBeChecked();
@@ -234,6 +285,32 @@ test('hardware editor uses the selected profile and saves proposals without inve
   expect(changed.capabilities.local_timing_evidence).toMatchObject({i2c_mode:'FAST_PLUS',confirmed:false});
 });
 
+
+test('CAN-FD device editor retains changed simulation rates separately from actual hardware @technology-review', async ({page}) => {
+  const project='nis-e2e-device-assumptions-'+randomUUID();
+  const headers={'X-Project-ID':project};
+  const nodeResponse=await page.request.post('/api/engineering/hardware-nodes',{headers,data:{name:'Scenario Controller',device_type:'EmbeddedController'}});
+  expect(nodeResponse.ok(),await nodeResponse.text()).toBe(true);
+  const node=await nodeResponse.json();
+  const portResponse=await page.request.post('/api/engineering/hardware-interfaces',{headers,data:{name:'Scenario CAN Port',hardware_node_id:node.id,technology:'CAN_FD'}});
+  expect(portResponse.ok(),await portResponse.text()).toBe(true);
+  const port=await portResponse.json();
+  await page.goto(`/studio/engineering?project=${project}&resource=hardware-interfaces&object=${port.id}&edit=1`);
+  await expect(page.locator('#edit_bitrate')).toHaveValue('500000');
+  await expect(page.locator('#edit_data_bitrate')).toHaveValue('500000');
+  await page.locator('#edit_bitrate').fill('250000');
+  await page.locator('#edit_data_bitrate').fill('250000');
+  await page.getByRole('button',{name:'Änderungen speichern',exact:true}).click();
+  await expect(page.locator('#edit_technology')).toHaveCount(0);
+  const saved=await (await page.request.get(`/api/engineering/hardware-interfaces/${port.id}`,{headers})).json();
+  expect(saved.bitrate).toBeNull();
+  expect(saved.data_bitrate).toBeNull();
+  expect(saved.capabilities.simulation_parameter_assumptions.can_fd.values).toMatchObject({arbitration_bitrate:250000,data_bitrate:250000});
+  expect(saved.capabilities.simulation_parameter_assumptions.can_fd.provenance.data_bitrate.hardware_evidence).toBe(false);
+  await page.goto(`/studio/engineering?project=${project}&resource=hardware-interfaces&object=${port.id}&edit=1`);
+  await expect(page.locator('#edit_bitrate')).toHaveValue('250000');
+  await expect(page.locator('#edit_data_bitrate')).toHaveValue('250000');
+});
 
 test('PWM device editor offers no retired transaction proof and preserves native driver configuration @technology-review', async ({page}) => {
   const project = 'nis-e2e-pwm-editor-' + randomUUID();
@@ -297,4 +374,64 @@ test('actual uint64 protocol value survives legacy numeric JSON, form edit, SQL 
   expect(saved.parameters.technology_parameters.sparkplug_b.provenance.spb_alias.value).toBe(edited);
   await page.reload();
   await expect(page.locator('#spb_alias')).toHaveValue(edited);
+});
+
+
+test('proposal parameter link selects its technology and live findings highlight only affected fields @technology-review', async ({page}) => {
+  const project='nis-e2e-current-parameter-review-'+randomUUID();
+  const headers={'X-Project-ID':project};
+  const networks=[{id:'can-local',name:'CAN Local',technology:'CAN_FD'},{id:'lin-local',name:'LIN Local',technology:'LIN'}];
+  const seed=await page.request.patch('/api/engineering/workflow/parameters',{headers,data:{parameters:{industry:'custom',technology:'can_fd',defaults_source:'technology-registry',networks,formats:['universal-jsonl']}}});
+  expect(seed.ok(),await seed.text()).toBe(true);
+  async function create(resource:string,data:Record<string,unknown>) {
+    const response=await page.request.post('/api/engineering/'+resource,{headers,data});
+    expect(response.ok(),await response.text()).toBe(true); return response.json();
+  }
+  const node=await create('hardware-nodes',{name:'Review ECU',device_type:'EmbeddedController'});
+  for (const network of networks) {
+    const port=await create('hardware-interfaces',{name:network.name,hardware_node_id:node.id,technology:network.technology,network_ref:network.id,bitrate:null,data_bitrate:null});
+    const logical=await create('interfaces',{name:network.name,hardware_node_id:node.id,interface_type:network.technology});
+    await create('messages',{name:network.name+' Status',interface_id:logical.id,hardware_interface_id:port.id,dlc:1,cycle_ms:100,direction:'tx'});
+  }
+  const before=await (await page.request.get('/api/engineering/workflow/parameters/review',{headers})).json();
+  expect(before.source).toBe('CURRENT_CANONICAL_MODEL');
+  expect(before.findings.filter((f:{technology:string})=>f.technology==='can_fd')).toHaveLength(1);
+  await page.goto(`/studio?mode=parameters&project=${project}&technology=lin&proposal=historical-review#parameter-findings`);
+  await expect(page.locator('#technology')).toHaveValue('lin');
+  await expect(page.getByRole('region',{name:'Aktuelle Parameterbefunde'})).toContainText('1 für LIN');
+  await expect(page.locator('#parameter-field-lin_bitrate_bps')).toHaveClass(/parameter-field-finding/);
+  await expect(page.locator('#parameter-field-lin_device_source')).toHaveClass(/parameter-field-finding/);
+  await page.getByRole('navigation',{name:'Technologien mit Parameterbefunden'}).getByRole('button',{name:/CAN-FD/}).click();
+  await expect(page.locator('#technology')).toHaveValue('can_fd');
+  await expect(page.locator('#parameter-field-arbitration_bitrate')).toHaveClass(/parameter-field-finding/);
+  await expect(page.locator('#parameter-field-data_bitrate')).toHaveClass(/parameter-field-finding/);
+  await expect(page.locator('#parameter-field-can_clock_hz')).not.toHaveClass(/parameter-field-finding/);
+  const confirm=page.getByRole('form',{name:'CAN-FD-Netze bestätigen'});
+  await page.locator('[name="can_clock_hz"]').fill('80000000');
+  await expect(confirm.getByRole('button',{name:'Für 1 Netze bestätigen & erneut prüfen',exact:true})).toBeDisabled();
+  await expect(page.getByRole('region',{name:'Aktuelle Parameterbefunde'})).toContainText('Speichere zuerst die Änderungen');
+  await page.getByRole('button',{name:'Parameter speichern →',exact:true}).click();
+  await expect(confirm.getByRole('button',{name:'Für 1 Netze bestätigen & erneut prüfen',exact:true})).toBeEnabled();
+  await confirm.getByRole('spinbutton',{name:/Nominal Bitrate/}).fill('500000');
+  await confirm.getByRole('spinbutton',{name:/Data Bitrate/}).fill('2000000');
+  await confirm.getByRole('button',{name:'Für 1 Netze bestätigen & erneut prüfen',exact:true}).click();
+  await expect(page.getByRole('region',{name:'Aktuelle Parameterbefunde'})).toContainText('0 für CAN-FD');
+  await expect(page.locator('#parameter-field-arbitration_bitrate')).not.toHaveClass(/parameter-field-finding/);
+  const after=await (await page.request.get('/api/engineering/workflow/parameters/review',{headers})).json();
+  expect(after.findings.some((f:{technology:string})=>f.technology==='can_fd')).toBe(false);
+  expect(after.findings.some((f:{technology:string})=>f.technology==='lin')).toBe(true);
+  const saved=await (await page.request.get('/api/engineering/workflow/parameters',{headers})).json();
+  expect(saved.parameters.networks.find((n:{id:string})=>n.id==='lin-local')).toEqual(networks[1]);
+  expect(saved.parameters.simulation_parameter_assumptions.can_fd.values.can_clock_hz).toBe(80000000);
+  await page.getByRole('navigation',{name:'Technologien mit Parameterbefunden'}).getByRole('button',{name:/LIN/}).click();
+  const linConfirm=page.getByRole('form',{name:'LIN-Netze bestätigen'});
+  await linConfirm.getByRole('spinbutton',{name:/bit.*rate/i}).fill('19200');
+  await linConfirm.getByRole('button',{name:'Für 1 Netze bestätigen & erneut prüfen',exact:true}).click();
+  await expect(page.locator('#parameter-field-lin_bitrate_bps')).not.toHaveClass(/parameter-field-finding/);
+  await expect(page.locator('#parameter-field-lin_device_source')).toHaveClass(/parameter-field-finding/);
+  await expect(page.getByRole('region',{name:'Aktuelle Parameterbefunde'})).toContainText('1 für LIN');
+  await expect(linConfirm).toHaveCount(0);
+  await expect(page.getByText('Die Rate fehlt als bestätigter Projektwert.',{exact:false})).toHaveCount(0);
+  const foreign=await (await page.request.get('/api/engineering/workflow/parameters/review',{headers:{'X-Project-ID':'nis-e2e-other-'+randomUUID()}})).json();
+  expect(foreign.findings).toEqual([]);
 });

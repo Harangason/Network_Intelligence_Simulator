@@ -1,0 +1,1245 @@
+{
+  "id": "gpio",
+  "label": "GPIO",
+  "domain": "generic_networking",
+  "layer": "PHYSICAL",
+  "transport_unit": "PROCESS_DATA",
+  "payload_element_types": [
+    "SIGNAL",
+    "STATUS"
+  ],
+  "hardware_interface": "gpio_port",
+  "hardware_capability_aliases": [
+    "gpio_port"
+  ],
+  "default_stack": [
+    "gpio"
+  ],
+  "stack_variants": [
+    [
+      "gpio"
+    ]
+  ],
+  "default_bitrate": null,
+  "rate_model": {
+    "type": "DIRECT_IO_NO_PACKET_RATE",
+    "fields": []
+  },
+  "local_timing_schema": [
+    {
+      "key": "sample_bound_ms",
+      "label": "Abtastgrenze (ms)",
+      "numeric": true,
+      "boolean": false,
+      "optional": true,
+      "unit": "ms",
+      "minimum": 0,
+      "required_when": {
+        "gpio_direction": "DIGITAL_INPUT",
+        "gpio_input_mode": "POLLED"
+      },
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "scope": "device",
+      "source": "https://www.st.com.cn/resource/en/reference_manual/rm0312-stm8tl5xxx-microcontroller-family-stmicroelectronics.pdf",
+      "source_revision": "ST RM0312 DocID022352 Rev3 October2013 chapter10 pp75-82; ST AN2710 Rev1 February2008 safe transition tables",
+      "description": "Actual matching pin/task/interrupt/debounce/update timing bound, not a bus rate or generic period. Confirm only with actual datasheet/measurement source."
+    },
+    {
+      "key": "debounce_bound_ms",
+      "label": "Entprellgrenze (ms)",
+      "numeric": true,
+      "boolean": false,
+      "optional": true,
+      "unit": "ms",
+      "minimum": 0,
+      "required_when": {
+        "gpio_debounce_enabled": true
+      },
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "scope": "device",
+      "source": "https://www.st.com.cn/resource/en/reference_manual/rm0312-stm8tl5xxx-microcontroller-family-stmicroelectronics.pdf",
+      "source_revision": "ST RM0312 DocID022352 Rev3 October2013 chapter10 pp75-82; ST AN2710 Rev1 February2008 safe transition tables",
+      "description": "Actual matching pin/task/interrupt/debounce/update timing bound, not a bus rate or generic period. Confirm only with actual datasheet/measurement source."
+    },
+    {
+      "key": "edge_detection_bound_ms",
+      "label": "Flankenerkennungsgrenze (ms)",
+      "numeric": true,
+      "boolean": false,
+      "optional": true,
+      "unit": "ms",
+      "minimum": 0,
+      "required_when": {
+        "gpio_direction": "DIGITAL_INPUT",
+        "gpio_input_mode": "INTERRUPT"
+      },
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "scope": "device",
+      "source": "https://www.st.com.cn/resource/en/reference_manual/rm0312-stm8tl5xxx-microcontroller-family-stmicroelectronics.pdf",
+      "source_revision": "ST RM0312 DocID022352 Rev3 October2013 chapter10 pp75-82; ST AN2710 Rev1 February2008 safe transition tables",
+      "description": "Actual matching pin/task/interrupt/debounce/update timing bound, not a bus rate or generic period. Confirm only with actual datasheet/measurement source."
+    },
+    {
+      "key": "update_bound_ms",
+      "label": "Output-update bound (ms)",
+      "numeric": true,
+      "boolean": false,
+      "optional": true,
+      "unit": "ms",
+      "minimum": 0,
+      "required_when": {
+        "gpio_direction": "DIGITAL_OUTPUT"
+      },
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "scope": "device",
+      "source": "https://www.st.com.cn/resource/en/reference_manual/rm0312-stm8tl5xxx-microcontroller-family-stmicroelectronics.pdf",
+      "source_revision": "ST RM0312 DocID022352 Rev3 October2013 chapter10 pp75-82; ST AN2710 Rev1 February2008 safe transition tables",
+      "description": "Actual matching pin/task/interrupt/debounce/update timing bound, not a bus rate or generic period. Confirm only with actual datasheet/measurement source."
+    }
+  ],
+  "parameter_schema": {
+    "cycle_ms": {
+      "label": "Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "Standardperiode fuer zyklische Nachrichten.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "minimum_cycle_time_ms": {
+      "label": "Minimum Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "deadline_ms": {
+      "label": "Deadline",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "timeout_ms": {
+      "label": "Timeout",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_latency_ms": {
+      "label": "Maximum Latency",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "jitter_ms": {
+      "label": "Jitter Budget",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "freshness_ms": {
+      "label": "Data Freshness",
+      "category": "timing",
+      "scope": "signal",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "source_processing_delay_ms": {
+      "label": "Source Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_processing_delay_ms": {
+      "label": "Target Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "propagation_delay_ms": {
+      "label": "Propagation",
+      "category": "timing",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.01,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "traffic_class": {
+      "label": "Traffic Class",
+      "category": "qos",
+      "scope": "route",
+      "type": "select",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": "BEST_EFFORT",
+      "options": [
+        "BEST_EFFORT",
+        "CONTROL",
+        "REALTIME",
+        "SAFETY_CRITICAL"
+      ],
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "required_reliability": {
+      "label": "Required Reliability",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.999,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_offset_ms": {
+      "label": "Clock Offset",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_drift_ppm": {
+      "label": "Clock Drift",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 20,
+      "unit": "ppm",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_precision_ms": {
+      "label": "Sync Precision",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_interval_ms": {
+      "label": "Sync Interval",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1000,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_sync_error_ms": {
+      "label": "Maximum Sync Error",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duration_s": {
+      "label": "Simulation Duration",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 1,
+      "unit": "s",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "seed": {
+      "label": "Random Seed",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 42,
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "max_events": {
+      "label": "Maximum Events",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 100000,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "dropout_probability": {
+      "label": "Failure Injection Dropout",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gpio_profile": {
+      "label": "profile",
+      "category": "physical",
+      "scope": "device",
+      "type": "select",
+      "description": "Actual GPIO device profile, unknown; digital pin is not a packet bus and has no universal baud or voltage.",
+      "required": true,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "STM8TL5_RM0312_3",
+        "DEVICE_SPECIFIC"
+      ],
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.st.com.cn/resource/en/reference_manual/rm0312-stm8tl5xxx-microcontroller-family-stmicroelectronics.pdf",
+      "source_revision": "ST RM0312 DocID022352 Rev3 October2013 chapter10 pp75-82; ST AN2710 Rev1 February2008 safe transition tables"
+    },
+    "gpio_pin": {
+      "label": "pin",
+      "category": "physical",
+      "scope": "device",
+      "type": "text",
+      "description": "Required actual port/pin/package identity and ownership, unknown; unavailable package pins and alternate-function conflicts must be resolved.",
+      "required": true,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.st.com.cn/resource/en/reference_manual/rm0312-stm8tl5xxx-microcontroller-family-stmicroelectronics.pdf",
+      "source_revision": "ST RM0312 DocID022352 Rev3 October2013 chapter10 pp75-82; ST AN2710 Rev1 February2008 safe transition tables"
+    },
+    "gpio_device_source": {
+      "label": "device source",
+      "category": "physical",
+      "scope": "device",
+      "type": "text",
+      "description": "Required actual datasheet/pinout/revision/clock/threshold/drive/interrupt capabilities, unknown.",
+      "required": true,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.st.com.cn/resource/en/reference_manual/rm0312-stm8tl5xxx-microcontroller-family-stmicroelectronics.pdf",
+      "source_revision": "ST RM0312 DocID022352 Rev3 October2013 chapter10 pp75-82; ST AN2710 Rev1 February2008 safe transition tables"
+    },
+    "gpio_wiring_source": {
+      "label": "wiring source",
+      "category": "physical",
+      "scope": "device",
+      "type": "text",
+      "description": "Required actual peer wiring/voltage domains/load/pull resistors/isolation/contention and physical limits, unknown.",
+      "required": true,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.st.com.cn/resource/en/reference_manual/rm0312-stm8tl5xxx-microcontroller-family-stmicroelectronics.pdf",
+      "source_revision": "ST RM0312 DocID022352 Rev3 October2013 chapter10 pp75-82; ST AN2710 Rev1 February2008 safe transition tables"
+    },
+    "gpio_phase": {
+      "label": "phase",
+      "category": "physical",
+      "scope": "device",
+      "type": "select",
+      "description": "Actual operating versus reset state. Reset defaults do not overwrite programmed application outputs.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "OPERATING",
+        "RESET"
+      ],
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.st.com.cn/resource/en/reference_manual/rm0312-stm8tl5xxx-microcontroller-family-stmicroelectronics.pdf",
+      "source_revision": "ST RM0312 DocID022352 Rev3 October2013 chapter10 pp75-82; ST AN2710 Rev1 February2008 safe transition tables"
+    },
+    "gpio_direction": {
+      "label": "direction",
+      "category": "physical",
+      "scope": "device",
+      "type": "select",
+      "description": "Actual pin mode, unknown. Qualified non-exception STM8TL reset proposes input only; alternate functions use a separate explicit technology.",
+      "required": true,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "DIGITAL_INPUT",
+        "DIGITAL_OUTPUT",
+        "ALTERNATE",
+        "ANALOG_HIGH_Z"
+      ],
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "source": "https://www.st.com.cn/resource/en/reference_manual/rm0312-stm8tl5xxx-microcontroller-family-stmicroelectronics.pdf",
+      "source_revision": "ST RM0312 DocID022352 Rev3 October2013 chapter10 pp75-82; ST AN2710 Rev1 February2008 safe transition tables",
+      "conditional_defaults": [
+        {
+          "when": {
+            "gpio_profile": "STM8TL5_RM0312_3",
+            "gpio_phase": "RESET",
+            "gpio_reset_exception": false
+          },
+          "value": "DIGITAL_INPUT"
+        }
+      ]
+    },
+    "gpio_reset_exception": {
+      "label": "reset exception",
+      "category": "physical",
+      "scope": "device",
+      "type": "boolean",
+      "description": "Actual pin/package exception to reset configuration from datasheet, unknown; e.g. PA_CR1 reset differs. Never assume all reset pins float.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.st.com.cn/resource/en/reference_manual/rm0312-stm8tl5xxx-microcontroller-family-stmicroelectronics.pdf",
+      "source_revision": "ST RM0312 DocID022352 Rev3 October2013 chapter10 pp75-82; ST AN2710 Rev1 February2008 safe transition tables"
+    },
+    "gpio_pull": {
+      "label": "pull",
+      "category": "physical",
+      "scope": "device",
+      "type": "select",
+      "description": "Actual controller internal pull, unknown; reviewed STM8TL digital input supports NONE/UP, not universal pull-down.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "NONE",
+        "UP",
+        "DOWN",
+        "DEVICE_SPECIFIC"
+      ],
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "source": "https://www.st.com.cn/resource/en/reference_manual/rm0312-stm8tl5xxx-microcontroller-family-stmicroelectronics.pdf",
+      "source_revision": "ST RM0312 DocID022352 Rev3 October2013 chapter10 pp75-82; ST AN2710 Rev1 February2008 safe transition tables",
+      "conditional_defaults": [
+        {
+          "when": {
+            "gpio_profile": "STM8TL5_RM0312_3",
+            "gpio_phase": "RESET",
+            "gpio_reset_exception": false
+          },
+          "value": "NONE"
+        }
+      ]
+    },
+    "gpio_drive": {
+      "label": "drive",
+      "category": "physical",
+      "scope": "device",
+      "type": "select",
+      "description": "Actual output driver/pad kind. True open-drain is pin-specific, not inferred from register option.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "PUSH_PULL",
+        "PSEUDO_OPEN_DRAIN",
+        "TRUE_OPEN_DRAIN",
+        "DEVICE_SPECIFIC"
+      ],
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.st.com.cn/resource/en/reference_manual/rm0312-stm8tl5xxx-microcontroller-family-stmicroelectronics.pdf",
+      "source_revision": "ST RM0312 DocID022352 Rev3 October2013 chapter10 pp75-82; ST AN2710 Rev1 February2008 safe transition tables"
+    },
+    "gpio_active_low": {
+      "label": "active low",
+      "category": "physical",
+      "scope": "device",
+      "type": "boolean",
+      "description": "Actual application polarity, unknown; electrical HIGH/LOW and functional active state are separate.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.st.com.cn/resource/en/reference_manual/rm0312-stm8tl5xxx-microcontroller-family-stmicroelectronics.pdf",
+      "source_revision": "ST RM0312 DocID022352 Rev3 October2013 chapter10 pp75-82; ST AN2710 Rev1 February2008 safe transition tables"
+    },
+    "gpio_level": {
+      "label": "level",
+      "category": "physical",
+      "scope": "device",
+      "type": "select",
+      "description": "Actual electrical drive/read state, unknown; floating input is not automatically logicLOW or safe actuation.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "LOW",
+        "HIGH",
+        "HIGH_Z"
+      ],
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.st.com.cn/resource/en/reference_manual/rm0312-stm8tl5xxx-microcontroller-family-stmicroelectronics.pdf",
+      "source_revision": "ST RM0312 DocID022352 Rev3 October2013 chapter10 pp75-82; ST AN2710 Rev1 February2008 safe transition tables"
+    },
+    "gpio_input_mode": {
+      "label": "input mode",
+      "category": "physical",
+      "scope": "device",
+      "type": "select",
+      "description": "Actual input sampling/event mechanism, unknown. Output update does not require a slave address or input polling bound.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "POLLED",
+        "INTERRUPT"
+      ],
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.st.com.cn/resource/en/reference_manual/rm0312-stm8tl5xxx-microcontroller-family-stmicroelectronics.pdf",
+      "source_revision": "ST RM0312 DocID022352 Rev3 October2013 chapter10 pp75-82; ST AN2710 Rev1 February2008 safe transition tables"
+    },
+    "gpio_event": {
+      "label": "event",
+      "category": "physical",
+      "scope": "device",
+      "type": "select",
+      "description": "Actual selected interrupt sensitivity and controller support, unknown; no mandatory rising edge.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "RISING",
+        "FALLING",
+        "BOTH_EDGES",
+        "HIGH_LEVEL",
+        "LOW_LEVEL",
+        "DEVICE_SPECIFIC"
+      ],
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.st.com.cn/resource/en/reference_manual/rm0312-stm8tl5xxx-microcontroller-family-stmicroelectronics.pdf",
+      "source_revision": "ST RM0312 DocID022352 Rev3 October2013 chapter10 pp75-82; ST AN2710 Rev1 February2008 safe transition tables"
+    },
+    "gpio_debounce_enabled": {
+      "label": "debounce enabled",
+      "category": "physical",
+      "scope": "device",
+      "type": "boolean",
+      "description": "Actual hardware/software debounce enabled, unknown; no universal debounce0ms or10ms.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.st.com.cn/resource/en/reference_manual/rm0312-stm8tl5xxx-microcontroller-family-stmicroelectronics.pdf",
+      "source_revision": "ST RM0312 DocID022352 Rev3 October2013 chapter10 pp75-82; ST AN2710 Rev1 February2008 safe transition tables"
+    },
+    "gpio_vdd_v": {
+      "label": "vdd v",
+      "category": "physical",
+      "scope": "device",
+      "type": "number",
+      "description": "Actual operating GPIO supply/domain voltage, unknown; datasheet governs min/max and pin tolerance.3.3/5/24V are not universal GPIO defaults.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "V",
+      "min": 0,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.st.com.cn/resource/en/reference_manual/rm0312-stm8tl5xxx-microcontroller-family-stmicroelectronics.pdf",
+      "source_revision": "ST RM0312 DocID022352 Rev3 October2013 chapter10 pp75-82; ST AN2710 Rev1 February2008 safe transition tables"
+    },
+    "gpio_vil_max_v": {
+      "label": "vil max v",
+      "category": "physical",
+      "scope": "device",
+      "type": "number",
+      "description": "Actual receiving maximum low-input voltage at matched supply/temperature/logic mode, unknown.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "V",
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.st.com.cn/resource/en/reference_manual/rm0312-stm8tl5xxx-microcontroller-family-stmicroelectronics.pdf",
+      "source_revision": "ST RM0312 DocID022352 Rev3 October2013 chapter10 pp75-82; ST AN2710 Rev1 February2008 safe transition tables"
+    },
+    "gpio_vih_min_v": {
+      "label": "vih min v",
+      "category": "physical",
+      "scope": "device",
+      "type": "number",
+      "description": "Actual receiving minimum high-input voltage at matched supply/temperature/logic mode, unknown.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "V",
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.st.com.cn/resource/en/reference_manual/rm0312-stm8tl5xxx-microcontroller-family-stmicroelectronics.pdf",
+      "source_revision": "ST RM0312 DocID022352 Rev3 October2013 chapter10 pp75-82; ST AN2710 Rev1 February2008 safe transition tables"
+    },
+    "gpio_vol_max_v": {
+      "label": "vol max v",
+      "category": "physical",
+      "scope": "device",
+      "type": "number",
+      "description": "Actual driving worst-case low voltage at the actual sink load, unknown; must meet receiving VIL.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "V",
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.st.com.cn/resource/en/reference_manual/rm0312-stm8tl5xxx-microcontroller-family-stmicroelectronics.pdf",
+      "source_revision": "ST RM0312 DocID022352 Rev3 October2013 chapter10 pp75-82; ST AN2710 Rev1 February2008 safe transition tables"
+    },
+    "gpio_voh_min_v": {
+      "label": "voh min v",
+      "category": "physical",
+      "scope": "device",
+      "type": "number",
+      "description": "Actual driving worst-case high voltage at the actual source load, unknown; must meet receiving VIH.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "V",
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.st.com.cn/resource/en/reference_manual/rm0312-stm8tl5xxx-microcontroller-family-stmicroelectronics.pdf",
+      "source_revision": "ST RM0312 DocID022352 Rev3 October2013 chapter10 pp75-82; ST AN2710 Rev1 February2008 safe transition tables"
+    },
+    "gpio_sink_bound_ma": {
+      "label": "sink bound ma",
+      "category": "physical",
+      "scope": "device",
+      "type": "number",
+      "description": "Actual safe per-pin sink-current bound for specified voltage, unknown; absolute maximum is not an operating default.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "mA",
+      "min": 0,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.st.com.cn/resource/en/reference_manual/rm0312-stm8tl5xxx-microcontroller-family-stmicroelectronics.pdf",
+      "source_revision": "ST RM0312 DocID022352 Rev3 October2013 chapter10 pp75-82; ST AN2710 Rev1 February2008 safe transition tables"
+    },
+    "gpio_source_bound_ma": {
+      "label": "source bound ma",
+      "category": "physical",
+      "scope": "device",
+      "type": "number",
+      "description": "Actual safe per-pin source-current bound for specified voltage, unknown; not universal20mA.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "mA",
+      "min": 0,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.st.com.cn/resource/en/reference_manual/rm0312-stm8tl5xxx-microcontroller-family-stmicroelectronics.pdf",
+      "source_revision": "ST RM0312 DocID022352 Rev3 October2013 chapter10 pp75-82; ST AN2710 Rev1 February2008 safe transition tables"
+    },
+    "gpio_sink_load_ma": {
+      "label": "sink load ma",
+      "category": "physical",
+      "scope": "device",
+      "type": "number",
+      "description": "Actual sink load, unknown; must fit per-pin limit and separately verified package/port aggregate.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "mA",
+      "min": 0,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.st.com.cn/resource/en/reference_manual/rm0312-stm8tl5xxx-microcontroller-family-stmicroelectronics.pdf",
+      "source_revision": "ST RM0312 DocID022352 Rev3 October2013 chapter10 pp75-82; ST AN2710 Rev1 February2008 safe transition tables"
+    },
+    "gpio_source_load_ma": {
+      "label": "source load ma",
+      "category": "physical",
+      "scope": "device",
+      "type": "number",
+      "description": "Actual source load, unknown; must fit pin and actual port/package aggregate.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "mA",
+      "min": 0,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.st.com.cn/resource/en/reference_manual/rm0312-stm8tl5xxx-microcontroller-family-stmicroelectronics.pdf",
+      "source_revision": "ST RM0312 DocID022352 Rev3 October2013 chapter10 pp75-82; ST AN2710 Rev1 February2008 safe transition tables"
+    },
+    "gpio_pull_source": {
+      "label": "pull source",
+      "category": "physical",
+      "scope": "device",
+      "type": "text",
+      "description": "Actual external pull-up/down resistance/load/rise/fall/rail and leakage evidence, unknown; open-drain high state needs explicit pull network.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.st.com.cn/resource/en/reference_manual/rm0312-stm8tl5xxx-microcontroller-family-stmicroelectronics.pdf",
+      "source_revision": "ST RM0312 DocID022352 Rev3 October2013 chapter10 pp75-82; ST AN2710 Rev1 February2008 safe transition tables"
+    },
+    "gpio_pull_ohms": {
+      "label": "pull ohms",
+      "category": "physical",
+      "scope": "device",
+      "type": "number",
+      "description": "Actual external resistor value, unknown; no universal4.7k resistor. An explicitly present resistor must be positive.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Ohm",
+      "min": 0,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.st.com.cn/resource/en/reference_manual/rm0312-stm8tl5xxx-microcontroller-family-stmicroelectronics.pdf",
+      "source_revision": "ST RM0312 DocID022352 Rev3 October2013 chapter10 pp75-82; ST AN2710 Rev1 February2008 safe transition tables"
+    },
+    "gpio_load_pf": {
+      "label": "load pf",
+      "category": "physical",
+      "scope": "device",
+      "type": "number",
+      "description": "Actual pad+wiring+peer load capacitance, unknown; no universal I2C400pF limit or timing default for GPIO.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "pF",
+      "min": 0,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.st.com.cn/resource/en/reference_manual/rm0312-stm8tl5xxx-microcontroller-family-stmicroelectronics.pdf",
+      "source_revision": "ST RM0312 DocID022352 Rev3 October2013 chapter10 pp75-82; ST AN2710 Rev1 February2008 safe transition tables"
+    },
+    "gpio_rise_bound_ns": {
+      "label": "rise bound ns",
+      "category": "physical",
+      "scope": "device",
+      "type": "number",
+      "description": "Actual pin transition upper bound at actual load/slew/drive conditions, unknown; nominal MCU clock does not prove this.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "ns",
+      "min": 0,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.st.com.cn/resource/en/reference_manual/rm0312-stm8tl5xxx-microcontroller-family-stmicroelectronics.pdf",
+      "source_revision": "ST RM0312 DocID022352 Rev3 October2013 chapter10 pp75-82; ST AN2710 Rev1 February2008 safe transition tables"
+    },
+    "gpio_fall_bound_ns": {
+      "label": "fall bound ns",
+      "category": "physical",
+      "scope": "device",
+      "type": "number",
+      "description": "Actual falling transition upper bound, unknown, separate from source/target software processing.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "ns",
+      "min": 0,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.st.com.cn/resource/en/reference_manual/rm0312-stm8tl5xxx-microcontroller-family-stmicroelectronics.pdf",
+      "source_revision": "ST RM0312 DocID022352 Rev3 October2013 chapter10 pp75-82; ST AN2710 Rev1 February2008 safe transition tables"
+    },
+    "gpio_transition_source": {
+      "label": "transition source",
+      "category": "physical",
+      "scope": "device",
+      "type": "text",
+      "description": "Actual register-write/configuration sequence and intermediate-state/glitch/interrupt masking evidence, unknown; required for deliberate mode transitions.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.st.com.cn/resource/en/reference_manual/rm0312-stm8tl5xxx-microcontroller-family-stmicroelectronics.pdf",
+      "source_revision": "ST RM0312 DocID022352 Rev3 October2013 chapter10 pp75-82; ST AN2710 Rev1 February2008 safe transition tables"
+    }
+  },
+  "mechanisms": {
+    "access": [
+      "ACTUAL_PIN_MODE_AND_REGISTER_TASK_INTERRUPT_SCHEDULE"
+    ],
+    "integrity": [
+      "ACTUAL_VOLTAGE_THRESHOLD_CURRENT_LOAD_AND_NOISE_EVIDENCE"
+    ],
+    "scope": [
+      "LOCAL_DIGITAL_IO_NOT_FRAMED_BUS"
+    ]
+  },
+  "parameter_constraints": [
+    {
+      "when": {
+        "gpio_profile": "STM8TL5_RM0312_3",
+        "gpio_phase": "RESET",
+        "gpio_reset_exception": false
+      },
+      "parameter": "gpio_direction",
+      "allowed": [
+        "DIGITAL_INPUT"
+      ],
+      "source": "https://www.st.com.cn/resource/en/reference_manual/rm0312-stm8tl5xxx-microcontroller-family-stmicroelectronics.pdf",
+      "source_revision": "ST RM0312 DocID022352 Rev3 October2013 chapter10 pp75-82; ST AN2710 Rev1 February2008 safe transition tables"
+    },
+    {
+      "when": {
+        "gpio_profile": "STM8TL5_RM0312_3",
+        "gpio_phase": "RESET",
+        "gpio_reset_exception": false
+      },
+      "parameter": "gpio_pull",
+      "allowed": [
+        "NONE"
+      ],
+      "source": "https://www.st.com.cn/resource/en/reference_manual/rm0312-stm8tl5xxx-microcontroller-family-stmicroelectronics.pdf",
+      "source_revision": "ST RM0312 DocID022352 Rev3 October2013 chapter10 pp75-82; ST AN2710 Rev1 February2008 safe transition tables"
+    },
+    {
+      "when": {
+        "gpio_profile": "STM8TL5_RM0312_3"
+      },
+      "parameter": "gpio_pull",
+      "allowed": [
+        "NONE",
+        "UP"
+      ],
+      "source": "https://www.st.com.cn/resource/en/reference_manual/rm0312-stm8tl5xxx-microcontroller-family-stmicroelectronics.pdf",
+      "source_revision": "ST RM0312 DocID022352 Rev3 October2013 chapter10 pp75-82; ST AN2710 Rev1 February2008 safe transition tables"
+    },
+    {
+      "when": {
+        "gpio_direction": "DIGITAL_INPUT"
+      },
+      "parameter": "gpio_drive",
+      "allowed": [],
+      "source": "https://www.st.com.cn/resource/en/reference_manual/rm0312-stm8tl5xxx-microcontroller-family-stmicroelectronics.pdf",
+      "source_revision": "ST RM0312 DocID022352 Rev3 October2013 chapter10 pp75-82; ST AN2710 Rev1 February2008 safe transition tables"
+    },
+    {
+      "when": {
+        "gpio_direction": "DIGITAL_OUTPUT"
+      },
+      "parameter": "gpio_input_mode",
+      "allowed": [],
+      "source": "https://www.st.com.cn/resource/en/reference_manual/rm0312-stm8tl5xxx-microcontroller-family-stmicroelectronics.pdf",
+      "source_revision": "ST RM0312 DocID022352 Rev3 October2013 chapter10 pp75-82; ST AN2710 Rev1 February2008 safe transition tables"
+    },
+    {
+      "when": {
+        "gpio_direction": "DIGITAL_OUTPUT"
+      },
+      "parameter": "gpio_event",
+      "allowed": [],
+      "source": "https://www.st.com.cn/resource/en/reference_manual/rm0312-stm8tl5xxx-microcontroller-family-stmicroelectronics.pdf",
+      "source_revision": "ST RM0312 DocID022352 Rev3 October2013 chapter10 pp75-82; ST AN2710 Rev1 February2008 safe transition tables"
+    },
+    {
+      "when": {
+        "gpio_profile": "STM8TL5_RM0312_3",
+        "gpio_direction": "DIGITAL_OUTPUT"
+      },
+      "parameter": "gpio_pull",
+      "allowed": [
+        "NONE"
+      ],
+      "source": "https://www.st.com.cn/resource/en/reference_manual/rm0312-stm8tl5xxx-microcontroller-family-stmicroelectronics.pdf",
+      "source_revision": "ST RM0312 DocID022352 Rev3 October2013 chapter10 pp75-82; ST AN2710 Rev1 February2008 safe transition tables"
+    },
+    {
+      "when": {
+        "gpio_direction": "DIGITAL_INPUT"
+      },
+      "parameter": "gpio_source_load_ma",
+      "allowed": [],
+      "source": "https://www.st.com.cn/resource/en/reference_manual/rm0312-stm8tl5xxx-microcontroller-family-stmicroelectronics.pdf",
+      "source_revision": "ST RM0312 DocID022352 Rev3 October2013 chapter10 pp75-82; ST AN2710 Rev1 February2008 safe transition tables"
+    },
+    {
+      "when": {
+        "gpio_direction": "DIGITAL_INPUT"
+      },
+      "parameter": "gpio_sink_load_ma",
+      "allowed": [],
+      "source": "https://www.st.com.cn/resource/en/reference_manual/rm0312-stm8tl5xxx-microcontroller-family-stmicroelectronics.pdf",
+      "source_revision": "ST RM0312 DocID022352 Rev3 October2013 chapter10 pp75-82; ST AN2710 Rev1 February2008 safe transition tables"
+    },
+    {
+      "when": {
+        "gpio_direction": "DIGITAL_OUTPUT",
+        "gpio_drive": "PSEUDO_OPEN_DRAIN"
+      },
+      "parameter": "gpio_pull_source",
+      "required": true,
+      "source": "https://www.st.com.cn/resource/en/reference_manual/rm0312-stm8tl5xxx-microcontroller-family-stmicroelectronics.pdf",
+      "source_revision": "ST RM0312 DocID022352 Rev3 October2013 chapter10 pp75-82; ST AN2710 Rev1 February2008 safe transition tables"
+    },
+    {
+      "when": {
+        "gpio_direction": "DIGITAL_OUTPUT",
+        "gpio_drive": "TRUE_OPEN_DRAIN"
+      },
+      "parameter": "gpio_pull_source",
+      "required": true,
+      "source": "https://www.st.com.cn/resource/en/reference_manual/rm0312-stm8tl5xxx-microcontroller-family-stmicroelectronics.pdf",
+      "source_revision": "ST RM0312 DocID022352 Rev3 October2013 chapter10 pp75-82; ST AN2710 Rev1 February2008 safe transition tables"
+    },
+    {
+      "when": {
+        "gpio_input_mode": "POLLED"
+      },
+      "parameter": "gpio_event",
+      "allowed": [],
+      "source": "https://www.st.com.cn/resource/en/reference_manual/rm0312-stm8tl5xxx-microcontroller-family-stmicroelectronics.pdf",
+      "source_revision": "ST RM0312 DocID022352 Rev3 October2013 chapter10 pp75-82; ST AN2710 Rev1 February2008 safe transition tables"
+    },
+    {
+      "when": {},
+      "parameter": "gpio_vdd_v",
+      "exclusive_minimum": 0,
+      "source": "https://www.st.com.cn/resource/en/reference_manual/rm0312-stm8tl5xxx-microcontroller-family-stmicroelectronics.pdf",
+      "source_revision": "ST RM0312 DocID022352 Rev3 October2013 chapter10 pp75-82; ST AN2710 Rev1 February2008 safe transition tables"
+    },
+    {
+      "when": {},
+      "parameter": "gpio_pull_ohms",
+      "exclusive_minimum": 0,
+      "source": "https://www.st.com.cn/resource/en/reference_manual/rm0312-stm8tl5xxx-microcontroller-family-stmicroelectronics.pdf",
+      "source_revision": "ST RM0312 DocID022352 Rev3 October2013 chapter10 pp75-82; ST AN2710 Rev1 February2008 safe transition tables"
+    },
+    {
+      "when": {},
+      "parameter": "gpio_vil_max_v",
+      "maximum_parameter": "gpio_vih_min_v",
+      "source": "https://www.st.com.cn/resource/en/reference_manual/rm0312-stm8tl5xxx-microcontroller-family-stmicroelectronics.pdf",
+      "source_revision": "ST RM0312 DocID022352 Rev3 October2013 chapter10 pp75-82; ST AN2710 Rev1 February2008 safe transition tables"
+    },
+    {
+      "when": {},
+      "parameter": "gpio_vol_max_v",
+      "maximum_parameter": "gpio_vil_max_v",
+      "source": "https://www.st.com.cn/resource/en/reference_manual/rm0312-stm8tl5xxx-microcontroller-family-stmicroelectronics.pdf",
+      "source_revision": "ST RM0312 DocID022352 Rev3 October2013 chapter10 pp75-82; ST AN2710 Rev1 February2008 safe transition tables"
+    },
+    {
+      "when": {},
+      "parameter": "gpio_voh_min_v",
+      "minimum_parameter": "gpio_vih_min_v",
+      "source": "https://www.st.com.cn/resource/en/reference_manual/rm0312-stm8tl5xxx-microcontroller-family-stmicroelectronics.pdf",
+      "source_revision": "ST RM0312 DocID022352 Rev3 October2013 chapter10 pp75-82; ST AN2710 Rev1 February2008 safe transition tables"
+    },
+    {
+      "when": {},
+      "parameter": "gpio_sink_load_ma",
+      "maximum_parameter": "gpio_sink_bound_ma",
+      "source": "https://www.st.com.cn/resource/en/reference_manual/rm0312-stm8tl5xxx-microcontroller-family-stmicroelectronics.pdf",
+      "source_revision": "ST RM0312 DocID022352 Rev3 October2013 chapter10 pp75-82; ST AN2710 Rev1 February2008 safe transition tables"
+    },
+    {
+      "when": {},
+      "parameter": "gpio_source_load_ma",
+      "maximum_parameter": "gpio_source_bound_ma",
+      "source": "https://www.st.com.cn/resource/en/reference_manual/rm0312-stm8tl5xxx-microcontroller-family-stmicroelectronics.pdf",
+      "source_revision": "ST RM0312 DocID022352 Rev3 October2013 chapter10 pp75-82; ST AN2710 Rev1 February2008 safe transition tables"
+    }
+  ],
+  "physical_layer_profile_id": null,
+  "medium_access_model": null,
+  "native_parameter_prefixes": [
+    "gpio_"
+  ],
+  "parameter_aliases": {},
+  "parameter_alias_limits": {},
+  "parameter_evidence_scope": null,
+  "rate_source_profile_id": null,
+  "arbitration_model_id": null,
+  "max_payload_bytes": null,
+  "capabilities": {
+    "supports_signals": true,
+    "supports_data_objects": false,
+    "supports_streams": false,
+    "supports_multicast": false,
+    "supports_publish_subscribe": false,
+    "supports_request_response": false,
+    "supports_cyclic": true,
+    "supports_event": true,
+    "supports_redundancy": false,
+    "supports_time_sync": false,
+    "supports_safety_profile": false,
+    "supports_segmentation": false,
+    "supports_fragmentation": false,
+    "supports_qos": false
+  },
+  "deterministic": false,
+  "overhead_bytes": 8,
+  "implementation_status": "PARTIAL",
+  "connection_type": "DIRECT_IO",
+  "parameter_proposals": {
+    "kind": "ACTUAL_DEVICE_NO_PACKET_RATE",
+    "status": "REVIEW_REQUIRED",
+    "source": "https://www.st.com.cn/resource/en/reference_manual/rm0312-stm8tl5xxx-microcontroller-family-stmicroelectronics.pdf",
+    "source_revision": "ST RM0312 DocID022352 Rev3 October2013 chapter10 pp75-82; ST AN2710 Rev1 February2008 safe transition tables",
+    "note": "GPIO has no standard packet speed/voltage/timing. Qualified STM8TL5 non-exception reset input/no-pull proposal is conditional; programmed outputs and real pin/peer evidence remain actual."
+  },
+  "capacity_evidence": {
+    "status": "NOT_APPLICABLE",
+    "frame_model": null,
+    "schedule_model": null,
+    "requires_confirmed_device_parameters": false
+  },
+  "components": {
+    "binding": "gpio.binding",
+    "generator": "gpio.generator",
+    "validator": "gpio.validator",
+    "timing_model": null,
+    "load_model": null,
+    "encoder": "gpio.encoder",
+    "decoder": "gpio.decoder"
+  },
+  "known_limitations": "Technology-specific conformance details require a vendor/profile extension."
+}

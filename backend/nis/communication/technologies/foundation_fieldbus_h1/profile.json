@@ -1,0 +1,2791 @@
+{
+  "id": "foundation_fieldbus_h1",
+  "label": "FOUNDATION Fieldbus H1",
+  "domain": "generic_networking",
+  "layer": "APPLICATION",
+  "transport_unit": "PDU",
+  "payload_element_types": [
+    "FIELD",
+    "STATUS",
+    "QUALITY"
+  ],
+  "hardware_interface": "h1_fieldbus_interface",
+  "hardware_capability_aliases": [
+    "fieldbus_interface"
+  ],
+  "default_stack": [
+    "foundation_fieldbus_h1"
+  ],
+  "stack_variants": [
+    [
+      "foundation_fieldbus_h1"
+    ]
+  ],
+  "default_bitrate": 31250,
+  "rate_model": {
+    "type": "FIXED_LINK_RATE",
+    "fields": [
+      "bitrate_bps"
+    ],
+    "fixed_bps": 31250
+  },
+  "local_timing_schema": [],
+  "parameter_schema": {
+    "bitrate_bps": {
+      "label": "Bitrate",
+      "category": "physical",
+      "scope": "network",
+      "type": "number",
+      "description": "Technology-profiled network rate.",
+      "required": true,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 31250,
+      "unit": "bit/s",
+      "min": 1,
+      "default_review": {
+        "technology": "foundation_fieldbus_h1",
+        "rate_profile": "foundation_fieldbus_h1",
+        "values": {
+          "bitrate_bps": 31250
+        },
+        "basis": "FIXED_PROFILE_RATE",
+        "status": "REVIEW_REQUIRED",
+        "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+        "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+      },
+      "allowed_bps": [
+        31250
+      ],
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED",
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    "payload_bytes": {
+      "label": "Payload",
+      "category": "physical",
+      "scope": "message",
+      "type": "number",
+      "description": "Actual FMS encoded data, not full telegram or logical segmented domain; applies to qualified DT layout only.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "max": 251,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification",
+      "integer": true
+    },
+    "cycle_ms": {
+      "label": "Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "Standardperiode fuer zyklische Nachrichten.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "minimum_cycle_time_ms": {
+      "label": "Minimum Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "deadline_ms": {
+      "label": "Deadline",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "timeout_ms": {
+      "label": "Timeout",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_latency_ms": {
+      "label": "Maximum Latency",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "jitter_ms": {
+      "label": "Jitter Budget",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "freshness_ms": {
+      "label": "Data Freshness",
+      "category": "timing",
+      "scope": "signal",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "source_processing_delay_ms": {
+      "label": "Source Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_processing_delay_ms": {
+      "label": "Target Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "propagation_delay_ms": {
+      "label": "Propagation",
+      "category": "timing",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.01,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_bus_load_percent": {
+      "label": "Ziel-Buslast",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "Zielwert fuer die aus Routing, Payload, Zyklus und Bitrate berechnete Buslast.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "peak_factor": {
+      "label": "Peak Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.15,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_factor": {
+      "label": "Burst Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.5,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_window_ms": {
+      "label": "Burst Window",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "warning_threshold": {
+      "label": "Load Warning",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "critical_threshold": {
+      "label": "Load Critical",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 75,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "overload_threshold": {
+      "label": "Load Overload",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 90,
+      "unit": "%",
+      "min": 1,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "traffic_class": {
+      "label": "Traffic Class",
+      "category": "qos",
+      "scope": "route",
+      "type": "select",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": "BEST_EFFORT",
+      "options": [
+        "BEST_EFFORT",
+        "CONTROL",
+        "REALTIME",
+        "SAFETY_CRITICAL"
+      ],
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "packet_loss_probability": {
+      "label": "Packet Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "frame_loss_probability": {
+      "label": "Frame Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "bit_error_rate": {
+      "label": "Bit Error Rate",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "corruption_probability": {
+      "label": "Corruption",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duplicate_probability": {
+      "label": "Duplication",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "reordering_probability": {
+      "label": "Reordering",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "required_reliability": {
+      "label": "Required Reliability",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.999,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_offset_ms": {
+      "label": "Clock Offset",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_drift_ppm": {
+      "label": "Clock Drift",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 20,
+      "unit": "ppm",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_precision_ms": {
+      "label": "Sync Precision",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_interval_ms": {
+      "label": "Sync Interval",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1000,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_sync_error_ms": {
+      "label": "Maximum Sync Error",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_delay_ms": {
+      "label": "Gateway Processing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.2,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_queue_delay_ms": {
+      "label": "Gateway Queueing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "protocol_conversion_delay_ms": {
+      "label": "Protocol Conversion",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duration_s": {
+      "label": "Simulation Duration",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 1,
+      "unit": "s",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "seed": {
+      "label": "Random Seed",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 42,
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "max_events": {
+      "label": "Maximum Events",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 100000,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "dropout_probability": {
+      "label": "Failure Injection Dropout",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "ff_profile": {
+      "label": "profile",
+      "category": "physical",
+      "scope": "route",
+      "type": "select",
+      "description": "Reviewed two-wire voltage-mode H1 baseline proposal. Optical/media extensions require their own physical evidence; HSE Ethernet is a different transport.",
+      "required": true,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": "H1_VOLTAGE_MODE",
+      "options": [
+        "H1_VOLTAGE_MODE",
+        "DEVICE_SPECIFIC"
+      ],
+      "integer": false,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED",
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    "ff_configuration_source": {
+      "label": "configuration source",
+      "category": "physical",
+      "scope": "route",
+      "type": "text",
+      "description": "Required matched specification/firmware/network configuration reference, unknown.",
+      "required": true,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    "ff_cff_source": {
+      "label": "csource",
+      "category": "physical",
+      "scope": "route",
+      "type": "text",
+      "description": "Required matched device CFF capability file/version, unknown. Capacity, timer and block constraints are not universal defaults.",
+      "required": true,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    "ff_physical_source": {
+      "label": "physical source",
+      "category": "physical",
+      "scope": "route",
+      "type": "text",
+      "description": "Required actual segment cable/power/terminator/repeater/signal/intrinsic-safety evidence, unknown.",
+      "required": true,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    "ff_schedule_source": {
+      "label": "schedule source",
+      "category": "physical",
+      "scope": "route",
+      "type": "text",
+      "description": "Required actual LAS/VCR/block execution/communication schedule evidence, unknown. Schedule feasibility is not implied by bitrate.",
+      "required": true,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    "ff_layout": {
+      "label": "layout",
+      "category": "physical",
+      "scope": "route",
+      "type": "select",
+      "description": "Qualified FMS/FAS/data-transfer diagram layout. Control PDUs and fragmented logical domains need their own definition.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": "YOKOGAWA_FMS_DIAGRAM",
+      "options": [
+        "YOKOGAWA_FMS_DIAGRAM",
+        "DEVICE_SPECIFIC"
+      ],
+      "integer": false,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED",
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    "ff_pdu": {
+      "label": "pdu",
+      "category": "physical",
+      "scope": "route",
+      "type": "select",
+      "description": "Actual link PDU, unknown. Native control traffic is not an FMS data-transfer packet.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "DT",
+        "CD",
+        "PT",
+        "RT",
+        "EC",
+        "DC",
+        "RI",
+        "PN",
+        "PR",
+        "TD",
+        "CT",
+        "RQ",
+        "RR",
+        "CL",
+        "TL",
+        "IDLE"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    "ff_fms_pci_bytes": {
+      "label": "fms pci bytes",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Four-octet FMS PCI proposal only for reviewed FMS DT layout.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "max": 255,
+      "integer": true,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification",
+      "conditional_defaults": [
+        {
+          "when": {
+            "ff_layout": "YOKOGAWA_FMS_DIAGRAM",
+            "ff_pdu": "DT"
+          },
+          "value": 4
+        }
+      ]
+    },
+    "ff_fas_pci_bytes": {
+      "label": "fas pci bytes",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "One-octet FAS PCI proposal only for reviewed FMS DT layout.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "max": 255,
+      "integer": true,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification",
+      "conditional_defaults": [
+        {
+          "when": {
+            "ff_layout": "YOKOGAWA_FMS_DIAGRAM",
+            "ff_pdu": "DT"
+          },
+          "value": 1
+        }
+      ]
+    },
+    "ff_dl_sdu_bytes": {
+      "label": "dl sdu bytes",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual data-link SDU, equals FMS encoded payload plus FMS/FAS PCI in reviewed DT layout. Priority ceiling applies to DLSDU, not payload.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "max": 256,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    "ff_dl_pci_bytes": {
+      "label": "dl pci bytes",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual data-link PCI, unknown; reviewed DT diagram range5..15 octets. Not a universal overhead8.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "max": 255,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    "ff_fcs_bytes": {
+      "label": "fcs bytes",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Two-octet frame-check sequence baseline proposal. A declared size does not recompute or verify integrity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "max": 255,
+      "integer": true,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification",
+      "conditional_defaults": [
+        {
+          "when": {
+            "ff_layout": "YOKOGAWA_FMS_DIAGRAM",
+            "ff_pdu": "DT"
+          },
+          "value": 2
+        }
+      ]
+    },
+    "ff_ph_sdu_bytes": {
+      "label": "ph sdu bytes",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual complete DL PDU/physical SDU, including DL PCI/SDU/FCS. Reviewed FMS diagram range8..273; excludes physical delimiters/preamble.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    "ff_preamble_bytes": {
+      "label": "preamble bytes",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Baseline one-octet preamble proposal; actual repeaters may require extension. Lower baseline does not prove physical synchronization.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 1,
+      "integer": true,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification",
+      "conditional_defaults": [
+        {
+          "when": {
+            "ff_profile": "H1_VOLTAGE_MODE"
+          },
+          "value": 1
+        }
+      ]
+    },
+    "ff_start_bytes": {
+      "label": "start bytes",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "One-octet-equivalent physical start delimiter proposal, includes non-data symbols; not an Ethernet preamble.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 1,
+      "max": 1,
+      "integer": true,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification",
+      "conditional_defaults": [
+        {
+          "when": {
+            "ff_profile": "H1_VOLTAGE_MODE"
+          },
+          "value": 1
+        }
+      ]
+    },
+    "ff_end_bytes": {
+      "label": "end bytes",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "One-octet-equivalent physical end delimiter proposal; not an Ethernet interframe gap.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 1,
+      "max": 1,
+      "integer": true,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification",
+      "conditional_defaults": [
+        {
+          "when": {
+            "ff_profile": "H1_VOLTAGE_MODE"
+          },
+          "value": 1
+        }
+      ]
+    },
+    "ff_wire_octets": {
+      "label": "wire octets",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual physical telegram sum including preamble/start/end. Excludes idle/response/token exchanges and block execution; not whole transaction latency.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "octet-equivalents",
+      "min": 0,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    "ff_priority": {
+      "label": "priority",
+      "category": "physical",
+      "scope": "route",
+      "type": "select",
+      "description": "Actual native DLL urgency, unknown. Qualified DLSDU ceilings64/128/256 bytes respectively; no CAN ID or Ethernet PCP conversion.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "URGENT",
+        "NORMAL",
+        "TIME_AVAILABLE"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    "ff_vcr": {
+      "label": "vcr",
+      "category": "physical",
+      "scope": "route",
+      "type": "select",
+      "description": "Actual VCR model. Buffered scheduled publication differs from queued client/server or source/sink token traffic.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "PUBLISHER_SUBSCRIBER",
+        "CLIENT_SERVER",
+        "SOURCE_SINK"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    "ff_access": {
+      "label": "access",
+      "category": "physical",
+      "scope": "route",
+      "type": "select",
+      "description": "Actual native access mechanism. CD scheduled publication; PT unscheduled token passing. Not generic FIFO arbitration.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "SCHEDULED_CD",
+        "UNSCHEDULED_PT"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    "ff_buffering": {
+      "label": "buffering",
+      "category": "physical",
+      "scope": "route",
+      "type": "select",
+      "description": "Actual VCR storage semantics; buffered publisher/subscriber is not a queue. Queue capacity remains actual CFF configuration.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "BUFFERED",
+        "QUEUED"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    "ff_device_class": {
+      "label": "device class",
+      "category": "physical",
+      "scope": "route",
+      "type": "select",
+      "description": "Actual device class, unknown. BASIC cannot become LAS; link master and bridge have capability, not automatic active status.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "BASIC",
+        "LINK_MASTER",
+        "BRIDGE"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    "ff_las_active": {
+      "label": "las active",
+      "category": "physical",
+      "scope": "route",
+      "type": "boolean",
+      "description": "Actual LAS active state, unknown. Exactly one active LAS per link requires topology/runtime evidence; not auto true.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    "ff_las_owner": {
+      "label": "las owner",
+      "category": "physical",
+      "scope": "route",
+      "type": "text",
+      "description": "Actual LAS node identity, unknown. LAS service address4 differs from configured physical node address.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    "ff_las_service_address": {
+      "label": "las service address",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Reserved LAS service address4 baseline; does not allocate node address4 to an ordinary device.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 4,
+      "min": 4,
+      "max": 4,
+      "integer": true,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED",
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    "ff_node_address": {
+      "label": "node address",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual8-bit node address, unknown. Operational range16..247 differs from cleared248..251 and temporary252..255; LM/BASIC allocation uses actual FUN/NUN.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 16,
+      "max": 255,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    "ff_address_state": {
+      "label": "address state",
+      "category": "physical",
+      "scope": "route",
+      "type": "select",
+      "description": "Actual address allocation category, unknown. A random commissioning address is not a persisted operational default.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "OPERATIONAL",
+        "CLEARED",
+        "TEMPORARY"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    "ff_fun": {
+      "label": "fun",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual boundary of link-master address pool, unknown. Not hard-coded16 or vendor sample20.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 16,
+      "max": 247,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    "ff_nun": {
+      "label": "nun",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual unused address count, unknown. BASIC start=FUN+NUN; actual address availability must be checked.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "max": 231,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    "ff_link_address": {
+      "label": "link address",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual logical link16-bit identifier, unknown; may be omitted within a link, needed across bridge.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "max": 65535,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    "ff_selector": {
+      "label": "selector",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual8-bit selector, unknown. DLCEP and DLSAP reserved allocation depends on VCR and device CFF, not just scalar range.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "max": 255,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    "ff_vcr_index": {
+      "label": "vcr index",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual device-local VCR index, unknown; device-specific capacity and supported index allocation require CFF.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    "ff_pd_tag": {
+      "label": "pd tag",
+      "category": "physical",
+      "scope": "route",
+      "type": "text",
+      "description": "Actual physical-device readable tag, unknown. Tag identity differs from numeric network address.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    "ff_sm_state": {
+      "label": "sm state",
+      "category": "physical",
+      "scope": "route",
+      "type": "select",
+      "description": "Actual system-management state, unknown. SM_OPERATIONAL is not inferred from address or selected profile.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "UNINITIALIZED",
+        "INITIALIZED",
+        "SM_OPERATIONAL"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    "ff_macrocycle_us": {
+      "label": "macrocycle us",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual configured communication/block macrocycle microseconds, unknown. No universal100ms CAN/application-cycle default.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "us",
+      "min": 0.001,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    "ff_scheduled_us": {
+      "label": "scheduled us",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual total scheduled communication occupied window microseconds. Complete CD/DT/response gaps and other scheduled traffic must be included by schedule source.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "us",
+      "min": 0,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    "ff_unscheduled_us": {
+      "label": "unscheduled us",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual available unscheduled budget microseconds, unknown; cannot be treated as zero merely because schedule is absent.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "us",
+      "min": 0,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    "ff_maintenance_us": {
+      "label": "maintenance us",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual maintenance/synchronization/probing and remaining reserved macrocycle budget microseconds. Budget partition must sum to declared macrocycle.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "us",
+      "min": 0,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    "ff_publish_offset_us": {
+      "label": "publish offset us",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual publication offset within macrocycle microseconds, unknown; not block execution completion proof.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "us",
+      "min": 0,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    "ff_exchange_bound_us": {
+      "label": "exchange bound us",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual bounded complete scheduled transaction duration microseconds including CD/DT/gaps/response. Wire telegram duration alone is insufficient.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "us",
+      "min": 0.001,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    "ff_token_hold_us": {
+      "label": "token hold us",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual granted PT token holding interval microseconds, unknown. Different from scheduled DT and NIS request timeout.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "us",
+      "min": 0.001,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    "ff_response_bound_us": {
+      "label": "response bound us",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual matched CFF/device response bound normalized to microseconds, unknown. Native timer units require source conversion; no sample-device value copied.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "us",
+      "min": 0,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    "ff_cable_type": {
+      "label": "cable type",
+      "category": "physical",
+      "scope": "route",
+      "type": "select",
+      "description": "Source-recommended Type A shielded twisted-pair baseline proposal. B/C/D are source reference wiring profiles, not automatically accepted installation designs.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "TYPE_A",
+        "TYPE_B",
+        "TYPE_C",
+        "TYPE_D",
+        "DEVICE_SPECIFIC"
+      ],
+      "integer": false,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification",
+      "conditional_defaults": [
+        {
+          "when": {
+            "ff_profile": "H1_VOLTAGE_MODE"
+          },
+          "value": "TYPE_A"
+        }
+      ]
+    },
+    "ff_trunk_m": {
+      "label": "trunk m",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual trunk length, unknown. Total segment includes all spurs; nominal1900m Type A is an upper reference limit, not a default length.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "m",
+      "min": 0,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    "ff_spurs_total_m": {
+      "label": "spurs total m",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual summed spur lengths, unknown. Per-spur/device-count/reference limits and IS constraints require actual topology source.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "m",
+      "min": 0,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    "ff_segment_total_m": {
+      "label": "segment total m",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual trunk plus summed spurs. Qualified reference limits A1900/B1200/C400/D200m; DEVICE_SPECIFIC requires own verified bounds.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "m",
+      "min": 0,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    "ff_terminators": {
+      "label": "terminators",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Baseline two end terminators proposal, not evidence that wiring has two. Different media require their own realization.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "integer": true,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification",
+      "conditional_defaults": [
+        {
+          "when": {
+            "ff_profile": "H1_VOLTAGE_MODE"
+          },
+          "value": 2
+        }
+      ]
+    },
+    "ff_termination_ohm": {
+      "label": "termination ohm",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Nominal100ohm end termination proposal. Actual impedance/tolerance and capacitive coupling require source.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "ohm",
+      "min": 0.001,
+      "integer": false,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification",
+      "conditional_defaults": [
+        {
+          "when": {
+            "ff_profile": "H1_VOLTAGE_MODE"
+          },
+          "value": 100
+        }
+      ]
+    },
+    "ff_terminal_v": {
+      "label": "terminal v",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual received device voltage, unknown. Reviewed voltage-mode envelope9..32V does not certify selected device/IS barrier operating limits.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "V",
+      "min": 0,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    "ff_supply_ma": {
+      "label": "supply ma",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual available power-conditioner/barrier current budget, unknown. Not inferred from32-node illustration.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "mA",
+      "min": 0,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    "ff_devices_ma": {
+      "label": "devices ma",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual total device current including limits/reserves, unknown; must fit available current. Individual voltage drops still require evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "mA",
+      "min": 0,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    "ff_power_source": {
+      "label": "power source",
+      "category": "physical",
+      "scope": "route",
+      "type": "text",
+      "description": "Actual voltage-drop/current-budget/power-conditioner/isolator calculation source, unknown.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    "ff_is_required": {
+      "label": "is required",
+      "category": "physical",
+      "scope": "route",
+      "type": "boolean",
+      "description": "Actual intrinsic-safety requirement, unknown. It does not claim SIL/safety communication or explosion protection.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    "ff_is_source": {
+      "label": "is source",
+      "category": "physical",
+      "scope": "route",
+      "type": "text",
+      "description": "Actual matched intrinsic-safety barrier/device/cable certificate and entity/FISCO design evidence, unknown; required when IS selected.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    }
+  },
+  "mechanisms": {
+    "access": [
+      "LAS_SCHEDULED_COMPEL_DATA",
+      "PASS_TOKEN_UNSCHEDULED"
+    ],
+    "integrity": [
+      "DLPDU_FRAME_CHECK_SEQUENCE"
+    ],
+    "synchronization": [
+      "LINK_SCHEDULING_TIME_DISTRIBUTION",
+      "APPLICATION_TIME_SEPARATE"
+    ],
+    "relationships": [
+      "BUFFERED_PUBLISHER_SUBSCRIBER",
+      "QUEUED_CLIENT_SERVER",
+      "QUEUED_SOURCE_SINK"
+    ]
+  },
+  "parameter_constraints": [
+    {
+      "when": {
+        "ff_layout": "YOKOGAWA_FMS_DIAGRAM",
+        "ff_pdu": "DT"
+      },
+      "parameter": "ff_fms_pci_bytes",
+      "allowed": [
+        4
+      ],
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    {
+      "when": {
+        "ff_layout": "YOKOGAWA_FMS_DIAGRAM",
+        "ff_pdu": "DT"
+      },
+      "parameter": "ff_fas_pci_bytes",
+      "allowed": [
+        1
+      ],
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    {
+      "when": {
+        "ff_layout": "YOKOGAWA_FMS_DIAGRAM",
+        "ff_pdu": "DT"
+      },
+      "parameter": "ff_fcs_bytes",
+      "allowed": [
+        2
+      ],
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    {
+      "when": {
+        "ff_layout": "YOKOGAWA_FMS_DIAGRAM",
+        "ff_pdu": "DT"
+      },
+      "parameter": "ff_dl_pci_bytes",
+      "minimum": 5,
+      "maximum": 15,
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    {
+      "when": {
+        "ff_layout": "YOKOGAWA_FMS_DIAGRAM",
+        "ff_pdu": "DT"
+      },
+      "parameter": "ff_ph_sdu_bytes",
+      "minimum": 8,
+      "maximum": 273,
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    {
+      "when": {
+        "ff_layout": "YOKOGAWA_FMS_DIAGRAM",
+        "ff_pdu": "DT"
+      },
+      "parameter": "ff_dl_sdu_bytes",
+      "minimum": 5,
+      "equal_expression": {
+        "sum": [
+          "payload_bytes",
+          "ff_fms_pci_bytes",
+          "ff_fas_pci_bytes"
+        ]
+      },
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    {
+      "when": {
+        "ff_layout": "YOKOGAWA_FMS_DIAGRAM",
+        "ff_pdu": "DT"
+      },
+      "parameter": "ff_ph_sdu_bytes",
+      "equal_expression": {
+        "sum": [
+          "ff_dl_sdu_bytes",
+          "ff_dl_pci_bytes",
+          "ff_fcs_bytes"
+        ]
+      },
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    {
+      "when": {
+        "ff_profile": "H1_VOLTAGE_MODE"
+      },
+      "parameter": "ff_wire_octets",
+      "equal_expression": {
+        "sum": [
+          "ff_ph_sdu_bytes",
+          "ff_preamble_bytes",
+          "ff_start_bytes",
+          "ff_end_bytes"
+        ]
+      },
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    {
+      "when": {
+        "ff_priority": "URGENT"
+      },
+      "parameter": "ff_dl_sdu_bytes",
+      "maximum": 64,
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    {
+      "when": {
+        "ff_priority": "NORMAL"
+      },
+      "parameter": "ff_dl_sdu_bytes",
+      "maximum": 128,
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    {
+      "when": {
+        "ff_priority": "TIME_AVAILABLE"
+      },
+      "parameter": "ff_dl_sdu_bytes",
+      "maximum": 256,
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    {
+      "when": {
+        "ff_vcr": "PUBLISHER_SUBSCRIBER"
+      },
+      "parameter": "ff_access",
+      "allowed": [
+        "SCHEDULED_CD"
+      ],
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    {
+      "when": {
+        "ff_vcr": "PUBLISHER_SUBSCRIBER"
+      },
+      "parameter": "ff_buffering",
+      "allowed": [
+        "BUFFERED"
+      ],
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    {
+      "when": {
+        "ff_vcr": "CLIENT_SERVER"
+      },
+      "parameter": "ff_access",
+      "allowed": [
+        "UNSCHEDULED_PT"
+      ],
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    {
+      "when": {
+        "ff_vcr": "CLIENT_SERVER"
+      },
+      "parameter": "ff_buffering",
+      "allowed": [
+        "QUEUED"
+      ],
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    {
+      "when": {
+        "ff_vcr": "SOURCE_SINK"
+      },
+      "parameter": "ff_access",
+      "allowed": [
+        "UNSCHEDULED_PT"
+      ],
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    {
+      "when": {
+        "ff_vcr": "SOURCE_SINK"
+      },
+      "parameter": "ff_buffering",
+      "allowed": [
+        "QUEUED"
+      ],
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    {
+      "when": {
+        "ff_device_class": "BASIC"
+      },
+      "parameter": "ff_las_active",
+      "allowed": [
+        false
+      ],
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    {
+      "when": {
+        "ff_address_state": "OPERATIONAL"
+      },
+      "parameter": "ff_node_address",
+      "minimum": 16,
+      "maximum": 247,
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    {
+      "when": {
+        "ff_address_state": "CLEARED"
+      },
+      "parameter": "ff_node_address",
+      "minimum": 248,
+      "maximum": 251,
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    {
+      "when": {
+        "ff_address_state": "TEMPORARY"
+      },
+      "parameter": "ff_node_address",
+      "minimum": 252,
+      "maximum": 255,
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    {
+      "when": {
+        "ff_address_state": "OPERATIONAL",
+        "ff_device_class": "LINK_MASTER"
+      },
+      "parameter": "ff_node_address",
+      "maximum_parameter": "ff_fun",
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    {
+      "when": {
+        "ff_address_state": "OPERATIONAL",
+        "ff_device_class": "BRIDGE"
+      },
+      "parameter": "ff_node_address",
+      "maximum_parameter": "ff_fun",
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    {
+      "when": {
+        "ff_address_state": "OPERATIONAL",
+        "ff_device_class": "BASIC"
+      },
+      "parameter": "ff_node_address",
+      "minimum_expression": {
+        "sum": [
+          "ff_fun",
+          "ff_nun"
+        ]
+      },
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    {
+      "when": {},
+      "parameter": "ff_nun",
+      "maximum_expression": {
+        "subtract": [
+          247,
+          "ff_fun"
+        ]
+      },
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    {
+      "when": {},
+      "parameter": "ff_macrocycle_us",
+      "equal_expression": {
+        "sum": [
+          "ff_scheduled_us",
+          "ff_unscheduled_us",
+          "ff_maintenance_us"
+        ]
+      },
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    {
+      "when": {},
+      "parameter": "ff_publish_offset_us",
+      "maximum_parameter": "ff_macrocycle_us",
+      "maximum_offset": -0.001,
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    {
+      "when": {
+        "ff_access": "SCHEDULED_CD"
+      },
+      "parameter": "ff_exchange_bound_us",
+      "maximum_parameter": "ff_scheduled_us",
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    {
+      "when": {
+        "ff_access": "SCHEDULED_CD"
+      },
+      "parameter": "ff_token_hold_us",
+      "allowed": [],
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    {
+      "when": {
+        "ff_access": "UNSCHEDULED_PT"
+      },
+      "parameter": "ff_publish_offset_us",
+      "allowed": [],
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    {
+      "when": {
+        "ff_access": "UNSCHEDULED_PT"
+      },
+      "parameter": "ff_token_hold_us",
+      "maximum_parameter": "ff_unscheduled_us",
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    {
+      "when": {},
+      "parameter": "ff_segment_total_m",
+      "equal_expression": {
+        "sum": [
+          "ff_trunk_m",
+          "ff_spurs_total_m"
+        ]
+      },
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    {
+      "when": {
+        "ff_profile": "H1_VOLTAGE_MODE",
+        "ff_cable_type": "TYPE_A"
+      },
+      "parameter": "ff_segment_total_m",
+      "maximum": 1900,
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    {
+      "when": {
+        "ff_profile": "H1_VOLTAGE_MODE",
+        "ff_cable_type": "TYPE_B"
+      },
+      "parameter": "ff_segment_total_m",
+      "maximum": 1200,
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    {
+      "when": {
+        "ff_profile": "H1_VOLTAGE_MODE",
+        "ff_cable_type": "TYPE_C"
+      },
+      "parameter": "ff_segment_total_m",
+      "maximum": 400,
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    {
+      "when": {
+        "ff_profile": "H1_VOLTAGE_MODE",
+        "ff_cable_type": "TYPE_D"
+      },
+      "parameter": "ff_segment_total_m",
+      "maximum": 200,
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    {
+      "when": {
+        "ff_profile": "H1_VOLTAGE_MODE"
+      },
+      "parameter": "ff_terminal_v",
+      "minimum": 9,
+      "maximum": 32,
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    {
+      "when": {
+        "ff_profile": "H1_VOLTAGE_MODE"
+      },
+      "parameter": "ff_terminators",
+      "allowed": [
+        2
+      ],
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    {
+      "when": {},
+      "parameter": "ff_devices_ma",
+      "maximum_parameter": "ff_supply_ma",
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    {
+      "when": {
+        "ff_is_required": true
+      },
+      "parameter": "ff_is_source",
+      "required": true,
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    {
+      "when": {
+        "ff_layout": "YOKOGAWA_FMS_DIAGRAM",
+        "ff_pdu": "CD"
+      },
+      "parameter": "payload_bytes",
+      "allowed": [],
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    {
+      "when": {
+        "ff_layout": "YOKOGAWA_FMS_DIAGRAM",
+        "ff_pdu": "CD"
+      },
+      "parameter": "ff_fms_pci_bytes",
+      "allowed": [],
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    {
+      "when": {
+        "ff_layout": "YOKOGAWA_FMS_DIAGRAM",
+        "ff_pdu": "CD"
+      },
+      "parameter": "ff_fas_pci_bytes",
+      "allowed": [],
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    {
+      "when": {
+        "ff_layout": "YOKOGAWA_FMS_DIAGRAM",
+        "ff_pdu": "PT"
+      },
+      "parameter": "payload_bytes",
+      "allowed": [],
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    {
+      "when": {
+        "ff_layout": "YOKOGAWA_FMS_DIAGRAM",
+        "ff_pdu": "PT"
+      },
+      "parameter": "ff_fms_pci_bytes",
+      "allowed": [],
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    {
+      "when": {
+        "ff_layout": "YOKOGAWA_FMS_DIAGRAM",
+        "ff_pdu": "PT"
+      },
+      "parameter": "ff_fas_pci_bytes",
+      "allowed": [],
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    {
+      "when": {
+        "ff_layout": "YOKOGAWA_FMS_DIAGRAM",
+        "ff_pdu": "RT"
+      },
+      "parameter": "payload_bytes",
+      "allowed": [],
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    {
+      "when": {
+        "ff_layout": "YOKOGAWA_FMS_DIAGRAM",
+        "ff_pdu": "RT"
+      },
+      "parameter": "ff_fms_pci_bytes",
+      "allowed": [],
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    {
+      "when": {
+        "ff_layout": "YOKOGAWA_FMS_DIAGRAM",
+        "ff_pdu": "RT"
+      },
+      "parameter": "ff_fas_pci_bytes",
+      "allowed": [],
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    {
+      "when": {
+        "ff_layout": "YOKOGAWA_FMS_DIAGRAM",
+        "ff_pdu": "EC"
+      },
+      "parameter": "payload_bytes",
+      "allowed": [],
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    {
+      "when": {
+        "ff_layout": "YOKOGAWA_FMS_DIAGRAM",
+        "ff_pdu": "EC"
+      },
+      "parameter": "ff_fms_pci_bytes",
+      "allowed": [],
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    {
+      "when": {
+        "ff_layout": "YOKOGAWA_FMS_DIAGRAM",
+        "ff_pdu": "EC"
+      },
+      "parameter": "ff_fas_pci_bytes",
+      "allowed": [],
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    {
+      "when": {
+        "ff_layout": "YOKOGAWA_FMS_DIAGRAM",
+        "ff_pdu": "DC"
+      },
+      "parameter": "payload_bytes",
+      "allowed": [],
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    {
+      "when": {
+        "ff_layout": "YOKOGAWA_FMS_DIAGRAM",
+        "ff_pdu": "DC"
+      },
+      "parameter": "ff_fms_pci_bytes",
+      "allowed": [],
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    {
+      "when": {
+        "ff_layout": "YOKOGAWA_FMS_DIAGRAM",
+        "ff_pdu": "DC"
+      },
+      "parameter": "ff_fas_pci_bytes",
+      "allowed": [],
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    {
+      "when": {
+        "ff_layout": "YOKOGAWA_FMS_DIAGRAM",
+        "ff_pdu": "RI"
+      },
+      "parameter": "payload_bytes",
+      "allowed": [],
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    {
+      "when": {
+        "ff_layout": "YOKOGAWA_FMS_DIAGRAM",
+        "ff_pdu": "RI"
+      },
+      "parameter": "ff_fms_pci_bytes",
+      "allowed": [],
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    {
+      "when": {
+        "ff_layout": "YOKOGAWA_FMS_DIAGRAM",
+        "ff_pdu": "RI"
+      },
+      "parameter": "ff_fas_pci_bytes",
+      "allowed": [],
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    {
+      "when": {
+        "ff_layout": "YOKOGAWA_FMS_DIAGRAM",
+        "ff_pdu": "PN"
+      },
+      "parameter": "payload_bytes",
+      "allowed": [],
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    {
+      "when": {
+        "ff_layout": "YOKOGAWA_FMS_DIAGRAM",
+        "ff_pdu": "PN"
+      },
+      "parameter": "ff_fms_pci_bytes",
+      "allowed": [],
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    {
+      "when": {
+        "ff_layout": "YOKOGAWA_FMS_DIAGRAM",
+        "ff_pdu": "PN"
+      },
+      "parameter": "ff_fas_pci_bytes",
+      "allowed": [],
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    {
+      "when": {
+        "ff_layout": "YOKOGAWA_FMS_DIAGRAM",
+        "ff_pdu": "PR"
+      },
+      "parameter": "payload_bytes",
+      "allowed": [],
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    {
+      "when": {
+        "ff_layout": "YOKOGAWA_FMS_DIAGRAM",
+        "ff_pdu": "PR"
+      },
+      "parameter": "ff_fms_pci_bytes",
+      "allowed": [],
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    {
+      "when": {
+        "ff_layout": "YOKOGAWA_FMS_DIAGRAM",
+        "ff_pdu": "PR"
+      },
+      "parameter": "ff_fas_pci_bytes",
+      "allowed": [],
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    {
+      "when": {
+        "ff_layout": "YOKOGAWA_FMS_DIAGRAM",
+        "ff_pdu": "TD"
+      },
+      "parameter": "payload_bytes",
+      "allowed": [],
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    {
+      "when": {
+        "ff_layout": "YOKOGAWA_FMS_DIAGRAM",
+        "ff_pdu": "TD"
+      },
+      "parameter": "ff_fms_pci_bytes",
+      "allowed": [],
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    {
+      "when": {
+        "ff_layout": "YOKOGAWA_FMS_DIAGRAM",
+        "ff_pdu": "TD"
+      },
+      "parameter": "ff_fas_pci_bytes",
+      "allowed": [],
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    {
+      "when": {
+        "ff_layout": "YOKOGAWA_FMS_DIAGRAM",
+        "ff_pdu": "CT"
+      },
+      "parameter": "payload_bytes",
+      "allowed": [],
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    {
+      "when": {
+        "ff_layout": "YOKOGAWA_FMS_DIAGRAM",
+        "ff_pdu": "CT"
+      },
+      "parameter": "ff_fms_pci_bytes",
+      "allowed": [],
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    {
+      "when": {
+        "ff_layout": "YOKOGAWA_FMS_DIAGRAM",
+        "ff_pdu": "CT"
+      },
+      "parameter": "ff_fas_pci_bytes",
+      "allowed": [],
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    {
+      "when": {
+        "ff_layout": "YOKOGAWA_FMS_DIAGRAM",
+        "ff_pdu": "RQ"
+      },
+      "parameter": "payload_bytes",
+      "allowed": [],
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    {
+      "when": {
+        "ff_layout": "YOKOGAWA_FMS_DIAGRAM",
+        "ff_pdu": "RQ"
+      },
+      "parameter": "ff_fms_pci_bytes",
+      "allowed": [],
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    {
+      "when": {
+        "ff_layout": "YOKOGAWA_FMS_DIAGRAM",
+        "ff_pdu": "RQ"
+      },
+      "parameter": "ff_fas_pci_bytes",
+      "allowed": [],
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    {
+      "when": {
+        "ff_layout": "YOKOGAWA_FMS_DIAGRAM",
+        "ff_pdu": "RR"
+      },
+      "parameter": "payload_bytes",
+      "allowed": [],
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    {
+      "when": {
+        "ff_layout": "YOKOGAWA_FMS_DIAGRAM",
+        "ff_pdu": "RR"
+      },
+      "parameter": "ff_fms_pci_bytes",
+      "allowed": [],
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    {
+      "when": {
+        "ff_layout": "YOKOGAWA_FMS_DIAGRAM",
+        "ff_pdu": "RR"
+      },
+      "parameter": "ff_fas_pci_bytes",
+      "allowed": [],
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    {
+      "when": {
+        "ff_layout": "YOKOGAWA_FMS_DIAGRAM",
+        "ff_pdu": "CL"
+      },
+      "parameter": "payload_bytes",
+      "allowed": [],
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    {
+      "when": {
+        "ff_layout": "YOKOGAWA_FMS_DIAGRAM",
+        "ff_pdu": "CL"
+      },
+      "parameter": "ff_fms_pci_bytes",
+      "allowed": [],
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    {
+      "when": {
+        "ff_layout": "YOKOGAWA_FMS_DIAGRAM",
+        "ff_pdu": "CL"
+      },
+      "parameter": "ff_fas_pci_bytes",
+      "allowed": [],
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    {
+      "when": {
+        "ff_layout": "YOKOGAWA_FMS_DIAGRAM",
+        "ff_pdu": "TL"
+      },
+      "parameter": "payload_bytes",
+      "allowed": [],
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    {
+      "when": {
+        "ff_layout": "YOKOGAWA_FMS_DIAGRAM",
+        "ff_pdu": "TL"
+      },
+      "parameter": "ff_fms_pci_bytes",
+      "allowed": [],
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    {
+      "when": {
+        "ff_layout": "YOKOGAWA_FMS_DIAGRAM",
+        "ff_pdu": "TL"
+      },
+      "parameter": "ff_fas_pci_bytes",
+      "allowed": [],
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    {
+      "when": {
+        "ff_layout": "YOKOGAWA_FMS_DIAGRAM",
+        "ff_pdu": "IDLE"
+      },
+      "parameter": "payload_bytes",
+      "allowed": [],
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    {
+      "when": {
+        "ff_layout": "YOKOGAWA_FMS_DIAGRAM",
+        "ff_pdu": "IDLE"
+      },
+      "parameter": "ff_fms_pci_bytes",
+      "allowed": [],
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    },
+    {
+      "when": {
+        "ff_layout": "YOKOGAWA_FMS_DIAGRAM",
+        "ff_pdu": "IDLE"
+      },
+      "parameter": "ff_fas_pci_bytes",
+      "allowed": [],
+      "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+      "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification"
+    }
+  ],
+  "physical_layer_profile_id": null,
+  "medium_access_model": null,
+  "native_parameter_prefixes": [],
+  "parameter_aliases": {},
+  "parameter_alias_limits": {},
+  "parameter_evidence_scope": null,
+  "rate_source_profile_id": null,
+  "arbitration_model_id": null,
+  "max_payload_bytes": 251,
+  "capabilities": {
+    "supports_signals": true,
+    "supports_data_objects": true,
+    "supports_streams": false,
+    "supports_multicast": false,
+    "supports_publish_subscribe": true,
+    "supports_request_response": true,
+    "supports_cyclic": true,
+    "supports_event": true,
+    "supports_redundancy": false,
+    "supports_time_sync": true,
+    "supports_safety_profile": false,
+    "supports_segmentation": false,
+    "supports_fragmentation": false,
+    "supports_qos": false
+  },
+  "deterministic": true,
+  "overhead_bytes": 8,
+  "implementation_status": "PARTIAL",
+  "connection_type": "COMMUNICATION_TECHNOLOGY",
+  "parameter_proposals": {
+    "kind": "FIXED_NOMINAL_RATE",
+    "default_bps": 31250,
+    "status": "REVIEW_REQUIRED",
+    "source": "https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf",
+    "source_revision": "Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification",
+    "note": "Fixed31.25kbit/s H1 baseline. Actual FMS data, DLSDU, complete physical telegram and LAS transaction are distinct; native device/CFF/physical/schedule evidence remains unknown. No100M HSE or CAN defaults."
+  },
+  "capacity_evidence": {
+    "status": "MODEL_MISSING",
+    "frame_model": null,
+    "schedule_model": null,
+    "requires_confirmed_device_parameters": true
+  },
+  "components": {
+    "binding": "foundation_fieldbus_h1.binding",
+    "generator": "foundation_fieldbus_h1.generator",
+    "validator": "foundation_fieldbus_h1.validator",
+    "timing_model": null,
+    "load_model": null,
+    "encoder": "foundation_fieldbus_h1.encoder",
+    "decoder": "foundation_fieldbus_h1.decoder"
+  },
+  "known_limitations": "Technology-specific conformance details require a vendor/profile extension."
+}

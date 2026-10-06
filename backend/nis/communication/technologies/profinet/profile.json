@@ -1,0 +1,4208 @@
+{
+  "id": "profinet",
+  "label": "PROFINET RT/IRT",
+  "domain": "industrial_automation",
+  "layer": "DATA_LINK",
+  "transport_unit": "PROCESS_DATA",
+  "payload_element_types": [
+    "FIELD",
+    "STATUS",
+    "QUALITY"
+  ],
+  "hardware_interface": "explicit_profinet_io",
+  "hardware_capability_aliases": [
+    "ethernet_port"
+  ],
+  "default_stack": [
+    "profinet"
+  ],
+  "stack_variants": [
+    [
+      "profinet"
+    ],
+    [
+      "ethernet",
+      "profinet"
+    ]
+  ],
+  "default_bitrate": null,
+  "rate_model": {
+    "type": "SINGLE_BITRATE",
+    "fields": [
+      "bitrate_bps"
+    ],
+    "minimum_bps": 1
+  },
+  "local_timing_schema": [],
+  "parameter_schema": {
+    "bitrate_bps": {
+      "label": "Bitrate",
+      "category": "physical",
+      "scope": "network",
+      "type": "number",
+      "description": "Conventional100Mbps PROFINET physical rate proposal; actual PHY, RTclass, IOCR and domain schedule required. Optional other PHY needs registered source.",
+      "required": true,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 100000000,
+      "unit": "bit/s",
+      "min": 1,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED",
+      "source": "https://cl.profibus.com/fileadmin/media/downloadsection/technical_description_&_books/PROFINET_System_Description_engl_2018_Update.pdf",
+      "source_revision": "PI System Description November2018 order4.132 pp8-16/23-24; conventional100M/full duplex, IO mapping, RT/IRT capability and optional fast cycles.",
+      "integer": true
+    },
+    "payload_bytes": {
+      "label": "Payload",
+      "category": "physical",
+      "scope": "message",
+      "type": "number",
+      "description": "Whole application bytes distinct native1440 CSDU inclIOPS/IOCS/padding and24byte NIC-buffer/28byte MAC framing. No8byte/1500byte universal application limit.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/common/pf_ppm.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da PPM frame allocation/layout and cycle-counter helpers; NIC buffer excludes FCS, not whole physical frame.",
+      "integer": true
+    },
+    "cycle_ms": {
+      "label": "Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "Standardperiode fuer zyklische Nachrichten.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "minimum_cycle_time_ms": {
+      "label": "Minimum Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "deadline_ms": {
+      "label": "Deadline",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "timeout_ms": {
+      "label": "Timeout",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_latency_ms": {
+      "label": "Maximum Latency",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "jitter_ms": {
+      "label": "Jitter Budget",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "freshness_ms": {
+      "label": "Data Freshness",
+      "category": "timing",
+      "scope": "signal",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "source_processing_delay_ms": {
+      "label": "Source Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_processing_delay_ms": {
+      "label": "Target Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "propagation_delay_ms": {
+      "label": "Propagation",
+      "category": "timing",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.01,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_bus_load_percent": {
+      "label": "Ziel-Buslast",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "Zielwert fuer die aus Routing, Payload, Zyklus und Bitrate berechnete Buslast.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "peak_factor": {
+      "label": "Peak Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.15,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_factor": {
+      "label": "Burst Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.5,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_window_ms": {
+      "label": "Burst Window",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "warning_threshold": {
+      "label": "Load Warning",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "critical_threshold": {
+      "label": "Load Critical",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 75,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "overload_threshold": {
+      "label": "Load Overload",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 90,
+      "unit": "%",
+      "min": 1,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "traffic_class": {
+      "label": "Traffic Class",
+      "category": "qos",
+      "scope": "route",
+      "type": "select",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": "BEST_EFFORT",
+      "options": [
+        "BEST_EFFORT",
+        "CONTROL",
+        "REALTIME",
+        "SAFETY_CRITICAL"
+      ],
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "packet_loss_probability": {
+      "label": "Packet Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "frame_loss_probability": {
+      "label": "Frame Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "bit_error_rate": {
+      "label": "Bit Error Rate",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "corruption_probability": {
+      "label": "Corruption",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duplicate_probability": {
+      "label": "Duplication",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "reordering_probability": {
+      "label": "Reordering",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "required_reliability": {
+      "label": "Required Reliability",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.999,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_offset_ms": {
+      "label": "Clock Offset",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_drift_ppm": {
+      "label": "Clock Drift",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 20,
+      "unit": "ppm",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_precision_ms": {
+      "label": "Sync Precision",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_interval_ms": {
+      "label": "Sync Interval",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1000,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_sync_error_ms": {
+      "label": "Maximum Sync Error",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_delay_ms": {
+      "label": "Gateway Processing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.2,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_queue_delay_ms": {
+      "label": "Gateway Queueing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "protocol_conversion_delay_ms": {
+      "label": "Protocol Conversion",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_maximum_throughput": {
+      "label": "Gateway Throughput",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100000000,
+      "unit": "bit/s",
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_input_buffer": {
+      "label": "Gateway Input Buffer",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 256,
+      "unit": "Frames",
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_output_buffer": {
+      "label": "Gateway Output Buffer",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 256,
+      "unit": "Frames",
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_maximum_routes": {
+      "label": "Gateway Maximum Routes",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 10000,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_maximum_messages_s": {
+      "label": "Gateway Messages per Second",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100000,
+      "unit": "msg/s",
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duration_s": {
+      "label": "Simulation Duration",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 1,
+      "unit": "s",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "seed": {
+      "label": "Random Seed",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 42,
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "max_events": {
+      "label": "Maximum Events",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 100000,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "dropout_probability": {
+      "label": "Failure Injection Dropout",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "pn_wire_profile": {
+      "type": "select",
+      "description": "Actual reviewed PNIO2.4 wire schema or another independently registered edition.",
+      "options": [
+        "PNIO_2_4",
+        "REGISTERED_ACTUAL"
+      ],
+      "integer": false,
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "label": "wire profile",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pn_clock_profile": {
+      "type": "select",
+      "description": "Actual controller clock policy; manufacturer preset must not become universal.",
+      "options": [
+        "PNIO_2_4",
+        "SIMOTION_2023_EVEN",
+        "REGISTERED_ACTUAL"
+      ],
+      "integer": false,
+      "source": "https://cache.industry.siemens.com/dl/files/439/109820439/att_1139619/v1/Communication_Fct_en-US.pdf",
+      "source_revision": "SIMOTION Communication04/2023 A5E33436509B pp46-50/137-139; hardware-qualified clock factors, update periods and1ms manufacturer preset, not universal fastest/default timing.",
+      "label": "clock profile",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pn_implementation": {
+      "type": "select",
+      "description": "Actual firmware/stack with its own supported services.",
+      "options": [
+        "P_NET_PUBLIC_PINNED",
+        "REGISTERED_ACTUAL"
+      ],
+      "integer": false,
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/include/pnet_api.h",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pnet_api.h IOXS/DataStatus and RTC3ready not implemented; explicit selected public-stack behavior.",
+      "label": "implementation",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pn_phy": {
+      "type": "select",
+      "description": "Actual conventional100Mbps PHY versus separately sourced physical realization.",
+      "options": [
+        "100BASE_TX",
+        "100BASE_FX",
+        "REGISTERED_ACTUAL"
+      ],
+      "integer": false,
+      "source": "https://cl.profibus.com/fileadmin/media/downloadsection/technical_description_&_books/PROFINET_System_Description_engl_2018_Update.pdf",
+      "source_revision": "PI System Description November2018 order4.132 pp8-16/23-24; conventional100M/full duplex, IO mapping, RT/IRT capability and optional fast cycles.",
+      "label": "phy",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pn_duplex": {
+      "type": "select",
+      "description": "Actual point-to-point full duplex, no CAN arbitration.",
+      "options": [
+        "FULL"
+      ],
+      "integer": false,
+      "source": "https://cl.profibus.com/fileadmin/media/downloadsection/technical_description_&_books/PROFINET_System_Description_engl_2018_Update.pdf",
+      "source_revision": "PI System Description November2018 order4.132 pp8-16/23-24; conventional100M/full duplex, IO mapping, RT/IRT capability and optional fast cycles.",
+      "label": "duplex",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pn_conformance": {
+      "type": "select",
+      "description": "Actual independently certified functionality class; class D requires own TSN registration.",
+      "options": [
+        "CC_A",
+        "CC_B",
+        "CC_C",
+        "CC_D_REGISTERED"
+      ],
+      "integer": false,
+      "source": "https://cl.profibus.com/fileadmin/media/downloadsection/technical_description_&_books/PROFINET_System_Description_engl_2018_Update.pdf",
+      "source_revision": "PI System Description November2018 order4.132 pp8-16/23-24; conventional100M/full duplex, IO mapping, RT/IRT capability and optional fast cycles.",
+      "label": "conformance",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pn_role": {
+      "type": "select",
+      "description": "Actual IO entity role, independent of industry template.",
+      "options": [
+        "IO_CONTROLLER",
+        "IO_DEVICE",
+        "IO_SUPERVISOR"
+      ],
+      "integer": false,
+      "source": "https://cl.profibus.com/fileadmin/media/downloadsection/technical_description_&_books/PROFINET_System_Description_engl_2018_Update.pdf",
+      "source_revision": "PI System Description November2018 order4.132 pp8-16/23-24; conventional100M/full duplex, IO mapping, RT/IRT capability and optional fast cycles.",
+      "label": "role",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pn_rt_class": {
+      "type": "select",
+      "description": "Actual cyclic IOCR transport class, not a universal runtime implementation.",
+      "options": [
+        "RTC1",
+        "RTC2",
+        "RTC3",
+        "UDP",
+        "STREAM"
+      ],
+      "integer": false,
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "label": "rt class",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pn_startup": {
+      "type": "select",
+      "description": "Actual IOCR startup mode; advanced startup excludes RTC1.",
+      "options": [
+        "LEGACY",
+        "ADVANCED"
+      ],
+      "integer": false,
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "label": "startup",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pn_iocr_type": {
+      "type": "select",
+      "description": "Actual input/output/multicast IO communication relationship.",
+      "options": [
+        "INPUT",
+        "OUTPUT",
+        "MC_PROVIDER",
+        "MC_CONSUMER"
+      ],
+      "integer": false,
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "label": "iocr type",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pn_service": {
+      "type": "select",
+      "description": "Actual cyclic IO versus acyclic record/alarm/DCP/LLDP service.",
+      "options": [
+        "CYCLIC_IO",
+        "RECORD",
+        "ALARM",
+        "DCP",
+        "LLDP"
+      ],
+      "integer": false,
+      "source": "https://cl.profibus.com/fileadmin/media/downloadsection/technical_description_&_books/PROFINET_System_Description_engl_2018_Update.pdf",
+      "source_revision": "PI System Description November2018 order4.132 pp8-16/23-24; conventional100M/full duplex, IO mapping, RT/IRT capability and optional fast cycles.",
+      "label": "service",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pn_state": {
+      "type": "select",
+      "description": "Actual configured AR/application state; valid Ethernet link alone is not running IO.",
+      "options": [
+        "COMMISSIONING",
+        "CONNECTING",
+        "APPLICATION_READY",
+        "DATA_EXCHANGE",
+        "ABORTED"
+      ],
+      "integer": false,
+      "source": "https://cl.profibus.com/fileadmin/media/downloadsection/technical_description_&_books/PROFINET_System_Description_engl_2018_Update.pdf",
+      "source_revision": "PI System Description November2018 order4.132 pp8-16/23-24; conventional100M/full duplex, IO mapping, RT/IRT capability and optional fast cycles.",
+      "label": "state",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pn_offset_kind": {
+      "type": "select",
+      "description": "Actual best-effort UInt32 sentinel versus scheduled nanosecond offset.",
+      "options": [
+        "BEST_EFFORT",
+        "SCHEDULED"
+      ],
+      "integer": false,
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "label": "offset kind",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pn_dcp_service": {
+      "type": "select",
+      "description": "Actual DCP link-layer commissioning service, not cyclic output data.",
+      "options": [
+        "HELLO",
+        "GET_SET",
+        "IDENTIFY_REQUEST",
+        "IDENTIFY_RESPONSE"
+      ],
+      "integer": false,
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/common/pf_dcp.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da DCP service frame identifiers; commissioning is distinct cyclic IO operation.",
+      "label": "dcp service",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pn_outcome": {
+      "type": "select",
+      "description": "Actual correlated functional consumer acceptance.",
+      "options": [
+        "ACCEPTED",
+        "REJECTED",
+        "PENDING",
+        "UNKNOWN"
+      ],
+      "integer": false,
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/include/pnet_api.h",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pnet_api.h IOXS/DataStatus and RTC3ready not implemented; explicit selected public-stack behavior.",
+      "label": "outcome",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pn_device_source": {
+      "type": "text",
+      "description": "Actual firmware/GSDML module/submodule/IOCR lengths and minimum device interval.",
+      "integer": false,
+      "source": "https://cl.profibus.com/fileadmin/media/downloadsection/technical_description_&_books/PROFINET_System_Description_engl_2018_Update.pdf",
+      "source_revision": "PI System Description November2018 order4.132 pp8-16/23-24; conventional100M/full duplex, IO mapping, RT/IRT capability and optional fast cycles.",
+      "label": "device source",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pn_physical_source": {
+      "type": "text",
+      "description": "Actual PHY/cable/ports/link rates/full duplex and bridge behavior.",
+      "integer": false,
+      "source": "https://cl.profibus.com/fileadmin/media/downloadsection/technical_description_&_books/PROFINET_System_Description_engl_2018_Update.pdf",
+      "source_revision": "PI System Description November2018 order4.132 pp8-16/23-24; conventional100M/full duplex, IO mapping, RT/IRT capability and optional fast cycles.",
+      "label": "physical source",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pn_schedule_source": {
+      "type": "text",
+      "description": "Actual per-port competing load/reserved phases/clock synchronization/topology and watchdog.",
+      "integer": false,
+      "source": "https://cache.industry.siemens.com/dl/files/439/109820439/att_1139619/v1/Communication_Fct_en-US.pdf",
+      "source_revision": "SIMOTION Communication04/2023 A5E33436509B pp46-50/137-139; hardware-qualified clock factors, update periods and1ms manufacturer preset, not universal fastest/default timing.",
+      "label": "schedule source",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pn_mapping_source": {
+      "type": "text",
+      "description": "Actual API/slot/subslot/AR ownership and application encoded bytes/status map.",
+      "integer": false,
+      "source": "https://cl.profibus.com/fileadmin/media/downloadsection/technical_description_&_books/PROFINET_System_Description_engl_2018_Update.pdf",
+      "source_revision": "PI System Description November2018 order4.132 pp8-16/23-24; conventional100M/full duplex, IO mapping, RT/IRT capability and optional fast cycles.",
+      "label": "mapping source",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pn_acceptance_source": {
+      "type": "text",
+      "description": "Actual consumer IOXS/DataStatus/counter/freshness/application result.",
+      "integer": false,
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/include/pnet_api.h",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pnet_api.h IOXS/DataStatus and RTC3ready not implemented; explicit selected public-stack behavior.",
+      "label": "acceptance source",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pn_address_source": {
+      "type": "text",
+      "description": "Actual unique station name/MAC and commissioning/IP configuration evidence.",
+      "integer": false,
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmina.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da PNIO2.4 station-name declared grammar; declaration applied rather than copying empty-label/port-prefix parser bugs.",
+      "label": "address source",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pn_registered_source": {
+      "type": "text",
+      "description": "Actual alternate edition/device/physical/clock/TSN profile source and limitations.",
+      "integer": false,
+      "source": "https://cl.profibus.com/fileadmin/media/downloadsection/technical_description_&_books/PROFINET_System_Description_engl_2018_Update.pdf",
+      "source_revision": "PI System Description November2018 order4.132 pp8-16/23-24; conventional100M/full duplex, IO mapping, RT/IRT capability and optional fast cycles.",
+      "label": "registered source",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pn_station_name": {
+      "type": "text",
+      "description": "Actual configured PNIO ASCII station name; empty is commissioning only, labels1..63,total<=240.",
+      "integer": false,
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmina.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da PNIO2.4 station-name declared grammar; declaration applied rather than copying empty-label/port-prefix parser bugs.",
+      "label": "station name",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pn_controller_id": {
+      "type": "text",
+      "description": "Actual owning IO controller identity, not arbitrary allocation.",
+      "integer": false,
+      "source": "https://cl.profibus.com/fileadmin/media/downloadsection/technical_description_&_books/PROFINET_System_Description_engl_2018_Update.pdf",
+      "source_revision": "PI System Description November2018 order4.132 pp8-16/23-24; conventional100M/full duplex, IO mapping, RT/IRT capability and optional fast cycles.",
+      "label": "controller id",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pn_ar_id": {
+      "type": "text",
+      "description": "Actual correlated application relationship UUID/identifier.",
+      "integer": false,
+      "source": "https://cl.profibus.com/fileadmin/media/downloadsection/technical_description_&_books/PROFINET_System_Description_engl_2018_Update.pdf",
+      "source_revision": "PI System Description November2018 order4.132 pp8-16/23-24; conventional100M/full duplex, IO mapping, RT/IRT capability and optional fast cycles.",
+      "label": "ar id",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pn_sync_domain": {
+      "type": "text",
+      "description": "Actual IRT synchronization domain and master, not arbitrary default.",
+      "integer": false,
+      "source": "https://cache.industry.siemens.com/dl/files/439/109820439/att_1139619/v1/Communication_Fct_en-US.pdf",
+      "source_revision": "SIMOTION Communication04/2023 A5E33436509B pp46-50/137-139; hardware-qualified clock factors, update periods and1ms manufacturer preset, not universal fastest/default timing.",
+      "label": "sync domain",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pn_irt_source": {
+      "type": "text",
+      "description": "Actual IRT hardware/topology/phase/sync plan and supported fastest cycle.",
+      "integer": false,
+      "source": "https://cache.industry.siemens.com/dl/files/439/109820439/att_1139619/v1/Communication_Fct_en-US.pdf",
+      "source_revision": "SIMOTION Communication04/2023 A5E33436509B pp46-50/137-139; hardware-qualified clock factors, update periods and1ms manufacturer preset, not universal fastest/default timing.",
+      "label": "irt source",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pn_optional_source": {
+      "type": "text",
+      "description": "Actual DFP/MRP/MRPD/fast-cycle/shared-device capability and selected configuration.",
+      "integer": false,
+      "source": "https://cl.profibus.com/fileadmin/media/downloadsection/technical_description_&_books/PROFINET_System_Description_engl_2018_Update.pdf",
+      "source_revision": "PI System Description November2018 order4.132 pp8-16/23-24; conventional100M/full duplex, IO mapping, RT/IRT capability and optional fast cycles.",
+      "label": "optional source",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pn_ethertype": {
+      "type": "number",
+      "description": "Actual L2 PN0x8892 or UDP IPv4 EtherType0x0800.",
+      "min": 0,
+      "max": 65535,
+      "integer": true,
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "label": "ethertype",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pn_vlan_id": {
+      "type": "number",
+      "description": "Reviewed IOCR priority tag VID0; generic VLAN1 must not leak into native wire schema.",
+      "min": 0,
+      "max": 4095,
+      "integer": true,
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "label": "vlan id",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "pn_wire_profile": "PNIO_2_4"
+          },
+          "value": 0,
+          "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+          "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime."
+        }
+      ]
+    },
+    "pn_priority": {
+      "type": "number",
+      "description": "Reviewed cyclic IOCR IEEE802.1Q priority6.",
+      "min": 0,
+      "max": 7,
+      "integer": true,
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "label": "priority",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "pn_wire_profile": "PNIO_2_4"
+          },
+          "value": 6,
+          "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+          "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime."
+        }
+      ]
+    },
+    "pn_frame_id": {
+      "type": "number",
+      "description": "Actual16-bit FrameID service/type/class range; output range not inferred from input checker.",
+      "min": 0,
+      "max": 65535,
+      "integer": true,
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "label": "frame id",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pn_api_count": {
+      "type": "number",
+      "description": "Actual configured application process identifiers in IOCR.",
+      "min": 1,
+      "max": 65535,
+      "integer": true,
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "label": "api count",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pn_api_id": {
+      "type": "number",
+      "description": "Actual32-bit application process identifier;0 is a legitimate API.",
+      "min": 0,
+      "max": 4294967295,
+      "integer": true,
+      "source": "https://cl.profibus.com/fileadmin/media/downloadsection/technical_description_&_books/PROFINET_System_Description_engl_2018_Update.pdf",
+      "source_revision": "PI System Description November2018 order4.132 pp8-16/23-24; conventional100M/full duplex, IO mapping, RT/IRT capability and optional fast cycles.",
+      "label": "api id",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pn_slot": {
+      "type": "number",
+      "description": "Actual16-bit module slot, not a physical port index.",
+      "min": 0,
+      "max": 65535,
+      "integer": true,
+      "source": "https://cl.profibus.com/fileadmin/media/downloadsection/technical_description_&_books/PROFINET_System_Description_engl_2018_Update.pdf",
+      "source_revision": "PI System Description November2018 order4.132 pp8-16/23-24; conventional100M/full duplex, IO mapping, RT/IRT capability and optional fast cycles.",
+      "label": "slot",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pn_subslot": {
+      "type": "number",
+      "description": "Actual16-bit submodule slot within module.",
+      "min": 0,
+      "max": 65535,
+      "integer": true,
+      "source": "https://cl.profibus.com/fileadmin/media/downloadsection/technical_description_&_books/PROFINET_System_Description_engl_2018_Update.pdf",
+      "source_revision": "PI System Description November2018 order4.132 pp8-16/23-24; conventional100M/full duplex, IO mapping, RT/IRT capability and optional fast cycles.",
+      "label": "subslot",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pn_csdu_bytes": {
+      "type": "number",
+      "description": "Actual cyclic service data unit includes IO data,IOPS,IOCS and padding; excludes FrameID/APDU.",
+      "min": 12,
+      "max": 1440,
+      "unit": "byte",
+      "integer": true,
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "label": "csdu bytes",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pn_io_data_bytes": {
+      "type": "number",
+      "description": "Actual aggregate cyclic data encoded bytes, not whole application message size.",
+      "min": 0,
+      "max": 1440,
+      "unit": "byte",
+      "integer": true,
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/common/pf_ppm.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da PPM frame allocation/layout and cycle-counter helpers; NIC buffer excludes FCS, not whole physical frame.",
+      "label": "io data bytes",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pn_iops_bytes": {
+      "type": "number",
+      "description": "Actual provider-status bytes in mapped CSDU.",
+      "min": 0,
+      "max": 1440,
+      "unit": "byte",
+      "integer": true,
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/common/pf_ppm.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da PPM frame allocation/layout and cycle-counter helpers; NIC buffer excludes FCS, not whole physical frame.",
+      "label": "iops bytes",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pn_iocs_bytes": {
+      "type": "number",
+      "description": "Actual consumer-status bytes in mapped CSDU.",
+      "min": 0,
+      "max": 1440,
+      "unit": "byte",
+      "integer": true,
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/common/pf_ppm.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da PPM frame allocation/layout and cycle-counter helpers; NIC buffer excludes FCS, not whole physical frame.",
+      "label": "iocs bytes",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pn_padding_bytes": {
+      "type": "number",
+      "description": "Actual cyclic CSDU padding distinct useful data.",
+      "min": 0,
+      "max": 1440,
+      "unit": "byte",
+      "integer": true,
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/common/pf_ppm.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da PPM frame allocation/layout and cycle-counter helpers; NIC buffer excludes FCS, not whole physical frame.",
+      "label": "padding bytes",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pn_buffer_bytes": {
+      "type": "number",
+      "description": "Actual NIC buffer; tagged L2=24+CSDU without FCS; UDP needs own registered overhead.",
+      "min": 0,
+      "unit": "byte",
+      "integer": true,
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/common/pf_ppm.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da PPM frame allocation/layout and cycle-counter helpers; NIC buffer excludes FCS, not whole physical frame.",
+      "label": "buffer bytes",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pn_mac_bytes": {
+      "type": "number",
+      "description": "Actual full MAC frame inclFCS; tagged L2=28+CSDU; preamble/IFG separate.",
+      "min": 0,
+      "unit": "byte",
+      "integer": true,
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/common/pf_ppm.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da PPM frame allocation/layout and cycle-counter helpers; NIC buffer excludes FCS, not whole physical frame.",
+      "label": "mac bytes",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pn_mac_bits": {
+      "type": "number",
+      "description": "Actual MAC bytes times8, not CAN bit stuffing or UART11bit; UDP overhead separate.",
+      "min": 0,
+      "unit": "bit",
+      "integer": true,
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/common/pf_ppm.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da PPM frame allocation/layout and cycle-counter helpers; NIC buffer excludes FCS, not whole physical frame.",
+      "label": "mac bits",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pn_send_clock_factor": {
+      "type": "number",
+      "description": "Actual basic send clock in31.25us units; supported sets depend on source/device.",
+      "min": 1,
+      "max": 128,
+      "integer": true,
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "label": "send clock factor",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "pn_clock_profile": "SIMOTION_2023_EVEN"
+          },
+          "value": 32,
+          "source": "https://cache.industry.siemens.com/dl/files/439/109820439/att_1139619/v1/Communication_Fct_en-US.pdf",
+          "source_revision": "SIMOTION Communication04/2023 A5E33436509B pp46-50/137-139; hardware-qualified clock factors, update periods and1ms manufacturer preset, not universal fastest/default timing."
+        }
+      ]
+    },
+    "pn_reduction_ratio": {
+      "type": "number",
+      "description": "Actual update interval/send-clock ratio; UDP wire bound differs native L2.",
+      "min": 1,
+      "max": 16384,
+      "integer": true,
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "label": "reduction ratio",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pn_phase": {
+      "type": "number",
+      "description": "Actual cyclic phase1..reduction ratio.",
+      "min": 1,
+      "max": 16384,
+      "integer": true,
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "label": "phase",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pn_min_device_interval": {
+      "type": "number",
+      "description": "Actual GSDML MinDeviceInterval in31.25us units, not invented fastest1.",
+      "min": 1,
+      "max": 65535,
+      "integer": true,
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "label": "min device interval",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pn_data_hold_factor": {
+      "type": "number",
+      "description": "Actual number of update intervals before data-hold expiration, protocol max7680.",
+      "min": 1,
+      "max": 7680,
+      "integer": true,
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "label": "data hold factor",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pn_frame_send_offset_ns": {
+      "type": "number",
+      "description": "Actual UInt32 scheduled offset or FFFFFFFF best-effort sentinel; not an application latency.",
+      "min": 0,
+      "max": 4294967295,
+      "unit": "ns",
+      "integer": true,
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "label": "frame send offset ns",
+      "category": "timing",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pn_cycle_counter": {
+      "type": "number",
+      "description": "Actual APDU16-bit31.25us background counter, not packet number.",
+      "min": 0,
+      "max": 65535,
+      "integer": true,
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/common/pf_ppm.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da PPM frame allocation/layout and cycle-counter helpers; NIC buffer excludes FCS, not whole physical frame.",
+      "label": "cycle counter",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pn_previous_counter": {
+      "type": "number",
+      "description": "Actual preceding counter for selected normalization/increment formula.",
+      "min": 0,
+      "max": 65535,
+      "integer": true,
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/common/pf_ppm.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da PPM frame allocation/layout and cycle-counter helpers; NIC buffer excludes FCS, not whole physical frame.",
+      "label": "previous counter",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pn_next_counter": {
+      "type": "number",
+      "description": "Actual normalized next counter modulo65536, distinct monitor deadline.",
+      "min": 0,
+      "max": 65535,
+      "integer": true,
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/common/pf_ppm.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da PPM frame allocation/layout and cycle-counter helpers; NIC buffer excludes FCS, not whole physical frame.",
+      "label": "next counter",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pn_data_status": {
+      "type": "number",
+      "description": "Actual APDU DataStatus octet; bits/acceptance depend on actual consumer.",
+      "min": 0,
+      "max": 255,
+      "integer": true,
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/include/pnet_api.h",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pnet_api.h IOXS/DataStatus and RTC3ready not implemented; explicit selected public-stack behavior.",
+      "label": "data status",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pn_transfer_status": {
+      "type": "number",
+      "description": "Actual APDU transfer status; selected public PPM emits0.",
+      "min": 0,
+      "max": 255,
+      "integer": true,
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/common/pf_ppm.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da PPM frame allocation/layout and cycle-counter helpers; NIC buffer excludes FCS, not whole physical frame.",
+      "label": "transfer status",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "pn_implementation": "P_NET_PUBLIC_PINNED"
+          },
+          "value": 0,
+          "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/common/pf_ppm.c",
+          "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da PPM frame allocation/layout and cycle-counter helpers; NIC buffer excludes FCS, not whole physical frame."
+        }
+      ]
+    },
+    "pn_iops": {
+      "type": "number",
+      "description": "Actual selected public-stack IOXS BAD0/GOOD128, not arbitrary PA quality range.",
+      "min": 0,
+      "max": 255,
+      "integer": true,
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/include/pnet_api.h",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pnet_api.h IOXS/DataStatus and RTC3ready not implemented; explicit selected public-stack behavior.",
+      "label": "iops",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pn_iocs": {
+      "type": "number",
+      "description": "Actual selected public-stack consumer IOXS BAD0/GOOD128.",
+      "min": 0,
+      "max": 255,
+      "integer": true,
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/include/pnet_api.h",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pnet_api.h IOXS/DataStatus and RTC3ready not implemented; explicit selected public-stack behavior.",
+      "label": "iocs",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pn_send_clock_us": {
+      "type": "number",
+      "description": "Actual basic clock=factor*31.25us, not device application update period.",
+      "min": 31.25,
+      "max": 4000,
+      "unit": "us",
+      "integer": false,
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "label": "send clock us",
+      "category": "timing",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "pn_clock_profile": "SIMOTION_2023_EVEN"
+          },
+          "value": 1000,
+          "source": "https://cache.industry.siemens.com/dl/files/439/109820439/att_1139619/v1/Communication_Fct_en-US.pdf",
+          "source_revision": "SIMOTION Communication04/2023 A5E33436509B pp46-50/137-139; hardware-qualified clock factors, update periods and1ms manufacturer preset, not universal fastest/default timing."
+        }
+      ]
+    },
+    "pn_update_us": {
+      "type": "number",
+      "description": "Actual cyclic interval=send clock*reduction ratio; device and source bounds apply.",
+      "min": 31.25,
+      "max": 65536000,
+      "unit": "us",
+      "integer": false,
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "label": "update us",
+      "category": "timing",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pn_data_hold_us": {
+      "type": "number",
+      "description": "Actual communication supervision interval=update*data hold factor, not functional deadline.",
+      "min": 31.25,
+      "max": 61440000,
+      "unit": "us",
+      "integer": false,
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "label": "data hold us",
+      "category": "timing",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pn_red_phase_us": {
+      "type": "number",
+      "description": "Actual reserved IRT phase duration, not generic reserved bandwidth percentage.",
+      "min": 0,
+      "max": 4000,
+      "unit": "us",
+      "integer": false,
+      "source": "https://cache.industry.siemens.com/dl/files/439/109820439/att_1139619/v1/Communication_Fct_en-US.pdf",
+      "source_revision": "SIMOTION Communication04/2023 A5E33436509B pp46-50/137-139; hardware-qualified clock factors, update periods and1ms manufacturer preset, not universal fastest/default timing.",
+      "label": "red phase us",
+      "category": "timing",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pn_open_phase_us": {
+      "type": "number",
+      "description": "Actual remaining RT/IP phase of IRT cycle.",
+      "min": 0,
+      "max": 4000,
+      "unit": "us",
+      "integer": false,
+      "source": "https://cache.industry.siemens.com/dl/files/439/109820439/att_1139619/v1/Communication_Fct_en-US.pdf",
+      "source_revision": "SIMOTION Communication04/2023 A5E33436509B pp46-50/137-139; hardware-qualified clock factors, update periods and1ms manufacturer preset, not universal fastest/default timing.",
+      "label": "open phase us",
+      "category": "timing",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pn_serialization_us": {
+      "type": "number",
+      "description": "Actual full MAC frame serialization only; competing traffic/sync/queues/IFG separate.",
+      "min": 0,
+      "unit": "us",
+      "integer": false,
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/common/pf_ppm.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da PPM frame allocation/layout and cycle-counter helpers; NIC buffer excludes FCS, not whole physical frame.",
+      "label": "serialization us",
+      "category": "timing",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pn_age_us": {
+      "type": "number",
+      "description": "Actual correlated application sample age.",
+      "min": 0,
+      "unit": "us",
+      "integer": false,
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/include/pnet_api.h",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pnet_api.h IOXS/DataStatus and RTC3ready not implemented; explicit selected public-stack behavior.",
+      "label": "age us",
+      "category": "timing",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pn_freshness_us": {
+      "type": "number",
+      "description": "Actual application functional freshness limit, not borrowed CAN500ms watchdog.",
+      "min": 0,
+      "unit": "us",
+      "integer": false,
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/include/pnet_api.h",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pnet_api.h IOXS/DataStatus and RTC3ready not implemented; explicit selected public-stack behavior.",
+      "label": "freshness us",
+      "category": "timing",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pn_record_timeout_ms": {
+      "type": "number",
+      "description": "Actual device/stack acyclic RPC timeout, not cyclic data hold.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "source": "https://cl.profibus.com/fileadmin/media/downloadsection/technical_description_&_books/PROFINET_System_Description_engl_2018_Update.pdf",
+      "source_revision": "PI System Description November2018 order4.132 pp8-16/23-24; conventional100M/full duplex, IO mapping, RT/IRT capability and optional fast cycles.",
+      "label": "record timeout ms",
+      "category": "timing",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pn_alarm_timeout_ms": {
+      "type": "number",
+      "description": "Actual selected alarm relationship supervision, distinct cyclic update.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "source": "https://cl.profibus.com/fileadmin/media/downloadsection/technical_description_&_books/PROFINET_System_Description_engl_2018_Update.pdf",
+      "source_revision": "PI System Description November2018 order4.132 pp8-16/23-24; conventional100M/full duplex, IO mapping, RT/IRT capability and optional fast cycles.",
+      "label": "alarm timeout ms",
+      "category": "timing",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pn_frame_valid": {
+      "type": "boolean",
+      "description": "Actual address/type/length/APDU/FCS checks passed; source-filled fields do not prove reception.",
+      "integer": false,
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/common/pf_ppm.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da PPM frame allocation/layout and cycle-counter helpers; NIC buffer excludes FCS, not whole physical frame.",
+      "label": "frame valid",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pn_mapping_valid": {
+      "type": "boolean",
+      "description": "Actual GSDML/modules/status layout and AR ownership verified.",
+      "integer": false,
+      "source": "https://cl.profibus.com/fileadmin/media/downloadsection/technical_description_&_books/PROFINET_System_Description_engl_2018_Update.pdf",
+      "source_revision": "PI System Description November2018 order4.132 pp8-16/23-24; conventional100M/full duplex, IO mapping, RT/IRT capability and optional fast cycles.",
+      "label": "mapping valid",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pn_data_accepted": {
+      "type": "boolean",
+      "description": "Actual functional consumer acceptance, not link-up or watchdog settings.",
+      "integer": false,
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/include/pnet_api.h",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pnet_api.h IOXS/DataStatus and RTC3ready not implemented; explicit selected public-stack behavior.",
+      "label": "data accepted",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pn_lldp_local_only": {
+      "type": "boolean",
+      "description": "Actual LLDP link-local nonforwarding policy on bridges.",
+      "integer": false,
+      "source": "https://cl.profibus.com/fileadmin/media/downloadsection/technical_description_&_books/PROFINET_System_Description_engl_2018_Update.pdf",
+      "source_revision": "PI System Description November2018 order4.132 pp8-16/23-24; conventional100M/full duplex, IO mapping, RT/IRT capability and optional fast cycles.",
+      "label": "lldp local only",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pn_irt_hardware": {
+      "type": "boolean",
+      "description": "Actual IRT-capable devices and switches, not inferred from RTC3 enum.",
+      "integer": false,
+      "source": "https://cache.industry.siemens.com/dl/files/439/109820439/att_1139619/v1/Communication_Fct_en-US.pdf",
+      "source_revision": "SIMOTION Communication04/2023 A5E33436509B pp46-50/137-139; hardware-qualified clock factors, update periods and1ms manufacturer preset, not universal fastest/default timing.",
+      "label": "irt hardware",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pn_sync_verified": {
+      "type": "boolean",
+      "description": "Actual synchronized IRT domain evidence.",
+      "integer": false,
+      "source": "https://cache.industry.siemens.com/dl/files/439/109820439/att_1139619/v1/Communication_Fct_en-US.pdf",
+      "source_revision": "SIMOTION Communication04/2023 A5E33436509B pp46-50/137-139; hardware-qualified clock factors, update periods and1ms manufacturer preset, not universal fastest/default timing.",
+      "label": "sync verified",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pn_topology_verified": {
+      "type": "boolean",
+      "description": "Actual per-port IRT topology and planned timing verified.",
+      "integer": false,
+      "source": "https://cache.industry.siemens.com/dl/files/439/109820439/att_1139619/v1/Communication_Fct_en-US.pdf",
+      "source_revision": "SIMOTION Communication04/2023 A5E33436509B pp46-50/137-139; hardware-qualified clock factors, update periods and1ms manufacturer preset, not universal fastest/default timing.",
+      "label": "topology verified",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pn_fast_cycle_capable": {
+      "type": "boolean",
+      "description": "Actual optional31.25us fast-cycle support, not every CCCdevice.",
+      "integer": false,
+      "source": "https://cl.profibus.com/fileadmin/media/downloadsection/technical_description_&_books/PROFINET_System_Description_engl_2018_Update.pdf",
+      "source_revision": "PI System Description November2018 order4.132 pp8-16/23-24; conventional100M/full duplex, IO mapping, RT/IRT capability and optional fast cycles.",
+      "label": "fast cycle capable",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pn_dfp_enabled": {
+      "type": "boolean",
+      "description": "Actual optional dynamic frame packing, not automatically enabled.",
+      "integer": false,
+      "source": "https://cl.profibus.com/fileadmin/media/downloadsection/technical_description_&_books/PROFINET_System_Description_engl_2018_Update.pdf",
+      "source_revision": "PI System Description November2018 order4.132 pp8-16/23-24; conventional100M/full duplex, IO mapping, RT/IRT capability and optional fast cycles.",
+      "label": "dfp enabled",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pn_mrp_enabled": {
+      "type": "boolean",
+      "description": "Actual optional media redundancy configuration.",
+      "integer": false,
+      "source": "https://cl.profibus.com/fileadmin/media/downloadsection/technical_description_&_books/PROFINET_System_Description_engl_2018_Update.pdf",
+      "source_revision": "PI System Description November2018 order4.132 pp8-16/23-24; conventional100M/full duplex, IO mapping, RT/IRT capability and optional fast cycles.",
+      "label": "mrp enabled",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pn_shared_device": {
+      "type": "boolean",
+      "description": "Actual submodule-specific ownership by different ARs/controllers.",
+      "integer": false,
+      "source": "https://cl.profibus.com/fileadmin/media/downloadsection/technical_description_&_books/PROFINET_System_Description_engl_2018_Update.pdf",
+      "source_revision": "PI System Description November2018 order4.132 pp8-16/23-24; conventional100M/full duplex, IO mapping, RT/IRT capability and optional fast cycles.",
+      "label": "shared device",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    }
+  },
+  "mechanisms": {
+    "framing": [
+      "CSDU_IO_DATA_IOPS_IOCS_APDU_NOT_APPLICATION_MTU"
+    ],
+    "integrity": [
+      "ETHERNET_FCS"
+    ],
+    "discovery": [
+      "PROFINET_DCP"
+    ],
+    "addressing": [
+      "MAC_ADDRESS",
+      "STATION_NAME",
+      "IP_ADDRESS_FOR_EXPLICIT_IP_SERVICES"
+    ],
+    "qualification": [
+      "SOURCE_QUALIFIED_CLOCK_FACTORS",
+      "PUBLIC_CODEC_NOT_FULL_RUNTIME",
+      "IOXS_AND_APPLICATION_ACCEPTANCE_SEPARATE"
+    ]
+  },
+  "parameter_constraints": [
+    {
+      "parameter": "pn_wire_profile",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "required": true
+    },
+    {
+      "parameter": "pn_clock_profile",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "required": true
+    },
+    {
+      "parameter": "pn_implementation",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "required": true
+    },
+    {
+      "parameter": "pn_phy",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "required": true
+    },
+    {
+      "parameter": "pn_duplex",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "required": true
+    },
+    {
+      "parameter": "pn_role",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "required": true
+    },
+    {
+      "parameter": "pn_service",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "required": true
+    },
+    {
+      "parameter": "pn_device_source",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "required": true
+    },
+    {
+      "parameter": "pn_physical_source",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "required": true
+    },
+    {
+      "parameter": "pn_schedule_source",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "required": true
+    },
+    {
+      "parameter": "pn_mapping_source",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "required": true
+    },
+    {
+      "parameter": "pn_acceptance_source",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "required": true
+    },
+    {
+      "parameter": "pn_address_source",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "required": true
+    },
+    {
+      "parameter": "pn_rt_class",
+      "when": {
+        "pn_service": "CYCLIC_IO"
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "required": true
+    },
+    {
+      "parameter": "pn_startup",
+      "when": {
+        "pn_service": "CYCLIC_IO"
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "required": true
+    },
+    {
+      "parameter": "pn_iocr_type",
+      "when": {
+        "pn_service": "CYCLIC_IO"
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "required": true
+    },
+    {
+      "parameter": "local_timing_evidence",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "allowed": []
+    },
+    {
+      "parameter": "pn_registered_source",
+      "when": {
+        "pn_wire_profile": "REGISTERED_ACTUAL"
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "required": true
+    },
+    {
+      "parameter": "pn_registered_source",
+      "when": {
+        "pn_clock_profile": "REGISTERED_ACTUAL"
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "required": true
+    },
+    {
+      "parameter": "pn_registered_source",
+      "when": {
+        "pn_implementation": "REGISTERED_ACTUAL"
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "required": true
+    },
+    {
+      "parameter": "pn_registered_source",
+      "when": {
+        "pn_phy": "REGISTERED_ACTUAL"
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "required": true
+    },
+    {
+      "parameter": "pn_registered_source",
+      "when": {
+        "pn_conformance": "CC_D_REGISTERED"
+      },
+      "source": "https://cl.profibus.com/fileadmin/media/downloadsection/technical_description_&_books/PROFINET_System_Description_engl_2018_Update.pdf",
+      "source_revision": "PI System Description November2018 order4.132 pp8-16/23-24; conventional100M/full duplex, IO mapping, RT/IRT capability and optional fast cycles.",
+      "required": true
+    },
+    {
+      "parameter": "bitrate_bps",
+      "when": {
+        "pn_phy": "100BASE_TX"
+      },
+      "source": "https://cl.profibus.com/fileadmin/media/downloadsection/technical_description_&_books/PROFINET_System_Description_engl_2018_Update.pdf",
+      "source_revision": "PI System Description November2018 order4.132 pp8-16/23-24; conventional100M/full duplex, IO mapping, RT/IRT capability and optional fast cycles.",
+      "allowed": [
+        100000000
+      ]
+    },
+    {
+      "parameter": "bitrate_bps",
+      "when": {
+        "pn_phy": "100BASE_FX"
+      },
+      "source": "https://cl.profibus.com/fileadmin/media/downloadsection/technical_description_&_books/PROFINET_System_Description_engl_2018_Update.pdf",
+      "source_revision": "PI System Description November2018 order4.132 pp8-16/23-24; conventional100M/full duplex, IO mapping, RT/IRT capability and optional fast cycles.",
+      "allowed": [
+        100000000
+      ]
+    },
+    {
+      "parameter": "pn_rt_class",
+      "when": {
+        "pn_startup": "ADVANCED"
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "allowed": [
+        "RTC2",
+        "RTC3",
+        "UDP",
+        "STREAM"
+      ]
+    },
+    {
+      "parameter": "pn_ethertype",
+      "when": {
+        "pn_wire_profile": "PNIO_2_4",
+        "pn_rt_class": "RTC1"
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "allowed": [
+        34962
+      ]
+    },
+    {
+      "parameter": "pn_csdu_bytes",
+      "when": {
+        "pn_wire_profile": "PNIO_2_4",
+        "pn_rt_class": "RTC1"
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "minimum": 40
+    },
+    {
+      "parameter": "pn_reduction_ratio",
+      "when": {
+        "pn_wire_profile": "PNIO_2_4",
+        "pn_rt_class": "RTC1"
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "maximum": 512
+    },
+    {
+      "parameter": "pn_data_hold_us",
+      "when": {
+        "pn_wire_profile": "PNIO_2_4",
+        "pn_rt_class": "RTC1"
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "maximum": 1920000
+    },
+    {
+      "parameter": "pn_data_hold_factor",
+      "when": {
+        "pn_wire_profile": "PNIO_2_4",
+        "pn_rt_class": "RTC1"
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "bounded_product_parameters": [
+        {
+          "parameter": "pn_send_clock_factor"
+        },
+        {
+          "parameter": "pn_reduction_ratio"
+        },
+        {
+          "parameter": "pn_data_hold_factor"
+        }
+      ],
+      "maximum_product": 61440
+    },
+    {
+      "parameter": "pn_ethertype",
+      "when": {
+        "pn_wire_profile": "PNIO_2_4",
+        "pn_rt_class": "RTC2"
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "allowed": [
+        34962
+      ]
+    },
+    {
+      "parameter": "pn_csdu_bytes",
+      "when": {
+        "pn_wire_profile": "PNIO_2_4",
+        "pn_rt_class": "RTC2"
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "minimum": 40
+    },
+    {
+      "parameter": "pn_reduction_ratio",
+      "when": {
+        "pn_wire_profile": "PNIO_2_4",
+        "pn_rt_class": "RTC2"
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "maximum": 512
+    },
+    {
+      "parameter": "pn_data_hold_us",
+      "when": {
+        "pn_wire_profile": "PNIO_2_4",
+        "pn_rt_class": "RTC2"
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "maximum": 1920000
+    },
+    {
+      "parameter": "pn_data_hold_factor",
+      "when": {
+        "pn_wire_profile": "PNIO_2_4",
+        "pn_rt_class": "RTC2"
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "bounded_product_parameters": [
+        {
+          "parameter": "pn_send_clock_factor"
+        },
+        {
+          "parameter": "pn_reduction_ratio"
+        },
+        {
+          "parameter": "pn_data_hold_factor"
+        }
+      ],
+      "maximum_product": 61440
+    },
+    {
+      "parameter": "pn_ethertype",
+      "when": {
+        "pn_wire_profile": "PNIO_2_4",
+        "pn_rt_class": "RTC3"
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "allowed": [
+        34962
+      ]
+    },
+    {
+      "parameter": "pn_csdu_bytes",
+      "when": {
+        "pn_wire_profile": "PNIO_2_4",
+        "pn_rt_class": "RTC3"
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "minimum": 40
+    },
+    {
+      "parameter": "pn_reduction_ratio",
+      "when": {
+        "pn_wire_profile": "PNIO_2_4",
+        "pn_rt_class": "RTC3"
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "maximum": 512
+    },
+    {
+      "parameter": "pn_data_hold_us",
+      "when": {
+        "pn_wire_profile": "PNIO_2_4",
+        "pn_rt_class": "RTC3"
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "maximum": 1920000
+    },
+    {
+      "parameter": "pn_data_hold_factor",
+      "when": {
+        "pn_wire_profile": "PNIO_2_4",
+        "pn_rt_class": "RTC3"
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "bounded_product_parameters": [
+        {
+          "parameter": "pn_send_clock_factor"
+        },
+        {
+          "parameter": "pn_reduction_ratio"
+        },
+        {
+          "parameter": "pn_data_hold_factor"
+        }
+      ],
+      "maximum_product": 61440
+    },
+    {
+      "parameter": "pn_ethertype",
+      "when": {
+        "pn_wire_profile": "PNIO_2_4",
+        "pn_rt_class": "STREAM"
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "allowed": [
+        34962
+      ]
+    },
+    {
+      "parameter": "pn_csdu_bytes",
+      "when": {
+        "pn_wire_profile": "PNIO_2_4",
+        "pn_rt_class": "STREAM"
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "minimum": 40
+    },
+    {
+      "parameter": "pn_registered_source",
+      "when": {
+        "pn_rt_class": "STREAM"
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "required": true
+    },
+    {
+      "parameter": "pn_ethertype",
+      "when": {
+        "pn_wire_profile": "PNIO_2_4",
+        "pn_rt_class": "UDP"
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "allowed": [
+        2048
+      ]
+    },
+    {
+      "parameter": "pn_data_hold_us",
+      "when": {
+        "pn_wire_profile": "PNIO_2_4",
+        "pn_rt_class": "UDP"
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "maximum": 61440000
+    },
+    {
+      "parameter": "pn_data_hold_factor",
+      "when": {
+        "pn_wire_profile": "PNIO_2_4",
+        "pn_rt_class": "UDP"
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "bounded_product_parameters": [
+        {
+          "parameter": "pn_send_clock_factor"
+        },
+        {
+          "parameter": "pn_reduction_ratio"
+        },
+        {
+          "parameter": "pn_data_hold_factor"
+        }
+      ],
+      "maximum_product": 1966080
+    },
+    {
+      "parameter": "pn_vlan_id",
+      "when": {
+        "pn_wire_profile": "PNIO_2_4"
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "pn_priority",
+      "when": {
+        "pn_wire_profile": "PNIO_2_4"
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "allowed": [
+        6
+      ]
+    },
+    {
+      "parameter": "pn_transfer_status",
+      "when": {
+        "pn_implementation": "P_NET_PUBLIC_PINNED"
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/common/pf_ppm.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da PPM frame allocation/layout and cycle-counter helpers; NIC buffer excludes FCS, not whole physical frame.",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "pn_iops",
+      "when": {
+        "pn_implementation": "P_NET_PUBLIC_PINNED"
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/include/pnet_api.h",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pnet_api.h IOXS/DataStatus and RTC3ready not implemented; explicit selected public-stack behavior.",
+      "allowed": [
+        0,
+        128
+      ]
+    },
+    {
+      "parameter": "pn_iocs",
+      "when": {
+        "pn_implementation": "P_NET_PUBLIC_PINNED"
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/include/pnet_api.h",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pnet_api.h IOXS/DataStatus and RTC3ready not implemented; explicit selected public-stack behavior.",
+      "allowed": [
+        0,
+        128
+      ]
+    },
+    {
+      "parameter": "pn_rt_class",
+      "when": {
+        "pn_implementation": "P_NET_PUBLIC_PINNED"
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/include/pnet_api.h",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pnet_api.h IOXS/DataStatus and RTC3ready not implemented; explicit selected public-stack behavior.",
+      "allowed": [
+        "RTC1",
+        "UDP"
+      ]
+    },
+    {
+      "parameter": "pn_send_clock_factor",
+      "when": {
+        "pn_clock_profile": "PNIO_2_4"
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "allowed": [
+        1,
+        2,
+        4,
+        8,
+        16,
+        32,
+        64,
+        128
+      ]
+    },
+    {
+      "parameter": "pn_send_clock_factor",
+      "when": {
+        "pn_clock_profile": "SIMOTION_2023_EVEN"
+      },
+      "source": "https://cache.industry.siemens.com/dl/files/439/109820439/att_1139619/v1/Communication_Fct_en-US.pdf",
+      "source_revision": "SIMOTION Communication04/2023 A5E33436509B pp46-50/137-139; hardware-qualified clock factors, update periods and1ms manufacturer preset, not universal fastest/default timing.",
+      "allowed": [
+        8,
+        16,
+        32,
+        64,
+        128
+      ]
+    },
+    {
+      "parameter": "pn_reduction_ratio",
+      "when": {
+        "pn_clock_profile": "SIMOTION_2023_EVEN"
+      },
+      "source": "https://cache.industry.siemens.com/dl/files/439/109820439/att_1139619/v1/Communication_Fct_en-US.pdf",
+      "source_revision": "SIMOTION Communication04/2023 A5E33436509B pp46-50/137-139; hardware-qualified clock factors, update periods and1ms manufacturer preset, not universal fastest/default timing.",
+      "allowed": [
+        1,
+        2,
+        4,
+        8,
+        16,
+        32,
+        64,
+        128,
+        256,
+        512
+      ]
+    },
+    {
+      "parameter": "pn_reduction_ratio",
+      "when": {
+        "pn_clock_profile": "SIMOTION_2023_EVEN",
+        "pn_send_clock_factor": 64
+      },
+      "source": "https://cache.industry.siemens.com/dl/files/439/109820439/att_1139619/v1/Communication_Fct_en-US.pdf",
+      "source_revision": "SIMOTION Communication04/2023 A5E33436509B pp46-50/137-139; hardware-qualified clock factors, update periods and1ms manufacturer preset, not universal fastest/default timing.",
+      "maximum": 256
+    },
+    {
+      "parameter": "pn_reduction_ratio",
+      "when": {
+        "pn_clock_profile": "SIMOTION_2023_EVEN",
+        "pn_send_clock_factor": 128
+      },
+      "source": "https://cache.industry.siemens.com/dl/files/439/109820439/att_1139619/v1/Communication_Fct_en-US.pdf",
+      "source_revision": "SIMOTION Communication04/2023 A5E33436509B pp46-50/137-139; hardware-qualified clock factors, update periods and1ms manufacturer preset, not universal fastest/default timing.",
+      "maximum": 128
+    },
+    {
+      "parameter": "pn_send_clock_us",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "equal_expression": {
+        "product": [
+          "pn_send_clock_factor",
+          31.25
+        ]
+      }
+    },
+    {
+      "parameter": "pn_update_us",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "equal_expression": {
+        "product": [
+          "pn_send_clock_factor",
+          "pn_reduction_ratio",
+          31.25
+        ]
+      }
+    },
+    {
+      "parameter": "pn_data_hold_us",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "equal_expression": {
+        "product": [
+          "pn_send_clock_factor",
+          "pn_reduction_ratio",
+          "pn_data_hold_factor",
+          31.25
+        ]
+      }
+    },
+    {
+      "parameter": "pn_send_clock_factor",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "when_present": [
+        "pn_data_hold_factor"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "pn_reduction_ratio",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "when_present": [
+        "pn_data_hold_factor"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "pn_phase",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "maximum_parameter": "pn_reduction_ratio"
+    },
+    {
+      "parameter": "pn_min_device_interval",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "maximum_expression": {
+        "product": [
+          "pn_send_clock_factor",
+          "pn_reduction_ratio"
+        ]
+      }
+    },
+    {
+      "parameter": "pn_send_clock_factor",
+      "when": {
+        "pn_wire_profile": "PNIO_2_4",
+        "pn_rt_class": "RTC1"
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "when_ranges": {
+        "pn_reduction_ratio": [
+          256,
+          511
+        ]
+      },
+      "maximum": 64
+    },
+    {
+      "parameter": "pn_send_clock_factor",
+      "when": {
+        "pn_wire_profile": "PNIO_2_4",
+        "pn_rt_class": "RTC1",
+        "pn_reduction_ratio": 512
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "maximum": 32
+    },
+    {
+      "parameter": "pn_send_clock_factor",
+      "when": {
+        "pn_wire_profile": "PNIO_2_4",
+        "pn_rt_class": "RTC2"
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "when_ranges": {
+        "pn_reduction_ratio": [
+          256,
+          511
+        ]
+      },
+      "maximum": 64
+    },
+    {
+      "parameter": "pn_send_clock_factor",
+      "when": {
+        "pn_wire_profile": "PNIO_2_4",
+        "pn_rt_class": "RTC2",
+        "pn_reduction_ratio": 512
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "maximum": 32
+    },
+    {
+      "parameter": "pn_send_clock_factor",
+      "when": {
+        "pn_wire_profile": "PNIO_2_4",
+        "pn_rt_class": "RTC3"
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "when_ranges": {
+        "pn_reduction_ratio": [
+          256,
+          511
+        ]
+      },
+      "maximum": 64
+    },
+    {
+      "parameter": "pn_send_clock_factor",
+      "when": {
+        "pn_wire_profile": "PNIO_2_4",
+        "pn_rt_class": "RTC3",
+        "pn_reduction_ratio": 512
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "maximum": 32
+    },
+    {
+      "parameter": "pn_send_clock_factor",
+      "when": {
+        "pn_wire_profile": "PNIO_2_4",
+        "pn_rt_class": "UDP"
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "when_ranges": {
+        "pn_reduction_ratio": [
+          8192,
+          16383
+        ]
+      },
+      "maximum": 64
+    },
+    {
+      "parameter": "pn_send_clock_factor",
+      "when": {
+        "pn_wire_profile": "PNIO_2_4",
+        "pn_rt_class": "UDP",
+        "pn_reduction_ratio": 16384
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "maximum": 32
+    },
+    {
+      "parameter": "pn_frame_send_offset_ns",
+      "when": {
+        "pn_offset_kind": "BEST_EFFORT"
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "allowed": [
+        4294967295
+      ]
+    },
+    {
+      "parameter": "pn_frame_send_offset_ns",
+      "when": {
+        "pn_offset_kind": "SCHEDULED"
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "exclusive_maximum": 4000000,
+      "exclusive_maximum_expression": {
+        "product": [
+          "pn_send_clock_factor",
+          31250
+        ]
+      }
+    },
+    {
+      "parameter": "pn_send_clock_factor",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "when_present": [
+        "pn_frame_send_offset_ns"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "pn_offset_kind",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "when_present": [
+        "pn_frame_send_offset_ns"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "pn_send_clock_factor",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "when_present": [
+        "pn_send_clock_us"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "pn_send_clock_factor",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "when_present": [
+        "pn_update_us"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "pn_reduction_ratio",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "when_present": [
+        "pn_update_us"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "pn_send_clock_factor",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "when_present": [
+        "pn_data_hold_us"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "pn_reduction_ratio",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "when_present": [
+        "pn_data_hold_us"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "pn_data_hold_factor",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "when_present": [
+        "pn_data_hold_us"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "pn_reduction_ratio",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "when_present": [
+        "pn_phase"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "pn_send_clock_factor",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "when_present": [
+        "pn_min_device_interval"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "pn_reduction_ratio",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "when_present": [
+        "pn_min_device_interval"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "pn_frame_id",
+      "when": {
+        "pn_wire_profile": "PNIO_2_4",
+        "pn_service": "CYCLIC_IO",
+        "pn_iocr_type": "INPUT",
+        "pn_rt_class": "RTC1"
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "minimum": 49152,
+      "maximum": 63487
+    },
+    {
+      "parameter": "pn_frame_id",
+      "when": {
+        "pn_wire_profile": "PNIO_2_4",
+        "pn_service": "CYCLIC_IO",
+        "pn_iocr_type": "INPUT",
+        "pn_rt_class": "UDP"
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "minimum": 49152,
+      "maximum": 63487
+    },
+    {
+      "parameter": "pn_frame_id",
+      "when": {
+        "pn_wire_profile": "PNIO_2_4",
+        "pn_service": "CYCLIC_IO",
+        "pn_iocr_type": "INPUT",
+        "pn_rt_class": "RTC2"
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "minimum": 32768,
+      "maximum": 48127
+    },
+    {
+      "parameter": "pn_frame_id",
+      "when": {
+        "pn_wire_profile": "PNIO_2_4",
+        "pn_service": "CYCLIC_IO",
+        "pn_iocr_type": "INPUT",
+        "pn_rt_class": "RTC3"
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "minimum": 256,
+      "maximum": 32767
+    },
+    {
+      "parameter": "pn_frame_id",
+      "when": {
+        "pn_wire_profile": "PNIO_2_4",
+        "pn_service": "CYCLIC_IO",
+        "pn_iocr_type": "MC_PROVIDER",
+        "pn_rt_class": "RTC1"
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "minimum": 63488,
+      "maximum": 64511
+    },
+    {
+      "parameter": "pn_frame_id",
+      "when": {
+        "pn_wire_profile": "PNIO_2_4",
+        "pn_service": "CYCLIC_IO",
+        "pn_iocr_type": "MC_PROVIDER",
+        "pn_rt_class": "UDP"
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "minimum": 63488,
+      "maximum": 64511
+    },
+    {
+      "parameter": "pn_frame_id",
+      "when": {
+        "pn_wire_profile": "PNIO_2_4",
+        "pn_service": "CYCLIC_IO",
+        "pn_iocr_type": "MC_PROVIDER",
+        "pn_rt_class": "RTC2"
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "minimum": 48128,
+      "maximum": 49151
+    },
+    {
+      "parameter": "pn_frame_id",
+      "when": {
+        "pn_wire_profile": "PNIO_2_4",
+        "pn_service": "CYCLIC_IO",
+        "pn_iocr_type": "MC_PROVIDER",
+        "pn_rt_class": "RTC3"
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "minimum": 256,
+      "maximum": 32767
+    },
+    {
+      "parameter": "pn_frame_id",
+      "when": {
+        "pn_wire_profile": "PNIO_2_4",
+        "pn_service": "CYCLIC_IO",
+        "pn_iocr_type": "MC_CONSUMER",
+        "pn_rt_class": "RTC1"
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "minimum": 63488,
+      "maximum": 64511
+    },
+    {
+      "parameter": "pn_frame_id",
+      "when": {
+        "pn_wire_profile": "PNIO_2_4",
+        "pn_service": "CYCLIC_IO",
+        "pn_iocr_type": "MC_CONSUMER",
+        "pn_rt_class": "UDP"
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "minimum": 63488,
+      "maximum": 64511
+    },
+    {
+      "parameter": "pn_frame_id",
+      "when": {
+        "pn_wire_profile": "PNIO_2_4",
+        "pn_service": "CYCLIC_IO",
+        "pn_iocr_type": "MC_CONSUMER",
+        "pn_rt_class": "RTC2"
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "minimum": 48128,
+      "maximum": 49151
+    },
+    {
+      "parameter": "pn_frame_id",
+      "when": {
+        "pn_wire_profile": "PNIO_2_4",
+        "pn_service": "CYCLIC_IO",
+        "pn_iocr_type": "MC_CONSUMER",
+        "pn_rt_class": "RTC3"
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmdev.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.",
+      "minimum": 256,
+      "maximum": 32767
+    },
+    {
+      "parameter": "pn_frame_id",
+      "when": {
+        "pn_service": "DCP",
+        "pn_dcp_service": "HELLO"
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/common/pf_dcp.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da DCP service frame identifiers; commissioning is distinct cyclic IO operation.",
+      "allowed": [
+        65276
+      ]
+    },
+    {
+      "parameter": "pn_frame_id",
+      "when": {
+        "pn_service": "DCP",
+        "pn_dcp_service": "GET_SET"
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/common/pf_dcp.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da DCP service frame identifiers; commissioning is distinct cyclic IO operation.",
+      "allowed": [
+        65277
+      ]
+    },
+    {
+      "parameter": "pn_frame_id",
+      "when": {
+        "pn_service": "DCP",
+        "pn_dcp_service": "IDENTIFY_REQUEST"
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/common/pf_dcp.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da DCP service frame identifiers; commissioning is distinct cyclic IO operation.",
+      "allowed": [
+        65278
+      ]
+    },
+    {
+      "parameter": "pn_frame_id",
+      "when": {
+        "pn_service": "DCP",
+        "pn_dcp_service": "IDENTIFY_RESPONSE"
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/common/pf_dcp.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da DCP service frame identifiers; commissioning is distinct cyclic IO operation.",
+      "allowed": [
+        65279
+      ]
+    },
+    {
+      "parameter": "pn_csdu_bytes",
+      "when": {
+        "pn_wire_profile": "PNIO_2_4"
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/common/pf_ppm.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da PPM frame allocation/layout and cycle-counter helpers; NIC buffer excludes FCS, not whole physical frame.",
+      "equal_expression": {
+        "sum": [
+          "pn_io_data_bytes",
+          "pn_iops_bytes",
+          "pn_iocs_bytes",
+          "pn_padding_bytes"
+        ]
+      }
+    },
+    {
+      "parameter": "pn_io_data_bytes",
+      "when": {
+        "pn_wire_profile": "PNIO_2_4"
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/common/pf_ppm.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da PPM frame allocation/layout and cycle-counter helpers; NIC buffer excludes FCS, not whole physical frame.",
+      "when_present": [
+        "pn_csdu_bytes"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "pn_iops_bytes",
+      "when": {
+        "pn_wire_profile": "PNIO_2_4"
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/common/pf_ppm.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da PPM frame allocation/layout and cycle-counter helpers; NIC buffer excludes FCS, not whole physical frame.",
+      "when_present": [
+        "pn_csdu_bytes"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "pn_iocs_bytes",
+      "when": {
+        "pn_wire_profile": "PNIO_2_4"
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/common/pf_ppm.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da PPM frame allocation/layout and cycle-counter helpers; NIC buffer excludes FCS, not whole physical frame.",
+      "when_present": [
+        "pn_csdu_bytes"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "pn_padding_bytes",
+      "when": {
+        "pn_wire_profile": "PNIO_2_4"
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/common/pf_ppm.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da PPM frame allocation/layout and cycle-counter helpers; NIC buffer excludes FCS, not whole physical frame.",
+      "when_present": [
+        "pn_csdu_bytes"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "pn_buffer_bytes",
+      "when": {
+        "pn_wire_profile": "PNIO_2_4",
+        "pn_rt_class": "RTC1"
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/common/pf_ppm.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da PPM frame allocation/layout and cycle-counter helpers; NIC buffer excludes FCS, not whole physical frame.",
+      "equal_expression": {
+        "sum": [
+          "pn_csdu_bytes",
+          24
+        ]
+      }
+    },
+    {
+      "parameter": "pn_mac_bytes",
+      "when": {
+        "pn_wire_profile": "PNIO_2_4",
+        "pn_rt_class": "RTC1"
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/common/pf_ppm.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da PPM frame allocation/layout and cycle-counter helpers; NIC buffer excludes FCS, not whole physical frame.",
+      "equal_expression": {
+        "sum": [
+          "pn_csdu_bytes",
+          28
+        ]
+      }
+    },
+    {
+      "parameter": "pn_csdu_bytes",
+      "when": {
+        "pn_wire_profile": "PNIO_2_4",
+        "pn_rt_class": "RTC1"
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/common/pf_ppm.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da PPM frame allocation/layout and cycle-counter helpers; NIC buffer excludes FCS, not whole physical frame.",
+      "when_present": [
+        "pn_buffer_bytes"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "pn_csdu_bytes",
+      "when": {
+        "pn_wire_profile": "PNIO_2_4",
+        "pn_rt_class": "RTC1"
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/common/pf_ppm.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da PPM frame allocation/layout and cycle-counter helpers; NIC buffer excludes FCS, not whole physical frame.",
+      "when_present": [
+        "pn_mac_bytes"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "pn_buffer_bytes",
+      "when": {
+        "pn_wire_profile": "PNIO_2_4",
+        "pn_rt_class": "RTC2"
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/common/pf_ppm.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da PPM frame allocation/layout and cycle-counter helpers; NIC buffer excludes FCS, not whole physical frame.",
+      "equal_expression": {
+        "sum": [
+          "pn_csdu_bytes",
+          24
+        ]
+      }
+    },
+    {
+      "parameter": "pn_mac_bytes",
+      "when": {
+        "pn_wire_profile": "PNIO_2_4",
+        "pn_rt_class": "RTC2"
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/common/pf_ppm.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da PPM frame allocation/layout and cycle-counter helpers; NIC buffer excludes FCS, not whole physical frame.",
+      "equal_expression": {
+        "sum": [
+          "pn_csdu_bytes",
+          28
+        ]
+      }
+    },
+    {
+      "parameter": "pn_csdu_bytes",
+      "when": {
+        "pn_wire_profile": "PNIO_2_4",
+        "pn_rt_class": "RTC2"
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/common/pf_ppm.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da PPM frame allocation/layout and cycle-counter helpers; NIC buffer excludes FCS, not whole physical frame.",
+      "when_present": [
+        "pn_buffer_bytes"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "pn_csdu_bytes",
+      "when": {
+        "pn_wire_profile": "PNIO_2_4",
+        "pn_rt_class": "RTC2"
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/common/pf_ppm.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da PPM frame allocation/layout and cycle-counter helpers; NIC buffer excludes FCS, not whole physical frame.",
+      "when_present": [
+        "pn_mac_bytes"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "pn_buffer_bytes",
+      "when": {
+        "pn_wire_profile": "PNIO_2_4",
+        "pn_rt_class": "RTC3"
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/common/pf_ppm.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da PPM frame allocation/layout and cycle-counter helpers; NIC buffer excludes FCS, not whole physical frame.",
+      "equal_expression": {
+        "sum": [
+          "pn_csdu_bytes",
+          24
+        ]
+      }
+    },
+    {
+      "parameter": "pn_mac_bytes",
+      "when": {
+        "pn_wire_profile": "PNIO_2_4",
+        "pn_rt_class": "RTC3"
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/common/pf_ppm.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da PPM frame allocation/layout and cycle-counter helpers; NIC buffer excludes FCS, not whole physical frame.",
+      "equal_expression": {
+        "sum": [
+          "pn_csdu_bytes",
+          28
+        ]
+      }
+    },
+    {
+      "parameter": "pn_csdu_bytes",
+      "when": {
+        "pn_wire_profile": "PNIO_2_4",
+        "pn_rt_class": "RTC3"
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/common/pf_ppm.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da PPM frame allocation/layout and cycle-counter helpers; NIC buffer excludes FCS, not whole physical frame.",
+      "when_present": [
+        "pn_buffer_bytes"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "pn_csdu_bytes",
+      "when": {
+        "pn_wire_profile": "PNIO_2_4",
+        "pn_rt_class": "RTC3"
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/common/pf_ppm.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da PPM frame allocation/layout and cycle-counter helpers; NIC buffer excludes FCS, not whole physical frame.",
+      "when_present": [
+        "pn_mac_bytes"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "pn_buffer_bytes",
+      "when": {
+        "pn_wire_profile": "PNIO_2_4",
+        "pn_rt_class": "STREAM"
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/common/pf_ppm.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da PPM frame allocation/layout and cycle-counter helpers; NIC buffer excludes FCS, not whole physical frame.",
+      "equal_expression": {
+        "sum": [
+          "pn_csdu_bytes",
+          24
+        ]
+      }
+    },
+    {
+      "parameter": "pn_mac_bytes",
+      "when": {
+        "pn_wire_profile": "PNIO_2_4",
+        "pn_rt_class": "STREAM"
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/common/pf_ppm.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da PPM frame allocation/layout and cycle-counter helpers; NIC buffer excludes FCS, not whole physical frame.",
+      "equal_expression": {
+        "sum": [
+          "pn_csdu_bytes",
+          28
+        ]
+      }
+    },
+    {
+      "parameter": "pn_csdu_bytes",
+      "when": {
+        "pn_wire_profile": "PNIO_2_4",
+        "pn_rt_class": "STREAM"
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/common/pf_ppm.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da PPM frame allocation/layout and cycle-counter helpers; NIC buffer excludes FCS, not whole physical frame.",
+      "when_present": [
+        "pn_buffer_bytes"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "pn_csdu_bytes",
+      "when": {
+        "pn_wire_profile": "PNIO_2_4",
+        "pn_rt_class": "STREAM"
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/common/pf_ppm.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da PPM frame allocation/layout and cycle-counter helpers; NIC buffer excludes FCS, not whole physical frame.",
+      "when_present": [
+        "pn_mac_bytes"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "pn_mac_bits",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/common/pf_ppm.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da PPM frame allocation/layout and cycle-counter helpers; NIC buffer excludes FCS, not whole physical frame.",
+      "equal_expression": {
+        "product": [
+          "pn_mac_bytes",
+          8
+        ]
+      }
+    },
+    {
+      "parameter": "pn_mac_bytes",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/common/pf_ppm.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da PPM frame allocation/layout and cycle-counter helpers; NIC buffer excludes FCS, not whole physical frame.",
+      "when_present": [
+        "pn_mac_bits"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "pn_serialization_us",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/common/pf_ppm.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da PPM frame allocation/layout and cycle-counter helpers; NIC buffer excludes FCS, not whole physical frame.",
+      "equal_ratio": {
+        "numerator_parameter": "pn_mac_bits",
+        "denominator_offset": 1,
+        "denominator_product": [
+          "bitrate_bps"
+        ],
+        "factor": 1000000
+      }
+    },
+    {
+      "parameter": "pn_mac_bits",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/common/pf_ppm.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da PPM frame allocation/layout and cycle-counter helpers; NIC buffer excludes FCS, not whole physical frame.",
+      "when_present": [
+        "pn_serialization_us"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "pn_next_counter",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/common/pf_ppm.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da PPM frame allocation/layout and cycle-counter helpers; NIC buffer excludes FCS, not whole physical frame.",
+      "equal_expression": {
+        "integer_remainder": [
+          {
+            "product": [
+              {
+                "sum": [
+                  {
+                    "floor": [
+                      {
+                        "product": [
+                          "pn_previous_counter",
+                          {
+                            "power": [
+                              {
+                                "product": [
+                                  "pn_send_clock_factor",
+                                  "pn_reduction_ratio"
+                                ]
+                              },
+                              -1
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  1
+                ]
+              },
+              "pn_send_clock_factor",
+              "pn_reduction_ratio"
+            ]
+          },
+          65536
+        ]
+      }
+    },
+    {
+      "parameter": "pn_previous_counter",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/common/pf_ppm.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da PPM frame allocation/layout and cycle-counter helpers; NIC buffer excludes FCS, not whole physical frame.",
+      "when_present": [
+        "pn_next_counter"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "pn_send_clock_factor",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/common/pf_ppm.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da PPM frame allocation/layout and cycle-counter helpers; NIC buffer excludes FCS, not whole physical frame.",
+      "when_present": [
+        "pn_next_counter"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "pn_reduction_ratio",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/common/pf_ppm.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da PPM frame allocation/layout and cycle-counter helpers; NIC buffer excludes FCS, not whole physical frame.",
+      "when_present": [
+        "pn_next_counter"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "pn_open_phase_us",
+      "when": {
+        "pn_rt_class": "RTC3"
+      },
+      "source": "https://cache.industry.siemens.com/dl/files/439/109820439/att_1139619/v1/Communication_Fct_en-US.pdf",
+      "source_revision": "SIMOTION Communication04/2023 A5E33436509B pp46-50/137-139; hardware-qualified clock factors, update periods and1ms manufacturer preset, not universal fastest/default timing.",
+      "equal_expression": {
+        "subtract": [
+          "pn_send_clock_us",
+          "pn_red_phase_us"
+        ]
+      }
+    },
+    {
+      "parameter": "pn_irt_hardware",
+      "when": {
+        "pn_rt_class": "RTC3"
+      },
+      "source": "https://cache.industry.siemens.com/dl/files/439/109820439/att_1139619/v1/Communication_Fct_en-US.pdf",
+      "source_revision": "SIMOTION Communication04/2023 A5E33436509B pp46-50/137-139; hardware-qualified clock factors, update periods and1ms manufacturer preset, not universal fastest/default timing.",
+      "required": true,
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "pn_sync_verified",
+      "when": {
+        "pn_rt_class": "RTC3"
+      },
+      "source": "https://cache.industry.siemens.com/dl/files/439/109820439/att_1139619/v1/Communication_Fct_en-US.pdf",
+      "source_revision": "SIMOTION Communication04/2023 A5E33436509B pp46-50/137-139; hardware-qualified clock factors, update periods and1ms manufacturer preset, not universal fastest/default timing.",
+      "required": true,
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "pn_topology_verified",
+      "when": {
+        "pn_rt_class": "RTC3"
+      },
+      "source": "https://cache.industry.siemens.com/dl/files/439/109820439/att_1139619/v1/Communication_Fct_en-US.pdf",
+      "source_revision": "SIMOTION Communication04/2023 A5E33436509B pp46-50/137-139; hardware-qualified clock factors, update periods and1ms manufacturer preset, not universal fastest/default timing.",
+      "required": true,
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "pn_irt_source",
+      "when": {
+        "pn_rt_class": "RTC3"
+      },
+      "source": "https://cache.industry.siemens.com/dl/files/439/109820439/att_1139619/v1/Communication_Fct_en-US.pdf",
+      "source_revision": "SIMOTION Communication04/2023 A5E33436509B pp46-50/137-139; hardware-qualified clock factors, update periods and1ms manufacturer preset, not universal fastest/default timing.",
+      "required": true
+    },
+    {
+      "parameter": "pn_sync_domain",
+      "when": {
+        "pn_rt_class": "RTC3"
+      },
+      "source": "https://cache.industry.siemens.com/dl/files/439/109820439/att_1139619/v1/Communication_Fct_en-US.pdf",
+      "source_revision": "SIMOTION Communication04/2023 A5E33436509B pp46-50/137-139; hardware-qualified clock factors, update periods and1ms manufacturer preset, not universal fastest/default timing.",
+      "required": true
+    },
+    {
+      "parameter": "pn_optional_source",
+      "when": {
+        "pn_dfp_enabled": true
+      },
+      "source": "https://cl.profibus.com/fileadmin/media/downloadsection/technical_description_&_books/PROFINET_System_Description_engl_2018_Update.pdf",
+      "source_revision": "PI System Description November2018 order4.132 pp8-16/23-24; conventional100M/full duplex, IO mapping, RT/IRT capability and optional fast cycles.",
+      "required": true
+    },
+    {
+      "parameter": "pn_optional_source",
+      "when": {
+        "pn_mrp_enabled": true
+      },
+      "source": "https://cl.profibus.com/fileadmin/media/downloadsection/technical_description_&_books/PROFINET_System_Description_engl_2018_Update.pdf",
+      "source_revision": "PI System Description November2018 order4.132 pp8-16/23-24; conventional100M/full duplex, IO mapping, RT/IRT capability and optional fast cycles.",
+      "required": true
+    },
+    {
+      "parameter": "pn_optional_source",
+      "when": {
+        "pn_shared_device": true
+      },
+      "source": "https://cl.profibus.com/fileadmin/media/downloadsection/technical_description_&_books/PROFINET_System_Description_engl_2018_Update.pdf",
+      "source_revision": "PI System Description November2018 order4.132 pp8-16/23-24; conventional100M/full duplex, IO mapping, RT/IRT capability and optional fast cycles.",
+      "required": true
+    },
+    {
+      "parameter": "pn_optional_source",
+      "when": {
+        "pn_fast_cycle_capable": true
+      },
+      "source": "https://cl.profibus.com/fileadmin/media/downloadsection/technical_description_&_books/PROFINET_System_Description_engl_2018_Update.pdf",
+      "source_revision": "PI System Description November2018 order4.132 pp8-16/23-24; conventional100M/full duplex, IO mapping, RT/IRT capability and optional fast cycles.",
+      "required": true
+    },
+    {
+      "parameter": "pn_station_name",
+      "when": {
+        "pn_state": "APPLICATION_READY"
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmina.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da PNIO2.4 station-name declared grammar; declaration applied rather than copying empty-label/port-prefix parser bugs.",
+      "required": true
+    },
+    {
+      "parameter": "pn_station_name",
+      "when": {
+        "pn_state": "DATA_EXCHANGE"
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmina.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da PNIO2.4 station-name declared grammar; declaration applied rather than copying empty-label/port-prefix parser bugs.",
+      "required": true
+    },
+    {
+      "parameter": "pn_station_name",
+      "when": {
+        "pn_wire_profile": "PNIO_2_4"
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/src/device/pf_cmina.c",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da PNIO2.4 station-name declared grammar; declaration applied rather than copying empty-label/port-prefix parser bugs.",
+      "pattern": "(?=.{1,240}$)(?![0-9]{1,3}(?:\\.[0-9]{1,3}){3}$)(?!port-[0-9]{3}(?:-[0-9]{5})?(?:\\.|$))(?!.*--)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)(?:\\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)*"
+    },
+    {
+      "parameter": "pn_age_us",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/include/pnet_api.h",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pnet_api.h IOXS/DataStatus and RTC3ready not implemented; explicit selected public-stack behavior.",
+      "maximum_parameter": "pn_freshness_us"
+    },
+    {
+      "parameter": "pn_freshness_us",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/include/pnet_api.h",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pnet_api.h IOXS/DataStatus and RTC3ready not implemented; explicit selected public-stack behavior.",
+      "when_present": [
+        "pn_age_us"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "pn_outcome",
+      "when": {
+        "pn_data_accepted": true
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/include/pnet_api.h",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pnet_api.h IOXS/DataStatus and RTC3ready not implemented; explicit selected public-stack behavior.",
+      "required": true,
+      "allowed": [
+        "ACCEPTED"
+      ]
+    },
+    {
+      "parameter": "pn_frame_valid",
+      "when": {
+        "pn_data_accepted": true
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/include/pnet_api.h",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pnet_api.h IOXS/DataStatus and RTC3ready not implemented; explicit selected public-stack behavior.",
+      "required": true,
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "pn_mapping_valid",
+      "when": {
+        "pn_data_accepted": true
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/include/pnet_api.h",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pnet_api.h IOXS/DataStatus and RTC3ready not implemented; explicit selected public-stack behavior.",
+      "required": true,
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "pn_state",
+      "when": {
+        "pn_data_accepted": true
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/include/pnet_api.h",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pnet_api.h IOXS/DataStatus and RTC3ready not implemented; explicit selected public-stack behavior.",
+      "required": true,
+      "allowed": [
+        "DATA_EXCHANGE"
+      ]
+    },
+    {
+      "parameter": "pn_data_status",
+      "when": {
+        "pn_data_accepted": true
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/include/pnet_api.h",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pnet_api.h IOXS/DataStatus and RTC3ready not implemented; explicit selected public-stack behavior.",
+      "required": true,
+      "forbidden_bit_mask": 128
+    },
+    {
+      "parameter": "pn_data_status",
+      "when": {
+        "pn_data_accepted": true
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/include/pnet_api.h",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pnet_api.h IOXS/DataStatus and RTC3ready not implemented; explicit selected public-stack behavior.",
+      "equal_expression": {
+        "sum": [
+          {
+            "product": [
+              {
+                "floor": [
+                  {
+                    "product": [
+                      "pn_data_status",
+                      0.125
+                    ]
+                  }
+                ]
+              },
+              8
+            ]
+          },
+          4,
+          {
+            "integer_remainder": [
+              "pn_data_status",
+              4
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "parameter": "pn_data_status",
+      "when": {
+        "pn_data_accepted": true
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/include/pnet_api.h",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pnet_api.h IOXS/DataStatus and RTC3ready not implemented; explicit selected public-stack behavior.",
+      "equal_expression": {
+        "sum": [
+          {
+            "product": [
+              {
+                "floor": [
+                  {
+                    "product": [
+                      "pn_data_status",
+                      0.03125
+                    ]
+                  }
+                ]
+              },
+              32
+            ]
+          },
+          16,
+          {
+            "integer_remainder": [
+              "pn_data_status",
+              16
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "parameter": "pn_iops",
+      "when": {
+        "pn_data_accepted": true,
+        "pn_implementation": "P_NET_PUBLIC_PINNED"
+      },
+      "source": "https://raw.githubusercontent.com/rtlabs-com/p-net/ca4f37c5d66b5378a8cf9349b9084df0612043da/include/pnet_api.h",
+      "source_revision": "p-net pinned ca4f37c5d66b5378a8cf9349b9084df0612043da pnet_api.h IOXS/DataStatus and RTC3ready not implemented; explicit selected public-stack behavior.",
+      "required": true,
+      "allowed": [
+        128
+      ]
+    }
+  ],
+  "physical_layer_profile_id": "ETHERNET_PHY_EXPLICIT",
+  "medium_access_model": "VARIANT_DEPENDENT",
+  "native_parameter_prefixes": [
+    "pn_"
+  ],
+  "parameter_aliases": {},
+  "parameter_alias_limits": {},
+  "parameter_evidence_scope": "EXPLICIT_LAYER",
+  "rate_source_profile_id": null,
+  "arbitration_model_id": null,
+  "max_payload_bytes": null,
+  "capabilities": {
+    "supports_signals": true,
+    "supports_data_objects": true,
+    "supports_streams": false,
+    "supports_multicast": false,
+    "supports_publish_subscribe": true,
+    "supports_request_response": false,
+    "supports_cyclic": true,
+    "supports_event": true,
+    "supports_redundancy": false,
+    "supports_time_sync": true,
+    "supports_safety_profile": true,
+    "supports_segmentation": false,
+    "supports_fragmentation": false,
+    "supports_qos": true
+  },
+  "deterministic": false,
+  "overhead_bytes": 8,
+  "implementation_status": "IMPLEMENTED",
+  "connection_type": "COMMUNICATION_TECHNOLOGY",
+  "parameter_proposals": {
+    "kind": "STANDARD_BASELINE",
+    "default_bps": 100000000,
+    "status": "REVIEW_REQUIRED",
+    "source": "https://cl.profibus.com/fileadmin/media/downloadsection/technical_description_&_books/PROFINET_System_Description_engl_2018_Update.pdf",
+    "source_revision": "PI System Description November2018 order4.132 pp8-16/23-24; conventional100M/full duplex, IO mapping, RT/IRT capability and optional fast cycles.",
+    "reason": "Conventional PROFINET100Mbps proposal; actual PHY/IOCR/RTclass/device interval/domain plan remain explicit."
+  },
+  "capacity_evidence": {
+    "status": "MODEL_MISSING",
+    "frame_model": null,
+    "schedule_model": null,
+    "requires_confirmed_device_parameters": true
+  },
+  "components": {
+    "binding": "profinet.binding",
+    "generator": "profinet.generator",
+    "validator": "profinet.validator",
+    "timing_model": null,
+    "load_model": null,
+    "encoder": "profinet.encoder",
+    "decoder": "profinet.decoder"
+  },
+  "known_limitations": "Technology-specific conformance details require a vendor/profile extension."
+}

@@ -99,3 +99,45 @@ def test_caller_cannot_change_validated_snapshot_after_construction(candidate, m
     snap = candidate['snapshot']; validator = RoutingValidator(snap['project_id'], model_snapshot=snap)
     snap['tables']['engineering_hardware_nodes'].clear(); snap['topology']['edges'].clear()
     assert validator.validate(candidate['route'])['valid'] is True
+
+
+def test_table_reuses_native_physical_evidence_and_refreshes_after_wire_edit(candidate, monkeypatch):
+    from backend.nis.engineering.communication import communication_repair
+    from backend.nis.engineering.projects.project_context import activate_project, reset_project
+    from backend.nis.workflow.services.service import WorkflowStatusService
+    project = candidate['snapshot']['project_id']
+    token = activate_project(project)
+    original = communication_repair.load_plan
+    captures = []
+    def capture():
+        value = original()
+        captures.append(value)
+        return value
+    monkeypatch.setattr(communication_repair, 'load_plan', capture)
+    try:
+        validator = RoutingValidator(project)
+        first = validator.validate_table([candidate['route'], deepcopy(candidate['route'])])
+        assert first['valid'] and len(captures) == 1
+        expected = {k: v for k, v in candidate['baseline'].items() if k != 'validation_timestamp'}
+        for result in first['results']:
+            assert {k: v for k, v in result.items() if k != 'validation_timestamp'} == expected
+        assert validator.physical_planner is None
+        WorkflowStatusService(project).save_topology({**candidate['snapshot']['topology'], 'edges': []})
+        second = validator.validate_table([candidate['route']])
+        assert len(captures) == 2 and not second['valid']
+        assert 'PHYSICAL_PATH_REMOVED' in {issue['code'] for issue in second['results'][0]['errors']}
+        assert validator.physical_planner is None
+    finally:
+        reset_project(token)
+
+
+def test_routing_batch_rejects_foreign_active_project_before_loading(candidate, monkeypatch):
+    from backend.nis.engineering.communication import communication_repair
+    from backend.nis.engineering.projects.project_context import activate_project, reset_project
+    token = activate_project('foreign-' + candidate['snapshot']['project_id'])
+    monkeypatch.setattr(communication_repair, 'load_plan', forbid_database)
+    try:
+        with pytest.raises(ValueError, match='active project'):
+            RoutingValidator.for_current_batch(candidate['snapshot']['project_id'])
+    finally:
+        reset_project(token)

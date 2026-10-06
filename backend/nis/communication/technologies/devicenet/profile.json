@@ -1,0 +1,2384 @@
+{
+  "id": "devicenet",
+  "label": "DeviceNet",
+  "domain": "industrial_automation",
+  "layer": "INDUSTRY_PROFILE",
+  "transport_unit": "MESSAGE",
+  "payload_element_types": [
+    "DATA_OBJECT",
+    "SIGNAL"
+  ],
+  "hardware_interface": "can_controller",
+  "hardware_capability_aliases": [
+    "can_controller"
+  ],
+  "default_stack": [
+    "can",
+    "devicenet"
+  ],
+  "stack_variants": [
+    [
+      "can",
+      "devicenet"
+    ]
+  ],
+  "default_bitrate": 125000,
+  "rate_model": {
+    "type": "SINGLE_BITRATE",
+    "fields": [
+      "bitrate_bps"
+    ],
+    "minimum_bps": 125000,
+    "maximum_bps": 500000,
+    "allowed_bps": [
+      125000,
+      250000,
+      500000
+    ]
+  },
+  "local_timing_schema": [],
+  "parameter_schema": {
+    "bitrate_bps": {
+      "label": "Bitrate",
+      "category": "physical",
+      "scope": "network",
+      "type": "number",
+      "description": "DeviceNet registered rates125/250/500kbit/s; default125kbit/s. Matching nodes/selected cable/drop lengths and actual connection evidence remain explicit.",
+      "required": true,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "unit": "bit/s",
+      "min": 125000,
+      "max": 500000,
+      "default_review": {
+        "technology": "devicenet",
+        "rate_profile": "devicenet",
+        "values": {
+          "bitrate_bps": 125000
+        },
+        "basis": "LITERATURE_DEFAULT",
+        "status": "REVIEW_REQUIRED",
+        "source": "https://literature.rockwellautomation.com/idc/groups/literature/documents/um/dnet-um004_-en-p.pdf",
+        "source_revision": "DNET-UM004E-EN-P March2022 page19; ODVA PUB00026R4 March2016; PUB00027R1 cable manual2003"
+      },
+      "allowed_bps": [
+        125000,
+        250000,
+        500000
+      ],
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED",
+      "source": "https://literature.rockwellautomation.com/idc/groups/literature/documents/um/dnet-um004_-en-p.pdf",
+      "source_revision": "DNET-UM004E-EN-P March2022 page19; ODVA PUB00026R4 March2016; PUB00027R1 cable manual2003",
+      "default": 125000
+    },
+    "payload_bytes": {
+      "label": "Payload",
+      "category": "physical",
+      "scope": "message",
+      "type": "number",
+      "description": "Actual CAN CC Data field. Remote request has zero data bytes regardless of its requested DLC; DATA DLC equals actual byte length.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "max": 8,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.zlg.cn/data/upload/software/Can/CANag.pdf",
+      "source_revision": "Bosch CAN Specification 2.0 September 1991 Part B sections 2 / 10; CiA CAN HS transmission accessed 2026-10-01",
+      "integer": true
+    },
+    "cycle_ms": {
+      "label": "Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "Standardperiode fuer zyklische Nachrichten.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "minimum_cycle_time_ms": {
+      "label": "Minimum Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "deadline_ms": {
+      "label": "Deadline",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "timeout_ms": {
+      "label": "Timeout",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_latency_ms": {
+      "label": "Maximum Latency",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "jitter_ms": {
+      "label": "Jitter Budget",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "freshness_ms": {
+      "label": "Data Freshness",
+      "category": "timing",
+      "scope": "signal",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "source_processing_delay_ms": {
+      "label": "Source Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_processing_delay_ms": {
+      "label": "Target Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "propagation_delay_ms": {
+      "label": "Propagation",
+      "category": "timing",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.01,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_bus_load_percent": {
+      "label": "Ziel-Buslast",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "Zielwert fuer die aus Routing, Payload, Zyklus und Bitrate berechnete Buslast.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "peak_factor": {
+      "label": "Peak Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.15,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_factor": {
+      "label": "Burst Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.5,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_window_ms": {
+      "label": "Burst Window",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "warning_threshold": {
+      "label": "Load Warning",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "critical_threshold": {
+      "label": "Load Critical",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 75,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "overload_threshold": {
+      "label": "Load Overload",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 90,
+      "unit": "%",
+      "min": 1,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "queue_size": {
+      "label": "Queue Size",
+      "category": "qos",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 256,
+      "unit": "Frames",
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1",
+      "integer": true
+    },
+    "queue_policy": {
+      "label": "Queue Policy",
+      "category": "qos",
+      "scope": "network",
+      "type": "select",
+      "description": "Abstract host queue. Wire arbitration uses the CAN identifier; host FIFO can introduce priority inversion.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": "FIFO",
+      "options": [
+        "FIFO",
+        "PRIORITY",
+        "CUSTOM"
+      ],
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "traffic_class": {
+      "label": "Traffic Class",
+      "category": "qos",
+      "scope": "route",
+      "type": "select",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": "BEST_EFFORT",
+      "options": [
+        "BEST_EFFORT",
+        "CONTROL",
+        "REALTIME",
+        "SAFETY_CRITICAL"
+      ],
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "packet_loss_probability": {
+      "label": "Packet Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "frame_loss_probability": {
+      "label": "Frame Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "bit_error_rate": {
+      "label": "Bit Error Rate",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "corruption_probability": {
+      "label": "Corruption",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duplicate_probability": {
+      "label": "Duplication",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "reordering_probability": {
+      "label": "Reordering",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "retransmission_enabled": {
+      "label": "Retransmission",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "boolean",
+      "description": "CAN automatic retransmission baseline. One-shot/listen-only hardware modes require separate device behavior; no finite retry count is implied.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": true,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED",
+      "source": "https://www.zlg.cn/data/upload/software/Can/CANag.pdf",
+      "source_revision": "Bosch CAN Specification 2.0 September 1991 Part B sections 2 / 10; CiA CAN HS transmission accessed 2026-10-01",
+      "allowed_values": [
+        true
+      ]
+    },
+    "required_reliability": {
+      "label": "Required Reliability",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.999,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_offset_ms": {
+      "label": "Clock Offset",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_drift_ppm": {
+      "label": "Clock Drift",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 20,
+      "unit": "ppm",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_precision_ms": {
+      "label": "Sync Precision",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_interval_ms": {
+      "label": "Sync Interval",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1000,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_sync_error_ms": {
+      "label": "Maximum Sync Error",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_delay_ms": {
+      "label": "Gateway Processing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.2,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_queue_delay_ms": {
+      "label": "Gateway Queueing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "protocol_conversion_delay_ms": {
+      "label": "Protocol Conversion",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duration_s": {
+      "label": "Simulation Duration",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 1,
+      "unit": "s",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "seed": {
+      "label": "Random Seed",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 42,
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1",
+      "integer": true
+    },
+    "max_events": {
+      "label": "Maximum Events",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 100000,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1",
+      "integer": true
+    },
+    "dropout_probability": {
+      "label": "Failure Injection Dropout",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "can_phy": {
+      "label": "Registered CAN CC physical baseline",
+      "category": "physical",
+      "scope": "network",
+      "type": "select",
+      "description": "Declared CAN CC configuration, not proof of actual controller state, hardware conformance or bounded retransmissions.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": "HIGH_SPEED",
+      "options": [
+        "HIGH_SPEED"
+      ],
+      "integer": false,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED",
+      "source": "https://www.can-cia.org/can-knowledge/can-hs-transmission",
+      "source_revision": "CiA ISO 11898-2 high-speed PMA; reviewed 2026-10-01"
+    },
+    "can_frame_format": {
+      "label": "Actual CAN identifier format",
+      "category": "communication",
+      "scope": "message",
+      "type": "select",
+      "description": "Declared CAN CC configuration, not proof of actual controller state, hardware conformance or bounded retransmissions.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "options": [
+        "BASE_11"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED",
+      "source": "https://jp.odva.org/wp-content/uploads/2020/05/PUB00026R4-Tech-Adv-Series-DeviceNet.pdf",
+      "source_revision": "PUB00026R4 March2016 pages3/4 11-bit identifier",
+      "default": "BASE_11"
+    },
+    "can_frame_type": {
+      "label": "CAN frame baseline",
+      "category": "communication",
+      "scope": "message",
+      "type": "select",
+      "description": "Declared CAN CC configuration, not proof of actual controller state, hardware conformance or bounded retransmissions.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": "DATA",
+      "options": [
+        "DATA"
+      ],
+      "integer": false,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED",
+      "source": "https://www.zlg.cn/data/upload/software/Can/CANag.pdf",
+      "source_revision": "Part B 3.2; reviewed 2026-10-01"
+    },
+    "can_identifier": {
+      "label": "Actual identifier / wire priority",
+      "category": "communication",
+      "scope": "message",
+      "type": "number",
+      "description": "Declared CAN CC configuration, not proof of actual controller state, hardware conformance or bounded retransmissions.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "max": 2047,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.zlg.cn/data/upload/software/Can/CANag.pdf",
+      "source_revision": "Part B 3.2.1; reviewed 2026-10-01"
+    },
+    "can_dlc": {
+      "label": "Actual data length / requested remote length",
+      "category": "communication",
+      "scope": "message",
+      "type": "number",
+      "description": "Declared CAN CC configuration, not proof of actual controller state, hardware conformance or bounded retransmissions.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "max": 8,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.zlg.cn/data/upload/software/Can/CANag.pdf",
+      "source_revision": "Part B 3.2.1 / 3.2.2; reviewed 2026-10-01"
+    },
+    "can_controller_profile": {
+      "label": "Actual bit timing controller profile",
+      "category": "physical",
+      "scope": "network",
+      "type": "select",
+      "description": "Declared CAN CC configuration, not proof of actual controller state, hardware conformance or bounded retransmissions.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "DEVICE_SPECIFIC",
+        "M_CAN_3_3_1"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.bosch-semiconductors.com/media/ip_modules/pdf_2/m_can/mcan_users_manual_v331.pdf",
+      "source_revision": "Part B 10 / Bosch M_CAN 3.3.1 2.3.8; reviewed 2026-10-01"
+    },
+    "can_clock_hz": {
+      "label": "Actual CAN clock",
+      "category": "physical",
+      "scope": "network",
+      "type": "number",
+      "description": "Declared CAN CC configuration, not proof of actual controller state, hardware conformance or bounded retransmissions.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Hz",
+      "min": 1,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.zlg.cn/data/upload/software/Can/CANag.pdf",
+      "source_revision": "Part B 10; reviewed 2026-10-01"
+    },
+    "can_prescaler": {
+      "label": "Actual prescaler (functional value)",
+      "category": "communication",
+      "scope": "network",
+      "type": "number",
+      "description": "Declared CAN CC configuration, not proof of actual controller state, hardware conformance or bounded retransmissions.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 1,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.bosch-semiconductors.com/media/ip_modules/pdf_2/m_can/mcan_users_manual_v331.pdf",
+      "source_revision": "Part B 10 / Bosch M_CAN 3.3.1 2.3.8; reviewed 2026-10-01"
+    },
+    "can_tseg1_tq": {
+      "label": "Actual Prop_Seg + Phase_Seg1 (functional value)",
+      "category": "physical",
+      "scope": "network",
+      "type": "number",
+      "description": "Declared CAN CC configuration, not proof of actual controller state, hardware conformance or bounded retransmissions.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "TQ",
+      "min": 1,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.bosch-semiconductors.com/media/ip_modules/pdf_2/m_can/mcan_users_manual_v331.pdf",
+      "source_revision": "Part B 10 / Bosch M_CAN 3.3.1 2.3.8; reviewed 2026-10-01"
+    },
+    "can_tseg2_tq": {
+      "label": "Actual Phase_Seg2 (functional value)",
+      "category": "physical",
+      "scope": "network",
+      "type": "number",
+      "description": "Declared CAN CC configuration, not proof of actual controller state, hardware conformance or bounded retransmissions.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "TQ",
+      "min": 1,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.bosch-semiconductors.com/media/ip_modules/pdf_2/m_can/mcan_users_manual_v331.pdf",
+      "source_revision": "Part B 10 / Bosch M_CAN 3.3.1 2.3.8; reviewed 2026-10-01"
+    },
+    "can_sjw_tq": {
+      "label": "Actual resynchronization jump width",
+      "category": "physical",
+      "scope": "network",
+      "type": "number",
+      "description": "Declared CAN CC configuration, not proof of actual controller state, hardware conformance or bounded retransmissions.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "TQ",
+      "min": 1,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.bosch-semiconductors.com/media/ip_modules/pdf_2/m_can/mcan_users_manual_v331.pdf",
+      "source_revision": "Part B 10 / Bosch M_CAN 3.3.1 2.3.8; reviewed 2026-10-01"
+    },
+    "sample_point_percent": {
+      "label": "Actual nominal sample point",
+      "category": "physical",
+      "scope": "network",
+      "type": "number",
+      "description": "Declared CAN CC configuration, not proof of actual controller state, hardware conformance or bounded retransmissions.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "%",
+      "min": 1e-06,
+      "max": 99.999999,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.zlg.cn/data/upload/software/Can/CANag.pdf",
+      "source_revision": "Part B 10; reviewed 2026-10-01"
+    },
+    "can_error_state": {
+      "label": "Observed controller error state",
+      "category": "communication",
+      "scope": "network",
+      "type": "select",
+      "description": "Declared CAN CC configuration, not proof of actual controller state, hardware conformance or bounded retransmissions.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "ERROR_ACTIVE",
+        "ERROR_PASSIVE",
+        "BUS_OFF"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.zlg.cn/data/upload/software/Can/CANag.pdf",
+      "source_revision": "Part B 8; reviewed 2026-10-01"
+    },
+    "can_tx_error_count": {
+      "label": "Observed transmit error counter",
+      "category": "communication",
+      "scope": "network",
+      "type": "number",
+      "description": "Declared CAN CC configuration, not proof of actual controller state, hardware conformance or bounded retransmissions.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.zlg.cn/data/upload/software/Can/CANag.pdf",
+      "source_revision": "Part B 8; reviewed 2026-10-01"
+    },
+    "can_rx_error_count": {
+      "label": "Observed receive error counter",
+      "category": "communication",
+      "scope": "network",
+      "type": "number",
+      "description": "Declared CAN CC configuration, not proof of actual controller state, hardware conformance or bounded retransmissions.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.zlg.cn/data/upload/software/Can/CANag.pdf",
+      "source_revision": "Part B 8; reviewed 2026-10-01"
+    },
+    "can_ack_receiver_count": {
+      "label": "Actual receivers capable of acknowledgement",
+      "category": "communication",
+      "scope": "network",
+      "type": "number",
+      "description": "Declared CAN CC configuration, not proof of actual controller state, hardware conformance or bounded retransmissions.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "nodes",
+      "min": 0,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.zlg.cn/data/upload/software/Can/CANag.pdf",
+      "source_revision": "Part B 2 / 3.2.1; reviewed 2026-10-01"
+    },
+    "can_termination_ohms": {
+      "label": "HS line termination recommendation",
+      "category": "physical",
+      "scope": "network",
+      "type": "number",
+      "description": "Nominal121ohms proposal per trunk end, 1percent tolerance. Actual installed two terminators/source required; not generic120ohms exact or drop-line terminators.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 121,
+      "unit": "Ohm",
+      "min": 119.79,
+      "integer": false,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED",
+      "source": "https://www.odva.org/wp-content/uploads/2023/05/PUB00027R1_Cable_Guide.pdf",
+      "source_revision": "ODVA PUB00027R1 2003 page1-7; 121ohms1percent each trunk end",
+      "max": 122.21
+    },
+    "can_bus_length_m": {
+      "label": "Actual main line length",
+      "category": "physical",
+      "scope": "network",
+      "type": "number",
+      "description": "Actual maximum path between nodes/terminators including longer end drops as needed, metres. Selected DeviceNet cable and125/250/500kbit/s bounds apply; not universally500m.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "m",
+      "min": 0,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.can-cia.org/can-knowledge/can-hs-transmission",
+      "source_revision": "CiA CAN HS transmission; reviewed 2026-10-01"
+    },
+    "can_stub_length_m": {
+      "label": "Actual longest stub",
+      "category": "physical",
+      "scope": "network",
+      "type": "number",
+      "description": "Actual longest branching drop to trunk, metres, max6; cumulative drops also rate-limited.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "m",
+      "min": 0,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.can-cia.org/can-knowledge/can-hs-transmission",
+      "source_revision": "CiA CAN network design; reviewed 2026-10-01",
+      "max": 6
+    },
+    "dn_specification_source": {
+      "label": "Actual DeviceNet adaptation revision",
+      "category": "qos",
+      "scope": "route",
+      "type": "text",
+      "description": "Actual DeviceNet/CIP adaptation and matching node/cable/connection evidence. No CANopen object dictionary, Ethernet rate or scanner-specific timer default is inferred.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://jp.odva.org/wp-content/uploads/2020/05/PUB00026R4-Tech-Adv-Series-DeviceNet.pdf",
+      "source_revision": "ODVA PUB00026R4 March2016 pages3-5; cable guidePUB00027R1 2003; actual edition/device EDS required"
+    },
+    "dn_eds_source": {
+      "label": "Actual matching device EDS/capability source",
+      "category": "qos",
+      "scope": "route",
+      "type": "text",
+      "description": "Actual DeviceNet/CIP adaptation and matching node/cable/connection evidence. No CANopen object dictionary, Ethernet rate or scanner-specific timer default is inferred.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://jp.odva.org/wp-content/uploads/2020/05/PUB00026R4-Tech-Adv-Series-DeviceNet.pdf",
+      "source_revision": "ODVA PUB00026R4 March2016 pages3-5; cable guidePUB00027R1 2003; actual edition/device EDS required"
+    },
+    "dn_mac_id": {
+      "label": "Actual node MAC ID",
+      "category": "qos",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual DeviceNet/CIP adaptation and matching node/cable/connection evidence. No CANopen object dictionary, Ethernet rate or scanner-specific timer default is inferred.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "max": 63,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://jp.odva.org/wp-content/uploads/2020/05/PUB00026R4-Tech-Adv-Series-DeviceNet.pdf",
+      "source_revision": "ODVA PUB00026R4 March2016 pages3-5; cable guidePUB00027R1 2003; actual edition/device EDS required"
+    },
+    "dn_node_count": {
+      "label": "Actual bus nodes",
+      "category": "qos",
+      "scope": "network",
+      "type": "number",
+      "description": "Actual DeviceNet/CIP adaptation and matching node/cable/connection evidence. No CANopen object dictionary, Ethernet rate or scanner-specific timer default is inferred.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 1,
+      "max": 64,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://jp.odva.org/wp-content/uploads/2020/05/PUB00026R4-Tech-Adv-Series-DeviceNet.pdf",
+      "source_revision": "ODVA PUB00026R4 March2016 pages3-5; cable guidePUB00027R1 2003; actual edition/device EDS required"
+    },
+    "dn_identifier_layout": {
+      "label": "Selected DeviceNet identifier layout",
+      "category": "qos",
+      "scope": "route",
+      "type": "select",
+      "description": "Actual DeviceNet/CIP adaptation and matching node/cable/connection evidence. No CANopen object dictionary, Ethernet rate or scanner-specific timer default is inferred.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": "CLASSIC_GROUPS_1_4",
+      "options": [
+        "CLASSIC_GROUPS_1_4",
+        "DEVICE_SPECIFIC"
+      ],
+      "integer": false,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED",
+      "source": "https://jp.odva.org/wp-content/uploads/2020/05/PUB00026R4-Tech-Adv-Series-DeviceNet.pdf",
+      "source_revision": "ODVA PUB00026R4 March2016 pages3-5; cable guidePUB00027R1 2003; actual edition/device EDS required"
+    },
+    "dn_message_group": {
+      "label": "Actual DeviceNet message group",
+      "category": "qos",
+      "scope": "route",
+      "type": "select",
+      "description": "Actual DeviceNet/CIP adaptation and matching node/cable/connection evidence. No CANopen object dictionary, Ethernet rate or scanner-specific timer default is inferred.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "GROUP1",
+        "GROUP2",
+        "GROUP3",
+        "GROUP4"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://jp.odva.org/wp-content/uploads/2020/05/PUB00026R4-Tech-Adv-Series-DeviceNet.pdf",
+      "source_revision": "ODVA PUB00026R4 March2016 pages3-5; cable guidePUB00027R1 2003; actual edition/device EDS required"
+    },
+    "dn_identifier_mac_id": {
+      "label": "Actual MAC encoded in CAN identifier",
+      "category": "qos",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual DeviceNet/CIP adaptation and matching node/cable/connection evidence. No CANopen object dictionary, Ethernet rate or scanner-specific timer default is inferred.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "max": 63,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://jp.odva.org/wp-content/uploads/2020/05/PUB00026R4-Tech-Adv-Series-DeviceNet.pdf",
+      "source_revision": "ODVA PUB00026R4 March2016 pages3-5; cable guidePUB00027R1 2003; actual edition/device EDS required"
+    },
+    "dn_message_id": {
+      "label": "Actual group message ID",
+      "category": "qos",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual DeviceNet/CIP adaptation and matching node/cable/connection evidence. No CANopen object dictionary, Ethernet rate or scanner-specific timer default is inferred.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "max": 47,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://jp.odva.org/wp-content/uploads/2020/05/PUB00026R4-Tech-Adv-Series-DeviceNet.pdf",
+      "source_revision": "ODVA PUB00026R4 March2016 pages3-5; cable guidePUB00027R1 2003; actual edition/device EDS required"
+    },
+    "dn_cable_type": {
+      "label": "Actual DeviceNet cable type",
+      "category": "physical",
+      "scope": "network",
+      "type": "select",
+      "description": "Actual DeviceNet/CIP adaptation and matching node/cable/connection evidence. No CANopen object dictionary, Ethernet rate or scanner-specific timer default is inferred.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "THICK",
+        "MID",
+        "THIN",
+        "FLAT",
+        "MIXED"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.odva.org/wp-content/uploads/2023/05/PUB00027R1_Cable_Guide.pdf",
+      "source_revision": "PUB00027R1 2003 sections1/4/AppendixB"
+    },
+    "dn_topology": {
+      "label": "DeviceNet physical topology",
+      "category": "physical",
+      "scope": "network",
+      "type": "select",
+      "description": "Actual DeviceNet/CIP adaptation and matching node/cable/connection evidence. No CANopen object dictionary, Ethernet rate or scanner-specific timer default is inferred.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": "TRUNK_DROP",
+      "options": [
+        "TRUNK_DROP"
+      ],
+      "integer": false,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED",
+      "source": "https://jp.odva.org/wp-content/uploads/2020/05/PUB00026R4-Tech-Adv-Series-DeviceNet.pdf",
+      "source_revision": "ODVA PUB00026R4 March2016 pages3-5; cable guidePUB00027R1 2003; actual edition/device EDS required"
+    },
+    "dn_cumulative_drop_m": {
+      "label": "Actual sum of all drop lines",
+      "category": "physical",
+      "scope": "network",
+      "type": "number",
+      "description": "Actual DeviceNet/CIP adaptation and matching node/cable/connection evidence. No CANopen object dictionary, Ethernet rate or scanner-specific timer default is inferred.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "m",
+      "min": 0,
+      "max": 156,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.odva.org/wp-content/uploads/2023/05/PUB00027R1_Cable_Guide.pdf",
+      "source_revision": "PUB00027R1 2003 sections1/4/AppendixB"
+    },
+    "dn_supply_voltage_v": {
+      "label": "Actual regulated supply voltage",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual DeviceNet/CIP adaptation and matching node/cable/connection evidence. No CANopen object dictionary, Ethernet rate or scanner-specific timer default is inferred.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "V",
+      "min": 0,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.odva.org/wp-content/uploads/2023/05/PUB00027R1_Cable_Guide.pdf",
+      "source_revision": "PUB00027R1 2003 sections1/4/AppendixB"
+    },
+    "dn_worst_node_voltage_v": {
+      "label": "Actual lowest node voltage under load",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual DeviceNet/CIP adaptation and matching node/cable/connection evidence. No CANopen object dictionary, Ethernet rate or scanner-specific timer default is inferred.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "V",
+      "min": 0,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.odva.org/wp-content/uploads/2023/05/PUB00027R1_Cable_Guide.pdf",
+      "source_revision": "PUB00027R1 2003 sections1/4/AppendixB"
+    },
+    "dn_device_minimum_voltage_v": {
+      "label": "Actual device minimum operating voltage",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual DeviceNet/CIP adaptation and matching node/cable/connection evidence. No CANopen object dictionary, Ethernet rate or scanner-specific timer default is inferred.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "V",
+      "min": 0,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.odva.org/wp-content/uploads/2023/05/PUB00027R1_Cable_Guide.pdf",
+      "source_revision": "PUB00027R1 2003 sections1/4/AppendixB"
+    },
+    "dn_power_evidence": {
+      "label": "Actual cable/current/voltage-drop/supply budget source",
+      "category": "physical",
+      "scope": "network",
+      "type": "text",
+      "description": "Actual DeviceNet/CIP adaptation and matching node/cable/connection evidence. No CANopen object dictionary, Ethernet rate or scanner-specific timer default is inferred.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.odva.org/wp-content/uploads/2023/05/PUB00027R1_Cable_Guide.pdf",
+      "source_revision": "PUB00027R1 2003 sections1/4/AppendixB"
+    },
+    "dn_connection_type": {
+      "label": "Actual CIP connection type",
+      "category": "qos",
+      "scope": "route",
+      "type": "select",
+      "description": "Actual DeviceNet/CIP adaptation and matching node/cable/connection evidence. No CANopen object dictionary, Ethernet rate or scanner-specific timer default is inferred.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "EXPLICIT",
+        "POLLED",
+        "BIT_STROBE",
+        "CYCLIC",
+        "CHANGE_OF_STATE"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://jp.odva.org/wp-content/uploads/2020/05/PUB00026R4-Tech-Adv-Series-DeviceNet.pdf",
+      "source_revision": "ODVA PUB00026R4 March2016 pages3-5; cable guidePUB00027R1 2003; actual edition/device EDS required"
+    },
+    "dn_connection_state": {
+      "label": "Actual CIP connection state",
+      "category": "qos",
+      "scope": "route",
+      "type": "select",
+      "description": "Actual DeviceNet/CIP adaptation and matching node/cable/connection evidence. No CANopen object dictionary, Ethernet rate or scanner-specific timer default is inferred.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "UNCONNECTED",
+        "ESTABLISHED",
+        "FAULTED"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://jp.odva.org/wp-content/uploads/2020/05/PUB00026R4-Tech-Adv-Series-DeviceNet.pdf",
+      "source_revision": "ODVA PUB00026R4 March2016 pages3-5; cable guidePUB00027R1 2003; actual edition/device EDS required"
+    },
+    "dn_duplicate_mac_passed": {
+      "label": "Actual duplicate-MAC test passed",
+      "category": "qos",
+      "scope": "route",
+      "type": "boolean",
+      "description": "Actual DeviceNet/CIP adaptation and matching node/cable/connection evidence. No CANopen object dictionary, Ethernet rate or scanner-specific timer default is inferred.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://jp.odva.org/wp-content/uploads/2020/05/PUB00026R4-Tech-Adv-Series-DeviceNet.pdf",
+      "source_revision": "ODVA PUB00026R4 March2016 pages3-5; cable guidePUB00027R1 2003; actual edition/device EDS required"
+    },
+    "dn_connection_source": {
+      "label": "Actual connection/scan-list/object mapping source",
+      "category": "qos",
+      "scope": "route",
+      "type": "text",
+      "description": "Actual DeviceNet/CIP adaptation and matching node/cable/connection evidence. No CANopen object dictionary, Ethernet rate or scanner-specific timer default is inferred.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://literature.rockwellautomation.com/idc/groups/literature/documents/um/dnet-um004_-en-p.pdf",
+      "source_revision": "DNET-UM004E-EN-P March2022 chapters6/11; differing scanner families prevent universal auto-scan/default timers"
+    },
+    "dn_expected_packet_rate_ms": {
+      "label": "Actual expected packet rate",
+      "category": "qos",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual DeviceNet/CIP adaptation and matching node/cable/connection evidence. No CANopen object dictionary, Ethernet rate or scanner-specific timer default is inferred.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "ms",
+      "min": 0,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://literature.rockwellautomation.com/idc/groups/literature/documents/um/dnet-um004_-en-p.pdf",
+      "source_revision": "DNET-UM004E-EN-P March2022 chapters6/11; differing scanner families prevent universal auto-scan/default timers"
+    },
+    "dn_inhibit_ms": {
+      "label": "Actual COS production inhibit",
+      "category": "qos",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual DeviceNet/CIP adaptation and matching node/cable/connection evidence. No CANopen object dictionary, Ethernet rate or scanner-specific timer default is inferred.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "ms",
+      "min": 0,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://literature.rockwellautomation.com/idc/groups/literature/documents/um/dnet-um004_-en-p.pdf",
+      "source_revision": "DNET-UM004E-EN-P March2022 chapters6/11; differing scanner families prevent universal auto-scan/default timers"
+    },
+    "dn_heartbeat_ms": {
+      "label": "Actual COS heartbeat period",
+      "category": "qos",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual DeviceNet/CIP adaptation and matching node/cable/connection evidence. No CANopen object dictionary, Ethernet rate or scanner-specific timer default is inferred.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "ms",
+      "min": 0,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://literature.rockwellautomation.com/idc/groups/literature/documents/um/dnet-um004_-en-p.pdf",
+      "source_revision": "DNET-UM004E-EN-P March2022 chapters6/11; differing scanner families prevent universal auto-scan/default timers"
+    },
+    "dn_interscan_ms": {
+      "label": "Actual scanner interscan delay",
+      "category": "qos",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual DeviceNet/CIP adaptation and matching node/cable/connection evidence. No CANopen object dictionary, Ethernet rate or scanner-specific timer default is inferred.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "ms",
+      "min": 0,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://literature.rockwellautomation.com/idc/groups/literature/documents/um/dnet-um004_-en-p.pdf",
+      "source_revision": "DNET-UM004E-EN-P March2022 chapters6/11; differing scanner families prevent universal auto-scan/default timers"
+    },
+    "dn_protocol_header_bytes": {
+      "label": "Actual encoded DeviceNet header in selected frame",
+      "category": "qos",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual DeviceNet/CIP adaptation and matching node/cable/connection evidence. No CANopen object dictionary, Ethernet rate or scanner-specific timer default is inferred.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "max": 8,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://jp.odva.org/wp-content/uploads/2020/05/PUB00026R4-Tech-Adv-Series-DeviceNet.pdf",
+      "source_revision": "ODVA PUB00026R4 March2016 pages3-5; cable guidePUB00027R1 2003; actual edition/device EDS required"
+    },
+    "dn_cip_data_bytes": {
+      "label": "Actual application data in selected frame",
+      "category": "qos",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual DeviceNet/CIP adaptation and matching node/cable/connection evidence. No CANopen object dictionary, Ethernet rate or scanner-specific timer default is inferred.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "max": 8,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://jp.odva.org/wp-content/uploads/2020/05/PUB00026R4-Tech-Adv-Series-DeviceNet.pdf",
+      "source_revision": "ODVA PUB00026R4 March2016 pages3-5; cable guidePUB00027R1 2003; actual edition/device EDS required"
+    },
+    "dn_complete_message_bytes": {
+      "label": "Actual complete reassembled CIP message",
+      "category": "qos",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual DeviceNet/CIP adaptation and matching node/cable/connection evidence. No CANopen object dictionary, Ethernet rate or scanner-specific timer default is inferred.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://jp.odva.org/wp-content/uploads/2020/05/PUB00026R4-Tech-Adv-Series-DeviceNet.pdf",
+      "source_revision": "ODVA PUB00026R4 March2016 pages3-5; cable guidePUB00027R1 2003; actual edition/device EDS required"
+    },
+    "dn_peer_message_limit_bytes": {
+      "label": "Actual peer complete-message limit",
+      "category": "qos",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual DeviceNet/CIP adaptation and matching node/cable/connection evidence. No CANopen object dictionary, Ethernet rate or scanner-specific timer default is inferred.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://jp.odva.org/wp-content/uploads/2020/05/PUB00026R4-Tech-Adv-Series-DeviceNet.pdf",
+      "source_revision": "ODVA PUB00026R4 March2016 pages3-5; cable guidePUB00027R1 2003; actual edition/device EDS required"
+    },
+    "dn_fragmented": {
+      "label": "Actual DeviceNet message fragmented",
+      "category": "qos",
+      "scope": "route",
+      "type": "boolean",
+      "description": "Actual DeviceNet/CIP adaptation and matching node/cable/connection evidence. No CANopen object dictionary, Ethernet rate or scanner-specific timer default is inferred.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://jp.odva.org/wp-content/uploads/2020/05/PUB00026R4-Tech-Adv-Series-DeviceNet.pdf",
+      "source_revision": "ODVA PUB00026R4 March2016 pages3-5; cable guidePUB00027R1 2003; actual edition/device EDS required"
+    },
+    "dn_fragmentation_source": {
+      "label": "Actual fragmentation/header/ACK/state specification",
+      "category": "qos",
+      "scope": "route",
+      "type": "text",
+      "description": "Actual DeviceNet/CIP adaptation and matching node/cable/connection evidence. No CANopen object dictionary, Ethernet rate or scanner-specific timer default is inferred.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://jp.odva.org/wp-content/uploads/2020/05/PUB00026R4-Tech-Adv-Series-DeviceNet.pdf",
+      "source_revision": "ODVA PUB00026R4 March2016 pages3-5; cable guidePUB00027R1 2003; actual edition/device EDS required"
+    }
+  },
+  "mechanisms": {
+    "arbitration": [
+      "CAN_NON_DESTRUCTIVE_BITWISE"
+    ],
+    "integrity": [
+      "CAN_CC_CRC"
+    ],
+    "connection": [
+      "UCMM_OR_GROUP2_UNCONNECTED",
+      "EXPLICIT_AND_IMPLICIT_CIP"
+    ],
+    "supervision": [
+      "DUPLICATE_MAC_CHECK",
+      "CONNECTION_WATCHDOG",
+      "COS_HEARTBEAT"
+    ],
+    "physical": [
+      "DEVICENET_TRUNK_DROP_POWER_AND_SIGNAL"
+    ]
+  },
+  "parameter_constraints": [
+    {
+      "when": {
+        "can_frame_format": "BASE_11"
+      },
+      "parameter": "can_identifier",
+      "maximum": 2047,
+      "source": "https://literature.rockwellautomation.com/idc/groups/literature/documents/um/dnet-um004_-en-p.pdf",
+      "source_revision": "DNET-UM004E-EN-P March2022 page19; ODVA PUB00026R4 March2016; PUB00027R1 cable manual2003"
+    },
+    {
+      "when": {
+        "can_frame_type": "REMOTE"
+      },
+      "parameter": "payload_bytes",
+      "allowed": [
+        0
+      ],
+      "source": "https://literature.rockwellautomation.com/idc/groups/literature/documents/um/dnet-um004_-en-p.pdf",
+      "source_revision": "DNET-UM004E-EN-P March2022 page19; ODVA PUB00026R4 March2016; PUB00027R1 cable manual2003"
+    },
+    {
+      "when": {
+        "can_frame_type": "DATA"
+      },
+      "parameter": "payload_bytes",
+      "equal_parameter": "can_dlc",
+      "source": "https://literature.rockwellautomation.com/idc/groups/literature/documents/um/dnet-um004_-en-p.pdf",
+      "source_revision": "DNET-UM004E-EN-P March2022 page19; ODVA PUB00026R4 March2016; PUB00027R1 cable manual2003"
+    },
+    {
+      "when": {},
+      "parameter": "can_sjw_tq",
+      "maximum_parameter": "can_tseg2_tq",
+      "source": "https://literature.rockwellautomation.com/idc/groups/literature/documents/um/dnet-um004_-en-p.pdf",
+      "source_revision": "DNET-UM004E-EN-P March2022 page19; ODVA PUB00026R4 March2016; PUB00027R1 cable manual2003"
+    },
+    {
+      "when": {},
+      "parameter": "can_sjw_tq",
+      "maximum_parameter": "can_tseg1_tq",
+      "source": "https://literature.rockwellautomation.com/idc/groups/literature/documents/um/dnet-um004_-en-p.pdf",
+      "source_revision": "DNET-UM004E-EN-P March2022 page19; ODVA PUB00026R4 March2016; PUB00027R1 cable manual2003"
+    },
+    {
+      "when": {},
+      "parameter": "bitrate_bps",
+      "equal_ratio": {
+        "numerator_parameter": "can_clock_hz",
+        "denominator_product": [
+          "can_prescaler"
+        ],
+        "denominator_sum": [
+          "can_tseg1_tq",
+          "can_tseg2_tq"
+        ],
+        "denominator_offset": 1
+      },
+      "source": "https://literature.rockwellautomation.com/idc/groups/literature/documents/um/dnet-um004_-en-p.pdf",
+      "source_revision": "DNET-UM004E-EN-P March2022 page19; ODVA PUB00026R4 March2016; PUB00027R1 cable manual2003"
+    },
+    {
+      "when": {},
+      "parameter": "sample_point_percent",
+      "equal_ratio": {
+        "numerator_sum": [
+          "can_tseg1_tq"
+        ],
+        "numerator_offset": 1,
+        "factor": 100,
+        "denominator_sum": [
+          "can_tseg1_tq",
+          "can_tseg2_tq"
+        ],
+        "denominator_offset": 1
+      },
+      "source": "https://literature.rockwellautomation.com/idc/groups/literature/documents/um/dnet-um004_-en-p.pdf",
+      "source_revision": "DNET-UM004E-EN-P March2022 page19; ODVA PUB00026R4 March2016; PUB00027R1 cable manual2003"
+    },
+    {
+      "when": {
+        "can_controller_profile": "M_CAN_3_3_1"
+      },
+      "parameter": "can_prescaler",
+      "maximum": 512,
+      "source": "https://literature.rockwellautomation.com/idc/groups/literature/documents/um/dnet-um004_-en-p.pdf",
+      "source_revision": "DNET-UM004E-EN-P March2022 page19; ODVA PUB00026R4 March2016; PUB00027R1 cable manual2003"
+    },
+    {
+      "when": {
+        "can_controller_profile": "M_CAN_3_3_1"
+      },
+      "parameter": "can_tseg1_tq",
+      "minimum": 2,
+      "maximum": 256,
+      "source": "https://literature.rockwellautomation.com/idc/groups/literature/documents/um/dnet-um004_-en-p.pdf",
+      "source_revision": "DNET-UM004E-EN-P March2022 page19; ODVA PUB00026R4 March2016; PUB00027R1 cable manual2003"
+    },
+    {
+      "when": {
+        "can_controller_profile": "M_CAN_3_3_1"
+      },
+      "parameter": "can_tseg2_tq",
+      "minimum": 2,
+      "maximum": 128,
+      "source": "https://literature.rockwellautomation.com/idc/groups/literature/documents/um/dnet-um004_-en-p.pdf",
+      "source_revision": "DNET-UM004E-EN-P March2022 page19; ODVA PUB00026R4 March2016; PUB00027R1 cable manual2003"
+    },
+    {
+      "when": {
+        "can_controller_profile": "M_CAN_3_3_1"
+      },
+      "parameter": "can_sjw_tq",
+      "maximum": 128,
+      "source": "https://literature.rockwellautomation.com/idc/groups/literature/documents/um/dnet-um004_-en-p.pdf",
+      "source_revision": "DNET-UM004E-EN-P March2022 page19; ODVA PUB00026R4 March2016; PUB00027R1 cable manual2003"
+    },
+    {
+      "when": {
+        "can_error_state": "ERROR_ACTIVE"
+      },
+      "parameter": "can_tx_error_count",
+      "maximum": 127,
+      "source": "https://literature.rockwellautomation.com/idc/groups/literature/documents/um/dnet-um004_-en-p.pdf",
+      "source_revision": "DNET-UM004E-EN-P March2022 page19; ODVA PUB00026R4 March2016; PUB00027R1 cable manual2003"
+    },
+    {
+      "when": {
+        "can_error_state": "ERROR_ACTIVE"
+      },
+      "parameter": "can_rx_error_count",
+      "maximum": 127,
+      "source": "https://literature.rockwellautomation.com/idc/groups/literature/documents/um/dnet-um004_-en-p.pdf",
+      "source_revision": "DNET-UM004E-EN-P March2022 page19; ODVA PUB00026R4 March2016; PUB00027R1 cable manual2003"
+    },
+    {
+      "when": {
+        "can_error_state": "ERROR_PASSIVE"
+      },
+      "parameter": "can_tx_error_count",
+      "maximum": 255,
+      "source": "https://literature.rockwellautomation.com/idc/groups/literature/documents/um/dnet-um004_-en-p.pdf",
+      "source_revision": "DNET-UM004E-EN-P March2022 page19; ODVA PUB00026R4 March2016; PUB00027R1 cable manual2003"
+    },
+    {
+      "when": {
+        "can_error_state": "BUS_OFF"
+      },
+      "parameter": "can_tx_error_count",
+      "minimum": 256,
+      "source": "https://literature.rockwellautomation.com/idc/groups/literature/documents/um/dnet-um004_-en-p.pdf",
+      "source_revision": "DNET-UM004E-EN-P March2022 page19; ODVA PUB00026R4 March2016; PUB00027R1 cable manual2003"
+    },
+    {
+      "when": {},
+      "when_ranges": {
+        "can_tx_error_count": [
+          0,
+          127
+        ],
+        "can_rx_error_count": [
+          0,
+          127
+        ]
+      },
+      "parameter": "can_error_state",
+      "allowed": [
+        "ERROR_ACTIVE"
+      ],
+      "source": "https://literature.rockwellautomation.com/idc/groups/literature/documents/um/dnet-um004_-en-p.pdf",
+      "source_revision": "DNET-UM004E-EN-P March2022 page19; ODVA PUB00026R4 March2016; PUB00027R1 cable manual2003"
+    },
+    {
+      "when": {},
+      "parameter": "can_frame_format",
+      "allowed": [
+        "BASE_11"
+      ],
+      "source": "https://literature.rockwellautomation.com/idc/groups/literature/documents/um/dnet-um004_-en-p.pdf",
+      "source_revision": "DNET-UM004E-EN-P March2022 page19; ODVA PUB00026R4 March2016; PUB00027R1 cable manual2003"
+    },
+    {
+      "when": {},
+      "parameter": "can_frame_type",
+      "allowed": [
+        "DATA"
+      ],
+      "source": "https://literature.rockwellautomation.com/idc/groups/literature/documents/um/dnet-um004_-en-p.pdf",
+      "source_revision": "DNET-UM004E-EN-P March2022 page19; ODVA PUB00026R4 March2016; PUB00027R1 cable manual2003"
+    },
+    {
+      "when": {},
+      "parameter": "can_identifier",
+      "maximum": 2047,
+      "source": "https://literature.rockwellautomation.com/idc/groups/literature/documents/um/dnet-um004_-en-p.pdf",
+      "source_revision": "DNET-UM004E-EN-P March2022 page19; ODVA PUB00026R4 March2016; PUB00027R1 cable manual2003"
+    },
+    {
+      "when": {
+        "dn_identifier_layout": "CLASSIC_GROUPS_1_4",
+        "dn_message_group": "GROUP1"
+      },
+      "parameter": "can_identifier",
+      "minimum": 0,
+      "maximum": 1023,
+      "equal_expression": {
+        "sum": [
+          0,
+          {
+            "product": [
+              64,
+              "dn_message_id"
+            ]
+          },
+          "dn_identifier_mac_id"
+        ]
+      },
+      "source": "https://literature.rockwellautomation.com/idc/groups/literature/documents/um/dnet-um004_-en-p.pdf",
+      "source_revision": "DNET-UM004E-EN-P March2022 page19; ODVA PUB00026R4 March2016; PUB00027R1 cable manual2003"
+    },
+    {
+      "when": {
+        "dn_identifier_layout": "CLASSIC_GROUPS_1_4",
+        "dn_message_group": "GROUP2"
+      },
+      "parameter": "can_identifier",
+      "minimum": 1024,
+      "maximum": 1535,
+      "equal_expression": {
+        "sum": [
+          1024,
+          {
+            "product": [
+              8,
+              "dn_identifier_mac_id"
+            ]
+          },
+          "dn_message_id"
+        ]
+      },
+      "source": "https://literature.rockwellautomation.com/idc/groups/literature/documents/um/dnet-um004_-en-p.pdf",
+      "source_revision": "DNET-UM004E-EN-P March2022 page19; ODVA PUB00026R4 March2016; PUB00027R1 cable manual2003"
+    },
+    {
+      "when": {
+        "dn_identifier_layout": "CLASSIC_GROUPS_1_4",
+        "dn_message_group": "GROUP3"
+      },
+      "parameter": "can_identifier",
+      "minimum": 1536,
+      "maximum": 1983,
+      "equal_expression": {
+        "sum": [
+          1536,
+          {
+            "product": [
+              64,
+              "dn_message_id"
+            ]
+          },
+          "dn_identifier_mac_id"
+        ]
+      },
+      "source": "https://literature.rockwellautomation.com/idc/groups/literature/documents/um/dnet-um004_-en-p.pdf",
+      "source_revision": "DNET-UM004E-EN-P March2022 page19; ODVA PUB00026R4 March2016; PUB00027R1 cable manual2003"
+    },
+    {
+      "when": {
+        "dn_identifier_layout": "CLASSIC_GROUPS_1_4",
+        "dn_message_group": "GROUP4"
+      },
+      "parameter": "can_identifier",
+      "minimum": 1984,
+      "maximum": 2031,
+      "equal_expression": {
+        "sum": [
+          1984,
+          "dn_message_id"
+        ]
+      },
+      "source": "https://literature.rockwellautomation.com/idc/groups/literature/documents/um/dnet-um004_-en-p.pdf",
+      "source_revision": "DNET-UM004E-EN-P March2022 page19; ODVA PUB00026R4 March2016; PUB00027R1 cable manual2003"
+    },
+    {
+      "when": {
+        "dn_identifier_layout": "CLASSIC_GROUPS_1_4"
+      },
+      "parameter": "can_identifier",
+      "maximum": 2031,
+      "source": "https://literature.rockwellautomation.com/idc/groups/literature/documents/um/dnet-um004_-en-p.pdf",
+      "source_revision": "DNET-UM004E-EN-P March2022 page19; ODVA PUB00026R4 March2016; PUB00027R1 cable manual2003"
+    },
+    {
+      "when": {
+        "dn_identifier_layout": "CLASSIC_GROUPS_1_4",
+        "dn_message_group": "GROUP1"
+      },
+      "parameter": "dn_message_id",
+      "maximum": 15,
+      "source": "https://literature.rockwellautomation.com/idc/groups/literature/documents/um/dnet-um004_-en-p.pdf",
+      "source_revision": "DNET-UM004E-EN-P March2022 page19; ODVA PUB00026R4 March2016; PUB00027R1 cable manual2003"
+    },
+    {
+      "when": {
+        "dn_identifier_layout": "CLASSIC_GROUPS_1_4",
+        "dn_message_group": "GROUP2"
+      },
+      "parameter": "dn_message_id",
+      "maximum": 7,
+      "source": "https://literature.rockwellautomation.com/idc/groups/literature/documents/um/dnet-um004_-en-p.pdf",
+      "source_revision": "DNET-UM004E-EN-P March2022 page19; ODVA PUB00026R4 March2016; PUB00027R1 cable manual2003"
+    },
+    {
+      "when": {
+        "dn_identifier_layout": "CLASSIC_GROUPS_1_4",
+        "dn_message_group": "GROUP3"
+      },
+      "parameter": "dn_message_id",
+      "maximum": 6,
+      "source": "https://literature.rockwellautomation.com/idc/groups/literature/documents/um/dnet-um004_-en-p.pdf",
+      "source_revision": "DNET-UM004E-EN-P March2022 page19; ODVA PUB00026R4 March2016; PUB00027R1 cable manual2003"
+    },
+    {
+      "when": {
+        "dn_identifier_layout": "CLASSIC_GROUPS_1_4",
+        "dn_message_group": "GROUP4"
+      },
+      "parameter": "dn_message_id",
+      "maximum": 47,
+      "source": "https://literature.rockwellautomation.com/idc/groups/literature/documents/um/dnet-um004_-en-p.pdf",
+      "source_revision": "DNET-UM004E-EN-P March2022 page19; ODVA PUB00026R4 March2016; PUB00027R1 cable manual2003"
+    },
+    {
+      "when": {
+        "dn_message_group": "GROUP4",
+        "dn_identifier_layout": "CLASSIC_GROUPS_1_4"
+      },
+      "parameter": "dn_identifier_mac_id",
+      "allowed": [],
+      "source": "https://literature.rockwellautomation.com/idc/groups/literature/documents/um/dnet-um004_-en-p.pdf",
+      "source_revision": "DNET-UM004E-EN-P March2022 page19; ODVA PUB00026R4 March2016; PUB00027R1 cable manual2003"
+    },
+    {
+      "when": {
+        "dn_cable_type": "THICK",
+        "bitrate_bps": 125000
+      },
+      "parameter": "can_bus_length_m",
+      "maximum": 500,
+      "source": "https://literature.rockwellautomation.com/idc/groups/literature/documents/um/dnet-um004_-en-p.pdf",
+      "source_revision": "DNET-UM004E-EN-P March2022 page19; ODVA PUB00026R4 March2016; PUB00027R1 cable manual2003"
+    },
+    {
+      "when": {
+        "dn_cable_type": "THICK",
+        "bitrate_bps": 250000
+      },
+      "parameter": "can_bus_length_m",
+      "maximum": 250,
+      "source": "https://literature.rockwellautomation.com/idc/groups/literature/documents/um/dnet-um004_-en-p.pdf",
+      "source_revision": "DNET-UM004E-EN-P March2022 page19; ODVA PUB00026R4 March2016; PUB00027R1 cable manual2003"
+    },
+    {
+      "when": {
+        "dn_cable_type": "THICK",
+        "bitrate_bps": 500000
+      },
+      "parameter": "can_bus_length_m",
+      "maximum": 100,
+      "source": "https://literature.rockwellautomation.com/idc/groups/literature/documents/um/dnet-um004_-en-p.pdf",
+      "source_revision": "DNET-UM004E-EN-P March2022 page19; ODVA PUB00026R4 March2016; PUB00027R1 cable manual2003"
+    },
+    {
+      "when": {
+        "dn_cable_type": "MID",
+        "bitrate_bps": 125000
+      },
+      "parameter": "can_bus_length_m",
+      "maximum": 300,
+      "source": "https://literature.rockwellautomation.com/idc/groups/literature/documents/um/dnet-um004_-en-p.pdf",
+      "source_revision": "DNET-UM004E-EN-P March2022 page19; ODVA PUB00026R4 March2016; PUB00027R1 cable manual2003"
+    },
+    {
+      "when": {
+        "dn_cable_type": "MID",
+        "bitrate_bps": 250000
+      },
+      "parameter": "can_bus_length_m",
+      "maximum": 250,
+      "source": "https://literature.rockwellautomation.com/idc/groups/literature/documents/um/dnet-um004_-en-p.pdf",
+      "source_revision": "DNET-UM004E-EN-P March2022 page19; ODVA PUB00026R4 March2016; PUB00027R1 cable manual2003"
+    },
+    {
+      "when": {
+        "dn_cable_type": "MID",
+        "bitrate_bps": 500000
+      },
+      "parameter": "can_bus_length_m",
+      "maximum": 100,
+      "source": "https://literature.rockwellautomation.com/idc/groups/literature/documents/um/dnet-um004_-en-p.pdf",
+      "source_revision": "DNET-UM004E-EN-P March2022 page19; ODVA PUB00026R4 March2016; PUB00027R1 cable manual2003"
+    },
+    {
+      "when": {
+        "dn_cable_type": "THIN",
+        "bitrate_bps": 125000
+      },
+      "parameter": "can_bus_length_m",
+      "maximum": 100,
+      "source": "https://literature.rockwellautomation.com/idc/groups/literature/documents/um/dnet-um004_-en-p.pdf",
+      "source_revision": "DNET-UM004E-EN-P March2022 page19; ODVA PUB00026R4 March2016; PUB00027R1 cable manual2003"
+    },
+    {
+      "when": {
+        "dn_cable_type": "THIN",
+        "bitrate_bps": 250000
+      },
+      "parameter": "can_bus_length_m",
+      "maximum": 100,
+      "source": "https://literature.rockwellautomation.com/idc/groups/literature/documents/um/dnet-um004_-en-p.pdf",
+      "source_revision": "DNET-UM004E-EN-P March2022 page19; ODVA PUB00026R4 March2016; PUB00027R1 cable manual2003"
+    },
+    {
+      "when": {
+        "dn_cable_type": "THIN",
+        "bitrate_bps": 500000
+      },
+      "parameter": "can_bus_length_m",
+      "maximum": 100,
+      "source": "https://literature.rockwellautomation.com/idc/groups/literature/documents/um/dnet-um004_-en-p.pdf",
+      "source_revision": "DNET-UM004E-EN-P March2022 page19; ODVA PUB00026R4 March2016; PUB00027R1 cable manual2003"
+    },
+    {
+      "when": {
+        "dn_cable_type": "FLAT",
+        "bitrate_bps": 125000
+      },
+      "parameter": "can_bus_length_m",
+      "maximum": 420,
+      "source": "https://literature.rockwellautomation.com/idc/groups/literature/documents/um/dnet-um004_-en-p.pdf",
+      "source_revision": "DNET-UM004E-EN-P March2022 page19; ODVA PUB00026R4 March2016; PUB00027R1 cable manual2003"
+    },
+    {
+      "when": {
+        "dn_cable_type": "FLAT",
+        "bitrate_bps": 250000
+      },
+      "parameter": "can_bus_length_m",
+      "maximum": 200,
+      "source": "https://literature.rockwellautomation.com/idc/groups/literature/documents/um/dnet-um004_-en-p.pdf",
+      "source_revision": "DNET-UM004E-EN-P March2022 page19; ODVA PUB00026R4 March2016; PUB00027R1 cable manual2003"
+    },
+    {
+      "when": {
+        "dn_cable_type": "FLAT",
+        "bitrate_bps": 500000
+      },
+      "parameter": "can_bus_length_m",
+      "maximum": 75,
+      "source": "https://literature.rockwellautomation.com/idc/groups/literature/documents/um/dnet-um004_-en-p.pdf",
+      "source_revision": "DNET-UM004E-EN-P March2022 page19; ODVA PUB00026R4 March2016; PUB00027R1 cable manual2003"
+    },
+    {
+      "when": {
+        "bitrate_bps": 125000
+      },
+      "parameter": "dn_cumulative_drop_m",
+      "maximum": 156,
+      "source": "https://literature.rockwellautomation.com/idc/groups/literature/documents/um/dnet-um004_-en-p.pdf",
+      "source_revision": "DNET-UM004E-EN-P March2022 page19; ODVA PUB00026R4 March2016; PUB00027R1 cable manual2003"
+    },
+    {
+      "when": {
+        "bitrate_bps": 250000
+      },
+      "parameter": "dn_cumulative_drop_m",
+      "maximum": 78,
+      "source": "https://literature.rockwellautomation.com/idc/groups/literature/documents/um/dnet-um004_-en-p.pdf",
+      "source_revision": "DNET-UM004E-EN-P March2022 page19; ODVA PUB00026R4 March2016; PUB00027R1 cable manual2003"
+    },
+    {
+      "when": {
+        "bitrate_bps": 500000
+      },
+      "parameter": "dn_cumulative_drop_m",
+      "maximum": 39,
+      "source": "https://literature.rockwellautomation.com/idc/groups/literature/documents/um/dnet-um004_-en-p.pdf",
+      "source_revision": "DNET-UM004E-EN-P March2022 page19; ODVA PUB00026R4 March2016; PUB00027R1 cable manual2003"
+    },
+    {
+      "when": {},
+      "parameter": "can_stub_length_m",
+      "maximum": 6,
+      "source": "https://literature.rockwellautomation.com/idc/groups/literature/documents/um/dnet-um004_-en-p.pdf",
+      "source_revision": "DNET-UM004E-EN-P March2022 page19; ODVA PUB00026R4 March2016; PUB00027R1 cable manual2003"
+    },
+    {
+      "when": {},
+      "parameter": "can_stub_length_m",
+      "maximum_parameter": "dn_cumulative_drop_m",
+      "source": "https://literature.rockwellautomation.com/idc/groups/literature/documents/um/dnet-um004_-en-p.pdf",
+      "source_revision": "DNET-UM004E-EN-P March2022 page19; ODVA PUB00026R4 March2016; PUB00027R1 cable manual2003"
+    },
+    {
+      "when": {},
+      "parameter": "dn_inhibit_ms",
+      "maximum_parameter": "dn_heartbeat_ms",
+      "source": "https://literature.rockwellautomation.com/idc/groups/literature/documents/um/dnet-um004_-en-p.pdf",
+      "source_revision": "DNET-UM004E-EN-P March2022 page19; ODVA PUB00026R4 March2016; PUB00027R1 cable manual2003"
+    },
+    {
+      "when": {},
+      "parameter": "dn_worst_node_voltage_v",
+      "maximum_parameter": "dn_supply_voltage_v",
+      "source": "https://literature.rockwellautomation.com/idc/groups/literature/documents/um/dnet-um004_-en-p.pdf",
+      "source_revision": "DNET-UM004E-EN-P March2022 page19; ODVA PUB00026R4 March2016; PUB00027R1 cable manual2003"
+    },
+    {
+      "when": {},
+      "parameter": "dn_worst_node_voltage_v",
+      "minimum_parameter": "dn_device_minimum_voltage_v",
+      "source": "https://literature.rockwellautomation.com/idc/groups/literature/documents/um/dnet-um004_-en-p.pdf",
+      "source_revision": "DNET-UM004E-EN-P March2022 page19; ODVA PUB00026R4 March2016; PUB00027R1 cable manual2003"
+    },
+    {
+      "when": {},
+      "parameter": "dn_supply_voltage_v",
+      "exclusive_minimum": 0,
+      "source": "https://literature.rockwellautomation.com/idc/groups/literature/documents/um/dnet-um004_-en-p.pdf",
+      "source_revision": "DNET-UM004E-EN-P March2022 page19; ODVA PUB00026R4 March2016; PUB00027R1 cable manual2003"
+    },
+    {
+      "when": {},
+      "parameter": "dn_device_minimum_voltage_v",
+      "exclusive_minimum": 0,
+      "source": "https://literature.rockwellautomation.com/idc/groups/literature/documents/um/dnet-um004_-en-p.pdf",
+      "source_revision": "DNET-UM004E-EN-P March2022 page19; ODVA PUB00026R4 March2016; PUB00027R1 cable manual2003"
+    },
+    {
+      "when": {},
+      "parameter": "dn_cip_data_bytes",
+      "equal_expression": {
+        "subtract": [
+          "payload_bytes",
+          "dn_protocol_header_bytes"
+        ]
+      },
+      "source": "https://literature.rockwellautomation.com/idc/groups/literature/documents/um/dnet-um004_-en-p.pdf",
+      "source_revision": "DNET-UM004E-EN-P March2022 page19; ODVA PUB00026R4 March2016; PUB00027R1 cable manual2003"
+    },
+    {
+      "when": {
+        "dn_fragmented": false
+      },
+      "parameter": "dn_complete_message_bytes",
+      "equal_parameter": "dn_cip_data_bytes",
+      "source": "https://literature.rockwellautomation.com/idc/groups/literature/documents/um/dnet-um004_-en-p.pdf",
+      "source_revision": "DNET-UM004E-EN-P March2022 page19; ODVA PUB00026R4 March2016; PUB00027R1 cable manual2003"
+    },
+    {
+      "when": {
+        "dn_fragmented": false
+      },
+      "parameter": "dn_complete_message_bytes",
+      "maximum": 8,
+      "source": "https://literature.rockwellautomation.com/idc/groups/literature/documents/um/dnet-um004_-en-p.pdf",
+      "source_revision": "DNET-UM004E-EN-P March2022 page19; ODVA PUB00026R4 March2016; PUB00027R1 cable manual2003"
+    },
+    {
+      "when": {
+        "dn_fragmented": true
+      },
+      "parameter": "dn_complete_message_bytes",
+      "minimum_parameter": "dn_cip_data_bytes",
+      "source": "https://literature.rockwellautomation.com/idc/groups/literature/documents/um/dnet-um004_-en-p.pdf",
+      "source_revision": "DNET-UM004E-EN-P March2022 page19; ODVA PUB00026R4 March2016; PUB00027R1 cable manual2003"
+    },
+    {
+      "when": {},
+      "parameter": "dn_complete_message_bytes",
+      "maximum_parameter": "dn_peer_message_limit_bytes",
+      "source": "https://literature.rockwellautomation.com/idc/groups/literature/documents/um/dnet-um004_-en-p.pdf",
+      "source_revision": "DNET-UM004E-EN-P March2022 page19; ODVA PUB00026R4 March2016; PUB00027R1 cable manual2003"
+    },
+    {
+      "when": {
+        "dn_duplicate_mac_passed": false
+      },
+      "parameter": "dn_connection_state",
+      "allowed": [
+        "UNCONNECTED",
+        "FAULTED"
+      ],
+      "source": "https://literature.rockwellautomation.com/idc/groups/literature/documents/um/dnet-um004_-en-p.pdf",
+      "source_revision": "DNET-UM004E-EN-P March2022 page19; ODVA PUB00026R4 March2016; PUB00027R1 cable manual2003"
+    }
+  ],
+  "physical_layer_profile_id": null,
+  "medium_access_model": null,
+  "native_parameter_prefixes": [],
+  "parameter_aliases": {},
+  "parameter_alias_limits": {},
+  "parameter_evidence_scope": null,
+  "rate_source_profile_id": null,
+  "arbitration_model_id": null,
+  "max_payload_bytes": 8,
+  "capabilities": {
+    "supports_signals": true,
+    "supports_data_objects": true,
+    "supports_streams": false,
+    "supports_multicast": false,
+    "supports_publish_subscribe": true,
+    "supports_request_response": true,
+    "supports_cyclic": true,
+    "supports_event": true,
+    "supports_redundancy": false,
+    "supports_time_sync": false,
+    "supports_safety_profile": false,
+    "supports_segmentation": false,
+    "supports_fragmentation": true,
+    "supports_qos": false
+  },
+  "deterministic": true,
+  "overhead_bytes": 8,
+  "implementation_status": "PLANNED",
+  "connection_type": "COMMUNICATION_TECHNOLOGY",
+  "parameter_proposals": {
+    "kind": "DISCRETE_STANDARD_RATES",
+    "default_bps": 125000,
+    "status": "REVIEW_REQUIRED",
+    "source": "https://literature.rockwellautomation.com/idc/groups/literature/documents/um/dnet-um004_-en-p.pdf",
+    "source_revision": "DNET-UM004E-EN-P March2022 page19; ODVA PUB00026R4 March2016; PUB00027R1 cable manual2003",
+    "note": "DeviceNet registered rates125/250/500kbit/s; default125kbit/s. Matching nodes/selected cable/drop lengths and actual connection evidence remain explicit."
+  },
+  "capacity_evidence": {
+    "status": "MODEL_MISSING",
+    "frame_model": null,
+    "schedule_model": null,
+    "requires_confirmed_device_parameters": true
+  },
+  "components": {
+    "binding": "devicenet.binding",
+    "generator": "devicenet.generator",
+    "validator": "devicenet.validator",
+    "timing_model": null,
+    "load_model": null,
+    "encoder": "devicenet.encoder",
+    "decoder": "devicenet.decoder"
+  },
+  "known_limitations": "Technology-specific conformance details require a vendor/profile extension."
+}

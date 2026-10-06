@@ -1,0 +1,3166 @@
+{
+  "id": "ip",
+  "label": "Internet Protocol",
+  "domain": "generic_networking",
+  "layer": "NETWORK",
+  "transport_unit": "PACKET",
+  "payload_element_types": [
+    "FIELD",
+    "RAW_DATA"
+  ],
+  "hardware_interface": "explicit_registered_link",
+  "hardware_capability_aliases": [
+    "ethernet_port"
+  ],
+  "default_stack": [
+    "ip"
+  ],
+  "stack_variants": [
+    [
+      "ip"
+    ],
+    [
+      "ethernet",
+      "ip"
+    ]
+  ],
+  "default_bitrate": null,
+  "rate_model": {
+    "type": "RATE_FROM_EXPLICIT_LOWER_PATH",
+    "fields": []
+  },
+  "local_timing_schema": [],
+  "parameter_schema": {
+    "payload_bytes": {
+      "label": "Payload",
+      "category": "physical",
+      "scope": "message",
+      "type": "number",
+      "description": "Actual upper-layer/application data; IP headers, extension headers, fragment lengths and jumbo payload limits are separate.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "integer": true
+    },
+    "cycle_ms": {
+      "label": "Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "Standardperiode fuer zyklische Nachrichten.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "minimum_cycle_time_ms": {
+      "label": "Minimum Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "deadline_ms": {
+      "label": "Deadline",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "timeout_ms": {
+      "label": "Timeout",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_latency_ms": {
+      "label": "Maximum Latency",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "jitter_ms": {
+      "label": "Jitter Budget",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "freshness_ms": {
+      "label": "Data Freshness",
+      "category": "timing",
+      "scope": "signal",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "source_processing_delay_ms": {
+      "label": "Source Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_processing_delay_ms": {
+      "label": "Target Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "propagation_delay_ms": {
+      "label": "Propagation",
+      "category": "timing",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.01,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_bus_load_percent": {
+      "label": "Ziel-Buslast",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "Zielwert fuer die aus Routing, Payload, Zyklus und Bitrate berechnete Buslast.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "peak_factor": {
+      "label": "Peak Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.15,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_factor": {
+      "label": "Burst Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.5,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_window_ms": {
+      "label": "Burst Window",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "warning_threshold": {
+      "label": "Load Warning",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "critical_threshold": {
+      "label": "Load Critical",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 75,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "overload_threshold": {
+      "label": "Load Overload",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 90,
+      "unit": "%",
+      "min": 1,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "traffic_class": {
+      "label": "Traffic Class",
+      "category": "qos",
+      "scope": "route",
+      "type": "select",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": "BEST_EFFORT",
+      "options": [
+        "BEST_EFFORT",
+        "CONTROL",
+        "REALTIME",
+        "SAFETY_CRITICAL"
+      ],
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "packet_loss_probability": {
+      "label": "Packet Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "frame_loss_probability": {
+      "label": "Frame Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "bit_error_rate": {
+      "label": "Bit Error Rate",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "corruption_probability": {
+      "label": "Corruption",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duplicate_probability": {
+      "label": "Duplication",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "reordering_probability": {
+      "label": "Reordering",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "required_reliability": {
+      "label": "Required Reliability",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.999,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_offset_ms": {
+      "label": "Clock Offset",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_drift_ppm": {
+      "label": "Clock Drift",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 20,
+      "unit": "ppm",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_precision_ms": {
+      "label": "Sync Precision",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_interval_ms": {
+      "label": "Sync Interval",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1000,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_sync_error_ms": {
+      "label": "Maximum Sync Error",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_delay_ms": {
+      "label": "Gateway Processing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.2,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_queue_delay_ms": {
+      "label": "Gateway Queueing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "protocol_conversion_delay_ms": {
+      "label": "Protocol Conversion",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duration_s": {
+      "label": "Simulation Duration",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 1,
+      "unit": "s",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "seed": {
+      "label": "Random Seed",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 42,
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "max_events": {
+      "label": "Maximum Events",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 100000,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "dropout_probability": {
+      "label": "Failure Injection Dropout",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "ip_version": {
+      "type": "select",
+      "description": "Explicit selected IPv4 or IPv6; no automatic industry/IP family selection.",
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "options": [
+        "IPv4",
+        "IPv6"
+      ],
+      "label": "version",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ip_role": {
+      "type": "select",
+      "description": "Actual source, destination or forwarding node; IPv6 routers never initiate IP fragmentation.",
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "options": [
+        "SOURCE",
+        "DESTINATION",
+        "FORWARDER"
+      ],
+      "label": "role",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ip_packet_kind": {
+      "type": "select",
+      "description": "Actual whole packet versus one fragment; reassembled upper payload is not current fragment length.",
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "options": [
+        "WHOLE",
+        "FRAGMENT"
+      ],
+      "label": "packet kind",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ip_destination_kind": {
+      "type": "select",
+      "description": "Actual unicast/multicast/IPv4 broadcast; IPv6 has no broadcast.",
+      "source": "https://www.rfc-editor.org/rfc/rfc4291",
+      "source_revision": "RFC4291 February2006; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "options": [
+        "UNICAST",
+        "MULTICAST",
+        "BROADCAST"
+      ],
+      "label": "destination kind",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ip_lower_path_kind": {
+      "type": "select",
+      "description": "Actual registered lower bearer; Ethernet is one option, not an IP requirement.",
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "options": [
+        "ETHERNET",
+        "OTHER_REGISTERED_LINK",
+        "TUNNEL"
+      ],
+      "label": "lower path kind",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ip_payload_mode": {
+      "type": "select",
+      "description": "IPv6 normal16-bit PayloadLength versus explicitly supported32-bit jumbogram.",
+      "source": "https://www.rfc-editor.org/rfc/rfc2675",
+      "source_revision": "RFC2675 August1999; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "options": [
+        "NORMAL",
+        "JUMBO"
+      ],
+      "label": "payload mode",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ip_ecn_mode": {
+      "type": "select",
+      "description": "Actual transport support and packet ECN codepoint; no implicit transport congestion control.",
+      "source": "https://www.rfc-editor.org/rfc/rfc3168",
+      "source_revision": "RFC3168 September2001 IP ECN field; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "options": [
+        "NOT_ECT",
+        "ECT_1",
+        "ECT_0",
+        "CE"
+      ],
+      "label": "ecn mode",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ip_hbh_processing": {
+      "type": "select",
+      "description": "Actual node processing policy under RFC9673; absence of processing does not mean packet rejection.",
+      "source": "https://www.rfc-editor.org/rfc/rfc9673",
+      "source_revision": "RFC9673 October2024; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "options": [
+        "PROCESS_SUPPORTED_OPTIONS",
+        "SKIP_UNSUPPORTED_OPTIONS"
+      ],
+      "label": "hbh processing",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ip_source_address": {
+      "type": "text",
+      "description": "Actual version-matching source address, scope/assignment requires actual interface evidence.",
+      "source": "https://www.rfc-editor.org/rfc/rfc4291",
+      "source_revision": "RFC4291 February2006; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "format": "IP_ADDRESS",
+      "label": "source address",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ip_destination_address": {
+      "type": "text",
+      "description": "Actual version-matching destination, group/scope/delivery separate from address syntax.",
+      "source": "https://www.rfc-editor.org/rfc/rfc4291",
+      "source_revision": "RFC4291 February2006; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "format": "IP_ADDRESS",
+      "label": "destination address",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ip_next_hop_address": {
+      "type": "text",
+      "description": "Actual selected neighbor/route next hop; no automatic gateway IP.",
+      "source": "https://www.rfc-editor.org/rfc/rfc1122",
+      "source_revision": "RFC1122 October1989 Internet layer; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "format": "IP_ADDRESS",
+      "label": "next hop address",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ip_interface_binding": {
+      "type": "text",
+      "description": "Actual canonical interface and registered lower technology path.",
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "label": "interface binding",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ip_lower_path_source": {
+      "type": "text",
+      "description": "Actual frame/PHY/MTU/queue/arbitration/encapsulation evidence of selected lower path.",
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "label": "lower path source",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ip_address_source": {
+      "type": "text",
+      "description": "Actual address/prefix/scope assignment, next hop, neighbor discovery and routing evidence.",
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "label": "address source",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ip_implementation_source": {
+      "type": "text",
+      "description": "Actual host/router version and capabilities; RFC constant does not prove implementation.",
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "label": "implementation source",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ip_encoding_source": {
+      "type": "text",
+      "description": "Actual header/options/extensions/checksum and datagram-to-frame encoding.",
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "label": "encoding source",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ip_pmtu_source": {
+      "type": "text",
+      "description": "Actual measured/configured path MTU, ICMP/PTB handling and selected probe policy.",
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "label": "pmtu source",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ip_schedule_source": {
+      "type": "text",
+      "description": "Actual per-hop traffic/queuing/forwarding/fragment schedule.",
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "label": "schedule source",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ip_acceptance_source": {
+      "type": "text",
+      "description": "Actual complete upper transport/application functional E2E/freshness/safety acceptance.",
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "label": "acceptance source",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ip_jumbo_source": {
+      "type": "text",
+      "description": "Actual source/destination/link jumbo support and full32-bit upper-layer lengths.",
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "label": "jumbo source",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ip_fragment_source": {
+      "type": "text",
+      "description": "Actual identifier lifetime, fragment coverage/order/overlap and reassembly evidence.",
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "label": "fragment source",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ip_options_source": {
+      "type": "text",
+      "description": "Actual IPv4 options wire contents/padding/copy behavior, not assumed zero when options exist.",
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "label": "options source",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ip_extensions_source": {
+      "type": "text",
+      "description": "Actual ordered extension headers including all first-fragment upper headers.",
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "label": "extensions source",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ip_ecn_source": {
+      "type": "text",
+      "description": "Actual selected upper transport ECN capability/policy and incoming/outgoing packet handling.",
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "label": "ecn source",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ip_flow_source": {
+      "type": "text",
+      "description": "Actual IPv6 flow-label assignment/entropy/stability policy.",
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "label": "flow source",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ip_hbh_source": {
+      "type": "text",
+      "description": "Actual Hop-by-Hop options and selected node processing implementation.",
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "label": "hbh source",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ip_tunnel_source": {
+      "type": "text",
+      "description": "Actual inner/outer version, encapsulation overhead, lower MTU and fragmentation policy.",
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "label": "tunnel source",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ip_prefix_bits": {
+      "type": "number",
+      "description": "Actual address prefix, IPv4 max32 versus IPv6 max128.",
+      "source": "https://www.rfc-editor.org/rfc/rfc4291",
+      "source_revision": "RFC4291 February2006; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "unit": "bit",
+      "min": 0,
+      "max": 128,
+      "label": "prefix bits",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ip_header_octets": {
+      "type": "number",
+      "description": "Actual IPv4 IHL*4 with options versus IPv6 fixed40-byte base header.",
+      "source": "https://www.rfc-editor.org/rfc/rfc791",
+      "source_revision": "RFC791 September1981 with RFC6864/2474/3168 updates; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "unit": "Byte",
+      "min": 20,
+      "max": 60,
+      "label": "header octets",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "ip_version": "IPv4",
+            "ip_options_octets": 0
+          },
+          "value": 20,
+          "source": "https://www.rfc-editor.org/rfc/rfc791",
+          "source_revision": "RFC791 September1981 with RFC6864/2474/3168 updates; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01"
+        },
+        {
+          "when": {
+            "ip_version": "IPv6"
+          },
+          "value": 40,
+          "source": "https://www.rfc-editor.org/rfc/rfc791",
+          "source_revision": "RFC791 September1981 with RFC6864/2474/3168 updates; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01"
+        }
+      ]
+    },
+    "ip_ihl_words": {
+      "type": "number",
+      "description": "Actual IPv4 header length5..15 in32-bit words, not application payload.",
+      "source": "https://www.rfc-editor.org/rfc/rfc791",
+      "source_revision": "RFC791 September1981 with RFC6864/2474/3168 updates; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "min": 5,
+      "max": 15,
+      "label": "ihl words",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "ip_version": "IPv4",
+            "ip_options_octets": 0
+          },
+          "value": 5,
+          "source": "https://www.rfc-editor.org/rfc/rfc791",
+          "source_revision": "RFC791 September1981 with RFC6864/2474/3168 updates; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01"
+        }
+      ]
+    },
+    "ip_options_octets": {
+      "type": "number",
+      "description": "Actual IPv4 options+padding0..40 in4-byte multiples.",
+      "source": "https://www.rfc-editor.org/rfc/rfc791",
+      "source_revision": "RFC791 September1981 with RFC6864/2474/3168 updates; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "unit": "Byte",
+      "min": 0,
+      "max": 40,
+      "label": "options octets",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ip_extension_octets": {
+      "type": "number",
+      "description": "Actual aggregate IPv6 extension octets, included in PayloadLength.",
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "unit": "Byte",
+      "min": 0,
+      "label": "extension octets",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ip_payload_octets": {
+      "type": "number",
+      "description": "Actual current IP payload, includes upper-layer headers and IPv6 extensions.",
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "unit": "Byte",
+      "min": 0,
+      "max": 4294967295,
+      "label": "payload octets",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ip_packet_octets": {
+      "type": "number",
+      "description": "Actual current IP packet excluding lower-layer headers/trailer/padding.",
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "unit": "Byte",
+      "min": 20,
+      "max": 4294967335,
+      "label": "packet octets",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ip_payload_length_field": {
+      "type": "number",
+      "description": "Actual IPv6 16-bit wire length; zero for jumbogram.",
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "min": 0,
+      "max": 65535,
+      "label": "payload length field",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ip_jumbo_payload_octets": {
+      "type": "number",
+      "description": "Actual32-bit JumboPayloadLength >65535, includes extensions.",
+      "source": "https://www.rfc-editor.org/rfc/rfc2675",
+      "source_revision": "RFC2675 August1999; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "unit": "Byte",
+      "min": 65536,
+      "max": 4294967295,
+      "label": "jumbo payload octets",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ip_jumbo_option_type": {
+      "type": "number",
+      "description": "Specified JumboPayload optionC2.",
+      "source": "https://www.rfc-editor.org/rfc/rfc2675",
+      "source_revision": "RFC2675 August1999; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "min": 194,
+      "max": 194,
+      "label": "jumbo option type",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "ip_version": "IPv6",
+            "ip_payload_mode": "JUMBO"
+          },
+          "value": 194,
+          "source": "https://www.rfc-editor.org/rfc/rfc2675",
+          "source_revision": "RFC2675 August1999; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01"
+        }
+      ]
+    },
+    "ip_jumbo_option_length": {
+      "type": "number",
+      "description": "Specified Jumbo option data length4.",
+      "source": "https://www.rfc-editor.org/rfc/rfc2675",
+      "source_revision": "RFC2675 August1999; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "unit": "Byte",
+      "min": 4,
+      "max": 4,
+      "label": "jumbo option length",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "ip_version": "IPv6",
+            "ip_payload_mode": "JUMBO"
+          },
+          "value": 4,
+          "source": "https://www.rfc-editor.org/rfc/rfc2675",
+          "source_revision": "RFC2675 August1999; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01"
+        }
+      ]
+    },
+    "ip_next_header": {
+      "type": "number",
+      "description": "Actual immediately following IPv6 header number; not necessarily upper transport after extensions.",
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "min": 0,
+      "max": 255,
+      "label": "next header",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ip_protocol_number": {
+      "type": "number",
+      "description": "Actual IPv4 upper protocol number, separate from transport ports.",
+      "source": "https://www.rfc-editor.org/rfc/rfc791",
+      "source_revision": "RFC791 September1981 with RFC6864/2474/3168 updates; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "min": 0,
+      "max": 255,
+      "label": "protocol number",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ip_dscp": {
+      "type": "number",
+      "description": "Actual6-bit DSCP, default PHB0 proposal without bandwidth/priority guarantee.",
+      "source": "https://www.rfc-editor.org/rfc/rfc2474",
+      "source_revision": "RFC2474 December1998 DefaultPHB; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "min": 0,
+      "max": 63,
+      "label": "dscp",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_STANDARD",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "default": 0
+    },
+    "ip_ecn_bits": {
+      "type": "number",
+      "description": "Actual2-bit ECN codepoint tied to packet ECN mode.",
+      "source": "https://www.rfc-editor.org/rfc/rfc3168",
+      "source_revision": "RFC3168 September2001 IP ECN field; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "min": 0,
+      "max": 3,
+      "label": "ecn bits",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ip_traffic_class": {
+      "type": "number",
+      "description": "Actual8-bit DS field =4*DSCP+ECN, IPv4/IPv6 header semantics.",
+      "source": "https://www.rfc-editor.org/rfc/rfc3168",
+      "source_revision": "RFC3168 September2001 IP ECN field; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "min": 0,
+      "max": 255,
+      "label": "traffic class",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ip_ttl": {
+      "type": "number",
+      "description": "Actual IPv4 transmitted TTL1..255; configurable historically suggested64, not a milliseconds deadline.",
+      "source": "https://www.rfc-editor.org/rfc/rfc1700",
+      "source_revision": "RFC1700 October1994 historical suggested TTL64; obsolete assignments, not a universal current normative TTL; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "min": 1,
+      "max": 255,
+      "label": "ttl",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "ip_version": "IPv4",
+            "ip_role": "SOURCE"
+          },
+          "value": 64,
+          "source": "https://www.rfc-editor.org/rfc/rfc1700",
+          "source_revision": "RFC1700 October1994 historical suggested TTL64; obsolete assignments, not a universal current normative TTL; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01"
+        }
+      ]
+    },
+    "ip_hop_limit": {
+      "type": "number",
+      "description": "Actual IPv6 HopLimit0..255; destination accepts zero, forwarding cannot use zero.",
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "min": 0,
+      "max": 255,
+      "label": "hop limit",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ip_flow_label": {
+      "type": "number",
+      "description": "Actual20-bit IPv6 flow label; no universal assigned label0.",
+      "source": "https://www.rfc-editor.org/rfc/rfc6437",
+      "source_revision": "RFC6437 November2011; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "min": 0,
+      "max": 1048575,
+      "label": "flow label",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ip_identification": {
+      "type": "number",
+      "description": "Actual IPv4 ID16-bit or IPv6 fragment ID32-bit; not global packet sequence.",
+      "source": "https://www.rfc-editor.org/rfc/rfc6864",
+      "source_revision": "RFC6864 February2013; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "min": 0,
+      "max": 4294967295,
+      "label": "identification",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ip_fragment_offset_units": {
+      "type": "number",
+      "description": "Actual13-bit fragment offset in8-octet units, not byte offset.",
+      "source": "https://www.rfc-editor.org/rfc/rfc791",
+      "source_revision": "RFC791 September1981 with RFC6864/2474/3168 updates; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "min": 0,
+      "max": 8191,
+      "label": "fragment offset units",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ip_fragment_offset_octets": {
+      "type": "number",
+      "description": "Actual byte offset equals8*offset units.",
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "unit": "Byte",
+      "min": 0,
+      "max": 65528,
+      "label": "fragment offset octets",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ip_fragment_data_octets": {
+      "type": "number",
+      "description": "Actual fragmentable data in this fragment; non-final must be8-octet aligned.",
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "unit": "Byte",
+      "min": 0,
+      "max": 65535,
+      "label": "fragment data octets",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ip_fragment_header_octets": {
+      "type": "number",
+      "description": "Specified IPv6 Fragment header8octets.",
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "unit": "Byte",
+      "min": 8,
+      "max": 8,
+      "label": "fragment header octets",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "ip_version": "IPv6",
+            "ip_fragment_header_present": true
+          },
+          "value": 8,
+          "source": "https://www.rfc-editor.org/rfc/rfc8200",
+          "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01"
+        }
+      ]
+    },
+    "ip_reassembled_octets": {
+      "type": "number",
+      "description": "Actual reassembled IP datagram including its base header, peer capability required.",
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "unit": "Byte",
+      "min": 20,
+      "max": 65575,
+      "label": "reassembled octets",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ip_ipv4_flags_reserved": {
+      "type": "number",
+      "description": "Reserved IPv4 flag must be zero.",
+      "source": "https://www.rfc-editor.org/rfc/rfc791",
+      "source_revision": "RFC791 September1981 with RFC6864/2474/3168 updates; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "min": 0,
+      "max": 0,
+      "label": "ipv4 flags reserved",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "ip_version": "IPv4"
+          },
+          "value": 0,
+          "source": "https://www.rfc-editor.org/rfc/rfc791",
+          "source_revision": "RFC791 September1981 with RFC6864/2474/3168 updates; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01"
+        }
+      ]
+    },
+    "ip_ipv6_fragment_reserved": {
+      "type": "number",
+      "description": "Reserved IPv6 Fragment fields zero.",
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "min": 0,
+      "max": 0,
+      "label": "ipv6 fragment reserved",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "ip_version": "IPv6",
+            "ip_fragment_header_present": true
+          },
+          "value": 0,
+          "source": "https://www.rfc-editor.org/rfc/rfc8200",
+          "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01"
+        }
+      ]
+    },
+    "ip_header_checksum": {
+      "type": "number",
+      "description": "Actual IPv4 header-only ones-complement16-bit checksum, no IPv6 base checksum.",
+      "source": "https://www.rfc-editor.org/rfc/rfc791",
+      "source_revision": "RFC791 September1981 with RFC6864/2474/3168 updates; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "min": 0,
+      "max": 65535,
+      "label": "header checksum",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ip_link_mtu_octets": {
+      "type": "number",
+      "description": "Actual selected IP link MTU, IPv6 minimum1280 is a constraint, not a measured default.",
+      "source": "https://www.rfc-editor.org/rfc/rfc2464",
+      "source_revision": "RFC2464 December1998 IPv6 Ethernet MTU; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "unit": "Byte",
+      "min": 68,
+      "label": "link mtu octets",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "ip_version": "IPv6",
+            "ip_lower_path_kind": "ETHERNET"
+          },
+          "value": 1500,
+          "source": "https://www.rfc-editor.org/rfc/rfc2464",
+          "source_revision": "RFC2464 December1998 IPv6 Ethernet MTU; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01"
+        }
+      ]
+    },
+    "ip_path_mtu_octets": {
+      "type": "number",
+      "description": "Actual path MTU versus local link MTU; never equal by assumption.",
+      "source": "https://www.rfc-editor.org/rfc/rfc8201",
+      "source_revision": "RFC8201 July2017; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "unit": "Byte",
+      "min": 68,
+      "label": "path mtu octets",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ip_peer_reassembly_octets": {
+      "type": "number",
+      "description": "Actual destination effective receive/reassembly limit, not guaranteed65535.",
+      "source": "https://www.rfc-editor.org/rfc/rfc1122",
+      "source_revision": "RFC1122 October1989 Internet layer; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "unit": "Byte",
+      "min": 0,
+      "label": "peer reassembly octets",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ip_reassembly_timeout_s": {
+      "type": "number",
+      "description": "Actual reassembly timeout: IPv6 fixed60s, IPv4 RFC1122 recommends60..120s, independent from E2E deadline.",
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "unit": "s",
+      "min": 0,
+      "label": "reassembly timeout s",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "ip_version": "IPv6"
+          },
+          "value": 60,
+          "source": "https://www.rfc-editor.org/rfc/rfc8200",
+          "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01"
+        }
+      ]
+    },
+    "ip_forward_hops": {
+      "type": "number",
+      "description": "Actual required forwarding count, not inferred from system label.",
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "min": 0,
+      "label": "forward hops",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ip_hop_processing_bound_ms": {
+      "type": "number",
+      "description": "Actual bounded per-hop processing/queuing, not zero by default.",
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "unit": "ms",
+      "min": 0,
+      "label": "hop processing bound ms",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ip_functional_bound_ms": {
+      "type": "number",
+      "description": "Actual complete sensor-controller-actuator deadline, independent from hop/TTL/reassembly.",
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "unit": "ms",
+      "min": 0,
+      "label": "functional bound ms",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ip_dont_fragment": {
+      "type": "boolean",
+      "description": "Actual IPv4 DF bit; no IPv6 DF field.",
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "label": "dont fragment",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ip_more_fragments": {
+      "type": "boolean",
+      "description": "Actual fragment M/MF flag.",
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "label": "more fragments",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ip_fragment_header_present": {
+      "type": "boolean",
+      "description": "Actual IPv6 fragment header presence, incompatible with jumbo option.",
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "label": "fragment header present",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ip_jumbo_supported": {
+      "type": "boolean",
+      "description": "Actual complete lower/peer jumbo support, not standard existence.",
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "label": "jumbo supported",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ip_pmtu_discovery": {
+      "type": "boolean",
+      "description": "Actual enabled and supported path-MTU discovery, no assumed packet success.",
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "label": "pmtu discovery",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ip_ecn_transport_capable": {
+      "type": "boolean",
+      "description": "Actual upper transport ECN capability; IP DS bits do not create capability.",
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "label": "ecn transport capable",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ip_flow_assignment_enabled": {
+      "type": "boolean",
+      "description": "Actual IPv6 source flow label assignment enabled.",
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "label": "flow assignment enabled",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ip_no_fragment_overlap": {
+      "type": "boolean",
+      "description": "Actual checked disjoint fragments; IPv6 overlap rejects full reassembly.",
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "label": "no fragment overlap",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ip_first_fragment_headers_complete": {
+      "type": "boolean",
+      "description": "Actual first fragment includes all extension and upper-layer headers.",
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "label": "first fragment headers complete",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ip_schedule_confirmed": {
+      "type": "boolean",
+      "description": "Actual schedule confirmation.",
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "label": "schedule confirmed",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ip_capacity_confirmed": {
+      "type": "boolean",
+      "description": "Actual lower-path capacity confirmation.",
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "label": "capacity confirmed",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    }
+  },
+  "mechanisms": {
+    "framing": [
+      "IPV4_IHL_TOTAL_LENGTH_VS_IPV6_BASE_EXTENSION_PAYLOAD"
+    ],
+    "arbitration": [
+      "EXPLICIT_LOWER_LINK_ONLY"
+    ],
+    "addressing": [
+      "ACTUAL_VERSION_SCOPE_ROUTE"
+    ],
+    "integrity": [
+      "IPV4_HEADER_ONLY_CHECKSUM_IPV6_UPPER_LAYER_INTEGRITY"
+    ],
+    "fragmentation": [
+      "IPV4_DF_MF_VS_IPV6_SOURCE_ONLY_FRAGMENT_AND_JUMBO"
+    ],
+    "acceptance": [
+      "LOWER_PATH_CAPACITY_SEPARATE_FROM_UPPER_E2E"
+    ]
+  },
+  "parameter_constraints": [
+    {
+      "parameter": "ip_source_address",
+      "when": {
+        "ip_version": "IPv4"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "pattern": "[0-9.]+"
+    },
+    {
+      "parameter": "ip_source_address",
+      "when": {
+        "ip_version": "IPv6"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "pattern": ".*:.*"
+    },
+    {
+      "parameter": "ip_destination_address",
+      "when": {
+        "ip_version": "IPv4"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "pattern": "[0-9.]+"
+    },
+    {
+      "parameter": "ip_destination_address",
+      "when": {
+        "ip_version": "IPv6"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "pattern": ".*:.*"
+    },
+    {
+      "parameter": "ip_next_hop_address",
+      "when": {
+        "ip_version": "IPv4"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "pattern": "[0-9.]+"
+    },
+    {
+      "parameter": "ip_next_hop_address",
+      "when": {
+        "ip_version": "IPv6"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "pattern": ".*:.*"
+    },
+    {
+      "parameter": "ip_ihl_words",
+      "when": {
+        "ip_version": "IPv6"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "allowed": []
+    },
+    {
+      "parameter": "ip_options_octets",
+      "when": {
+        "ip_version": "IPv6"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "allowed": []
+    },
+    {
+      "parameter": "ip_ttl",
+      "when": {
+        "ip_version": "IPv6"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "allowed": []
+    },
+    {
+      "parameter": "ip_protocol_number",
+      "when": {
+        "ip_version": "IPv6"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "allowed": []
+    },
+    {
+      "parameter": "ip_dont_fragment",
+      "when": {
+        "ip_version": "IPv6"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "allowed": []
+    },
+    {
+      "parameter": "ip_ipv4_flags_reserved",
+      "when": {
+        "ip_version": "IPv6"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "allowed": []
+    },
+    {
+      "parameter": "ip_header_checksum",
+      "when": {
+        "ip_version": "IPv6"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "allowed": []
+    },
+    {
+      "parameter": "ip_extension_octets",
+      "when": {
+        "ip_version": "IPv4"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "allowed": []
+    },
+    {
+      "parameter": "ip_hop_limit",
+      "when": {
+        "ip_version": "IPv4"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "allowed": []
+    },
+    {
+      "parameter": "ip_next_header",
+      "when": {
+        "ip_version": "IPv4"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "allowed": []
+    },
+    {
+      "parameter": "ip_flow_label",
+      "when": {
+        "ip_version": "IPv4"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "allowed": []
+    },
+    {
+      "parameter": "ip_flow_assignment_enabled",
+      "when": {
+        "ip_version": "IPv4"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "allowed": []
+    },
+    {
+      "parameter": "ip_flow_source",
+      "when": {
+        "ip_version": "IPv4"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "allowed": []
+    },
+    {
+      "parameter": "ip_payload_length_field",
+      "when": {
+        "ip_version": "IPv4"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "allowed": []
+    },
+    {
+      "parameter": "ip_payload_mode",
+      "when": {
+        "ip_version": "IPv4"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "allowed": []
+    },
+    {
+      "parameter": "ip_jumbo_payload_octets",
+      "when": {
+        "ip_version": "IPv4"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "allowed": []
+    },
+    {
+      "parameter": "ip_jumbo_option_type",
+      "when": {
+        "ip_version": "IPv4"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "allowed": []
+    },
+    {
+      "parameter": "ip_jumbo_option_length",
+      "when": {
+        "ip_version": "IPv4"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "allowed": []
+    },
+    {
+      "parameter": "ip_jumbo_supported",
+      "when": {
+        "ip_version": "IPv4"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "allowed": []
+    },
+    {
+      "parameter": "ip_jumbo_source",
+      "when": {
+        "ip_version": "IPv4"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "allowed": []
+    },
+    {
+      "parameter": "ip_hbh_processing",
+      "when": {
+        "ip_version": "IPv4"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "allowed": []
+    },
+    {
+      "parameter": "ip_hbh_source",
+      "when": {
+        "ip_version": "IPv4"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "allowed": []
+    },
+    {
+      "parameter": "ip_fragment_header_octets",
+      "when": {
+        "ip_version": "IPv4"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "allowed": []
+    },
+    {
+      "parameter": "ip_fragment_header_present",
+      "when": {
+        "ip_version": "IPv4"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "allowed": []
+    },
+    {
+      "parameter": "ip_ipv6_fragment_reserved",
+      "when": {
+        "ip_version": "IPv4"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "allowed": []
+    },
+    {
+      "parameter": "ip_prefix_bits",
+      "when": {
+        "ip_version": "IPv4"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc4291",
+      "source_revision": "RFC4291 February2006; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "maximum": 32
+    },
+    {
+      "parameter": "ip_header_octets",
+      "when": {
+        "ip_version": "IPv4"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc791",
+      "source_revision": "RFC791 September1981 with RFC6864/2474/3168 updates; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "equal_expression": {
+        "product": [
+          4,
+          "ip_ihl_words"
+        ]
+      }
+    },
+    {
+      "parameter": "ip_header_octets",
+      "when": {
+        "ip_version": "IPv4"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc791",
+      "source_revision": "RFC791 September1981 with RFC6864/2474/3168 updates; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "equal_expression": {
+        "sum": [
+          20,
+          "ip_options_octets"
+        ]
+      }
+    },
+    {
+      "parameter": "ip_options_octets",
+      "when": {
+        "ip_version": "IPv4"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc791",
+      "source_revision": "RFC791 September1981 with RFC6864/2474/3168 updates; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "multiple_of": 4
+    },
+    {
+      "parameter": "ip_options_source",
+      "when": {},
+      "source": "https://www.rfc-editor.org/rfc/rfc791",
+      "source_revision": "RFC791 September1981 with RFC6864/2474/3168 updates; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "when_positive": [
+        "ip_options_octets"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "ip_header_octets",
+      "when": {
+        "ip_version": "IPv6"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "allowed": [
+        40
+      ]
+    },
+    {
+      "parameter": "ip_packet_octets",
+      "when": {},
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "equal_expression": {
+        "sum": [
+          "ip_header_octets",
+          "ip_payload_octets"
+        ]
+      }
+    },
+    {
+      "parameter": "ip_packet_octets",
+      "when": {
+        "ip_version": "IPv4"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc791",
+      "source_revision": "RFC791 September1981 with RFC6864/2474/3168 updates; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "maximum": 65535
+    },
+    {
+      "parameter": "ip_payload_octets",
+      "when": {
+        "ip_version": "IPv4"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc791",
+      "source_revision": "RFC791 September1981 with RFC6864/2474/3168 updates; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "maximum_expression": {
+        "subtract": [
+          65535,
+          "ip_header_octets"
+        ]
+      }
+    },
+    {
+      "parameter": "ip_payload_octets",
+      "when": {
+        "ip_version": "IPv6",
+        "ip_payload_mode": "NORMAL"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "maximum": 65535
+    },
+    {
+      "parameter": "ip_payload_length_field",
+      "when": {
+        "ip_version": "IPv6",
+        "ip_payload_mode": "NORMAL"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "equal_parameter": "ip_payload_octets"
+    },
+    {
+      "parameter": "ip_extension_octets",
+      "when": {},
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "maximum_parameter": "ip_payload_octets"
+    },
+    {
+      "parameter": "ip_extensions_source",
+      "when": {},
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "when_positive": [
+        "ip_extension_octets"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "ip_jumbo_payload_octets",
+      "when": {
+        "ip_payload_mode": "NORMAL"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "allowed": []
+    },
+    {
+      "parameter": "ip_jumbo_payload_octets",
+      "when": {
+        "ip_payload_mode": "JUMBO"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc2675",
+      "source_revision": "RFC2675 August1999; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "required": true
+    },
+    {
+      "parameter": "ip_jumbo_option_type",
+      "when": {
+        "ip_payload_mode": "NORMAL"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "allowed": []
+    },
+    {
+      "parameter": "ip_jumbo_option_type",
+      "when": {
+        "ip_payload_mode": "JUMBO"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc2675",
+      "source_revision": "RFC2675 August1999; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "required": true
+    },
+    {
+      "parameter": "ip_jumbo_option_length",
+      "when": {
+        "ip_payload_mode": "NORMAL"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "allowed": []
+    },
+    {
+      "parameter": "ip_jumbo_option_length",
+      "when": {
+        "ip_payload_mode": "JUMBO"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc2675",
+      "source_revision": "RFC2675 August1999; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "required": true
+    },
+    {
+      "parameter": "ip_jumbo_source",
+      "when": {
+        "ip_payload_mode": "NORMAL"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "allowed": []
+    },
+    {
+      "parameter": "ip_jumbo_source",
+      "when": {
+        "ip_payload_mode": "JUMBO"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc2675",
+      "source_revision": "RFC2675 August1999; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "required": true
+    },
+    {
+      "parameter": "ip_jumbo_supported",
+      "when": {
+        "ip_payload_mode": "JUMBO"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc2675",
+      "source_revision": "RFC2675 August1999; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "required": true,
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "ip_payload_length_field",
+      "when": {
+        "ip_payload_mode": "JUMBO"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc2675",
+      "source_revision": "RFC2675 August1999; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "allowed": [
+        0
+      ],
+      "required": true
+    },
+    {
+      "parameter": "ip_payload_octets",
+      "when": {
+        "ip_payload_mode": "JUMBO"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc2675",
+      "source_revision": "RFC2675 August1999; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "equal_parameter": "ip_jumbo_payload_octets"
+    },
+    {
+      "parameter": "ip_next_header",
+      "when": {
+        "ip_payload_mode": "JUMBO"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc2675",
+      "source_revision": "RFC2675 August1999; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "ip_fragment_header_present",
+      "when": {
+        "ip_payload_mode": "JUMBO"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc2675",
+      "source_revision": "RFC2675 August1999; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "allowed": [
+        false
+      ]
+    },
+    {
+      "parameter": "ip_packet_kind",
+      "when": {
+        "ip_payload_mode": "JUMBO"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc2675",
+      "source_revision": "RFC2675 August1999; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "allowed": [
+        "WHOLE"
+      ]
+    },
+    {
+      "parameter": "ip_extension_octets",
+      "when": {
+        "ip_payload_mode": "JUMBO"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc2675",
+      "source_revision": "RFC2675 August1999; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "minimum": 8
+    },
+    {
+      "parameter": "ip_ecn_bits",
+      "when": {
+        "ip_ecn_mode": "NOT_ECT"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc3168",
+      "source_revision": "RFC3168 September2001 IP ECN field; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "ip_ecn_bits",
+      "when": {
+        "ip_ecn_mode": "ECT_1"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc3168",
+      "source_revision": "RFC3168 September2001 IP ECN field; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "allowed": [
+        1
+      ]
+    },
+    {
+      "parameter": "ip_ecn_bits",
+      "when": {
+        "ip_ecn_mode": "ECT_0"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc3168",
+      "source_revision": "RFC3168 September2001 IP ECN field; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "allowed": [
+        2
+      ]
+    },
+    {
+      "parameter": "ip_ecn_bits",
+      "when": {
+        "ip_ecn_mode": "CE"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc3168",
+      "source_revision": "RFC3168 September2001 IP ECN field; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "allowed": [
+        3
+      ]
+    },
+    {
+      "parameter": "ip_traffic_class",
+      "when": {},
+      "source": "https://www.rfc-editor.org/rfc/rfc3168",
+      "source_revision": "RFC3168 September2001 IP ECN field; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "equal_expression": {
+        "sum": [
+          {
+            "product": [
+              4,
+              "ip_dscp"
+            ]
+          },
+          "ip_ecn_bits"
+        ]
+      }
+    },
+    {
+      "parameter": "ip_ecn_transport_capable",
+      "when": {},
+      "source": "https://www.rfc-editor.org/rfc/rfc3168",
+      "source_revision": "RFC3168 September2001 IP ECN field; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "when_greater_than": {
+        "ip_ecn_bits": 0
+      },
+      "allowed": [
+        true
+      ],
+      "required": true
+    },
+    {
+      "parameter": "ip_ecn_source",
+      "when": {},
+      "source": "https://www.rfc-editor.org/rfc/rfc3168",
+      "source_revision": "RFC3168 September2001 IP ECN field; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "when_greater_than": {
+        "ip_ecn_bits": 0
+      },
+      "required": true
+    },
+    {
+      "parameter": "ip_flow_label",
+      "when": {
+        "ip_flow_assignment_enabled": false
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc6437",
+      "source_revision": "RFC6437 November2011; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "ip_flow_source",
+      "when": {
+        "ip_flow_assignment_enabled": true
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc6437",
+      "source_revision": "RFC6437 November2011; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "required": true
+    },
+    {
+      "parameter": "ip_flow_label",
+      "when": {
+        "ip_flow_assignment_enabled": true
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc6437",
+      "source_revision": "RFC6437 November2011; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "minimum": 1
+    },
+    {
+      "parameter": "ip_identification",
+      "when": {
+        "ip_version": "IPv4"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc6864",
+      "source_revision": "RFC6864 February2013; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "maximum": 65535
+    },
+    {
+      "parameter": "ip_destination_kind",
+      "when": {
+        "ip_version": "IPv6"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc4291",
+      "source_revision": "RFC4291 February2006; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "forbidden": [
+        "BROADCAST"
+      ]
+    },
+    {
+      "parameter": "ip_fragment_offset_octets",
+      "when": {},
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "equal_expression": {
+        "product": [
+          8,
+          "ip_fragment_offset_units"
+        ]
+      }
+    },
+    {
+      "parameter": "ip_more_fragments",
+      "when": {
+        "ip_packet_kind": "WHOLE"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "allowed": [
+        false
+      ]
+    },
+    {
+      "parameter": "ip_fragment_offset_units",
+      "when": {
+        "ip_packet_kind": "WHOLE"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "ip_fragment_offset_octets",
+      "when": {
+        "ip_packet_kind": "WHOLE"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "ip_fragment_header_present",
+      "when": {
+        "ip_version": "IPv6",
+        "ip_packet_kind": "FRAGMENT"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "allowed": [
+        true
+      ],
+      "required": true
+    },
+    {
+      "parameter": "ip_fragment_source",
+      "when": {
+        "ip_packet_kind": "FRAGMENT"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "required": true
+    },
+    {
+      "parameter": "ip_identification",
+      "when": {
+        "ip_packet_kind": "FRAGMENT"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "required": true
+    },
+    {
+      "parameter": "ip_fragment_data_octets",
+      "when": {
+        "ip_more_fragments": true
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "multiple_of": 8
+    },
+    {
+      "parameter": "ip_dont_fragment",
+      "when": {
+        "ip_version": "IPv4",
+        "ip_packet_kind": "FRAGMENT"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc791",
+      "source_revision": "RFC791 September1981 with RFC6864/2474/3168 updates; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "allowed": [
+        false
+      ]
+    },
+    {
+      "parameter": "ip_more_fragments",
+      "when": {
+        "ip_dont_fragment": true
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc791",
+      "source_revision": "RFC791 September1981 with RFC6864/2474/3168 updates; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "allowed": [
+        false
+      ]
+    },
+    {
+      "parameter": "ip_fragment_offset_units",
+      "when": {
+        "ip_dont_fragment": true
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc791",
+      "source_revision": "RFC791 September1981 with RFC6864/2474/3168 updates; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "ip_reassembled_octets",
+      "when": {
+        "ip_version": "IPv4"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc791",
+      "source_revision": "RFC791 September1981 with RFC6864/2474/3168 updates; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "maximum": 65535
+    },
+    {
+      "parameter": "ip_reassembled_octets",
+      "when": {
+        "ip_version": "IPv6"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "maximum": 65575
+    },
+    {
+      "parameter": "ip_reassembled_octets",
+      "when": {},
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "maximum_parameter": "ip_peer_reassembly_octets"
+    },
+    {
+      "parameter": "ip_no_fragment_overlap",
+      "when": {
+        "ip_version": "IPv6",
+        "ip_packet_kind": "FRAGMENT"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "allowed": [
+        true
+      ],
+      "required": true
+    },
+    {
+      "parameter": "ip_first_fragment_headers_complete",
+      "when": {
+        "ip_version": "IPv6",
+        "ip_packet_kind": "FRAGMENT",
+        "ip_fragment_offset_units": 0
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "allowed": [
+        true
+      ],
+      "required": true
+    },
+    {
+      "parameter": "ip_reassembly_timeout_s",
+      "when": {
+        "ip_version": "IPv6"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "allowed": [
+        60
+      ]
+    },
+    {
+      "parameter": "ip_link_mtu_octets",
+      "when": {
+        "ip_version": "IPv6"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "minimum": 1280
+    },
+    {
+      "parameter": "ip_path_mtu_octets",
+      "when": {
+        "ip_version": "IPv6"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "minimum": 1280
+    },
+    {
+      "parameter": "ip_path_mtu_octets",
+      "when": {},
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "maximum_parameter": "ip_link_mtu_octets"
+    },
+    {
+      "parameter": "ip_packet_octets",
+      "when": {},
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "maximum_parameter": "ip_path_mtu_octets"
+    },
+    {
+      "parameter": "ip_hop_limit",
+      "when": {
+        "ip_version": "IPv6",
+        "ip_role": "FORWARDER"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "minimum": 1
+    },
+    {
+      "parameter": "ip_hop_limit",
+      "when": {
+        "ip_version": "IPv6",
+        "ip_role": "SOURCE"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "when_positive": [
+        "ip_forward_hops"
+      ],
+      "exclusive_minimum_expression": "ip_forward_hops"
+    },
+    {
+      "parameter": "ip_ttl",
+      "when": {
+        "ip_version": "IPv4",
+        "ip_role": "SOURCE"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "exclusive_minimum_expression": "ip_forward_hops"
+    },
+    {
+      "parameter": "ip_tunnel_source",
+      "when": {
+        "ip_lower_path_kind": "TUNNEL"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc8200",
+      "source_revision": "RFC8200 July2017 with RFC9673 update; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "required": true
+    },
+    {
+      "parameter": "ip_hbh_source",
+      "when": {},
+      "source": "https://www.rfc-editor.org/rfc/rfc9673",
+      "source_revision": "RFC9673 October2024; primary TXT downloaded/hash manifest, applicable parameter sections inspected2026-10-01",
+      "when_present": [
+        "ip_hbh_processing"
+      ],
+      "required": true
+    }
+  ],
+  "physical_layer_profile_id": null,
+  "medium_access_model": null,
+  "native_parameter_prefixes": [
+    "ip_"
+  ],
+  "parameter_aliases": {},
+  "parameter_alias_limits": {},
+  "parameter_evidence_scope": "EXPLICIT_LAYER",
+  "rate_source_profile_id": null,
+  "arbitration_model_id": null,
+  "max_payload_bytes": null,
+  "capabilities": {
+    "supports_signals": true,
+    "supports_data_objects": true,
+    "supports_streams": true,
+    "supports_multicast": true,
+    "supports_publish_subscribe": false,
+    "supports_request_response": false,
+    "supports_cyclic": true,
+    "supports_event": true,
+    "supports_redundancy": false,
+    "supports_time_sync": false,
+    "supports_safety_profile": false,
+    "supports_segmentation": false,
+    "supports_fragmentation": true,
+    "supports_qos": true
+  },
+  "deterministic": false,
+  "overhead_bytes": 8,
+  "implementation_status": "IMPLEMENTED",
+  "connection_type": "COMMUNICATION_TECHNOLOGY",
+  "parameter_proposals": {
+    "kind": "DEVICE_DEPENDENT",
+    "status": "REVIEW_REQUIRED",
+    "required_fields": [],
+    "note": "No universal rate is available; inspect the selected hardware/profile."
+  },
+  "capacity_evidence": {
+    "status": "MODEL_MISSING",
+    "frame_model": null,
+    "schedule_model": null,
+    "requires_confirmed_device_parameters": true
+  },
+  "components": {
+    "binding": "ip.binding",
+    "generator": "ip.generator",
+    "validator": "ip.validator",
+    "timing_model": null,
+    "load_model": null,
+    "encoder": "ip.encoder",
+    "decoder": "ip.decoder"
+  },
+  "known_limitations": "Technology-specific conformance details require a vendor/profile extension."
+}

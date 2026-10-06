@@ -1,0 +1,3266 @@
+{
+  "id": "wifi",
+  "label": "Wi-Fi",
+  "domain": "generic_networking",
+  "layer": "DATA_LINK",
+  "transport_unit": "FRAME",
+  "payload_element_types": [
+    "FIELD",
+    "RAW_DATA"
+  ],
+  "hardware_interface": "wifi_actual_generation_peer_radio",
+  "hardware_capability_aliases": [
+    "wireless_interface"
+  ],
+  "default_stack": [
+    "wifi"
+  ],
+  "stack_variants": [
+    [
+      "wifi"
+    ]
+  ],
+  "default_bitrate": null,
+  "rate_model": {
+    "type": "ACTUAL_WIFI_PHY_USER_RATE",
+    "fields": []
+  },
+  "local_timing_schema": [],
+  "parameter_schema": {
+    "payload_bytes": {
+      "label": "Payload",
+      "category": "physical",
+      "scope": "message",
+      "type": "number",
+      "description": "Actual application bytes, separate MSDU/MPDU/crypto/FCS/aggregation/peerlimits and selected radio generation. No1G/2304 universalframecap.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.17/include/linux/ieee80211.h",
+      "source_revision": "Linuxv6.17 original ieee80211.h selected MAC/FCS/MSDU/HT/VHT/HE/EHTlimits andcapabilitybitfields. Headerconstant notphysicaltimingproof.",
+      "integer": true
+    },
+    "cycle_ms": {
+      "label": "Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "Standardperiode fuer zyklische Nachrichten.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "minimum_cycle_time_ms": {
+      "label": "Minimum Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "deadline_ms": {
+      "label": "Deadline",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "timeout_ms": {
+      "label": "Timeout",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_latency_ms": {
+      "label": "Maximum Latency",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "jitter_ms": {
+      "label": "Jitter Budget",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "freshness_ms": {
+      "label": "Data Freshness",
+      "category": "timing",
+      "scope": "signal",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "source_processing_delay_ms": {
+      "label": "Source Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_processing_delay_ms": {
+      "label": "Target Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "propagation_delay_ms": {
+      "label": "Propagation",
+      "category": "timing",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.01,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_bus_load_percent": {
+      "label": "Ziel-Buslast",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "Zielwert fuer die aus Routing, Payload, Zyklus und Bitrate berechnete Buslast.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "peak_factor": {
+      "label": "Peak Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.15,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_factor": {
+      "label": "Burst Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.5,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_window_ms": {
+      "label": "Burst Window",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "warning_threshold": {
+      "label": "Load Warning",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "critical_threshold": {
+      "label": "Load Critical",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 75,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "overload_threshold": {
+      "label": "Load Overload",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 90,
+      "unit": "%",
+      "min": 1,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "queue_size": {
+      "label": "Queue Size",
+      "category": "qos",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 256,
+      "unit": "Frames",
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "queue_policy": {
+      "label": "Queue Policy",
+      "category": "qos",
+      "scope": "network",
+      "type": "select",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": "FIFO",
+      "options": [
+        "FIFO",
+        "PRIORITY",
+        "STRICT_PRIORITY",
+        "WEIGHTED_PRIORITY",
+        "WRR",
+        "ROUND_ROBIN",
+        "TIME_TRIGGERED",
+        "TAS",
+        "CBS",
+        "CUSTOM"
+      ],
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "qos_priority": {
+      "label": "Default Priority",
+      "category": "qos",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 3,
+      "min": 0,
+      "max": 7,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "traffic_class": {
+      "label": "Traffic Class",
+      "category": "qos",
+      "scope": "route",
+      "type": "select",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": "BEST_EFFORT",
+      "options": [
+        "BEST_EFFORT",
+        "CONTROL",
+        "REALTIME",
+        "SAFETY_CRITICAL"
+      ],
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "packet_loss_probability": {
+      "label": "Packet Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "frame_loss_probability": {
+      "label": "Frame Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "bit_error_rate": {
+      "label": "Bit Error Rate",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "corruption_probability": {
+      "label": "Corruption",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duplicate_probability": {
+      "label": "Duplication",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "reordering_probability": {
+      "label": "Reordering",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "required_reliability": {
+      "label": "Required Reliability",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.999,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_offset_ms": {
+      "label": "Clock Offset",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_drift_ppm": {
+      "label": "Clock Drift",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 20,
+      "unit": "ppm",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_precision_ms": {
+      "label": "Sync Precision",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_interval_ms": {
+      "label": "Sync Interval",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1000,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_sync_error_ms": {
+      "label": "Maximum Sync Error",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_delay_ms": {
+      "label": "Gateway Processing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.2,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_queue_delay_ms": {
+      "label": "Gateway Queueing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "protocol_conversion_delay_ms": {
+      "label": "Protocol Conversion",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duration_s": {
+      "label": "Simulation Duration",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 1,
+      "unit": "s",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "seed": {
+      "label": "Random Seed",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 42,
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "max_events": {
+      "label": "Maximum Events",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 100000,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "dropout_probability": {
+      "label": "Failure Injection Dropout",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "wf_phy": {
+      "type": "select",
+      "description": "Actual PHYgeneration; differentmode/rate/aggregation/GI envelopes.",
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+      "source_revision": "hostapd2.11 original configuration; selected radio/rate/beacon/DTIM/WMM APversusSTA and HT/VHT/HE/EHT configuration. Defaults scoped toselectedimplementation, notfullIEEE.",
+      "options": [
+        "DSSS_HR",
+        "LEGACY_OFDM",
+        "HT",
+        "VHT",
+        "HE",
+        "EHT",
+        "DMG",
+        "S1G",
+        "REGISTERED_ACTUAL"
+      ],
+      "label": "wf phy",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "wf_band": {
+      "type": "select",
+      "description": "Actualregulatoryqualified band, channelnumberaloneambiguous.",
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+      "source_revision": "hostapd2.11 original configuration; selected radio/rate/beacon/DTIM/WMM APversusSTA and HT/VHT/HE/EHT configuration. Defaults scoped toselectedimplementation, notfullIEEE.",
+      "options": [
+        "2_4_GHZ",
+        "5_GHZ",
+        "6_GHZ",
+        "60_GHZ",
+        "SUB1_GHZ",
+        "REGISTERED_ACTUAL"
+      ],
+      "label": "wf band",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "wf_role": {
+      "type": "select",
+      "description": "Actual transmitterAPversusSTA distinctEDCAdefaults.",
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+      "source_revision": "hostapd2.11 original configuration; selected radio/rate/beacon/DTIM/WMM APversusSTA and HT/VHT/HE/EHT configuration. Defaults scoped toselectedimplementation, notfullIEEE.",
+      "options": [
+        "AP",
+        "STA",
+        "MESH",
+        "REGISTERED_ACTUAL"
+      ],
+      "label": "wf role",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "wf_profile": {
+      "type": "select",
+      "description": "Actual sourceedition baseline, not defaultalldevices.",
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+      "source_revision": "hostapd2.11 original configuration; selected radio/rate/beacon/DTIM/WMM APversusSTA and HT/VHT/HE/EHT configuration. Defaults scoped toselectedimplementation, notfullIEEE.",
+      "options": [
+        "HOSTAPD2_11_BASELINE",
+        "ACTUAL_CONFIG",
+        "REGISTERED_ACTUAL"
+      ],
+      "label": "wf profile",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "wf_access": {
+      "type": "select",
+      "description": "Actualcontention/QoS ortrigger/resource allocation.",
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+      "source_revision": "hostapd2.11 original configuration; selected radio/rate/beacon/DTIM/WMM APversusSTA and HT/VHT/HE/EHT configuration. Defaults scoped toselectedimplementation, notfullIEEE.",
+      "options": [
+        "DCF",
+        "EDCA",
+        "TRIGGER_OFDMA",
+        "REGISTERED_ACTUAL"
+      ],
+      "label": "wf access",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "wf_ac": {
+      "type": "select",
+      "description": "Actual accesscategory separate priorityandwiredPCP.",
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+      "source_revision": "hostapd2.11 original configuration; selected radio/rate/beacon/DTIM/WMM APversusSTA and HT/VHT/HE/EHT configuration. Defaults scoped toselectedimplementation, notfullIEEE.",
+      "options": [
+        "BK",
+        "BE",
+        "VI",
+        "VO"
+      ],
+      "label": "wf ac",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "wf_aggregation": {
+      "type": "select",
+      "description": "Actual MSDU versusA-MSDU versusA-MPDU accounting.",
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.17/include/linux/ieee80211.h",
+      "source_revision": "Linuxv6.17 original ieee80211.h selected MAC/FCS/MSDU/HT/VHT/HE/EHTlimits andcapabilitybitfields. Headerconstant notphysicaltimingproof.",
+      "options": [
+        "NONE",
+        "A_MSDU",
+        "A_MPDU",
+        "BOTH"
+      ],
+      "label": "wf aggregation",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "wf_ppdu": {
+      "type": "select",
+      "description": "ActualHE/VHT/EHT PPDUmode.",
+      "source": "https://www.radiotap.org/fields/HE.html",
+      "source_revision": "Radiotap original HE field definition PPDU/RU/GI0.8/1.6/3.2/LTF/NSTS/BSScolor; knownbits required for interpretation.",
+      "options": [
+        "SU",
+        "EXT_SU",
+        "MU",
+        "TRIGGER",
+        "REGISTERED_ACTUAL"
+      ],
+      "label": "wf ppdu",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "wf_coding": {
+      "type": "select",
+      "description": "Actual FEC encoding, notautoLDPC foranygeneration.",
+      "source": "https://www.radiotap.org/fields/MCS.html",
+      "source_revision": "Radiotap original MCS field definition HTknownbit/rateindex/bandwidth/GI/STBC/FEC; captureunknownnotconfiguration.",
+      "options": [
+        "BCC",
+        "LDPC",
+        "REGISTERED_ACTUAL"
+      ],
+      "label": "wf coding",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "wf_outcome": {
+      "type": "select",
+      "description": "Actual consumingfunction result.",
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+      "source_revision": "hostapd2.11 original configuration; selected radio/rate/beacon/DTIM/WMM APversusSTA and HT/VHT/HE/EHT configuration. Defaults scoped toselectedimplementation, notfullIEEE.",
+      "options": [
+        "ACCEPTED",
+        "MAC_ACK_ONLY",
+        "ASSOCIATED_ONLY",
+        "ERROR",
+        "UNKNOWN"
+      ],
+      "label": "wf outcome",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "wf_link_bps": {
+      "type": "number",
+      "description": "Actual negotiated peruserPHYrate, notaggregateadvertisedmaximum.",
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+      "source_revision": "hostapd2.11 original configuration; selected radio/rate/beacon/DTIM/WMM APversusSTA and HT/VHT/HE/EHT configuration. Defaults scoped toselectedimplementation, notfullIEEE.",
+      "min": 1,
+      "unit": "bit/s",
+      "integer": true,
+      "label": "wf link bps",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "wf_profile": "HOSTAPD2_11_BASELINE",
+            "wf_phy": "DSSS_HR",
+            "wf_legacy_rate_100k": 10
+          },
+          "value": 1000000,
+          "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+          "source_revision": "hostapd2.11 original configuration; selected radio/rate/beacon/DTIM/WMM APversusSTA and HT/VHT/HE/EHT configuration. Defaults scoped toselectedimplementation, notfullIEEE."
+        },
+        {
+          "when": {
+            "wf_profile": "HOSTAPD2_11_BASELINE",
+            "wf_phy": "LEGACY_OFDM",
+            "wf_legacy_rate_100k": 60
+          },
+          "value": 6000000,
+          "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+          "source_revision": "hostapd2.11 original configuration; selected radio/rate/beacon/DTIM/WMM APversusSTA and HT/VHT/HE/EHT configuration. Defaults scoped toselectedimplementation, notfullIEEE."
+        }
+      ]
+    },
+    "wf_legacy_rate_100k": {
+      "type": "number",
+      "description": "Actuallegacyrate in hostapd100kbit/sunits.",
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+      "source_revision": "hostapd2.11 original configuration; selected radio/rate/beacon/DTIM/WMM APversusSTA and HT/VHT/HE/EHT configuration. Defaults scoped toselectedimplementation, notfullIEEE.",
+      "min": 1,
+      "max": 65535,
+      "integer": true,
+      "label": "wf legacy rate 100k",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "wf_profile": "HOSTAPD2_11_BASELINE",
+            "wf_phy": "DSSS_HR"
+          },
+          "value": 10,
+          "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+          "source_revision": "hostapd2.11 original configuration; selected radio/rate/beacon/DTIM/WMM APversusSTA and HT/VHT/HE/EHT configuration. Defaults scoped toselectedimplementation, notfullIEEE."
+        },
+        {
+          "when": {
+            "wf_profile": "HOSTAPD2_11_BASELINE",
+            "wf_phy": "LEGACY_OFDM"
+          },
+          "value": 60,
+          "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+          "source_revision": "hostapd2.11 original configuration; selected radio/rate/beacon/DTIM/WMM APversusSTA and HT/VHT/HE/EHT configuration. Defaults scoped toselectedimplementation, notfullIEEE."
+        }
+      ]
+    },
+    "wf_channel": {
+      "type": "number",
+      "description": "Actualchannelnumber with band/operatingclass/regulatorysource.",
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+      "source_revision": "hostapd2.11 original configuration; selected radio/rate/beacon/DTIM/WMM APversusSTA and HT/VHT/HE/EHT configuration. Defaults scoped toselectedimplementation, notfullIEEE.",
+      "min": 1,
+      "max": 255,
+      "integer": true,
+      "label": "wf channel",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "wf_operating_class": {
+      "type": "number",
+      "description": "Actualglobaloperatingclass definingchannel/band.",
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+      "source_revision": "hostapd2.11 original configuration; selected radio/rate/beacon/DTIM/WMM APversusSTA and HT/VHT/HE/EHT configuration. Defaults scoped toselectedimplementation, notfullIEEE.",
+      "min": 1,
+      "max": 255,
+      "integer": true,
+      "label": "wf operating class",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "wf_width_mhz": {
+      "type": "number",
+      "description": "Actualprimary/secondarychannelwidth.",
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+      "source_revision": "hostapd2.11 original configuration; selected radio/rate/beacon/DTIM/WMM APversusSTA and HT/VHT/HE/EHT configuration. Defaults scoped toselectedimplementation, notfullIEEE.",
+      "min": 0,
+      "unit": "MHz",
+      "integer": false,
+      "label": "wf width mhz",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "wf_phy": "DSSS_HR"
+          },
+          "value": 22,
+          "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+          "source_revision": "hostapd2.11 original configuration; selected radio/rate/beacon/DTIM/WMM APversusSTA and HT/VHT/HE/EHT configuration. Defaults scoped toselectedimplementation, notfullIEEE."
+        },
+        {
+          "when": {
+            "wf_phy": "LEGACY_OFDM"
+          },
+          "value": 20,
+          "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+          "source_revision": "hostapd2.11 original configuration; selected radio/rate/beacon/DTIM/WMM APversusSTA and HT/VHT/HE/EHT configuration. Defaults scoped toselectedimplementation, notfullIEEE."
+        }
+      ]
+    },
+    "wf_mcs": {
+      "type": "number",
+      "description": "Actualknown MCSindex, rawunknownindexmustnotaccepted.",
+      "source": "https://www.radiotap.org/fields/MCS.html",
+      "source_revision": "Radiotap original MCS field definition HTknownbit/rateindex/bandwidth/GI/STBC/FEC; captureunknownnotconfiguration.",
+      "min": 0,
+      "max": 76,
+      "integer": true,
+      "label": "wf mcs",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "wf_nss": {
+      "type": "number",
+      "description": "Actualspatialstreams separateSTBCspace-timestreams.",
+      "source": "https://www.radiotap.org/fields/VHT.html",
+      "source_revision": "Radiotap original VHT field definition MCS0..9/NSS1..8/guard/coding/group0or63SU1..62MU.",
+      "min": 1,
+      "max": 16,
+      "integer": true,
+      "label": "wf nss",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "wf_nsts": {
+      "type": "number",
+      "description": "Actual space-time streams; capture0unknownexcluded.",
+      "source": "https://www.radiotap.org/fields/HE.html",
+      "source_revision": "Radiotap original HE field definition PPDU/RU/GI0.8/1.6/3.2/LTF/NSTS/BSScolor; knownbits required for interpretation.",
+      "min": 1,
+      "max": 16,
+      "integer": true,
+      "label": "wf nsts",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "wf_gi_us": {
+      "type": "number",
+      "description": "Actualguardinterval bound toselectedPHY.",
+      "source": "https://www.radiotap.org/fields/HE.html",
+      "source_revision": "Radiotap original HE field definition PPDU/RU/GI0.8/1.6/3.2/LTF/NSTS/BSScolor; knownbits required for interpretation.",
+      "min": 0,
+      "unit": "us",
+      "integer": false,
+      "label": "wf gi us",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "wf_group_id": {
+      "type": "number",
+      "description": "ActualVHTgroup0or63SU/1..62MU.",
+      "source": "https://www.radiotap.org/fields/VHT.html",
+      "source_revision": "Radiotap original VHT field definition MCS0..9/NSS1..8/guard/coding/group0or63SU1..62MU.",
+      "min": 0,
+      "max": 63,
+      "integer": true,
+      "label": "wf group id",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "wf_bss_color": {
+      "type": "number",
+      "description": "ActualHE6bitcolor0..63, color0disablednotgenericabsence.",
+      "source": "https://www.radiotap.org/fields/HE.html",
+      "source_revision": "Radiotap original HE field definition PPDU/RU/GI0.8/1.6/3.2/LTF/NSTS/BSScolor; knownbits required for interpretation.",
+      "min": 0,
+      "max": 63,
+      "integer": true,
+      "label": "wf bss color",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "wf_ru_tones": {
+      "type": "number",
+      "description": "ActualHE/EHT resourceunit size, independentfullbandwidth.",
+      "source": "https://www.radiotap.org/fields/HE.html",
+      "source_revision": "Radiotap original HE field definition PPDU/RU/GI0.8/1.6/3.2/LTF/NSTS/BSScolor; knownbits required for interpretation.",
+      "min": 1,
+      "integer": true,
+      "label": "wf ru tones",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "wf_user_priority": {
+      "type": "number",
+      "description": "Actualuserpriority0..7 mappingcategory.",
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+      "source_revision": "hostapd2.11 original configuration; selected radio/rate/beacon/DTIM/WMM APversusSTA and HT/VHT/HE/EHT configuration. Defaults scoped toselectedimplementation, notfullIEEE.",
+      "min": 0,
+      "max": 7,
+      "integer": true,
+      "label": "wf user priority",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "wf_ecwmin": {
+      "type": "number",
+      "description": "ActualencodedCWminexponent0..15; notnumberofslots.",
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+      "source_revision": "hostapd2.11 original configuration; selected radio/rate/beacon/DTIM/WMM APversusSTA and HT/VHT/HE/EHT configuration. Defaults scoped toselectedimplementation, notfullIEEE.",
+      "min": 0,
+      "max": 15,
+      "integer": true,
+      "label": "wf ecwmin",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "wf_profile": "HOSTAPD2_11_BASELINE",
+            "wf_role": "STA",
+            "wf_ac": "BK",
+            "wf_phy": "LEGACY_OFDM"
+          },
+          "value": 4,
+          "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+          "source_revision": "hostapd2.11 original configuration; selected radio/rate/beacon/DTIM/WMM APversusSTA and HT/VHT/HE/EHT configuration. Defaults scoped toselectedimplementation, notfullIEEE."
+        },
+        {
+          "when": {
+            "wf_profile": "HOSTAPD2_11_BASELINE",
+            "wf_role": "STA",
+            "wf_ac": "BE",
+            "wf_phy": "LEGACY_OFDM"
+          },
+          "value": 4,
+          "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+          "source_revision": "hostapd2.11 original configuration; selected radio/rate/beacon/DTIM/WMM APversusSTA and HT/VHT/HE/EHT configuration. Defaults scoped toselectedimplementation, notfullIEEE."
+        },
+        {
+          "when": {
+            "wf_profile": "HOSTAPD2_11_BASELINE",
+            "wf_role": "STA",
+            "wf_ac": "VI",
+            "wf_phy": "LEGACY_OFDM"
+          },
+          "value": 3,
+          "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+          "source_revision": "hostapd2.11 original configuration; selected radio/rate/beacon/DTIM/WMM APversusSTA and HT/VHT/HE/EHT configuration. Defaults scoped toselectedimplementation, notfullIEEE."
+        },
+        {
+          "when": {
+            "wf_profile": "HOSTAPD2_11_BASELINE",
+            "wf_role": "STA",
+            "wf_ac": "VO",
+            "wf_phy": "LEGACY_OFDM"
+          },
+          "value": 2,
+          "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+          "source_revision": "hostapd2.11 original configuration; selected radio/rate/beacon/DTIM/WMM APversusSTA and HT/VHT/HE/EHT configuration. Defaults scoped toselectedimplementation, notfullIEEE."
+        }
+      ]
+    },
+    "wf_ecwmax": {
+      "type": "number",
+      "description": "ActualencodedCWmaxexponent>=min.",
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+      "source_revision": "hostapd2.11 original configuration; selected radio/rate/beacon/DTIM/WMM APversusSTA and HT/VHT/HE/EHT configuration. Defaults scoped toselectedimplementation, notfullIEEE.",
+      "min": 0,
+      "max": 15,
+      "integer": true,
+      "label": "wf ecwmax",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "wf_profile": "HOSTAPD2_11_BASELINE",
+            "wf_role": "STA",
+            "wf_ac": "BK",
+            "wf_phy": "LEGACY_OFDM"
+          },
+          "value": 10,
+          "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+          "source_revision": "hostapd2.11 original configuration; selected radio/rate/beacon/DTIM/WMM APversusSTA and HT/VHT/HE/EHT configuration. Defaults scoped toselectedimplementation, notfullIEEE."
+        },
+        {
+          "when": {
+            "wf_profile": "HOSTAPD2_11_BASELINE",
+            "wf_role": "STA",
+            "wf_ac": "BE",
+            "wf_phy": "LEGACY_OFDM"
+          },
+          "value": 10,
+          "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+          "source_revision": "hostapd2.11 original configuration; selected radio/rate/beacon/DTIM/WMM APversusSTA and HT/VHT/HE/EHT configuration. Defaults scoped toselectedimplementation, notfullIEEE."
+        },
+        {
+          "when": {
+            "wf_profile": "HOSTAPD2_11_BASELINE",
+            "wf_role": "STA",
+            "wf_ac": "VI",
+            "wf_phy": "LEGACY_OFDM"
+          },
+          "value": 4,
+          "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+          "source_revision": "hostapd2.11 original configuration; selected radio/rate/beacon/DTIM/WMM APversusSTA and HT/VHT/HE/EHT configuration. Defaults scoped toselectedimplementation, notfullIEEE."
+        },
+        {
+          "when": {
+            "wf_profile": "HOSTAPD2_11_BASELINE",
+            "wf_role": "STA",
+            "wf_ac": "VO",
+            "wf_phy": "LEGACY_OFDM"
+          },
+          "value": 3,
+          "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+          "source_revision": "hostapd2.11 original configuration; selected radio/rate/beacon/DTIM/WMM APversusSTA and HT/VHT/HE/EHT configuration. Defaults scoped toselectedimplementation, notfullIEEE."
+        }
+      ]
+    },
+    "wf_cwmin": {
+      "type": "number",
+      "description": "Actualcontentionwindowslots2^ECWmin−1.",
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+      "source_revision": "hostapd2.11 original configuration; selected radio/rate/beacon/DTIM/WMM APversusSTA and HT/VHT/HE/EHT configuration. Defaults scoped toselectedimplementation, notfullIEEE.",
+      "min": 0,
+      "max": 32767,
+      "unit": "slot",
+      "integer": true,
+      "label": "wf cwmin",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "wf_cwmax": {
+      "type": "number",
+      "description": "Actualcontentionwindowslots2^ECWmax−1.",
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+      "source_revision": "hostapd2.11 original configuration; selected radio/rate/beacon/DTIM/WMM APversusSTA and HT/VHT/HE/EHT configuration. Defaults scoped toselectedimplementation, notfullIEEE.",
+      "min": 0,
+      "max": 32767,
+      "unit": "slot",
+      "integer": true,
+      "label": "wf cwmax",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "wf_aifsn": {
+      "type": "number",
+      "description": "Actual4bitAIFSN fromnegotiatedWMMparameter.",
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.17/include/linux/ieee80211.h",
+      "source_revision": "Linuxv6.17 original ieee80211.h selected MAC/FCS/MSDU/HT/VHT/HE/EHTlimits andcapabilitybitfields. Headerconstant notphysicaltimingproof.",
+      "min": 0,
+      "max": 15,
+      "integer": true,
+      "label": "wf aifsn",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "wf_profile": "HOSTAPD2_11_BASELINE",
+            "wf_role": "STA",
+            "wf_ac": "BK",
+            "wf_phy": "LEGACY_OFDM"
+          },
+          "value": 7,
+          "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+          "source_revision": "hostapd2.11 original configuration; selected radio/rate/beacon/DTIM/WMM APversusSTA and HT/VHT/HE/EHT configuration. Defaults scoped toselectedimplementation, notfullIEEE."
+        },
+        {
+          "when": {
+            "wf_profile": "HOSTAPD2_11_BASELINE",
+            "wf_role": "STA",
+            "wf_ac": "BE",
+            "wf_phy": "LEGACY_OFDM"
+          },
+          "value": 3,
+          "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+          "source_revision": "hostapd2.11 original configuration; selected radio/rate/beacon/DTIM/WMM APversusSTA and HT/VHT/HE/EHT configuration. Defaults scoped toselectedimplementation, notfullIEEE."
+        },
+        {
+          "when": {
+            "wf_profile": "HOSTAPD2_11_BASELINE",
+            "wf_role": "STA",
+            "wf_ac": "VI",
+            "wf_phy": "LEGACY_OFDM"
+          },
+          "value": 2,
+          "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+          "source_revision": "hostapd2.11 original configuration; selected radio/rate/beacon/DTIM/WMM APversusSTA and HT/VHT/HE/EHT configuration. Defaults scoped toselectedimplementation, notfullIEEE."
+        },
+        {
+          "when": {
+            "wf_profile": "HOSTAPD2_11_BASELINE",
+            "wf_role": "STA",
+            "wf_ac": "VO",
+            "wf_phy": "LEGACY_OFDM"
+          },
+          "value": 2,
+          "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+          "source_revision": "hostapd2.11 original configuration; selected radio/rate/beacon/DTIM/WMM APversusSTA and HT/VHT/HE/EHT configuration. Defaults scoped toselectedimplementation, notfullIEEE."
+        }
+      ]
+    },
+    "wf_slot_us": {
+      "type": "number",
+      "description": "Actual selectedPHYslottime/shortslot operationalfact.",
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+      "source_revision": "hostapd2.11 original configuration; selected radio/rate/beacon/DTIM/WMM APversusSTA and HT/VHT/HE/EHT configuration. Defaults scoped toselectedimplementation, notfullIEEE.",
+      "min": 0,
+      "unit": "us",
+      "integer": false,
+      "label": "wf slot us",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "wf_sifs_us": {
+      "type": "number",
+      "description": "ActualsourcequalifiedPHY SIFS.",
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+      "source_revision": "hostapd2.11 original configuration; selected radio/rate/beacon/DTIM/WMM APversusSTA and HT/VHT/HE/EHT configuration. Defaults scoped toselectedimplementation, notfullIEEE.",
+      "min": 0,
+      "unit": "us",
+      "integer": false,
+      "label": "wf sifs us",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "wf_aifs_us": {
+      "type": "number",
+      "description": "ActualSIFS+AIFSN*slot duration.",
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+      "source_revision": "hostapd2.11 original configuration; selected radio/rate/beacon/DTIM/WMM APversusSTA and HT/VHT/HE/EHT configuration. Defaults scoped toselectedimplementation, notfullIEEE.",
+      "min": 0,
+      "unit": "us",
+      "integer": false,
+      "label": "wf aifs us",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "wf_txop_units": {
+      "type": "number",
+      "description": "ActualWMM16bitTXOPlimit in32microsecondunits;0oneexchange notzerocapacity.",
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+      "source_revision": "hostapd2.11 original configuration; selected radio/rate/beacon/DTIM/WMM APversusSTA and HT/VHT/HE/EHT configuration. Defaults scoped toselectedimplementation, notfullIEEE.",
+      "min": 0,
+      "max": 65535,
+      "integer": true,
+      "label": "wf txop units",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "wf_profile": "HOSTAPD2_11_BASELINE",
+            "wf_role": "STA",
+            "wf_ac": "BK",
+            "wf_phy": "LEGACY_OFDM"
+          },
+          "value": 0,
+          "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+          "source_revision": "hostapd2.11 original configuration; selected radio/rate/beacon/DTIM/WMM APversusSTA and HT/VHT/HE/EHT configuration. Defaults scoped toselectedimplementation, notfullIEEE."
+        },
+        {
+          "when": {
+            "wf_profile": "HOSTAPD2_11_BASELINE",
+            "wf_role": "STA",
+            "wf_ac": "BE",
+            "wf_phy": "LEGACY_OFDM"
+          },
+          "value": 0,
+          "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+          "source_revision": "hostapd2.11 original configuration; selected radio/rate/beacon/DTIM/WMM APversusSTA and HT/VHT/HE/EHT configuration. Defaults scoped toselectedimplementation, notfullIEEE."
+        },
+        {
+          "when": {
+            "wf_profile": "HOSTAPD2_11_BASELINE",
+            "wf_role": "STA",
+            "wf_ac": "VI",
+            "wf_phy": "LEGACY_OFDM"
+          },
+          "value": 94,
+          "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+          "source_revision": "hostapd2.11 original configuration; selected radio/rate/beacon/DTIM/WMM APversusSTA and HT/VHT/HE/EHT configuration. Defaults scoped toselectedimplementation, notfullIEEE."
+        },
+        {
+          "when": {
+            "wf_profile": "HOSTAPD2_11_BASELINE",
+            "wf_role": "STA",
+            "wf_ac": "VO",
+            "wf_phy": "LEGACY_OFDM"
+          },
+          "value": 47,
+          "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+          "source_revision": "hostapd2.11 original configuration; selected radio/rate/beacon/DTIM/WMM APversusSTA and HT/VHT/HE/EHT configuration. Defaults scoped toselectedimplementation, notfullIEEE."
+        }
+      ]
+    },
+    "wf_txop_us": {
+      "type": "number",
+      "description": "ActualdecodedTXOPmicroseconds.",
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+      "source_revision": "hostapd2.11 original configuration; selected radio/rate/beacon/DTIM/WMM APversusSTA and HT/VHT/HE/EHT configuration. Defaults scoped toselectedimplementation, notfullIEEE.",
+      "min": 0,
+      "max": 2097120,
+      "unit": "us",
+      "integer": true,
+      "label": "wf txop us",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "wf_beacon_tu": {
+      "type": "number",
+      "description": "Actualhostapdbeaconinterval TU1.024ms.",
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+      "source_revision": "hostapd2.11 original configuration; selected radio/rate/beacon/DTIM/WMM APversusSTA and HT/VHT/HE/EHT configuration. Defaults scoped toselectedimplementation, notfullIEEE.",
+      "min": 15,
+      "max": 65535,
+      "unit": "TU",
+      "integer": true,
+      "label": "wf beacon tu",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "wf_profile": "HOSTAPD2_11_BASELINE",
+            "wf_role": "AP"
+          },
+          "value": 100,
+          "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+          "source_revision": "hostapd2.11 original configuration; selected radio/rate/beacon/DTIM/WMM APversusSTA and HT/VHT/HE/EHT configuration. Defaults scoped toselectedimplementation, notfullIEEE."
+        }
+      ]
+    },
+    "wf_beacon_ms": {
+      "type": "number",
+      "description": "Actualbeaconperiod notapplicationcycle.",
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+      "source_revision": "hostapd2.11 original configuration; selected radio/rate/beacon/DTIM/WMM APversusSTA and HT/VHT/HE/EHT configuration. Defaults scoped toselectedimplementation, notfullIEEE.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "label": "wf beacon ms",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "wf_dtim_period": {
+      "type": "number",
+      "description": "Actualcountbeacons perDTIM.",
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+      "source_revision": "hostapd2.11 original configuration; selected radio/rate/beacon/DTIM/WMM APversusSTA and HT/VHT/HE/EHT configuration. Defaults scoped toselectedimplementation, notfullIEEE.",
+      "min": 1,
+      "max": 255,
+      "integer": true,
+      "label": "wf dtim period",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "wf_profile": "HOSTAPD2_11_BASELINE",
+            "wf_role": "AP"
+          },
+          "value": 2,
+          "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+          "source_revision": "hostapd2.11 original configuration; selected radio/rate/beacon/DTIM/WMM APversusSTA and HT/VHT/HE/EHT configuration. Defaults scoped toselectedimplementation, notfullIEEE."
+        }
+      ]
+    },
+    "wf_rts_threshold": {
+      "type": "number",
+      "description": "ActualhostapdRTSthreshold−1disabled; runtimeownerexplicit.",
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+      "source_revision": "hostapd2.11 original configuration; selected radio/rate/beacon/DTIM/WMM APversusSTA and HT/VHT/HE/EHT configuration. Defaults scoped toselectedimplementation, notfullIEEE.",
+      "min": -1,
+      "max": 65535,
+      "unit": "byte",
+      "integer": true,
+      "label": "wf rts threshold",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "wf_profile": "HOSTAPD2_11_BASELINE",
+            "wf_role": "AP"
+          },
+          "value": -1,
+          "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+          "source_revision": "hostapd2.11 original configuration; selected radio/rate/beacon/DTIM/WMM APversusSTA and HT/VHT/HE/EHT configuration. Defaults scoped toselectedimplementation, notfullIEEE."
+        }
+      ]
+    },
+    "wf_fragment_threshold": {
+      "type": "number",
+      "description": "Actualhostapdfragmentthreshold−1disabled or256..2346.",
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+      "source_revision": "hostapd2.11 original configuration; selected radio/rate/beacon/DTIM/WMM APversusSTA and HT/VHT/HE/EHT configuration. Defaults scoped toselectedimplementation, notfullIEEE.",
+      "min": -1,
+      "max": 2346,
+      "unit": "byte",
+      "integer": true,
+      "label": "wf fragment threshold",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "wf_profile": "HOSTAPD2_11_BASELINE",
+            "wf_role": "AP"
+          },
+          "value": -1,
+          "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+          "source_revision": "hostapd2.11 original configuration; selected radio/rate/beacon/DTIM/WMM APversusSTA and HT/VHT/HE/EHT configuration. Defaults scoped toselectedimplementation, notfullIEEE."
+        }
+      ]
+    },
+    "wf_msdu_bytes": {
+      "type": "number",
+      "description": "Actual completeMSDU beforeaggregate/crypto/FCS.",
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.17/include/linux/ieee80211.h",
+      "source_revision": "Linuxv6.17 original ieee80211.h selected MAC/FCS/MSDU/HT/VHT/HE/EHTlimits andcapabilitybitfields. Headerconstant notphysicaltimingproof.",
+      "min": 0,
+      "unit": "byte",
+      "integer": true,
+      "label": "wf msdu bytes",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "wf_mac_header_bytes": {
+      "type": "number",
+      "description": "Actual3/4address/QoS/HTcontrolnativeheader.",
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.17/include/linux/ieee80211.h",
+      "source_revision": "Linuxv6.17 original ieee80211.h selected MAC/FCS/MSDU/HT/VHT/HE/EHTlimits andcapabilitybitfields. Headerconstant notphysicaltimingproof.",
+      "min": 0,
+      "unit": "byte",
+      "integer": true,
+      "label": "wf mac header bytes",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "wf_crypto_bytes": {
+      "type": "number",
+      "description": "Actual selectedcipher/securityoverhead, not0default.",
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.17/include/linux/ieee80211.h",
+      "source_revision": "Linuxv6.17 original ieee80211.h selected MAC/FCS/MSDU/HT/VHT/HE/EHTlimits andcapabilitybitfields. Headerconstant notphysicaltimingproof.",
+      "min": 0,
+      "unit": "byte",
+      "integer": true,
+      "label": "wf crypto bytes",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "wf_fcs_bytes": {
+      "type": "number",
+      "description": "Actual4byte onairFCS; radiotapcapturemaystrip it.",
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.17/include/linux/ieee80211.h",
+      "source_revision": "Linuxv6.17 original ieee80211.h selected MAC/FCS/MSDU/HT/VHT/HE/EHTlimits andcapabilitybitfields. Headerconstant notphysicaltimingproof.",
+      "min": 0,
+      "max": 4,
+      "unit": "byte",
+      "integer": true,
+      "label": "wf fcs bytes",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "wf_mpdu_bytes": {
+      "type": "number",
+      "description": "ActualcompleteMPDU notMSDUcap.",
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.17/include/linux/ieee80211.h",
+      "source_revision": "Linuxv6.17 original ieee80211.h selected MAC/FCS/MSDU/HT/VHT/HE/EHTlimits andcapabilitybitfields. Headerconstant notphysicaltimingproof.",
+      "min": 0,
+      "unit": "byte",
+      "integer": true,
+      "label": "wf mpdu bytes",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "wf_max_mpdu_bytes": {
+      "type": "number",
+      "description": "Actualpeercapabilityselected MPDUlimit.",
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.17/include/linux/ieee80211.h",
+      "source_revision": "Linuxv6.17 original ieee80211.h selected MAC/FCS/MSDU/HT/VHT/HE/EHTlimits andcapabilitybitfields. Headerconstant notphysicaltimingproof.",
+      "min": 0,
+      "unit": "byte",
+      "integer": true,
+      "label": "wf max mpdu bytes",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "wf_ampdu_exp": {
+      "type": "number",
+      "description": "ActualHT/VHTadvertisedA-MPDUexponent.",
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.17/include/linux/ieee80211.h",
+      "source_revision": "Linuxv6.17 original ieee80211.h selected MAC/FCS/MSDU/HT/VHT/HE/EHTlimits andcapabilitybitfields. Headerconstant notphysicaltimingproof.",
+      "min": 0,
+      "max": 7,
+      "integer": true,
+      "label": "wf ampdu exp",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "wf_max_ampdu_bytes": {
+      "type": "number",
+      "description": "Actual2^(13+exp)−1 beforeHEadditionalcapabilities.",
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.17/include/linux/ieee80211.h",
+      "source_revision": "Linuxv6.17 original ieee80211.h selected MAC/FCS/MSDU/HT/VHT/HE/EHTlimits andcapabilitybitfields. Headerconstant notphysicaltimingproof.",
+      "min": 0,
+      "unit": "byte",
+      "integer": true,
+      "label": "wf max ampdu bytes",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "wf_ampdu_bytes": {
+      "type": "number",
+      "description": "Actualcompleteaggregatedwire PSDU.",
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.17/include/linux/ieee80211.h",
+      "source_revision": "Linuxv6.17 original ieee80211.h selected MAC/FCS/MSDU/HT/VHT/HE/EHTlimits andcapabilitybitfields. Headerconstant notphysicaltimingproof.",
+      "min": 0,
+      "unit": "byte",
+      "integer": true,
+      "label": "wf ampdu bytes",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "wf_ba_buffer_frames": {
+      "type": "number",
+      "description": "ActualHT/HE/EHTBlockACKreorderingbuffer count.",
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.17/include/linux/ieee80211.h",
+      "source_revision": "Linuxv6.17 original ieee80211.h selected MAC/FCS/MSDU/HT/VHT/HE/EHTlimits andcapabilitybitfields. Headerconstant notphysicaltimingproof.",
+      "min": 1,
+      "max": 1024,
+      "integer": true,
+      "label": "wf ba buffer frames",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "wf_air_us": {
+      "type": "number",
+      "description": "ActualwholePPDUwithpreamble/FEC/GI/aggregationduration.",
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+      "source_revision": "hostapd2.11 original configuration; selected radio/rate/beacon/DTIM/WMM APversusSTA and HT/VHT/HE/EHT configuration. Defaults scoped toselectedimplementation, notfullIEEE.",
+      "min": 0,
+      "unit": "us",
+      "integer": false,
+      "label": "wf air us",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "wf_access_us": {
+      "type": "number",
+      "description": "Actualqualifiedbusy/backoff/contention/trigger/retry bound.",
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+      "source_revision": "hostapd2.11 original configuration; selected radio/rate/beacon/DTIM/WMM APversusSTA and HT/VHT/HE/EHT configuration. Defaults scoped toselectedimplementation, notfullIEEE.",
+      "min": 0,
+      "unit": "us",
+      "integer": false,
+      "label": "wf access us",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "wf_source_ms": {
+      "type": "number",
+      "description": "Actualproducing/cipher/queuedelay.",
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+      "source_revision": "hostapd2.11 original configuration; selected radio/rate/beacon/DTIM/WMM APversusSTA and HT/VHT/HE/EHT configuration. Defaults scoped toselectedimplementation, notfullIEEE.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "label": "wf source ms",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "wf_transport_ms": {
+      "type": "number",
+      "description": "Actual completeWi-Fipath access/frame/retry/forwardbound.",
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+      "source_revision": "hostapd2.11 original configuration; selected radio/rate/beacon/DTIM/WMM APversusSTA and HT/VHT/HE/EHT configuration. Defaults scoped toselectedimplementation, notfullIEEE.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "label": "wf transport ms",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "wf_use_ms": {
+      "type": "number",
+      "description": "Actual consumingfunction executiondelay.",
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+      "source_revision": "hostapd2.11 original configuration; selected radio/rate/beacon/DTIM/WMM APversusSTA and HT/VHT/HE/EHT configuration. Defaults scoped toselectedimplementation, notfullIEEE.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "label": "wf use ms",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "wf_e2e_ms": {
+      "type": "number",
+      "description": "Actual source-to-usebound notMACACK/PHYbitrate.",
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+      "source_revision": "hostapd2.11 original configuration; selected radio/rate/beacon/DTIM/WMM APversusSTA and HT/VHT/HE/EHT configuration. Defaults scoped toselectedimplementation, notfullIEEE.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "label": "wf e2e ms",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "wf_deadline_ms": {
+      "type": "number",
+      "description": "Independent functiondeadline.",
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+      "source_revision": "hostapd2.11 original configuration; selected radio/rate/beacon/DTIM/WMM APversusSTA and HT/VHT/HE/EHT configuration. Defaults scoped toselectedimplementation, notfullIEEE.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "label": "wf deadline ms",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "wf_age_ms": {
+      "type": "number",
+      "description": "Actualconsumeddataage.",
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+      "source_revision": "hostapd2.11 original configuration; selected radio/rate/beacon/DTIM/WMM APversusSTA and HT/VHT/HE/EHT configuration. Defaults scoped toselectedimplementation, notfullIEEE.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "label": "wf age ms",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "wf_freshness_ms": {
+      "type": "number",
+      "description": "Independent allowableage.",
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+      "source_revision": "hostapd2.11 original configuration; selected radio/rate/beacon/DTIM/WMM APversusSTA and HT/VHT/HE/EHT configuration. Defaults scoped toselectedimplementation, notfullIEEE.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "label": "wf freshness ms",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "wf_stbc": {
+      "type": "boolean",
+      "description": "ActualSTBCcodingflag for streamcount relation.",
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+      "source_revision": "hostapd2.11 original configuration; selected radio/rate/beacon/DTIM/WMM APversusSTA and HT/VHT/HE/EHT configuration. Defaults scoped toselectedimplementation, notfullIEEE.",
+      "label": "wf stbc",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "wf_mcs_known": {
+      "type": "boolean",
+      "description": "ActualMCSknowledge/capturebit, falsecannotprove actualrate.",
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+      "source_revision": "hostapd2.11 original configuration; selected radio/rate/beacon/DTIM/WMM APversusSTA and HT/VHT/HE/EHT configuration. Defaults scoped toselectedimplementation, notfullIEEE.",
+      "label": "wf mcs known",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "wf_ampdu_limit_base": {
+      "type": "boolean",
+      "description": "ActualselectedHT/VHTbaseonlylimit; HE/EHTextensionrequiresownrules.",
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+      "source_revision": "hostapd2.11 original configuration; selected radio/rate/beacon/DTIM/WMM APversusSTA and HT/VHT/HE/EHT configuration. Defaults scoped toselectedimplementation, notfullIEEE.",
+      "label": "wf ampdu limit base",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "wf_path_verified": {
+      "type": "boolean",
+      "description": "Actual radiointerference/backoff/retry/AP/STA/hostpathevidence.",
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+      "source_revision": "hostapd2.11 original configuration; selected radio/rate/beacon/DTIM/WMM APversusSTA and HT/VHT/HE/EHT configuration. Defaults scoped toselectedimplementation, notfullIEEE.",
+      "label": "wf path verified",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "wf_data_accepted": {
+      "type": "boolean",
+      "description": "Actualindependent consumingfunction receivesfreshdata.",
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+      "source_revision": "hostapd2.11 original configuration; selected radio/rate/beacon/DTIM/WMM APversusSTA and HT/VHT/HE/EHT configuration. Defaults scoped toselectedimplementation, notfullIEEE.",
+      "label": "wf data accepted",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "wf_revision": {
+      "type": "text",
+      "description": "ActualIEEE/device/driverconfigurationedition.",
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+      "source_revision": "hostapd2.11 original configuration; selected radio/rate/beacon/DTIM/WMM APversusSTA and HT/VHT/HE/EHT configuration. Defaults scoped toselectedimplementation, notfullIEEE.",
+      "label": "wf revision",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "wf_device_source": {
+      "type": "text",
+      "description": "Actualradio/peer/firmware capabilities.",
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+      "source_revision": "hostapd2.11 original configuration; selected radio/rate/beacon/DTIM/WMM APversusSTA and HT/VHT/HE/EHT configuration. Defaults scoped toselectedimplementation, notfullIEEE.",
+      "label": "wf device source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "wf_radio_source": {
+      "type": "text",
+      "description": "Actual PHY/MCS/GI/NSS/RU/rate/aggregation evidence.",
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+      "source_revision": "hostapd2.11 original configuration; selected radio/rate/beacon/DTIM/WMM APversusSTA and HT/VHT/HE/EHT configuration. Defaults scoped toselectedimplementation, notfullIEEE.",
+      "label": "wf radio source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "wf_regulatory_source": {
+      "type": "text",
+      "description": "Actualregion/channel/class/EIRPpermission.",
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+      "source_revision": "hostapd2.11 original configuration; selected radio/rate/beacon/DTIM/WMM APversusSTA and HT/VHT/HE/EHT configuration. Defaults scoped toselectedimplementation, notfullIEEE.",
+      "label": "wf regulatory source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "wf_schedule_source": {
+      "type": "text",
+      "description": "Actualaccesscontention/interference/retry/hostpathbound.",
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+      "source_revision": "hostapd2.11 original configuration; selected radio/rate/beacon/DTIM/WMM APversusSTA and HT/VHT/HE/EHT configuration. Defaults scoped toselectedimplementation, notfullIEEE.",
+      "label": "wf schedule source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "wf_acceptance_source": {
+      "type": "text",
+      "description": "Actualindependentdeadline/age/faultcontract.",
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+      "source_revision": "hostapd2.11 original configuration; selected radio/rate/beacon/DTIM/WMM APversusSTA and HT/VHT/HE/EHT configuration. Defaults scoped toselectedimplementation, notfullIEEE.",
+      "label": "wf acceptance source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "wf_registered_source": {
+      "type": "text",
+      "description": "ActualqualifiedDMG/S1G/EHTextension/alternative rules.",
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+      "source_revision": "hostapd2.11 original configuration; selected radio/rate/beacon/DTIM/WMM APversusSTA and HT/VHT/HE/EHT configuration. Defaults scoped toselectedimplementation, notfullIEEE.",
+      "label": "wf registered source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "wf_observation_source": {
+      "type": "text",
+      "description": "Actualcorrelatedproducer/air/capture/consumertrace.",
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+      "source_revision": "hostapd2.11 original configuration; selected radio/rate/beacon/DTIM/WMM APversusSTA and HT/VHT/HE/EHT configuration. Defaults scoped toselectedimplementation, notfullIEEE.",
+      "label": "wf observation source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    }
+  },
+  "mechanisms": {
+    "network": [
+      "MSDU_MPDU_AMPDU_AND_CRYPTO_SEPARATE",
+      "GENERATION_PEER_NEGOTIATED_CAPTURE_KNOWN"
+    ],
+    "timing": [
+      "ACTUAL_CONTENTION_RETRY_RADIO_PATH"
+    ]
+  },
+  "parameter_constraints": [
+    {
+      "parameter": "bitrate",
+      "when": {},
+      "allowed": [],
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11"
+    },
+    {
+      "parameter": "reserved_bandwidth_percent",
+      "when": {},
+      "allowed": [],
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11"
+    },
+    {
+      "parameter": "sync_method",
+      "when": {},
+      "allowed": [],
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11"
+    },
+    {
+      "parameter": "retransmission_enabled",
+      "when": {},
+      "allowed": [],
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11"
+    },
+    {
+      "parameter": "retransmission_rate",
+      "when": {},
+      "allowed": [],
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11"
+    },
+    {
+      "parameter": "retry_limit",
+      "when": {},
+      "allowed": [],
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11"
+    },
+    {
+      "parameter": "retransmission_delay_ms",
+      "when": {},
+      "allowed": [],
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11"
+    },
+    {
+      "parameter": "gateway_maximum_throughput",
+      "when": {},
+      "allowed": [],
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11"
+    },
+    {
+      "parameter": "gateway_input_buffer",
+      "when": {},
+      "allowed": [],
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11"
+    },
+    {
+      "parameter": "gateway_output_buffer",
+      "when": {},
+      "allowed": [],
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11"
+    },
+    {
+      "parameter": "gateway_maximum_routes",
+      "when": {},
+      "allowed": [],
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11"
+    },
+    {
+      "parameter": "gateway_maximum_messages_s",
+      "when": {},
+      "allowed": [],
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11"
+    },
+    {
+      "parameter": "wf_registered_source",
+      "when": {
+        "wf_phy": "REGISTERED_ACTUAL"
+      },
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+      "required": true
+    },
+    {
+      "parameter": "wf_registered_source",
+      "when": {
+        "wf_profile": "REGISTERED_ACTUAL"
+      },
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+      "required": true
+    },
+    {
+      "parameter": "wf_registered_source",
+      "when": {
+        "wf_phy": "DMG"
+      },
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+      "required": true
+    },
+    {
+      "parameter": "wf_registered_source",
+      "when": {
+        "wf_phy": "S1G"
+      },
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+      "required": true
+    },
+    {
+      "parameter": "wf_width_mhz",
+      "when": {
+        "wf_phy": "DSSS_HR"
+      },
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+      "allowed": [
+        22
+      ]
+    },
+    {
+      "parameter": "wf_band",
+      "when": {
+        "wf_phy": "DSSS_HR"
+      },
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+      "allowed": [
+        "2_4_GHZ"
+      ]
+    },
+    {
+      "parameter": "wf_width_mhz",
+      "when": {
+        "wf_phy": "LEGACY_OFDM"
+      },
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+      "allowed": [
+        20
+      ]
+    },
+    {
+      "parameter": "wf_band",
+      "when": {
+        "wf_phy": "LEGACY_OFDM"
+      },
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+      "allowed": [
+        "2_4_GHZ",
+        "5_GHZ"
+      ]
+    },
+    {
+      "parameter": "wf_width_mhz",
+      "when": {
+        "wf_phy": "HT"
+      },
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+      "allowed": [
+        20,
+        40
+      ]
+    },
+    {
+      "parameter": "wf_band",
+      "when": {
+        "wf_phy": "HT"
+      },
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+      "allowed": [
+        "2_4_GHZ",
+        "5_GHZ"
+      ]
+    },
+    {
+      "parameter": "wf_width_mhz",
+      "when": {
+        "wf_phy": "VHT"
+      },
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+      "allowed": [
+        20,
+        40,
+        80,
+        160
+      ]
+    },
+    {
+      "parameter": "wf_band",
+      "when": {
+        "wf_phy": "VHT"
+      },
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+      "allowed": [
+        "5_GHZ"
+      ]
+    },
+    {
+      "parameter": "wf_width_mhz",
+      "when": {
+        "wf_phy": "HE"
+      },
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+      "allowed": [
+        20,
+        40,
+        80,
+        160
+      ]
+    },
+    {
+      "parameter": "wf_band",
+      "when": {
+        "wf_phy": "HE"
+      },
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+      "allowed": [
+        "2_4_GHZ",
+        "5_GHZ",
+        "6_GHZ"
+      ]
+    },
+    {
+      "parameter": "wf_width_mhz",
+      "when": {
+        "wf_phy": "EHT"
+      },
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+      "allowed": [
+        20,
+        40,
+        80,
+        160,
+        320
+      ]
+    },
+    {
+      "parameter": "wf_band",
+      "when": {
+        "wf_phy": "EHT"
+      },
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+      "allowed": [
+        "2_4_GHZ",
+        "5_GHZ",
+        "6_GHZ"
+      ]
+    },
+    {
+      "parameter": "wf_mcs",
+      "when": {
+        "wf_phy": "HT"
+      },
+      "source": "https://www.radiotap.org/fields/MCS.html",
+      "maximum": 76
+    },
+    {
+      "parameter": "wf_mcs",
+      "when": {
+        "wf_phy": "VHT"
+      },
+      "source": "https://www.radiotap.org/fields/VHT.html",
+      "maximum": 9
+    },
+    {
+      "parameter": "wf_mcs",
+      "when": {
+        "wf_phy": "HE"
+      },
+      "source": "https://www.radiotap.org/fields/HE.html",
+      "maximum": 11
+    },
+    {
+      "parameter": "wf_mcs",
+      "when": {
+        "wf_phy": "EHT"
+      },
+      "source": "https://www.radiotap.org/fields/EHT.html",
+      "maximum": 15
+    },
+    {
+      "parameter": "wf_mcs",
+      "when": {
+        "wf_phy": "DSSS_HR"
+      },
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+      "allowed": []
+    },
+    {
+      "parameter": "wf_mcs",
+      "when": {
+        "wf_phy": "LEGACY_OFDM"
+      },
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+      "allowed": []
+    },
+    {
+      "parameter": "wf_phy",
+      "when": {},
+      "source": "https://www.radiotap.org/fields/MCS.html",
+      "when_present": [
+        "wf_mcs"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "wf_mcs_known",
+      "when": {},
+      "source": "https://www.radiotap.org/fields/MCS.html",
+      "when_present": [
+        "wf_mcs"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "wf_band",
+      "when": {
+        "wf_phy": "EHT",
+        "wf_width_mhz": 320
+      },
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+      "allowed": [
+        "6_GHZ"
+      ]
+    },
+    {
+      "parameter": "wf_mcs",
+      "when": {
+        "wf_mcs_known": false
+      },
+      "source": "https://www.radiotap.org/fields/MCS.html",
+      "allowed": []
+    },
+    {
+      "parameter": "wf_link_bps",
+      "when": {},
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+      "equal_expression": {
+        "product": [
+          "wf_legacy_rate_100k",
+          100000
+        ]
+      }
+    },
+    {
+      "parameter": "wf_gi_us",
+      "when": {
+        "wf_phy": "HT"
+      },
+      "source": "https://www.radiotap.org/fields/MCS.html",
+      "allowed": [
+        0.4,
+        0.8
+      ]
+    },
+    {
+      "parameter": "wf_gi_us",
+      "when": {
+        "wf_phy": "VHT"
+      },
+      "source": "https://www.radiotap.org/fields/VHT.html",
+      "allowed": [
+        0.4,
+        0.8
+      ]
+    },
+    {
+      "parameter": "wf_gi_us",
+      "when": {
+        "wf_phy": "HE"
+      },
+      "source": "https://www.radiotap.org/fields/HE.html",
+      "allowed": [
+        0.8,
+        1.6,
+        3.2
+      ]
+    },
+    {
+      "parameter": "wf_gi_us",
+      "when": {
+        "wf_phy": "EHT"
+      },
+      "source": "https://www.radiotap.org/fields/EHT.html",
+      "allowed": [
+        0.8,
+        1.6,
+        3.2
+      ]
+    },
+    {
+      "parameter": "wf_nsts",
+      "when": {
+        "wf_stbc": false
+      },
+      "source": "https://www.radiotap.org/fields/VHT.html",
+      "equal_expression": {
+        "product": [
+          "wf_nss",
+          1
+        ]
+      }
+    },
+    {
+      "parameter": "wf_nsts",
+      "when": {
+        "wf_stbc": true
+      },
+      "source": "https://www.radiotap.org/fields/VHT.html",
+      "equal_expression": {
+        "product": [
+          "wf_nss",
+          2
+        ]
+      }
+    },
+    {
+      "parameter": "wf_nss",
+      "when": {
+        "wf_phy": "VHT"
+      },
+      "source": "https://www.radiotap.org/fields/VHT.html",
+      "maximum": 8
+    },
+    {
+      "parameter": "wf_group_id",
+      "when": {
+        "wf_phy": "VHT",
+        "wf_ppdu": "SU"
+      },
+      "source": "https://www.radiotap.org/fields/VHT.html",
+      "allowed": [
+        0,
+        63
+      ]
+    },
+    {
+      "parameter": "wf_group_id",
+      "when": {
+        "wf_phy": "VHT",
+        "wf_ppdu": "MU"
+      },
+      "source": "https://www.radiotap.org/fields/VHT.html",
+      "minimum": 1,
+      "maximum": 62
+    },
+    {
+      "parameter": "wf_ru_tones",
+      "when": {
+        "wf_phy": "HE"
+      },
+      "source": "https://www.radiotap.org/fields/HE.html",
+      "allowed": [
+        26,
+        52,
+        106,
+        242,
+        484,
+        996,
+        1992
+      ]
+    },
+    {
+      "parameter": "wf_user_priority",
+      "when": {
+        "wf_ac": "BK"
+      },
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+      "allowed": [
+        1,
+        2
+      ]
+    },
+    {
+      "parameter": "wf_user_priority",
+      "when": {
+        "wf_ac": "BE"
+      },
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+      "allowed": [
+        0,
+        3
+      ]
+    },
+    {
+      "parameter": "wf_user_priority",
+      "when": {
+        "wf_ac": "VI"
+      },
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+      "allowed": [
+        4,
+        5
+      ]
+    },
+    {
+      "parameter": "wf_user_priority",
+      "when": {
+        "wf_ac": "VO"
+      },
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+      "allowed": [
+        6,
+        7
+      ]
+    },
+    {
+      "parameter": "wf_ecwmax",
+      "when": {},
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+      "minimum_parameter": "wf_ecwmin"
+    },
+    {
+      "parameter": "wf_cwmax",
+      "when": {},
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+      "minimum_parameter": "wf_cwmin"
+    },
+    {
+      "parameter": "wf_cwmin",
+      "when": {},
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+      "equal_expression": {
+        "subtract": [
+          {
+            "power": [
+              2,
+              "wf_ecwmin"
+            ]
+          },
+          1
+        ]
+      }
+    },
+    {
+      "parameter": "wf_cwmax",
+      "when": {},
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+      "equal_expression": {
+        "subtract": [
+          {
+            "power": [
+              2,
+              "wf_ecwmax"
+            ]
+          },
+          1
+        ]
+      }
+    },
+    {
+      "parameter": "wf_aifs_us",
+      "when": {},
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+      "equal_expression": {
+        "sum": [
+          "wf_sifs_us",
+          {
+            "product": [
+              "wf_aifsn",
+              "wf_slot_us"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "parameter": "wf_txop_us",
+      "when": {},
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+      "equal_expression": {
+        "product": [
+          "wf_txop_units",
+          32
+        ]
+      }
+    },
+    {
+      "parameter": "wf_beacon_ms",
+      "when": {},
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+      "equal_expression": {
+        "product": [
+          "wf_beacon_tu",
+          1.024
+        ]
+      }
+    },
+    {
+      "parameter": "wf_fragment_threshold",
+      "when": {},
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+      "when_ranges": {
+        "wf_fragment_threshold": [
+          -1,
+          255
+        ]
+      },
+      "allowed": [
+        -1
+      ]
+    },
+    {
+      "parameter": "wf_fcs_bytes",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.17/include/linux/ieee80211.h",
+      "allowed": [
+        4
+      ]
+    },
+    {
+      "parameter": "wf_msdu_bytes",
+      "when": {
+        "wf_phy": "DMG"
+      },
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.17/include/linux/ieee80211.h",
+      "maximum": 7920
+    },
+    {
+      "parameter": "wf_msdu_bytes",
+      "when": {
+        "wf_phy": "DSSS_HR",
+        "wf_aggregation": "NONE"
+      },
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.17/include/linux/ieee80211.h",
+      "maximum": 2304
+    },
+    {
+      "parameter": "wf_msdu_bytes",
+      "when": {
+        "wf_phy": "LEGACY_OFDM",
+        "wf_aggregation": "NONE"
+      },
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.17/include/linux/ieee80211.h",
+      "maximum": 2304
+    },
+    {
+      "parameter": "wf_msdu_bytes",
+      "when": {
+        "wf_phy": "HT",
+        "wf_aggregation": "NONE"
+      },
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.17/include/linux/ieee80211.h",
+      "maximum": 2304
+    },
+    {
+      "parameter": "wf_msdu_bytes",
+      "when": {
+        "wf_phy": "VHT",
+        "wf_aggregation": "NONE"
+      },
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.17/include/linux/ieee80211.h",
+      "maximum": 2304
+    },
+    {
+      "parameter": "wf_msdu_bytes",
+      "when": {
+        "wf_phy": "HE",
+        "wf_aggregation": "NONE"
+      },
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.17/include/linux/ieee80211.h",
+      "maximum": 2304
+    },
+    {
+      "parameter": "wf_msdu_bytes",
+      "when": {
+        "wf_phy": "EHT",
+        "wf_aggregation": "NONE"
+      },
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.17/include/linux/ieee80211.h",
+      "maximum": 2304
+    },
+    {
+      "parameter": "wf_mpdu_bytes",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.17/include/linux/ieee80211.h",
+      "equal_expression": {
+        "sum": [
+          "wf_msdu_bytes",
+          "wf_mac_header_bytes",
+          "wf_crypto_bytes",
+          "wf_fcs_bytes"
+        ]
+      },
+      "maximum_parameter": "wf_max_mpdu_bytes"
+    },
+    {
+      "parameter": "wf_max_mpdu_bytes",
+      "when": {
+        "wf_phy": "VHT"
+      },
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.17/include/linux/ieee80211.h",
+      "allowed": [
+        3895,
+        7991,
+        11454
+      ]
+    },
+    {
+      "parameter": "wf_ampdu_exp",
+      "when": {
+        "wf_phy": "HT"
+      },
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.17/include/linux/ieee80211.h",
+      "maximum": 3
+    },
+    {
+      "parameter": "wf_max_ampdu_bytes",
+      "when": {
+        "wf_ampdu_limit_base": true
+      },
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.17/include/linux/ieee80211.h",
+      "equal_expression": {
+        "subtract": [
+          {
+            "power": [
+              2,
+              {
+                "sum": [
+                  13,
+                  "wf_ampdu_exp"
+                ]
+              }
+            ]
+          },
+          1
+        ]
+      }
+    },
+    {
+      "parameter": "wf_ampdu_bytes",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.17/include/linux/ieee80211.h",
+      "maximum_parameter": "wf_max_ampdu_bytes"
+    },
+    {
+      "parameter": "wf_ba_buffer_frames",
+      "when": {
+        "wf_phy": "HT"
+      },
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.17/include/linux/ieee80211.h",
+      "maximum": 64
+    },
+    {
+      "parameter": "wf_ba_buffer_frames",
+      "when": {
+        "wf_phy": "VHT"
+      },
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.17/include/linux/ieee80211.h",
+      "maximum": 64
+    },
+    {
+      "parameter": "wf_ba_buffer_frames",
+      "when": {
+        "wf_phy": "HE"
+      },
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.17/include/linux/ieee80211.h",
+      "maximum": 256
+    },
+    {
+      "parameter": "wf_ba_buffer_frames",
+      "when": {
+        "wf_phy": "EHT"
+      },
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.17/include/linux/ieee80211.h",
+      "maximum": 1024
+    },
+    {
+      "parameter": "wf_e2e_ms",
+      "when": {},
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+      "equal_expression": {
+        "sum": [
+          "wf_source_ms",
+          "wf_transport_ms",
+          "wf_use_ms"
+        ]
+      },
+      "maximum_parameter": "wf_deadline_ms"
+    },
+    {
+      "parameter": "wf_age_ms",
+      "when": {},
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+      "maximum_parameter": "wf_freshness_ms"
+    },
+    {
+      "parameter": "wf_source_ms",
+      "when": {},
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+      "when_present": [
+        "wf_e2e_ms"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "wf_transport_ms",
+      "when": {},
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+      "when_present": [
+        "wf_e2e_ms"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "wf_use_ms",
+      "when": {},
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+      "when_present": [
+        "wf_e2e_ms"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "wf_e2e_ms",
+      "when": {
+        "wf_data_accepted": true
+      },
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+      "required": true
+    },
+    {
+      "parameter": "wf_deadline_ms",
+      "when": {
+        "wf_data_accepted": true
+      },
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+      "required": true
+    },
+    {
+      "parameter": "wf_age_ms",
+      "when": {
+        "wf_data_accepted": true
+      },
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+      "required": true
+    },
+    {
+      "parameter": "wf_freshness_ms",
+      "when": {
+        "wf_data_accepted": true
+      },
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+      "required": true
+    },
+    {
+      "parameter": "wf_observation_source",
+      "when": {
+        "wf_data_accepted": true
+      },
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+      "required": true
+    },
+    {
+      "parameter": "wf_path_verified",
+      "when": {
+        "wf_data_accepted": true
+      },
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+      "required": true,
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "wf_outcome",
+      "when": {
+        "wf_data_accepted": true
+      },
+      "source": "https://w1.fi/cgit/hostap/plain/hostapd/hostapd.conf?h=hostap_2_11",
+      "required": true,
+      "allowed": [
+        "ACCEPTED"
+      ]
+    }
+  ],
+  "physical_layer_profile_id": null,
+  "medium_access_model": null,
+  "native_parameter_prefixes": [
+    "wf_"
+  ],
+  "parameter_aliases": {},
+  "parameter_alias_limits": {},
+  "parameter_evidence_scope": "EXPLICIT_LAYER",
+  "rate_source_profile_id": null,
+  "arbitration_model_id": null,
+  "max_payload_bytes": null,
+  "capabilities": {
+    "supports_signals": true,
+    "supports_data_objects": true,
+    "supports_streams": true,
+    "supports_multicast": true,
+    "supports_publish_subscribe": false,
+    "supports_request_response": false,
+    "supports_cyclic": true,
+    "supports_event": true,
+    "supports_redundancy": false,
+    "supports_time_sync": false,
+    "supports_safety_profile": false,
+    "supports_segmentation": false,
+    "supports_fragmentation": false,
+    "supports_qos": true
+  },
+  "deterministic": false,
+  "overhead_bytes": 8,
+  "implementation_status": "EXPERIMENTAL",
+  "connection_type": "COMMUNICATION_TECHNOLOGY",
+  "parameter_proposals": {
+    "kind": "DEVICE_DEPENDENT",
+    "status": "REVIEW_REQUIRED",
+    "required_fields": [],
+    "note": "No universal rate is available; inspect the selected hardware/profile."
+  },
+  "capacity_evidence": {
+    "status": "MODEL_MISSING",
+    "frame_model": null,
+    "schedule_model": null,
+    "requires_confirmed_device_parameters": true
+  },
+  "components": {
+    "binding": "wifi.binding",
+    "generator": "wifi.generator",
+    "validator": "wifi.validator",
+    "timing_model": null,
+    "load_model": null,
+    "encoder": "wifi.encoder",
+    "decoder": "wifi.decoder"
+  },
+  "known_limitations": "Technology-specific conformance details require a vendor/profile extension."
+}

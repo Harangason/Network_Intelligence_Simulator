@@ -1,0 +1,2196 @@
+{
+  "id": "generic_serial",
+  "label": "Generic Serial",
+  "domain": "generic_networking",
+  "layer": "DATA_LINK",
+  "transport_unit": "STREAM_CHUNK",
+  "payload_element_types": [
+    "RAW_DATA"
+  ],
+  "hardware_interface": "explicit_serial_transport_binding",
+  "hardware_capability_aliases": [
+    "serial_port"
+  ],
+  "default_stack": [
+    "generic_serial"
+  ],
+  "stack_variants": [
+    [
+      "generic_serial"
+    ]
+  ],
+  "default_bitrate": null,
+  "rate_model": {
+    "type": "APPLICATION_TRANSPORT_DEPENDENT",
+    "fields": []
+  },
+  "local_timing_schema": [],
+  "parameter_schema": {
+    "payload_bytes": {
+      "label": "Payload",
+      "category": "physical",
+      "scope": "message",
+      "type": "number",
+      "description": "Actual qualified API stream-chunk or application octets, not UART character/wire count. No universal8-byte default or65535 maximum.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5",
+      "integer": true
+    },
+    "cycle_ms": {
+      "label": "Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "Standardperiode fuer zyklische Nachrichten.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "minimum_cycle_time_ms": {
+      "label": "Minimum Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "deadline_ms": {
+      "label": "Deadline",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "timeout_ms": {
+      "label": "Timeout",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_latency_ms": {
+      "label": "Maximum Latency",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "jitter_ms": {
+      "label": "Jitter Budget",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "freshness_ms": {
+      "label": "Data Freshness",
+      "category": "timing",
+      "scope": "signal",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "source_processing_delay_ms": {
+      "label": "Source Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_processing_delay_ms": {
+      "label": "Target Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "propagation_delay_ms": {
+      "label": "Propagation",
+      "category": "timing",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.01,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_bus_load_percent": {
+      "label": "Ziel-Buslast",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "Zielwert fuer die aus Routing, Payload, Zyklus und Bitrate berechnete Buslast.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "peak_factor": {
+      "label": "Peak Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.15,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_factor": {
+      "label": "Burst Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.5,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_window_ms": {
+      "label": "Burst Window",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "warning_threshold": {
+      "label": "Load Warning",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "critical_threshold": {
+      "label": "Load Critical",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 75,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "overload_threshold": {
+      "label": "Load Overload",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 90,
+      "unit": "%",
+      "min": 1,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "traffic_class": {
+      "label": "Traffic Class",
+      "category": "qos",
+      "scope": "route",
+      "type": "select",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": "BEST_EFFORT",
+      "options": [
+        "BEST_EFFORT",
+        "CONTROL",
+        "REALTIME",
+        "SAFETY_CRITICAL"
+      ],
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "packet_loss_probability": {
+      "label": "Packet Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "frame_loss_probability": {
+      "label": "Frame Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "bit_error_rate": {
+      "label": "Bit Error Rate",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "corruption_probability": {
+      "label": "Corruption",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duplicate_probability": {
+      "label": "Duplication",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "reordering_probability": {
+      "label": "Reordering",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "required_reliability": {
+      "label": "Required Reliability",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.999,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_offset_ms": {
+      "label": "Clock Offset",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_drift_ppm": {
+      "label": "Clock Drift",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 20,
+      "unit": "ppm",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_precision_ms": {
+      "label": "Sync Precision",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_interval_ms": {
+      "label": "Sync Interval",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1000,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_sync_error_ms": {
+      "label": "Maximum Sync Error",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_delay_ms": {
+      "label": "Gateway Processing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.2,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_queue_delay_ms": {
+      "label": "Gateway Queueing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "protocol_conversion_delay_ms": {
+      "label": "Protocol Conversion",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duration_s": {
+      "label": "Simulation Duration",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 1,
+      "unit": "s",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "seed": {
+      "label": "Random Seed",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 42,
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "max_events": {
+      "label": "Maximum Events",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 100000,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "dropout_probability": {
+      "label": "Failure Injection Dropout",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gs_mode": {
+      "label": "mode",
+      "category": "communication",
+      "scope": "route",
+      "type": "select",
+      "description": "Actual serial mechanism, unknown. A stream/COM-port name alone selects neither UART nor synchronous clocks nor native USB CDC.",
+      "required": true,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "ASYNC_UART",
+        "SYNC_SERIAL",
+        "USB_CDC",
+        "CUSTOM_STREAM"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    "gs_transport_binding": {
+      "label": "transport binding",
+      "category": "communication",
+      "scope": "route",
+      "type": "text",
+      "description": "Required actual registered serial/USB/PHY port and direction topology reference; no silent RS232/RS485/SPI binding.",
+      "required": true,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    "gs_implementation_source": {
+      "label": "implementation source",
+      "category": "communication",
+      "scope": "route",
+      "type": "text",
+      "description": "Required device/firmware/clock/driver capabilities and revision, unknown. Generic Serial is an NIS abstraction, not a normative serial bus.",
+      "required": true,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    "gs_framing_source": {
+      "label": "framing source",
+      "category": "communication",
+      "scope": "route",
+      "type": "text",
+      "description": "Required actual message encoding/framing/escaping/integrity and byte/character boundary source, unknown; stream chunks are not necessarily complete messages.",
+      "required": true,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    "gs_uart_profile": {
+      "label": "uart profile",
+      "category": "communication",
+      "scope": "route",
+      "type": "select",
+      "description": "Explicit source-qualified async UART framing profile, unknown. TB3216 tutorial supplies conditional9600/8N1 proposals, not universal baud minimum.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "TB3216_8N1",
+        "AVR_FRAME_FORMATS",
+        "DEVICE_SPECIFIC"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    "gs_baud_rate": {
+      "label": "baud rate",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual async binary UART symbol rate, unknown until matched clock/divisor/configuration;9600 is conditional tutorial proposal, not generic minimum.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Bd",
+      "min": 1,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5",
+      "conditional_defaults": [
+        {
+          "when": {
+            "gs_mode": "ASYNC_UART",
+            "gs_uart_profile": "TB3216_8N1"
+          },
+          "value": 9600
+        }
+      ]
+    },
+    "gs_peer_baud_rate": {
+      "label": "peer baud rate",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual peer configured baud rate; must agree with selected UART configuration. Clock error/oversampling tolerance needs actual device proof.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Bd",
+      "min": 1,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    "gs_data_bits": {
+      "label": "data bits",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual data bits per UART character; reviewed AVR5..9, tutorial8. Not application octets or USB packet size.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "bit",
+      "min": 1,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5",
+      "conditional_defaults": [
+        {
+          "when": {
+            "gs_mode": "ASYNC_UART",
+            "gs_uart_profile": "TB3216_8N1"
+          },
+          "value": 8
+        }
+      ]
+    },
+    "gs_parity": {
+      "label": "parity",
+      "category": "communication",
+      "scope": "route",
+      "type": "select",
+      "description": "Actual UART parity; reviewed AVR NONE/EVEN/ODD only, tutorial NONE. Other devices require their own source.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "NONE",
+        "EVEN",
+        "ODD",
+        "MARK",
+        "SPACE",
+        "DEVICE_SPECIFIC"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5",
+      "conditional_defaults": [
+        {
+          "when": {
+            "gs_mode": "ASYNC_UART",
+            "gs_uart_profile": "TB3216_8N1"
+          },
+          "value": "NONE"
+        }
+      ]
+    },
+    "gs_start_bits": {
+      "label": "start bits",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual UART start bits; reviewed AVR/tutorial1. Unknown device-specific layouts are not verified using AVR limits.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "bit",
+      "min": 1,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5",
+      "conditional_defaults": [
+        {
+          "when": {
+            "gs_mode": "ASYNC_UART",
+            "gs_uart_profile": "TB3216_8N1"
+          },
+          "value": 1
+        }
+      ]
+    },
+    "gs_stop_bits": {
+      "label": "stop bits",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual UART stop-bit periods; reviewed AVR1 or2, tutorial1. Fractional stop periods are device-dependent.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "bit",
+      "min": 0.5,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5",
+      "conditional_defaults": [
+        {
+          "when": {
+            "gs_mode": "ASYNC_UART",
+            "gs_uart_profile": "TB3216_8N1"
+          },
+          "value": 1
+        }
+      ]
+    },
+    "gs_char_bits": {
+      "label": "char bits",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual start+data+parity+stop bit-periods per character. Tutorial8N1=10, AVR parity adds1. Not8 useful bits.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "bit",
+      "min": 1,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5",
+      "conditional_defaults": [
+        {
+          "when": {
+            "gs_mode": "ASYNC_UART",
+            "gs_uart_profile": "TB3216_8N1"
+          },
+          "value": 10
+        }
+      ]
+    },
+    "gs_encoded_characters": {
+      "label": "encoded characters",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual serialized character count including framing/encoding/escaping/flow characters as applicable, unknown; not blindly equal to application payload octets.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "character",
+      "min": 1,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    "gs_wire_bits": {
+      "label": "wire bits",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual UART occupied bit-period count = encoded characters times character bits; start/stop/parity included.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "bit",
+      "min": 1,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    "gs_serialization_us": {
+      "label": "serialization us",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual UART serialization time = wire bit periods / binary UART baud times1e6, excluding actual gaps/flow stalls.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "us",
+      "min": 0,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    "gs_gap_bound_us": {
+      "label": "gap bound us",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual aggregate character/message/turnaround idle bound, unknown; zero only when explicitly justified.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "us",
+      "min": 0,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    "gs_flow_control": {
+      "label": "flow control",
+      "category": "communication",
+      "scope": "route",
+      "type": "select",
+      "description": "Actual UART flow control and peer support, unknown. No automatic disabled flow-control assumption.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "NONE",
+        "RTS_CTS",
+        "XON_XOFF",
+        "DEVICE_SPECIFIC"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    "gs_flow_bound_us": {
+      "label": "flow bound us",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual bounded UART flow-control blocking from both endpoints, unknown. Unbounded peer stalls do not prove capacity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "us",
+      "min": 0,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    "gs_wire_bound_us": {
+      "label": "wire bound us",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual complete UART transfer bound at least serialization+aggregate idle+flow stalls, unknown; driver/application processing remains separate.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "us",
+      "min": 0,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    "gs_clock_hz": {
+      "label": "clock hz",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual synchronous serial clock, unknown. Encoding/bits per clock/edge/role/word lengths supplied by actual bound port; never UART baud or USB speed.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Hz",
+      "min": 1,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    "gs_cdc_line_coding_role": {
+      "label": "cdc line coding role",
+      "category": "communication",
+      "scope": "route",
+      "type": "select",
+      "description": "Actual CDC implementation interpretation of line coding, unknown. Arduino native CDC ignores Serial.begin baud for wire speed; USB-to-UART bridges require separate real UART binding.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "NATIVE_ADVISORY",
+        "BRIDGE_UART",
+        "DEVICE_SPECIFIC"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    "gs_framing": {
+      "label": "framing",
+      "category": "communication",
+      "scope": "route",
+      "type": "select",
+      "description": "Actual application message framing, unknown; optional line delimiters in TB3216 example are not mandatory for all serial streams.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "NONE",
+        "FIXED_LENGTH",
+        "LENGTH_PREFIX",
+        "DELIMITER",
+        "DEVICE_SPECIFIC"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    "gs_message_bytes": {
+      "label": "message bytes",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual application-message octets, unknown. Not API read/write chunk, UART characters, USB packets or encoded wire count.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    "gs_max_message_bytes": {
+      "label": "max message bytes",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual implementation/application-message limit, unknown.65535 is not a generic serial standard maximum.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 1,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    }
+  },
+  "mechanisms": {
+    "access": [
+      "EXPLICIT_SERIAL_PORT_IMPLEMENTATION_AND_FRAMING"
+    ],
+    "integrity": [
+      "ACTUAL_UART_PARITY_AND_APPLICATION_FRAME_INTEGRITY_SEPARATE"
+    ],
+    "scope": [
+      "GENERIC_STREAM_NOT_UNIVERSAL_UART_USB_OR_SYNCHRONOUS_BUS"
+    ]
+  },
+  "parameter_constraints": [
+    {
+      "when": {
+        "gs_mode": "SYNC_SERIAL"
+      },
+      "parameter": "gs_uart_profile",
+      "allowed": [],
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    {
+      "when": {
+        "gs_mode": "SYNC_SERIAL"
+      },
+      "parameter": "gs_baud_rate",
+      "allowed": [],
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    {
+      "when": {
+        "gs_mode": "SYNC_SERIAL"
+      },
+      "parameter": "gs_peer_baud_rate",
+      "allowed": [],
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    {
+      "when": {
+        "gs_mode": "SYNC_SERIAL"
+      },
+      "parameter": "gs_data_bits",
+      "allowed": [],
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    {
+      "when": {
+        "gs_mode": "SYNC_SERIAL"
+      },
+      "parameter": "gs_parity",
+      "allowed": [],
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    {
+      "when": {
+        "gs_mode": "SYNC_SERIAL"
+      },
+      "parameter": "gs_start_bits",
+      "allowed": [],
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    {
+      "when": {
+        "gs_mode": "SYNC_SERIAL"
+      },
+      "parameter": "gs_stop_bits",
+      "allowed": [],
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    {
+      "when": {
+        "gs_mode": "SYNC_SERIAL"
+      },
+      "parameter": "gs_char_bits",
+      "allowed": [],
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    {
+      "when": {
+        "gs_mode": "SYNC_SERIAL"
+      },
+      "parameter": "gs_encoded_characters",
+      "allowed": [],
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    {
+      "when": {
+        "gs_mode": "SYNC_SERIAL"
+      },
+      "parameter": "gs_wire_bits",
+      "allowed": [],
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    {
+      "when": {
+        "gs_mode": "SYNC_SERIAL"
+      },
+      "parameter": "gs_serialization_us",
+      "allowed": [],
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    {
+      "when": {
+        "gs_mode": "SYNC_SERIAL"
+      },
+      "parameter": "gs_gap_bound_us",
+      "allowed": [],
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    {
+      "when": {
+        "gs_mode": "SYNC_SERIAL"
+      },
+      "parameter": "gs_flow_control",
+      "allowed": [],
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    {
+      "when": {
+        "gs_mode": "SYNC_SERIAL"
+      },
+      "parameter": "gs_flow_bound_us",
+      "allowed": [],
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    {
+      "when": {
+        "gs_mode": "SYNC_SERIAL"
+      },
+      "parameter": "gs_wire_bound_us",
+      "allowed": [],
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    {
+      "when": {
+        "gs_mode": "USB_CDC"
+      },
+      "parameter": "gs_uart_profile",
+      "allowed": [],
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    {
+      "when": {
+        "gs_mode": "USB_CDC"
+      },
+      "parameter": "gs_baud_rate",
+      "allowed": [],
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    {
+      "when": {
+        "gs_mode": "USB_CDC"
+      },
+      "parameter": "gs_peer_baud_rate",
+      "allowed": [],
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    {
+      "when": {
+        "gs_mode": "USB_CDC"
+      },
+      "parameter": "gs_data_bits",
+      "allowed": [],
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    {
+      "when": {
+        "gs_mode": "USB_CDC"
+      },
+      "parameter": "gs_parity",
+      "allowed": [],
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    {
+      "when": {
+        "gs_mode": "USB_CDC"
+      },
+      "parameter": "gs_start_bits",
+      "allowed": [],
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    {
+      "when": {
+        "gs_mode": "USB_CDC"
+      },
+      "parameter": "gs_stop_bits",
+      "allowed": [],
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    {
+      "when": {
+        "gs_mode": "USB_CDC"
+      },
+      "parameter": "gs_char_bits",
+      "allowed": [],
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    {
+      "when": {
+        "gs_mode": "USB_CDC"
+      },
+      "parameter": "gs_encoded_characters",
+      "allowed": [],
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    {
+      "when": {
+        "gs_mode": "USB_CDC"
+      },
+      "parameter": "gs_wire_bits",
+      "allowed": [],
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    {
+      "when": {
+        "gs_mode": "USB_CDC"
+      },
+      "parameter": "gs_serialization_us",
+      "allowed": [],
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    {
+      "when": {
+        "gs_mode": "USB_CDC"
+      },
+      "parameter": "gs_gap_bound_us",
+      "allowed": [],
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    {
+      "when": {
+        "gs_mode": "USB_CDC"
+      },
+      "parameter": "gs_flow_control",
+      "allowed": [],
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    {
+      "when": {
+        "gs_mode": "USB_CDC"
+      },
+      "parameter": "gs_flow_bound_us",
+      "allowed": [],
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    {
+      "when": {
+        "gs_mode": "USB_CDC"
+      },
+      "parameter": "gs_wire_bound_us",
+      "allowed": [],
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    {
+      "when": {
+        "gs_mode": "CUSTOM_STREAM"
+      },
+      "parameter": "gs_uart_profile",
+      "allowed": [],
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    {
+      "when": {
+        "gs_mode": "CUSTOM_STREAM"
+      },
+      "parameter": "gs_baud_rate",
+      "allowed": [],
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    {
+      "when": {
+        "gs_mode": "CUSTOM_STREAM"
+      },
+      "parameter": "gs_peer_baud_rate",
+      "allowed": [],
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    {
+      "when": {
+        "gs_mode": "CUSTOM_STREAM"
+      },
+      "parameter": "gs_data_bits",
+      "allowed": [],
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    {
+      "when": {
+        "gs_mode": "CUSTOM_STREAM"
+      },
+      "parameter": "gs_parity",
+      "allowed": [],
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    {
+      "when": {
+        "gs_mode": "CUSTOM_STREAM"
+      },
+      "parameter": "gs_start_bits",
+      "allowed": [],
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    {
+      "when": {
+        "gs_mode": "CUSTOM_STREAM"
+      },
+      "parameter": "gs_stop_bits",
+      "allowed": [],
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    {
+      "when": {
+        "gs_mode": "CUSTOM_STREAM"
+      },
+      "parameter": "gs_char_bits",
+      "allowed": [],
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    {
+      "when": {
+        "gs_mode": "CUSTOM_STREAM"
+      },
+      "parameter": "gs_encoded_characters",
+      "allowed": [],
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    {
+      "when": {
+        "gs_mode": "CUSTOM_STREAM"
+      },
+      "parameter": "gs_wire_bits",
+      "allowed": [],
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    {
+      "when": {
+        "gs_mode": "CUSTOM_STREAM"
+      },
+      "parameter": "gs_serialization_us",
+      "allowed": [],
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    {
+      "when": {
+        "gs_mode": "CUSTOM_STREAM"
+      },
+      "parameter": "gs_gap_bound_us",
+      "allowed": [],
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    {
+      "when": {
+        "gs_mode": "CUSTOM_STREAM"
+      },
+      "parameter": "gs_flow_control",
+      "allowed": [],
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    {
+      "when": {
+        "gs_mode": "CUSTOM_STREAM"
+      },
+      "parameter": "gs_flow_bound_us",
+      "allowed": [],
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    {
+      "when": {
+        "gs_mode": "CUSTOM_STREAM"
+      },
+      "parameter": "gs_wire_bound_us",
+      "allowed": [],
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    {
+      "when": {
+        "gs_mode": "ASYNC_UART"
+      },
+      "parameter": "gs_clock_hz",
+      "allowed": [],
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    {
+      "when": {
+        "gs_mode": "USB_CDC"
+      },
+      "parameter": "gs_clock_hz",
+      "allowed": [],
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    {
+      "when": {
+        "gs_mode": "CUSTOM_STREAM"
+      },
+      "parameter": "gs_clock_hz",
+      "allowed": [],
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    {
+      "when": {
+        "gs_mode": "ASYNC_UART"
+      },
+      "parameter": "gs_cdc_line_coding_role",
+      "allowed": [],
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    {
+      "when": {
+        "gs_mode": "SYNC_SERIAL"
+      },
+      "parameter": "gs_cdc_line_coding_role",
+      "allowed": [],
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    {
+      "when": {
+        "gs_mode": "CUSTOM_STREAM"
+      },
+      "parameter": "gs_cdc_line_coding_role",
+      "allowed": [],
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    {
+      "when": {
+        "gs_mode": "ASYNC_UART"
+      },
+      "parameter": "gs_uart_profile",
+      "required": true,
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    {
+      "when": {
+        "gs_mode": "ASYNC_UART"
+      },
+      "parameter": "gs_baud_rate",
+      "required": true,
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    {
+      "when": {
+        "gs_mode": "SYNC_SERIAL"
+      },
+      "parameter": "gs_clock_hz",
+      "required": true,
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    {
+      "when": {
+        "gs_mode": "USB_CDC"
+      },
+      "parameter": "gs_cdc_line_coding_role",
+      "required": true,
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    {
+      "when": {
+        "gs_mode": "ASYNC_UART"
+      },
+      "parameter": "gs_peer_baud_rate",
+      "equal_parameter": "gs_baud_rate",
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    {
+      "when": {
+        "gs_mode": "ASYNC_UART",
+        "gs_uart_profile": "TB3216_8N1"
+      },
+      "parameter": "gs_data_bits",
+      "allowed": [
+        5,
+        6,
+        7,
+        8,
+        9
+      ],
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    {
+      "when": {
+        "gs_mode": "ASYNC_UART",
+        "gs_uart_profile": "TB3216_8N1"
+      },
+      "parameter": "gs_parity",
+      "allowed": [
+        "NONE",
+        "EVEN",
+        "ODD"
+      ],
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    {
+      "when": {
+        "gs_mode": "ASYNC_UART",
+        "gs_uart_profile": "TB3216_8N1"
+      },
+      "parameter": "gs_start_bits",
+      "allowed": [
+        1
+      ],
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    {
+      "when": {
+        "gs_mode": "ASYNC_UART",
+        "gs_uart_profile": "TB3216_8N1"
+      },
+      "parameter": "gs_stop_bits",
+      "allowed": [
+        1,
+        2
+      ],
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    {
+      "when": {
+        "gs_mode": "ASYNC_UART",
+        "gs_uart_profile": "TB3216_8N1",
+        "gs_parity": "NONE"
+      },
+      "parameter": "gs_char_bits",
+      "equal_sum": [
+        {
+          "parameter": "gs_start_bits"
+        },
+        {
+          "parameter": "gs_data_bits"
+        },
+        {
+          "parameter": "gs_stop_bits"
+        }
+      ],
+      "equal_sum_offset": 0,
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    {
+      "when": {
+        "gs_mode": "ASYNC_UART",
+        "gs_uart_profile": "TB3216_8N1",
+        "gs_parity": "EVEN"
+      },
+      "parameter": "gs_char_bits",
+      "equal_sum": [
+        {
+          "parameter": "gs_start_bits"
+        },
+        {
+          "parameter": "gs_data_bits"
+        },
+        {
+          "parameter": "gs_stop_bits"
+        }
+      ],
+      "equal_sum_offset": 1,
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    {
+      "when": {
+        "gs_mode": "ASYNC_UART",
+        "gs_uart_profile": "TB3216_8N1",
+        "gs_parity": "ODD"
+      },
+      "parameter": "gs_char_bits",
+      "equal_sum": [
+        {
+          "parameter": "gs_start_bits"
+        },
+        {
+          "parameter": "gs_data_bits"
+        },
+        {
+          "parameter": "gs_stop_bits"
+        }
+      ],
+      "equal_sum_offset": 1,
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    {
+      "when": {
+        "gs_mode": "ASYNC_UART",
+        "gs_uart_profile": "TB3216_8N1"
+      },
+      "parameter": "gs_wire_bits",
+      "equal_expression": {
+        "product": [
+          "gs_char_bits",
+          "gs_encoded_characters"
+        ]
+      },
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    {
+      "when": {
+        "gs_mode": "ASYNC_UART",
+        "gs_uart_profile": "TB3216_8N1"
+      },
+      "parameter": "gs_serialization_us",
+      "equal_ratio": {
+        "numerator_parameter": "gs_wire_bits",
+        "denominator_sum": [
+          "gs_baud_rate"
+        ],
+        "factor": 1000000
+      },
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    {
+      "when": {
+        "gs_mode": "ASYNC_UART",
+        "gs_uart_profile": "TB3216_8N1"
+      },
+      "parameter": "gs_wire_bound_us",
+      "minimum_expression": {
+        "sum": [
+          "gs_serialization_us",
+          "gs_gap_bound_us",
+          "gs_flow_bound_us"
+        ]
+      },
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    {
+      "when": {
+        "gs_mode": "ASYNC_UART",
+        "gs_uart_profile": "AVR_FRAME_FORMATS"
+      },
+      "parameter": "gs_data_bits",
+      "allowed": [
+        5,
+        6,
+        7,
+        8,
+        9
+      ],
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    {
+      "when": {
+        "gs_mode": "ASYNC_UART",
+        "gs_uart_profile": "AVR_FRAME_FORMATS"
+      },
+      "parameter": "gs_parity",
+      "allowed": [
+        "NONE",
+        "EVEN",
+        "ODD"
+      ],
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    {
+      "when": {
+        "gs_mode": "ASYNC_UART",
+        "gs_uart_profile": "AVR_FRAME_FORMATS"
+      },
+      "parameter": "gs_start_bits",
+      "allowed": [
+        1
+      ],
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    {
+      "when": {
+        "gs_mode": "ASYNC_UART",
+        "gs_uart_profile": "AVR_FRAME_FORMATS"
+      },
+      "parameter": "gs_stop_bits",
+      "allowed": [
+        1,
+        2
+      ],
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    {
+      "when": {
+        "gs_mode": "ASYNC_UART",
+        "gs_uart_profile": "AVR_FRAME_FORMATS",
+        "gs_parity": "NONE"
+      },
+      "parameter": "gs_char_bits",
+      "equal_sum": [
+        {
+          "parameter": "gs_start_bits"
+        },
+        {
+          "parameter": "gs_data_bits"
+        },
+        {
+          "parameter": "gs_stop_bits"
+        }
+      ],
+      "equal_sum_offset": 0,
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    {
+      "when": {
+        "gs_mode": "ASYNC_UART",
+        "gs_uart_profile": "AVR_FRAME_FORMATS",
+        "gs_parity": "EVEN"
+      },
+      "parameter": "gs_char_bits",
+      "equal_sum": [
+        {
+          "parameter": "gs_start_bits"
+        },
+        {
+          "parameter": "gs_data_bits"
+        },
+        {
+          "parameter": "gs_stop_bits"
+        }
+      ],
+      "equal_sum_offset": 1,
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    {
+      "when": {
+        "gs_mode": "ASYNC_UART",
+        "gs_uart_profile": "AVR_FRAME_FORMATS",
+        "gs_parity": "ODD"
+      },
+      "parameter": "gs_char_bits",
+      "equal_sum": [
+        {
+          "parameter": "gs_start_bits"
+        },
+        {
+          "parameter": "gs_data_bits"
+        },
+        {
+          "parameter": "gs_stop_bits"
+        }
+      ],
+      "equal_sum_offset": 1,
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    {
+      "when": {
+        "gs_mode": "ASYNC_UART",
+        "gs_uart_profile": "AVR_FRAME_FORMATS"
+      },
+      "parameter": "gs_wire_bits",
+      "equal_expression": {
+        "product": [
+          "gs_char_bits",
+          "gs_encoded_characters"
+        ]
+      },
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    {
+      "when": {
+        "gs_mode": "ASYNC_UART",
+        "gs_uart_profile": "AVR_FRAME_FORMATS"
+      },
+      "parameter": "gs_serialization_us",
+      "equal_ratio": {
+        "numerator_parameter": "gs_wire_bits",
+        "denominator_sum": [
+          "gs_baud_rate"
+        ],
+        "factor": 1000000
+      },
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    {
+      "when": {
+        "gs_mode": "ASYNC_UART",
+        "gs_uart_profile": "AVR_FRAME_FORMATS"
+      },
+      "parameter": "gs_wire_bound_us",
+      "minimum_expression": {
+        "sum": [
+          "gs_serialization_us",
+          "gs_gap_bound_us",
+          "gs_flow_bound_us"
+        ]
+      },
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    {
+      "when": {
+        "gs_mode": "ASYNC_UART",
+        "gs_uart_profile": "TB3216_8N1"
+      },
+      "parameter": "gs_data_bits",
+      "allowed": [
+        8
+      ],
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    {
+      "when": {
+        "gs_mode": "ASYNC_UART",
+        "gs_uart_profile": "TB3216_8N1"
+      },
+      "parameter": "gs_parity",
+      "allowed": [
+        "NONE"
+      ],
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    {
+      "when": {
+        "gs_mode": "ASYNC_UART",
+        "gs_uart_profile": "TB3216_8N1"
+      },
+      "parameter": "gs_start_bits",
+      "allowed": [
+        1
+      ],
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    {
+      "when": {
+        "gs_mode": "ASYNC_UART",
+        "gs_uart_profile": "TB3216_8N1"
+      },
+      "parameter": "gs_stop_bits",
+      "allowed": [
+        1
+      ],
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    {
+      "when": {
+        "gs_mode": "ASYNC_UART",
+        "gs_uart_profile": "TB3216_8N1"
+      },
+      "parameter": "gs_char_bits",
+      "allowed": [
+        10
+      ],
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    },
+    {
+      "when": {},
+      "parameter": "gs_message_bytes",
+      "maximum_parameter": "gs_max_message_bytes",
+      "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+      "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5"
+    }
+  ],
+  "physical_layer_profile_id": null,
+  "medium_access_model": null,
+  "native_parameter_prefixes": [
+    "gs_"
+  ],
+  "parameter_aliases": {},
+  "parameter_alias_limits": {},
+  "parameter_evidence_scope": null,
+  "rate_source_profile_id": null,
+  "arbitration_model_id": null,
+  "max_payload_bytes": null,
+  "capabilities": {
+    "supports_signals": true,
+    "supports_data_objects": false,
+    "supports_streams": true,
+    "supports_multicast": false,
+    "supports_publish_subscribe": false,
+    "supports_request_response": false,
+    "supports_cyclic": true,
+    "supports_event": true,
+    "supports_redundancy": false,
+    "supports_time_sync": false,
+    "supports_safety_profile": false,
+    "supports_segmentation": false,
+    "supports_fragmentation": false,
+    "supports_qos": false
+  },
+  "deterministic": false,
+  "overhead_bytes": 8,
+  "implementation_status": "EXPERIMENTAL",
+  "connection_type": "COMMUNICATION_TECHNOLOGY",
+  "parameter_proposals": {
+    "kind": "CONFIGURED_TRANSPORT_PROFILE",
+    "status": "REVIEW_REQUIRED",
+    "source": "https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf",
+    "source_revision": "Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5",
+    "note": "Generic Serial has no universal physical rate. Explicit async TB3216 tutorial profile has conditional9600/8N1 proposals; sync and USB CDC require their own actual bound implementation."
+  },
+  "capacity_evidence": {
+    "status": "MODEL_MISSING",
+    "frame_model": null,
+    "schedule_model": null,
+    "requires_confirmed_device_parameters": true
+  },
+  "components": {
+    "binding": "generic_serial.binding",
+    "generator": "generic_serial.generator",
+    "validator": "generic_serial.validator",
+    "timing_model": null,
+    "load_model": null,
+    "encoder": "generic_serial.encoder",
+    "decoder": "generic_serial.decoder"
+  },
+  "known_limitations": "Technology-specific conformance details require a vendor/profile extension."
+}
