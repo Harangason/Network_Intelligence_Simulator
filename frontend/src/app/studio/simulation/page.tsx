@@ -9,7 +9,9 @@ export default async function WorkflowSimulationPage({
 }: {
   searchParams: Promise<ProjectQueryRecord>;
 }) {
-  const initialProjectId = projectIdFromSearchParams(await searchParams);
+  const query = await searchParams;
+  const initialProjectId = projectIdFromSearchParams(query);
+  const initialSnapshotId = Array.isArray(query.snapshot) ? query.snapshot[0] : query.snapshot;
   return (
     <main className="shell studio-shell workflow-shell">
       <StudioTopbar initialProjectId={initialProjectId} />
@@ -17,7 +19,7 @@ export default async function WorkflowSimulationPage({
       <StudioWorkflowHero eyebrow="Workflow 07" initialProjectId={initialProjectId} title="Signale und Kommunikation gemeinsam simulieren.">
         Modellwerte, Frames, Buslast und Fehlerereignisse laufen auf einer synchronisierten Zeitachse.
       </StudioWorkflowHero>
-      <ModelSimulationRunner initialProjectId={initialProjectId} />
+      <ModelSimulationRunner key={`${initialProjectId}:${initialSnapshotId}`} initialProjectId={initialProjectId} initialSnapshotId={initialSnapshotId} />
     </main>
   );
 }

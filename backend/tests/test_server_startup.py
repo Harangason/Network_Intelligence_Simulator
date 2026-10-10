@@ -123,6 +123,22 @@ def test_launcher_command_timeout_kills_hung_child_process() -> None:
     assert "Prozessbaum wurde beendet" in result.stdout
 
 
+@pytest.mark.parametrize('instance,ready', [('ours', True), ('foreign', False)])
+def test_backend_catalog_cold_start_keeps_bounded_instance_readiness(monkeypatch, instance, ready):
+    elapsed = [0.0]
+    monkeypatch.setattr(LAUNCHER.time, 'monotonic', lambda: elapsed[0])
+    monkeypatch.setattr(LAUNCHER.time, 'sleep', lambda seconds: elapsed.__setitem__(0, elapsed[0] + seconds))
+    def health(*args, **kwargs):
+        if elapsed[0] < 25:
+            raise LAUNCHER.URLError('Native catalog still initializing')
+        return _JsonResponse(json.dumps({'instance_id': instance}).encode())
+    monkeypatch.setattr(LAUNCHER, 'urlopen', health)
+    assert LAUNCHER._wait_for_url('http://127.0.0.1/health', _RunningProcess(),
+        timeout_s=LAUNCHER.BACKEND_STARTUP_TIMEOUT_SECONDS, expected_instance_id='ours') is ready
+    assert elapsed[0] >= 25
+    assert elapsed[0] <= LAUNCHER.BACKEND_STARTUP_TIMEOUT_SECONDS + .2
+
+
 def test_backend_server_owns_its_port_exclusively() -> None:
     server = ExclusiveThreadedWSGIServer("127.0.0.1", 0, create_app(testing=True))
     competing_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

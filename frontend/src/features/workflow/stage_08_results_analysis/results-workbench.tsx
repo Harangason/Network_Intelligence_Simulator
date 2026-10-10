@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getSimulation, listSimulations } from "@/shared/api/api";
-import { mergeSimulationResult } from "@/features/simulation/lib/simulation-result";
+import { mergeSimulationResult, mergeSimulationSnapshots, selectSimulationSnapshot } from "@/features/simulation/lib/simulation-result";
 import type { RuntimeMetrics, SimulationJob } from "@/shared/api/types";
 import {
   getWorkflowSimulationSnapshot,
@@ -13,44 +13,47 @@ import {
   type SimulationSnapshot,
 } from "@/features/workflow/lib/workflow-api";
 import { useWorkflowRefresh } from "@/features/workflow/lib/use-workflow-refresh";
-import { withProjectParam } from "@/features/settings/lib/user-settings";
+import { readActiveProjectId, withProjectParam } from "@/features/settings/lib/user-settings";
 
-export function ResultsWorkbench({ initialProjectId = "" }: { initialProjectId?: string }) {
+export function ResultsWorkbench({ initialProjectId = "", initialSnapshotId }: { initialProjectId?: string; initialSnapshotId?: string }) {
   const [snapshots, setSnapshots] = useState<SimulationSnapshot[]>([]);
   const [capacity, setCapacity] = useState<AnalysisSnapshot | null>(null);
   const [jobs, setJobs] = useState<Record<string, SimulationJob>>({});
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(initialSnapshotId ?? null);
+  const requestedSnapshot = useRef(initialSnapshotId);
+  const loadSequence = useRef(0);
   const [compareId, setCompareId] = useState<string>("");
   const [error, setError] = useState("");
   const [loadedSnapshotDetails, setLoadedSnapshotDetails] = useState<Set<string>>(() => new Set());
 
   const load = useCallback(async () => {
+    const sequence = ++loadSequence.current;
+    const projectId = initialProjectId || readActiveProjectId();
     try {
-      const [workflowSnapshots, simulationJobs] = await Promise.all([getWorkflowSnapshots(), listSimulations()]);
-        setSnapshots((current) => workflowSnapshots.simulations.map((item) => {
-          const existing = current.find((snapshot) => snapshot.id === item.id);
-          return existing?.result !== undefined ? { ...item, result: existing.result } : item;
-        }));
+      const [workflowSnapshots, simulationJobs] = await Promise.all([getWorkflowSnapshots(projectId), listSimulations(projectId)]);
+        if (sequence !== loadSequence.current || readActiveProjectId() !== projectId) return;
+        const selection = selectSimulationSnapshot(workflowSnapshots.simulations, { snapshotId: requestedSnapshot.current });
+        setSnapshots((current) => mergeSimulationSnapshots(workflowSnapshots.simulations, current));
         setCapacity(workflowSnapshots.capacity);
         setJobs(Object.fromEntries(simulationJobs.map((job) => [job.id, job])));
-        setSelectedId((current) => workflowSnapshots.simulations.some((item) => item.id === current)
-          ? current
-          : workflowSnapshots.simulations[0]?.id ?? null);
+        requestedSnapshot.current = selection?.id;
+        setSelectedId(selection?.id ?? null);
         setError("");
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Ergebnisse nicht verfügbar.");
+      if (sequence === loadSequence.current) setError(caught instanceof Error ? caught.message : "Ergebnisse nicht verfügbar.");
     }
-  }, []);
+  }, [initialProjectId]);
   useWorkflowRefresh(load);
 
   const selected = useMemo(() => snapshots.find((item) => item.id === selectedId) ?? null, [selectedId, snapshots]);
   const compareSnapshot = snapshots.find((item) => item.id === compareId);
 
   useEffect(() => {
+    if (!selected) return;
     void setWorkflowContext({
-      selected_simulation: selected ? { snapshot_id: selected.id, job_id: selected.job_id ?? null } : null,
-    }).catch(() => undefined);
-  }, [selected]);
+      selected_simulation: { snapshot_id: selected.id, job_id: selected.job_id ?? null },
+    }, initialProjectId || readActiveProjectId()).catch(() => undefined);
+  }, [initialProjectId, selected?.id, selected?.job_id]);
 
   useEffect(() => {
     const ids = [selectedId, compareId].filter((value): value is string => Boolean(value));
@@ -59,15 +62,16 @@ export function ResultsWorkbench({ initialProjectId = "" }: { initialProjectId?:
       return snapshot && snapshot.result === undefined && !loadedSnapshotDetails.has(id);
     });
     if (!missing.length) return;
+    const projectId = initialProjectId || readActiveProjectId();
     setLoadedSnapshotDetails((current) => new Set([...current, ...missing]));
     missing.forEach((id) => {
-      void getWorkflowSimulationSnapshot(id)
+      void getWorkflowSimulationSnapshot(id, projectId)
         .then((fullSnapshot) => {
-          setSnapshots((current) => current.map((item) => item.id === fullSnapshot.id ? { ...item, ...fullSnapshot } : item));
+          if (readActiveProjectId() === projectId) setSnapshots((current) => current.map((item) => item.id === fullSnapshot.id ? { ...item, ...fullSnapshot } : item));
         })
-        .catch((caught) => setError(caught instanceof Error ? caught.message : "Simulationsergebnis nicht verfügbar."));
+        .catch((caught) => { if (readActiveProjectId() === projectId) setError(caught instanceof Error ? caught.message : "Simulationsergebnis nicht verfügbar."); });
     });
-  }, [compareId, loadedSnapshotDetails, selectedId, snapshots]);
+  }, [compareId, initialProjectId, selectedId, snapshots]);
 
   const job = selected?.job_id ? jobs[selected.job_id] : undefined;
   const observed = mergeSimulationResult(job?.result, selected?.result);
@@ -95,11 +99,18 @@ export function ResultsWorkbench({ initialProjectId = "" }: { initialProjectId?:
   async function refreshJob() {
     if (!selected?.job_id) return;
     try {
-      const next = await getSimulation(selected.job_id);
+      const next = await getSimulation(selected.job_id, initialProjectId || readActiveProjectId());
       setJobs((current) => ({ ...current, [next.id]: next }));
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Lauf konnte nicht aktualisiert werden.");
     }
+  }
+
+  function selectRun(id: string) {
+    requestedSnapshot.current = id;
+    setSelectedId(id);
+    setError("");
+    window.history.replaceState(window.history.state, "", withProjectParam(`/studio/results?snapshot=${encodeURIComponent(id)}`, initialProjectId || readActiveProjectId()));
   }
 
   return (
@@ -109,7 +120,7 @@ export function ResultsWorkbench({ initialProjectId = "" }: { initialProjectId?:
       <div className="results-layout">
         <aside className="result-run-list">
           <div className="result-run-list-heading"><strong>SimulationSnapshots</strong><span>{snapshots.length}</span></div>
-          {snapshots.map((item) => <button className={selectedId === item.id ? "active" : ""} key={item.id} onClick={() => setSelectedId(item.id)} type="button"><span className={`run-state run-${item.status.toLowerCase()}`}>{item.status}</span><strong>{new Date(item.created_at).toLocaleString("de-DE")}</strong><small>{item.job_id ? `Job ${item.job_id.slice(0, 10)}` : "Noch nicht ausgeführt"}</small></button>)}
+          {snapshots.map((item) => <button className={selectedId === item.id ? "active" : ""} data-snapshot-id={item.id} key={item.id} onClick={() => selectRun(item.id)} type="button"><span className={`run-state run-${item.status.toLowerCase()}`}>{item.status}</span><strong>{new Date(item.created_at).toLocaleString("de-DE")}</strong><small>{item.job_id ? `Job ${item.job_id.slice(0, 10)}` : "Noch nicht ausgeführt"}</small></button>)}
           {!snapshots.length && <div className="analysis-empty"><strong>Keine Snapshots</strong><p>Nach einem erfolgreichen Preflight kann die erste Simulation gestartet werden.</p></div>}
         </aside>
         <div className="result-analysis">
@@ -133,7 +144,7 @@ export function ResultsWorkbench({ initialProjectId = "" }: { initialProjectId?:
           </> : <div className="analysis-empty"><strong>Kein Lauf ausgewählt</strong><p>Ergebnisse werden nicht gelöscht; veraltete Läufe bleiben als historische Evidenz sichtbar.</p></div>}
         </div>
       </div>
-      <div className="analysis-footer-actions"><Link className="button secondary" href={withProjectParam("/studio/simulation", projectIdForLinks)}>Simulation öffnen</Link><Link className="button primary" href={withProjectParam("/studio/engineering", projectIdForLinks)}>Zum Engineering-Modell →</Link></div>
+      <div className="analysis-footer-actions"><Link className="button secondary" href={withProjectParam(selected ? `/studio/simulation?snapshot=${encodeURIComponent(selected.id)}` : "/studio/simulation", projectIdForLinks)}>Simulation öffnen</Link><Link className="button primary" href={withProjectParam("/studio/engineering", projectIdForLinks)}>Zum Engineering-Modell →</Link></div>
     </section>
   );
 }

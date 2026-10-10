@@ -47,12 +47,15 @@ test.afterEach(async ({ page }, info) => {
   writeTimings.delete(info.testId);
   progressMilestones.delete(info.testId);
   expect(workflowPageFailures.get(page), 'The underlying engineering page must remain readable throughout reload and recovery.').toEqual([]);
+  await expect(page.getByRole('heading', {name: 'Die Ansicht konnte nicht geladen werden.', exact: true}),
+    'A crashed parameter or engineering page must never count as a successful wizard detour.').not.toBeVisible();
 });
 
 async function assertEngineeringPageHealthy(page: Page) {
   expect(workflowPageFailures.get(page), 'A working wizard overlay must not conceal a workflow HTTP 413.').toEqual([]);
   expect(await page.getByText('Engineering-API nicht erreichbar', { exact: true }).isVisible(),
     'The underlying engineering page must not show its API error view.').toBe(false);
+  await expect(page.getByRole('heading', {name: 'Die Ansicht konnte nicht geladen werden.', exact: true})).not.toBeVisible();
 }
 
 async function readProject(page: Page, project: string, path: string) {
@@ -152,7 +155,8 @@ async function verifySignalContracts(page: Page, project: string, expected: Reco
   expect(contracts, 'Every original signal and its explicit encoding must survive generation.').toEqual(expected);
 }
 
-async function verifyArtifacts(page: Page, project: string, minimumCanonicalSignals: number, internalController?: string) {
+async function verifyArtifacts(page: Page, project: string, minimumCanonicalSignals: number, internalController?: string,
+  expectedParameters?: Record<string, unknown>, expectedNativeRates?: Record<string, Record<string, number>>) {
   // The completed model is stable; these independent reads need no serial waits.
   const [workflow, jobList, snapshots, signals, messages] = await Promise.all([
     readProject(page, project, '/api/engineering/workflow?view=summary'),
@@ -169,6 +173,20 @@ async function verifyArtifacts(page: Page, project: string, minimumCanonicalSign
   const snapshot = snapshots.simulations.find((item: { job_id: string }) => item.job_id === jobs[0].id);
   expect(snapshot).toBeTruthy();
   const full = await readProject(page, project, `/api/engineering/workflow/simulation-snapshots/${snapshot.id}`);
+  if (expectedParameters) {
+    const { data_bitrate, can_fd_data_prescaler, ...runtimeParameters } = expectedParameters;
+    expect(full.configuration.parameters).toMatchObject(runtimeParameters);
+    const canFdNetworks = full.configuration.networks.filter((network: any) => network.technology === 'can_fd');
+    expect(canFdNetworks.length, 'The edited CAN-FD configuration must reach a physical simulation network.').toBeGreaterThan(0);
+    for (const network of canFdNetworks) expect(network).toMatchObject({ data_bitrate, can_fd_data_prescaler });
+  }
+  if (expectedNativeRates) {
+    for (const [technology, rates] of Object.entries(expectedNativeRates)) {
+      const networks = full.configuration.networks.filter((network: any) => network.technology === technology);
+      expect(networks.length, `Saved ${technology} rates must reach the frozen simulation.`).toBeGreaterThan(0);
+      for (const network of networks) expect(network).toMatchObject(rates);
+    }
+  }
   const assessment = full.result.assessment;
   expect(assessment.scope_coverage.scope_mode).toBe('ALL');
   expect(assessment.scope_coverage.complete).toBe(true);
@@ -200,11 +218,176 @@ async function verifyArtifacts(page: Page, project: string, minimumCanonicalSign
   const trace = await readProject(page, project, `/api/simulations/${jobs[0].id}/trace-window?limit=10`);
   expect(trace.count).toBeGreaterThan(0);
   expect(trace.events.some((item: { signals?: unknown[] }) => item.signals && Object.keys(item.signals).length)).toBeTruthy();
-  return { workflow, job: jobs[0].id, assessment };
+  return { workflow, job: jobs[0].id, snapshot: snapshot.id, trace_events: full.result.trace.events, assessment, parameter_proof: expectedParameters ? {
+    saved: expectedParameters, simulation_rates: full.configuration.networks.map((network: any) => ({
+      technology: network.technology, bitrate: network.bitrate,
+      arbitration_bitrate: network.arbitration_bitrate, data_bitrate: network.data_bitrate,
+      hardware_evidence: network.hardware_evidence,
+    })),
+  } : undefined };
+}
+
+type ParameterReturnScenario = {
+  technology: string;
+  fields: Record<string, string>;
+  native: Record<string, number>;
+  editFields?: string[];
+};
+
+// Exercise the user's detour, including repeated saves in an existing run.
+// Reads inspect real persisted state; writes and return navigation use the UI.
+async function repeatParameterReturn(page: Page, project: string, proposalId: string,
+  scenarios: ParameterReturnScenario[], seeds = [41, 43, 42]) {
+  const before = await readProject(page, project, '/api/engineering/workflow?view=summary');
+  const identity = before.context.agent_execution;
+  expect(identity.run_id).toBeTruthy();
+  const nodeIds = (await allObjects(page, project, 'hardware-nodes')).map(item => item.id).sort();
+  const starts: unknown[] = [];
+  const trackStarts = (request: import('playwright/test').Request) => {
+    if (request.url().endsWith('/api/agent/chat') && request.method() === 'POST'
+      && request.postDataJSON()?.wizard_command?.action === 'START') starts.push(request.postDataJSON());
+  };
+  const evidence: unknown[] = [];
+  page.on('request', trackStarts);
+  try {
+    const wizard = page.getByRole('dialog', {name: 'Engineering-Auftrag erstellen'});
+    if (await wizard.isVisible()) {
+      // A captured API START does not activate a browser wizard session. Enter
+      // parameters through the actual workflow card, just as a user does.
+      await wizard.locator('.agent-wizard-progress-card[href*="mode=parameters"]').click();
+      await expect(page.getByRole('button', {name: 'Zurück zum Auftrag', exact: true})).toBeVisible();
+    }
+    for (const [cycle, seed] of seeds.entries()) {
+      for (const scenario of scenarios) {
+        await page.goto(`/studio?mode=parameters&project=${encodeURIComponent(project)}&technology=${scenario.technology}&proposal=${proposalId}#parameter-findings`);
+        await assertEngineeringPageHealthy(page);
+        const common = page.locator('.parameter-group-common');
+        for (const [field, value] of Object.entries(scenario.fields)) {
+          const input = page.locator(`#${field}`);
+          const details = input.locator('xpath=ancestor::details[1]');
+          if (await details.count() && await details.getAttribute('open') === null)
+            await details.locator(':scope > summary').click();
+          if (scenario.editFields?.includes(field)) await input.fill(value);
+          else await expect(input).toHaveValue(value);
+        }
+        await common.locator('#seed').fill(String(seed));
+        await page.getByRole('button', {name: 'Parameter speichern →', exact: true}).click();
+        await expect(page.getByText('Technologie- und Timing-Parameter gespeichert.')).toBeVisible();
+        const saved = await readProject(page, project, '/api/engineering/workflow/parameters');
+        expect(saved.project_id).toBe(project);
+        expect(saved.parameters.parameter_provenance.duration_s).toEqual({source:'TECHNOLOGY_DEFAULT',value:1});
+        const scoped = saved.parameters.technology_parameters[scenario.technology];
+        const assumed = saved.parameters.simulation_parameter_assumptions?.[scenario.technology];
+        expect(scoped.values.seed).toBe(seed);
+        const nativeValues = {...assumed?.values, ...scoped.values};
+        expect(nativeValues).toMatchObject(scenario.native);
+        for (const [key, value] of Object.entries(scenario.native)) {
+          const confirmed = Object.hasOwn(scoped.values, key);
+          expect((confirmed ? scoped : assumed).provenance[key]).toMatchObject(confirmed
+            ? {source: 'USER_CONFIRMED', status: 'CONFIRMED', value}
+            : {source: 'NIS_SIMULATION_ASSUMPTION', status: 'ASSUMED', technology: scenario.technology, hardware_evidence: false, value});
+        }
+        const userValues = await readProject(page, project, '/api/engineering/workflow/parameters/user-defined-values');
+        expect(userValues.project_id).toBe(project);
+        expect(userValues.value_origin).toBe('USER_DEFINED_VALUE');
+        expect(userValues.parameters.technology_defaults).toBeUndefined();
+        expect(userValues.parameters.technology_parameters[scenario.technology]).toEqual(scoped);
+        const stale = await readProject(page, project, `/api/engineering/agent/proposals/${proposalId}?view=status`);
+        expect(stale.data.status).toBe('OUTDATED');
+        const canonicalIds = stale.data.canonical_ids;
+        // Observe only the new document's real UI review: an old review can
+        // finish during reload, after its response body has been discarded.
+        let reloadedDocumentAt = Infinity;
+        const markReloadedDocument = (frame: import('playwright/test').Frame) => {
+          if (frame === page.mainFrame()) reloadedDocumentAt = Date.now();
+        };
+        page.on('framenavigated', markReloadedDocument);
+        const reviewResponse = page.waitForResponse(response => {
+          const url = new URL(response.url());
+          return url.pathname === '/api/engineering/workflow/parameters/review'
+            && url.searchParams.get('proposal') === proposalId
+            && response.request().method() === 'GET'
+            && response.request().headers()['x-project-id'] === project
+            && response.request().timing().startTime >= reloadedDocumentAt;
+        }, {timeout: 60_000});
+        try {
+          await page.reload();
+        } finally {
+          page.off('framenavigated', markReloadedDocument);
+        }
+        const actualReviewResponse = await reviewResponse;
+        expect(actualReviewResponse.ok(), await actualReviewResponse.text()).toBe(true);
+        const review = await actualReviewResponse.json();
+        expect(review.edit_token).toBe(saved.edit_token);
+        await expect(common.locator('#seed')).toHaveValue(String(seed));
+        for (const [field, value] of Object.entries(scenario.fields)) {
+          const input = page.locator(`#${field}`);
+          const details = input.locator('xpath=ancestor::details[1]');
+          if (await details.count() && await details.getAttribute('open') === null)
+            await details.locator(':scope > summary').click();
+          await expect(input).toHaveValue(value);
+        }
+        const selectedFindings = review.findings.filter((finding: {technology:string}) => finding.technology === scenario.technology);
+        if (selectedFindings.length && selectedFindings.every((finding: {code:string}) => finding.code === 'CAPACITY_DEVICE_EVIDENCE_MISSING')) {
+          await expect(page.locator('#parameter-findings form')).toHaveCount(0);
+          await expect(page.locator('#parameter-findings [role="alert"]')).toHaveCount(0);
+          await expect(page.locator('#parameter-findings')).toContainText('kein Simulationsblocker');
+        }
+        // Keep the existing delayed-restore regression, using real responses.
+        let resumeRestore!: () => void;
+        const restorePause = new Promise<void>(resolve => { resumeRestore = resolve; });
+        const delayRestore = async (route: import('playwright/test').Route) => {
+          await restorePause; await route.continue();
+        };
+        const delayed = cycle === 0 && scenario === scenarios[0];
+        if (delayed) await page.route('**/api/engineering/workflow?view=summary', delayRestore);
+        const dialog = page.getByRole('dialog', {name: 'Engineering-Auftrag erstellen'});
+        try {
+          await page.getByRole('button', {name: 'Zurück zum Auftrag', exact: true}).click();
+          if (delayed) {
+            await expect(dialog.getByRole('region', {name: 'Gespeicherten Auftrag wiederherstellen'})).toBeVisible();
+            await expect(dialog).not.toContainText('Projektname: Schritt 1');
+          }
+        } finally {
+          resumeRestore();
+          if (delayed) await page.unrouteAll({behavior: 'wait'});
+        }
+        // Match the existing proposal-review readiness budget below. The new
+        // return assertion must not impose a shorter limit on the large model.
+        await expect(dialog.getByRole('region', {name: 'Engineering-Vorschlag'}))
+          .toContainText('Geprüft · Freigabe offen', {timeout: 60_000});
+        await expect(dialog).toContainText('Statusübersicht: Schritt 5 von 5');
+        const restored = await readProject(page, project, '/api/engineering/workflow?view=summary');
+        expect(restored.project_id).toBe(project);
+        expect(restored.context.agent_execution.run_id).toBe(identity.run_id);
+        expect(restored.context.agent_execution.request_revision).toBe(identity.request_revision);
+        expect(restored.context.agent_execution.state).toBe('REVIEW_REQUIRED');
+        expect(restored.context.agent_execution.step).toBe(identity.step);
+        for (const step of steps) if (done.has(before.statuses[step]))
+          expect(done.has(restored.statuses[step]), `Returning must preserve completed stage ${step}.`).toBe(true);
+        const conversation = await readProject(page, project, '/api/engineering/agent/conversation');
+        expect(conversation.data.active_proposal).toBe(proposalId);
+        const fresh = await readProject(page, project, `/api/engineering/agent/proposals/${proposalId}?view=status`);
+        expect(fresh.data.status).toBe('VALIDATED');
+        expect(fresh.data.canonical_ids).toEqual(canonicalIds);
+        expect((await allObjects(page, project, 'hardware-nodes')).map(item => item.id).sort()).toEqual(nodeIds);
+        const after = await readProject(page, project, '/api/engineering/workflow/parameters');
+        expect(after.parameters).toEqual(saved.parameters);
+        expect(starts, 'Returning from parameters must never restart this run.').toEqual([]);
+        evidence.push({cycle: cycle + 1, technology: scenario.technology, seed, run_id: identity.run_id,
+          proposal_id: proposalId, saved_values: scoped, assumptions: assumed,
+          restored_status: fresh.data.status, canonical_ids: canonicalIds});
+      }
+    }
+  } finally {
+    page.off('request', trackStarts);
+    await test.info().attach('repeated-parameter-return', {body: JSON.stringify(evidence), contentType: 'application/json'});
+  }
 }
 
 async function completeThroughWizard(page: Page, project: string, restart: boolean, expectedHardware: string[] = [], crashSimulation = false,
-  expectedSignals?: Record<string, unknown>, afterFirstModelApplied?: () => Promise<void>, stopOnEvidenceBlock = false) {
+  expectedSignals?: Record<string, unknown>, afterFirstModelApplied?: () => Promise<void>, stopOnEvidenceBlock = false,
+  beforeProposalReview?: (proposalId: string, proposalType: string) => Promise<void | 'STOP_AFTER_REVIEW'>) {
   let reviewCount = 0;
   let runId: string | undefined;
   const reviewed = new Set<string>();
@@ -334,6 +517,13 @@ async function completeThroughWizard(page: Page, project: string, restart: boole
         .toEqual(expect.arrayContaining(expectedHardware));
     }
     expect(reviewed.has(proposalId), 'The same proposal must not request review twice.').toBe(false);
+    const reviewAction = await beforeProposalReview?.(proposalId, candidate.data.proposal_type);
+    if (reviewAction === 'STOP_AFTER_REVIEW') {
+      // Explicit targeted coverage: the selected pending proposal has been
+      // exercised but is not applied and this is not nine-stage completion.
+      return { runId, reviewed: [...reviewed], restartedJobId,
+        reviewOnly: { proposalId, proposalType: candidate.data.proposal_type } };
+    }
     const applyResponse = page.waitForResponse(response => response.url().includes(`/proposals/${proposalId}/approve-apply`) && response.request().method() === 'POST', { timeout: 180_000 });
     const approval = dialog.getByRole('button', { name: /^(Freigeben, übernehmen & fortfahren|Übernehmen & fortfahren)$/ });
     await expect(approval).toBeEnabled({ timeout: 60_000 });
@@ -388,7 +578,7 @@ test('wizard refuses an unavailable catalog and recovers using the real registry
   expect(catalog.technology_count).toBe(125);
 });
 
-test('new small wizard traverses all nine stages and survives reload/restart @small', async ({ page }, testInfo) => {
+test('new small wizard traverses all nine stages and survives reload/restart @small', async ({ page, browser }, testInfo) => {
   const errors: string[] = []; page.on('pageerror', error => errors.push(error.message));
   const project = 'nis-e2e-small-' + randomUUID();
   const dialog = await openWizard(page, project);
@@ -411,9 +601,27 @@ test('new small wizard traverses all nine stages and survives reload/restart @sm
   }
   const requested = (await startRequest).postDataJSON().wizard_command.wizard_context;
   expect(requested.technologies, 'An explicit CAN-FD task must not silently request LIN and SOME/IP.').toEqual(['CAN-FD (can_fd)']);
+  // Preserve a real pending model through parameter save and renewed review.
+  await expect.poll(async () => (await readProject(page,project,'/api/engineering/workflow?view=summary')).context.agent_execution?.state,
+    {timeout:180000}).toBe('REVIEW_REQUIRED');
+  const pending = (await readProject(page,project,'/api/engineering/agent/conversation')).data.active_proposal;
+  await page.goto(`/studio?mode=parameters&project=${project}&technology=can_fd&proposal=${pending}#parameter-findings`);
+  await expect(page.getByRole('region',{name:'Aktuelle Parameterbefunde'})).toContainText('noch nicht übernommenen Vorschlags');
+  const common = page.locator('.parameter-group-common');
+  await expect(common.locator('#arbitration_bitrate')).toHaveValue('500 kbit/s');
+  await expect(common.locator('#data_bitrate')).toHaveValue('2 Mbit/s');
+  await expect(page.locator('.parameter-details[open]')).toHaveCount(0);
+  await repeatParameterReturn(page, project, pending, [{technology: 'can_fd',
+    fields: {arbitration_bitrate: '500 kbit/s', data_bitrate: '1 Mbit/s', can_fd_data_prescaler: '2'},
+    native: {arbitration_bitrate: 500_000, data_bitrate: 1_000_000, can_fd_data_prescaler: 2},
+    editFields: ['data_bitrate', 'can_fd_data_prescaler']}]);
+  expect((await readProject(page,project,`/api/engineering/agent/proposals/${pending}?view=status`)).data.canonical_ids).toEqual([]);
+  expect((await allObjects(page,project,'hardware-nodes'))).toHaveLength(0);
   const continuity = await completeThroughWizard(page, project, true,
     ['System', 'Motorsteuerung', 'Anzeige', 'MotorTemperature', 'MotorValve']);
-  const artifacts = await verifyArtifacts(page, project, 5);
+  const artifacts = await verifyArtifacts(page, project, 5, undefined, {
+    seed: 42, data_bitrate: 1_000_000, can_fd_data_prescaler: 2,
+  });
   expect(artifacts.assessment.observed_signal_count).toBeGreaterThanOrEqual(3);
   expect(artifacts.assessment.scope_coverage.transport_exclusions).toHaveLength(3);
   const finished = page.waitForResponse(response => response.url().includes(`/runs/${continuity.runId}/finish`)
@@ -421,6 +629,47 @@ test('new small wizard traverses all nine stages and survives reload/restart @sm
   await dialog.getByRole('button', { name: 'Fertig stellen', exact: true }).click();
   expect((await finished).ok()).toBe(true);
   await expect(dialog).not.toBeVisible();
+  await expect(page).toHaveURL(new RegExp(`/studio/results\\?snapshot=${artifacts.snapshot}&project=${project}$`));
+  const selectedRun = page.locator(`.result-run-list button[data-snapshot-id="${artifacts.snapshot}"]`);
+  await expect(selectedRun).toHaveClass('active');
+  await expect(page.getByText('Anforderungserfüllung: Bestanden', { exact: true })).toBeVisible();
+  await expect(page.locator('.metric').filter({ has: page.getByText('Trace Events', { exact: true }) }))
+    .toContainText(artifacts.trace_events.toLocaleString('de-DE'));
+  await page.reload();
+  await expect(selectedRun).toHaveClass('active');
+  await expect(page.getByText('Anforderungserfüllung: Bestanden', { exact: true })).toBeVisible();
+  await page.getByRole('link', { name: 'Simulation öffnen', exact: true }).click();
+  const runner = page.locator('.model-simulation-runner');
+  await expect(runner).toHaveAttribute('data-job-id', artifacts.job);
+  await expect(runner).toHaveAttribute('data-snapshot-id', artifacts.snapshot);
+  await expect(page.getByRole('heading', { name: 'Simulation abgeschlossen', exact: true })).toBeVisible();
+  await page.reload();
+  await expect(runner).toHaveAttribute('data-job-id', artifacts.job);
+  // A new browser context has no session key from either wizard or simulation UI.
+  const freshContext = await browser.newContext({ baseURL: new URL(page.url()).origin });
+  try {
+    const fresh = await freshContext.newPage();
+    await fresh.goto(`/studio/simulation?project=${project}`);
+    const freshRunner = fresh.locator('.model-simulation-runner');
+    await expect(freshRunner).toHaveAttribute('data-job-id', artifacts.job);
+    await expect(freshRunner).toHaveAttribute('data-snapshot-id', artifacts.snapshot);
+    await expect(fresh.getByRole('heading', { name: 'Simulation abgeschlossen', exact: true })).toBeVisible();
+    await fresh.getByRole('button', { name: 'Reset', exact: true }).click();
+    await fresh.getByRole('button', { name: 'Ansicht zurücksetzen', exact: true }).click();
+    await expect(freshRunner).not.toHaveAttribute('data-job-id');
+    await fresh.reload();
+    await expect(fresh.getByRole('button', { name: 'Start', exact: true })).toBeEnabled();
+    await expect(freshRunner).not.toHaveAttribute('data-job-id');
+    await fresh.goto(`/studio/results?project=${project}&snapshot=${artifacts.snapshot}`);
+    await expect(fresh.locator('.result-run-list button.active')).toHaveAttribute('data-snapshot-id', artifacts.snapshot);
+    await expect(fresh.getByText('Anforderungserfüllung: Bestanden', { exact: true })).toBeVisible();
+    await testInfo.attach('wizard-result-restoration', { body: await fresh.screenshot(), contentType: 'image/png' });
+    await fresh.goto(`/studio/results?project=${project}-other&snapshot=${artifacts.snapshot}`);
+    await expect(fresh.getByText('Dieser Simulationslauf ist in diesem Projekt nicht verfügbar.', { exact: true })).toBeVisible();
+    await expect(fresh.locator('.result-run-list button.active')).toHaveCount(0);
+  } finally {
+    await freshContext.close();
+  }
   await openWizard(page, project);
   expect((await readProject(page, project, '/api/simulations')).jobs).toHaveLength(1);
   expect(errors).toEqual([]);
@@ -428,7 +677,7 @@ test('new small wizard traverses all nine stages and survives reload/restart @sm
 });
 
 for (const technology of ['I2C', 'Modbus RTU']) {
-  test(`Raspberry Pi ${technology} project retains model and requests missing capacity evidence @nonautomotive`, async ({ page }, testInfo) => {
+  test(`Raspberry Pi ${technology} project retains model and blocks inconsistent native parameters @nonautomotive`, async ({ page }, testInfo) => {
     const project = 'nis-e2e-embedded-' + randomUUID();
     const dialog = await openWizard(page, project);
     await dialog.getByTitle('Projektname', { exact: true }).click();
@@ -461,15 +710,45 @@ for (const technology of ['I2C', 'Modbus RTU']) {
       .rejects.toThrow(/Wizard BLOCKED at parameters:.*bestätigte Angaben/);
     const workflow = await readProject(page, project, '/api/engineering/workflow');
     const findings = workflow.context.agent_execution.blocking_findings as { code: string }[];
-    expect(findings.map(item => item.code)).toContain('TECHNOLOGY_PARAMETER_MISSING');
+    expect(findings.map(item => item.code)).toContain('TECHNOLOGY_PARAMETER_DEPENDENCY_MISMATCH');
     expect(workflow.statuses.parameters).toBe('IN_PROGRESS');
     expect(workflow.artifact_checks.parameters.complete).toBe(false);
     const required = workflow.artifact_checks.parameters.required;
-    expect(required[technology === 'I2C' ? 'i2c_device_source' : 'mr_device_source']).toBe(false);
+    expect(required.profile_values).toBe(false);
+    const deviceSource = technology === 'I2C' ? 'i2c_device_source' : 'mr_device_source';
+    // These scenarios remain blocked by real native dependencies, not by the
+    // absence of a real device qualification or fabricated source identifier.
+    expect(required).not.toHaveProperty(deviceSource, false);
+    const nativeTechnology = technology === 'I2C' ? 'i2c' : 'modbus_rtu';
+    expect(workflow.parameters.simulation_parameter_assumptions[nativeTechnology].values)
+      .not.toHaveProperty(deviceSource);
+    expect(workflow.artifact_checks.parameters.profile_findings.some((finding: {code: string}) =>
+      finding.code === 'TECHNOLOGY_PARAMETER_DEPENDENCY_MISMATCH')).toBe(true);
     const evidenceReview = dialog.getByRole('region', {name: 'Blockierende Preflight-Befunde'});
-    await expect(evidenceReview).toContainText(technology === 'I2C' ? 'i2c_device_source' : 'mr_device_source');
+    await expect(evidenceReview).toContainText(technology === 'I2C' ? 'i2c_pullup_ohms' : 'mr_pdu_bytes');
     await expect(evidenceReview.getByRole('link', {name: 'Betroffene Angaben bearbeiten'}).first())
       .toHaveAttribute('href', new RegExp(`mode=parameters.*project=${project}`));
+    // Rechecking persisted findings must use the existing request, and must
+    // never release unchanged invalid native values or invent device evidence.
+    const continued = page.waitForRequest(request => new URL(request.url()).pathname === '/api/agent/chat'
+      && request.method() === 'POST' && request.postDataJSON()?.wizard_command?.action === 'CONTINUE');
+    await evidenceReview.getByRole('button', {name: 'Gespeicherte Angaben erneut prüfen & fortsetzen', exact: true}).click();
+    const command = (await continued).postDataJSON().wizard_command;
+    expect(command.run_id).toBe(workflow.context.agent_execution.run_id);
+    expect(command.request_revision).toBe(workflow.context.agent_execution.request_revision);
+    await expect.poll(async () => {
+      const next = await readProject(page, project, '/api/engineering/workflow?view=summary');
+      return next.context.agent_execution.state === 'BLOCKED'
+        && next.context.agent_execution.updated_at !== workflow.context.agent_execution.updated_at;
+    }, {timeout: 60_000}).toBe(true);
+    const rechecked = await readProject(page, project, '/api/engineering/workflow');
+    expect(rechecked.context.agent_execution.run_id).toBe(command.run_id);
+    expect(rechecked.context.agent_execution.request_revision).toBe(command.request_revision);
+    expect(rechecked.context.agent_execution.blocking_findings.map((item: {code: string}) => item.code))
+      .toContain('TECHNOLOGY_PARAMETER_DEPENDENCY_MISMATCH');
+    expect(rechecked.parameters).toEqual(workflow.parameters);
+    expect(rechecked.statuses.parameters).toBe('IN_PROGRESS');
+    await expect(dialog.getByRole('button', {name: 'Fertig stellen', exact: true})).toBeDisabled();
     expect(workflow.statuses.simulation).toBe('EMPTY');
     if (technology === 'I2C') {
       expect(workflow.parameters.rate_review_proposals.i2c.status).toBe('REVIEW_REQUIRED');
@@ -489,15 +768,13 @@ for (const technology of ['I2C', 'Modbus RTU']) {
   });
 }
 
-test('exact confirmed 50/250/250 request completes through real wizard review @large', async ({ page }, testInfo) => {
-  const errors: string[] = []; page.on('pageerror', error => errors.push(error.message));
-  const project = 'nis-e2e-large-' + randomUUID();
+async function startCapturedLargeWizard(page: Page, project: string) {
   const runId = randomUUID();
   const original = await readFile(new URL('./fixtures/wizard-large-50-250-250.txt', import.meta.url), 'utf8');
   const metadata = JSON.parse(await readFile(new URL('./fixtures/wizard-large-50-250-250.json', import.meta.url), 'utf8'));
   const baseline = JSON.parse(await readFile(new URL('./fixtures/wizard-large-signal-contracts.json', import.meta.url), 'utf8'));
   const prompt = original.replace(/^- Lauf-ID:.*$/m, '- Lauf-ID: ' + runId);
-  await reviewVirtualTransports(page, project);
+  await reviewVirtualTransports(page, project, true);
   // Replay the captured, already confirmed input through the normal START API.
   // All proposal inspection, approval, continuation and reloads below use UI.
   const started = await page.request.post('/api/engineering/agent/chat', {
@@ -507,13 +784,48 @@ test('exact confirmed 50/250/250 request completes through real wizard review @l
   });
   if (!started.ok()) throw new Error(`HTTP ${started.status()}: ${(await started.text()).slice(0, 4000)}`);
   await openWizard(page, project);
-  const continuity = await completeThroughWizard(page, project, false, [], true, baseline.signals);
+  return { runId, metadata, baseline };
+}
+
+function largeParameterScenarios(): ParameterReturnScenario[] {
+  return [
+    {technology: 'lin', fields: {lin_bitrate_bps: '19,2 kbit/s'}, native: {lin_bitrate_bps: 19_200}},
+    {technology: 'can_fd', fields: {arbitration_bitrate: '500 kbit/s', data_bitrate: '2 Mbit/s'},
+      native: {arbitration_bitrate: 500_000, data_bitrate: 2_000_000}},
+    // Match the unchanged captured 100-Mbit/s request and genuinely change
+    // the 1-Gbit/s profile seed, so saving exercises user-value provenance.
+    {technology: 'ethernet', fields: {bitrate: '100 Mbit/s'}, native: {bitrate: 100_000_000}, editFields: ['bitrate']},
+  ];
+}
+
+test('exact confirmed 50/250/250 request completes through real wizard review @large', async ({ page }, testInfo) => {
+  const errors: string[] = []; page.on('pageerror', error => errors.push(error.message));
+  const project = 'nis-e2e-large-' + randomUUID();
+  const { runId, metadata, baseline } = await startCapturedLargeWizard(page, project);
+  const parameterReturnReviews: string[] = [];
+  const continuity = await completeThroughWizard(page, project, false, [], true, baseline.signals,
+    undefined, false, async (proposalId, proposalType) => {
+      if (!['WIZARD_ENGINEERING_MODEL', 'WIZARD_ROUTING', 'WIZARD_NETWORK_TOPOLOGY'].includes(proposalType)) return;
+      // One full three-bus cycle remains integrated at every review stage.
+      // Repeated three-seed coverage has its own real large cases below,
+      // preserving the contractual 20-minute whole-workflow case limit.
+      // Each phase must really edit the seed: an identical save correctly
+      // leaves the existing proposal VALIDATED instead of making it OUTDATED.
+      const reviewSeed = proposalType === 'WIZARD_ENGINEERING_MODEL' ? 41
+        : proposalType === 'WIZARD_ROUTING' ? 43 : 42;
+      await repeatParameterReturn(page, project, proposalId, largeParameterScenarios(), [reviewSeed]);
+      parameterReturnReviews.push(proposalType);
+    });
+  expect(parameterReturnReviews).toEqual(['WIZARD_ENGINEERING_MODEL', 'WIZARD_ROUTING', 'WIZARD_NETWORK_TOPOLOGY']);
   expect(continuity.runId).toBe(runId);
   const hardware = await allObjects(page, project, 'hardware-nodes');
   expect(hardware.filter(item => item.device_type === 'SensorController')).toHaveLength(250);
   expect(hardware.filter(item => item.device_type === 'ActuatorController')).toHaveLength(250);
   expect(hardware.filter(item => item.device_type === 'ECU').length).toBeGreaterThanOrEqual(50);
-  const artifacts = await verifyArtifacts(page, project, 1404);
+  const artifacts = await verifyArtifacts(page, project, 1404, undefined, undefined, {
+    lin: {bitrate: 19_200}, can_fd: {arbitration_bitrate: 500_000, data_bitrate: 2_000_000},
+    ethernet: {bitrate: 100_000_000},
+  });
   const excludedSignalIds = new Set(artifacts.assessment.scope_coverage.transport_exclusions
     .flatMap((item: { signal_ids: string[] }) => item.signal_ids));
   expect(excludedSignalIds.size).toBe(235);
@@ -523,6 +835,34 @@ test('exact confirmed 50/250/250 request completes through real wizard review @l
   expect(errors).toEqual([]);
   await testInfo.attach('evidence', { body: JSON.stringify({ project, fixture: metadata.request_sha256, ...continuity, ...artifacts }), contentType: 'application/json' });
 });
+
+for (const target of [
+  { label: 'model', type: 'WIZARD_ENGINEERING_MODEL', step: 'engineering_model' },
+  { label: 'routing', type: 'WIZARD_ROUTING', step: 'routing' },
+  { label: 'topology', type: 'WIZARD_NETWORK_TOPOLOGY', step: 'network_editor' },
+]) {
+  test(`exact confirmed 50/250/250 ${target.label} parameter return review only @large-return`, async ({ page }, testInfo) => {
+    const errors: string[] = []; page.on('pageerror', error => errors.push(error.message));
+    const project = `nis-e2e-large-return-${target.label}-` + randomUUID();
+    const { runId, metadata, baseline } = await startCapturedLargeWizard(page, project);
+    const continuity = await completeThroughWizard(page, project, false, [], false, baseline.signals,
+      undefined, false, async (proposalId, proposalType) => {
+        if (proposalType !== target.type) return;
+        await repeatParameterReturn(page, project, proposalId, largeParameterScenarios());
+        return 'STOP_AFTER_REVIEW';
+      });
+    expect(continuity.runId).toBe(runId);
+    expect(continuity.reviewOnly?.proposalType).toBe(target.type);
+    const workflow = await readProject(page, project, '/api/engineering/workflow?view=summary');
+    expect(workflow.context.agent_execution).toMatchObject({ run_id: runId, state: 'REVIEW_REQUIRED', step: target.step });
+    expect(done.has(workflow.statuses.simulation)).toBe(false);
+    const proposal = await readProject(page, project, `/api/engineering/agent/proposals/${continuity.reviewOnly!.proposalId}?view=status`);
+    expect(proposal.data.status).toBe('VALIDATED');
+    expect(errors).toEqual([]);
+    await testInfo.attach('review-only-evidence', { body: JSON.stringify({ project, fixture: metadata.request_sha256,
+      coverage: 'REVIEW_CONTINUITY_ONLY', cycles: 3, technologies: ['lin', 'can_fd', 'ethernet'], ...continuity }), contentType: 'application/json' });
+  });
+}
 
 test('a real AMEND after model approval adds the requested sensor and reuses its networks @amend', async ({ page }, testInfo) => {
   const project = 'nis-e2e-amend-' + randomUUID();

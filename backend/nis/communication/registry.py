@@ -54,6 +54,7 @@ class TechnologyRegistry:
         self._load_calculators: dict[str, Any] = {}
         self._timing_models: dict[str, Any] = {}
         self._revision = 0
+        self._parameter_key_snapshots: dict[str | None, tuple[int, frozenset[str]]] = {}
 
     @property
     def revision(self) -> int:
@@ -219,10 +220,16 @@ class TechnologyRegistry:
     def get_capabilities(self, technology_id: str) -> dict[str, bool]:
         return deepcopy(self.profile(technology_id)["capabilities"])
 
-    def profile(self, technology_id: str) -> dict[str, Any]:
+    def profile(self, technology_id: str, *, fields: Iterable[str] | None = None) -> dict[str, Any]:
         key = self.normalize_id(technology_id)
         if key not in self._profiles:
             raise KeyError(f"unknown technology: {key}")
+        if fields is not None:
+            # Hot transport lookups need a few owned attributes, not a copy of
+            # every constraint and reference. Results remain detached, including
+            # nested schema metadata; the registered profile stays authoritative.
+            definition = self._profiles[key].definition
+            return deepcopy({name: definition[name] for name in fields if name in definition})
         return self._profiles[key].to_dict()
 
     def profiles(self) -> list[dict[str, Any]]:
@@ -252,18 +259,49 @@ class TechnologyRegistry:
         from backend.nis.communication.catalog import _parameter_defaults_review
         return _parameter_defaults_review(self.normalize_id(technology_id), self.rate_profile(technology_id))
 
+    def parameter_roles(self, technology_id: str) -> dict[str, str]:
+        """Classify saved values without generating new default proposals."""
+        from backend.nis.communication.catalog import parameter_value_role
+        schema = self._profiles[self.normalize_id(technology_id)].definition.get('parameter_schema', {})
+        return {name: parameter_value_role(name, spec) for name, spec in schema.items() if spec.get('label')}
+
+    def transport_parameter_keys(self, technology_id: str) -> set[str]:
+        """Native ingress ownership without copying display/schema metadata."""
+        schema = self._profiles[self.normalize_id(technology_id)].definition.get('parameter_schema', {})
+        return {name for name, spec in schema.items()
+                if spec.get('parameter_origin') in {'TRANSPORT_PROFILE', 'DEVICE_CONFIGURATION'}}
+
+    def constrain_simulation_values(self, technology_id: str, values: dict[str, Any], fixed: Iterable[str]) -> dict[str, Any]:
+        """Derive detached scenario values using the current native constraints.
+
+        The constraint evaluator reads the authoritative definition without
+        copying its display metadata for each message. It changes only the
+        separate proposals; explicit fixed values retain their authority.
+        """
+        from backend.nis.communication.catalog import _constrained_simulation_proposals
+        key = self.normalize_id(technology_id)
+        definition = self._profiles[key].definition
+        proposals = {name: {'value': deepcopy(value)} for name, value in values.items()}
+        result = _constrained_simulation_proposals(key, definition, proposals, set(fixed))
+        return {name: deepcopy(proposal['value']) for name, proposal in result.items()}
+
     def parameter_fields(self, technology_id: str) -> list[dict[str, Any]]:
         """One profile-owned schema for UI, wizard and API consumers."""
-        from backend.nis.communication.catalog import PARAMETER_UI_ALIASES, simulation_parameter_proposal
+        from backend.nis.communication.catalog import PARAMETER_UI_ALIASES, simulation_parameter_values, parameter_value_role
         profile = self._profiles[self.normalize_id(technology_id)].definition
+        proposals = simulation_parameter_values(profile['id'], profile)
         result = []
         for name, spec in profile.get('parameter_schema', {}).items():
             if not spec.get('label'):
                 continue
-            field = {**deepcopy(spec), 'key': PARAMETER_UI_ALIASES.get(name, name)}
-            proposal = simulation_parameter_proposal(profile['id'], profile, name, spec)
+            field = {**deepcopy(spec), 'key': PARAMETER_UI_ALIASES.get(name, name), 'native_key': name}
+            field['value_role'] = parameter_value_role(name, spec)
+            proposal = deepcopy(proposals[name])
             field['simulation_default'] = proposal['value']
             field['simulation_default_provenance'] = proposal
+            field['not_applicable_when'] = [{PARAMETER_UI_ALIASES.get(key, key): value for key, value in rule.get('when', {}).items()}
+                for rule in profile.get('parameter_constraints') or [] if rule['parameter'] == name
+                and rule.get('allowed') in ([], ['']) and not any(key.startswith('when_') for key in rule)]
             if (spec.get('integer') or spec.get('type') == 'integer') and any(
                 isinstance(spec.get(bound), int) and abs(spec[bound]) > 2**53 - 1 for bound in ('min', 'max', 'minimum', 'maximum')):
                 field['numeric_encoding'] = 'DECIMAL_STRING'
@@ -276,6 +314,57 @@ class TechnologyRegistry:
                 field['simulation_default'] = str(field['simulation_default'])
                 field['simulation_default_provenance']['value'] = field['simulation_default']
             result.append(field)
+        return result
+
+    def simulation_defaults_for_project(self, parameters: dict[str, Any], technology_ids=()) -> dict[str, Any]:
+        """Fill missing project values; never edit central profiles or confirm devices.
+
+        Comparable networks must use the exact registered protocol. Their reviewed
+        fields may replace an otherwise arbitrary schema example, with named origins.
+        Explicit values and saved user assumptions always take precedence.
+        """
+        result = dict(parameters)
+        groups = deepcopy(parameters.get('simulation_parameter_assumptions') or {})
+        ids = list(technology_ids) or [parameters.get('technology')]
+        ids += [item.get('technology') for item in parameters.get('networks') or []]
+        for technology in dict.fromkeys(self.normalize_id(item) for item in ids if item):
+            fields = self.parameter_fields(technology)
+            saved = (parameters.get('technology_parameters') or {}).get(technology) or {}
+            previous = groups.get(technology) or {}
+            values, proofs = dict(previous.get('values') or {}), dict(previous.get('provenance') or {})
+            for field in fields:
+                key = field['key']
+                if field['value_role'] != 'CONFIGURATION' and values.get(key) == f"simulation:{technology}:{field['native_key']}":
+                    # Remove only the exact old generated assumption. Explicit
+                    # user/group facts and operational values are untouched.
+                    values.pop(key, None)
+                    proofs.pop(key, None)
+                if key in values or key in (saved.get('values') or {}):
+                    continue
+                global_proof = (parameters.get('parameter_provenance') or {}).get(key) or {}
+                if self.normalize_id(parameters.get('technology')) == technology and key in parameters and global_proof.get('source') in {'USER_CONFIRMED', 'EXPLICIT_USER_SPECIFICATION'}:
+                    continue
+                proposal = deepcopy(field['simulation_default_provenance'])
+                if proposal['value'] is None:
+                    continue
+                if proposal.get('applicable') is False:
+                    continue
+                if proposal['basis'] in {'SCHEMA_SIMULATION_EXAMPLE', 'COMPARABLE_PROTOCOL_SCENARIO'}:
+                    comparable = [item for item in parameters.get('networks') or []
+                                  if self.normalize_id(item.get('technology')) == technology
+                                  and key in item and ((item.get('parameter_provenance') or {}).get(key) or {}).get('source') in {'USER_CONFIRMED', 'EXPLICIT_USER_SPECIFICATION'}
+                                  and ((item.get('parameter_provenance') or {}).get(key) or {}).get('status') != 'REVIEW_REQUIRED'
+                                  and ((item.get('parameter_provenance') or {}).get(key) or {}).get('value') == item[key]]
+                    if comparable and all(item[key] == comparable[0][key] for item in comparable):
+                        candidate = comparable[0][key]
+                        checked = self.validate_parameters(technology, {key: candidate})
+                        if checked['status'] not in {'INVALID', 'UNKNOWN'}:
+                            proposal.update(value=candidate, basis='COMPARABLE_PROJECT_NETWORK',
+                                            comparable_network_ids=[item['id'] for item in comparable])
+                values[key] = proposal['value']
+                proofs[key] = {**proposal, 'value': values[key]}
+            groups[technology] = {'values': values, 'provenance': proofs}
+        result['simulation_parameter_assumptions'] = groups
         return result
 
     def list_all(self) -> list[dict[str, Any]]:
@@ -390,10 +479,19 @@ class TechnologyRegistry:
     def parameter_keys(self, technology_id: str | None = None) -> set[str]:
         """Known field names, including UI aliases, for consumer isolation."""
         from backend.nis.communication.catalog import PARAMETER_UI_ALIASES, RESERVED_PARAMETER_NAMES
-        profiles = self._profiles.values() if technology_id is None else [self._profiles[self.normalize_id(technology_id)]]
+        key = self.normalize_id(technology_id) if technology_id is not None else None
+        snapshot = self._parameter_key_snapshots.get(key)
+        if snapshot is not None and snapshot[0] == self._revision:
+            return set(snapshot[1])
+        revision = self._revision
+        profiles = self._profiles.values() if key is None else [self._profiles[key]]
         names = {field for profile in profiles for field in profile.definition.get('parameter_schema', {})}
         names |= {alias for profile in profiles for alias in profile.definition.get("parameter_aliases", {})}
-        return names | {PARAMETER_UI_ALIASES[name] for name in names if name in PARAMETER_UI_ALIASES} | (RESERVED_PARAMETER_NAMES if technology_id is None else set())
+        names |= {PARAMETER_UI_ALIASES[name] for name in names if name in PARAMETER_UI_ALIASES} | (RESERVED_PARAMETER_NAMES if key is None else set())
+        self._parameter_key_snapshots[key] = (revision, frozenset(names))
+        # Consumers may extend their local allowed fields. Their edits must never
+        # alter another protocol or survive a registry revision.
+        return set(names)
 
     def validate_parameters(self, technology_id: str, parameters: dict[str, Any]) -> dict[str, Any]:
         key = self.normalize_id(technology_id)

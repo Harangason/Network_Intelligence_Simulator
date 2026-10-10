@@ -536,6 +536,26 @@ def generate_parameters(arguments: dict) -> dict:
     prompt = effective_wizard_prompt(arguments['prompt'])
     workflow = WorkflowStatusService(current_project_id())
     state = workflow.get()
+    if arguments.get('sizing_only'):
+        # A reviewed physical topology and complete saved configuration own
+        # this continuation. Do not regenerate their defaults or spatial plan.
+        artifact_check = state['artifact_checks']['parameters']
+        if not artifact_check['complete'] or not state['artifact_checks']['network_editor']['complete']:
+            raise ValueError('Erneute Kommunikationsauslegung benötigt vollständige gespeicherte Parameter und Netzwerktopologie.')
+        parameters = state['parameters']
+        from backend.nis.engineering.capacity.sizing_service import CommunicationSizingService
+        from backend.nis.engineering.capacity.dimensioning import policy_for
+        sizing = None
+        if policy_for(parameters)['enabled']:
+            service = CommunicationSizingService(current_project_id())
+            sizing = service.preview()
+            if sizing['changes']:
+                service.apply(sizing['source_token'], actor=str(arguments.get('_actor') or 'engineering-agent'), approve_valid=True)
+                state = workflow.get()
+        return {'status': state['statuses']['parameters'], 'parameters': state['parameters'],
+                'artifact_check': artifact_check, 'source': 'saved-project-configuration',
+                'technology_ids': list((parameters.get('simulation_parameter_assumptions') or {}).keys()),
+                'communication_dimensioning': sizing}
     technology_ids = _wizard_parameter_technology_ids(prompt)
     for route in model.routes():
         protocol = str((route.get('source') or {}).get('protocol') or '')
@@ -584,8 +604,8 @@ def generate_parameters(arguments: dict) -> dict:
     parameters = {
         **primary_defaults,
         **existing,
-        **({'bitrate': explicit_rates[primary]} if primary in explicit_rates else {}),
-        **(can_fd_phases if primary == 'can_fd' else {}),
+        # Prompt rates seed a new configuration via primary_defaults. A resumed
+        # run must retain the later saved project values and their provenance.
         'industry': industry,
         'technology': primary,
         'formats': list(existing.get('formats') or ['universal-jsonl', 'universal-csv']),
@@ -598,9 +618,10 @@ def generate_parameters(arguments: dict) -> dict:
     if primary in explicit_rates:
         parameters['parameter_provenance'] = {
             **(existing.get('parameter_provenance') or {}),
-            'bitrate': {'source': 'EXPLICIT_USER_SPECIFICATION', 'value': explicit_rates[primary]},
+            **({'bitrate': {'source': 'EXPLICIT_USER_SPECIFICATION', 'value': explicit_rates[primary]}}
+               if 'bitrate' not in existing else {}),
             **({key: {'source': 'EXPLICIT_USER_SPECIFICATION', 'value': value}
-                for key, value in can_fd_phases.items()} if primary == 'can_fd' else {}),
+                for key, value in can_fd_phases.items() if key not in existing} if primary == 'can_fd' else {}),
         }
     elif not existing.get('bitrate') and review_candidates[primary][0]:
         parameters['parameter_provenance'] = {
@@ -614,6 +635,7 @@ def generate_parameters(arguments: dict) -> dict:
             'duration_s': {'source': 'TECHNOLOGY_DEFAULT', 'value': primary_defaults['duration_s']},
         }
 
+    parameters = DEFAULT_TECHNOLOGY_REGISTRY.simulation_defaults_for_project(parameters, technology_ids)
     saved = workflow.save_parameters(
         parameters, actor=str(arguments.get('_actor') or 'engineering-agent')
     )
@@ -635,21 +657,24 @@ def generate_parameters(arguments: dict) -> dict:
         return {'parameters': parameters, 'technology_ids': technology_ids, 'artifact_check': artifact_check,
                 'status': 'REVIEW_REQUIRED', 'missing_parameters': missing, 'parameter_findings': findings}
 
+    sizing = None
     if not parameters.get('spatial_zoning'):
         from backend.nis.engineering.structure.zoning_service import SpatialZoningService
         zoning = SpatialZoningService(current_project_id())
         zone_plan = zoning.plan(driving_side_from_prompt(prompt))
-        zoning.apply(zone_plan['token'], driving_side_from_prompt(prompt),
-                     actor=str(arguments.get('_actor') or 'engineering-agent'), approve_valid=True)
+        zoning_result = zoning.apply(zone_plan['token'], driving_side_from_prompt(prompt),
+                                     actor=str(arguments.get('_actor') or 'engineering-agent'), approve_valid=True)
         saved = workflow.get()
         parameters = saved['parameters']
+        # Zoning has already dimensioned and checked these new physical buses.
+        # Reuse that exact result; no model/configuration edit intervenes here.
+        sizing = zoning_result['dimensioning']['plan']
     # Parameter generation follows physical routing. Dimension the complete bus
     # traffic here, before capacity/network splitting, using the same service as
     # the workbench. Explicit user/import timing remains locked.
     from backend.nis.engineering.capacity.sizing_service import CommunicationSizingService
     from backend.nis.engineering.capacity.dimensioning import policy_for
-    sizing = None
-    if policy_for(parameters)["enabled"]:
+    if sizing is None and policy_for(parameters)["enabled"]:
         sizing_service = CommunicationSizingService(current_project_id())
         sizing = sizing_service.preview()
         if sizing["changes"]:

@@ -34,6 +34,24 @@ def serial_evidence_missing_fields(protocol, parameters, payload_bytes=0):
 
 
 
+def estimate_simulation_frame(protocol: str, payload_bytes: int, parameters: dict[str, Any]):
+    """Use registered native estimators for a validated, labelled scenario only."""
+    from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY as registry
+    implementation = registry.timing_implementation(protocol)
+    handler = getattr(implementation, 'estimate_planning_frame', estimate_frame)
+    available = parameters.get('_simulation_parameters_usable', False)
+    frame_parameters = {**parameters, '_rate_evidenced': available}
+    prepare = getattr(implementation, 'planning_frame_parameters', None)
+    if prepare:
+        frame_parameters = prepare(payload_bytes, frame_parameters)
+    # This private estimator switch is never persisted or returned as evidence.
+    try:
+        return handler(protocol, payload_bytes, frame_parameters)
+    except (ValueError, TypeError):
+        return FrameEstimate(str(protocol).upper(), payload_bytes, 0, 0.0,
+                             'NATIVE_FRAME_LAYOUT_INVALID', transmission_time_available=False)
+
+
 def estimate_frame(protocol: str, payload_bytes: int, parameters: dict[str, Any]):
     normalized = str(protocol or 'CUSTOM').upper().replace('-', '_').replace(' ', '_')
     payload = max(0, int(payload_bytes))

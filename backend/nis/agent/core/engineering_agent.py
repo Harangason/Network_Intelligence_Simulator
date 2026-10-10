@@ -566,6 +566,7 @@ class EngineeringAgent:
         routing_complete = project.data.get('artifact_checks', {}).get('routing', {}).get('complete', False)
         topology_complete = project.data.get('artifact_checks', {}).get('network_editor', {}).get('complete', False)
         parameters_complete = project.data.get('artifact_checks', {}).get('parameters', {}).get('complete', False)
+        parameters_sized_this_turn = False
         workflow_statuses = project.data.get('statuses', {})
         capacity_complete = workflow_statuses.get('capacity_timing') in {'COMPLETE', 'APPROVED', 'WARNING'}
         validation_complete = workflow_statuses.get('validation') in {'COMPLETE', 'APPROVED', 'WARNING'}
@@ -678,6 +679,7 @@ class EngineeringAgent:
             parameters_complete = bool(
                 result.success and (result.data.get('artifact_check') or {}).get('complete')
             )
+            parameters_sized_this_turn = parameters_complete
             if not parameters_complete:
                 status = 'INCOMPLETE'
                 findings = result.data.get('parameter_findings', []) if result.success else []
@@ -709,6 +711,18 @@ class EngineeringAgent:
         # or the next human review gate is reached.
         if (confirmed_wizard and target_index >= workflow_order.index('capacity_timing')
                 and topology_complete and parameters_complete and not capacity_complete):
+            if not parameters_sized_this_turn:
+                # Completeness of saved values does not establish a current
+                # schedule after an approved physical segment split. The same
+                # native sizing path preserves those values and locked periods.
+                event('PROGRESS', status='PLANNING', text='Kommunikationsauslegung auf der aktuellen Netzstruktur prüfen.')
+                sizing = await call('generate_wizard_parameters', {'prompt': prompt, 'sizing_only': True})
+                if not sizing.success or not (sizing.data.get('artifact_check') or {}).get('complete'):
+                    text = 'Die aktuelle Kommunikationsauslegung konnte nicht vollständig geprüft werden.'
+                    event('RESULT', status='INCOMPLETE', text=text)
+                    return {'run_id': run_id, 'status': 'INCOMPLETE', 'text': text, 'events': events,
+                            'context': context.model_dump(), 'trace': traces, 'proposals': [],
+                            'blocking_findings': sizing.data.get('parameter_findings', []) if sizing.success else sizing.findings}
             event('PROGRESS', status='PLANNING', text='Capacity & Timing aus Routing, Topologie und Parametern berechnen.')
             result = await call('calculate_capacity', {})
             if not result.success:

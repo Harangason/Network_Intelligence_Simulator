@@ -19,13 +19,32 @@ def _number(value):
         return None
 
 
-def mark_user_duration(parameters: dict) -> dict:
-    """The public parameter-write boundary owns this provenance, never clients."""
+def mark_user_duration(parameters: dict, *, previous: dict | None = None,
+                       edited_fields: list[str] | None = None, defaults: dict | None = None) -> dict:
+    """Resolve duration intent at the public boundary using trusted saved origin.
+
+    Legacy direct requests explicitly supply their duration. Bulk forms also
+    carry untouched fields, so they report duration edits separately. Their
+    copied provenance cannot replace a previously explicit duration.
+    """
+    if edited_fields is not None and (not isinstance(edited_fields, list)
+            or any(not isinstance(key, str) or key not in {"duration_s", "duration"} for key in edited_fields)):
+        raise EngineeringValidationError("edited_duration_fields muss Dauer-Feldnamen enthalten.")
     result = deepcopy(parameters)
     provenance = dict(result.get("parameter_provenance") or {})
+    previous, defaults = previous or {}, defaults or {}
     for key in ("duration_s", "duration"):
         if key in result:
-            provenance[key] = {"source": "USER_PARAMETER", "value": result[key]}
+            value = result[key]
+            if edited_fields is not None and key not in edited_fields:
+                old_origin = (previous.get("parameter_provenance") or {}).get(key) or {}
+                if key in previous and value == previous[key] and old_origin.get("value") == value:
+                    provenance[key] = deepcopy(old_origin)
+                    continue
+                if key not in previous and key in defaults and value == defaults[key]:
+                    provenance[key] = {"source": "TECHNOLOGY_DEFAULT", "value": value}
+                    continue
+            provenance[key] = {"source": "USER_PARAMETER", "value": value}
     if provenance:
         result["parameter_provenance"] = provenance
     return result

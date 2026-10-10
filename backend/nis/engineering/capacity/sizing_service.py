@@ -34,7 +34,14 @@ class CommunicationSizingService:
         resolved_policy = policy_for(parameters)
         capacity = CapacityTimingService(self.project_id).calculate(overrides=parameters, persist=False, include_drafts=True)
         history = (state.get("context") or {}).get("communication_sizing_history") or []
-        plan = dimension_communications(capacity["results"].get("transmissions", []), parameters, history)
+        transmissions = [{**row, **{key: value for key, value in (row.get('simulation_capacity') or {}).items()
+                                   if key in {'bitrate', 'average_load_percent', 'peak_load_percent', 'burst_load_percent', 'segment_transmission_latency_ms'}}}
+                         for row in capacity['results'].get('transmissions', [])]
+        plan = dimension_communications(transmissions, parameters, history)
+        plan['hardware_evidence'] = False
+        plan['functional_timing_accepted'] = False
+        from backend.nis.agent.tools.validation import review_bus_rate_plans
+        plan['bus_rate_plans'] = review_bus_rate_plans(state)
         inputs = {"versions": state["versions"], "policy": resolved_policy,
                   "transmissions": capacity["results"].get("transmissions", [])}
         plan["source_token"] = sha256(json.dumps(inputs, sort_keys=True, default=str).encode()).hexdigest()

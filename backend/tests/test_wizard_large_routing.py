@@ -34,6 +34,13 @@ def test_full_captured_model_and_all_routing_validate_without_rewriting_inputs(t
         groups[technology] = {'values': values, 'provenance': {
             key: {'source': 'USER_CONFIRMED', 'status': 'CONFIRMED', 'value': value}
             for key, value in values.items()}}
+    # Explicit padded wire transport keeps this capacity-repair case a large
+    # shared-channel stress test. Logical payloads, encodings and the captured
+    # graph remain unchanged; a starter layout must never silently inflate them.
+    padded = {'can_fd_dlc': 15, 'can_fd_wire_data_bytes': 64, 'can_fd_crc_bits': 21}
+    groups['can_fd'] = {'values': padded, 'provenance': {
+        key: {'source': 'USER_CONFIRMED', 'status': 'CONFIRMED', 'technology': 'can_fd', 'value': value}
+        for key, value in padded.items()}}
     call('review_virtual_serializer', lambda: WorkflowStatusService(authority.project_id).save_parameters({
         'technology_parameters': groups}))
 
@@ -124,8 +131,10 @@ def test_full_captured_model_and_all_routing_validate_without_rewriting_inputs(t
         diagnostic.write_text(json.dumps(result, default=str), encoding='utf-8')
         errors = [item for item in result['findings'] if item.get('severity') == 'ERROR']
         assert result['status'] != 'ERROR', json.dumps(errors, default=str)
-        assert result['results']['overview']['capacity_verified'] is True, json.dumps({
-            'unverified': [row for row in result['results']['networks'] if not row['capacity_verified']],
+        assert result['results']['overview']['capacity_verified'] is False
+        assert all(row['hardware_evidence'] is False for row in result['results']['networks'])
+        assert all(row['simulation_capacity_verified'] is True for row in result['results']['networks']), json.dumps({
+            'unverified': [row for row in result['results']['networks'] if not row['simulation_capacity_verified']],
             'findings': result['findings']}, default=str)
         assert not any(item['code'] == 'CAPACITY_RATE_UNVERIFIED' for item in result['findings'])
         assert any(item['code'] == 'LIN_SCHEDULE_RESERVE_UNMET' and item['severity'] == 'WARNING' for item in result['findings'])

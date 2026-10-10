@@ -11,11 +11,13 @@ export type Technology = {
   default_bitrate?: number | null;
   rate_model?: {
     type?: string;
+    fields?: string[];
     minimum_bps?: number;
     fixed_bps?: number;
     allowed_bps?: number[];
     typical_bps?: number[];
   };
+  simulation_defaults?: {rate_fields?: string[]};
   max_payload_bytes?: number | null;
   native_formats?: string[];
   parameter_schema?: TechnologyParameterField[];
@@ -57,6 +59,7 @@ export type Technology = {
 
 export type TechnologyParameterField = {
   key: string;
+  native_key?: string;
   label: string;
   type: "number" | "select" | "boolean" | "text";
   unit?: string;
@@ -66,9 +69,11 @@ export type TechnologyParameterField = {
   decimal_min?: string;
   decimal_max?: string;
   default?: string | number | boolean;
-  simulation_default?: string | number | boolean;
-  simulation_default_provenance?: {value: string | number | boolean; basis: string; source: 'NIS_SIMULATION_ASSUMPTION'; status: 'ASSUMED'; technology: string; hardware_evidence: false};
+  value_role?: 'CONFIGURATION' | 'EVIDENCE' | 'REFERENCE';
+  simulation_default?: string | number | boolean | null;
+  simulation_default_provenance?: {value: string | number | boolean | null; basis: string; source: 'NIS_SIMULATION_ASSUMPTION'; status: 'ASSUMED' | 'UNKNOWN'; technology: string; hardware_evidence: false};
   conditional_defaults?: Array<{when: Record<string, string | number | boolean>; value: string | number | boolean}>;
+  not_applicable_when?: Array<Record<string, string | number | boolean>>;
   allowed_bps?: number[];
   default_review?: { basis: string; status: 'REVIEW_REQUIRED'; source: string };
   parameter_origin?: 'TRANSPORT_PROFILE' | 'NIS_SCENARIO' | 'DEVICE_CONFIGURATION';

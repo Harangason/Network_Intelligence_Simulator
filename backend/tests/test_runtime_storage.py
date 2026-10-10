@@ -39,8 +39,30 @@ def test_expired_finished_tree_removed(tmp_path):
 
 
 @pytest.mark.parametrize("age", [0, RETENTION_SECONDS])
-def test_recent_and_exact_boundary_retained(tmp_path, age):
+def test_finished_run_removed_at_next_start_without_waiting(tmp_path, age):
     runtime = finished_runtime(tmp_path)
+    now = int(time.time())
+    age_tree(runtime, now - age)
+    result = cleanup_runtime_dirs(tmp_path, now=now)
+    assert result["deleted"] == [runtime.name]
+    assert result["errors"] == []
+    assert not runtime.exists()
+
+
+def test_finished_run_recent_child_does_not_extend_retention(tmp_path):
+    runtime = finished_runtime(tmp_path)
+    now = time.time()
+    age_tree(runtime, now - RETENTION_SECONDS - 10)
+    os.utime(runtime / "traces" / "session" / "source.trace", (now, now))
+    assert cleanup_runtime_dirs(tmp_path, now=now)["deleted"] == [runtime.name]
+
+
+@pytest.mark.parametrize("age", [0, RETENTION_SECONDS])
+def test_crashed_run_keeps_recent_and_exact_boundary_grace_period(tmp_path, age):
+    runtime = finished_runtime(tmp_path)
+    marker = json.loads((runtime / MARKER).read_text())
+    marker["state"] = "RUNNING"
+    (runtime / MARKER).write_text(json.dumps(marker))
     now = int(time.time())
     age_tree(runtime, now - age)
     result = cleanup_runtime_dirs(tmp_path, now=now)
@@ -48,12 +70,18 @@ def test_recent_and_exact_boundary_retained(tmp_path, age):
     assert (runtime / "traces" / "session" / "source.trace").exists()
 
 
-def test_recent_child_extends_retention(tmp_path):
+def test_explicitly_retained_evidence_survives_next_start(tmp_path):
     runtime = finished_runtime(tmp_path)
+    marker = json.loads((runtime / MARKER).read_text())
+    marker["retain"] = True
+    (runtime / MARKER).write_text(json.dumps(marker))
     now = time.time()
     age_tree(runtime, now - RETENTION_SECONDS - 10)
-    os.utime(runtime / "traces" / "session" / "source.trace", (now, now))
-    assert cleanup_runtime_dirs(tmp_path, now=now)["recent"] == [runtime.name]
+    disposable = finished_runtime(tmp_path)
+    result = cleanup_runtime_dirs(tmp_path, now=now)
+    assert result["retained"] == [runtime.name]
+    assert result["deleted"] == [disposable.name]
+    assert (runtime / "traces" / "session" / "source.trace").read_bytes() == b"test capture"
 
 
 def test_active_process_protected_then_crash_releases_lock(tmp_path):
@@ -64,7 +92,11 @@ def test_active_process_protected_then_crash_releases_lock(tmp_path):
         "print(lease.path, flush=True); sys.stdin.read()"
     )
     process = subprocess.Popen(
-        [sys.executable, "-c", code, str(tmp_path)],
+        # A Windows virtualenv executable redirects through a second process.
+        # Joining its killed launcher can precede the lock holder's teardown.
+        # This child uses only stdlib: launch the interpreter itself so kill()
+        # and wait() exercise a crash of the actual owner of the lease.
+        [sys._base_executable if os.name == "nt" else sys.executable, "-c", code, str(tmp_path)],
         cwd=Path(__file__).resolve().parents[2],
         stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
     )

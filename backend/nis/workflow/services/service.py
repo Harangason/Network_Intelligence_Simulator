@@ -389,7 +389,11 @@ class WorkflowStatusService:
         from backend.nis.engineering.capacity.transmission import profile
         from backend.nis.engineering.capacity.dimensioning import transmission_contract
         transmission_rows = connection.execute(
-            'SELECT cycle_ms, configuration FROM engineering_messages WHERE project_id = %s', (self.project_id,),
+            """SELECT cycle_ms,
+                CASE WHEN jsonb_typeof(configuration) = 'object'
+                     THEN jsonb_build_object('communication_contract', configuration -> 'communication_contract')
+                     ELSE configuration END AS configuration
+                FROM engineering_messages WHERE project_id = %s""", (self.project_id,),
         ).fetchall()
         incomplete['transmission'] = sum(bool(profile(transmission_contract(row), row.get('cycle_ms'))['errors'])
             for row in transmission_rows)
@@ -506,7 +510,18 @@ class WorkflowStatusService:
         fanout_routes = int(fanout["routes"] or 0)
         fanout_interfaces = int(fanout["interfaces"] or 0)
         messages = connection.execute(
-            "SELECT id, name, configuration, lifecycle_state FROM engineering_messages WHERE project_id = %s", (self.project_id,),
+            # Coverage consumes these complete contracts, not signal metadata or
+            # generation history. Retain malformed types and explicit nulls;
+            # an absent transport_unit alone has the legacy empty-object meaning.
+            """SELECT id, name, lifecycle_state,
+                CASE WHEN jsonb_typeof(configuration) = 'object' THEN
+                    jsonb_build_object('communication_contract', configuration -> 'communication_contract',
+                                       'routing', configuration -> 'routing')
+                    || CASE WHEN configuration ? 'transport_unit'
+                            THEN jsonb_build_object('transport_unit', configuration -> 'transport_unit')
+                            ELSE '{}'::jsonb END
+                ELSE configuration END AS configuration
+                FROM engineering_messages WHERE project_id = %s""", (self.project_id,),
         ).fetchall()
         signals = connection.execute(
             "SELECT id, message_id, lifecycle_state, "
@@ -514,7 +529,12 @@ class WorkflowStatusService:
             "FROM engineering_signals WHERE project_id = %s", (self.project_id,),
         ).fetchall()
         declared_routes = connection.execute(
-            "SELECT id, payload, status, approval_state, validation ->> 'valid' AS valid FROM engineering_routing_entries WHERE project_id = %s",
+            """SELECT id, status, approval_state, validation ->> 'valid' AS valid,
+                CASE WHEN jsonb_typeof(payload) = 'object' THEN
+                    jsonb_build_object('message_id', payload -> 'message_id', 'message_ids', payload -> 'message_ids',
+                                       'signal_id', payload -> 'signal_id', 'signal_ids', payload -> 'signal_ids')
+                ELSE payload END AS payload
+                FROM engineering_routing_entries WHERE project_id = %s""",
             (self.project_id,),
         ).fetchall()
         routes = [route for route in declared_routes if route.get("approval_state") == "APPROVED" and route.get("valid") == "true"]
@@ -628,11 +648,15 @@ class WorkflowStatusService:
         }
         from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY as registry
         profile_findings = []
+        effective, scenario = {}, False
+        hardware_evidence, uses_scenario = False, False
         try:
             schema = {item['key']: item for item in registry.parameter_fields(parameters.get('technology'))}
-            from backend.nis.engineering.capacity.service import parameters_for_protocol
-            effective = parameters_for_protocol(parameters['technology'], parameters,
+            from backend.nis.engineering.capacity.service import simulation_parameters_for_protocol
+            effective = simulation_parameters_for_protocol(parameters['technology'], parameters,
                                                 confirmed_parameters=parameters)
+            scenario = bool(effective.get('_simulation_assumption_fields')) and not effective.get('_rate_evidenced')
+            hardware_evidence, uses_scenario = bool(effective.get('_rate_evidenced')), scenario
             from backend.nis.communication.catalog import PARAMETER_CORE_ALIASES
             native_aliases = registry.profile(parameters['technology']).get('parameter_aliases', {})
             values = {key: value for key, value in effective.items()
@@ -644,11 +668,32 @@ class WorkflowStatusService:
                     required[key] = True
             for key, spec in schema.items():
                 if spec.get('required'):
+                    if scenario and spec.get('value_role') in {'EVIDENCE', 'REFERENCE'}:
+                        continue
                     field = native_aliases.get(key, PARAMETER_CORE_ALIASES.get(key, key))
                     required[key] = field in normalized and normalized[field] is not None and normalized[field] != ''
             validation = registry.validate_parameters(parameters['technology'], values)
-            profile_findings = validation['findings']
-            required['profile_values'] = validation['status'] == 'VALID'
+            profile_findings = effective.get('_simulation_parameter_findings', []) if scenario else validation['findings']
+            required['profile_values'] = bool(effective.get('_simulation_parameters_usable')) if scenario else validation['status'] == 'VALID'
+            # A configured primary bus cannot complete a mixed project whose
+            # other declared technologies still have no saved configuration.
+            primary = registry.normalize_id(parameters['technology'])
+            other_technologies = {registry.normalize_id(network.get('technology'))
+                                  for network in parameters.get('networks') or []} - {primary}
+            for technology in sorted(other_technologies):
+                try:
+                    scoped = simulation_parameters_for_protocol(technology, parameters,
+                                                               confirmed_parameters=parameters)
+                    hardware_evidence = hardware_evidence and bool(scoped.get('_rate_evidenced'))
+                    uses_scenario = uses_scenario or bool(scoped.get('_simulation_assumption_fields'))
+                    required['technology:' + technology] = bool(scoped.get('_simulation_parameters_usable'))
+                    profile_findings.extend({**finding, 'technology_id': technology}
+                                            for finding in scoped.get('_simulation_parameter_findings', []))
+                except (KeyError, ValueError) as error:
+                    required['technology:' + technology] = False
+                    hardware_evidence = False
+                    profile_findings.append({'code': 'TECHNOLOGY_PARAMETER_INVALID', 'severity': 'BLOCKER',
+                                             'technology_id': technology, 'message': str(error)})
         except ValueError as error:
             required['profile_values'] = False
             profile_findings = [{'code': 'TECHNOLOGY_PARAMETER_INVALID', 'severity': 'BLOCKER',
@@ -687,6 +732,8 @@ class WorkflowStatusService:
             "required": required,
             "invalid_numeric": invalid_numeric,
             "profile_findings": profile_findings,
+            "configuration_basis": "SAVED_SIMULATION_ASSUMPTIONS" if uses_scenario else "PROJECT_PARAMETERS",
+            "hardware_evidence": hardware_evidence,
         }
 
     def _source_artifact_check(
@@ -723,8 +770,11 @@ class WorkflowStatusService:
             check = self._topology_artifact_check(topology)
             if topology.get("nodes"):
                 from backend.nis.engineering.network.physical_ports import topology_port_findings
-                hardware = connection.execute("SELECT * FROM engineering_hardware_nodes WHERE project_id = %s", (self.project_id,)).fetchall()
-                interfaces = connection.execute("SELECT * FROM engineering_hardware_interfaces WHERE project_id = %s", (self.project_id,)).fetchall()
+                hardware = connection.execute("SELECT id FROM engineering_hardware_nodes WHERE project_id = %s", (self.project_id,)).fetchall()
+                interfaces = connection.execute(
+                    "SELECT id, hardware_node_id, technology, network_ref, channel_index, controller_ref, physical_port_ref "
+                    "FROM engineering_hardware_interfaces WHERE project_id = %s", (self.project_id,),
+                ).fetchall()
                 findings = topology_port_findings(topology, hardware, interfaces)
                 check["physical_findings"] = findings
                 if findings:
@@ -1122,11 +1172,11 @@ class WorkflowStatusService:
             # the user from preserving an already checked clock or address.
             validate(technology, group['values'], partial=True)
         old_networks = {str(item.get('id')): item for item in previous.get('networks', [])}
+        network_keys = registry.parameter_keys()
         for network in parameters.get('networks', []):
             old = old_networks.get(str(network.get('id')), {})
-            keys = registry.parameter_keys()
-            values = {key: network[key] for key in keys if key in network}
-            if values and (network.get('technology') != old.get('technology') or any(network.get(key) != old.get(key) for key in keys)):
+            values = {key: network[key] for key in network_keys if key in network}
+            if values and (network.get('technology') != old.get('technology') or any(network.get(key) != old.get(key) for key in network_keys)):
                 validate(network.get('technology'), values, partial=True)
 
     def save_topology(self, topology: dict[str, Any], actor: str | None = None, *, layout_positions: dict | None = None) -> dict[str, Any]:

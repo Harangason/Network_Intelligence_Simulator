@@ -23,6 +23,27 @@ from backend.nis.workflow.services.service import WorkflowStatusService
 from backend.nis.workflow.services.service import WorkflowConflictError
 from backend.nis.workflow.services.service import is_topology_layout_only_change
 from backend.nis.workflow.services.service import normalize_engineering_wizard_settings
+from backend.tests.test_model_ownership import db_project
+
+
+@pytest.mark.parametrize('transmission', [
+    {'mode': 'EVENT', 'minimum_interval_ms': 20},
+    {'mode': 'ON_REQUEST', 'minimum_interval_ms': 20, 'request_source': 'bus_message'},
+    {'mode': 'CYCLIC', 'release_times_ms': [-1]},
+])
+def test_model_artifact_sql_preserves_invalid_native_release_contract(db_project, transmission):
+    from psycopg.types.json import Jsonb
+    from backend.tests.test_model_ownership import _chain
+    from backend.nis.infrastructure.persistence.db import get_connection
+
+    _hardware, _port, _interface, message, _signal = _chain()
+    with get_connection() as connection:
+        connection.execute('UPDATE engineering_messages SET configuration=%s WHERE id=%s',
+                           (Jsonb({'communication_contract': {'transmission': transmission},
+                                   'unrelated_metadata': 'not release evidence'}), message['id']))
+        result = WorkflowStatusService(db_project)._model_artifact_check(connection)
+    assert result['incomplete']['transmission'] == 1
+    assert not result['complete']
 
 
 def test_topology_artifact_accepts_canonical_hardware_interface_ports():
@@ -756,6 +777,32 @@ def test_preflight_does_not_treat_default_rates_as_configured(monkeypatch, techn
     assert any(item["code"] in {"TECHNOLOGY_PARAMETER_INVALID", "TECHNOLOGY_PARAMETER_MISSING"} for item in findings)
     assert result["preflight_status"] == "BLOCKED"
     assert result["ready_for_simulation"] is False
+
+
+@pytest.mark.parametrize('technology', ['lin', 'can_fd', 'ethernet'])
+def test_preflight_separates_saved_simulation_parameters_from_device_qualification(monkeypatch, technology):
+    from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY as registry
+    parameters = registry.simulation_defaults_for_project({'technology': technology}, [technology])
+    state = {'versions': default_versions(), 'statuses': {step: 'COMPLETE' for step in default_statuses()},
+             'parameters': parameters, 'topology': {'nodes': [], 'edges': []}}
+    service = PreflightService('analysis-project')
+    monkeypatch.setattr(service.workflow, 'get', lambda: state)
+    monkeypatch.setattr(service.workflow, 'latest_analysis', lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(service.workflow, 'create_analysis_snapshot', lambda *_args, **_kwargs: {'id': 'snapshot'})
+    monkeypatch.setattr(capacity_service_module, 'list_objects', lambda *_args, **_kwargs: [])
+    monkeypatch.setattr(capacity_service_module, 'list_routes', lambda **_kwargs: [])
+    result = service.run()
+    technology_findings = result['category_checks']['technology']
+    assert all(row['severity'] == 'INFO' for row in technology_findings), technology_findings
+    assert any(row['code'] == 'CAPACITY_DEVICE_EVIDENCE_MISSING' for row in technology_findings)
+    # Missing model/schedule data must still block, rather than blanket acceptance.
+    assert not result['ready_for_simulation'] and result['preflight_status'] == 'BLOCKED'
+    assert any(row['code'] == 'MODEL_NODES_MISSING' for row in result['findings'])
+    group = parameters['simulation_parameter_assumptions'][technology]
+    key = {'lin': 'lin_bitrate_bps', 'can_fd': 'arbitration_bitrate', 'ethernet': 'bitrate'}[technology]
+    group['provenance'][key]['technology'] = 'spi'
+    invalid = service.run()['category_checks']['technology']
+    assert any(row['code'] == 'SIMULATION_PARAMETER_PROVENANCE_MISMATCH' and row['severity'] == 'ERROR' for row in invalid)
 
 
 @pytest.mark.parametrize("selection", [{}, {"technology": None}, {"technology": ""}, {"technology": "  "}])

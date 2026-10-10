@@ -1,6 +1,123 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { localEvidenceFieldRequired, booleanParameterValue, numericParameterValue, conditionalParameterDefault, technologyParameterValues, technologyParameterUnverified, confirmTechnologyParameters, confirmNetworkParameters, groupPreflightFindings } from './technology-parameters.ts';
+import { formatBitrate } from './technology-parameters.ts';
+
+test('readable SI rates round-trip without rounding or weakening profile bounds', () => {
+  const field = {key:'bitrate',label:'Busgeschwindigkeit',type:'number',unit:'bit/s',integer:true,min:1,max:Number.MAX_SAFE_INTEGER};
+  for (const [value, display] of [[19200,'19,2 kbit/s'],[500000,'500 kbit/s'],[2000000,'2 Mbit/s'],[1000000000,'1 Gbit/s'],[19201,'19,201 kbit/s'],[1000000001,'1,000000001 Gbit/s']]) {
+    assert.equal(formatBitrate(value), display);
+    assert.equal(numericParameterValue(field,display),value);
+  }
+  assert.equal(numericParameterValue(field,'19.201 kbit/s'),19201);
+  assert.equal(formatBitrate(Number.MAX_SAFE_INTEGER),'9007199,254740991 Gbit/s');
+  assert.equal(numericParameterValue(field,formatBitrate(Number.MAX_SAFE_INTEGER)),Number.MAX_SAFE_INTEGER);
+  for (const value of [19200.1,19047.619047619046,476190.47619047615,1123456789.0123456]) {
+    assert.equal(numericParameterValue({...field,integer:false},formatBitrate(value)),value);
+  }
+  assert.equal(formatBitrate(1123456789.0123456),'1,1234567890123456 Gbit/s');
+  assert.equal(numericParameterValue(field,'2e6'),2000000);
+  assert.equal(numericParameterValue(field,'9600'),9600);
+  assert.throws(()=>numericParameterValue({...field,max:20000},'2 Mbit/s'));
+  assert.throws(()=>numericParameterValue(field,'1 MB/s'));
+  assert.throws(()=>numericParameterValue(field,'0,0000000001 Gbit/s'));
+  const profile={id:'lin',parameter_schema:[{...field,key:'lin_bitrate_bps',simulation_default:19200}]};
+  const saved=confirmTechnologyParameters({},profile,{lin_bitrate_bps:numericParameterValue(field,'19,201 kbit/s')},{preserveSimulationAssumptions:true});
+  assert.equal(technologyParameterValues(JSON.parse(JSON.stringify(saved)),profile).lin_bitrate_bps,19201);
+  assert.equal(saved.simulation_parameter_assumptions.lin.provenance.lin_bitrate_bps.hardware_evidence,false);
+});
+
+test('coherent preset outranks an old baseline and a conditional minimum', () => {
+  const profile={id:'lin',parameter_schema:[{key:'lin_edition',simulation_default:'OLD'},
+    {key:'lin_bitrate_bps',scope:'network',unit:'bit/s',default:1000,simulation_default:19200,
+     simulation_default_provenance:{basis:'PROFILE_SIMULATION_PRESET'},conditional_defaults:[{when:{lin_edition:'OLD'},value:1000}]}]};
+  assert.equal(technologyParameterValues({},profile).lin_bitrate_bps,19200);
+  const actual=confirmTechnologyParameters({},profile,{lin_edition:'OLD',lin_bitrate_bps:9600});
+  assert.equal(technologyParameterValues(actual,profile).lin_bitrate_bps,9600);
+  const saved=confirmTechnologyParameters({},profile,{lin_edition:'OLD',lin_bitrate_bps:19200},{preserveSimulationAssumptions:true});
+  assert.equal(saved.simulation_parameter_assumptions.lin.values.lin_bitrate_bps,19200);
+  assert.equal(technologyParameterUnverified(saved,'lin_bitrate_bps','lin'),true);
+});
+
+test('confirmed native networks outrank an old saved assumption without leaking into another bus', () => {
+  const lin={id:'lin',parameter_schema:[{key:'lin_bitrate_bps',scope:'network',unit:'bit/s',simulation_default:19200}]};
+  const p={technology:'can_fd',simulation_parameter_assumptions:{lin:{values:{lin_bitrate_bps:1000}}},
+    networks:[{id:'l',technology:'LIN',lin_bitrate_bps:9600,parameter_provenance:{lin_bitrate_bps:{source:'USER_CONFIRMED',status:'CONFIRMED',value:9600}}},
+      {id:'c',technology:'CAN_FD',data_bitrate:2000000,parameter_provenance:{data_bitrate:{source:'USER_CONFIRMED',status:'CONFIRMED',value:2000000}}}]};
+  assert.equal(technologyParameterValues(p,lin).lin_bitrate_bps,9600);
+  assert.equal(technologyParameterUnverified(p,'lin_bitrate_bps','lin'),false);
+  assert.equal('data_bitrate' in technologyParameterValues(p,lin),false);
+});
+import { commonTechnologyParameters, localEvidenceFieldRequired, booleanParameterValue, numericParameterValue, conditionalParameterDefault, technologyParameterValues, technologyParameterApplicable, technologyParameterUnverified, technologyRateParameters, confirmTechnologyParameters, confirmNetworkParameters, groupPreflightFindings, simulationParameterFindings, networkRateReviewTargets } from './technology-parameters.ts';
+
+test('saved simulation and confirmed network rates do not reopen for device evidence', () => {
+  const profile = {id:'ethernet',parameter_schema:[{key:'bitrate',scope:'network',unit:'bit/s',default:100000000}]};
+  const initial = {networks:[{id:'e',technology:'ETHERNET'}]};
+  const saved = JSON.parse(JSON.stringify(confirmNetworkParameters(initial,profile,['e'],{bitrate:1000000000})));
+  const notice = {technology:'ethernet',network_id:'e',code:'CAPACITY_DEVICE_EVIDENCE_MISSING',severity:'INFO',
+    missing_fields:['hardware_rate_evidence'],parameter_fields:['bitrate'],simulation_parameters_usable:true};
+  assert.deepEqual(networkRateReviewTargets(saved,profile,[notice]),[]);
+  assert.deepEqual(simulationParameterFindings([notice]),[]);
+  assert.equal(technologyParameterValues(saved,profile).bitrate,1000000000);
+  assert.equal(technologyParameterUnverified(saved,'bitrate','ethernet'),false);
+  const reloaded = JSON.parse(JSON.stringify(confirmTechnologyParameters(saved,profile,{bitrate:1000000000})));
+  assert.deepEqual(reloaded.networks,saved.networks);
+  assert.equal(technologyParameterValues(reloaded,profile).bitrate,1000000000);
+  assert.deepEqual(networkRateReviewTargets(reloaded,profile,[notice]),[]);
+  const actualMissing = {...notice,code:'CAPACITY_UNVERIFIED',severity:'ERROR',simulation_parameters_usable:false};
+  assert.deepEqual(networkRateReviewTargets(initial,profile,[actualMissing]),initial.networks);
+  assert.deepEqual(simulationParameterFindings([notice,actualMissing]),[actualMissing]);
+  assert.deepEqual(networkRateReviewTargets(initial,profile,[{...actualMissing,technology:'lin'}]),[]);
+  assert.deepEqual(networkRateReviewTargets(initial,profile,[{...actualMissing,network_id:'other-project'}]),[]);
+  assert.deepEqual(networkRateReviewTargets(initial,profile,[{...actualMissing,parameter_fields:['eth_payload_layer']}]),[]);
+});
+
+test('common controls use native rate order and exclude evidence and identities', () => {
+  const profile = {id:'lin',simulation_defaults:{rate_fields:['lin_bitrate_bps']},parameter_schema:[
+    {key:'lin_registered_source',value_role:'EVIDENCE'}, {key:'cycle_ms'}, {key:'payload_bytes'},
+    {key:'lin_commander_node_id',value_role:'REFERENCE'}, {key:'lin_bitrate_bps',unit:'bit/s',scope:'network'}]};
+  assert.deepEqual(commonTechnologyParameters(profile).map(field=>field.key), ['lin_bitrate_bps','payload_bytes','cycle_ms']);
+});
+
+test('legacy fabricated reference assumptions disappear without touching actual user references or operational values', () => {
+  const reference = 'simulation:lin:lin_registered_source';
+  const profile = {id:'lin',parameter_schema:[{key:'lin_registered_source',value_role:'EVIDENCE',type:'text',simulation_default:null},
+    {key:'lin_bitrate_bps',simulation_default:19200}]};
+  const old = {technology:'lin',simulation_parameter_assumptions:{lin:{values:{lin_registered_source:reference,lin_bitrate_bps:9600}}}};
+  const displayed = technologyParameterValues(old, profile);
+  assert.equal(displayed.lin_registered_source, null);
+  assert.equal(displayed.lin_bitrate_bps, 9600);
+  const saved = confirmTechnologyParameters(old,profile,displayed,{preserveSimulationAssumptions:true});
+  assert.equal(saved.simulation_parameter_assumptions.lin.values.lin_registered_source, undefined);
+  assert.equal(saved.technology_parameters.lin.values.lin_registered_source, undefined);
+  const actual = confirmTechnologyParameters({},profile,{lin_registered_source:reference,lin_bitrate_bps:19200});
+  assert.equal(technologyParameterValues(actual,profile).lin_registered_source, reference);
+});
+
+test('native rate identity binds phase fields and never substitutes a foreign UI rate', () => {
+  const profile={id:'dual',rate_model:{fields:['native_nominal','native_data']},parameter_schema:[
+    {key:'bitrate',native_key:'foreign_clock',scope:'network',unit:'bit/s'},
+    {key:'data',native_key:'native_data',scope:'network',unit:'bit/s'},
+    {key:'nominal',native_key:'native_nominal',scope:'network',unit:'bit/s'}]};
+  assert.deepEqual(technologyRateParameters(profile).map(field=>field.key),['nominal','data']);
+  assert.deepEqual(technologyRateParameters({...profile,rate_model:{fields:['missing_native_rate']}}),[]);
+  const lin={id:'lin',rate_model:{fields:[]},simulation_defaults:{rate_fields:['lin_bitrate_bps']},
+    parameter_schema:[{key:'lin_bitrate_bps',native_key:'lin_bitrate_bps',scope:'network',unit:'bit/s',simulation_default:19200}]};
+  assert.deepEqual(technologyRateParameters(lin).map(field=>field.key),['lin_bitrate_bps']);
+});
+
+test('inactive protocol fields are excluded from saved values and resolved rules outrank old schema defaults', () => {
+  const inactive={key:'plca_id',type:'number',simulation_default:0,not_applicable_when:[{phy:'1000BASE_T'}]};
+  const derived={key:'padding',type:'number',default:0,simulation_default:38,simulation_default_provenance:{basis:'PROFILE_RULE_SIMULATION_PROPOSAL'}};
+  const profile={id:'ethernet',parameter_schema:[{key:'phy',default:'1000BASE_T'},inactive,derived]};
+  const values=technologyParameterValues({},profile);
+  assert.equal(values.padding,38);
+  assert.equal(technologyParameterApplicable(inactive,values),false);
+  assert.equal(technologyParameterApplicable(inactive,{phy:'10BASE_T1S'}),true);
+  const saved=confirmTechnologyParameters({},profile,values,{preserveSimulationAssumptions:true});
+  assert.equal('plca_id' in saved.technology_parameters.ethernet.values,false);
+  assert.equal('plca_id' in saved.simulation_parameter_assumptions.ethernet.values,false);
+  assert.equal(saved.simulation_parameter_assumptions.ethernet.values.padding,38);
+});
 
 test('blank project fields load their profile defaults while false and zero survive', () => {
   const profile = {id:'example',parameter_schema:[{key:'rate',default:9600},{key:'enabled',default:true},{key:'count',default:8}]};

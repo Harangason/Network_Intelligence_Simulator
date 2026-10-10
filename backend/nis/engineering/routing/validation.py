@@ -84,7 +84,7 @@ def physical_route_technology(value):
     """Resolve an application interface to the physical layer in its profile."""
     registry = DEFAULT_TECHNOLOGY_REGISTRY
     identifier = registry.normalize_id(str(value or ''))
-    profile = registry.profile(identifier)
+    profile = registry.profile(identifier, fields=('layer', 'default_stack'))
     stack = tuple(profile.get('default_stack') or ())
     if profile.get('layer') == 'APPLICATION' and stack and stack[0].upper() in PROTOCOL_CAPACITY:
         return stack[0].upper()

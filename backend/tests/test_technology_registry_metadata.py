@@ -13,6 +13,107 @@ def definition(label, **extra):
             "rate_model": {"fields": []}, **extra}
 
 
+def test_parameter_key_snapshots_refresh_after_registration_and_generated_update():
+    registry = TechnologyRegistry()
+    generated = definition('Generated Bus', id='generated_bus',
+        knowledge_origin='GENERATED_TECHNOLOGY_PACK', aliases=['GBUS'],
+        parameter_schema={'first_feature': {'type': 'boolean', 'default': False}})
+    registry.register_generated_profile(generated)
+    assert 'first_feature' in registry.parameter_keys()
+    local = registry.parameter_keys('GBUS')
+    local.clear()
+    assert 'first_feature' in registry.parameter_keys('generated_bus')
+    registry.register_profile('second_bus', definition('Second Bus',
+        parameter_schema={'second_feature': {'type': 'boolean', 'default': True}}))
+    assert 'second_feature' in registry.parameter_keys()
+    assert 'second_feature' not in registry.parameter_keys('generated_bus')
+    registry.register_generated_profile({**generated,
+        'parameter_schema': {'replacement_feature': {'type': 'boolean', 'default': True}}})
+    assert 'replacement_feature' in registry.parameter_keys('GBUS')
+    assert 'first_feature' not in registry.parameter_keys('GBUS')
+    assert 'replacement_feature' in registry.parameter_keys()
+    assert 'first_feature' not in registry.parameter_keys()
+
+
+def test_selected_profile_fields_preserve_native_identity_and_nested_isolation():
+    for technology in ('lin', 'can_fd', 'ethernet', 'someip'):
+        full = REGISTRY.profile(technology)
+        selected = REGISTRY.profile(full['aliases'][0], fields=('layer', 'default_stack', 'parameter_schema'))
+        assert selected == {name: full[name] for name in ('layer', 'default_stack', 'parameter_schema') if name in full}
+        selected['parameter_schema'].clear()
+        assert REGISTRY.profile(technology)['parameter_schema'] == full['parameter_schema']
+    with pytest.raises(KeyError, match='unknown technology'):
+        REGISTRY.profile('unknown_bus', fields=('layer', 'default_stack'))
+
+
+def test_saved_value_roles_match_ui_metadata_and_refresh_without_cached_defaults():
+    for technology in ('lin', 'can_fd', 'ethernet', 'i2c', 'modbus_rtu'):
+        expected = {field['native_key']: field['value_role'] for field in REGISTRY.parameter_fields(technology)}
+        roles = REGISTRY.parameter_roles(technology)
+        assert roles == expected
+        roles.clear()
+        assert REGISTRY.parameter_roles(technology) == expected
+    registry = TechnologyRegistry()
+    first = definition('Generated Roles', id='generated_roles', knowledge_origin='GENERATED_TECHNOLOGY_PACK',
+                       parameter_schema={'device_source': {'label':'Source', 'type':'text'}})
+    registry.register_generated_profile(first)
+    assert registry.parameter_roles('generated_roles') == {'device_source':'EVIDENCE'}
+    registry.register_generated_profile({**first, 'parameter_schema': {
+        'native_rate': {'label':'Rate', 'type':'number', 'value_role':'CONFIGURATION'}}})
+    assert registry.parameter_roles('generated_roles') == {'native_rate':'CONFIGURATION'}
+
+
+def test_transport_owned_keys_match_current_native_schema_and_are_detached():
+    for technology in ('lin', 'can_fd', 'ethernet', 'i2c', 'modbus_rtu', 'someip'):
+        schema = REGISTRY.profile(technology)['parameter_schema']
+        expected = {key for key, spec in schema.items()
+                    if spec.get('parameter_origin') in {'TRANSPORT_PROFILE', 'DEVICE_CONFIGURATION'}}
+        keys = REGISTRY.transport_parameter_keys(technology)
+        assert keys == expected
+        keys.clear()
+        assert REGISTRY.transport_parameter_keys(technology) == expected
+    registry = TechnologyRegistry()
+    first = definition('Generated Ingress', id='generated_ingress', knowledge_origin='GENERATED_TECHNOLOGY_PACK',
+                       parameter_schema={'native_rate': {'type': 'number', 'parameter_origin': 'TRANSPORT_PROFILE'}})
+    registry.register_generated_profile(first)
+    assert registry.transport_parameter_keys('generated_ingress') == {'native_rate'}
+    registry.register_generated_profile({**first, 'parameter_schema': {
+        'device_clock': {'type': 'number', 'parameter_origin': 'DEVICE_CONFIGURATION'},
+        'analysis_control': {'type': 'number', 'parameter_origin': 'ANALYSIS'}}})
+    assert registry.transport_parameter_keys('generated_ingress') == {'device_clock'}
+
+
+def test_simulation_constraint_values_match_native_rules_and_keep_fixed_inputs():
+    from backend.nis.communication.catalog import _constrained_simulation_proposals, simulation_parameter_values
+    profile = REGISTRY.profile('lin')
+    values = {key:proposal['value'] for key,proposal in simulation_parameter_values('lin',profile).items()}
+    values.update(lin_data_octets=8,lin_frame_nominal_bits=1)
+    fixed = set(values)-{'lin_frame_nominal_bits','lin_response_nominal_bits'}
+    expected = _constrained_simulation_proposals('lin',profile,
+        {key:{'value':value} for key,value in values.items()},fixed)
+    actual = REGISTRY.constrain_simulation_values('LIN',values,fixed)
+    assert actual=={key:item['value'] for key,item in expected.items()}
+    assert actual['lin_frame_nominal_bits']==124
+    assert all(actual[key]==values[key] for key in fixed)
+
+
+def test_simulation_constraint_values_are_detached_and_follow_profile_updates():
+    registry = TechnologyRegistry()
+    first = definition('Generated Derivation',id='generated_derivation',knowledge_origin='GENERATED_TECHNOLOGY_PACK',
+        parameter_schema={'layout':{'type':'text'},'source':{'type':'number'},'derived':{'type':'number'}},
+        parameter_constraints=[{'parameter':'derived','equal_parameter':'source'}])
+    registry.register_generated_profile(first)
+    values={'layout':{'slots':[1]},'source':2,'derived':0}
+    actual=registry.constrain_simulation_values('generated_derivation',values,{'layout','source'})
+    assert actual['derived']==2
+    actual['layout']['slots'].append(3)
+    assert values['layout']=={'slots':[1]}
+    registry.register_generated_profile({**first,'parameter_constraints':[
+        {'parameter':'derived','equal_parameter':'source','equal_parameter_offset':3}]})
+    assert registry.constrain_simulation_values('generated_derivation',values,{'layout','source'})['derived']==5
+    assert registry.constrain_simulation_values('generated_derivation',values,values)==values
+
+
 def test_every_profile_exposes_canonical_identity_aliases_and_honest_verification():
     profiles = REGISTRY.list_all()
     assert profiles == REGISTRY.profiles()

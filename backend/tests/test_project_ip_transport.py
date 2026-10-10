@@ -42,6 +42,44 @@ def test_qualified_ip_serializer_fixture_has_exact_headers_and_rejects_mac_clien
         events(config)
 
 
+def test_saved_native_ethernet_starter_executes_exact_ip_serializer_without_manual_geometry(tmp_path):
+    from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY as registry
+    from backend.nis.engineering.capacity.service import simulation_parameters_for_protocol
+    parameters = registry.simulation_defaults_for_project({'technology': 'ethernet'}, ['ethernet'])
+    resolved = simulation_parameters_for_protocol('ethernet', parameters, confirmed_parameters=parameters)
+    before = deepcopy(parameters)
+    config = ip_config(tmp_path)
+    config['parameters'] = parameters
+    config['networks'][0].update({key: value for key, value in resolved.items()
+                                if key in registry.parameter_keys('ethernet')})
+    config['networks'][0].update(bitrate=resolved['bitrate'],
+        _rate_evidenced=False, _simulation_assumption_fields=resolved['_simulation_assumption_fields'],
+        simulation_parameter_assumptions=resolved['_simulation_parameter_assumptions'])
+    rows = events(config)
+    assert rows and all(row['timing_basis'] == 'SAVED_SIMULATION_ASSUMPTIONS'
+                        and row['hardware_evidence'] is False for row in rows)
+    packet = packet_bytes(rows[0])
+    assert packet[14] >> 4 == 4
+    assert packet[23] == 17  # IPv4 UDP protocol, independently decoded.
+    ip_length = struct.unpack('!H', packet[16:18])[0]
+    assert ip_length == 28 + len(bytes.fromhex(rows[0]['payload_hex']))
+    assert packet[42:14 + ip_length] == bytes.fromhex(rows[0]['payload_hex'])
+    assert packet[14 + ip_length:] == bytes(max(0, 60 - 14 - ip_length))
+    assert resolved['eth_payload_layer'] == 'UPPER_LAYER'
+    assert resolved['eth_upper_header_bytes'] == 28
+    assert parameters == before
+    # Preserve an explicit old measurement boundary instead of silently fixing it.
+    values = {'eth_payload_layer': 'MAC_CLIENT', 'eth_upper_header_bytes': 0}
+    explicit = {'technology': 'ethernet', 'technology_parameters': {'ethernet': {
+        'values': values, 'provenance': {key: {'source': 'USER_CONFIRMED', 'status': 'CONFIRMED',
+            'technology': 'ethernet', 'value': value} for key, value in values.items()}}}}
+    refreshed = registry.simulation_defaults_for_project(explicit, ['ethernet'])
+    assert refreshed['technology_parameters']['ethernet']['values'] == values
+    config['parameters'] = refreshed
+    with pytest.raises(ValueError, match='serializer geometry contradicts eth_payload_layer'):
+        events(config)
+
+
 @pytest.mark.parametrize("version", [4, 6])
 @pytest.mark.parametrize("protocol", ["udp", "tcp"])
 def test_exact_project_addresses_payload_headers_checksums(tmp_path, version, protocol):

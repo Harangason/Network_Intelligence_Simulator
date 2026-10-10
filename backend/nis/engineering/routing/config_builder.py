@@ -73,9 +73,9 @@ def _timing_requirements(route: dict[str, Any], parameters: dict[str, Any]) -> d
 
 class CommunicationConfigBuilder:
     def build(self, routes: list[dict[str, Any]], *, topology: dict[str, Any] | None = None,
-              parameters: dict[str, Any] | None = None) -> dict[str, Any]:
+              parameters: dict[str, Any] | None = None, simulation: bool = False) -> dict[str, Any]:
         from backend.nis.engineering.routing.transport_segments import PhysicalRouteResolver
-        from backend.nis.engineering.capacity.service import parameters_for_protocol
+        from backend.nis.engineering.capacity.service import parameters_for_protocol, simulation_parameters_for_protocol
         from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY
 
         parameters = parameters or {}
@@ -184,8 +184,12 @@ class CommunicationConfigBuilder:
                 net, protocol, technology = network_info(source)
                 source_interface, configuration = bind_endpoint(source, net, technology)
                 target_interface, _ = bind_endpoint(target, net, technology)
-                resolved = parameters_for_protocol(protocol, parameters, configuration, net,
+                resolver = simulation_parameters_for_protocol if simulation else parameters_for_protocol
+                resolved = resolver(protocol, parameters, configuration, net,
                                                    confirmed_parameters=parameters)
+                if simulation and not resolved.get('_simulation_parameters_usable'):
+                    raise EngineeringValidationError(f"{net}: Simulationsparameter sind nicht verwendbar: "
+                        + '; '.join(item['message'] for item in resolved.get('_simulation_parameter_findings', [])))
                 owned = DEFAULT_TECHNOLOGY_REGISTRY.parameter_keys(technology) if technology != 'generic' else set()
                 network = networks.setdefault(net, {"id": net, "name": source.get("network_name") or net,
                     "technology": technology, "protocol": protocol,
@@ -193,6 +197,11 @@ class CommunicationConfigBuilder:
                        if key in owned},
                     "bitrate": resolved.get("bitrate"),
                     "_rate_evidenced": resolved.get("_rate_evidenced", False),
+                    **({"simulation_parameters_usable": True,
+                        "hardware_evidence": bool(resolved.get('_simulation_hardware_evidence')),
+                        "_simulation_assumption_fields": resolved.get('_simulation_assumption_fields', []),
+                        "simulation_parameter_assumptions": resolved.get('_simulation_parameter_assumptions', {})}
+                       if simulation else {}),
                     **({"_rate_findings": resolved["_rate_findings"]} if "_rate_findings" in resolved else {}),
                     **({"parameter_provenance": resolved["parameter_provenance"]}
                        if "parameter_provenance" in resolved else {}),

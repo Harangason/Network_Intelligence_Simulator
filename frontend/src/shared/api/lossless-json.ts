@@ -16,3 +16,20 @@ export function parseLosslessJson(text: string): unknown {
 export async function readLosslessJson(response: Response): Promise<unknown> {
   return parseLosslessJson(await response.text());
 }
+
+/** A successful status never turns an interrupted/invalid body into success. */
+export async function readApiJson(response: Response): Promise<unknown> {
+  let payload: unknown;
+  try {
+    payload = await readLosslessJson(response);
+  } catch (error) {
+    if (response.ok) throw error;
+    throw new Error(`API-Fehler ${response.status}`);
+  }
+  if (!response.ok) {
+    const detail = payload && typeof payload === 'object' && 'error' in payload
+      ? (payload as { error?: unknown }).error : undefined;
+    throw new Error(typeof detail === 'string' ? detail : `API-Fehler ${response.status}`);
+  }
+  return payload;
+}

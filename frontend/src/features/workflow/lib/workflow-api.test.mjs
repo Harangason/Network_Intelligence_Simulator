@@ -1,12 +1,30 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { getWorkflow, getWorkflowSummary } from './workflow-api.ts';
+import { getWorkflow, getWorkflowSummary, saveWorkflowParameters } from './workflow-api.ts';
 
 const versions = (revision = 1) => ({ engineering_model: revision, routing: revision, network_editor: revision, parameters: revision });
 const summary = (project, revision = 1) => ({ project_id: project, versions: versions(revision),
   edit_tokens: { parameters: `p${revision}`, topology: `t${revision}` }, context: { marker: revision } });
 const detail = (project, key, revision = 1, payload = {}) => ({ project_id: project, versions: versions(revision),
   edit_token: `${key[0]}${revision}`, [key]: payload });
+
+test('bulk parameter saves distinguish copied duration from an explicit same-value edit', async () => {
+  const original = globalThis.fetch, bodies = [];
+  globalThis.fetch = async (_url, options) => {
+    bodies.push(JSON.parse(options.body));
+    assert.equal(options.headers['X-Project-ID'], 'duration-project');
+    return Response.json({ ...summary('duration-project'), parameters: bodies.at(-1).parameters });
+  };
+  try {
+    const parameters = {duration_s: 1, seed: 43};
+    await saveWorkflowParameters(parameters, 'p1', 'duration-project');
+    await saveWorkflowParameters(parameters, 'p2', 'duration-project', ['duration_s']);
+    assert.deepEqual(bodies, [
+      {parameters, expected_token: 'p1', edited_duration_fields: []},
+      {parameters, expected_token: 'p2', edited_duration_fields: ['duration_s']},
+    ]);
+  } finally { globalThis.fetch = original; }
+});
 
 test('large editors load separate canonical details and preserve simulation metadata without an oversized status request', async () => {
   const original = globalThis.fetch;

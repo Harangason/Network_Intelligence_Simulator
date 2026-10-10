@@ -51,7 +51,7 @@ for key,meaning,source in [
  ('checksum_source','Actualencodedbytearray/PID/end-aroundcarrychecksumtestproof.',SPEC)]:d(key,'text',meaning,source=source)
 
 for key,meaning,lo,hi,unit,integer in [
- ('bitrate_bps','ActualprojectLDFnominal1..20kbit/s for reviewedPHY; no universal19.2kbpsdefault.',1,None,'bit/s',True),
+ ('bitrate_bps','ActualprojectLDFnominal1..20kbit/s for reviewedPHY; no universal19.2kbpsdefault.',1,20000,'bit/s',True),
  ('commander_count','ActualsinglecommandertaskononeLINcluster.',1,1,None,True),
  ('node_count','Actualtotalphysicalnodes;2010 recommendationmax16includingcommander,not16respondersplus1.',1,None,None,True),
  ('frame_id','Actual6bitrawidentifier0..63,diagnostic60/61,reserved62/63forbiddenin2.x.',0,63,None,True),
@@ -225,8 +225,8 @@ def fields():
         for field,value in [('start_bits',1),('data_bits',8),('stop_bits',1),('byte_bits',10),('sync_byte',85),('header_nominal_bits',34),('data_order','LSB_FIRST'),('uart_parity','NONE')]:
             if key==field:p(value)
         if key=='bitrate_bps':
-            p(1000,physical_profile='LIN_2_2A_SINGLE_WIRE')
-            proposals[-1]['basis']='USER_POLICY_LOWEST_SPECIFIED_RATE_NOT_UNIVERSAL_LIN_DEFAULT'
+            p(19200,physical_profile='LIN_2_2A_SINGLE_WIRE')
+            proposals[-1]['basis']='USER_REQUESTED_SIMULATION_RATE_NOT_ACTUAL_LDF_EVIDENCE'
         if key=='break_bits':p(13)
         if key=='delimiter_bits':p(1)
         if key=='time_base_ms':p(5)

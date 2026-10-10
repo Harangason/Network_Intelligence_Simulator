@@ -9,7 +9,9 @@ export default async function ResultsPage({
 }: {
   searchParams: Promise<ProjectQueryRecord>;
 }) {
-  const initialProjectId = projectIdFromSearchParams(await searchParams);
+  const query = await searchParams;
+  const initialProjectId = projectIdFromSearchParams(query);
+  const initialSnapshotId = Array.isArray(query.snapshot) ? query.snapshot[0] : query.snapshot;
   return (
     <main className="shell studio-shell workflow-shell">
       <StudioTopbar initialProjectId={initialProjectId} />
@@ -17,7 +19,7 @@ export default async function ResultsPage({
       <StudioWorkflowHero eyebrow="Workflow 08" initialProjectId={initialProjectId} title="Prognose und Simulation gemeinsam analysieren.">
         Historische Ergebnisse bleiben erhalten, einschließlich Quellversionen, Veraltungsgrund und technischer Evidenz.
       </StudioWorkflowHero>
-      <ResultsWorkbench initialProjectId={initialProjectId} />
+      <ResultsWorkbench key={`${initialProjectId}:${initialSnapshotId}`} initialProjectId={initialProjectId} initialSnapshotId={initialSnapshotId} />
     </main>
   );
 }

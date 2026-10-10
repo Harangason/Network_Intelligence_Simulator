@@ -26,6 +26,9 @@ CANONICAL_ROOT = Path(r"I:\PycharmProjects\My_first_Network_Simulator")
 SIMULATOR_ROOT = ROOT / "backend" / "simulator"
 BACKEND_HOST = "127.0.0.1"
 BACKEND_PORT = 15050
+# Backend readiness includes the complete native catalog and persisted-job
+# recovery. Keep its cold-start budget separate from wizard stage deadlines.
+BACKEND_STARTUP_TIMEOUT_SECONDS = 90.0
 FRONTEND_HOST = "127.0.0.1"
 FRONTEND_PORT = 13500
 SERVICE_LOG_ROOT = ROOT / "var" / "runtime" / "logs"
@@ -952,6 +955,7 @@ def _run_web() -> int:
         if not _wait_for_url(
             f"{backend_url}/api/health",
             backend_process,
+            timeout_s=BACKEND_STARTUP_TIMEOUT_SECONDS,
             expected_instance_id=instance_id,
         ):
             return_code = backend_process.poll()
@@ -1010,6 +1014,7 @@ def _run_web() -> int:
                 if not _wait_for_url(
                     f"{backend_url}/api/health",
                     backend_process,
+                    timeout_s=BACKEND_STARTUP_TIMEOUT_SECONDS,
                     expected_instance_id=instance_id,
                 ):
                     _terminate_process_tree(backend_process)

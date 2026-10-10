@@ -65,6 +65,38 @@ def test_manual_identical_duration_invalidates_a_copied_default_marker():
     assert parameters["parameter_provenance"]["duration_s"]["source"] == "TECHNOLOGY_DEFAULT"
 
 
+def test_bulk_save_keeps_trusted_default_origin_despite_form_confirmation():
+    previous = _config()["parameters"]
+    submitted = {**previous, "seed": 43, "parameter_provenance": {
+        "duration_s": {"source": "USER_CONFIRMED", "status": "CONFIRMED", "value": 1}}}
+    saved = mark_user_duration(submitted, previous=previous, edited_fields=[])
+    assert saved["parameter_provenance"]["duration_s"] == previous["parameter_provenance"]["duration_s"]
+    assert plan_observation_window({**_config(_route()), "parameters": saved})["duration_s"] == pytest.approx(1.071)
+    assert submitted["parameter_provenance"]["duration_s"]["source"] == "USER_CONFIRMED"
+
+
+@pytest.mark.parametrize(("value", "edited"), [(1, ["duration_s"]), (0.25, [])])
+def test_duration_edit_intent_or_changed_value_remains_exact(value, edited):
+    previous = _config()["parameters"]
+    saved = mark_user_duration({**previous, "duration_s": value}, previous=previous, edited_fields=edited)
+    assert saved["parameter_provenance"]["duration_s"] == {"source": "USER_PARAMETER", "value": value}
+    assert plan_observation_window({**_config(_route()), "parameters": saved})["duration_s"] == value
+
+
+def test_bulk_save_cannot_spoof_a_saved_explicit_duration_as_default():
+    previous = {"duration_s": 1, "parameter_provenance": {
+        "duration_s": {"source": "USER_PARAMETER", "value": 1}}}
+    saved = mark_user_duration(_config()["parameters"], previous=previous, edited_fields=[], defaults={"duration_s": 1})
+    assert saved["parameter_provenance"] == previous["parameter_provenance"]
+    assert plan_observation_window({**_config(_route()), "parameters": saved})["duration_s"] == 1
+
+
+@pytest.mark.parametrize("edited", ["duration_s", ["seed"], [None], [True], {}])
+def test_invalid_bulk_duration_intent_is_rejected(edited):
+    with pytest.raises(ValueError, match="edited_duration_fields"):
+        mark_user_duration(_config()["parameters"], edited_fields=edited)
+
+
 def test_changed_parameter_does_not_inherit_an_old_default_marker():
     config = _config(_route())
     config["parameters"]["duration_s"] = 0.25
@@ -180,7 +212,7 @@ def test_dds_parameter_defaults_keep_explicit_lower_link_unverified():
     assert "dds" not in ethernet.get("technology_stack", [])
 
 
-def test_mixed_robotics_defaults_require_native_review_with_dds_as_primary(db_project, monkeypatch):
+def test_mixed_robotics_saved_defaults_allow_simulation_without_qualifying_dds_hardware(db_project, monkeypatch):
     from backend.nis.agent.tools import wizard_generation as wizard_generation
     from backend.nis.workflow.services.service import WorkflowStatusService
 
@@ -199,12 +231,28 @@ def test_mixed_robotics_defaults_require_native_review_with_dds_as_primary(db_pr
         "prompt": "- Projekt-Modelltyp: robotics_ros\nTechnologie-Defaults verwenden.",
     })
 
-    assert not generated["artifact_check"]["complete"]
-    assert generated["status"] == "REVIEW_REQUIRED"
-    assert generated["missing_parameters"]
+    # Saved native scenario assumptions satisfy simulation configuration. They
+    # must neither borrow Ethernet's bitrate nor qualify an actual DDS entity.
+    assert generated["artifact_check"]["complete"]
+    assert generated["artifact_check"]["configuration_basis"] == "SAVED_SIMULATION_ASSUMPTIONS"
+    assert generated["artifact_check"]["hardware_evidence"] is False
+    assert generated["status"] != "REVIEW_REQUIRED"
     assert generated["parameters"]["technology"] == "dds"
     assert "bitrate" not in generated["parameters"]
     assert set(generated["technology_ids"]) == {"dds", "ethercat", "ethernet", "can_fd"}
+    parameters = generated["parameters"]
+    assert set(parameters["simulation_parameter_assumptions"]) == set(generated["technology_ids"])
+    dds = parameters["simulation_parameter_assumptions"]["dds"]
+    assert "bitrate" not in dds["values"]
+    assert "dds_registered_source" not in dds["values"]
+    assert "dds_history_kind" not in dds["values"]  # Actual selected entity remains unknown.
+    assert "payload_bytes" in dds["values"]
+    forged = deepcopy(parameters)
+    forged["simulation_parameter_assumptions"]["dds"]["provenance"]["payload_bytes"]["technology"] = "ethernet"
+    rejected = WorkflowStatusService._parameter_artifact_check(forged)
+    assert not rejected["complete"]
+    assert any(finding["code"] == "SIMULATION_PARAMETER_PROVENANCE_MISMATCH"
+               for finding in rejected["profile_findings"])
 
 
 def test_http_manual_identical_duration_cannot_retain_or_spoof_default_origin(db_project, monkeypatch):
@@ -226,6 +274,51 @@ def test_http_manual_identical_duration_cannot_retain_or_spoof_default_origin(db
     assert saved["duration_s"] == 1
     assert saved["parameter_provenance"]["duration_s"] == {"source": "USER_PARAMETER", "value": 1}
     assert plan_observation_window({**_config(_route()), "parameters": saved})["duration_s"] == 1
+
+
+def test_http_bulk_defaults_repeat_without_fixing_duration_then_same_value_edit_stays_explicit(db_project, monkeypatch):
+    from backend.nis.app import create_app
+    from backend.nis.interfaces.http import engineering as api
+    from backend.nis.workflow.services.service import WorkflowStatusService
+    workflow = WorkflowStatusService(db_project)
+    monkeypatch.setattr(api, "_auto_recalculate_capacity", lambda _: None)
+    client = create_app(testing=True).test_client()
+    workflow.save_parameters({"technology": "lin"})
+    for seed in (41, 43, 42):
+        current = workflow.get()
+        response = client.patch("/api/engineering/workflow/parameters", headers={"X-Project-ID": db_project},
+            json={"expected_token": current["edit_tokens"]["parameters"], "edited_duration_fields": [],
+                  "parameters": {**current["parameters"], "duration_s": 1, "seed": seed,
+                      "parameter_provenance": {"duration_s": {"source": "USER_CONFIRMED", "value": 1}}}})
+        assert response.status_code == 200, response.get_json()
+        saved = workflow.get()["parameters"]
+        assert saved["parameter_provenance"]["duration_s"] == {"source": "TECHNOLOGY_DEFAULT", "value": 1}
+        assert plan_observation_window({**_config(_route()), "parameters": saved})["duration_s"] == pytest.approx(1.071)
+    response = client.patch("/api/engineering/workflow/parameters", headers={"X-Project-ID": db_project},
+        json={"parameters": saved, "edited_duration_fields": ["duration_s"]})
+    assert response.status_code == 200, response.get_json()
+    explicit = workflow.get()["parameters"]
+    assert explicit["parameter_provenance"]["duration_s"] == {"source": "USER_PARAMETER", "value": 1}
+    response = client.patch("/api/engineering/workflow/parameters", headers={"X-Project-ID": db_project},
+        json={"parameters": {**explicit, "parameter_provenance": _config()["parameters"]["parameter_provenance"]},
+              "edited_duration_fields": []})
+    assert response.status_code == 200
+    assert workflow.get()["parameters"]["parameter_provenance"]["duration_s"] == explicit["parameter_provenance"]["duration_s"]
+
+
+def test_unknown_profile_cannot_supply_an_automatic_duration(db_project, monkeypatch):
+    from backend.nis.app import create_app
+    from backend.nis.interfaces.http import engineering as api
+    from backend.nis.workflow.services.service import WorkflowStatusService
+    monkeypatch.setattr(api, "_auto_recalculate_capacity", lambda _: None)
+    before = WorkflowStatusService(db_project).get()["parameters"]
+    response = create_app(testing=True).test_client().patch("/api/engineering/workflow/parameters",
+        headers={"X-Project-ID": db_project}, json={"edited_duration_fields": [],
+        "parameters": {"technology": "unknown-transport", "duration_s": 1,
+            "parameter_provenance": {"duration_s": {"source": "TECHNOLOGY_DEFAULT", "value": 1}}}})
+    assert response.status_code == 400, response.get_json()
+    assert 'TECHNOLOGY_PROFILE_MISSING' in response.get_json()['error']
+    assert WorkflowStatusService(db_project).get()["parameters"] == before
 
 
 def test_real_gateway_delivery_and_jitter_need_two_received_frames(gateway_config):

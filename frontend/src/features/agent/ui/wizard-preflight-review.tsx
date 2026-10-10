@@ -101,6 +101,7 @@ export function WizardPreflightReview({ findings, projectId, disabled = false, o
     </article>)}
     <details><summary>Alle technischen Befunde ({findings.length})</summary><ul>{findings.map((finding, index) => <li key={index}>{finding.code}: {finding.message}</li>)}</ul></details>
     <button className="button secondary tiny" type="button" disabled={disabled} onClick={() => setReload(value => value + 1)}>Rückfragen neu laden</button>
+    <button className="button primary tiny" type="button" disabled={disabled || !snapshot || Boolean(error)} onClick={() => void onContinue()}>Gespeicherte Angaben erneut prüfen & fortsetzen</button>
     {error && <p role="alert">{error}</p>}
   </section>;
 }

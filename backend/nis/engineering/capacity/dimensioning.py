@@ -29,6 +29,140 @@ SUPPORTED_CAPACITY_PROTOCOLS = frozenset(
 )
 
 
+def bus_rate_plan(technology, messages, parameters, *, industry=None, target_load_percent=60, alternatives=True):
+    """Native wire-demand comparison, explicitly separated from device/timing proof.
+
+    A rate candidate is never a hardware upgrade or a functional acceptance.
+    Registered operating points carry coherent phase timing; foreign buses are
+    considered only as explicit proposals from the selected industry template.
+    """
+    from backend.nis.communication.catalog import PARAMETER_UI_ALIASES
+    from backend.nis.engineering.capacity.calculators import estimate_simulation_frame, utilization_percent
+    registry = DEFAULT_TECHNOLOGY_REGISTRY
+    technology = registry.normalize_id(technology)
+    definition = registry.profile(technology)
+    preset = definition.get('simulation_defaults') or {}
+    fields = registry.parameter_fields(technology)
+    model = definition.get('rate_model') or {}
+    native_rates = model.get('fields') or preset.get('rate_fields') or [
+        registry.profile(technology).get('parameter_aliases', {}).get('bitrate', field['key'])
+        for field in fields if field.get('required') and field.get('scope') == 'network' and field.get('unit') == 'bit/s']
+    # Required protocol context and recorded starter choices are editable assumptions.
+    base = {field['key']: field['simulation_default'] for field in fields if field.get('required')}
+    base.update({PARAMETER_UI_ALIASES.get(key, key): value for key, value in preset.get('values', {}).items()})
+    group = (parameters.get('simulation_parameter_assumptions') or {}).get(technology) or {}
+    base.update({key: value for key, value in (group.get('values') or {}).items() if key in base})
+    explicit = ((parameters.get('technology_parameters') or {}).get(technology) or {}).get('values') or {}
+    base.update(explicit)
+    if registry.normalize_id(parameters.get('technology')) == technology:
+        base.update({field['key']: parameters[field['key']] for field in fields if field['key'] in parameters
+                     and ((parameters.get('parameter_provenance') or {}).get(field['key']) or {}).get('source') in {'USER_CONFIRMED', 'EXPLICIT_USER_SPECIFICATION'}})
+    releases = [profile(transmission_contract(message), message.get('cycle_ms')) for message in messages]
+    # A specialization may compare nominal scenario demand while keeping its
+    # actual-device estimator strict. Never supply invented source identifiers.
+    result = {'technology': technology, 'unit': 'bit/s', 'source': 'TechnologyProfile:' + technology,
+              'hardware_evidence': False, 'functional_timing_accepted': False, 'alternatives': [],
+              'target_load_percent': target_load_percent, 'candidates': [], 'selected_values': {}}
+    if not messages or any(item['errors'] or not item['period_ms'] for item in releases):
+        return {**result, 'status': 'TRAFFIC_UNRESOLVED', 'reason': 'Sendeabstände und Auslöser müssen für die vollständige Last bekannt sein.'}
+    points = list(preset.get('operating_points') or [])
+    current_native = registry.normalize_parameters(technology, base)
+    if native_rates and all(key in current_native for key in native_rates):
+        points.insert(0, {'id': 'CURRENT_PROJECT_OR_PROFILE', 'values': {
+            key: current_native[key] for key in native_rates}})
+    if len(native_rates) == 1:
+        name = native_rates[0]
+        ui = PARAMETER_UI_ALIASES.get(name, name)
+        candidates = set(model.get('allowed_bps') or preset.get('rate_candidates_bps') or [])
+        value = base.get(ui)
+        if isinstance(value, (int, float)) and not isinstance(value, bool) and value > 0:
+            candidates.add(value)
+        points += [{'id': str(rate), 'values': {name: rate}} for rate in sorted(candidates)]
+    elif not points:
+        points = [{'id': 'REGISTERED_STARTER', 'values': dict(preset.get('values') or {})}]
+    for point in points:
+        chosen = {PARAMETER_UI_ALIASES.get(key, key): value for key, value in point['values'].items()}
+        native = {key: point['values'][key] for key in native_rates if key in point['values']}
+        if not native or registry.validate_parameters(technology, native)['status'] in {'INVALID', 'UNKNOWN'}:
+            continue
+        owner = registry.capacity_parameter_implementation(technology)
+        hook = getattr(owner, 'rate_planning_values', None)
+        if hook:
+            chosen = hook(chosen, base, explicit)
+        scenario = {**base, **chosen}
+        for constraint in definition.get('parameter_constraints') or []:
+            if constraint.get('parameter') not in native or constraint.get('allowed') != [native[constraint['parameter']]]:
+                continue
+            # A proposed PHY operating mode comes from the same profile's rules.
+            # Confirmed device restrictions below take precedence over it.
+            when = constraint.get('when') or {}
+            existing_matches = all(scenario.get(key) == value for key, value in when.items())
+            if not existing_matches and point['id'] == 'CURRENT_PROJECT_OR_PROFILE':
+                continue
+            chosen.update(when)
+            scenario.update(when)
+            break
+        for constraint in definition.get('parameter_constraints') or []:
+            if constraint.get('equal_parameter') in native and constraint.get('parameter') in scenario:
+                key = constraint['parameter']; chosen[key] = native[constraint['equal_parameter']]; scenario[key] = chosen[key]
+        configurable = {PARAMETER_UI_ALIASES.get(name, name) for name in native_rates}
+        configurable.update(PARAMETER_UI_ALIASES.get(name, name) for name in preset.get('configurable_rate_fields') or [])
+        protected = {key: value for key, value in explicit.items() if key not in configurable}
+        scenario.update(protected)
+        check_values = {key: value for key, value in scenario.items() if key in registry.parameter_keys(technology)}
+        if registry.validate_parameters(technology, check_values)['status'] in {'INVALID', 'UNKNOWN'}:
+            continue
+        # Native aliases belong to this profile; LIN does not inherit a CAN rate.
+        for alias, field in (definition.get('parameter_aliases') or {}).items():
+            if field in scenario:
+                scenario[alias] = scenario[field]
+        if 'bitrate_bps' in native:
+            scenario['bitrate'] = native['bitrate_bps']
+        scenario['_rate_evidenced'] = True  # Local calculation input, never persisted as evidence.
+        scenario['_simulation_parameters_usable'] = True
+        scenario['_simulation_assumption_fields'] = [key for key in base if key not in explicit
+            and next((field.get('value_role') for field in fields if field['key'] == key), None) == 'CONFIGURATION']
+        loads = []
+        frames = {}
+        try:
+            for message, release in zip(messages, releases):
+                payload = int(message.get('dlc') or 0)
+                # This operating point fixes every native scenario input. Frame
+                # duration depends on payload; release periods remain per message.
+                if payload not in frames:
+                    frames[payload] = estimate_simulation_frame(technology, payload, scenario)
+                frame = frames[payload]
+                if frame.is_generic_estimate or not frame.transmission_time_available:
+                    loads = []; break
+                loads.append(utilization_percent(frame.transmission_time_s, release['period_ms']))
+        except ValueError:
+            continue
+        if len(loads) == len(messages):
+            load = sum(loads)
+            result['candidates'].append({'id': point['id'], 'values': chosen, 'load_percent': load,
+                                          'fits': load <= target_load_percent, 'status': 'SIMULATION_ASSUMPTION'})
+    fitting = next((item for item in result['candidates'] if item['fits']), None)
+    if fitting:
+        return {**result, 'status': 'CAPACITY_CANDIDATE', 'selected_values': fitting['values'],
+                'load_percent': fitting['load_percent'], 'reason': 'Native Wire-Last unter Simulationsannahmen; PHY, Schedule und funktionale Fristen separat prüfen.'}
+    if alternatives:
+        from backend.nis.industries.models import MODEL_TYPES
+        template = next((item for item in MODEL_TYPES if item['id'] == industry), None)
+        for candidate in (template or {}).get('recommended_technologies') or []:
+            candidate = registry.normalize_id(candidate)
+            if candidate == technology or candidate.upper() not in SUPPORTED_CAPACITY_PROTOCOLS:
+                continue
+            other = bus_rate_plan(candidate, messages, {}, industry=industry,
+                                  target_load_percent=target_load_percent, alternatives=False)
+            if other['status'] == 'CAPACITY_CANDIDATE':
+                result['alternatives'].append({'technology': candidate, 'values': other['selected_values'],
+                    'load_percent': other['load_percent'], 'source': other['source'],
+                    'industry': industry, 'hardware_change_required': True, 'status': 'PROPOSAL'})
+    return {**result, 'status': 'BUS_ALTERNATIVE_PROPOSED' if result['alternatives'] else
+            'CAPACITY_INSUFFICIENT' if result['candidates'] else 'MODEL_OR_DEVICE_CONTEXT_UNRESOLVED',
+            'reason': 'Keine geprüfte Kandidatenrate erfüllt die Ziel-Last; bestätigte Hardware, Topologie, Schedule und Industrie begrenzen die Übernahme.'}
+
+
 
 def local_evidence_proposal(protocol, rows):
     """Offer review fields from the canonical technology profile, never a timing approval."""

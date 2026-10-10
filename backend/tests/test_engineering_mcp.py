@@ -339,6 +339,59 @@ def test_wizard_review_rolls_back_approval_when_apply_reconciliation_fails(autho
     assert persisted.json["data"]["canonical_ids"] == []
 
 
+def test_parameter_save_exposes_stale_review_before_click_and_revalidation_allows_durable_apply(authority):
+    proposal = wizard_review_proposal(authority)
+    client, headers = wizard_review_client(authority)
+    base = f"/api/engineering/agent/proposals/{proposal['proposal_id']}"
+    parameter_url = '/api/engineering/workflow/parameters'
+    initial = client.get(parameter_url, headers=headers).json
+    saved = client.patch(parameter_url, headers=headers, json={'expected_token':initial['edit_token'],
+        'parameters':{**initial['parameters'], 'seed':42}})
+    assert saved.status_code == 200, saved.json
+    stale = client.get(base + '?view=status', headers=headers).json['data']
+    assert stale['status'] == 'OUTDATED'
+    assert stale['canonical_ids'] == []
+    assert any(f['code'] == 'MODEL_REVISION_CHANGED' for f in stale['validation_result']['findings'])
+    preview = client.get('/api/engineering/workflow/parameters/review?proposal=' + proposal['proposal_id'], headers=headers)
+    assert preview.status_code == 200, preview.json
+    assert preview.json['source'] == 'PENDING_PROPOSAL'
+    assert preview.json['proposal']['status'] == 'OUTDATED'
+    assert preview.json['findings']
+    checked = client.post(base + '/validate', headers=headers, json={'revision':stale['revision']})
+    assert checked.status_code == 200, checked.json
+    current = checked.json['data']
+    assert current['status'] == 'VALIDATED'
+    assert current['revision'] != proposal['revision']
+    assert client.post(base + '/approve-apply?view=status', headers=headers,
+                       json={'revision':proposal['revision']}).status_code == 409
+    approved = client.post(base + '/review', headers=headers,
+                           json={'decision':'approve', 'revision':current['revision']})
+    assert approved.status_code == 200, approved.json
+    assert approved.json['data']['status'] == 'APPROVED'
+    approved_revision = current['revision']
+    latest_parameters = client.get(parameter_url, headers=headers).json
+    changed = client.patch(parameter_url, headers=headers, json={
+        'expected_token':latest_parameters['edit_token'],
+        'parameters':{**latest_parameters['parameters'], 'seed':43}})
+    assert changed.status_code == 200, changed.json
+    assert client.get(base + '?view=status', headers=headers).json['data']['status'] == 'OUTDATED'
+    checked = client.post(base + '/validate', headers=headers, json={'revision':approved_revision})
+    assert checked.status_code == 200, checked.json
+    current = checked.json['data']
+    assert current['status'] == 'VALIDATED' and current['revision'] != approved_revision
+    assert not current['approved_by']
+    assert client.post(base + '/approve-apply?view=status', headers=headers,
+                       json={'revision':approved_revision}).status_code == 409
+    applied = client.post(base + '/approve-apply?view=status', headers=headers, json={'revision':current['revision']})
+    assert applied.status_code == 200, applied.json
+    assert applied.json['data']['status'] == 'APPLIED'
+    assert applied.json['data']['canonical_ids']
+    assert client.get(base + '?view=status', headers=headers).json['data']['canonical_ids'] == applied.json['data']['canonical_ids']
+    assert client.get(parameter_url, headers=headers).json['parameters']['seed'] == 43
+    after = client.get('/api/engineering/workflow/parameters/review?proposal=' + proposal['proposal_id'], headers=headers)
+    assert after.json['source'] == 'CURRENT_CANONICAL_MODEL'
+
+
 def test_wizard_review_endpoint_rejects_generic_proposals(authority):
     proposal = call(authority, "generate_functions", {"prompt": "Erzeuge Kamera Funktionen.", **CONFIRMED_CONTROLLER}).data
     proposal = call(authority, "validate_proposal", {"proposal_id": proposal["proposal_id"]}).data

@@ -128,14 +128,7 @@ def technologies():
 
 @api.get('/technology-sources')
 def technology_sources():
-    from backend.nis.communication.services.sources import directory_from_profiles
-    from backend.nis.communication.services.licensing import license_states
-    catalog = JOBS.simulations.catalog()
-    profiles = {profile['id']: profile for domain in catalog['domains'] for profile in domain['technologies']}
-    directory = directory_from_profiles(list(profiles.values()))
-    directory['licenses'] = license_states(_request_project_id(), list(profiles.values()))
-    directory['project_id'] = _request_project_id()
-    return jsonify(directory)
+    return jsonify(JOBS.simulations.source_directory(_request_project_id()))
 
 
 @api.route('/technology-licenses', methods=['GET', 'POST'])

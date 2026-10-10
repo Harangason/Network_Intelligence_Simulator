@@ -5,15 +5,60 @@ from typing import Any
 from backend.nis.communication.core.timing import FrameEstimate, _positive
 
 def estimate_frame(protocol, payload_bytes, parameters):
+    return _nominal_frame(protocol, payload_bytes, parameters, planning=False)
+
+
+def estimate_planning_frame(protocol, payload_bytes, parameters):
+    """Use the same nominal wire model for marked scenarios, never device proof."""
+    return _nominal_frame(protocol, payload_bytes, parameters, planning=True)
+
+
+def prepare_simulation_parameters(parameters):
+    return planning_frame_parameters(parameters.get('lin_data_octets', 0), parameters)
+
+
+def planning_frame_parameters(payload_bytes, parameters):
+    """A starter length is replaced by the canonical message's own payload size."""
+    assumed = set(parameters.get('_simulation_assumption_fields', []))
+    if 'lin_data_octets' not in assumed:
+        return parameters
+    from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY as registry
+    keys = registry.parameter_keys('lin')
+    values = {key: value for key, value in parameters.items() if key in keys}
+    values['lin_data_octets'] = payload_bytes
+    dependent = {'lin_response_nominal_bits', 'lin_frame_nominal_bits', 'lin_frame_max_ms',
+                 'lin_header_actual_ms', 'lin_response_actual_ms', 'lin_slot_ms'} & assumed
+    def derive(current):
+        return registry.constrain_simulation_values('lin', current, set(current) - dependent)
+    values = derive(values)
+    if {'lin_slot_ms', 'lin_slot_ticks'} <= assumed:
+        from math import floor
+        timebase = values.get('lin_time_base_ms', 0)
+        if timebase > 0:
+            values['lin_slot_ticks'] = max(1, floor((values.get('lin_frame_max_ms', 0) + values.get('lin_jitter_ms', 0)) / timebase) + 1)
+            values = derive(values)
+    return {**parameters, **values}
+
+
+def _nominal_frame(protocol, payload_bytes, parameters, *, planning):
     normalized = str(protocol or "CUSTOM").upper().replace("-", "_").replace(" ", "_")
     payload = max(0, int(payload_bytes))
     bitrate = _positive(parameters.get("bitrate"), 0.0)
     rate_confirmed = parameters.get("_rate_evidenced") is not False
     available = bitrate > 0 and rate_confirmed
     from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY as registry
-    values = {key: value for key, value in parameters.items() if key in registry.parameter_keys('lin')}
+    keys = registry.parameter_keys('lin')
+    values = {key: value for key, value in parameters.items() if key in keys}
     checked = registry.validate_parameters('lin', values)
-    available = available and checked['status'] == 'VALID' and (
+    usable = checked['status'] == 'VALID'
+    if planning and checked['status'] == 'UNVERIFIED':
+        references = {key for key, role in registry.parameter_roles('lin').items()
+                      if role in {'EVIDENCE', 'REFERENCE'}}
+        usable = bool(checked['findings']) and all(
+            finding['code'] == 'TECHNOLOGY_PARAMETER_MISSING'
+            and (finding.get('parameter') or finding['message'].split()[0]) in references
+            for finding in checked['findings'])
+    available = available and usable and (
         parameters.get('lin_edition') == 'LIN_2_2A_2010' and
         parameters.get('lin_physical_profile') == 'LIN_2_2A_SINGLE_WIRE' and
         parameters.get('lin_frame_kind') not in {'WAKE_UP', 'REGISTERED_FRAME'} and 1 <= payload <= 8)

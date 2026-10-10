@@ -14,7 +14,7 @@ import { ProjectDraftEditor } from '../../projects/ui/project-draft-editor';
 import type { AgentInput, InteractiveQuestion } from "@/features/agent/lib/agent-response";
 import { engineeringContextHref, readAssistantContext } from "@/features/agent/lib/assistant-context";
 import { readConversation } from '@/features/agent/lib/conversation-client';
-import { applyReviewedProposal, approveAndApplyWizardProposal, hasCompleteProposal, proposalChangePage, proposalFindingGroups, refreshProposal } from '@/features/agent/lib/proposal-client';
+import { applyReviewedProposal, approveAndApplyWizardProposal, hasCompleteProposal, proposalChangePage, proposalFindingGroups, refreshProposal, restoreWizardProposal } from '@/features/agent/lib/proposal-client';
 
 import { parameterReviewHref } from "@/features/communication/lib/technology-parameters";
 
@@ -61,6 +61,7 @@ function ProposalReview({ initial, projectId, wizardReview = false, onProposalCh
   const [loaded, setLoaded] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [loadError, setLoadError] = useState('');
   const [editing, setEditing] = useState(false);
   const [names, setNames] = useState<Record<string, string>>({});
   const [rationale, setRationale] = useState(initial.rationale);
@@ -69,18 +70,25 @@ function ProposalReview({ initial, projectId, wizardReview = false, onProposalCh
   useEffect(() => {
     if (busy) return;
     const controller = new AbortController();
-    const refresh = () => refreshProposal(proposal, projectId, controller.signal, !loaded)
+    let refreshing = false;
+    const refresh = () => {
+      if (refreshing) return;
+      refreshing = true;
+      return (wizardReview && !loaded ? restoreWizardProposal(proposal, projectId, controller.signal)
+        : refreshProposal(proposal, projectId, controller.signal, !loaded))
       .then(result => { if (!controller.signal.aborted) {
         if (!loaded || proposal.revision !== result.revision || proposal.proposal_id !== result.proposal_id) {
           setRationale(result.rationale); setNames({}); setEditing(false); setPage(0);
         }
-        setProposal(result); onProposalChange?.(result); setLoaded(true); setError("");
+        setProposal(result); onProposalChange?.(result); setLoaded(true); setLoadError('');
       } })
-      .catch(cause => { if (!controller.signal.aborted) { setLoaded(false); setError(cause instanceof Error ? cause.message : "Vorschlag konnte nicht vollständig geladen werden."); } });
+      .catch(cause => { if (!controller.signal.aborted) { setLoaded(false); setLoadError(cause instanceof Error ? cause.message : "Vorschlag konnte nicht vollständig geladen werden."); } })
+      .finally(() => { refreshing = false; });
+    };
     void refresh();
     const timer = window.setInterval(() => { if (document.visibilityState === "visible") void refresh(); }, 5000);
     return () => { controller.abort(); window.clearInterval(timer); };
-  }, [base, projectId, busy, proposal.revision, loaded]);
+  }, [base, projectId, busy, proposal.revision, loaded, wizardReview]);
   async function action(kind: "approve" | "approveApply" | "reject" | "apply" | "validate" | "revise") {
     if (!loaded || !hasCompleteProposal(proposal) || busy) return;
     setBusy(true); onReviewBusyChange?.(true); setError("");
@@ -126,6 +134,7 @@ function ProposalReview({ initial, projectId, wizardReview = false, onProposalCh
   const references = Object.fromEntries((complete ? proposal.changes : []).map(change => [`$${change.local_ref}`, String(change.data?.name ?? change.object_name ?? change.object_type)]));
   return <section className="engineering-proposal-review" aria-label="Engineering-Vorschlag">
     <strong>{statusLabels[proposal.status]}</strong>
+    {proposal.status === 'OUTDATED' && <p role="status">Gespeicherte Projektwerte haben sich seit der Prüfung geändert. „Erneut prüfen“ aktualisiert die Prüfung; danach kannst du die aktuelle Fassung freigeben und übernehmen.</p>}
     <p>{proposal.rationale}</p>
     <p>{proposal.change_count ?? proposal.changes.length} Änderungen</p>
     {complete && typeof proposal.validation_result.valid_count === 'number' && <p>
@@ -133,19 +142,20 @@ function ProposalReview({ initial, projectId, wizardReview = false, onProposalCh
       {' · '}{['APPROVED', 'APPLIED'].includes(proposal.status) ? 'freigegeben' : 'noch nicht freigegeben'}
       {' · '}{proposal.status === 'APPLIED' ? `${proposal.canonical_count ?? proposal.canonical_ids.length} übernommen` : 'noch nicht übernommen'}
     </p>}
-    {!complete && <p role="status">Vollständiger Vorschlag wird aus dem gespeicherten Modell geladen. Freigabe ist bis dahin gesperrt.</p>}
+    {!complete && <p role="status">Vorschlag wird mit den gespeicherten Projektwerten geladen und geprüft. Freigabe ist bis dahin gesperrt.</p>}
     {complete && Boolean(proposal.validation_result.findings?.length) && <section aria-label="Prüfbefunde des Vorschlags">
       <h4>{proposal.validation_result.findings!.length} Prüfbefunde</h4>
       {proposal.status === "APPLIED" && <p role="status">Befunde der Vorschlagsprüfung vor der Übernahme. Die Parameteransicht prüft den aktuellen Modellstand erneut.</p>}
       {proposalFindingGroups(proposal).map(group => <article key={group.key}>
-        <strong>{group.code === 'CAPACITY_UNVERIFIED' ? `${group.technology} · ${group.network} · ${group.findings.length} Anschlüsse ohne Kapazitätsnachweis` : group.findings[0].object_name}</strong>
+        <strong>{['CAPACITY_UNVERIFIED','CAPACITY_DEVICE_EVIDENCE_MISSING'].includes(group.code) ? `${group.technology} · ${group.network} · ${group.findings.length} Anschlüsse ${group.code === 'CAPACITY_DEVICE_EVIDENCE_MISSING' ? 'mit offenem Gerätenachweis' : 'ohne Kapazitätsnachweis'}` : group.findings[0].object_name}</strong>
         <p>{group.findings[0].message}</p>
         {group.code === 'CAPACITY_UNVERIFIED' && (['i2c', 'spi'].includes(group.technology.toLowerCase())
           ? <><p>Busfrequenz und Gerätenachweis werden getrennt geprüft. Nach Übernahme des Modells die betroffenen Anschlüsse unter „Gerätespezifische Zeitdaten“ bearbeiten. Master, Adresse/Chip-Select, Transferumfang und Zeitgrenzen benötigen Geräteunterlagen; sie werden nicht aus Standardwerten erfunden.</p>
             <a className="button secondary tiny" href={`/studio/engineering?resource=hardware-interfaces&project=${encodeURIComponent(projectId)}`}>Geräteanschlüsse und Zeitdaten prüfen</a></>
           : <><p>Kapazitätsprüfung erfolgt mit dem Modell dieser Technologie nach Bestätigung und Übernahme der Parameter. Modellfreigabe bestätigt keine Kapazität.</p>
             <a className="button secondary tiny" href={parameterReviewHref(projectId, group.technology, proposal.proposal_id)}>Technologieparameter bearbeiten und bestätigen</a></>)}
-        {group.code === 'CAPACITY_UNVERIFIED' ? <LazyDetails title={`Alle betroffenen Objekte und Befunde (${group.findings.length})`}>{() => <FindingGroupDetails findings={group.findings} />}</LazyDetails>
+        {group.code === 'CAPACITY_DEVICE_EVIDENCE_MISSING' && <><p>Hinweis · Blockiert die Simulation nicht. Gerätebelege bleiben für eine reale Implementierung offen.</p><a className="button secondary tiny" href={parameterReviewHref(projectId, group.technology, proposal.proposal_id)}>Gespeicherte Simulationsauslegung und Nachweise prüfen</a></>}
+        {['CAPACITY_UNVERIFIED','CAPACITY_DEVICE_EVIDENCE_MISSING'].includes(group.code) ? <LazyDetails title={`Alle betroffenen Objekte und Befunde (${group.findings.length})`}>{() => <FindingGroupDetails findings={group.findings} />}</LazyDetails>
           : group.findings.map((finding, index) => <div key={index}>
             <p role={finding.severity === 'WARNING' ? 'status' : 'alert'}>{finding.message}</p>
             <ContextLinks refs={[finding.source, ...(finding.destinations ?? [])].filter(endpoint => endpoint && typeof endpoint.node_id === 'string').map(endpoint => ({ object_type: 'HardwareNode', id: String(endpoint!.node_id), name: 'Betroffenes Gerät öffnen' }))} projectId={projectId} />
@@ -193,6 +203,7 @@ function ProposalReview({ initial, projectId, wizardReview = false, onProposalCh
       <details><summary>Prüfevidenz</summary><Value value={{ capacity_snapshot_id: proposal.dependent_results.capacity_snapshot_id, preflight_snapshot_id: proposal.dependent_results.preflight_snapshot_id }} /></details>
     </section> : proposal.status === "APPLIED" && <p>{proposal.canonical_count ?? proposal.canonical_ids.length} Modellobjekte bestätigt.</p>}
     {error && <p role="alert">{error}</p>}
+    {loadError && <p role="alert">{loadError}</p>}
   </section>;
 }
 

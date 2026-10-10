@@ -3,7 +3,7 @@ import { CommunicationRepairAgent } from "@/features/communication/ui/communicat
 import { CommunicationWarningIndicator } from "@/features/communication/ui/communication-warning";
 import { communicationWarnings, communicationWarningText, type CommunicationWarnings } from "@/features/communication/lib/communication-warnings";
 import { getCatalog } from "@/shared/api/api";
-import { localEvidenceFieldRequired, technologyKey } from "@/features/communication/lib/technology-parameters";
+import { localEvidenceFieldRequired, numericParameterValue, technologyKey, technologyParameterValues, technologyRateParameters } from "@/features/communication/lib/technology-parameters";
 import type { Technology } from "@/shared/api/types";
 import { listRoutes } from "@/features/routing/lib/routing-api";
 import { physicalBindingStatus } from "@/shared/lib/interface-status";
@@ -1999,6 +1999,14 @@ function CreateForm({
   const [hardwareInterfaces, setHardwareInterfaces] = useState<EngineeringObject[]>([]);
   const [parentId, setParentId] = useState("");
   const [loadingParents, setLoadingParents] = useState(false);
+  const [createTechnology, setCreateTechnology] = useState('');
+  const [createProfiles, setCreateProfiles] = useState<Technology[]>([]);
+  const createProfile = createProfiles.find(profile => [profile.id, ...(profile.aliases ?? [])]
+    .some(id => technologyKey(id) === technologyKey(createTechnology)));
+  const createRateFields = createProfile ? technologyRateParameters(createProfile) : [];
+  const createRateDefaults = createProfile ? technologyParameterValues({}, createProfile) : {};
+  const reviewedRates = (reviewValues.capabilities as {simulation_parameter_assumptions?:Record<string,{values:Record<string,unknown>}>} | undefined)
+    ?.simulation_parameter_assumptions?.[createProfile?.id ?? '']?.values ?? {};
   const hierarchy = RESOURCE_HIERARCHY[resource];
   const objectType = RESOURCE_TO_OBJECT_TYPE[resource];
   const references = useMemo<Partial<Record<EngineeringResource, EngineeringObject[]>>>(() => (
@@ -2074,6 +2082,17 @@ function CreateForm({
     return value === null || value === "" ? null : Number(value);
   }
 
+  useEffect(() => {
+    if (resource !== 'hardware-interfaces') return;
+    let active = true;
+    getCatalog({strict:true}).then(catalog => {
+      if (active) setCreateProfiles(catalog.domains.flatMap(domain => domain.technologies));
+    }).catch(error => { if (active) setFormError(String(error)); });
+    return () => { active = false; };
+  }, [resource]);
+
+  const rateInputName = (index: number) => index === 0 ? 'bitrate' : index === 1 ? 'data_bitrate' : `profile_rate_${index}`;
+
   function payloadFrom(form: FormData) {
     const parent = parents.find((item) => item.id === parentId);
     let normalizedName: unknown = form.get("name");
@@ -2097,13 +2116,13 @@ function CreateForm({
     }
     if (resource === "hardware-interfaces") {
       payload.hardware_node_id = parentId;
-      payload.technology = form.get("technology") || "CAN_FD";
+      payload.technology = createTechnology;
       payload.controller_ref = form.get("controller_ref") || null;
       payload.physical_port_ref = form.get("physical_port_ref") || null;
       payload.channel_index = optionalFormNumber(form, "channel_index");
       payload.network_ref = form.get("network_ref") || null;
-      payload.bitrate = optionalFormNumber(form, "bitrate");
-      payload.data_bitrate = optionalFormNumber(form, "data_bitrate");
+      payload.bitrate = null;
+      payload.data_bitrate = null;
       payload.status = form.get("status") || "UNMAPPED";
       payload.message_refs = [];
       payload.capabilities = {
@@ -2111,6 +2130,18 @@ function CreateForm({
         multiple_messages_allowed: true,
         multiple_functions_allowed: true,
       };
+      if (createProfile && createRateFields.length) {
+        const values = Object.fromEntries(createRateFields.map((field, index) =>
+          [field.key, numericParameterValue(field, String(form.get(rateInputName(index)) ?? ''))]));
+        payload.capabilities = {...payload.capabilities as Record<string,unknown>, simulation_parameter_assumptions: {
+          [createProfile.id]: {values, provenance: Object.fromEntries(createRateFields.map(field => [field.key, {
+            ...field.simulation_default_provenance,
+            source:'NIS_SIMULATION_ASSUMPTION',status:'ASSUMED',technology:createProfile.id,hardware_evidence:false,
+            basis: values[field.key] === createRateDefaults[field.key] ? field.simulation_default_provenance?.basis : 'USER_EDITED_SIMULATION_ASSUMPTION',
+            value: values[field.key],
+          }]))},
+        }};
+      }
       payload.static_load = optionalFormNumber(form, "static_load");
       payload.runtime_load = optionalFormNumber(form, "runtime_load");
       payload.target_load_limit = optionalFormNumber(form, "target_load_limit");
@@ -2160,8 +2191,13 @@ function CreateForm({
   }
 
   function openStep(nextStep: number) {
+    if (resource === 'hardware-interfaces' && nextStep > 1 && !createProfile) {
+      setFormError('Bitte eine Technologie auswählen und das zugehörige Profil laden lassen.');
+      return;
+    }
     if (nextStep === WIZARD_STEPS.length - 1 && formRef.current) {
-      setReviewValues(payloadFrom(new FormData(formRef.current)));
+      try { setReviewValues(payloadFrom(new FormData(formRef.current))); }
+      catch (error) { setFormError(String(error)); return; }
     }
     setStep(nextStep);
   }
@@ -2170,6 +2206,10 @@ function CreateForm({
     event.preventDefault();
     if (step < WIZARD_STEPS.length - 1) {
       openStep(step + 1);
+      return;
+    }
+    if (resource === 'hardware-interfaces' && !createProfile) {
+      setFormError('Das passende Technologieprofil muss vor dem Anlegen geladen sein.');
       return;
     }
     setSubmitting(true);
@@ -2330,8 +2370,9 @@ function CreateForm({
       {resource === "hardware-interfaces" && (
         <div className="field">
           <label htmlFor="technology">Technologie</label>
-          <select id="technology" name="technology" required>
-            {(schema?.interface_types ?? ["CAN_FD"]).map((type) => (
+          <select id="technology" name="technology" onChange={event => {setCreateTechnology(event.target.value);setFormError('');}} required value={createTechnology}>
+            <option value="">Technologie auswählen</option>
+            {(schema?.interface_types ?? []).map((type) => (
               <option key={type} value={type}>
                 {type}
               </option>
@@ -2352,12 +2393,17 @@ function CreateForm({
       {resource === "hardware-interfaces" && (
         <>
         <div className="form-grid three">
-          <div className="field"><label htmlFor="controller_ref">Controller</label><input id="controller_ref" name="controller_ref" placeholder="CAN0" type="text" /></div>
+          <div className="field"><label htmlFor="controller_ref">Controller</label><input id="controller_ref" name="controller_ref" placeholder="Controllerkennung" type="text" /></div>
           <div className="field"><label htmlFor="physical_port_ref">Physischer Port</label><input id="physical_port_ref" name="physical_port_ref" placeholder="Port 1" type="text" /></div>
           <div className="field"><label htmlFor="channel_index">Kanal</label><input defaultValue="1" id="channel_index" min="1" name="channel_index" type="number" /></div>
-          <div className="field"><label htmlFor="network_ref">Netzwerk / Bussegment</label><input id="network_ref" name="network_ref" placeholder="CAN_FD_A" type="text" /></div>
-          <div className="field"><label htmlFor="bitrate">Bitrate</label><input defaultValue="500000" id="bitrate" min="1" name="bitrate" step="1" type="number" /></div>
-          <div className="field"><label htmlFor="data_bitrate">Data Bitrate</label><input defaultValue="2000000" id="data_bitrate" min="1" name="data_bitrate" step="1" type="number" /></div>
+          <div className="field"><label htmlFor="network_ref">Netzwerk / Bussegment</label><input id="network_ref" name="network_ref" placeholder="Netzkennung" type="text" /></div>
+          {createRateFields.map((field,index) => <div className="field" key={`${createTechnology}:${field.key}`}>
+            <label htmlFor={rateInputName(index)}>{field.label} ({field.unit ?? 'bit/s'})</label>
+            <small>{field.simulation_default_provenance?.basis.startsWith('COMPARABLE_') ? 'VERGLEICHSVORSCHLAG' : 'SIMULATIONSANNAHME'} · Kein Gerätenachweis</small>
+            <input defaultValue={String(createRateDefaults[field.key] ?? '')} id={rateInputName(index)} min={field.min ?? 1}
+              max={field.max} name={rateInputName(index)} required step="1" type="number" />
+          </div>)}
+          {!createRateFields.length && <p>Dieses Profil besitzt keine eigenständige Busgeschwindigkeit. Die Transport- und Geräteparameter werden am Anschluss konfiguriert.</p>}
           <div className="field"><label htmlFor="target_load_limit">Ziel-Last (%)</label><input defaultValue="60" id="target_load_limit" min="0" name="target_load_limit" step="any" type="number" /></div>
           <div className="field"><label htmlFor="warning_load_limit">Warn-Last (%)</label><input defaultValue="75" id="warning_load_limit" min="0" name="warning_load_limit" step="any" type="number" /></div>
           <div className="field"><label htmlFor="hard_load_limit">Harte Last (%)</label><input defaultValue="90" id="hard_load_limit" min="0" name="hard_load_limit" step="any" type="number" /></div>
@@ -2436,6 +2482,7 @@ function CreateForm({
       </div>
 
       <div className="proposal-wizard-review" hidden={step !== 3}>
+        {resource === 'hardware-interfaces' && createRateFields.length > 0 && <p>SIMULATIONSANNAHME · {createRateFields.map(field => `${field.label}: ${String(reviewedRates[field.key] ?? '')} ${field.unit ?? 'bit/s'}`).join(' · ')}</p>}
         <div className={missing.length ? "proposal-wizard-verdict invalid" : "proposal-wizard-verdict valid"}>
           <strong>{missing.length ? "Noch nicht vollständig" : "Bereit zum Anlegen"}</strong>
           <span>{missing.length ? `${missing.length} Pflichtfeld(er) fehlen.` : "Alle bekannten Pflichtfelder sind gefüllt."}</span>
@@ -2449,9 +2496,9 @@ function CreateForm({
       <footer>
         <button className="button secondary" disabled={step === 0 || submitting} onClick={() => openStep(Math.max(0, step - 1))} type="button">Zurück</button>
         {step < WIZARD_STEPS.length - 1 ? (
-          <button key="next" className="button primary" disabled={loadingParents} onClick={() => openStep(Math.min(WIZARD_STEPS.length - 1, step + 1))} type="button">Weiter</button>
+          <button key="next" className="button primary" disabled={loadingParents || resource === 'hardware-interfaces' && step === 1 && !createProfile} onClick={() => openStep(Math.min(WIZARD_STEPS.length - 1, step + 1))} type="button">Weiter</button>
         ) : (
-          <button key="create" className="button primary" disabled={submitting || missing.length > 0 || Boolean(hierarchy && !parentId)} type="submit">{submitting ? "Wird angelegt …" : "Objekt anlegen"}</button>
+          <button key="create" className="button primary" disabled={submitting || missing.length > 0 || Boolean(hierarchy && !parentId) || resource === 'hardware-interfaces' && !createProfile} type="submit">{submitting ? "Wird angelegt …" : "Objekt anlegen"}</button>
         )}
       </footer>
     </form>
@@ -3430,15 +3477,19 @@ function EditObjectForm({
   const localFields = technologyProfile?.local_timing_schema ?? [];
   const previousLocal = isHardwareNetworkInterface(item) && technologyKey(editedTechnology) === technologyKey(originalTechnology)
     ? (item.capabilities.local_timing_evidence ?? {}) as Record<string, unknown> : {};
-  const clockField = technologyProfile?.parameter_schema?.find(field => field.key === 'bitrate' || field.key === 'arbitration_bitrate');
-  const dataClockField = technologyProfile?.parameter_schema?.find(field => field.key === 'data_bitrate');
+  const rateFields = technologyProfile ? technologyRateParameters(technologyProfile) : [];
+  const clockField = rateFields[0];
+  const dataClockField = rateFields[1];
+  const profileDefaults = technologyProfile ? technologyParameterValues({},technologyProfile) : {};
   const localAssumptions = isHardwareNetworkInterface(item)
     ? ((item.capabilities.simulation_parameter_assumptions as Record<string, {values?: Record<string, unknown>}> | undefined)
       ?.[technologyProfile?.id ?? '']?.values ?? {}) : {};
   const localCandidate = (key: string) => {
     const field = localFields.find(field => field.key === key);
     const saved = localAssumptions[key];
-    return saved !== undefined && saved !== null && saved !== '' ? saved : field?.default ?? field?.simulation_default;
+    const native = technologyProfile?.parameter_schema?.find(candidate => candidate.native_key === key);
+    return saved !== undefined && saved !== null && saved !== '' ? saved
+      : native ? profileDefaults[native.key] : field?.default ?? field?.simulation_default;
   };
   const localValue = (key: string) => previousLocal[key] === undefined || previousLocal[key] === null || previousLocal[key] === ''
     ? localCandidate(key) : previousLocal[key];
@@ -3689,8 +3740,8 @@ function EditObjectForm({
           <div className="field"><label htmlFor="edit_physical_port_ref">Physischer Port</label><input defaultValue={item.physical_port_ref ?? ""} id="edit_physical_port_ref" name="edit_physical_port_ref" type="text" /></div>
           <div className="field"><label htmlFor="edit_channel_index">Kanal</label><input defaultValue={item.channel_index ?? ""} id="edit_channel_index" min="1" name="edit_channel_index" type="number" /></div>
           <div className="field"><label htmlFor="edit_network_ref">Netzwerk / Bussegment</label><input defaultValue={item.network_ref ?? ""} id="edit_network_ref" name="edit_network_ref" type="text" /></div>
-          {clockField && <div className="field"><label htmlFor="edit_bitrate">{clockField.label}</label><input key={editedTechnology} defaultValue={String(technologyKey(editedTechnology) === technologyKey(originalTechnology) ? item.bitrate ?? localAssumptions[clockField.key] ?? clockField.default ?? clockField.simulation_default ?? "" : localAssumptions[clockField.key] ?? clockField.default ?? clockField.simulation_default ?? "")} id="edit_bitrate" min={clockField.min ?? 1} max={clockField.max} name="edit_bitrate" step="1" type="number" onChange={() => setLocalConfirmation({technology: editedTechnology, confirmed: false})} /></div>}
-          {dataClockField && <div className="field"><label htmlFor="edit_data_bitrate">{dataClockField.label}</label><input key={editedTechnology} defaultValue={String(technologyKey(editedTechnology) === technologyKey(originalTechnology) ? item.data_bitrate ?? localAssumptions[dataClockField.key] ?? dataClockField.default ?? dataClockField.simulation_default ?? "" : localAssumptions[dataClockField.key] ?? dataClockField.default ?? dataClockField.simulation_default ?? "")} id="edit_data_bitrate" min={dataClockField.min ?? 1} max={dataClockField.max} name="edit_data_bitrate" step="1" type="number" onChange={() => setLocalConfirmation({technology: editedTechnology, confirmed: false})} /></div>}
+          {clockField && <div className="field"><label htmlFor="edit_bitrate">{clockField.label}</label><input key={editedTechnology} defaultValue={String(technologyKey(editedTechnology) === technologyKey(originalTechnology) ? item.bitrate ?? localAssumptions[clockField.key] ?? profileDefaults[clockField.key] ?? "" : localAssumptions[clockField.key] ?? profileDefaults[clockField.key] ?? "")} id="edit_bitrate" min={clockField.min ?? 1} max={clockField.max} name="edit_bitrate" step="1" type="number" onChange={() => setLocalConfirmation({technology: editedTechnology, confirmed: false})} /></div>}
+          {dataClockField && <div className="field"><label htmlFor="edit_data_bitrate">{dataClockField.label}</label><input key={editedTechnology} defaultValue={String(technologyKey(editedTechnology) === technologyKey(originalTechnology) ? item.data_bitrate ?? localAssumptions[dataClockField.key] ?? profileDefaults[dataClockField.key] ?? "" : localAssumptions[dataClockField.key] ?? profileDefaults[dataClockField.key] ?? "")} id="edit_data_bitrate" min={dataClockField.min ?? 1} max={dataClockField.max} name="edit_data_bitrate" step="1" type="number" onChange={() => setLocalConfirmation({technology: editedTechnology, confirmed: false})} /></div>}
           {profileError && <p role="alert">Technologieprofil konnte nicht geladen werden: {profileError}</p>}
           <div className="field"><label htmlFor="edit_target_load_limit">Ziel-Last (%)</label><input defaultValue={item.target_load_limit ?? ""} id="edit_target_load_limit" min="0" name="edit_target_load_limit" step="any" type="number" /></div>
           <div className="field"><label htmlFor="edit_warning_load_limit">Warn-Last (%)</label><input defaultValue={item.warning_load_limit ?? ""} id="edit_warning_load_limit" min="0" name="edit_warning_load_limit" step="any" type="number" /></div>

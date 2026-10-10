@@ -4,12 +4,33 @@ type Parameters = Record<string, unknown>;
 export type DeclaredNetwork = Parameters & { id: string; name?: string; technology?: string };
 const record = (value: unknown): Parameters => value && typeof value === 'object' && !Array.isArray(value) ? value as Parameters : {};
 const present = (value: unknown) => value === '' || value === null ? undefined : value;
+const placeholderReference = (field: TechnologyParameterField, value: unknown) =>
+  field.value_role && field.value_role !== 'CONFIGURATION' && typeof value === 'string' && /^simulation:[^:]+:[^:]+$/.test(value);
+
+/** The native profile owns rates; everyday scenario controls precede details. */
+export function commonTechnologyParameters(technology: Technology): TechnologyParameterField[] {
+  const schema = technology.parameter_schema ?? [];
+  const keys = [...technologyRateParameters(technology).map(field => field.key),
+    'can_fd_brs', 'payload_bytes', 'cycle_ms', 'deadline_ms', 'duration_s', 'seed'];
+  return [...new Set(keys)].map(key => schema.find(field => field.key === key))
+    .filter((field): field is TechnologyParameterField => !!field && (!field.value_role || field.value_role === 'CONFIGURATION'));
+}
 export const technologyKey = (value: unknown) => {
   const key = String(value ?? '').toLowerCase().replace(/[ -]/g, '_');
   return ({automotive_ethernet:'ethernet',canfd:'can_fd',some_ip:'someip'} as Record<string,string>)[key] ?? key;
 };
 const matchingProof = (proof: Parameters, technologyId: string) => ['technology', 'technology_id', 'protocol']
   .every(key => !proof[key] || technologyKey(proof[key]) === technologyKey(technologyId));
+const commonNetworkParameter = (parameters: Parameters, technologyId: string, key: string) => {
+  const networks = (Array.isArray(parameters.networks) ? parameters.networks : []).map(record)
+    .filter(item => technologyKey(item.technology) === technologyKey(technologyId));
+  return networks.length && networks.every(item => {
+    const proof = record(record(item.parameter_provenance)[key]);
+    return present(item[key]) !== undefined && item[key] === networks[0][key]
+      && proof.source === 'USER_CONFIRMED' && proof.status === 'CONFIRMED'
+      && proof.value === item[key] && matchingProof(proof, technologyId);
+  }) ? networks[0] : undefined;
+};
 
 /** The profile owns device requirements; a controller port is not a transaction. */
 export function localEvidenceFieldRequired(
@@ -37,6 +58,30 @@ export function conditionalParameterDefault(field: Pick<TechnologyParameterField
   return matches.length && matches.every(item => item.value === matches[0].value) ? matches[0].value : undefined;
 }
 
+/** Display decimal SI units without changing the profile's canonical bit/s value. */
+export function formatBitrate(value: number): string {
+  const [power, unit] = value >= 1e9 ? [9, 'Gbit/s'] : value >= 1e6 ? [6, 'Mbit/s']
+    : value >= 1e3 ? [3, 'kbit/s'] : [0, 'bit/s'];
+  if (!Number.isFinite(value)) return `${value} ${unit}`;
+  // Shift the canonical decimal text, avoiding a second floating-point rounding.
+  const [mantissa, exponent] = String(value).split('e');
+  const [whole, fraction = ''] = mantissa.replace('-', '').split('.');
+  const digits = whole + fraction;
+  const position = whole.length + Number(exponent ?? 0) - power;
+  const integer = position <= 0 ? '0' : digits.slice(0, position).padEnd(position, '0');
+  const decimal = (position <= 0 ? '0'.repeat(-position) + digits : digits.slice(position)).replace(/0+$/, '');
+  return `${value < 0 ? '-' : ''}${integer}${decimal ? ',' + decimal : ''} ${unit}`;
+}
+
+/** Decimal SI prefixes are presentation only; never persist a decorated rate. */
+export function parseBitrate(text: string): number {
+  const match = text.trim().match(/^([+-]?\d+)(?:[.,](\d+))?\s*(bit\/s|kbit\/s|Mbit\/s|Gbit\/s)?$/);
+  if (!match) return Number(text); // Retain raw numeric input, including scientific notation.
+  const power = { 'bit/s':0, 'kbit/s':3, 'Mbit/s':6, 'Gbit/s':9 }[match[3] ?? 'bit/s']!;
+  // Parse once into the canonical number instead of multiplying a rounded mantissa.
+  return Number(`${match[1]}.${match[2] ?? '0'}e${power}`);
+}
+
 /** Parse a profile field without rounding protocol counters or durations. */
 export function numericParameterValue(field: TechnologyParameterField, entered: string): number | string | null {
   const text = entered.trim();
@@ -51,12 +96,31 @@ export function numericParameterValue(field: TechnologyParameterField, entered: 
       || field.decimal_max !== undefined && integer > BigInt(field.decimal_max)) throw new Error(`${field.label}: Der Wert liegt außerhalb des gültigen Bereichs.`);
     return integer.toString();
   }
-  const numeric = Number(text);
+  const numeric = field.unit === 'bit/s' ? parseBitrate(text) : Number(text);
   if (!Number.isFinite(numeric) || field.integer && !Number.isSafeInteger(numeric)
     || field.min !== undefined && numeric < field.min || field.max !== undefined && numeric > field.max) {
     throw new Error(`${field.label}: Der Wert liegt außerhalb des gültigen Bereichs.`);
   }
   return numeric;
+}
+
+export function technologyParameterApplicable(field: TechnologyParameterField, values: Parameters): boolean {
+  return !(field.not_applicable_when ?? []).some(when => Object.entries(when).every(([key, value]) => values[key] === value));
+}
+
+/** Bind native phase names to their exact exported fields, without a protocol fallback. */
+export function technologyRateParameters(technology: Technology): TechnologyParameterField[] {
+  const schema = technology.parameter_schema ?? [];
+  const model = technology.rate_model?.fields ?? [];
+  const names = model.length ? model : technology.simulation_defaults?.rate_fields ?? [];
+  return names.length ? names.map(name => schema.find(field => (field.native_key ?? field.key) === name))
+    .filter((field): field is TechnologyParameterField => !!field)
+    : schema.filter(field => field.scope === 'network' && field.unit === 'bit/s');
+}
+
+function resolvedProfileProposal(field: TechnologyParameterField): boolean {
+  return field.simulation_default !== undefined && !!field.simulation_default_provenance
+    && !['SCHEMA_SIMULATION_EXAMPLE', 'REGISTERED_PARAMETER_DEFAULT'].includes(field.simulation_default_provenance.basis);
 }
 
 /** Catalog defaults remain proposals; only matching saved values may override them. */
@@ -67,16 +131,21 @@ export function technologyParameterValues(parameters: Parameters, technology: Te
   const saved = record(scoped.values);
   const assumptions = record(record(record(parameters.simulation_parameter_assumptions)[technology.id]).values);
   const values = Object.fromEntries((technology.parameter_schema ?? []).map(field => {
-    const supplied = saved[field.key] ?? global[field.key];
-    const value = present(supplied);
-    const proof = record(record(scoped.provenance)[field.key] ?? record(parameters.parameter_provenance)[field.key]);
+    const stored = saved[field.key] ?? global[field.key];
+    const storedProof = record(record(scoped.provenance)[field.key] ?? record(parameters.parameter_provenance)[field.key]);
+    const supplied = placeholderReference(field, stored) && storedProof.status !== 'CONFIRMED'
+      && storedProof.source !== 'EXPLICIT_USER_SPECIFICATION' ? undefined : stored;
+    const common = field.scope === 'network' ? commonNetworkParameter(parameters, technology.id, field.key) : undefined;
+    const value = present(common ? common[field.key] : supplied);
+    const proof = common ? record(record(common.parameter_provenance)[field.key]) : record(record(scoped.provenance)[field.key] ?? record(parameters.parameter_provenance)[field.key]);
     const rate = field.unit === 'bit/s' && ['bitrate', 'arbitration_bitrate', 'data_bitrate'].includes(field.key);
     const matching = matchingProof(proof, technology.id);
     const confirmed = matching && (proof.status === 'CONFIRMED' && proof.source === 'USER_CONFIRMED' && proof.value === value || proof.source === 'EXPLICIT_USER_SPECIFICATION' && proof.value === value);
     const invalidRate = rate && (typeof value !== 'number' || !Number.isFinite(value) || value <= 0 || field.min !== undefined && value < field.min || field.max !== undefined && value > field.max || field.allowed_bps?.length && !field.allowed_bps.includes(value));
     const oldProposal = rate && (proof.status === 'REVIEW_REQUIRED' || proof.source === 'TECHNOLOGY_DEFAULT');
-    const assumption = present(assumptions[field.key]);
-    const fallback = assumption ?? present(field.default) ?? present(proposed[field.key]) ?? field.simulation_default;
+    const assumption = placeholderReference(field, assumptions[field.key]) ? undefined : present(assumptions[field.key]);
+    const preset = resolvedProfileProposal(field);
+    const fallback = assumption ?? (preset ? field.simulation_default : present(field.default) ?? present(proposed[field.key]) ?? field.simulation_default);
     return [field.key, !matching ? fallback : confirmed ? value : assumption ?? (invalidRate || oldProposal ? fallback : value ?? fallback)];
   }));
   // Dependencies may appear later in the schema. Iterate only proposed fields;
@@ -86,13 +155,15 @@ export function technologyParameterValues(parameters: Parameters, technology: Te
     let changed = false;
     for (const field of schema) {
       if (!field.conditional_defaults?.length) continue;
+      if (field.scope === 'network' && commonNetworkParameter(parameters, technology.id, field.key)) continue;
       const proof = record(record(scoped.provenance)[field.key] ?? record(parameters.parameter_provenance)[field.key]);
       const explicit = matchingProof(proof, technology.id) && proof.value === values[field.key]
         && (proof.source === 'EXPLICIT_USER_SPECIFICATION' || proof.source === 'USER_CONFIRMED' && proof.status === 'CONFIRMED');
       const oldSuggestion = proof.status === 'REVIEW_REQUIRED' && /DEFAULT|PROPOSAL/.test(String(proof.source || ''));
       const savedAssumption = present(assumptions[field.key]) !== undefined;
       const savedActual = saved[field.key] ?? global[field.key];
-      if (!explicit && !savedAssumption && (oldSuggestion || savedActual === undefined || savedActual === null || savedActual === '')) {
+      if (!explicit && !savedAssumption && !resolvedProfileProposal(field)
+          && (oldSuggestion || savedActual === undefined || savedActual === null || savedActual === '')) {
         const suggestion = conditionalParameterDefault(field, values) ?? assumptions[field.key] ?? field.simulation_default;
         if (values[field.key] !== suggestion) { values[field.key] = suggestion; changed = true; }
       }
@@ -107,6 +178,7 @@ export function technologyParameterUnverified(parameters: Parameters, key: strin
   if (key === 'technology') return technologyKey(parameters.technology) !== technologyKey(technologyId)
     && !Object.keys(record(scoped.values)).length
     && !Object.keys(record(record(record(parameters.simulation_parameter_assumptions)[technologyId]).values)).length;
+  if (commonNetworkParameter(parameters, technologyId, key)) return false;
   const value = record(scoped.values)[key];
   const proof = record(record(scoped.provenance)[key]);
   if (value !== undefined && value !== null && matchingProof(proof, technologyId) && proof.source === 'USER_CONFIRMED' && proof.status === 'CONFIRMED' && proof.value === value) return false;
@@ -137,14 +209,16 @@ export function confirmTechnologyParameters(parameters: Parameters, technology: 
     reason: 'NOT_IN_CURRENT_TECHNOLOGY_SCHEMA',
   } : oldRetired;
   const assumptionFields = new Set((technology.parameter_schema ?? []).filter(field =>
-    options.preserveSimulationAssumptions && field.default === undefined && field.simulation_default !== undefined
+    options.preserveSimulationAssumptions && field.simulation_default != null
+    && technologyParameterApplicable(field, values)
+    && (field.default === undefined || resolvedProfileProposal(field))
     && technologyParameterUnverified(parameters, field.key, technology.id)).map(field => field.key));
   const assumptions = Object.fromEntries((technology.parameter_schema ?? []).filter(field => assumptionFields.has(field.key))
     .map(field => [field.key, values[field.key]]).filter(([, value]) => value !== undefined && value !== null && value !== ''));
   const assumptionState = { ...record(parameters.simulation_parameter_assumptions), [technology.id]: {
     values: assumptions, provenance: Object.fromEntries(Object.entries(assumptions).map(([key, value]) =>
       [key, {source:'NIS_SIMULATION_ASSUMPTION', status:'ASSUMED', technology:technology.id, hardware_evidence:false, value}])) }};
-  const selected = Object.fromEntries((technology.parameter_schema ?? []).filter(field => !assumptionFields.has(field.key)).map(field => [field.key, values[field.key]])
+  const selected = Object.fromEntries((technology.parameter_schema ?? []).filter(field => !assumptionFields.has(field.key) && technologyParameterApplicable(field, values)).map(field => [field.key, values[field.key]])
     .filter(([, value]) => value !== undefined && value !== null && value !== ''));
   if (selected.bitrate === undefined && selected.data_bitrate !== undefined) selected.bitrate = selected.data_bitrate;
   const provenance = Object.fromEntries(Object.entries(selected).map(([key, value]) => [key, { source: 'USER_CONFIRMED', status: 'CONFIRMED', value }]));
@@ -161,6 +235,13 @@ export function confirmTechnologyParameters(parameters: Parameters, technology: 
   for (const key of assumptionFields) {
     delete result[key];
     delete record(result.parameter_provenance)[key];
+  }
+  for (const field of technology.parameter_schema ?? []) {
+    if (placeholderReference(field, result[field.key]) && technologyParameterUnverified(parameters, field.key, technology.id)
+        && present(values[field.key]) === undefined) {
+      delete result[field.key];
+      delete record(result.parameter_provenance)[field.key];
+    }
   }
   if (parameters.technology) {
     const previous = record(record(record(parameters.technology_parameters)[technologyKey(parameters.technology)]).values);
@@ -207,8 +288,24 @@ export function groupPreflightFindings(findings: ReviewFinding[]): Array<{ id: s
 
 
 export type ParameterFinding = ReviewFinding & { severity?: string; technology?: string; network_id?: string;
+  simulation_parameters_usable?: boolean; hardware_evidence?: boolean;
   network_name?: string; node_name?: string; object_name?: string; missing_fields?: string[]; parameter_fields?: string[];
   parameter_findings?: Array<{parameter?: string; code?: string; message?: string}> };
+
+/** Device qualification is separate from deficiencies in an executable scenario. */
+export function simulationParameterFindings(findings: ParameterFinding[]): ParameterFinding[] {
+  return findings.filter(finding => finding.code !== 'CAPACITY_DEVICE_EVIDENCE_MISSING');
+}
+
+/** Reconfirmation can repair a missing native rate, never missing device evidence. */
+export function networkRateReviewTargets(parameters: Parameters, technology: Technology, findings: ParameterFinding[]): DeclaredNetwork[] {
+  const rates = new Set((technology.parameter_schema ?? []).filter(field => field.scope === 'network' && field.unit === 'bit/s').map(field => field.key));
+  const ids = new Set(simulationParameterFindings(findings).filter(finding =>
+    technologyKey(finding.technology) === technologyKey(technology.id) && finding.code === 'CAPACITY_UNVERIFIED'
+    && finding.parameter_fields?.some(key => rates.has(key))).map(finding => finding.network_id));
+  return ((parameters.networks ?? []) as DeclaredNetwork[]).filter(network =>
+    technologyKey(network.technology) === technologyKey(technology.id) && ids.has(network.id));
+}
 
 /** A saved scenario is still not hardware evidence, but it is no longer an unsaved draft. */
 export function parameterValueStatus(parameters: Parameters, key: string, technologyId: string) {

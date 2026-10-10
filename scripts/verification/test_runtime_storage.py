@@ -1,4 +1,4 @@
-"""48-hour retention for owned pytest runtimes, protected by process-held locks."""
+"""Remove completed pytest runtimes on next start; protect active and pinned data."""
 from __future__ import annotations
 
 import sys as _entry_sys
@@ -16,7 +16,7 @@ PREFIX = "nis-test-runtime-"
 MARKER = ".nis-test-runtime.json"
 LOCK = ".nis-test-runtime.lock"
 SCHEMA = "nis-test-runtime-v1"
-RETENTION_SECONDS = 48 * 60 * 60
+RETENTION_SECONDS = 48 * 60 * 60  # Grace period for crashed, unfinished runs only.
 
 
 def _linked(path: Path) -> bool:
@@ -74,14 +74,16 @@ class RuntimeLease:
 
 
 def cleanup_runtime_dirs(parent: Path, *, now: float | None = None) -> dict:
-    """Delete expired owned trees only; foreign, linked and locked paths are kept.
+    """Delete completed owned trees on the next test start, regardless of age.
 
-    The latest directory/file write (including the FINISHED marker) starts the
-    retention clock. A RUNNING marker with a released lock is a crashed session.
+    Foreign, linked, locked and explicitly retained trees are kept. A marker's
+    ``retain: true`` pins needed diagnostic evidence. A RUNNING marker with a
+    released lock is a crashed session; its latest write starts a 48-hour grace
+    period. Product traces and knowledge stores are outside this owned root.
     """
     parent = _parent(parent)
     cutoff = (time.time() if now is None else now) - RETENTION_SECONDS
-    result = {"deleted": [], "active": [], "recent": [], "unmanaged": [], "errors": []}
+    result = {"deleted": [], "active": [], "recent": [], "retained": [], "unmanaged": [], "errors": []}
     for runtime in parent.iterdir():
         if not runtime.name.startswith(PREFIX):
             continue
@@ -102,8 +104,12 @@ def cleanup_runtime_dirs(parent: Path, *, now: float | None = None) -> dict:
                 continue
             data = json.loads(marker.read_text(encoding="utf-8"))
             if (not isinstance(data, dict) or data.get("schema") != SCHEMA
-                    or data.get("directory") != runtime.name):
+                    or data.get("directory") != runtime.name
+                    or data.get("state") not in ("RUNNING", "FINISHED")):
                 result["unmanaged"].append(runtime.name)
+                continue
+            if data.get("retain") is True:
+                result["retained"].append(runtime.name)
                 continue
             files, directories = [], [runtime]
             newest = runtime.stat().st_mtime
@@ -118,7 +124,7 @@ def cleanup_runtime_dirs(parent: Path, *, now: float | None = None) -> dict:
                         files.append(child)
                     else:
                         raise ValueError("Non-regular child; whole runtime retained.")
-            if newest >= cutoff:
+            if data["state"] != "FINISHED" and newest >= cutoff:
                 result["recent"].append(runtime.name)
                 continue
             # Validate the complete tree before deleting anything. Keep the lock

@@ -45,7 +45,7 @@ def test_lin_rate_profile_accepts_real_rate_and_blocks_can_fd_rate() -> None:
     assert REGISTRY.validate_parameters("LIN", {"bitrate_bps": 19_200})["status"] != "VALID"
     invalid = REGISTRY.validate_parameters("LIN", {**LIN_CONTEXT,"lin_bitrate_bps": 2_000_000})
     assert invalid["status"] == "INVALID"
-    assert codes(invalid) == {"TECHNOLOGY_PARAMETER_DEPENDENCY_MISMATCH"}
+    assert codes(invalid) == {"TECHNOLOGY_PARAMETER_DEPENDENCY_MISMATCH", "TECHNOLOGY_PARAMETER_OUT_OF_RANGE"}
     assert invalid["findings"][0]["severity"] == "BLOCKER"
 
 
@@ -145,7 +145,7 @@ def test_communication_mechanisms_are_profile_backed(technology: str, category: 
 
 def test_lin_calculation_refuses_invalid_rate() -> None:
     model = REGISTRY.resolve_stack(("lin",))["timing_model"]
-    with pytest.raises(ValueError, match="contradicts lin"):
+    with pytest.raises(ValueError, match="lin_bitrate_bps violates the lin parameter schema"):
         model.transmission_time_us(8, 2_000_000, technology_parameters={**LIN_CONTEXT,'lin_bitrate_bps':2_000_000})
     with pytest.raises(ValueError, match="required"):
         model.transmission_time_us(8, 19_200)

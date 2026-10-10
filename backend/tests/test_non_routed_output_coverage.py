@@ -191,6 +191,52 @@ def test_legacy_full_inventory_has_no_new_exclusions():
     assert coverage["required_messages"] == 653 and coverage["transport_exclusions"] == []
 
 
+@pytest.mark.parametrize(("transport", "excluded"), [
+    ("absent", True), ({}, True), (None, False), ([], False),
+    ({"provenance": None}, False), ({"provenance": {"generator": 123}}, False),
+])
+def test_workflow_sql_keeps_absent_and_malformed_transport_distinct(db_project, transport, excluded):
+    from psycopg.types.json import Jsonb
+    from backend.nis.infrastructure.persistence.db import get_connection
+    from backend.nis.workflow.services.service import WorkflowStatusService
+
+    _sensor, _port, _interface, message, _signal = _chain()
+    config = output_configuration()
+    config.pop('transport_unit', None)
+    if transport != 'absent':
+        config['transport_unit'] = transport
+    with get_connection() as connection:
+        connection.execute('UPDATE engineering_messages SET configuration=%s WHERE id=%s',
+                           (Jsonb(config), message['id']))
+        result = WorkflowStatusService(db_project)._routing_artifact_check(connection)['coverage']
+    assert result['excluded_message_ids'] == ([str(message['id'])] if excluded else [])
+    assert result['missing_message_ids'] == ([] if excluded else [str(message['id'])])
+    assert result['complete'] is excluded
+
+
+@pytest.mark.parametrize('payload_key', ['message_id', 'message_ids', 'signal_id', 'signal_ids'])
+def test_workflow_sql_retains_each_outdated_authored_transport_reference(db_project, payload_key):
+    from uuid import uuid4
+    from psycopg.types.json import Jsonb
+    from backend.nis.infrastructure.persistence.db import get_connection
+    from backend.nis.workflow.services.service import WorkflowStatusService
+
+    _sensor, _port, interface, message, signal = _chain()
+    value = str(signal['id'] if payload_key.startswith('signal') else message['id'])
+    payload = {payload_key: [value] if payload_key.endswith('ids') else value}
+    with get_connection() as connection:
+        connection.execute('UPDATE engineering_messages SET configuration=%s WHERE id=%s',
+                           (Jsonb(output_configuration()), message['id']))
+        connection.execute("INSERT INTO engineering_routing_entries (project_id, route_code, name, source, payload, status) "
+                           "VALUES (%s, %s, 'Pending intent', %s, %s, 'OUTDATED')",
+                           (db_project, f'RT-{uuid4().hex[:8]}', Jsonb({'interface_id': str(interface['id'])}), Jsonb(payload)))
+        result = WorkflowStatusService(db_project)._routing_artifact_check(connection)['coverage']
+    assert result['excluded_message_ids'] == []
+    assert result['missing_message_ids'] == [str(message['id'])]
+    assert result['missing_signal_ids'] == [str(signal['id'])]
+    assert not result['complete']
+
+
 @pytest.mark.parametrize("reference", [None, "message", "signal"])
 def test_snapshot_uses_canonical_toggle_and_authored_transport_inventory(db_project, reference):
     from psycopg.types.json import Jsonb

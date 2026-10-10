@@ -152,6 +152,29 @@ def _load(rows: list[dict[str, Any]]) -> float:
     return max((sum(_number(row.get(key)) for row in rows) for key in LOAD_KEYS), default=0.0)
 
 
+def _planning_stream(row: dict[str, Any]) -> dict[str, Any] | None:
+    """Consume qualified or native scenario metrics without changing their source.
+
+    Capacity intentionally keeps unqualified hardware metrics null. A usable
+    scenario supplies separate metrics; missing scenario data is never zero load.
+    """
+    if row.get('hardware_evidence') is not False:
+        return row
+    scenario = row.get('simulation_capacity') or {}
+    if (row.get('simulation_capacity_verified') is not True
+            or scenario.get('status') != 'CALCULATED_UNDER_ASSUMPTIONS'
+            or scenario.get('hardware_evidence') is not False):
+        return None
+    metrics = {key: scenario.get(key) for key in LOAD_KEYS}
+    metrics['segment_transmission_latency_ms'] = scenario.get('segment_transmission_latency_ms')
+    if any(isinstance(value, bool) or not isinstance(value, (int, float))
+           or not isfinite(value) or value < 0 for value in metrics.values()):
+        return None
+    if metrics['segment_transmission_latency_ms'] <= 0:
+        return None
+    return {**row, **metrics, '_planning_basis': 'SIMULATION_ASSUMPTIONS'}
+
+
 def _route_ids(rows: list[dict[str, Any]]) -> list[str]:
     return sorted({str(identifier) for row in rows for identifier in (row.get('route_ids') or [row['route_id']])})
 
@@ -291,7 +314,21 @@ def plan_network_distribution(
         for side in ('physical_source', 'physical_target'):
             if identifier := (row.get(side) or {}).get('hardware_interface_id'):
                 channel_ids[stream_key(row)].add(str(identifier))
-    for row in unique_streams(results["routes"]):
+    invalid_networks = set()
+    streams = []
+    for source in unique_streams(results["routes"]):
+        row = _planning_stream(source)
+        if row is None:
+            network_id = str(source.get('network_id') or 'unknown')
+            invalid_networks.add(network_id)
+            plan['unresolved'].append(
+                f"{network_id}: gültige native Simulationslast und Rahmendauer fehlen für "
+                f"{source.get('message_name') or source.get('route_id')}; keine Auslegung mit Null-Last.")
+        else:
+            streams.append(row)
+    for row in streams:
+        if str(row.get('network_id') or 'unknown') in invalid_networks:
+            continue  # A valid subset cannot establish the whole physical bus.
         row['_physical_channel_ids'] = sorted(channel_ids[stream_key(row)])
         metrics_by_network[str(row.get("network_id") or "unknown")].append(row)
     physical_networks = physical_network_inventory(topology)
@@ -499,6 +536,8 @@ def plan_network_distribution(
             )
         plan["networks"].append({
             "network_id": network_id, "protocol": protocol,
+            "capacity_basis": ('SIMULATION_ASSUMPTIONS' if any(
+                row.get('_planning_basis') == 'SIMULATION_ASSUMPTIONS' for row in rows) else 'CAPACITY_SNAPSHOT'),
             "current_load_percent": round(before, 4), "current_segments": 1,
             "lin_schedule": current_check,
             "timing_status": ('VERIFIED_UNDER_ASSUMPTIONS' if all(item['timing_status'] == 'VERIFIED_UNDER_ASSUMPTIONS' for item in segments)

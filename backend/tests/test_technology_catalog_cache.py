@@ -47,6 +47,37 @@ def test_complete_http_bytes_are_reused_but_mutable_callers_are_detached(catalog
     assert len(calls) == 1
 
 
+def test_source_projection_reuses_revision_but_keeps_project_evidence_current(catalog_case, monkeypatch):
+    from backend.nis.communication.services import sources, licensing
+    service, registry, _ = catalog_case
+    registry.register_defaults([DEFAULT_TECHNOLOGY_REGISTRY.profile('mipi_csi2')])
+    builds = []
+    original = sources.directory_from_profiles
+    def counted(profiles):
+        builds.append(len(profiles))
+        return original(profiles)
+    monkeypatch.setattr(sources, 'directory_from_profiles', counted)
+    first = service.source_directory('source-cache-a')
+    original_name = first['sources'][0]['name']
+    first['sources'][0]['name'] = 'caller mutation'
+    licensing.submit_evidence('source-cache-a', 'mipi_csi2', {
+        'issuer': 'Isolated test issuer', 'reference': 'isolated-reference',
+        'scope_description': 'Isolated simulation scope'})
+    updated = service.source_directory('source-cache-a')
+    other = service.source_directory('source-cache-b')
+    assert updated['sources'][0]['name'] == original_name
+    assert updated['licenses']['mipi_csi2']['status'] == 'PENDING'
+    assert other['licenses']['mipi_csi2']['status'] == 'MISSING'
+    assert updated['licenses']['mipi_csi2']['blocked'] and other['licenses']['mipi_csi2']['blocked']
+    assert builds == [2]
+    profile = generated()
+    profile['source_cache_test'] = {'source': 'https://example.com/new-source-revision'}
+    registry.register_generated_profile(profile)
+    refreshed = service.source_directory('source-cache-b')
+    assert builds == [2, 3]
+    assert any(row['url'] == 'https://example.com/new-source-revision' for row in refreshed['sources'])
+
+
 def test_onboarding_and_generated_update_replace_the_whole_cached_revision(catalog_case):
     service, registry, calls = catalog_case
     initial = service.catalog_json()

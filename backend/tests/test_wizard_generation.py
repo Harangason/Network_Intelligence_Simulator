@@ -947,6 +947,24 @@ Erzeuge ein Fahrzeugnetzwerk mit 100 Sensoren, 100 Aktuatoren, 50 ECUs und 1 Gat
     assert capacity_snapshot['results']['overview']['route_count'] == 4
     assert capacity_snapshot['results']['overview']['network_count'] >= 1
 
+    # Complete saved parameters can outlive an approved topology change. A
+    # capacity continuation must size the current graph while retaining the
+    # user's configuration; completeness alone must not bypass that sizing.
+    from copy import deepcopy
+    retained_parameters = deepcopy(parameter_state['parameters'])
+    retained_parameters['seed'] = 73
+    workflow = WorkflowStatusService(authority.project_id)
+    workflow.save_parameters(retained_parameters, actor='test-human')
+    assert workflow.get(summary=True)['artifact_checks']['parameters']['complete']
+    repeated_capacity = asyncio.run(capacity_continuation())
+    assert repeated_capacity['status'] == 'COMPLETED', repeated_capacity
+    successful_tools = [item['tool'] for item in repeated_capacity['trace'] if item['status'] == 'SUCCESS']
+    assert successful_tools.index('generate_wizard_parameters') < successful_tools.index('calculate_capacity')
+    retained = workflow.get()['parameters']
+    assert retained['seed'] == 73
+    assert retained['simulation_parameter_assumptions'] == retained_parameters['simulation_parameter_assumptions']
+    assert retained.get('technology_parameters') == retained_parameters.get('technology_parameters')
+
     from backend.nis.agent.tools import simulation_gateway as simulation_gateway
     from backend.nis.app import create_app
     import importlib

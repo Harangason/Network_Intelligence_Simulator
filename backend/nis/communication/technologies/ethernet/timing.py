@@ -4,6 +4,40 @@ from math import ceil, isfinite
 from typing import Any
 from backend.nis.communication.core.timing import FrameEstimate, _positive
 
+def prepare_simulation_parameters(parameters):
+    """Reconcile assumed PHY/layout with authoritative native network facts."""
+    from .definition import PROFILE
+    from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY as registry
+    aliases = PROFILE.get('parameter_aliases', {})
+    assumed = {aliases.get(key, key) for key in parameters.get('_simulation_assumption_fields', [])}
+    native = registry.normalize_parameters('ethernet', {
+        key: value for key, value in parameters.items() if key in registry.parameter_keys('ethernet')})
+    rate = native.get('bitrate_bps')
+    if 'eth_phy' in assumed and rate is not None:
+        choices = [rule['when']['eth_phy'] for rule in PROFILE.get('parameter_constraints', [])
+                   if rule.get('parameter') == 'bitrate_bps' and rate in rule.get('allowed', [])
+                   and set(rule.get('when', {})) == {'eth_phy'}]
+        if choices and native.get('eth_phy') not in choices:
+            native['eth_phy'] = choices[0]
+    # The rate is the resolved network input, even if its original profile seed
+    # was assumed. Never reverse a PHY constraint by replacing that input.
+    fixed = (set(native) - assumed) | {'bitrate_bps'}
+    derived = registry.constrain_simulation_values('ethernet', native, fixed)
+    return {**parameters, **{key: value for key, value in derived.items() if key in assumed}}
+
+
+def planning_frame_parameters(payload_bytes, parameters):
+    """Use actual message data to derive only assumed dependent MAC lengths."""
+    from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY as registry
+    assumed = set(parameters.get('_simulation_assumption_fields', []))
+    dependent = {'eth_client_bytes', 'eth_pad_bytes', 'eth_mac_frame_bytes',
+                 'eth_wire_slot_bytes', 'eth_type_length'} & assumed
+    native = registry.normalize_parameters('ethernet', {
+        key: value for key, value in parameters.items() if key in registry.parameter_keys('ethernet')})
+    native['payload_bytes'] = payload_bytes
+    derived = registry.constrain_simulation_values('ethernet', native, set(native) - dependent)
+    return {**parameters, **{key: value for key, value in derived.items() if key in dependent}}
+
 def estimate_frame(protocol, payload_bytes, parameters):
     normalized = str(protocol or "CUSTOM").upper().replace("-", "_").replace(" ", "_")
     payload = max(0, int(payload_bytes))

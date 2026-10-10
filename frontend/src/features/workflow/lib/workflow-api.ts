@@ -129,7 +129,11 @@ export type PreflightResults = {
   category_checks: Record<PreflightCategory, AnalysisFinding[]>;
 };
 
+export type SimulationCapacityResult = {status:string;hardware_evidence:false;functional_timing_accepted:false;
+  bitrate?:number|null;average_load_percent?:number;peak_load_percent?:number;burst_load_percent?:number;
+  capacity_reserve_percent?:number;communication_schedule?:{status:string}|null};
 export type CapacityNetwork = {
+  simulation_capacity?:SimulationCapacityResult;
   communication_schedule?: {status: string; reasons?: string[]; hardware_review_proposal?: HardwareReviewProposal};
   evaluation?: {
     payload: { status: string; signal_count: number; errors: number; open: number };
@@ -422,11 +426,12 @@ export const getWorkflowParameters = (projectId = readActiveProjectId()) =>
     headers: { "X-Project-ID": projectId },
   });
 
-export const saveWorkflowParameters = (parameters: Record<string, unknown>, expectedToken?: string, projectId?: string) =>
+export const saveWorkflowParameters = (parameters: Record<string, unknown>, expectedToken?: string, projectId?: string,
+  editedDurationFields: string[] = []) =>
   request<WorkflowState>("/workflow/parameters", {
     method: "PATCH",
     ...(projectId ? { headers: { "X-Project-ID": projectId } } : {}),
-    body: JSON.stringify({ parameters, expected_token: expectedToken }),
+    body: JSON.stringify({ parameters, expected_token: expectedToken, edited_duration_fields: editedDurationFields }),
     signal: AbortSignal.timeout(180000),
   }).then(normalizeWorkflowState);
 
@@ -629,15 +634,15 @@ export const createSimulationSnapshot = (configuration: Record<string, unknown>)
     body: JSON.stringify({ configuration }),
   });
 
-export const getWorkflowSnapshots = () =>
+export const getWorkflowSnapshots = (projectId = readActiveProjectId()) =>
   request<{
     capacity: AnalysisSnapshot | null;
     preflight: AnalysisSnapshot | null;
     simulations: SimulationSnapshot[];
-  }>("/workflow/snapshots");
+  }>("/workflow/snapshots", { headers: { "X-Project-ID": projectId } });
 
-export const getWorkflowSimulationSnapshot = (snapshotId: string) =>
-  request<SimulationSnapshot>(`/workflow/simulation-snapshots/${encodeURIComponent(snapshotId)}`);
+export const getWorkflowSimulationSnapshot = (snapshotId: string, projectId = readActiveProjectId()) =>
+  request<SimulationSnapshot>(`/workflow/simulation-snapshots/${encodeURIComponent(snapshotId)}`, { headers: { "X-Project-ID": projectId } });
 
 export type IntelligenceIssue = {
   severity: "ERROR" | "WARNING" | "INFO";
@@ -856,7 +861,18 @@ export const resetProjectWorkspace = (projectId: string) =>
   });
 
 
-export type ParameterReview = WorkflowResourceRevision & {source:'CURRENT_CANONICAL_MODEL';
+export type BusRatePlan = {technology:string;network_id:string;network_name:string;port_id?:string;status:string;
+  selected_values:Record<string,unknown>;load_percent?:number;reason:string;hardware_evidence:false;
+  candidates:Array<{values:Record<string,unknown>;load_percent:number;fits:boolean}>;
+  alternatives:Array<{technology:string;values:Record<string,unknown>;load_percent:number;industry:string;hardware_change_required:true}>};
+export type ParameterReview = WorkflowResourceRevision & {source:'CURRENT_CANONICAL_MODEL' | 'PENDING_PROPOSAL';bus_rate_plans?:BusRatePlan[];
+  simulation_capacity?:Array<{network_id:string;network_name:string;technology:string;port_id?:string|null;status:string;
+    rates:Record<string,number|null>;load_percent:number|null;target_load_percent:number;message_count:number;reason:string;
+    hardware_evidence:false;functional_timing_accepted:false;parameter_fields:string[]}>;
+  proposal?: {proposal_id:string;revision:string;status:string} | null;
   findings: import('@/features/communication/lib/technology-parameters').ParameterFinding[]};
-export const getParameterReview = (projectId = readActiveProjectId()) => request<ParameterReview>(
-  '/workflow/parameters/review', {headers:{'X-Project-ID':projectId}, signal:AbortSignal.timeout(180000)});
+export const getParameterReview = (projectId = readActiveProjectId(), proposalId?:string | null) => request<ParameterReview>(
+  '/workflow/parameters/review' + (proposalId ? '?proposal=' + encodeURIComponent(proposalId) : ''), {headers:{'X-Project-ID':projectId}, signal:AbortSignal.timeout(180000)});
+export const loadProjectSimulationDefaults = (projectId:string, expectedToken:string, technologies:string[]) => request<WorkflowState>(
+  '/workflow/parameters/defaults', {method:'POST',headers:{'X-Project-ID':projectId},
+    body:JSON.stringify({expected_token:expectedToken,technologies}),signal:AbortSignal.timeout(180000)}).then(normalizeWorkflowState);

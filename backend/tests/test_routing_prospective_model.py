@@ -41,6 +41,58 @@ def test_real_sql_route_and_snapshot_use_identical_validation(candidate, monkeyp
     assert snap == before
 
 
+def test_canonical_proposal_preview_matches_sql_and_never_reuses_snapshot_after_edit(candidate, monkeypatch):
+    from backend.nis.agent.tools import proposal_service
+    from backend.nis.engineering.projects.project_context import activate_project, reset_project
+    from backend.nis.workflow.services.service import WorkflowStatusService
+    project = candidate['snapshot']['project_id']
+    token = activate_project(project)
+    try:
+        preview = proposal_service._canonical_routing_preview()
+        with monkeypatch.context() as patch:
+            patch.setattr(validation, 'get_connection', forbid_database)
+            result = preview.validate(candidate['route'])
+        assert {k: v for k, v in result.items() if k != 'validation_timestamp'} == {
+            k: v for k, v in candidate['baseline'].items() if k != 'validation_timestamp'}
+        WorkflowStatusService(project).save_topology({**candidate['snapshot']['topology'], 'edges': []})
+        refreshed = proposal_service._canonical_routing_preview().validate(candidate['route'])
+        assert not refreshed['valid']
+        assert 'PHYSICAL_PATH_REMOVED' in {finding['code'] for finding in refreshed['errors']}
+        # The already captured review remains detached; a later review refreshes.
+        assert preview.validate(candidate['route'])['valid']
+    finally:
+        reset_project(token)
+
+
+def test_routing_proposal_captures_once_and_checks_every_route(candidate, monkeypatch):
+    from backend.nis.agent.tools import proposal_service
+    from backend.nis.agent.tools import validation as proposal_validation
+    from backend.nis.engineering.projects.project_context import activate_project, reset_project
+    token = activate_project(candidate['snapshot']['project_id'])
+    original = proposal_service._canonical_routing_preview
+    captures = []
+    def capture():
+        preview = original()
+        captures.append(preview)
+        return preview
+    monkeypatch.setattr(proposal_service, '_canonical_routing_preview', capture)
+    monkeypatch.setattr(proposal_validation, 'validate_effective_model', lambda changes: [])
+    try:
+        invalid = deepcopy(candidate['route'])
+        invalid['destinations'][0]['node_id'] = str(uuid4())
+        result = proposal_service._validate_changes([
+            {'object_type': 'RoutingEntry', 'action': 'CREATE', 'local_ref': 'valid', 'data': candidate['route']},
+            {'object_type': 'RoutingEntry', 'action': 'CREATE', 'local_ref': 'invalid', 'data': invalid},
+            {'object_type': 'RoutingEntry', 'action': 'CREATE', 'local_ref': 'valid-again', 'data': deepcopy(candidate['route'])},
+        ], proposal_type='WIZARD_ROUTING')
+        assert len(captures) == 1
+        assert not result['valid'] and result['valid_count'] == 2
+        assert {finding['index'] for finding in result['findings']} == {1}
+        assert 'DESTINATION_NOT_FOUND' in {finding['code'] for finding in result['findings']}
+    finally:
+        reset_project(token)
+
+
 def test_new_unpersisted_identifiers_are_validated_in_proposed_graph(candidate, monkeypatch):
     monkeypatch.setattr(validation, 'get_connection', forbid_database)
     # Replace every object identity with a new UUID. These rows do not exist in SQL.

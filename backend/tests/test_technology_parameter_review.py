@@ -23,6 +23,146 @@ def test_capacity_parameter_validation_does_not_traverse_unrelated_project_graph
                                       confirmed_parameters=parameters)
     assert invalid['_rate_evidenced'] is False
     assert any(row['code'] == 'TECHNOLOGY_PARAMETER_NOT_APPLICABLE' for row in invalid['_rate_findings'])
+
+
+@pytest.mark.parametrize('technology,payload,bits,rate', [('lin',4,84,19200), ('can_fd',12,240,500000), ('ethernet',8,672,1000000000)])
+def test_saved_simulation_values_reach_native_wire_model_without_hardware_confirmation(technology,payload,bits,rate):
+    from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY as registry
+    from backend.nis.engineering.capacity.service import simulation_parameters_for_protocol
+    from backend.nis.engineering.capacity.calculators import estimate_simulation_frame
+    service = WorkflowStatusService(current_project_id())
+    base = {**mixed(), 'technology': 'can_fd'}
+    saved = registry.simulation_defaults_for_project(base, [technology])
+    service.save_parameters(saved)
+    reloaded = service.get()['parameters']
+    before = deepcopy(reloaded)
+    resolved = simulation_parameters_for_protocol(technology, reloaded, confirmed_parameters=reloaded)
+    assert resolved['_simulation_parameters_usable'], resolved['_simulation_parameter_findings']
+    assert not resolved['_rate_evidenced']
+    assert resolved['arbitration_bitrate' if technology == 'can_fd' else 'bitrate'] == rate
+    frame = estimate_simulation_frame(technology, payload, resolved)
+    assert frame.transmission_time_available and not frame.is_generic_estimate
+    assert frame.frame_bits == bits
+    expected = 80/500000 + 160/2000000 if technology == 'can_fd' else bits/rate
+    assert frame.transmission_time_s == pytest.approx(expected)
+    assert service.get()['parameters'] == before
+    strict = parameters_for_protocol(technology, reloaded, confirmed_parameters=reloaded)
+    assert not strict['_rate_evidenced']
+
+
+@pytest.mark.parametrize('patch,proof_patch,code', [
+    ({'lin_bitrate_bps':2000000},{},'TECHNOLOGY_PARAMETER_OUT_OF_RANGE'),
+    ({'lin_node_count':200},{},'TECHNOLOGY_PARAMETER_DEPENDENCY_MISMATCH'),
+    ({},{'technology':'can_fd'},'SIMULATION_PARAMETER_PROVENANCE_MISMATCH'),
+    ({},{'value':9600},'SIMULATION_PARAMETER_PROVENANCE_MISMATCH'),
+])
+def test_invalid_saved_simulation_context_is_not_repaired_by_a_foreign_clock_or_stale_proof(patch,proof_patch,code):
+    from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY as registry
+    from backend.nis.engineering.capacity.service import simulation_parameters_for_protocol
+    from backend.nis.engineering.capacity.calculators import estimate_simulation_frame
+    p = registry.simulation_defaults_for_project(mixed(), ['lin'])
+    group = p['simulation_parameter_assumptions']['lin']
+    for key,value in patch.items():
+        group['values'][key]=value
+        group['provenance'][key]['value']=value
+    group['provenance']['lin_bitrate_bps'].update(proof_patch)
+    before = deepcopy(p)
+    resolved = simulation_parameters_for_protocol('lin',p,confirmed_parameters=p)
+    assert not resolved['_simulation_parameters_usable']
+    assert any(item['code'] == code for item in resolved['_simulation_parameter_findings'])
+    assert not estimate_simulation_frame('LIN',2,resolved).transmission_time_available
+    assert not resolved['_rate_evidenced'] and p == before
+
+
+def test_explicit_lin_layout_is_not_overwritten_by_assumed_message_length():
+    from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY as registry
+    from backend.nis.engineering.capacity.service import simulation_parameters_for_protocol
+    from backend.nis.engineering.capacity.calculators import estimate_simulation_frame
+    p=registry.simulation_defaults_for_project(mixed(),['lin'])
+    p['technology_parameters']={'lin':reviewed({'lin_data_octets':1})}
+    resolved=simulation_parameters_for_protocol('lin',p,confirmed_parameters=p)
+    assert resolved['lin_data_octets']==1
+    assert 'lin_data_octets' not in resolved['_simulation_assumption_fields']
+    assert not estimate_simulation_frame('lin',4,resolved).transmission_time_available
+
+
+def test_saved_interface_assumption_overrides_project_starter_without_becoming_hardware_evidence():
+    from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY as registry
+    from backend.nis.engineering.capacity.service import simulation_parameters_for_protocol
+    p=registry.simulation_defaults_for_project(mixed(),['lin'])
+    group=deepcopy(p['simulation_parameter_assumptions']['lin'])
+    group['values']['lin_bitrate_bps']=9600
+    group['provenance']['lin_bitrate_bps']['value']=9600
+    scoped={'technology':'lin','capabilities':{'simulation_parameter_assumptions':{'lin':group}}}
+    resolved=simulation_parameters_for_protocol('lin',p,scoped,confirmed_parameters=p)
+    assert resolved['bitrate']==9600 and resolved['_simulation_parameters_usable']
+    assert not resolved['_rate_evidenced']
+
+
+def test_complete_explicit_device_input_wins_over_obsolete_unused_assumptions():
+    from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY as registry
+    from backend.nis.engineering.capacity.service import simulation_parameters_for_protocol
+    from backend.tests.native_transport_fixtures import lin_design
+    p=registry.simulation_defaults_for_project(mixed(),['lin'])
+    p['simulation_parameter_assumptions']['lin']['provenance']['lin_bitrate_bps']['value']=9600
+    # Complete explicit input includes the optional native scenario configuration
+    # too; the separate partial-rate regressions require those values to stay assumed.
+    p['technology_parameters']={'lin':reviewed({**p['simulation_parameter_assumptions']['lin']['values'], **lin_design(),
+        'lin_publisher_node_id': 'isolated-virtual-fixture:publisher_node_id'})}
+    resolved=simulation_parameters_for_protocol('lin',p,confirmed_parameters=p)
+    assert resolved['_rate_evidenced'] and resolved['_simulation_parameters_usable']
+    assert resolved['bitrate']==19200 and resolved['_simulation_assumption_fields']==[]
+
+
+def test_capacity_service_exposes_saved_scenario_metrics_without_qualifying_device_or_timing(monkeypatch):
+    from backend.nis.app import create_app
+    from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY as registry
+    from backend.nis.engineering.capacity.service import CapacityTimingService
+    client = create_app(testing=True).test_client()
+    client.environ_base['HTTP_X_PROJECT_ID'] = current_project_id()
+    service = WorkflowStatusService(current_project_id())
+    p = registry.simulation_defaults_for_project({'technology':'lin','industry':'automotive','defaults_source':'technology-registry',
+        'networks':[{'id':'local-lin','technology':'LIN'}]},['lin'])
+    service.save_parameters(p)
+    def create(resource,data):
+        response=client.post('/api/engineering/'+resource,json=data)
+        assert response.status_code in {200,201},response.get_json()
+        return response.get_json()
+    node=create('hardware-nodes',{'name':'Scenario controller','device_type':'EmbeddedController'})
+    port=create('hardware-interfaces',{'name':'Local LIN','hardware_node_id':node['id'],'technology':'LIN','network_ref':'local-lin','bitrate':None})
+    logical=create('interfaces',{'name':'LIN producer','hardware_node_id':node['id'],'interface_type':'LIN'})
+    message=create('messages',{'name':'Four byte command','interface_id':logical['id'],'hardware_interface_id':port['id'],'dlc':4,'cycle_ms':100,'direction':'tx'})
+    larger=create('messages',{'name':'Eight byte command','interface_id':logical['id'],'hardware_interface_id':port['id'],'dlc':8,'cycle_ms':100,'direction':'tx'})
+    from backend.nis.engineering.capacity import service as capacity_module
+    resolve = capacity_module.simulation_parameters_for_protocol
+    resolutions = []
+    def counted(*args, **kwargs):
+        if len(args) > 3 and args[3] is not None:
+            resolutions.append(args[0])
+        return resolve(*args, **kwargs)
+    monkeypatch.setattr(capacity_module, 'simulation_parameters_for_protocol', counted)
+    calculator=CapacityTimingService(current_project_id())
+    results=calculator.calculate(persist=False)['results']
+    metric=next(row for row in results['messages'] if row['message_id']==message['id'])
+    assert metric['capacity_verified'] is False and metric['hardware_evidence'] is False
+    assert metric['average_load_percent'] is None
+    scenario=metric['simulation_capacity']
+    assert scenario['average_load_percent']==pytest.approx(84/19200/.1*100,abs=.0001)
+    assert not scenario['hardware_evidence'] and not scenario['functional_timing_accepted']
+    assert results['overview']['capacity_verified'] is False
+    assert len(resolutions)==1
+    larger_metric=next(row for row in results['messages'] if row['message_id']==larger['id'])
+    assert larger_metric['simulation_capacity']['average_load_percent']==pytest.approx(124/19200/.1*100,abs=.0001)
+    changed=service.get()['parameters']
+    group=changed['simulation_parameter_assumptions']['lin']
+    group['values']['lin_bitrate_bps']=9600
+    group['provenance']['lin_bitrate_bps']['value']=9600
+    service.save_parameters(changed)
+    repeated=calculator.calculate(persist=False)['results']
+    assert len(resolutions)==2
+    repeated_metric=next(row for row in repeated['messages'] if row['message_id']==message['id'])
+    assert repeated_metric['simulation_capacity']['average_load_percent']==pytest.approx(84/9600/.1*100,abs=.0001)
+    assert repeated_metric['hardware_evidence'] is False
 from backend.nis.engineering.capacity.service import parameters_for_protocol
 from backend.nis.workflow.services.service import WorkflowStatusService
 from backend.nis.engineering.projects.project_context import current_project_id
@@ -45,6 +185,23 @@ def mixed():
             'warning_threshold': 60, 'critical_threshold': 75, 'overload_threshold': 90, 'formats': ['universal-jsonl'],
             'networks': [{'id': 'lin-1', 'technology': 'LIN'}, {'id': 'can-1', 'technology': 'CAN_FD'}],
             'technology_defaults': {'lin': {'bitrate': 19200}}}
+
+
+def configured_secondary_buses(parameters):
+    """Keep primary-input tests focused while satisfying mixed-project completeness.
+
+    No starter is supplied for the primary bus: its invalid/missing values must
+    still fail. Secondary missing/default cases have their own regression.
+    """
+    from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY as registry
+    primary = registry.normalize_id(parameters['technology'])
+    groups = parameters.setdefault('simulation_parameter_assumptions', {})
+    for network in parameters.get('networks', []):
+        technology = registry.normalize_id(network['technology'])
+        if technology != primary:
+            groups[technology] = registry.simulation_defaults_for_project(
+                {'technology': technology}, [technology])['simulation_parameter_assumptions'][technology]
+    return parameters
 
 
 def test_profile_proposal_is_not_confirmed_capacity_evidence():
@@ -113,12 +270,12 @@ def test_individually_confirmed_partial_group_is_preserved_without_capacity_appr
 
 
 def test_parameter_artifact_reads_confirmed_primary_group_and_allows_signed_profile_values():
-    parameters = {**mixed(), 'technology': 'lin', 'technology_parameters': {'lin': reviewed(dict(LIN_CONTEXT))}}
+    parameters = configured_secondary_buses({**mixed(), 'technology': 'lin', 'technology_parameters': {'lin': reviewed(dict(LIN_CONTEXT))}})
     for key in ('bitrate', 'arbitration_bitrate', 'data_bitrate'):
         parameters.pop(key)
     check = WorkflowStatusService._parameter_artifact_check(parameters)
     assert check['complete'], check
-    parameters = {**mixed(), 'clock_offset_ms': -2}
+    parameters = configured_secondary_buses({**mixed(), 'clock_offset_ms': -2})
     check = WorkflowStatusService._parameter_artifact_check(parameters)
     assert check['complete'], check
 
@@ -138,7 +295,7 @@ def test_valid_can_fd_group_keeps_separate_phases():
 
 
 def test_parameter_artifact_accepts_valid_historical_can_fd_nominal_alias():
-    parameters = mixed()
+    parameters = configured_secondary_buses(mixed())
     parameters.pop('arbitration_bitrate')
     parameters.pop('defaults_source')
     parameters['bitrate'] = 500_000
@@ -157,6 +314,7 @@ def test_owned_canonical_rates_reach_consumers_with_their_confirmation(scoped, t
     parameters = {key: value for key, value in mixed().items()
                   if key not in {'bitrate', 'arbitration_bitrate', 'data_bitrate'}}
     parameters['technology'] = technology
+    configured_secondary_buses(parameters)
     group = reviewed(values)
     if scoped:
         parameters['technology_parameters'] = {technology: group}
@@ -182,7 +340,7 @@ def test_rate_alias_conflict_remains_visible_and_blocks_computation():
 
 
 def test_parameter_artifact_needs_data_phase_until_brs_is_explicitly_disabled():
-    parameters = {**mixed(), 'bitrate': 500_000}
+    parameters = configured_secondary_buses({**mixed(), 'bitrate': 500_000})
     parameters.pop('data_bitrate')
     parameters.pop('defaults_source')
     assert not WorkflowStatusService._parameter_artifact_check(parameters)['complete']

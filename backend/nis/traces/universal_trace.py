@@ -261,6 +261,7 @@ def _generate_universal_events(
     address_owners = {}
     forwarding_templates = {}
     response_templates = {}
+    scenario_scopes = {}
     for route in routes:
         check_cancellation()
         segment_index = int(route["metadata"].get("segment_index") or 0)
@@ -283,13 +284,27 @@ def _generate_universal_events(
             cycle_s *= 2
         network_metadata = route.get("network_metadata") if isinstance(route.get("network_metadata"), dict) else {}
         frame_parameters = dict(network_metadata)
+        scenario_frame = False
+        if network_metadata.get('simulation_parameter_assumptions') or config.get('simulation_parameter_assumptions'):
+            from backend.nis.engineering.capacity.service import simulation_parameters_for_protocol
+            from backend.nis.engineering.capacity.calculators import estimate_simulation_frame
+            scope_key = (technology['id'], route['network'])
+            if scope_key not in scenario_scopes:
+                # Previously resolved assumptions are not reinterpreted as device facts.
+                assumed = set(network_metadata.get('_simulation_assumption_fields') or [])
+                configuration = {key: value for key, value in network_metadata.items() if key not in assumed}
+                scenario_scopes[scope_key] = simulation_parameters_for_protocol(
+                    technology['id'], config.get('parameters') or config, configuration,
+                    route['network'], confirmed_parameters=config.get('parameters') or config)
+            frame_parameters = dict(scenario_scopes[scope_key])
+            scenario_frame = True
         if "bitrate" not in frame_parameters and "link_speed" in frame_parameters:
             frame_parameters["bitrate"] = frame_parameters["link_speed"]
         ethernet = resolve_flow({**route, 'network_metadata': {
             **{key: config[key] for key in ('ip_version', 'transport_protocol', 'source_port', 'destination_port', 'mtu', 'vlan_id') if key in config},
             **network_metadata}})
         apply_serializer_geometry(technology, ethernet, network_metadata, frame_parameters, payload_size, route)
-        frame = estimate_frame(technology['id'], payload_size, frame_parameters)
+        frame = (estimate_simulation_frame if scenario_frame else estimate_frame)(technology['id'], payload_size, frame_parameters)
         if frame.is_generic_estimate or not frame.transmission_time_available:
             raise ValueError(
                 f"TIMING_UNVERIFIED: {technology['id']} auf Netz {route['network']}: "
@@ -446,6 +461,9 @@ def _generate_universal_events(
                 "reordered": reordered,
                 "retry_delay_ms": retransmission_count * retry_delay_ms,
                 "configured_bitrate": bitrate,
+                **({'timing_basis': 'SAVED_SIMULATION_ASSUMPTIONS',
+                    'hardware_evidence': bool(frame_parameters.get('_simulation_hardware_evidence')),
+                    'functional_timing_accepted': False} if scenario_frame else {}),
             }
             if ethernet:
                 event["ethernet"] = ethernet
@@ -668,6 +686,7 @@ def _write_csv(path: Path, events: list[dict[str, Any]]) -> Path:
         "caused_by_event_id", "transmission_attempted", "golden_time_s",
         "traffic_type", "protocol_event", "session_id", "tcp_flags", "transport_ack_number",
         "technology", "technology_family", "access_model", "timing_model", "error_model",
+        "timing_basis", "hardware_evidence", "functional_timing_accepted",
         "network", "sender_hardware", "source_name", "source_logical_address", "sender_port",
         "sender_interface", "receiver_hardware", "receiver_interfaces", "payload_bytes",
         "receiver_ports", "ip_version", "src_ip", "dst_ips", "transport_protocol", "ethernet", "tx_start_s", "tx_end_s", "rx_ports", "port_model",

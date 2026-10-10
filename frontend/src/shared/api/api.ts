@@ -1,4 +1,5 @@
-import { readLosslessJson } from './lossless-json.ts';
+import { readApiJson } from './lossless-json.ts';
+import { readRegisteredCatalog } from './catalog-response';
 import type { Catalog, SimulationJob, SimulationResultPayload } from "./types";
 import { createLocalSimulation, getLocalSimulation, localCatalog } from "../lib/local-simulator";
 import { mergeSimulationResult } from "../../features/simulation/lib/simulation-result";
@@ -20,13 +21,16 @@ async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
     });
   } catch (error) {
     if (isRequestTimeout(error)) {
-      throw new Error("API-Zeitlimit: Der lokale Simulationsdienst hat innerhalb von 10 s nicht geantwortet. Das passiert meist bei einem nicht gestarteten Backend, einem hängenden Simulationslauf oder einem noch initialisierenden Dienst.");
+      throw new Error("API-Zeitlimit: Die Antwort wurde nicht vollständig geladen. Bitte erneut laden.");
     }
     throw error;
   }
-  const payload = await readLosslessJson(response).catch(() => ({}));
-  if (!response.ok) throw new Error((payload as { error?: string }).error ?? `API-Fehler ${response.status}`);
-  return payload as T;
+  try {
+    return await readApiJson(response) as T;
+  } catch (error) {
+    if (isRequestTimeout(error)) throw new Error('API-Zeitlimit: Die Antwort wurde nicht vollständig geladen. Bitte erneut laden.');
+    throw error;
+  }
 }
 
 function isRequestTimeout(error: unknown) {
@@ -47,7 +51,11 @@ function announceMode(mode: "backend" | "browser") {
 
 export async function getCatalog(options: { strict?: boolean } = {}): Promise<Catalog> {
   try {
-    const catalog = await apiRequest<Catalog>("/api/technologies");
+    // Full native schemas exceed small-request transfer times under load.
+    // Keep the normal API budget unchanged and bound this complete read.
+    const catalog = await readRegisteredCatalog(() => apiRequest<Catalog>("/api/technologies", {
+      signal: AbortSignal.timeout(60_000),
+    }));
     announceMode("backend");
     return catalog;
   } catch (error) {
@@ -70,24 +78,25 @@ export async function createSimulation(payload: Record<string, unknown>, validat
   }
 }
 
-export async function listSimulations(): Promise<SimulationJob[]> {
-  const response = await apiRequest<{ jobs: SimulationJob[] }>("/api/simulations");
+export async function listSimulations(projectId = readActiveProjectId()): Promise<SimulationJob[]> {
+  const response = await apiRequest<{ jobs: SimulationJob[] }>("/api/simulations", { headers: { "X-Project-ID": projectId } });
   return response.jobs;
 }
 
-export async function getSimulation(id: string): Promise<SimulationJob> {
+export async function getSimulation(id: string, projectId = readActiveProjectId()): Promise<SimulationJob> {
   if (id.startsWith("local-")) {
     announceMode("browser");
     return getLocalSimulation(id);
   }
-  const job = await apiRequest<SimulationJob>(`/api/simulations/${id}`);
+  const options = { headers: { "X-Project-ID": projectId } };
+  const job = await apiRequest<SimulationJob>(`/api/simulations/${id}`, options);
   if (!job.result?.registry_truncated || !job.artifact_downloads?.length) return job;
   const fullResult = job.artifact_downloads.find(
     (artifact) => artifact.name === "simulation_result.json",
   );
   if (!fullResult) return job;
   try {
-    const persisted = await apiRequest<SimulationResultPayload>(fullResult.url);
+    const persisted = await apiRequest<SimulationResultPayload>(fullResult.url, options);
     return { ...job, result: mergeSimulationResult(job.result, persisted) ?? job.result };
   } catch {
     // The compact registry result remains usable while an artifact is moved or unavailable.

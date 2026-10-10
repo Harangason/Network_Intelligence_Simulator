@@ -27,6 +27,7 @@ from backend.nis.engineering.simulation import save_scenario
 from backend.nis.engineering.simulation import validate_scenario
 from backend.nis.workflow.services.service import WorkflowStatusService
 from backend.nis.agent.tools.model import model
+from backend.nis.agent.tools.model import SECTIONS
 from backend.nis.agent.tools.model import model_revision
 from backend.nis.agent.tools.model import json_safe
 from backend.nis.agent.tools.model import networks
@@ -34,6 +35,11 @@ from backend.nis.agent.tools.audit import record
 
 ARTIFACT_TYPES = {"StatusModel", "DataObject", "SignalBehavior"}
 MAX_PROPOSAL_CHANGES = 10_000
+
+
+def _source_versions():
+    versions = WorkflowStatusService(current_project_id()).get(summary=True)['versions']
+    return {key: versions[key] for key in ('engineering_model', 'routing', 'network_editor', 'parameters')}
 
 
 def order_change_dependencies(changes: list[dict]) -> list[dict]:
@@ -128,6 +134,16 @@ def get(proposal_id: str) -> dict:
             result['validation_result'] = {**result.get('validation_result', {}), 'valid': False,
                 'findings': [*result.get('validation_result', {}).get('findings', []),
                              {'severity': 'ERROR', 'code': 'DRAFT_REVISION_CHANGED', 'message': str(error)}]}
+        contract = row.get('engineering_contract') or {}
+        source_versions = contract.get('base_source_versions')
+        outdated = (_source_versions() != source_versions
+                    if source_versions is not None else model_revision() != contract.get('base_model_revision')) if result['status'] in {'VALIDATED', 'APPROVED'} else False
+        if outdated:
+            result['status'] = 'OUTDATED'
+            result['validation_result'] = {**result.get('validation_result', {}), 'valid': False,
+                'findings': [*result.get('validation_result', {}).get('findings', []),
+                    {'severity': 'REVIEW', 'code': 'MODEL_REVISION_CHANGED',
+                     'message': 'Projektwerte wurden seit der Vorschlagsprüfung gespeichert oder geändert. Bitte den Vorschlag erneut prüfen und anschließend freigeben.'}]}
     return result
 
 
@@ -157,8 +173,20 @@ def create(proposal_type: str, changes: list[dict], rationale: str, *, assumptio
     return _write(str(row["proposal_id"]), contract)
 
 
+def _canonical_routing_preview() -> RoutingValidator:
+    """One detached canonical snapshot for this read-only proposal preview."""
+    snapshot = model()
+    tables = {ENTITY_SPECS[kind].table: snapshot[section] for section, kind in SECTIONS.items()}
+    tables['engineering_routing_entries'] = snapshot['routing']
+    return RoutingValidator(current_project_id(), model_snapshot={
+        'project_id': snapshot['project_id'], 'topology': snapshot['topology'],
+        'parameters': snapshot['parameters'], 'tables': tables,
+    })
+
+
 def _validate_changes(changes: list[dict], *, proposal_type: str = '') -> dict:
     findings, known, names, definitions = [], {}, set(), {}
+    existing_network_ids = None
     message_signals = {}
     route_preview = None
     preview_refs = {}
@@ -211,8 +239,10 @@ def _validate_changes(changes: list[dict], *, proposal_type: str = '') -> dict:
                     elif not change.get("impact_analysis"):
                         raise ValueError("Löschen benötigt eine dokumentierte Auswirkungsanalyse.")
             elif kind == "RoutingEntry" and action == "CREATE":
+                if route_preview is None:
+                    route_preview = _canonical_routing_preview()
                 result = (route_preview.validate(_resolve(data, preview_refs), exclude_route_id=preview_refs[ref])
-                          if route_preview is not None else RoutingValidator().validate(data))
+                          if proposal_type == 'PERIODIC_ACQUISITION' else route_preview.validate(data))
                 if not result.get("valid", result.get("is_valid", False)):
                     issues = result.get('errors') or result.get('findings') or [
                         {'code': 'ROUTING_INVALID', 'message': 'Der Routingvorschlag ist nicht gültig.'}]
@@ -258,8 +288,11 @@ def _validate_changes(changes: list[dict], *, proposal_type: str = '') -> dict:
                 for field in ("bitrate", "arbitration_bitrate", "data_bitrate"):
                     if field in data and (not isinstance(data[field], (int, float)) or data[field] <= 0):
                         raise ValueError(f"{field} muss positiv sein.")
-                if any(str(item.get("id")) == str(data["id"]) for item in
-                       networks()):
+                if existing_network_ids is None:
+                    # This preview never writes the model. All changes compare
+                    # against the same canonical inventory in this request.
+                    existing_network_ids = {str(item.get('id')) for item in networks()}
+                if str(data['id']) in existing_network_ids:
                     raise ValueError("Netzwerk-ID bereits vorhanden.")
             elif kind == "ProjectBundleRestore" and action == "CREATE":
                 from backend.nis.agent.tools.project_bundle_restore import source
@@ -306,10 +339,14 @@ def _validate_changes(changes: list[dict], *, proposal_type: str = '') -> dict:
             # reviewable structural project model. The missing controller
             # status remains explicit and still blocks communication release
             # and preflight. Only this narrow structural proposal may defer it.
-            if finding.get('code') == 'CAPACITY_UNVERIFIED':
+            if finding.get('code') in {'CAPACITY_UNVERIFIED', 'CAPACITY_DEVICE_EVIDENCE_MISSING',
+                                       'SIMULATION_CAPACITY_OVERLOAD'}:
                 # A draft may preserve missing rate evidence for review. This
                 # validates its structure, never its communication capacity;
                 # capacity/preflight retain their independent evidence gate.
+                # The initial graph must remain reviewable so the subsequent
+                # topology/capacity repair can split overloaded shared buses.
+                # Preserve the measured overload as OPEN, never as a PASS.
                 open_findings.append({**finding, 'severity': 'OPEN'})
             elif (proposal_type == 'SIMPLE_PROJECT_STRUCTURE'
                     and finding.get('code') == 'DEVICE_STATUS_MISSING'
@@ -326,7 +363,8 @@ def _validate_changes(changes: list[dict], *, proposal_type: str = '') -> dict:
     invalid_count = len({item['index'] for item in findings}) if findings and all('index' in item for item in findings) else len(findings)
     return {"valid": not findings, "requested": len(changes), "valid_count": max(0, len(changes)-invalid_count),
             "validation_scope": "MODEL_STRUCTURE",
-            "capacity_status": "UNVERIFIED" if any(item.get('code') == 'CAPACITY_UNVERIFIED'
+            "capacity_status": "UNVERIFIED" if any(item.get('code') in {'CAPACITY_UNVERIFIED', 'CAPACITY_DEVICE_EVIDENCE_MISSING',
+                'SIMULATION_CAPACITY_OVERLOAD'}
                 for item in open_findings) else "NOT_ASSESSED",
             "findings": [*findings, *open_findings]}
 
@@ -377,7 +415,9 @@ def validate(proposal_id: str) -> dict:
     assert_proposal_source(row)
     contract = deepcopy(row.get("engineering_contract") or {})
     envelope(row)
-    if contract["status"] in {"APPLIED", "REJECTED", "APPROVED"}:
+    if contract["status"] in {"APPLIED", "REJECTED"}:
+        return envelope(row)
+    if contract['status'] == 'APPROVED' and model_revision() == contract.get('base_model_revision'):
         return envelope(row)
     contract["validation_result"] = _validate_changes(contract["changes"], proposal_type=row['proposal_type'])
     inventory_findings = _validate_topology_inventory(row, contract['changes'])
@@ -385,7 +425,11 @@ def validate(proposal_id: str) -> dict:
         contract['validation_result']['findings'].extend(inventory_findings)
         contract['validation_result'].update(valid=False, valid_count=0)
     contract["status"] = "VALIDATED" if contract["validation_result"]["valid"] else "PROPOSED"
+    contract.pop('approved_by', None)
     contract["base_model_revision"] = model_revision()
+    # Cheap polling detects source changes; approval/apply still compare the
+    # complete canonical model hash before committing any object.
+    contract['base_source_versions'] = _source_versions()
     contract["revision"] = str(uuid4())
     return _write(proposal_id, contract, legacy_status="READY_FOR_REVIEW" if contract["status"] == "VALIDATED" else "DRAFT")
 

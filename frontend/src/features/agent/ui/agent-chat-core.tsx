@@ -12,7 +12,9 @@ import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { FormEvent, KeyboardEvent, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { EngineeringAgentUIMessage, EngineeringProposal } from "@/features/agent/lib/engineering-agent";
+import { loadWizardProposal } from '@/features/agent/lib/proposal-client';
 import { getCatalog } from "@/shared/api/api";
+import { selectSimulationSnapshot } from "@/features/simulation/lib/simulation-result";
 import {
   activateEngineeringAgentWizardSession,
   clearPendingEngineeringAgentTask,
@@ -82,6 +84,7 @@ import {
   getPreflightSnapshot,
   getWorkflow,
   getWorkflowSummary,
+  getWorkflowSnapshots,
   setWorkflowContext,
   type IntelligenceRecommendation,
   type WorkflowState,
@@ -1305,6 +1308,8 @@ export function EngineeringAgentWizard({
   });
   const [phase, setPhase] = useState<"questionnaire" | "status">("questionnaire");
   const [wizardPreferencesReady, setWizardPreferencesReady] = useState(false);
+  const [wizardRestoreError, setWizardRestoreError] = useState('');
+  const [wizardRestoreRevision, setWizardRestoreRevision] = useState(0);
   const projectNameEditRevisionRef = useRef(0);
   const projectNameDirtyRef = useRef(false);
   const projectNameSaveTimerRef = useRef<number | null>(null);
@@ -1383,6 +1388,8 @@ export function EngineeringAgentWizard({
 
   useEffect(() => {
     let active = true;
+    setWizardPreferencesReady(false);
+    setWizardRestoreError('');
     void getWorkflowSummary(projectId).then((nextWorkflow) => {
       if (!active) return;
       setLinkedDraftId(new URL(window.location.href).searchParams.get('draft') ?? '');
@@ -1434,25 +1441,27 @@ export function EngineeringAgentWizard({
         event: "popup-status-restored",
         details: "Die Statusübersicht wurde aus dem gespeicherten Projektkontext wiederhergestellt.",
       }).catch(() => undefined);
-    }).catch(() => undefined).finally(() => {
+    }).catch(error => {
+      if (active) setWizardRestoreError(error instanceof Error ? error.message : 'Gespeicherter Auftrag konnte nicht geladen werden.');
+    }).finally(() => {
       if (active) setWizardPreferencesReady(true);
     });
     return () => {
       active = false;
     };
-  }, [projectId]);
+  }, [projectId, wizardRestoreRevision]);
 
   useEffect(() => {
-    if (!wizardPreferencesReady || phase !== 'questionnaire') return;
+    if (!wizardPreferencesReady || wizardRestoreError || phase !== 'questionnaire') return;
     if (taskText.trim()) {
       window.sessionStorage.setItem(projectIntakeKey(projectId), JSON.stringify({ projectId, requirement: taskText }));
     } else {
       window.sessionStorage.removeItem(projectIntakeKey(projectId));
     }
-  }, [phase, projectId, taskText, wizardPreferencesReady]);
+  }, [phase, projectId, taskText, wizardPreferencesReady, wizardRestoreError]);
 
   useEffect(() => {
-    if (phase !== 'questionnaire' || manualTechnologyScopeRef.current === `${mode}:${selectedDomain?.id}`) return;
+    if (!wizardPreferencesReady || wizardRestoreError || phase !== 'questionnaire' || manualTechnologyScopeRef.current === `${mode}:${selectedDomain?.id}`) return;
     const requested = technologyChoices.filter(technology => recognizedEquipment.communicationSystems
       .some(system => technologyMatchesRecognizedSystem(technology, system))).map(technology => technology.id);
     if (requested.length) {
@@ -1466,7 +1475,7 @@ export function EngineeringAgentWizard({
       return;
     }
     setSelectedTechnologies(defaultWizardTechnologyIds(selectedDomain));
-  }, [mode, phase, recognizedEquipment.communicationSystems, selectedDomain, technologyChoices]);
+  }, [mode, phase, recognizedEquipment.communicationSystems, selectedDomain, technologyChoices, wizardPreferencesReady, wizardRestoreError]);
 
   useEffect(() => {
     if (phase !== "status" || !runId) return;
@@ -2011,7 +2020,7 @@ export function EngineeringAgentWizard({
   const atLastStep = phase === "questionnaire" && step === questionnaireSteps.length - 1;
   const projectReady = projectName.trim().length > 0;
   const taskReady = taskText.trim().length > 0 || taskFiles.length > 0;
-  const effectiveBusy = busy || submitting || !wizardPreferencesReady;
+  const effectiveBusy = busy || submitting || !wizardPreferencesReady || Boolean(wizardRestoreError);
   const selectedArchitecture = architectureOption(networkArchitecture);
   const plannedNetworkConnections = plannedNetworkConnectionCount({
     architectureId: selectedArchitecture?.id,
@@ -2421,6 +2430,7 @@ export function EngineeringAgentWizard({
 
   async function finishWizard() {
     if (agentPending || routingReviewBusy || supplementBusy || routingReviewPending || runPaused) return;
+    let completedResultsHref: string | undefined;
     try {
       const response = await fetch(`/api/engineering/agent/runs/${encodeURIComponent(runId)}/finish`, {
         method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Project-ID': projectId },
@@ -2428,6 +2438,20 @@ export function EngineeringAgentWizard({
       });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error ?? result.findings?.[0]?.message ?? 'Der Auftrag ist noch nicht vollständig abgeschlossen.');
+      if (readActiveProjectId() !== projectId || result.project_id !== projectId) {
+        throw new Error('Das aktive Projekt wurde gewechselt. Bitte den abgeschlossenen Auftrag in seinem Projekt öffnen.');
+      }
+      const finishedWorkflow = result as WorkflowState;
+      const requestedTarget = (finishedWorkflow.context.wizard_request as { target?: string } | undefined)?.target;
+      if (requestedTarget && wizardTargets.indexOf(requestedTarget as WorkflowStepId) >= wizardTargets.indexOf('simulation')
+        && ['COMPLETE', 'APPROVED', 'WARNING'].includes(finishedWorkflow.statuses.simulation)) {
+        // The authoritative finish receipt deliberately contains no snapshot details.
+        // Failure of this optional metadata read must not undo an accepted finish.
+        const persisted = await getWorkflowSnapshots(projectId).catch(() => null);
+        const latest = selectSimulationSnapshot(persisted?.simulations ?? []);
+        completedResultsHref = latest?.status === 'COMPLETED' && !latest.is_outdated
+          ? `/studio/results?snapshot=${encodeURIComponent(latest.id)}` : '/studio/results';
+      }
     } catch (error) {
       setStatusError(error instanceof Error ? error.message : "Der Agent-Auftrag konnte nicht abgeschlossen werden.");
       return;
@@ -2441,6 +2465,7 @@ export function EngineeringAgentWizard({
       details: "Die temporäre Rückkehr zum Engineering-Auftrag wurde beendet.",
     }).catch(() => undefined);
     onFinish?.();
+    if (completedResultsHref && readActiveProjectId() === projectId) window.location.assign(withProjectParam(completedResultsHref, projectId));
   }
 
   async function cancelWizardRun() {
@@ -2965,6 +2990,12 @@ export function EngineeringAgentWizard({
     routingReviewPending,
     runPaused,
   });
+
+  if (!wizardPreferencesReady || wizardRestoreError) return <section className="eng-agent-questionnaire" aria-label="Gespeicherten Auftrag wiederherstellen">
+    {wizardRestoreError ? <><p role="alert">{wizardRestoreError} Der gespeicherte Auftrag bleibt erhalten.</p>
+      <button type="button" onClick={() => setWizardRestoreRevision(value => value + 1)}>Auftrag erneut laden</button></>
+      : <p role="status">Gespeicherter Auftrag und Bestätigungsschritt werden wiederhergestellt …</p>}
+  </section>;
 
   if (linkedDraftId && phase === 'questionnaire') return <section className="eng-agent-questionnaire" aria-label="Geführte Agent-Rückfrage">
     <h3>Gespeicherten Projektentwurf ausführen</h3>
@@ -4507,15 +4538,15 @@ function summarizeToolInput(input: unknown) {
 
 function WizardModelReview({ onProposalLoaded, onReviewBusyChange, projectId, runId }: { onProposalLoaded?: (proposal: EngineeringProposal) => void; onReviewBusyChange?: (busy: boolean) => void; projectId: string; runId: string }) {
   const [proposal, setProposal] = useState<EngineeringProposal | null>(null);
+  const proposalRef = useRef<EngineeringProposal | undefined>(undefined);
   const [error, setError] = useState("");
   const revisionRef = useRef('');
   const [reviewBusy, setReviewBusy] = useState(false);
-  const proposalChanged = useCallback((value: EngineeringProposal) => { setProposal(value); onProposalLoaded?.(value); }, [onProposalLoaded]);
+  const proposalChanged = useCallback((value: EngineeringProposal) => { proposalRef.current = value; setProposal(value); onProposalLoaded?.(value); }, [onProposalLoaded]);
   const busyChanged = useCallback((value: boolean) => { setReviewBusy(value); onReviewBusyChange?.(value); }, [onReviewBusyChange]);
   useEffect(() => {
     if (reviewBusy) return;
     const controller = new AbortController();
-    const options = { headers: { "X-Project-ID": projectId }, signal: controller.signal, cache: "no-store" as const };
     let refreshing = false;
     const refresh = async () => {
       if (refreshing) return;
@@ -4523,16 +4554,16 @@ function WizardModelReview({ onProposalLoaded, onReviewBusyChange, projectId, ru
       try {
         const conversation = await readConversation(projectId, controller.signal);
         if (!wizardConversationMatches(conversation.data, runId)) throw new Error('Der gespeicherte Vorschlag gehört zu einem anderen Auftrag.');
-        if (!conversation.data.active_proposal) { setProposal(null); setError(''); return; }
-        const result = await fetch(`/api/engineering/agent/proposals/${encodeURIComponent(conversation.data.active_proposal)}`, options);
-        const value = await result.json();
-        if (!result.ok || !value.success) throw new Error('Vorschlag konnte nicht geladen werden.');
+        if (!conversation.data.active_proposal) { proposalRef.current = undefined; setProposal(null); setError(''); return; }
+        const value = await loadWizardProposal(conversation.data.active_proposal, projectId,
+          proposalRef.current, controller.signal);
         if (controller.signal.aborted) return;
-        const signature = JSON.stringify([value.data.proposal_id, value.data.revision, value.data.status, value.data.validation_result]);
+        proposalRef.current = value;
+        const signature = JSON.stringify([value.proposal_id, value.revision, value.status, value.validation_result]);
         if (revisionRef.current !== signature) {
           revisionRef.current = signature;
-          setProposal(value.data);
-          onProposalLoaded?.(value.data);
+          setProposal(value);
+          onProposalLoaded?.(value);
         }
         setError('');
       } catch (cause) {

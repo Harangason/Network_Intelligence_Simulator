@@ -21,7 +21,8 @@ import {
   simulationFormatDefinitions,
 } from "@/features/simulation/lib/simulation-formats";
 import { topologyToConfig, type NetworkTopology } from "@/features/network/lib/topology";
-import { createSimulationSnapshot, getWorkflow, setWorkflowContext, type SimulationSnapshot, type WorkflowState } from "@/features/workflow/lib/workflow-api";
+import { createSimulationSnapshot, getWorkflow, getWorkflowSimulationSnapshot, setWorkflowContext, type SimulationSnapshot, type WorkflowState } from "@/features/workflow/lib/workflow-api";
+import { mergeSimulationResult, selectSimulationSnapshot } from "@/features/simulation/lib/simulation-result";
 import type { Catalog, ModelSignalSeries, ModelSimulationTrace, RuntimeNetworkMetric, SimulationJob } from "@/shared/api/types";
 import { SimulationResult } from "./simulation-result";
 import { notifyWorkflowChanged } from "../../workflow/ui/workflow-header";
@@ -64,7 +65,9 @@ function simulationSessionKey(projectId: string) {
   return `nis.active-simulation.${projectId}`;
 }
 
-export function ModelSimulationRunner({ initialProjectId = "" }: { initialProjectId?: string }) {
+const RESET_SIMULATION_VIEW = "reset-view";
+
+export function ModelSimulationRunner({ initialProjectId = "", initialSnapshotId }: { initialProjectId?: string; initialSnapshotId?: string }) {
   const [catalog, setCatalog] = useState<Catalog | null>(null);
   const [workflow, setWorkflow] = useState<WorkflowState | null>(null);
   const [snapshot, setSnapshot] = useState<SimulationSnapshot | null>(null);
@@ -97,7 +100,7 @@ export function ModelSimulationRunner({ initialProjectId = "" }: { initialProjec
   const [resetPromptOpen, setResetPromptOpen] = useState(false);
 
   useEffect(() => {
-    const projectId = workflow?.project_id;
+    const projectId = workflow?.project_id ?? "";
     if (!projectId) return;
     let active = true;
     setRestoredProjectId("");
@@ -105,30 +108,42 @@ export function ModelSimulationRunner({ initialProjectId = "" }: { initialProjec
     setJob(null);
     setSnapshot(null);
     const savedJobId = window.sessionStorage.getItem(simulationSessionKey(projectId));
-    if (!savedJobId) {
+    if (!initialSnapshotId && savedJobId === RESET_SIMULATION_VIEW) {
       setRestoredProjectId(projectId);
       return () => { active = false; };
     }
-    void getSimulation(savedJobId).then((savedJob) => {
+    async function restore() {
+      const persisted = selectSimulationSnapshot(workflow?.simulation_snapshots ?? [],
+        initialSnapshotId ? { snapshotId: initialSnapshotId } : savedJobId ? { jobId: savedJobId } : {});
+      const jobId = persisted?.job_id ?? savedJobId;
+      if (!jobId) {
+        if (active) setRestoredProjectId(projectId);
+        return;
+      }
+      const [savedJob, fullSnapshot] = await Promise.all([
+        getSimulation(jobId, projectId),
+        persisted ? getWorkflowSimulationSnapshot(persisted.id, projectId) : Promise.resolve(null),
+      ]);
       if (!active) return;
-      setJob(savedJob);
+      setSnapshot(fullSnapshot);
+      setJob({ ...savedJob, result: mergeSimulationResult(savedJob.result, fullSnapshot?.result) ?? null });
       setRestoredProjectId(projectId);
-    }).catch((caught) => {
+    }
+    void restore().catch((caught) => {
       if (active) setRestoreError(caught instanceof Error ? caught.message : "Simulationslauf nicht erreichbar.");
     });
     return () => { active = false; };
-  }, [restoreAttempt, workflow?.project_id]);
+  }, [initialSnapshotId, restoreAttempt, workflow?.project_id]);
 
   useEffect(() => {
     const projectId = workflow?.project_id;
     if (!projectId || restoredProjectId !== projectId) return;
     const key = simulationSessionKey(projectId);
     if (job) window.sessionStorage.setItem(key, job.id);
-    else window.sessionStorage.removeItem(key);
   }, [job, restoredProjectId, workflow?.project_id]);
 
   useEffect(() => {
-    if (!job) return;
+    if (!job || ["completed", "failed", "canceled"].includes(job.status)) return;
     const warnBeforeLeaving = (event: BeforeUnloadEvent) => {
       event.preventDefault();
       event.returnValue = "";
@@ -139,13 +154,13 @@ export function ModelSimulationRunner({ initialProjectId = "" }: { initialProjec
 
   const loadWorkflow = useCallback(async () => {
     try {
-      const nextWorkflow = await getWorkflow();
+      const nextWorkflow = await getWorkflow(initialProjectId || undefined);
       setWorkflow(nextWorkflow);
       setError("");
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Workflow nicht verfügbar.");
     }
-  }, []);
+  }, [initialProjectId]);
   useWorkflowRefresh(loadWorkflow);
 
   useEffect(() => {
@@ -159,9 +174,10 @@ export function ModelSimulationRunner({ initialProjectId = "" }: { initialProjec
   }, [workflow?.project_id, workflow?.versions.engineering_model]);
 
   useEffect(() => {
+    if (!snapshot || !job) return;
     void setWorkflowContext({
-      selected_simulation: snapshot ? { snapshot_id: snapshot.id, job_id: job?.id ?? null } : null,
-    }).catch(() => undefined);
+      selected_simulation: { snapshot_id: snapshot.id, job_id: job.id },
+    }, workflow?.project_id).catch(() => undefined);
   }, [job?.id, snapshot]);
 
   useEffect(() => {
@@ -186,7 +202,7 @@ export function ModelSimulationRunner({ initialProjectId = "" }: { initialProjec
 
   const valid = workflow?.statuses.validation === "APPROVED" || workflow?.statuses.validation === "WARNING";
   const projectIdForLinks = workflow?.project_id ?? initialProjectId;
-  const simulationOutdated = workflow?.statuses.simulation === "OUTDATED";
+  const simulationOutdated = snapshot?.is_outdated || workflow?.statuses.simulation === "OUTDATED";
   const running = Boolean(job && !["completed", "failed", "canceled"].includes(job.status));
   const selectedTechnology = useMemo(() => {
     const industry = String(workflow?.parameters.industry ?? "");
@@ -230,7 +246,9 @@ export function ModelSimulationRunner({ initialProjectId = "" }: { initialProjec
   }
 
   const handleJobChange = useCallback((nextJob: SimulationJob) => {
-    setJob(nextJob);
+    setJob((current) => current?.id === nextJob.id
+      ? { ...nextJob, result: mergeSimulationResult(nextJob.result, current.result) ?? null }
+      : nextJob);
     if (["completed", "failed", "canceled"].includes(nextJob.status)) {
       void getWorkflow().then(setWorkflow).catch(() => undefined);
       notifyWorkflowChanged();
@@ -346,7 +364,9 @@ export function ModelSimulationRunner({ initialProjectId = "" }: { initialProjec
   }
 
   function clearSimulationView() {
-    if (workflow?.project_id) window.sessionStorage.removeItem(simulationSessionKey(workflow.project_id));
+    if (workflow?.project_id) window.sessionStorage.setItem(simulationSessionKey(workflow.project_id), RESET_SIMULATION_VIEW);
+    // The explicit URL selects a saved run; reset clears that selection, never the persisted evidence.
+    window.history.replaceState(window.history.state, "", withProjectParam("/studio/simulation", projectIdForLinks));
     setResetPromptOpen(false);
     setPlaying(false);
     setPlayhead(0);
@@ -426,9 +446,12 @@ export function ModelSimulationRunner({ initialProjectId = "" }: { initialProjec
   const maximumTime = Number(modelTrace?.scenario.duration_s || duration);
 
   return (
-    <section className="simulation-runner model-simulation-runner">
+    <section className="simulation-runner model-simulation-runner" data-snapshot-id={snapshot?.id} data-job-id={job?.id}>
+      {snapshot && job && <div className="notice"><strong>Gespeicherter Simulationslauf</strong> · {job.id}
+        <Link href={withProjectParam(`/studio/results?snapshot=${encodeURIComponent(snapshot.id)}`, projectIdForLinks)}>Ergebnis und Bewertung öffnen →</Link>
+      </div>}
       {!valid && <div className="workflow-blocker error"><strong>Simulation blockiert</strong><span>Ein aktueller Preflight mit Status APPROVED oder WARNING ist erforderlich.</span><Link href={withProjectParam("/studio/validation", projectIdForLinks)}>Preflight öffnen</Link></div>}
-      {simulationOutdated && <div className="workflow-blocker warning"><strong>Frühere Simulation ist OUTDATED</strong><span>{workflow?.stale_reasons.simulation}</span></div>}
+      {simulationOutdated && <div className="workflow-blocker warning"><strong>Historisches Simulationsergebnis · OUTDATED</strong><span>{snapshot?.outdated_reason ?? workflow?.stale_reasons.simulation}</span></div>}
 
       <form className="panel simulation-command-bar" onSubmit={start}>
         <label><span>Szenario</span><select value={mode} onChange={(event) => setMode(event.target.value)}><option value="GOLDEN">Golden / Ideal</option><option value="NORMAL">Normal</option><option value="USER_DEFINED_FAULT">Nutzerfehler</option><option value="AI_GENERATED_FAULT">Geprüfter KI-Fehler</option><option value="STRESS">Stresstest</option></select></label>
@@ -484,14 +507,14 @@ export function ModelSimulationRunner({ initialProjectId = "" }: { initialProjec
       </form>
       {savedScenarioNotice && <div className="notice success">{savedScenarioNotice}</div>}
       {restoreError && <div className="notice error" role="alert">Der gespeicherte Simulationslauf konnte nicht geladen werden: {restoreError} <button className="button secondary tiny" onClick={() => setRestoreAttempt((attempt) => attempt + 1)} type="button">Erneut laden</button></div>}
-      {workflow?.project_id && restoredProjectId !== workflow.project_id && !restoreError && <div className="notice" role="status">Der letzte Simulationslauf dieser Sitzung wird wiederhergestellt …</div>}
+      {workflow?.project_id && restoredProjectId !== workflow.project_id && !restoreError && <div className="notice" role="status">Der gespeicherte Simulationslauf dieses Projekts wird geladen …</div>}
       {resetPromptOpen && job && (
         <div className="project-dialog-backdrop">
           <section aria-labelledby="simulation-reset-title" aria-modal="true" className="project-dialog simulation-reset-dialog" role="alertdialog">
             <div>
               <p className="eyebrow">Simulations-Trace</p>
               <h2 id="simulation-reset-title">Trace vor dem Zurücksetzen sichern?</h2>
-              <p>Der Lauf bleibt bis zum Zurücksetzen in dieser Sitzung erhalten. Lade gewünschte Artefakte jetzt herunter. Danach wird die Ansicht geleert; du kannst den Lauf bis dahin durch Navigation oder Neuladen wieder öffnen.</p>
+              <p>Zurücksetzen leert nur diese Ansicht. Der gespeicherte Lauf und seine Ergebnisse bleiben unter Results / Analysis verfügbar. Du kannst die Trace-Artefakte zusätzlich herunterladen.</p>
             </div>
             {!!job.artifact_downloads?.length && (
               <div className="simulation-reset-artifacts" aria-label="Trace-Artefakte herunterladen">

@@ -89,7 +89,7 @@ def _load_project_transport_config(project_id: str, routes: list[dict[str, Any]]
     try:
         state = WorkflowStatusService(project_id).get()
         return CommunicationConfigBuilder().build(routes, topology=state.get("topology") or {},
-            parameters=state.get("parameters") or {}).get("config") or {}
+            parameters=state.get("parameters") or {}, simulation=True).get("config") or {}
     finally:
         reset_project(token)
 
@@ -166,11 +166,16 @@ def prepare_workflow_simulation_config(config: dict[str, Any], project_id: str) 
         from backend.nis.engineering.capacity.service import CapacityTimingService
         from backend.nis.engineering.capacity.dimensioning import VERSION
         current = CapacityTimingService(project_id).calculate(persist=False)["results"]["networks"]
-        invalid_lin = [item for item in current if item["protocol"] == "LIN" and not item["timing_verified"]]
+        def simulation_schedule(item):
+            return (item.get('simulation_capacity') or {}).get('communication_schedule') or item['communication_schedule']
+        invalid_lin = [item for item in current if item["protocol"] == "LIN"
+            and simulation_schedule(item).get('status') != 'FEASIBLE_UNDER_ASSUMPTIONS']
         if invalid_lin:
             raise EngineeringValidationError("LIN-Sendeplan muss neu dimensioniert werden: " + ", ".join(item["network_name"] for item in invalid_lin))
         parameters = {**parameters, "communication_schedule": {"version": VERSION, "networks": [
-            {"network_id": item["network_id"], **item["communication_schedule"]} for item in current if item["timing_verified"]]}}
+            {"network_id": item["network_id"], **simulation_schedule(item),
+             "hardware_evidence": bool(item['capacity_verified'])}
+            for item in current if simulation_schedule(item).get('status') == 'FEASIBLE_UNDER_ASSUMPTIONS']}}
     frozen = {**config, "topology": state["topology"], "parameters": parameters}
     for key in ("networks", "hardware", "communications", "routing_entry_ids"):
         frozen[key] = transport[key]

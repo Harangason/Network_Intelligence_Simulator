@@ -83,6 +83,9 @@ def simulation_coverage(messages: list[dict], signals: list[dict], transports: l
     message_ids = {str(row["id"]) for row in messages if row.get("id")}
     signal_ids = {str(row["id"]) for row in signals if row.get("id")}
     signal_messages = {str(row["id"]): str(row.get("message_id") or "") for row in signals if row.get("id")}
+    message_signals: dict[str, set[str]] = {}
+    for key, parent in signal_messages.items():
+        message_signals.setdefault(parent, set()).add(key)
     scope = scope if isinstance(scope, dict) else {}
     selected = not scope.get("include_all") and str(scope.get("mode") or "ALL").upper() != "ALL"
     errors: list[str] = []
@@ -103,6 +106,9 @@ def simulation_coverage(messages: list[dict], signals: list[dict], transports: l
         # transport obligation. Signal switches never repack a physical frame.
         excluded = _unused_function_outputs(messages, all_signal_messages, [*transports, *(declared_transports or [])])
         message_names = {str(message["id"]): str(message.get("name") or message["id"]) for message in messages if message.get("id")}
+        first_messages = {}
+        for message in messages:
+            first_messages.setdefault(str(message.get("id")), message)
         excluded_children = {message_id: set() for message_id in excluded}
         for key, parent in signal_messages.items():
             if parent in excluded_children:
@@ -111,7 +117,7 @@ def simulation_coverage(messages: list[dict], signals: list[dict], transports: l
             excluded_signals = excluded_children[message_id]
             required_messages.discard(message_id)
             required_signals.difference_update(excluded_signals)
-            internal_state = next((message for message in messages if str(message.get("id")) == message_id), None)
+            internal_state = first_messages.get(message_id)
             contract = ((internal_state or {}).get("configuration") or {}).get("communication_contract") or {}
             is_internal = contract.get("role") == "INTERNAL_STATE" and contract.get("scope") in {"INTERNAL", "FUNCTION_OUTPUT"}
             transport_exclusions.append({"message_id": message_id, "message_name": message_names[message_id],
@@ -142,8 +148,11 @@ def simulation_coverage(messages: list[dict], signals: list[dict], transports: l
         if payload.get("message_id"):
             linked_messages.add(str(payload["message_id"]))
         linked_signals = _ids(payload.get("signal_ids"))
-        covered_signals.update(linked_signals if linked_signals else
-                               {key for key, parent in signal_messages.items() if parent in linked_messages})
+        if linked_signals:
+            covered_signals.update(linked_signals)
+        else:
+            for message_id in linked_messages:
+                covered_signals.update(message_signals.get(message_id, ()))
         covered_messages.update(linked_messages)
         covered_messages.update(signal_messages[key] for key in linked_signals if key in signal_messages)
     covered_messages &= required_messages

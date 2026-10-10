@@ -849,16 +849,30 @@ def workflow_parameters_route():
 
 @engineering_api.route('/workflow/parameters/review', methods=['GET'])
 def parameter_review_route():
-    from backend.nis.agent.tools.validation import review_parameter_findings
+    from backend.nis.agent.tools.validation import review_parameter_findings, review_bus_rate_plans, review_simulation_capacity, _parameter_review_graph
     service = WorkflowStatusService(_project_id())
     state = service.get()
-    findings = review_parameter_findings(state)
+    proposal_id = request.args.get('proposal')
+    proposal = None
+    changes = None
+    if proposal_id:
+        from backend.nis.agent.tools import proposal_service
+        proposal = proposal_service.latest(proposal_id)
+        if proposal['status'] not in {'APPLIED', 'REJECTED'}:
+            changes = proposal['changes']
+    effective_model = _parameter_review_graph(state, changes)
+    simulation_capacity = review_simulation_capacity(state, changes, effective_model=effective_model)
+    findings = review_parameter_findings(state, changes, simulation_checks=simulation_capacity, effective_model=effective_model)
+    rate_plans = review_bus_rate_plans(state, changes, effective_model=effective_model)
     current = service.get()
     if state['versions'] != current['versions'] or state['edit_tokens']['parameters'] != current['edit_tokens']['parameters']:
         return jsonify({'error': 'Das Modell wurde während der Prüfung geändert. Bitte erneut prüfen.'}), 409
+    if proposal and proposal_service.latest(proposal_id)['revision'] != proposal['revision']:
+        return jsonify({'error': 'Der Vorschlag wurde während der Prüfung geändert. Bitte erneut prüfen.'}), 409
     return jsonify({'project_id': state['project_id'], 'versions': state['versions'],
-                    'edit_token': state['edit_tokens']['parameters'], 'source': 'CURRENT_CANONICAL_MODEL',
-                    'findings': findings})
+                    'edit_token': state['edit_tokens']['parameters'], 'source': 'PENDING_PROPOSAL' if changes is not None else 'CURRENT_CANONICAL_MODEL',
+                    'proposal': {'proposal_id': proposal['proposal_id'], 'revision': proposal['revision'], 'status': proposal['status']} if proposal else None,
+                    'findings': findings, 'bus_rate_plans': rate_plans, 'simulation_capacity': simulation_capacity})
 
 
 @engineering_api.route('/workflow/parameters/user-defined-values', methods=['GET'])
@@ -871,6 +885,23 @@ def user_defined_values_route():
     if document is None:
         return jsonify({'error': 'Für dieses Projekt wurden noch keine Nutzerwerte gespeichert.'}), 404
     return jsonify(document)
+
+
+@engineering_api.route('/workflow/parameters/defaults', methods=['POST'])
+def apply_parameter_defaults_route():
+    from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY
+    payload = _routing_payload()
+    service = WorkflowStatusService(_project_id())
+    state = service.get()
+    if not payload.get('expected_token'):
+        raise EngineeringValidationError('Die aktuelle Parameterrevision fehlt. Bitte neu laden.')
+    check_edit_token(payload['expected_token'], state['parameters'])
+    technologies = payload.get('technologies') or []
+    if not isinstance(technologies, list) or any(not isinstance(item, str) for item in technologies):
+        raise EngineeringValidationError('technologies muss eine Liste registrierter IDs sein.')
+    parameters = DEFAULT_TECHNOLOGY_REGISTRY.simulation_defaults_for_project(state['parameters'], technologies)
+    service.save_parameters(parameters, actor='project-simulation-defaults')
+    return jsonify(service.get())
 
 
 @engineering_api.route('/workflow/communication-repair/preview', methods=['POST'])
@@ -917,9 +948,23 @@ def update_workflow_parameters_route():
     if not parameters:
         raise EngineeringValidationError("parameters muss ein nicht-leeres Objekt sein.")
     from backend.nis.engineering.simulation_observation import mark_user_duration
-    parameters = mark_user_duration(parameters)
     project_id = _project_id()
-    check_edit_token(payload.get("expected_token"), WorkflowStatusService(project_id).get()["parameters"])
+    current_parameters = WorkflowStatusService(project_id).get()["parameters"]
+    check_edit_token(payload.get("expected_token"), current_parameters)
+    duration_defaults = {}
+    edited_duration_fields = payload.get("edited_duration_fields")
+    if edited_duration_fields is not None:
+        from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY
+        technology = parameters.get("technology") or current_parameters.get("technology")
+        if technology:
+            try:
+                schema = DEFAULT_TECHNOLOGY_REGISTRY.profile(technology, fields=("parameter_schema",)).get("parameter_schema") or {}
+                duration_defaults = {key: schema[key]["default"] for key in ("duration_s", "duration")
+                                     if key in schema and "default" in schema[key]}
+            except KeyError:
+                pass  # Unknown profiles cannot provide an automatic duration.
+    parameters = mark_user_duration(parameters, previous=current_parameters,
+                                    edited_fields=edited_duration_fields, defaults=duration_defaults)
     try:
         WorkflowStatusService(project_id).save_parameters(parameters, actor=payload.get("actor"))
     except ValueError as error:

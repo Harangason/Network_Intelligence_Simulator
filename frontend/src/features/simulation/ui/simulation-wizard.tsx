@@ -2,9 +2,10 @@
 
 import { parseLosslessJson } from "../../../shared/api/lossless-json.ts";
 
-import { booleanParameterValue, numericParameterValue, conditionalParameterDefault, confirmTechnologyParameters, technologyParameterUnverified as parameterIsUnverified, technologyParameterValues, parameterValueStatus, findingsForParameter, technologyKey, type DeclaredNetwork } from "@/features/communication/lib/technology-parameters";
+import { formatBitrate, parseBitrate, commonTechnologyParameters, booleanParameterValue, numericParameterValue, conditionalParameterDefault, confirmTechnologyParameters, technologyParameterApplicable, technologyParameterUnverified as parameterIsUnverified, technologyParameterValues, parameterValueStatus, findingsForParameter, simulationParameterFindings, networkRateReviewTargets, technologyKey } from "@/features/communication/lib/technology-parameters";
 
 import Link from "next/link";
+import { requestEngineeringAgentWizard } from '@/features/agent/lib/agent-task-events';
 import { engineeringContextHref } from "@/features/agent/lib/assistant-context";
 import { useSearchParams } from "next/navigation";
 import { NetworkRateReview } from "@/features/agent/ui/wizard-preflight-review";
@@ -27,7 +28,7 @@ import {
   type TopologyNode,
   type TopologyPort,
 } from "@/features/network/lib/topology";
-import { getNetworkView, saveNetworkView, renamePhysicalBus, getWorkflowSummary, getWorkflowParameters, getParameterReview, type ParameterReview, saveWorkflowParameters, saveWorkflowTopology, saveBusChange, saveNetworkAssignment, createFrameDevice, type FrameDeviceRequest, type NetworkAssignmentRequest, type BusChangeRequest } from "@/features/workflow/lib/workflow-api";
+import { getNetworkView, saveNetworkView, renamePhysicalBus, getWorkflowSummary, getWorkflowParameters, getParameterReview, loadProjectSimulationDefaults, type ParameterReview, saveWorkflowParameters, saveWorkflowTopology, saveBusChange, saveNetworkAssignment, createFrameDevice, type FrameDeviceRequest, type NetworkAssignmentRequest, type BusChangeRequest } from "@/features/workflow/lib/workflow-api";
 import { routingBusType as routingBus } from "@/features/communication/lib/bus-technology";
 import { defaultSimulationFormats } from "@/features/simulation/lib/simulation-formats";
 import { fuzzyTechnologySearch, parameterTechnologySelection, registeredTechnologies } from "@/features/communication/lib/technology-catalog-selection";
@@ -539,13 +540,16 @@ export function SimulationWizard({
 }) {
   const searchParams = useSearchParams();
   const requestedTechnology = searchParams.get("technology");
+  const requestedProposal = searchParams.get('proposal');
   const [parameterReview, setParameterReview] = useState<ParameterReview | null>(null);
   const [parameterReviewError, setParameterReviewError] = useState("");
   const [parameterDraftDirty, setParameterDraftDirty] = useState(false);
+  const editedDurationFieldsRef = useRef(new Set<string>());
   const [networkConfirming, setNetworkConfirming] = useState(false);
   const [catalog, setCatalog] = useState<Catalog>(localCatalog);
   const [catalogError, setCatalogError] = useState("");
   const [catalogLoaded, setCatalogLoaded] = useState(false);
+  const [catalogReload, setCatalogReload] = useState(0);
   const [licenseStates, setLicenseStates] = useState<Record<string, LicenseState>>({});
   const [licenseError, setLicenseError] = useState('');
   const [domainId, setDomainId] = useState("");
@@ -722,7 +726,7 @@ export function SimulationWizard({
       if (active) setCatalogError(error instanceof Error ? error.message : "Technologiekatalog konnte nicht geladen werden.");
     });
     return () => { active = false; };
-  }, [mode]);
+  }, [mode, catalogReload]);
 
   useEffect(() => {
     let active = true;
@@ -771,13 +775,13 @@ export function SimulationWizard({
   useEffect(() => {
     if (mode !== "parameters" || !workflowLoaded) return;
     let active = true; setParameterReview(null); setParameterReviewError("");
-    void getParameterReview(initialProjectId).then(review => {
+    void getParameterReview(initialProjectId, requestedProposal).then(review => {
       if (!active) return;
       if (review.edit_token !== editTokensRef.current.parameters) throw new Error("Der gespeicherte Parameterstand wurde geändert. Bitte die Ansicht neu laden.");
       setParameterReview(review);
     }).catch(error => { if (active) setParameterReviewError(error instanceof Error ? error.message : "Parameterprüfung fehlgeschlagen."); });
     return () => { active = false; };
-  }, [mode, initialProjectId, workflowLoaded, syncRequest]);
+  }, [mode, initialProjectId, workflowLoaded, syncRequest, requestedProposal]);
 
   useEffect(() => {
     if (mode !== "parameters") return;
@@ -924,14 +928,28 @@ export function SimulationWizard({
     [storedParameters.formats],
   );
   const parameterGroups = useMemo(() => {
-    const groups = new Map<TechnologyParameterField["category"], TechnologyParameterField[]>();
+    const common = technology ? commonTechnologyParameters(technology) : [];
+    const commonKeys = new Set(common.map(field => field.key));
+    const groups = new Map<string, TechnologyParameterField[]>();
     for (const field of technology?.parameter_schema ?? []) {
-      if (busLoadRangeKeys.has(field.key)) continue;
-      const category = field.category ?? "physical";
+      if (busLoadRangeKeys.has(field.key) || commonKeys.has(field.key)) continue;
+      const category = field.value_role === 'EVIDENCE' || field.value_role === 'REFERENCE' ? 'evidence' : field.category ?? "physical";
       groups.set(category, [...(groups.get(category) ?? []), field]);
     }
-    return Array.from(groups.entries());
+    return [['common', common], ...Array.from(groups.entries())] as Array<[string, TechnologyParameterField[]]>;
   }, [technology]);
+  useEffect(() => {
+    if (mode !== 'parameters') return;
+    const reveal = () => {
+      const id = window.location.hash.slice(1);
+      if (!id.startsWith('parameter-field-')) return;
+      const target = document.getElementById(id);
+      const details = target?.closest('details'); if (details) details.open = true;
+      target?.scrollIntoView({block:'center'});
+    };
+    reveal(); window.addEventListener('hashchange', reveal);
+    return () => window.removeEventListener('hashchange', reveal);
+  }, [mode, technology, parameterReview]);
   const busLoadField = useMemo(
     () => technology?.parameter_schema?.find((field) => field.key === "target_bus_load_percent"),
     [technology],
@@ -952,7 +970,13 @@ export function SimulationWizard({
   }
 
   function chooseTechnology(value: string) {
+    editedDurationFieldsRef.current.clear();
     setTechnologyId(value);
+    if (mode === "parameters") {
+      const url = new URL(window.location.href);
+      url.searchParams.set("technology", value);
+      window.history.replaceState(window.history.state, "", url);
+    }
   }
 
   async function applyRoutingSuggestion(suggestion: RoutingNetworkSuggestion) {
@@ -1009,7 +1033,8 @@ export function SimulationWizard({
         setSavedMessage("Netzwerktopologie gespeichert. Capacity & Timing ist jetzt gegebenenfalls veraltet.");
       } else if (advanced) {
         const parsed = parseLosslessJson(advancedConfig) as Record<string, unknown>;
-        const saved = await saveWorkflowParameters(parsed, editTokensRef.current.parameters, initialProjectId);
+        const saved = await saveWorkflowParameters(parsed, editTokensRef.current.parameters, initialProjectId,
+          ['duration_s', 'duration'].filter(key => Object.hasOwn(parsed, key)));
         editTokensRef.current = saved.edit_tokens ?? {};
         setStoredParameters(saved.parameters);
         setSavedMessage("Parameterkonfiguration gespeichert.");
@@ -1047,13 +1072,14 @@ export function SimulationWizard({
         if (!technology) throw new Error("Das Technologieprofil ist nicht verfügbar.");
         const parameters = { ...confirmTechnologyParameters(storedParameters, technology, dynamicParameters,
           {preserveSimulationAssumptions:true}), industry: domainId, formats };
-        const saved = await saveWorkflowParameters(parameters, editTokensRef.current.parameters, initialProjectId);
+        const saved = await saveWorkflowParameters(parameters, editTokensRef.current.parameters, initialProjectId,
+          [...editedDurationFieldsRef.current]);
         editTokensRef.current = saved.edit_tokens ?? {};
         setStoredParameters(saved.parameters);
         setSavedMessage("Technologie- und Timing-Parameter gespeichert.");
       }
       if (mode === "network") localWorkflowChangeRef.current = true;
-      if (mode === "parameters") { setParameterDraftDirty(false); notifyWorkflowDraftStatus("parameters", null); setSyncRequest(value => value + 1); }
+      if (mode === "parameters") { editedDurationFieldsRef.current.clear(); setParameterDraftDirty(false); notifyWorkflowDraftStatus("parameters", null); setSyncRequest(value => value + 1); }
       notifyWorkflowChanged();
     } catch (error) {
       setFormError(error instanceof Error ? error.message : "Anfrage fehlgeschlagen.");
@@ -1071,24 +1097,26 @@ export function SimulationWizard({
 
   const currentFindings = parameterReview?.findings ?? [];
   const selectedFindings = currentFindings.filter(item => technologyKey(item.technology) === technologyKey(technologyId));
+  const allSimulationFindings = simulationParameterFindings(currentFindings);
+  const simulationFindings = simulationParameterFindings(selectedFindings);
+  const deviceFindings = selectedFindings.filter(item => item.code === 'CAPACITY_DEVICE_EVIDENCE_MISSING');
+  const simulationChecks = (parameterReview?.simulation_capacity ?? []).filter(item => technologyKey(item.technology) === technologyKey(technologyId));
   const networkRateKeys = (technology?.parameter_schema ?? []).filter(field => field.scope === 'network' && field.unit === 'bit/s').map(field => field.key);
-  const affectedNetworks = ((storedParameters.networks ?? []) as DeclaredNetwork[]).filter(network =>
-    technologyKey(network.technology) === technologyKey(technologyId)
-    && selectedFindings.some(finding => finding.network_id === network.id && finding.code === 'CAPACITY_UNVERIFIED'
-      && finding.parameter_fields?.some(key => networkRateKeys.includes(key))));
-  const affectedFieldKeys = [...new Set(selectedFindings.flatMap(finding => finding.parameter_fields ?? []))];
+  const affectedNetworks = technology ? networkRateReviewTargets(storedParameters, technology, selectedFindings) : [];
+  const affectedFieldKeys = [...new Set(simulationFindings.flatMap(finding => finding.parameter_fields ?? []))];
   const findingTechnologies = [...new Set(currentFindings.map(item => technologyKey(item.technology)))];
-  const proposedFieldCount = (technology?.parameter_schema ?? []).filter(field => parameterValueStatus(storedParameters, field.key, technologyId) === 'PROPOSAL').length;
+  const proposedFieldCount = (technology?.parameter_schema ?? []).filter(field => field.simulation_default != null && parameterValueStatus(storedParameters, field.key, technologyId) === 'PROPOSAL').length;
   const assumptionFieldCount = (technology?.parameter_schema ?? []).filter(field => parameterValueStatus(storedParameters, field.key, technologyId) === 'SAVED_ASSUMPTION').length;
 
   if (catalogError) {
     return (
-      <div className="panel error-card">
-        <p className="eyebrow">Backend nicht erreichbar</p>
+      <div className="panel error-card" role="alert">
+        <p className="eyebrow">Technologieprofile konnten nicht geladen werden</p>
         <h2>{catalogError}</h2>
         <p className="muted">
-          Starte die Anwendung mit dem gemeinsamen Web-Launcher.
+          Gespeicherte Projektwerte bleiben erhalten. Lade die Technologieprofile erneut.
         </p>
+        <button className="button secondary" onClick={() => setCatalogReload(value => value + 1)} type="button">Technologieprofile erneut laden</button>
       </div>
     );
   }
@@ -1127,20 +1155,60 @@ export function SimulationWizard({
       {mode === 'parameters' && <section className="panel parameter-findings-panel" id="parameter-findings" aria-label="Aktuelle Parameterbefunde">
         <h3>Aktuelle Parameterprüfung</h3>
         <p>Prüfung der gespeicherten Netz- und Geräteanschlüsse. Änderungen im Formular werden nach dem Speichern erneut geprüft.</p>
-        {searchParams.get('proposal') && <p>Du kommst aus einer Vorschlagsprüfung. Hier werden die aktuellen Projektwerte geprüft; frühere Vorschlagsbefunde können bereits erledigt sein.</p>}
+        {searchParams.get('proposal') && <p>{parameterReview?.source === 'PENDING_PROPOSAL'
+          ? 'Diese Prüfung berücksichtigt die Anschlüsse des noch nicht übernommenen Vorschlags und deine gespeicherten Projektwerte.'
+          : 'Diese Prüfung verwendet den aktuellen gespeicherten Modellstand.'} Parameter speichern übernimmt keine Modellobjekte.
+          {' '}<Link href={withProjectParam('/studio/engineering', projectIdForLinks)} onClick={() => requestEngineeringAgentWizard(projectIdForLinks)}>Zur Vorschlagsprüfung zurück →</Link></p>}
         {!parameterReview && !parameterReviewError && <p role="status">Aktuelle Befunde werden geprüft …</p>}
         {parameterReviewError && <p className="notice error" role="alert">{parameterReviewError}</p>}
         {parameterReview && <>
-          <p role="status">{currentFindings.length ? `${currentFindings.length} offene Anschlussbefunde · ${selectedFindings.length} für ${technology.label}` : 'Keine offenen Anschlussbefunde in dieser Parameterprüfung.'} Diese Prüfung ersetzt keine vollständige Preflight- oder Timing-Freigabe.</p>
-          <nav aria-label="Technologien mit Parameterbefunden">{findingTechnologies.map(id => <button type="button" className="button secondary tiny" key={id} onClick={() => chooseTechnology(id)}>{allTechnologies.find(item => item.id === id)?.label ?? id} · {currentFindings.filter(item => technologyKey(item.technology) === id).length}</button>)}</nav>
-          {Boolean(selectedFindings.length) && <div className="notice error" role="alert">
-            <strong>{new Set(selectedFindings.map(item => item.network_id).filter(Boolean)).size} betroffene Netze · {selectedFindings.length} Anschlüsse</strong>
-            <p>Ein angezeigter Profilwert oder eine gespeicherte Simulationsannahme ist noch kein bestätigter Netzparameter. Offene Bestätigungen sind im Formular markiert; Geräte- und Modellnachweise bleiben separat sichtbar.</p>
-            <nav aria-label="Betroffene Parameterfelder">{affectedFieldKeys.map(key => <a key={key} href={`#parameter-field-${key}`}>{technology.parameter_schema?.find(field => field.key === key)?.label ?? key}</a>)}</nav>
-            <details><summary>Betroffene Anschlüsse und Netze anzeigen</summary><ul>{selectedFindings.map((finding,index) => <li key={index}><strong>{finding.node_name} · {finding.network_name ?? finding.network_id}</strong>: {finding.message} <a href={engineeringContextHref({object_type:'HardwareNetworkInterface',id:finding.object_id ?? ''}, initialProjectId) ?? withProjectParam('/studio/engineering?resource=hardware-interfaces',initialProjectId)}>Anschluss prüfen</a>
+          <p role="status">{allSimulationFindings.length ? `${allSimulationFindings.length} offene Simulationsbefunde · ${simulationFindings.length} für ${technology.label}.` : 'Keine offenen Simulationsbefunde in dieser Parameterprüfung.'} Diese Prüfung ersetzt keine vollständige Preflight- oder Timing-Freigabe.</p>
+          <nav aria-label="Technologien mit Parameterbefunden">{findingTechnologies.map(id => {
+            const findings = currentFindings.filter(item => technologyKey(item.technology) === id);
+            const open = simulationParameterFindings(findings).length;
+            const notices = findings.length - open;
+            return <button type="button" className="button secondary tiny" key={id} onClick={() => chooseTechnology(id)}>{allTechnologies.find(item => item.id === id)?.label ?? id} · {[open ? `${open} offen` : '', notices ? `${notices} Gerätehinweise` : ''].filter(Boolean).join(' · ')}</button>;
+          })}</nav>
+          {simulationChecks.length > 0 && <section aria-label="Auslegung mit gespeicherten Simulationswerten">
+            <h4>Auslegung mit gespeicherten Simulationswerten</h4>
+            <p role="status">{simulationChecks.filter(item => item.status === 'FEASIBLE_UNDER_ASSUMPTIONS').length} von {simulationChecks.length} Bus-/Portgruppen erfüllen die nominale Zielauslastung. Geräte-, Schedule- und funktionaler Timingnachweis bleiben getrennt.</p>
+            <details><summary>Busgeschwindigkeit und berechnete Last anzeigen</summary>
+              {simulationChecks.map((item,index) => <article key={`${item.network_id}:${item.port_id ?? index}`}>
+                <strong>{item.network_name}{item.port_id ? ` · Anschluss ${item.port_id}` : ''}</strong>
+                <p>{Object.entries(item.rates).map(([key,value]) => `${technology.parameter_schema?.find(field => field.key === key)?.label ?? key}: ${value == null ? 'offen' : formatBitrate(Number(value))}`).join(' · ')}{item.load_percent != null ? ` · ${item.load_percent.toFixed(2)} % nominale Last · Ziel ${item.target_load_percent} %` : ''}</p>
+                <small>SIMULATIONSANNAHME · {item.reason}</small>
+              </article>)}
+            </details>
+          </section>}
+          <button className="button secondary tiny" type="button" disabled={submitting || parameterDraftDirty || networkConfirming} onClick={async () => {
+            setNetworkConfirming(true); setParameterReviewError('');
+            try { await loadProjectSimulationDefaults(initialProjectId, parameterReview.edit_token!, [technologyId]); await afterNetworkConfirmation(); notifyWorkflowChanged(); }
+            catch (cause) { setParameterReviewError(cause instanceof Error ? cause.message : 'Simulationsvorgaben konnten nicht geladen werden.'); }
+            finally { setNetworkConfirming(false); }
+          }}>Simulationsvorgaben im Projekt ergänzen</button>
+          <details><summary>Busgeschwindigkeit und Kapazitätsvorschläge</summary>
+            {(parameterReview.bus_rate_plans ?? []).filter(plan => technologyKey(plan.technology) === technologyKey(technologyId)).map((plan, index) => <article key={`${plan.network_id}:${plan.port_id ?? index}`}>
+              <strong>{plan.network_name} · {plan.status === 'CAPACITY_CANDIDATE' ? 'Passende Simulationsrate' : 'Weitere Auslegung erforderlich'}</strong>
+              <p>{Object.entries(plan.selected_values).filter(([key]) => networkRateKeys.includes(key)).map(([key,value]) => `${technology.parameter_schema?.find(field => field.key === key)?.label ?? key}: ${formatBitrate(Number(value))}`).join(' · ')}{plan.load_percent !== undefined ? ` · ${plan.load_percent.toFixed(1)} % modellierte Last` : ''}</p>
+              <small>SIMULATIONSANNAHME · {plan.reason}</small>
+              {plan.alternatives.map(item => <p key={item.technology}>Branchenvorschlag: {item.technology.toUpperCase()} · {item.load_percent.toFixed(1)} % Last · neue Hardware/Anschlüsse und physische Auslegung prüfen.</p>)}
+            </article>)}
+          </details>
+          {Boolean(simulationFindings.length) && <div className="notice error" role="alert">
+            <strong>{new Set(simulationFindings.map(item => item.network_id).filter(Boolean)).size} betroffene Netze · {simulationFindings.length} offene Auslegungsbefunde</strong>
+            <p>Fehlende oder ungültige Simulationsparameter, widersprüchliche Anschlüsse und Überlasten sind im Formular markiert. Gespeicherte Vorgaben werden bei der Prüfung verwendet.</p>
+            <nav aria-label="Betroffene Parameterfelder">{affectedFieldKeys.map(key => <a key={key} href={`#parameter-field-${key}`} onClick={() => {
+              const field = document.getElementById(`parameter-field-${key}`);
+              const details = field?.closest('details'); if (details) details.open = true;
+            }}>{technology.parameter_schema?.find(field => field.key === key)?.label ?? key}</a>)}</nav>
+            <details><summary>Betroffene Anschlüsse und Netze anzeigen</summary><ul>{simulationFindings.map((finding,index) => <li key={index}><strong>{finding.node_name} · {finding.network_name ?? finding.network_id}</strong>: {finding.message} <a href={engineeringContextHref({object_type:'HardwareNetworkInterface',id:finding.object_id ?? ''}, initialProjectId) ?? withProjectParam('/studio/engineering?resource=hardware-interfaces',initialProjectId)}>Anschluss prüfen</a>
               {!!finding.parameter_findings?.length && <ul>{finding.parameter_findings.map((detail,i) => <li key={i}>{detail.message ?? detail.code}</li>)}</ul>}
             </li>)}</ul></details>
           </div>}
+          {deviceFindings.length > 0 && <details className="notice"><summary>Hinweis · {deviceFindings.length} Anschlüsse mit offenem Gerätenachweis · kein Simulationsblocker</summary>
+            <p>Die gespeicherten Simulationswerte sind verwendbar. Fehlende Gerätebelege blockieren die Simulation nicht. Reale Geräte, Transceiver, Verkabelung und Implementierung sind damit noch nicht bestätigt. Parameter-, Modell- und Sendeplanfehler werden weiterhin geprüft.</p>
+            <ul>{deviceFindings.map((finding,index) => <li key={index}><strong>{finding.node_name} · {finding.network_name}</strong>: {finding.message}</li>)}</ul>
+          </details>}
           {!!affectedNetworks.length && <NetworkRateReview key={`${parameterReview.edit_token}:${technologyId}`} technology={technology} networks={affectedNetworks}
             snapshot={{project_id:parameterReview.project_id,parameters:storedParameters,edit_token:parameterReview.edit_token}}
             projectId={initialProjectId} disabled={submitting || parameterDraftDirty} fieldKeys={affectedFieldKeys} onContinue={afterNetworkConfirmation} onBusyChange={setNetworkConfirming} />}
@@ -1153,6 +1221,10 @@ export function SimulationWizard({
         key={`${mode}:${JSON.stringify(storedParameters)}`}
         className="panel config-panel"
         inert={networkConfirming || undefined}
+        onInputCapture={event => {
+          const name = (event.target as HTMLInputElement).name;
+          if (name === 'duration_s' || name === 'duration') editedDurationFieldsRef.current.add(name);
+        }}
         onChange={() => {
           if (mode === "parameters") { setParameterDraftDirty(true); notifyWorkflowDraftStatus("parameters", "OUTDATED"); }
         }}
@@ -1160,6 +1232,7 @@ export function SimulationWizard({
           event.preventDefault();
           void submit(event.currentTarget);
         }}
+        onInvalidCapture={event => { const details = (event.target as HTMLElement).closest('details'); if (details) details.open = true; }}
       >
         <div className="panel-heading">
           <div>
@@ -1429,27 +1502,37 @@ export function SimulationWizard({
               />
             )}
             <div className="parameter-groups">
-              {parameterGroups.map(([category, fields]) => (
+              {parameterGroups.map(([category, fields]) => {
+                const findings = fields.filter(field => findingsForParameter(allSimulationFindings, technologyId, field.key).length > 0).length;
+                const contents = (
                 <fieldset className={`parameter-group parameter-group-${category}`} key={`${technology.id}:${category}`}>
-                  <legend>{parameterCategoryLabels[category]}</legend>
+                  <legend>{category === 'common' ? 'Wichtige Simulationsparameter' : category === 'evidence' ? 'Nachweise und Gerätezuordnung' : parameterCategoryLabels[category as TechnologyParameterField['category']]}</legend>
                   <div className="form-grid three">
                     {fields.map((field) => (
-                      <div key={field.key} id={`parameter-field-${field.key}`} className={findingsForParameter(currentFindings, technologyId, field.key).length ? 'parameter-field-finding' : undefined}>
-                      {findingsForParameter(currentFindings, technologyId, field.key).length > 0 && <p className="parameter-field-finding-message" role="status">Prüfbefund · {new Set(findingsForParameter(currentFindings, technologyId, field.key).map(item => item.network_id)).size} betroffene Netze: Bestätigung oder passender Nachweis fehlt. Ein vorbelegter Wert allein erledigt den Befund nicht.</p>}
+                      <div key={field.key} id={`parameter-field-${field.key}`} className={findingsForParameter(allSimulationFindings, technologyId, field.key).length ? 'parameter-field-finding' : undefined}>
+                      {findingsForParameter(allSimulationFindings, technologyId, field.key).length > 0 && <p className="parameter-field-finding-message" role="status">Prüfbefund · {new Set(findingsForParameter(allSimulationFindings, technologyId, field.key).map(item => item.network_id)).size} betroffene Netze: {findingsForParameter(allSimulationFindings, technologyId, field.key).every(item => item.code === 'CAPACITY_DEVICE_EVIDENCE_MISSING') ? 'Geräte-/Implementierungsnachweis offen; die Simulationswerte werden verwendet.' : 'Gespeicherte Konfiguration oder Auslegung prüfen. Einzelheiten stehen in der aktuellen Parameterprüfung.'}</p>}
                       <ParameterControl
                         field={field}
                         key={field.key}
                         value={displayedParameters[field.key]}
+                        applicable={technologyParameterApplicable(field, displayedParameters)}
                         unverified={parameterIsUnverified(storedParameters, field.key, technologyId)}
                         savedAssumption={parameterValueStatus(storedParameters, field.key, technologyId) === "SAVED_ASSUMPTION"}
-                        simulationAssumption={field.default === undefined && field.simulation_default !== undefined && parameterIsUnverified(storedParameters, field.key, technologyId)}
+                        simulationAssumption={field.simulation_default != null
+                          && (field.default === undefined || !['SCHEMA_SIMULATION_EXAMPLE', 'REGISTERED_PARAMETER_DEFAULT'].includes(field.simulation_default_provenance?.basis ?? 'REGISTERED_PARAMETER_DEFAULT'))
+                          && parameterIsUnverified(storedParameters, field.key, technologyId)}
                         proposal={field.key === "bitrate" ? technology.parameter_proposals : undefined}
                       />
                       </div>
                     ))}
                   </div>
                 </fieldset>
-              ))}
+                );
+                return category === 'common' ? contents : <details className="parameter-details" key={`${technology.id}:${category}`}>
+                  <summary>{category === 'evidence' ? 'Nachweise und Gerätezuordnung' : parameterCategoryLabels[category as TechnologyParameterField['category']]} · {fields.length} weitere Parameter{findings ? ` · ${findings} mit Prüfhinweisen` : ''}</summary>
+                  {contents}
+                </details>;
+              })}
             </div>
 
           </>
@@ -1493,20 +1576,28 @@ export function SimulationWizard({
   );
 }
 
-function ParameterControl({ field, value, unverified = false, simulationAssumption = false, savedAssumption = false, proposal }: {
+function ParameterControl({ field, value, applicable = true, unverified = false, simulationAssumption = false, savedAssumption = false, proposal }: {
   field: TechnologyParameterField;
   value: unknown;
+  applicable?: boolean;
   unverified?: boolean;
   simulationAssumption?: boolean;
   savedAssumption?: boolean;
   proposal?: Technology["parameter_proposals"];
 }) {
   const [proposalError, setProposalError] = useState('');
-  const label = `${field.label}${field.unit ? ` (${field.unit})` : ""}`;
+  const referenceLabels: Record<string,string> = {registered_source:'Profilquelle',device_source:'Geräteunterlagen',binding_source:'Anschlusszuordnung',physical_source:'Nachweis der Leitung und Physik',ldf_source:'LIN-Beschreibungsdatei (LDF)',ncf_source:'Knotenbeschreibung (NCF)',encoding_source:'Signal- und Nachrichtenkodierung',schedule_source:'Sendeplan',capacity_source:'Kapazitätsnachweis',acceptance_source:'Abnahmekriterien',commander_node_id:'Steuernder Teilnehmer',publisher_node_id:'Sendender Teilnehmer',revision:'Profilrevision'};
+  const referenceLabel = field.value_role && field.value_role !== 'CONFIGURATION' ? Object.entries(referenceLabels).find(([suffix]) => field.key === suffix || field.key.endsWith('_' + suffix))?.[1] : undefined;
+  const commonLabels: Record<string, string> = {lin_bitrate_bps: 'LIN-Busgeschwindigkeit', bitrate: 'Busgeschwindigkeit', arbitration_bitrate: 'Arbitrationsgeschwindigkeit', data_bitrate: 'Datengeschwindigkeit', payload_bytes: 'Nutzdaten je Nachricht', cycle_ms: 'Sendezyklus', deadline_ms: 'Zeitgrenze', duration_s: 'Simulationsdauer', seed: 'Zufallsstartwert'};
+  const label = `${referenceLabel ?? commonLabels[field.key] ?? field.label}${field.unit && field.unit !== 'bit/s' ? ` (${field.unit})` : ""}`;
+  if (!applicable) return <div><span>{label}</span><p>Nicht zutreffend für die gewählte Protokollkonfiguration.</p></div>;
   const missing = value === undefined || value === null || value === "";
   const suggestion = field.parameter_origin === 'NIS_SCENARIO' ? 'NIS-Szenariovorschlag' : 'Profilvorschlag';
-  const gap = unverified ? <small>{simulationAssumption ? (savedAssumption ? 'SIMULATIONSANNAHME · Gespeichert · Kein Gerätenachweis' : 'SIMULATIONSANNAHME · Kein Gerätenachweis') : `UNVERIFIED · ${missing ? "Eingabe erforderlich" : suggestion}`}</small> : null;
-  const conditionalProposal = field.conditional_defaults?.length ? <>
+  const comparison = field.simulation_default_provenance?.basis === 'COMPARABLE_PROTOCOL_SCENARIO';
+  const reference = field.value_role === 'EVIDENCE' || field.value_role === 'REFERENCE';
+  const gap = reference ? <small>{missing ? (field.value_role === 'EVIDENCE' ? 'Nachweis offen' : 'Zuordnung offen') : 'Projektangabe'} · Für Geräteprüfung und Freigaben</small>
+    : unverified ? <small>{simulationAssumption ? (comparison ? `VERGLEICHSVORSCHLAG · ${savedAssumption ? 'Gespeicherte Simulationsannahme' : 'Simulationsannahme'} · Kein Gerätenachweis` : savedAssumption ? 'SIMULATIONSANNAHME · Gespeichert · Kein Gerätenachweis' : 'SIMULATIONSANNAHME · Kein Gerätenachweis') : `UNVERIFIED · ${missing ? "Eingabe erforderlich" : suggestion}`}</small> : null;
+  const conditionalProposal = field.conditional_defaults?.length ? <details className="parameter-default-details"><summary>Profilvorgaben ansehen</summary>
     <button className="button secondary" type="button" onClick={(event) => {
       const form = event.currentTarget.closest('form');
       if (!form) return;
@@ -1517,7 +1608,7 @@ function ParameterControl({ field, value, unverified = false, simulationAssumpti
           const entered = raw.get(key);
           const control = form.elements.namedItem(key);
           values[key] = typeof expected === 'boolean' ? control instanceof HTMLInputElement && control.type === 'checkbox' ? control.checked : booleanParameterValue({}, entered)
-            : typeof expected === 'number' ? entered === null || entered === '' ? undefined : Number(entered) : entered;
+            : typeof expected === 'number' ? entered === null || entered === '' ? undefined : parseBitrate(String(entered)) : entered;
         }
       }
       const suggested = conditionalParameterDefault(field, values);
@@ -1525,14 +1616,15 @@ function ParameterControl({ field, value, unverified = false, simulationAssumpti
       if (suggested === undefined) {
         setProposalError('Zuerst die zugehörige Einstellung auswählen.');
       } else if (input instanceof HTMLInputElement || input instanceof HTMLSelectElement) {
-        input.value = String(suggested);
+        input.value = field.unit === 'bit/s' && typeof suggested === 'number' ? formatBitrate(suggested) : String(suggested);
+        if (input instanceof HTMLInputElement) input.setCustomValidity('');
         input.dispatchEvent(new Event('change', {bubbles: true}));
         setProposalError('');
       }
     }}>Bedingten Standardwert übernehmen</button>
-    <small>{field.description}</small>
+    <p>Die Vorgabe hängt von diesen Einstellungen ab: {[...new Set(field.conditional_defaults.flatMap(item => Object.keys(item.when)))].map(key => key.replaceAll('_', ' ')).join(', ')}.</p>
     {proposalError && <small role="status">{proposalError}</small>}
-  </> : null;
+  </details> : null;
   if (field.type === "select") {
     return (
       <div className="field" title={field.description}>
@@ -1575,7 +1667,7 @@ function ParameterControl({ field, value, unverified = false, simulationAssumpti
       <div className="field" title={field.description}>
         <label htmlFor={field.key}>{label}</label>
         {gap}
-        <input defaultValue={String(value ?? "")} id={field.key} name={field.key} type="text" />
+        <input defaultValue={String(value ?? "")} id={field.key} name={field.key} type="text" placeholder={reference ? 'Bei Bedarf im Projekt angeben' : undefined} />
         {conditionalProposal}
       </div>
     );
@@ -1590,7 +1682,23 @@ function ParameterControl({ field, value, unverified = false, simulationAssumpti
   return (
     <div title={field.description}>
       {gap}
-      <NumberField
+      {field.unit === 'bit/s' ? <div className="field">
+        <label htmlFor={field.key}>{label}</label>
+        <input id={field.key} name={field.key} type="text" required={field.required}
+          defaultValue={missing ? '' : formatBitrate(Number(value))}
+          aria-describedby={`${field.key}-unit-hint`}
+          onChange={event => {
+            try { numericParameterValue(field, event.currentTarget.value); event.currentTarget.setCustomValidity(''); }
+            catch { event.currentTarget.setCustomValidity('Bitte eine gültige Geschwindigkeit mit bit/s, kbit/s, Mbit/s oder Gbit/s eingeben.'); }
+          }}
+          onBlur={event => {
+            try {
+              const parsed = numericParameterValue(field, event.currentTarget.value);
+              if (typeof parsed === 'number') event.currentTarget.value = formatBitrate(parsed);
+            } catch { /* Preserve invalid input so the user can correct it. */ }
+          }} />
+        <small id={`${field.key}-unit-hint`}>bit/s · kbit/s · Mbit/s · Gbit/s</small>
+      </div> : <NumberField
         label={label}
         name={field.key}
         min={field.min === undefined ? undefined : String(field.min)}
@@ -1598,12 +1706,12 @@ function ParameterControl({ field, value, unverified = false, simulationAssumpti
         step={field.integer ? "1" : "any"}
         required={field.required}
         value={missing ? "" : String(value)}
-      />
+      />}
       {conditionalProposal}
       {proposal?.options?.length ? (
         <p className="muted">
           Referenz-Obergrenzen, keine bestätigte Busfrequenz: {proposal.options.map(option =>
-            `${option.mode} ≤ ${option.maximum.toLocaleString("de-DE")} ${proposal.unit ?? "bit/s"}`).join(" · ")}.
+            `${option.mode} ≤ ${(proposal.unit ?? 'bit/s') === 'bit/s' ? formatBitrate(option.maximum) : option.maximum.toLocaleString('de-DE') + ' ' + proposal.unit}`).join(" · ")}.
           Controller, angeschlossene Geräte und Leitung müssen die gewählte Frequenz unterstützen.
           {proposal.source?.startsWith("https://") && <>
             {" "}<a href={proposal.source} rel="noreferrer" target="_blank">Spezifikation</a>

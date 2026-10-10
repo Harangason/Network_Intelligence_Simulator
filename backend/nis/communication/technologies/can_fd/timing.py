@@ -6,6 +6,20 @@ from backend.nis.communication.core.timing import FrameEstimate, _positive
 
 from .constants import CAN_FD_DATA_LENGTHS
 
+def prepare_simulation_parameters(parameters):
+    from .parameters import rate_planning_values
+    assumed = set(parameters.get('_simulation_assumption_fields', []))
+    requested = rate_planning_values({}, parameters, {key: value for key, value in parameters.items() if key not in assumed})
+    return {**parameters, **{key: value for key, value in requested.items() if key in assumed}}
+
+def planning_frame_parameters(payload_bytes, parameters):
+    """Derive padding/DLC only for unconfirmed starter layout fields."""
+    assumed = set(parameters.get('_simulation_assumption_fields', []))
+    if {'can_fd_dlc', 'can_fd_wire_data_bytes'} <= assumed:
+        length = can_fd_wire_data_bytes(payload_bytes, {})
+        return {**parameters, 'can_fd_dlc': CAN_FD_DATA_LENGTHS.index(length), 'can_fd_wire_data_bytes': length}
+    return parameters
+
 def can_fd_wire_data_bytes(payload: int, parameters: dict[str, Any]) -> int:
     if not 0 <= payload <= 64:
         raise ValueError('CAN FD logical payload must be 0..64 B.')

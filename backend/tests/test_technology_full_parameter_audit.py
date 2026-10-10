@@ -1845,15 +1845,15 @@ LIN_ACTUAL={**{'lin_'+key:'synthetic-actual-'+key for key in
     'lin_frame_kind':'UNCONDITIONAL','lin_bitrate_bps':1000}
 
 
-def test_lin_has_explicit_ldf_minimum_policy_proposal_not_example_19200_or_can_defaults():
+def test_lin_has_requested_19200_simulation_proposal_separate_from_ldf_minimum():
     f={v['key']:v for v in registry.parameter_fields('lin')};p=registry.profile('lin')
     assert p['domain']=='generic_networking'and p['default_stack']==['lin']
     assert p['capacity_evidence']['frame_model']=='LIN_NOMINAL_WITH_CHECKSUM'
     assert p['verification_status']=='UNVERIFIED'
     assert registry.validate_parameters('lin',LIN_ACTUAL)['status']=='VALID'
     assert registry.parameter_defaults_review('lin')['values']=={}
-    assert f['lin_bitrate_bps']['conditional_defaults'][0]['value']==1000
-    assert f['lin_bitrate_bps']['conditional_defaults'][0]['basis']=='USER_POLICY_LOWEST_SPECIFIED_RATE_NOT_UNIVERSAL_LIN_DEFAULT'
+    assert f['lin_bitrate_bps']['conditional_defaults'][0]['value']==19200
+    assert f['lin_bitrate_bps']['conditional_defaults'][0]['basis']=='USER_REQUESTED_SIMULATION_RATE_NOT_ACTUAL_LDF_EVIDENCE'
     assert 'bitrate'not in f and 'queue_policy'not in f and 'qos_priority'not in f
     for key in ('pid','commander_node_id','publisher_node_id','node_count','data_octets','slot_ticks','jitter_ms',
                 'supply_v','bus_capacitance_nf','diag_nad','diode_present','capacity_confirmed'):
@@ -7388,9 +7388,17 @@ def test_can_cc_confirmed_device_values_survive_rejected_parameter_edits():
 def test_http_schema_is_registered_profile_schema_for_every_technology():
     # Detect future API-local definitions that silently replace the canonical schema.
     for profile in registry.profiles():
-        expected = [{**spec, 'key': PARAMETER_UI_ALIASES.get(key, key)}
+        expected = [{**spec, 'key': PARAMETER_UI_ALIASES.get(key, key), 'native_key': key}
                     for key, spec in profile['parameter_schema'].items() if spec.get('label')]
         for field in expected:
+            native_key = next(key for key in profile['parameter_schema']
+                              if PARAMETER_UI_ALIASES.get(key, key) == field['key'])
+            field['not_applicable_when'] = [
+                {PARAMETER_UI_ALIASES.get(key, key): value for key, value in rule.get('when', {}).items()}
+                for rule in profile.get('parameter_constraints') or []
+                if rule['parameter'] == native_key and rule.get('allowed') in ([], [''])
+                and not any(key.startswith('when_') for key in rule)
+            ]
             if (field.get('integer') or field.get('type') == 'integer') and any(
                 isinstance(field.get(key), int) and abs(field[key]) > 2**53 - 1 for key in ('min', 'max', 'minimum', 'maximum')):
                 field['numeric_encoding'] = 'DECIMAL_STRING'
@@ -7400,13 +7408,21 @@ def test_http_schema_is_registered_profile_schema_for_every_technology():
                         field['decimal_' + target] = str(value)
                         field.pop(target, None)
         actual = SimulationService._parameter_schema(profile['id'], profile)
+        from backend.nis.communication.catalog import parameter_value_role
+        for field in expected:
+            field['value_role'] = parameter_value_role(field['native_key'], field)
         scenario_keys = {'simulation_default', 'simulation_default_provenance'}
         assert [{key: value for key, value in field.items() if key not in scenario_keys}
                 for field in actual] == expected
         for field in actual:
             proposal = field['simulation_default_provenance']
             assert proposal['technology'] == profile['id']
-            assert proposal['source'] == 'NIS_SIMULATION_ASSUMPTION' and proposal['status'] == 'ASSUMED'
+            assert proposal['source'] == 'NIS_SIMULATION_ASSUMPTION'
+            if proposal['value'] is None:
+                assert field['value_role'] in {'EVIDENCE', 'REFERENCE'}
+                assert proposal['status'] == 'UNKNOWN' and proposal['basis'] == 'EXPLICIT_REFERENCE_REQUIRED'
+            else:
+                assert proposal['status'] == 'ASSUMED'
             assert proposal['hardware_evidence'] is False and proposal['value'] == field['simulation_default']
         assert all(field.get('parameter_origin') and field.get('source') for field in expected)
 

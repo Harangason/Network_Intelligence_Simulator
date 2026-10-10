@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
-import {parseLosslessJson, readLosslessJson} from './lossless-json.ts';
+import {parseLosslessJson, readLosslessJson, readApiJson} from './lossless-json.ts';
 
 test('uint64 and signed protocol counters survive read, edit, provenance and reload', async () => {
   const response = new Response('{"values":{"alias":18446744073709551615,"ns":9223372036854775807},"proof":{"value":18446744073709551615},"small":255,"decimal":0.1}');
@@ -11,6 +11,17 @@ test('uint64 and signed protocol counters survive read, edit, provenance and rel
   assert.equal(parsed.small, 255);
   assert.equal(parsed.decimal, 0.1);
   assert.deepEqual(parseLosslessJson(JSON.stringify(parsed)), parsed);
+});
+
+test('HTTP 200 interrupted and malformed bodies cannot become empty successful data', async () => {
+  const stream = new ReadableStream({ start(controller) {
+    controller.enqueue(new TextEncoder().encode('{"domains":['));
+    controller.error(new DOMException('Response interrupted', 'AbortError'));
+  }});
+  await assert.rejects(readApiJson(new Response(stream)), {name: 'AbortError'});
+  await assert.rejects(readApiJson(new Response('{"domains":[')), SyntaxError);
+  await assert.rejects(readApiJson(new Response('<html>unavailable</html>', {status: 503})), /API-Fehler 503/);
+  await assert.rejects(readApiJson(new Response('{"error":"Native profile unavailable"}', {status: 422})), /Native profile unavailable/);
 });
 
 test('JSON syntax and escaped text remain intact at exact-integer boundaries', () => {

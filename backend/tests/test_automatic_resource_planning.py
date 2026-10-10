@@ -20,6 +20,65 @@ from backend.tests.test_network_distribution import capacity, hardware, topology
 AUTO = {'mode': 'AUTO_SIZE', 'hard_limits': {}}
 
 
+def scenario_capacity():
+    source = capacity((40, 40))
+    for row in source['results']['routes']:
+        row.update(protocol='CAN_FD', bitrate=500_000, cycle_ms=20,
+                   frame_time_bound_ms=8, segment_transmission_latency_ms=8,
+                   hardware_evidence=False, simulation_capacity_verified=True)
+        row['simulation_capacity'] = {'status': 'CALCULATED_UNDER_ASSUMPTIONS',
+            'hardware_evidence': False, 'functional_timing_accepted': False,
+            'segment_transmission_latency_ms': 8,
+            **{key: row[key] for key in ('average_load_percent', 'peak_load_percent', 'burst_load_percent')}}
+        for key in ('average_load_percent', 'peak_load_percent', 'burst_load_percent', 'segment_transmission_latency_ms'):
+            row[key] = None
+    return source
+
+
+def test_native_simulation_load_drives_same_split_without_hardware_promotion():
+    source = scenario_capacity()
+    saved = deepcopy(source)
+    plan = plan_network_distribution(source, hardware(), {}, available_protocol_counts={'CAN_FD': 1}, resource_policy=AUTO)
+    qualified = deepcopy(source)
+    for row in qualified['results']['routes']:
+        row.update(hardware_evidence=True, **{key: row['simulation_capacity'][key]
+            for key in ('average_load_percent', 'peak_load_percent', 'burst_load_percent', 'segment_transmission_latency_ms')})
+    actual = plan_network_distribution(qualified, hardware(), {}, available_protocol_counts={'CAN_FD': 1}, resource_policy=AUTO)
+    assert plan['status'] == actual['status'] == 'PROPOSED'
+    branch = plan['networks'][0]
+    assert branch['capacity_basis'] == 'SIMULATION_ASSUMPTIONS'
+    assert branch['decision'] == 'SPLIT_CURRENT_TECHNOLOGY'
+    assert branch['current_load_percent'] == actual['networks'][0]['current_load_percent'] == 80
+    assert branch['projected_max_load_percent'] == actual['networks'][0]['projected_max_load_percent'] == 40
+    assert branch['proposed_segments'] == actual['networks'][0]['proposed_segments'] == 2
+    assert source == saved
+    assert all(row['hardware_evidence'] is False and row['average_load_percent'] is None
+               and row['simulation_capacity']['functional_timing_accepted'] is False
+               for row in source['results']['routes'])
+
+
+@pytest.mark.parametrize('change', [
+    {'simulation_capacity_verified': False},
+    {'status': 'PROFILE_INCOMPLETE'}, {'hardware_evidence': True},
+    {'average_load_percent': None}, {'peak_load_percent': float('nan')},
+    {'burst_load_percent': float('inf')}, {'average_load_percent': -1},
+    {'segment_transmission_latency_ms': 0},
+])
+def test_invalid_simulation_stream_cannot_hide_in_valid_physical_bus_subset(change):
+    source = scenario_capacity()
+    row = source['results']['routes'][0]
+    if 'simulation_capacity_verified' in change:
+        row.update(change)
+    else:
+        row['simulation_capacity'].update(change)
+    saved = deepcopy(source)
+    plan = plan_network_distribution(source, hardware(), {}, available_protocol_counts={'CAN_FD': 1}, resource_policy=AUTO)
+    assert plan['status'] == 'RESIDUAL_CONSTRAINTS'
+    assert plan['unresolved'] and plan['networks'] == []
+    assert plan['resource_allocation'][0]['additional_for_load'] == 0
+    assert source == saved
+
+
 def test_automatic_sizing_adds_only_needed_same_technology_resources():
     source = capacity((40, 40))
     saved = deepcopy(source)

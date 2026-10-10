@@ -4,6 +4,17 @@ from backend.nis.communication.core.scheduling import number, _constraints
 
 from collections import defaultdict
 
+def parameter_readiness(parameters):
+    """Shared native prerequisites for parameter review and FIFO scheduling."""
+    findings = []
+    for key, expected in (('duplex', 'FULL'), ('eth_link_up', True)):
+        if parameters.get(key) != expected or key == 'eth_link_up' and parameters.get(key) is not True:
+            findings.append({'parameter': key, 'message': 'Ethernet benötigt einen aktiven Vollduplex-Link; unbekannter Zustand oder CSMA/CD liefert keinen FIFO-Nachweis.'})
+    for key in ('eth_pause_rx', 'eth_pause_tx', 'eth_eee_enabled'):
+        if parameters.get(key) is not False:
+            findings.append({'parameter': key, 'message': 'PAUSE/PFC oder EEE sind aktiv oder unbekannt; ihre Blockierzeiten sind im FIFO-Modell nicht nachgewiesen.'})
+    return findings
+
 def schedule(rows, result):
     """Bound Ethernet serialization independently for each confirmed TX port."""
     from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY
@@ -18,10 +29,9 @@ def schedule(rows, result):
     maximum_payload = number(technology.get("max_payload_bytes"))
     ports = defaultdict(list)
     for row in rows:
-        if row.get('duplex')!='FULL' or row.get('eth_link_up') is not True:
-            return {**result,'status':'PROFILE_INCOMPLETE','reasons':['Ethernet benötigt bestätigten Vollduplex-Link; unbekannter Zustand oder CSMA/CD liefert keinen FIFO-Nachweis.']}
-        if any(row.get(key) is not False for key in ('eth_pause_rx','eth_pause_tx','eth_eee_enabled')):
-            return {**result,'status':'PROFILE_INCOMPLETE','reasons':['PAUSE/PFC oder EEE sind aktiv oder unbekannt; ihre Blockierzeiten sind im FIFO-Modell nicht nachgewiesen.']}
+        readiness = parameter_readiness(row)
+        if readiness:
+            return {**result,'status':'PROFILE_INCOMPLETE','reasons':list(dict.fromkeys(item['message'] for item in readiness))}
         source = row.get("physical_source") or {}
         node_id = str(source.get("node_id") or "").strip()
         port_id = str(source.get("hardware_interface_id") or source.get("physical_port_ref") or source.get("port_id") or "").strip()

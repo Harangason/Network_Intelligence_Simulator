@@ -214,6 +214,17 @@ export function CapacityWorkbench({ initialProjectId = "" }: { initialProjectId?
             <Metric details={statusDetails} label="Status" value={status ?? shown.overview.status} tone={status ?? shown.overview.status} />
           </div>
 
+          {shown.networks.some(network => !network.capacity_verified && network.simulation_capacity) && <section aria-label="Berechnete Simulationsauslegung">
+            <h3>Berechnet mit gespeicherten Simulationswerten</h3>
+            <p>Diese Lastwerte verwenden die gespeicherten Projektannahmen und das native Busmodell. Gerätenachweis und funktionale Timingfreigabe stehen weiterhin separat in der Prüfung.</p>
+            <PaginatedResults items={shown.networks.filter(network => !network.capacity_verified && network.simulation_capacity)} label="Simulationsauslegung">{entries => <div className="analysis-list">
+              {entries.map(network => <div key={network.network_id}><strong>{network.network_name}</strong>
+                <span>Ø {formatEvidence(network.simulation_capacity?.average_load_percent,2,'%')} · Peak {formatEvidence(network.simulation_capacity?.peak_load_percent,2,'%')} · Stress {formatEvidence(network.simulation_capacity?.burst_load_percent,2,'%')}</span>
+                <small>SIMULATIONSANNAHME · {Number(network.simulation_capacity?.average_load_percent) > Number(network.target_bus_load_percent) ? 'Zielauslastung überschritten' : 'Nominale Last berechnet'} · Gerätenachweis offen</small>
+              </div>)}
+            </div>}</PaginatedResults>
+          </section>}
+
           <div className="analysis-tabs" role="tablist" aria-label="Capacity-Ansichten">
             {CAPACITY_VIEWS.map((item) => {
               const warning = warningInfo[item];
