@@ -31,6 +31,13 @@ export type SequenceDiagramModel = {
   uncorrelatedCount: number;
 };
 
+/** Display filter on original hop endpoints; never infer an unobserved connection. */
+export function sequenceEventMatchesParticipants(event: SequenceEvent, selected: ReadonlySet<string>): boolean {
+  if (selected.size === 0) return true;
+  if (selected.size === 1) return selected.has(event.source) || selected.has(event.destination);
+  return event.source !== event.destination && selected.has(event.source) && selected.has(event.destination);
+}
+
 /** API sequence models are authoritative; this only narrows visible rows for the current view. */
 export function sequenceModelForEventIds(model: SequenceDiagramModel, eventIds: Set<string>): SequenceDiagramModel {
   const events = model.events.filter(event => eventIds.has(event.id));

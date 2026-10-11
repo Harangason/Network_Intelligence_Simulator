@@ -655,6 +655,7 @@ function SequenceView({ trace, model: sourceModel, playhead }: { trace: ModelSim
 }
 
 function SignalsView({ trace, playhead }: { trace: ModelSimulationTrace; playhead: number }) {
+  const [compact, setCompact] = useState(true);
   const [selected, setSelected] = useState(() => initialSignalSelection(trace.signals));
   const [search, setSearch] = useState("");
   const [behavior, setBehavior] = useState<SignalBehaviorFilter>("ALL");
@@ -680,7 +681,7 @@ function SignalsView({ trace, playhead }: { trace: ModelSimulationTrace; playhea
   const filteredIds = filtered.map((series) => series.signal_id);
   const selectFiltered = () => setSelected((current) => [...new Set([...current, ...filteredIds])]);
   const clearFiltered = () => setSelected((current) => current.filter((id) => !filteredIds.includes(id)));
-  return <div className="signal-plot-workbench">
+  return <div className={`signal-plot-workbench${compact ? " compact-signals" : ""}`}>
     <div className="signal-plot-controls">
       <div className="signal-filter-primary">
         <label className="signal-filter-field signal-filter-search">
@@ -701,6 +702,7 @@ function SignalsView({ trace, playhead }: { trace: ModelSimulationTrace; playhea
         <div className="signal-selector-actions">
           <button className="button secondary tiny" onClick={selectFiltered} type="button">Treffer wählen</button>
           <button className="button secondary tiny" onClick={clearFiltered} type="button">Treffer abwählen</button>
+          <button className="button secondary tiny" aria-pressed={!compact} onClick={() => { setCompact(current => !current); changePage(0); }} type="button">{compact ? "Detailansicht" : "15 Signalspuren"}</button>
         </div>
         <output className="signal-filter-summary">{displayed.items.length} dargestellt <i /> {visibleSelected.length} im Filter gewählt <i /> {trace.signals.length} gesamt</output>
         <div className="signal-time-controls">

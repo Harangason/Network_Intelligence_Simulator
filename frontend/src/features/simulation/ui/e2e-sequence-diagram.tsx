@@ -2,6 +2,7 @@
 
 import { useId, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
 import type { SequenceDiagramModel, SequenceEvent } from "@/features/simulation/lib/e2e-sequence";
+import { sequenceEventMatchesParticipants } from "@/features/simulation/lib/e2e-sequence";
 import { simulationPage } from "../lib/simulation-pagination";
 import { SimulationPageControls } from "./simulation-page-controls";
 
@@ -40,6 +41,7 @@ export function E2ESequenceDiagram({ model, selectedId, onSelect, onClearSelecti
   const [localSelectedId, setLocalSelectedId] = useState<string | null>(null);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
+  const [selectedParticipants, setSelectedParticipants] = useState<string[]>([]);
   const [measuring, setMeasuring] = useState(false);
   const [measureIds, setMeasureIds] = useState<string[]>([]);
   const [page, setPage] = useState(0);
@@ -53,16 +55,21 @@ export function E2ESequenceDiagram({ model, selectedId, onSelect, onClearSelecti
     model.participants.forEach(participant => ordered.add(participant));
     return [...ordered];
   }, [model.events, model.participants]);
+  const participantFilter = useMemo(() => new Set(selectedParticipants.filter(participant => participants.includes(participant))), [selectedParticipants, participants]);
   const origin = model.events.find(event => event.timeS !== null)?.timeS ?? null;
   const filtered = useMemo(() => {
     const normalized = query.trim().toLocaleLowerCase();
-    if (!normalized) return model.events;
-    return model.events.filter(event => [event.source, event.destination, event.route, event.technology, event.status, event.transactionId ?? ""]
-      .some(value => value.toLocaleLowerCase().includes(normalized)));
-  }, [model.events, query]);
+    return model.events.filter(event => sequenceEventMatchesParticipants(event, participantFilter) && (!normalized ||
+      [event.source, event.destination, event.route, event.technology, event.status, event.transactionId ?? ""]
+        .some(value => value.toLocaleLowerCase().includes(normalized))));
+  }, [model.events, query, participantFilter]);
   const displayed = simulationPage(filtered, page, 200);
   const shown = displayed.items;
   const changePage = (next: number) => { setPage(next); setHoveredId(null); scrollRef.current?.scrollTo({ top: 0 }); };
+  const toggleParticipant = (participant: string) => {
+    setSelectedParticipants(current => current.includes(participant) ? current.filter(item => item !== participant) : [...current, participant]);
+    changePage(0);
+  };
   const width = TIME_COLUMN + Math.max(participants.length, 1) * PARTICIPANT_COLUMN + 96;
   const height = CHART_TOP + shown.length * ROW_HEIGHT + 16;
   const xFor = (participant: string) => TIME_COLUMN + Math.max(0, participants.indexOf(participant)) * PARTICIPANT_COLUMN + PARTICIPANT_COLUMN / 2;
@@ -109,6 +116,11 @@ export function E2ESequenceDiagram({ model, selectedId, onSelect, onClearSelecti
         </div>
       </div>
     </header>
+    <div className="e2e-sequence-participant-filter" aria-label="Teilnehmerfilter">
+      <span aria-live="polite">{participantFilter.size === 0 ? "Teilnehmer anklicken, um ihre TX/RX-Kommunikation zu filtern." :
+        participantFilter.size === 1 ? `TX/RX von ${[...participantFilter][0]}` : `Kommunikation zwischen ${[...participantFilter].join(" ↔ ")}`}</span>
+      {participantFilter.size > 0 && <button className="e2e-sequence-tool-button" type="button" onClick={() => { setSelectedParticipants([]); changePage(0); }}>Teilnehmerfilter aufheben</button>}
+    </div>
     <p className="e2e-sequence-context">{filtered.length} Ereignisse · {model.transactions.length} Transaktionen · {participants.length} Teilnehmer · {model.uncorrelatedCount} ohne Transaktions-ID · {model.transactions.filter(item => item.receiverStatus === "ACCEPTED").length} mit belegter Empfängerakzeptanz. {measuring ? measured.length < 2 ? "Start- und Endereignis auswählen." : measureDelta === null ? "Zeitmessung nicht möglich: Zeitstempel fehlen." : `Zeitabstand: ${measureDelta.toFixed(3)} ms` : "Zeit relativ zum ersten bekannten Ereignis."}</p>
     {measuring && <section className="e2e-sequence-measurement" aria-label="Zeitmessung" aria-live="polite">
       <header><strong>Zeitmessung</strong><button className="button secondary tiny" type="button" onClick={() => setMeasureIds([])}>Messung zurücksetzen</button></header>
@@ -122,11 +134,12 @@ export function E2ESequenceDiagram({ model, selectedId, onSelect, onClearSelecti
       <div className="e2e-sequence-chart" style={{ width, "--participant-count": participants.length } as CSSProperties}>
         <div className="e2e-sequence-lanes" style={{ gridTemplateColumns: `${TIME_COLUMN}px repeat(${Math.max(participants.length, 1)}, ${PARTICIPANT_COLUMN}px)` }}>
           <strong className="e2e-sequence-lane-time">Zeit</strong>
-          {participants.map((participant, index) => <div className="e2e-sequence-participant" key={participant} title={participant}>
+          {participants.map((participant, index) => <button className="e2e-sequence-participant" type="button" key={participant} title={participant}
+            aria-label={`${participant}: TX/RX filtern`} aria-pressed={participantFilter.has(participant)} onClick={() => toggleParticipant(participant)}>
             <strong>{MAC_ADDRESS.test(participant) ? `Teilnehmer ${index + 1}` : participant}</strong>
             <code>{participant}</code>
             <small>{MAC_ADDRESS.test(participant) ? "Beobachteter Netzwerkteilnehmer" : "Kommunikationsteilnehmer"}</small>
-          </div>)}
+          </button>)}
         </div>
         <svg className="e2e-sequence-svg" width={width} height={height} viewBox={`0 0 ${width} ${height}`} role="img" aria-label={`${shown.length} zeitlich geordnete Ereignisse zwischen ${participants.length} Kommunikationsteilnehmern`}>
           <defs>
