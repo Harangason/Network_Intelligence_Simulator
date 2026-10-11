@@ -69,7 +69,7 @@ def source_rights(url: str) -> dict:
     return result
 
 
-def directory_from_profiles(profiles: list[dict]) -> dict:
+def directory_from_profiles(profiles: list[dict], *, include_assurance: bool = True) -> dict:
     metadata = source_metadata()
     entries: dict[str, dict] = {}
     for profile in profiles:
@@ -89,13 +89,26 @@ def directory_from_profiles(profiles: list[dict]) -> dict:
             row['aliases'].add(original)
             if revision:
                 row['revisions'].add(str(revision))
+    # Standards/regulations are bibliography areas, never transport profiles.
+    for url, known in metadata.get('sources', {}).items():
+        if not include_assurance or not known.get('categories'):
+            continue
+        row = entries.setdefault(url, {
+            'id': hashlib.sha256(url.encode()).hexdigest()[:24], 'url': url,
+            'name': known['name'], 'publisher': known['publisher'],
+            'accessed_at': known.get('accessed_at'),
+            'access_date_basis': known.get('access_date_basis', 'NOT_RECORDED'),
+            'rights': source_rights(url), 'technologies': {}, 'revisions': set(), 'aliases': {url},
+        })
+        row['categories'] = deepcopy(known['categories'])
+        row['revisions'].add(known['source_revision'])
     rows = []
     for row in entries.values():
         row['technologies'] = sorted(row['technologies'].values(), key=lambda item: (item['abbreviation'], item['id']))
         row['revisions'] = sorted(row['revisions'])
         row['aliases'] = sorted(row['aliases'])
         rows.append(row)
-    rows.sort(key=lambda row: (row['technologies'][0]['abbreviation'], row['name'].casefold(), row['url']))
+    rows.sort(key=lambda row: (row['technologies'][0]['abbreviation'] if row['technologies'] else row['categories'][0]['abbreviation'], row['name'].casefold(), row['url']))
     return {'sources': rows, 'source_count': len(rows), 'technology_count': len(profiles),
             'rights_reviewed_at': metadata['reviewed_at'],
             'scope': 'Bibliographic metadata and publisher rights review; no original documents, copied standard tables or license grants.'}

@@ -360,6 +360,7 @@ def analyze_runtime_trace(
         "networks": network_metrics,
         "routes": route_metrics,
         "e2e_transactions": build_e2e_transactions(events, route_requirements),
+        "safety_assurance": _safety_report(config, events, route_requirements),
         "sequence_model": build_sequence_model(events, route_requirements, source="SIMULATED"),
         "queues": {
             "average_depth": round(
@@ -392,3 +393,10 @@ class RuntimeBusLoadMonitor:
 
     def analyze(self, result: dict[str, Any], config: dict[str, Any]) -> dict[str, Any]:
         return analyze_runtime_trace(result, config)
+
+
+def _safety_report(config, events, routes):
+    from backend.nis.engineering.safety_assurance import assess_requirements
+    requirements = (config.get("engineering_model") or {}).get("safety_requirements", [])
+    # Engine-emitted simulated timestamps share the configured simulation clock.
+    return assess_requirements(requirements, events, routes, time_basis="SIMULATION_CLOCK")

@@ -1,0 +1,434 @@
+
+PAGE 1
+Implementation aspects of 
+TTEthernet Interfaces 
+Anders Petersén 
+Project Manager 
+RUAG Space AB 
+ADCSS 2013 
+
+PAGE 2
+│ │ ADCSS 2013    23.10.2013 RUAG Space 2 
+Outline 
+ Introduction 
+ Avionics 
+ TTEthernet 
+ 
+ Completed work 
+ FLPP Phase 1 
+ Avionique-X Increment 1 
+ 
+ Ongoing work 
+ FLPP Phase 2.2 
+ 
+ Future work 
+ Avionic XE 
+ 
+
+
+PAGE 3
+│ │ ADCSS 2013    23.10.2013 RUAG Space 3 
+Introduction:  
+Launcher avionics 
+ Present: Ariane 5, Vega 
+ Operational >2020 
+ Flight control bus based on MIL-STD-
+1553 
+ Local telemetry links 
+ 
+ Ariane 6  
+ Planned first flight 2021 
+ Three stage launcher 
+ Low / reduced cost a priority 
+ 
+ Ariane 6 Communication Network 
+ Determinism crucial for critical traffic 
+ TTEthernet is one option to simplify the 
+avionic, due to: 
+ High performance 
+ Traffic isolation (Mix of critical and non-
+critical traffic) 
+ Compliance with Ethernet 
+ Clock Distribution 
+ Allows for example the use of a common 
+data bus for flight control and telemetry 
+Safety system
+TVA system
+TVC
+Power
+storage
+Power 
+distr. Power
+storage
+Neutralisat.
+Localisation
+Reception
+TVA system
+TVC
+Power
+storage
+Power 
+distr.
+Safety
+Upper 
+stage TVC
+TVC
+Navigation
+Power 
+distr.
+Power
+storage
+Neutralisat.
+Flight control
+Guidance
+Pyro Control
+Att. Control
+Power
+storage
+TM
+Data 
+collection
+Safety system
+Power
+storage
+Neutralisat.
+TM
+Data 
+collection
+Safety system
+TVA system
+TVC
+Power
+storage
+Power 
+distr. Power
+storage
+Neutralisat.
+TM
+Data 
+collection
+Safety system
+TVA system
+TVC
+Power
+storage
+Power 
+distr. Power
+storage
+Neutralisat.
+TM
+Data 
+collection
+TM
+Data 
+collection
+Data 
+storage
+Data 
+Transmission
+Functions to be handled by or supported by the Avionics 
+
+PAGE 4
+│ │ ADCSS 2013    23.10.2013 RUAG Space 4 
+Introduction:  
+Time Triggered Ethernet 
+ Time Triggered Ethernet 
+ Provides deterministic and 
+synchronous communication in a 
+Ethernet network 
+ SAE AS6802 standard 
+ Time Triggered Ethernet unaffected 
+by asynchronous Ethernet traffic 
+ 
+ The following Traffic classes can co-
+exist in the communication network: 
+ TT – Time Triggered Ethernet 
+ RC – Rate Constrained (AFDX) 
+ BE – Best Effort (Legacy Ethernet) 
+
+
+PAGE 5
+│ │ ADCSS 2013    23.10.2013 RUAG Space 5 
+Introduction:  
+Time Triggered Ethernet 
+ Basic concept: 
+ Every Time Triggered unit is 
+synchronised to a common time and 
+a common schedule 
+ Frames transmitted over virtual links 
+in a time segregated network 
+ Switches are gatekeepers 
+ 
+ Timekeeping concept: 
+ Distributed clock synchronisation 
+mechanism to agree on a common 
+global time between all nodes 
+ Synchronisation Masters -> Protocol 
+Control Frames (PCF) 
+ Compression Masters -> PCF 
+ Correction for latency 
+
+
+PAGE 6
+│ │ ADCSS 2013    23.10.2013 RUAG Space 6 
+RUAG Space AB experiences:  
+Overview 
+ FLPP Phase 1 – completed (ESA, Astrium ST, RUAG) 
+ Software based end systems 
+ Non-redundant multi-hop network 
+ 
+ Avionique-X Increment 1 – completed (CNES, Astrium ST, RUAG, ÅAC 
+Microtec) 
+ Hardware based end systems 
+ Redundant network 
+ 
+ FLPP Phase 2.2 – ongoing work (ESA, Astrium ST, RUAG) 
+ Hardware based end systems 
+ Redundant multi-hop network 
+ 
+ Avionic XE – to be started (ESA, Astrium ST, RUAG, ÅAC Microtec) 
+ TTEthernet setup as in Avionique-X Increment 1 
+ Assess TTEthernet technology maturity and identify industrialisation activities 
+ 
+
+PAGE 7
+│ │ ADCSS 2013    23.10.2013 RUAG Space 7 
+FLPP Phase 1 
+Setup & Objectives 
+ Objectives:  
+ Study avionics for a future launcher 
+ Demonstrate key communication aspects using 
+ Ariane 5-type redundancy concept 
+ Warm redundant OBCs 
+ 
+ Setup  
+ Two OBCs supervised by reconfiguration 
+module 
+ Two TTEthernet end nodes simulation sensors 
+and actuators (SA-Up, SA-Lo) 
+ Two switches in non-redundant multi-hop 
+TTEthernet network configuration 
+ Disconnect lower switch to simulate solid 
+booster ejection 
+ Operator for commanding and monitoring 
+ 
+ 
+
+
+PAGE 8
+│ │ ADCSS 2013    23.10.2013 RUAG Space 8 
+FLPP Phase 1 
+Features 
+ Network 
+ 100 Mbps bit rate 
+ 5 ms – 50 ms message cycles 
+ Synchronization master and 
+Compression master in Switch-Up 
+ 
+ End system 
+ Software based TTE end systems 
+on COTS Linux computers 
+ In-house developed network sniffer 
+ 
+ Supervisor 
+ RSE standard reconfiguration 
+module for SMU and OBC 
+ Automatic reconfiguration of OBCs 
+
+
+PAGE 9
+│ │ ADCSS 2013    23.10.2013 RUAG Space 9 
+FLPP Phase 1 
+Findings 
+ Performance 
+ Software based end systems (discontinued by the vendor in the meantime), 
+accuracy achieved for time triggered transfers was better than 200 us 
+ Not possible to synchronise between TTE layer and application space. 
+ 
+ Tools 
+ Prototype scheduling tools with limited functionality 
+ Could fail in finding schedule that met the specified criteria without notifying the user  
+ Multiple iterations involving vendor before successful network integration 
+ 
+ Reuse 
+ TTEthernet demonstration system and tools with limited functionality. Only the 
+included switches could be reused in the follow-on studies 
+
+PAGE 10
+│ │ ADCSS 2013    23.10.2013 RUAG Space 10 
+Avionique-X Increment 1 
+Setup & Objectives 
+ Objectives: To develop a Modular 
+Data Handling Block (MDHB-X) 
+demonstrator with a communication 
+network supporting TTEthernet 
+ Hardware based end systems 
+ LEON based System-On-Chip (SoC)  
+OBC 
+ Hot duplex architecture 
+ MDHB-X delivered to Astrium ST for 
+system evaluation activities 
+ 
+ Setup 
+ Redundant network 
+ PnP RTU1 & 2 (ÅAC Microtec)  
+ PC1 & 2 TTEthernet end-nodes 
+ Monitor PC running Wireshark 
+ 
+ 
+ 
+ 
+
+
+PAGE 11
+│ │ ADCSS 2013    23.10.2013 RUAG Space 11 
+Avionique-X Increment 1 
+Features 
+ Network 
+ 100 Mbps bit rate 
+ 10 ms – 32 ms message cycles 
+ OBC as synchronisation master and 
+switches as compression masters  
+ 
+ End systems 
+ TTEthernet E/S chip IP (Pegasus) in 
+OBCs licensed from TTTech 
+ TTE chip IP (Pluto) in PnP RTUs from 
+TTTech 
+ Synchronisation of TTE global time to 
+OBC time reference 
+ TTE compliant Network Interface Cards 
+(NIC) in PC1 & PC2 
+ 
+ The discontinued software based end 
+systems (FLPP phase 1) were 
+exchanged by the vendor for TTE NIC 
+cards  
+ 
+
+
+PAGE 12
+│ │ ADCSS 2013    23.10.2013 RUAG Space 12 
+Avionique-X Increment 1 
+Findings 
+ Performance 
+ Hardware based end systems, accuracy achieved for time triggered transfers  
+better than ~10 us 
+ Test case with 100 Mbps bit rate (47% utilization, 44% TT traffic, 3% RC traffic) 
+ TTE IP (Pegasus) complexity estimate based on FPGA implementation: 32 000 
+DFFs and approx 2 Mbit on-chip RAM (half of OBC SoC complexity) 
+ 
+ The TTEthernet approach of using a distributed clock synchronisation concept 
+put constraints on a system with a single reference time source 
+(Synchronisation of TTEthernet time to the GNSS based On Board Time) 
+ Either the Synchronisation Master (the two OBCs) must be high-integrity nodes, 
+detecting local failure as clock drift or loss of synchronisation to external reference 
+and fail-stops, or 
+ Synchronisation Masters (end-systems) must be added to the system (number 
+depending on level of fault-tolerance required –single/dual) 
+ 
+ 
+
+PAGE 13
+│ │ ADCSS 2013    23.10.2013 RUAG Space 13 
+Avionique-X Increment 1 
+Findings 
+ Tools 
+ Tools more mature but still at prototype level 
+ 
+ Tools unable to generate configuration for embedded IP (Pegasus and 
+Pluto), manual modification needed. Tools not supporting the following 
+configuration: 
+ All critical traffic received on the same data port 
+ 2 synchronisation masters, down to 1 
+ Internally generated trigger signal for synchronisation to On Board Time 
+ 
+ All issues could be solved however by vendor support and a working 
+configuration was reached 
+
+PAGE 14
+│ │ ADCSS 2013    23.10.2013 RUAG Space 14 
+Ongoing work : FLPP Phase 2.2 
+Objectives & Evaluation 
+ Objectives: Potential Ariane 6 network TTE implementation: 
+ Hardware based end systems 
+ Redundant multi-hop network 
+ 
+ Evaluate 
+ Warm and hot redundant OBCs 
+ 2 ms – 500 ms TTEthernet message cycles 
+ Network latency in multi-hop configurations 
+ Failure coverage 
+ Synchronisation to reference time 
+
+PAGE 15
+│ │ ADCSS 2013    23.10.2013 RUAG Space 15 
+Ongoing work : FLPP Phase 2.2 
+Setup & Features 
+ Setup #1 
+ Redundant network 
+ SW-C and SW-D virtual 
+ 
+ Setup #2 
+ Multi-hop network 
+ SW-B and SW-D virtual 
+ 
+ Network 
+ 100 Mbps bit rate  
+(12% TT traffic utilization) 
+ 2 ms – 500 ms message cycles 
+ 
+ End system 
+ OBC: NGMP and a Network Controller 
+Module (NCM) SoC with TTE chip IP 
+ TTE synchronised application 
+ TTE compliant NIC in SA-* 
+
+
+PAGE 16
+│ │ ADCSS 2013    23.10.2013 RUAG Space 16 
+Ongoing work : FLPP Phase 2.2 
+Findings 
+ Findings so far 
+ The tools have matured more  
+ Supporting TTEthernet E/S chip IP (Pegasus) used by RUAG 
+ Supporting usage of 1 single Synchronisation Master in a system 
+ Able to generate a working configuration without work required by vendor 
+by applying provided scripts to tool output 
+ 
+ To be evaluated 
+ TTEthernet traffic with 2 ms – 500 ms message cycle 
+ Warm and Hot redundant OBCs 
+ Network latency in multi-hop configurations 
+ Failure coverage 
+
+PAGE 17
+│ │ ADCSS 2013    23.10.2013 RUAG Space 17 
+Avionic XE 
+Issues to be studied in coming Increments 
+ The Communication Network and end-nodes same as in Avionique-X 
+Increment 1, with new functionality in the MDHB-X Demonstrator 
+ 
+ Assess TTEthernet technology maturity and identify industrialisation 
+activities 
+ Study optimisation of gate complexity of the TTEthernet IP with respect to 
+configurability requirements 
+ Feasibility study of a TTEthernet switch ASIC and associated flight parts 
+and connectors 
+ Investigate Fail-silent capabilities 
+ Cost aspects including licensing cost and royalties 
+ 
+
+PAGE 18
+│ │ ADCSS 2013    23.10.2013 RUAG Space 18 
+ 
+ 
+ 
+ 
+ 
+ 
+Questions 
+
+PAGE 19
+│ │ ADCSS 2013    23.10.2013 RUAG Space 19 
+Thank you for your attention! 

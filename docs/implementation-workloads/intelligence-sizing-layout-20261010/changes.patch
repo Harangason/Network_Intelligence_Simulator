@@ -1,0 +1,145 @@
+--- before/frontend/src/features/communication/ui/communication-sizing-panel.tsx
++++ after/frontend/src/features/communication/ui/communication-sizing-panel.tsx
+@@ -75,22 +75,28 @@
+   const hasCanOrLin = protocols.some(protocol => ["CAN", "CAN_CLASSIC", "CAN_FD", "CANFD", "LIN"].includes(protocol));
+ 
+   return <details className="panel communication-sizing-panel">
+-    <summary><strong>Kommunikation automatisch dimensionieren</strong></summary>
+-    <p>{protocols.length ? `Erkannte Technologien in ${projectId}: ${protocols.join(", ")}.` : "Die Dimensionierung verwendet ausschließlich die physischen Verbindungen und Anforderungen des aktiven Projekts."} Bestätigte Fristen, Datenalter und gesperrte Zyklen bleiben verbindlich. Die Planung vergleicht alle zulässigen Zyklusvarianten und ändert weder Technologieparameter noch Frame-Kodierungen.</p>
++    <summary className="communication-sizing-summary">
++      <span className="communication-sizing-icon" aria-hidden="true"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M6 7h12M6 17h12M6 7v10m12-10v10" stroke="currentColor" strokeWidth="1.5" /><circle cx="6" cy="7" r="2.5" fill="currentColor" /><circle cx="18" cy="7" r="2.5" fill="currentColor" /><circle cx="6" cy="17" r="2.5" fill="currentColor" /><circle cx="18" cy="17" r="2.5" fill="currentColor" /></svg></span>
++      <span className="communication-sizing-heading"><span className="eyebrow">Kommunikationsplanung</span><strong>Kommunikation automatisch dimensionieren</strong><span>Zulässige Zyklusvarianten vergleichen und passende Änderungen auswählen.</span></span>
++      <span className="communication-sizing-chevron" aria-hidden="true">⌄</span>
++    </summary>
++    <div className="communication-sizing-body" aria-busy={busy}>
++    <p className="communication-sizing-intro">{protocols.length ? `Erkannte Technologien: ${protocols.join(", ")}.` : "Die Dimensionierung verwendet ausschließlich die physischen Verbindungen und Anforderungen des aktiven Projekts."} Bestätigte Fristen, Datenalter und gesperrte Zyklen bleiben verbindlich. Die Planung vergleicht alle zulässigen Zyklusvarianten und ändert weder Technologieparameter noch Frame-Kodierungen.</p>
+     {hasI2c && <p className="notice warning">I2C ist im Projekt vorhanden. Der Zeitnachweis bleibt offen, bis Master, Slave-Adresse, Clock-Stretching-Grenze und Transferumfang modelliert sind. LIN-Slots und CAN-Arbitrierung werden dafür nicht angesetzt.</p>}
+-    <div className="analysis-scenario-row">
+-      <label>Mindest-Sendeabstand (ms)<input type="number" min="1" disabled={busy} value={minimum} onChange={e => edit(setMinimum, e.target.value)} /></label>
+-      <label>Maximaler generierter Zyklus (ms)<input type="number" min="1" disabled={busy} value={maximum} onChange={e => edit(setMaximum, e.target.value)} /></label>
+-      {hasCanOrLin && <label>Ziel-Buslast (%)<input type="number" min="1" max="100" disabled={busy} value={target} onChange={e => edit(setTarget, e.target.value)} /></label>}
+-      {protocols.includes("LIN") && <label>Maximale LIN-Slotbelegung (%)<input type="number" min="1" max="100" disabled={busy} value={slotLimit} onChange={e => edit(setSlotLimit, e.target.value)} /></label>}
++    <div className="communication-sizing-fields">
++      <label><span>Mindest-Sendeabstand (ms)</span><input type="number" min="1" disabled={busy} value={minimum} onChange={e => edit(setMinimum, e.target.value)} /></label>
++      <label><span>Maximaler generierter Zyklus (ms)</span><input type="number" min="1" disabled={busy} value={maximum} onChange={e => edit(setMaximum, e.target.value)} /></label>
++      {hasCanOrLin && <label><span>Ziel-Buslast (%)</span><input type="number" min="1" max="100" disabled={busy} value={target} onChange={e => edit(setTarget, e.target.value)} /></label>}
++      {protocols.includes("LIN") && <label><span>Maximale LIN-Slotbelegung (%)</span><input type="number" min="1" max="100" disabled={busy} value={slotLimit} onChange={e => edit(setSlotLimit, e.target.value)} /></label>}
+     </div>
+-    <button type="button" className="button primary" disabled={busy} onClick={() => void calculate()}>{busy ? "Prüft …" : "Zyklusvarianten für dieses Projekt prüfen"}</button>
+-    {message && <p role="status">{message}</p>}
+-    {plan && <>
+-      <p><strong>{plan.changes.length} Nachrichtenänderungen</strong> · {plan.history_matches.length} passende Erfahrungen aus früheren Dimensionierungen. Alle zulässigen Varianten werden mit den aktuellen Anforderungen verglichen; Linkrate, Technologie, Payload und Kodierung bleiben fest.</p>
++    <div className="communication-sizing-actions"><span>Erst Varianten prüfen, anschließend geprüfte Änderungen übernehmen.</span><button type="button" className="button primary" disabled={busy} onClick={() => void calculate()}>{busy ? "Prüft …" : "Zyklusvarianten für dieses Projekt prüfen"}</button></div>
++    {message && <p className="notice communication-sizing-message" role="status">{message}</p>}
++    {plan && <div className="communication-sizing-result">
++      <div className="communication-sizing-result-heading"><strong>{plan.changes.length} Nachrichtenänderungen</strong><span>{plan.history_matches.length} passende Erfahrungen aus früheren Dimensionierungen</span></div>
++      <p>Alle zulässigen Varianten werden mit den aktuellen Anforderungen verglichen; Linkrate, Technologie, Payload und Kodierung bleiben fest.</p>
+       {plan.status === "PARTIAL" && <p className="notice warning">Einige Netze benötigen weitere Maßnahmen. Änderungen werden nur für vollständig geprüfte Netze angeboten; offene Zeitnachweise bleiben unverändert.</p>}
+-      <div style={{maxHeight: 520, overflow: "auto"}}>
+-        {plan.networks.map(network => <details key={network.network_id} style={{padding: "12px 0", borderBottom: "1px solid var(--border, #293746)"}}>
++      <div className="communication-sizing-networks">
++        {plan.networks.map(network => <details className="communication-sizing-network" key={network.network_id}>
+           <summary><strong>{network.network_name}</strong> · {network.protocol} · Zyklen: {network.effective_periods_ms?.join(" / ") || "offen"} ms · {percent(network.schedule?.nominal_load_percent)}</summary>
+           <p>{network.explanation}</p>
+           {network.schedule?.hardware_review_proposal && <div className="notice warning">
+@@ -107,10 +113,11 @@
+         </details>)}
+       </div>
+       {plan.changes.length > 0 && canDimension && <>
+-        <details><summary>Nachrichtenänderungen prüfen</summary><ul>{plan.changes.map(change => <li key={change.message_id}>{change.name}: {change.before_ms} → {change.after_ms} ms{change.evaluation === "POLICY_ONLY_UNVERIFIED" ? " · Mindestabstandsregel; Ethernet-Zeitnachweis offen" : ""}</li>)}</ul></details>
++        <details className="communication-sizing-changes"><summary>Nachrichtenänderungen prüfen</summary><ul>{plan.changes.map(change => <li key={change.message_id}>{change.name}: {change.before_ms} → {change.after_ms} ms{change.evaluation === "POLICY_ONLY_UNVERIFIED" ? " · Mindestabstandsregel; Ethernet-Zeitnachweis offen" : ""}</li>)}</ul></details>
+         <p>Die Übernahme aktualisiert Nachrichten, Signale, Routing und Sendeplan gemeinsam. Nachgelagerte Ergebnisse werden zur Neuberechnung markiert.</p>
+         <button type="button" className="button primary" disabled={busy || edited || readActiveProjectId() !== projectId} onClick={() => void apply()}>Geprüfte Änderungen übernehmen</button>
+       </>}
+-    </>}
++    </div>}
++    </div>
+   </details>;
+ }
+--- before/frontend/src/features/workflow/stage_09_intelligence/intelligence-workbench.tsx
++++ after/frontend/src/features/workflow/stage_09_intelligence/intelligence-workbench.tsx
+@@ -308,7 +308,7 @@
+     <section className="intelligence-section full issue-table-section">
+       <div className="section-heading"><div><p className="eyebrow">Critical issues</p><h3>Technische Problemübersicht</h3></div><div className="analysis-actions"><span>{filtered.length} von {issues.length}</span><button className="button primary tiny" disabled={!visibleConfirmable.length} onClick={() => void onApproveAll(visibleConfirmable)} type="button">Allow all</button></div></div>
+       <div className="table-controls"><label><span>Suche</span><input onChange={(event) => setSearch(event.target.value)} placeholder="Objekt, Ursache, Code ..." value={search} /></label><label><span>Severity</span><select onChange={(event) => setSeverity(event.target.value)} value={severity}><option>ALL</option><option>ERROR</option><option>WARNING</option><option>INFO</option></select></label><label><span>Kategorie</span><select onChange={(event) => setCategory(event.target.value)} value={category}><option>ALL</option>{categories.map((item) => <option key={item}>{item}</option>)}</select></label><label><span>Sortieren</span><select onChange={(event) => setSort(event.target.value)} value={sort}><option value="severity">Severity</option><option value="category">Kategorie</option><option value="object">Objekt</option></select></label><label><span>Gruppieren</span><select onChange={(event) => setGroup(event.target.value)} value={group}><option value="none">Keine</option><option value="severity">Severity</option><option value="category">Kategorie</option></select></label></div>
+-      <div className="analysis-table-wrap"><table className="analysis-table issue-table"><thead><tr><th>Severity</th><th>Status</th><th>Category</th><th>Object</th><th>Problem</th><th>Detected Cause</th><th>Affected</th><th>Recommendation</th><th>Aktionen</th></tr></thead><tbody>{visible.map((item, index) => { const rowKey = `${item.code}-${item.object_id}-${index}`; const approved = item.status === "APPROVED" || item.approval_state === "APPROVED"; const confirmable = isConfirmableIssue(item); return <tr key={rowKey}><td><Status value={item.severity} />{item.original_severity && <small>vorher {item.original_severity}</small>}</td><td><Status value={approved ? "APPROVED" : item.approval_state || item.status} /></td><td>{item.category}</td><td><strong className="issue-object-name">{issueObjectLabel(item)}</strong><small className={`eng-object-badge ${engineeringObjectTypeClass(item.object_type)}`}>{engineeringObjectTypeLabel(item.object_type)}</small><small className="issue-object-id">{item.object_id}</small></td><td><button className="issue-problem-button" onClick={() => setSelectedIssue(item)} type="button">{item.problem}</button><small>{item.code}</small>{item.approval_note && <small>{item.approval_note}</small>}</td><td>{item.detected_cause}</td><td>{item.affected_objects.length}</td><td>{item.recommendation}</td><td><div className="table-actions"><button className="button secondary tiny" onClick={() => setSelectedIssue(item)} type="button">Details</button>{confirmable && <button className="button primary tiny" onClick={() => void onApprove(item)} type="button">Allow</button>}<Link className="button secondary tiny" href={objectLink(item)}>Zum Editor</Link><Link className="button secondary tiny" href={withProjectParam("/studio?mode=network")}>Netz öffnen</Link><Link className="button secondary tiny" href={withProjectParam(`/studio/engineering?graph=${encodeURIComponent(item.object_id)}`)}>Graph</Link><button className="button secondary tiny" onClick={() => askAgent(buildIssueAgentPrompt(item))} type="button">Ask AI</button><button className="button primary tiny" disabled={approved || proposals.some((proposal) => proposal.problem === item.problem)} onClick={() => void onCreate(recommendationFromIssue(item))} type="button">Create Proposal</button></div></td></tr>; })}</tbody></table></div>
++      <div className="analysis-table-wrap"><table className="analysis-table issue-table"><thead><tr><th>Severity</th><th>Status</th><th>Category</th><th>Object</th><th>Problem</th><th>Detected Cause</th><th>Affected</th><th>Recommendation</th><th>Aktionen</th></tr></thead><tbody>{visible.map((item, index) => { const rowKey = `${item.code}-${item.object_id}-${index}`; const approved = item.status === "APPROVED" || item.approval_state === "APPROVED"; const confirmable = isConfirmableIssue(item); return <tr key={rowKey}><td><Status value={item.severity} />{item.original_severity && <small>vorher {item.original_severity}</small>}</td><td><Status value={approved ? "APPROVED" : item.approval_state || item.status} /></td><td>{item.category}</td><td><strong className="issue-object-name">{issueObjectLabel(item)}</strong><small className={`eng-object-badge ${engineeringObjectTypeClass(item.object_type)}`}>{engineeringObjectTypeLabel(item.object_type)}</small><small className="issue-object-id">{item.object_id}</small></td><td><button className="issue-problem-button" onClick={() => setSelectedIssue(item)} type="button">{item.problem}</button><small>{item.code}</small>{item.approval_note && <small>{item.approval_note}</small>}</td><td>{item.detected_cause}</td><td>{item.affected_objects.length}</td><td>{item.recommendation}</td><td><div className="table-actions"><button className="button secondary tiny" onClick={() => setSelectedIssue(item)} type="button">Details</button>{confirmable && <button className="button primary tiny" onClick={() => void onApprove(item)} type="button">Allow</button>}<IssueEditorLinks issue={item} compact /><Link className="button secondary tiny" href={withProjectParam(`/studio/engineering?graph=${encodeURIComponent(item.object_id)}`)}>Graph</Link><button className="button secondary tiny" onClick={() => askAgent(buildIssueAgentPrompt(item))} type="button">Ask AI</button><button className="button primary tiny" disabled={approved || proposals.some((proposal) => proposal.problem === item.problem)} onClick={() => void onCreate(recommendationFromIssue(item))} type="button">Create Proposal</button></div></td></tr>; })}</tbody></table></div>
+       {selectedIssue && <IssueDetailDialog issue={selectedIssue} onClose={() => setSelectedIssue(null)} onCreate={onCreate} proposalExists={proposals.some((proposal) => proposal.problem === selectedIssue.problem)} />}
+       <footer className="table-pagination"><span>{filtered.length ? `${page * pageSize + 1}-${Math.min((page + 1) * pageSize, filtered.length)} von ${filtered.length}` : "Keine Treffer"}</span><div><button className="button secondary tiny" disabled={page === 0} onClick={() => setPage((current) => Math.max(0, current - 1))} type="button">Zurück</button><span>Seite {page + 1} / {pageCount}</span><button className="button secondary tiny" disabled={page + 1 >= pageCount} onClick={() => setPage((current) => Math.min(pageCount - 1, current + 1))} type="button">Weiter</button></div></footer>
+     </section>
+@@ -347,8 +347,7 @@
+           </section>
+         </div>
+         <footer>
+-          <Link className="button secondary" href={objectLink(issue)}>Zum Editor</Link>
+-          <Link className="button secondary" href={withProjectParam("/studio?mode=network")}>Netz öffnen</Link>
++          <IssueEditorLinks issue={issue} />
+           <button className="button secondary" onClick={() => askAgent(buildIssueAgentPrompt(issue))} type="button">Ask AI</button>
+           <button className="button primary" disabled={proposalExists} onClick={() => void onCreate(recommendationFromIssue(issue))} type="button">Create Proposal</button>
+         </footer>
+@@ -410,6 +409,16 @@
+   const resource = ISSUE_RESOURCE_BY_TYPE[issue.object_type];
+   const resourceParam = resource ? `resource=${encodeURIComponent(resource)}&type=${encodeURIComponent(issue.object_type)}&` : "";
+   return withProjectParam(`/studio/engineering?${resourceParam}object=${encodeURIComponent(issue.object_id)}&edit=1`);
++}
++
++function IssueEditorLinks({ issue, compact = false }: { issue: IntelligenceIssue; compact?: boolean }) {
++  const editorHref = objectLink(issue);
++  const networkHref = withProjectParam("/studio?mode=network");
++  const className = `button secondary${compact ? " tiny" : ""}`;
++  return <>
++    <Link className={className} href={editorHref}>{editorHref === networkHref ? "Netz öffnen" : "Zum Editor"}</Link>
++    {editorHref !== networkHref && <Link className={className} href={networkHref}>Netz öffnen</Link>}
++  </>;
+ }
+ 
+ function recommendationFromIssue(issue: IntelligenceIssue): IntelligenceRecommendation {
+--- before/frontend/src/app/globals.css
++++ after/frontend/src/app/globals.css
+@@ -13058,6 +13058,46 @@
+ .source-version-table b { color: var(--accent); }
+ .result-compare-select { display: grid; gap: 5px; color: var(--muted); font-size: 9px; }
+ .result-compare-select select { min-height: 34px; padding: 7px 9px; border: 1px solid var(--border); border-radius: 4px; background: var(--background); color: var(--text); }
++.communication-sizing-panel { min-width: 0; margin-bottom: 24px; overflow: hidden; box-shadow: 0 8px 24px var(--shadow); }
++.communication-sizing-summary { display: flex; align-items: center; gap: 14px; padding: 20px 24px; cursor: pointer; list-style: none; }
++.communication-sizing-summary::-webkit-details-marker { display: none; }
++.communication-sizing-summary::marker { content: ""; }
++.communication-sizing-summary:focus-visible { outline: 2px solid var(--accent); outline-offset: -3px; border-radius: 12px; }
++.communication-sizing-icon { display: grid; place-items: center; flex: 0 0 42px; height: 42px; border-radius: 10px; color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--surface)); }
++.communication-sizing-heading { display: grid; gap: 5px; min-width: 0; }
++.communication-sizing-heading strong { color: var(--text); font-size: 17px; line-height: 1.35; }
++.communication-sizing-heading > span:last-child { color: var(--muted); font-size: 12px; line-height: 1.5; }
++.communication-sizing-chevron { flex: 0 0 auto; margin-left: auto; color: var(--muted); font-size: 24px; line-height: 1; }
++.communication-sizing-panel[open] > .communication-sizing-summary { background: color-mix(in srgb, var(--accent) 3%, transparent); }
++.communication-sizing-panel[open] > .communication-sizing-summary .communication-sizing-chevron { transform: rotate(180deg); }
++.communication-sizing-body { display: grid; gap: 18px; padding: 20px 24px 24px; border-top: 1px solid var(--border); }
++.communication-sizing-body p { margin: 0; font-size: 12px; line-height: 1.65; overflow-wrap: anywhere; }
++.communication-sizing-intro { max-width: 100ch; color: var(--muted); }
++.communication-sizing-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr)); gap: 14px; max-width: 760px; }
++.communication-sizing-fields label { display: grid; align-content: start; gap: 8px; min-width: 0; color: var(--muted); font-size: 11px; line-height: 1.4; }
++.communication-sizing-fields input { width: 100%; min-width: 0; min-height: 40px; border: 1px solid var(--border); border-radius: 6px; padding: 9px 11px; color: var(--text); background: var(--background); font: 13px var(--font-geist-mono), monospace; }
++.communication-sizing-fields input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
++.communication-sizing-fields input:disabled { opacity: .6; }
++.communication-sizing-actions { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding-top: 16px; border-top: 1px solid var(--border); }
++.communication-sizing-actions > span { color: var(--muted); font-size: 11px; line-height: 1.5; }
++.communication-sizing-actions > .button { margin-left: auto; max-width: 100%; white-space: normal; text-align: center; }
++.communication-sizing-result { display: grid; gap: 14px; padding-top: 18px; border-top: 1px solid var(--border); min-width: 0; }
++.communication-sizing-result-heading { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 16px; }
++.communication-sizing-result-heading strong { color: var(--text); font-size: 14px; }
++.communication-sizing-result-heading span { color: var(--muted); font-size: 11px; }
++.communication-sizing-networks { display: grid; gap: 8px; min-width: 0; max-height: 520px; overflow: auto; }
++.communication-sizing-network, .communication-sizing-changes { min-width: 0; padding: 12px 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface-deep); }
++.communication-sizing-network > summary, .communication-sizing-changes > summary { cursor: pointer; color: var(--text); font-size: 12px; line-height: 1.6; overflow-wrap: anywhere; }
++.communication-sizing-network > p { margin: 12px 0; }
++.communication-sizing-changes ul { margin-bottom: 0; font-size: 12px; line-height: 1.7; }
++@media (max-width: 640px) {
++  .communication-sizing-summary { padding: 16px; gap: 10px; }
++  .communication-sizing-icon { flex-basis: 36px; height: 36px; }
++  .communication-sizing-heading strong { font-size: 15px; }
++  .communication-sizing-body { padding: 16px; }
++  .communication-sizing-actions > .button { width: 100%; }
++}
++
+ .runtime-analysis { margin-top: 18px; }
+ .runtime-analysis > .metric-strip.compact { display: flex; flex-wrap: wrap; gap: 1px; margin-top: 0; overflow: hidden; background: var(--border); }
+ .runtime-analysis > .metric-strip.compact > .metric { flex: 1 1 max-content; min-width: min(100%, 96px); min-height: 54px; gap: 4px; padding: 8px 10px; border: 0; }

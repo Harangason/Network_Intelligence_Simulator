@@ -1,0 +1,2138 @@
+{
+  "id": "can_fd",
+  "label": "CAN-FD",
+  "domain": "generic_networking",
+  "layer": "DATA_LINK",
+  "transport_unit": "FRAME",
+  "payload_element_types": [
+    "SIGNAL",
+    "STATUS"
+  ],
+  "hardware_interface": "can_fd_controller",
+  "hardware_capability_aliases": [
+    "can_fd_controller"
+  ],
+  "default_stack": [
+    "can_fd"
+  ],
+  "stack_variants": [
+    [
+      "can_fd"
+    ]
+  ],
+  "default_bitrate": null,
+  "rate_model": {
+    "type": "MULTI_PHASE_BITRATE",
+    "fields": [
+      "nominal_bitrate_bps",
+      "data_bitrate_bps"
+    ],
+    "minimum_bps": 1,
+    "nominal_maximum_bps": 1000000,
+    "optional_fields_when": {
+      "data_bitrate_bps": {
+        "can_fd_brs": false
+      }
+    }
+  },
+  "local_timing_schema": [],
+  "parameter_schema": {
+    "nominal_bitrate_bps": {
+      "label": "Nominal Bitrate",
+      "category": "physical",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": true,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "unit": "bit/s",
+      "min": 1,
+      "max": 1000000,
+      "default_review": {
+        "technology": "can_fd",
+        "rate_profile": "can_fd",
+        "values": {},
+        "basis": "DEVICE_DEPENDENT",
+        "status": "REVIEW_REQUIRED",
+        "source": "https://www.can-cia.org/can-knowledge/can-fd-the-basic-idea",
+        "source_revision": "CiA CAN FD basic idea / PMA options accessed2026-10-01; ISO11898-1:2015 / 2024"
+      },
+      "allowed_bps": [],
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "UNKNOWN",
+      "source": "https://www.can-cia.org/can-knowledge/can-fd-the-basic-idea",
+      "source_revision": "CiA CAN FD basic idea / PMA options accessed2026-10-01; ISO11898-1:2015 / 2024"
+    },
+    "data_bitrate_bps": {
+      "label": "Data Bitrate",
+      "category": "physical",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "unit": "bit/s",
+      "min": 1,
+      "default_review": {
+        "technology": "can_fd",
+        "rate_profile": "can_fd",
+        "values": {},
+        "basis": "DEVICE_DEPENDENT",
+        "status": "REVIEW_REQUIRED",
+        "source": "https://www.can-cia.org/can-knowledge/can-fd-the-basic-idea",
+        "source_revision": "CiA CAN FD basic idea / PMA options accessed2026-10-01; ISO11898-1:2015 / 2024"
+      },
+      "allowed_bps": [],
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "UNKNOWN",
+      "source": "https://www.can-cia.org/can-knowledge/can-fd-the-basic-idea",
+      "source_revision": "CiA CAN FD basic idea / PMA options accessed2026-10-01; ISO11898-1:2015 / 2024",
+      "required_when": {
+        "can_fd_brs": true
+      }
+    },
+    "payload_bytes": {
+      "label": "Payload",
+      "category": "physical",
+      "scope": "message",
+      "type": "number",
+      "description": "Actual logical payload0..64 bytes. CAN FD wire data length follows DLC and may include padding; no default full64-byte payload.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "max": 64,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.can-cia.org/can-knowledge/can-fd-the-basic-idea",
+      "source_revision": "CiA CAN FD basic idea / PMA options accessed2026-10-01; ISO11898-1:2015 / 2024",
+      "integer": true
+    },
+    "cycle_ms": {
+      "label": "Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "Standardperiode fuer zyklische Nachrichten.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "minimum_cycle_time_ms": {
+      "label": "Minimum Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "deadline_ms": {
+      "label": "Deadline",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "timeout_ms": {
+      "label": "Timeout",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_latency_ms": {
+      "label": "Maximum Latency",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "jitter_ms": {
+      "label": "Jitter Budget",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "freshness_ms": {
+      "label": "Data Freshness",
+      "category": "timing",
+      "scope": "signal",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "source_processing_delay_ms": {
+      "label": "Source Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_processing_delay_ms": {
+      "label": "Target Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "propagation_delay_ms": {
+      "label": "Propagation",
+      "category": "timing",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.01,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_bus_load_percent": {
+      "label": "Ziel-Buslast",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "Zielwert fuer die aus Routing, Payload, Zyklus und Bitrate berechnete Buslast.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "peak_factor": {
+      "label": "Peak Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.15,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_factor": {
+      "label": "Burst Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.5,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_window_ms": {
+      "label": "Burst Window",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "warning_threshold": {
+      "label": "Load Warning",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "critical_threshold": {
+      "label": "Load Critical",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 75,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "overload_threshold": {
+      "label": "Load Overload",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 90,
+      "unit": "%",
+      "min": 1,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "queue_size": {
+      "label": "Queue Size",
+      "category": "qos",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 256,
+      "unit": "Frames",
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1",
+      "integer": true
+    },
+    "queue_policy": {
+      "label": "Queue Policy",
+      "category": "qos",
+      "scope": "network",
+      "type": "select",
+      "description": "Abstract host queue. Wire arbitration uses the CAN identifier; host FIFO can introduce priority inversion.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": "FIFO",
+      "options": [
+        "FIFO",
+        "PRIORITY",
+        "CUSTOM"
+      ],
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "traffic_class": {
+      "label": "Traffic Class",
+      "category": "qos",
+      "scope": "route",
+      "type": "select",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": "BEST_EFFORT",
+      "options": [
+        "BEST_EFFORT",
+        "CONTROL",
+        "REALTIME",
+        "SAFETY_CRITICAL"
+      ],
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "packet_loss_probability": {
+      "label": "Packet Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "frame_loss_probability": {
+      "label": "Frame Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "bit_error_rate": {
+      "label": "Bit Error Rate",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "corruption_probability": {
+      "label": "Corruption",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duplicate_probability": {
+      "label": "Duplication",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "reordering_probability": {
+      "label": "Reordering",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "retransmission_enabled": {
+      "label": "Retransmission",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "boolean",
+      "description": "CAN automatic retransmission baseline. One-shot/listen-only hardware modes require separate device behavior; no finite retry count is implied.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": true,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED",
+      "source": "https://www.zlg.cn/data/upload/software/Can/CANag.pdf",
+      "source_revision": "Bosch CAN Specification 2.0 September 1991 Part B sections 2 / 10; CiA CAN HS transmission accessed 2026-10-01",
+      "allowed_values": [
+        true
+      ]
+    },
+    "required_reliability": {
+      "label": "Required Reliability",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.999,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_offset_ms": {
+      "label": "Clock Offset",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_drift_ppm": {
+      "label": "Clock Drift",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 20,
+      "unit": "ppm",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_precision_ms": {
+      "label": "Sync Precision",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_interval_ms": {
+      "label": "Sync Interval",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1000,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_sync_error_ms": {
+      "label": "Maximum Sync Error",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_delay_ms": {
+      "label": "Gateway Processing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.2,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_queue_delay_ms": {
+      "label": "Gateway Queueing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "protocol_conversion_delay_ms": {
+      "label": "Protocol Conversion",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duration_s": {
+      "label": "Simulation Duration",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 1,
+      "unit": "s",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "seed": {
+      "label": "Random Seed",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 42,
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1",
+      "integer": true
+    },
+    "max_events": {
+      "label": "Maximum Events",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 100000,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1",
+      "integer": true
+    },
+    "dropout_probability": {
+      "label": "Failure Injection Dropout",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "can_frame_format": {
+      "label": "Actual CAN identifier format",
+      "category": "communication",
+      "scope": "message",
+      "type": "select",
+      "description": "Declared CAN CC configuration, not proof of actual controller state, hardware conformance or bounded retransmissions.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "options": [
+        "BASE_11",
+        "EXTENDED_29"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.zlg.cn/data/upload/software/Can/CANag.pdf",
+      "source_revision": "Part B 3.1 / 3.2.1; reviewed 2026-10-01"
+    },
+    "can_frame_type": {
+      "label": "CAN frame baseline",
+      "category": "communication",
+      "scope": "message",
+      "type": "select",
+      "description": "CAN FD has no remote frame. Classic CAN compatibility is a separately identified CC frame.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": "DATA",
+      "options": [
+        "DATA"
+      ],
+      "integer": false,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED",
+      "source": "https://www.zlg.cn/data/upload/software/Can/CANag.pdf",
+      "source_revision": "Part B 3.2; reviewed 2026-10-01"
+    },
+    "can_identifier": {
+      "label": "Actual identifier / wire priority",
+      "category": "communication",
+      "scope": "message",
+      "type": "number",
+      "description": "Declared CAN CC configuration, not proof of actual controller state, hardware conformance or bounded retransmissions.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "max": 536870911,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.zlg.cn/data/upload/software/Can/CANag.pdf",
+      "source_revision": "Part B 3.2.1; reviewed 2026-10-01"
+    },
+    "can_controller_profile": {
+      "label": "Actual bit timing controller profile",
+      "category": "physical",
+      "scope": "network",
+      "type": "select",
+      "description": "Declared CAN CC configuration, not proof of actual controller state, hardware conformance or bounded retransmissions.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "DEVICE_SPECIFIC",
+        "M_CAN_3_3_1"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.bosch-semiconductors.com/media/ip_modules/pdf_2/m_can/mcan_users_manual_v331.pdf",
+      "source_revision": "Part B 10 / Bosch M_CAN 3.3.1 2.3.8; reviewed 2026-10-01"
+    },
+    "can_clock_hz": {
+      "label": "Actual CAN clock",
+      "category": "physical",
+      "scope": "network",
+      "type": "number",
+      "description": "Declared CAN CC configuration, not proof of actual controller state, hardware conformance or bounded retransmissions.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Hz",
+      "min": 1,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.zlg.cn/data/upload/software/Can/CANag.pdf",
+      "source_revision": "Part B 10; reviewed 2026-10-01"
+    },
+    "can_prescaler": {
+      "label": "Actual prescaler (functional value)",
+      "category": "communication",
+      "scope": "network",
+      "type": "number",
+      "description": "Declared CAN CC configuration, not proof of actual controller state, hardware conformance or bounded retransmissions.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 1,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.bosch-semiconductors.com/media/ip_modules/pdf_2/m_can/mcan_users_manual_v331.pdf",
+      "source_revision": "Part B 10 / Bosch M_CAN 3.3.1 2.3.8; reviewed 2026-10-01"
+    },
+    "can_tseg1_tq": {
+      "label": "Actual Prop_Seg + Phase_Seg1 (functional value)",
+      "category": "physical",
+      "scope": "network",
+      "type": "number",
+      "description": "Declared CAN CC configuration, not proof of actual controller state, hardware conformance or bounded retransmissions.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "TQ",
+      "min": 1,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.bosch-semiconductors.com/media/ip_modules/pdf_2/m_can/mcan_users_manual_v331.pdf",
+      "source_revision": "Part B 10 / Bosch M_CAN 3.3.1 2.3.8; reviewed 2026-10-01"
+    },
+    "can_tseg2_tq": {
+      "label": "Actual Phase_Seg2 (functional value)",
+      "category": "physical",
+      "scope": "network",
+      "type": "number",
+      "description": "Declared CAN CC configuration, not proof of actual controller state, hardware conformance or bounded retransmissions.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "TQ",
+      "min": 1,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.bosch-semiconductors.com/media/ip_modules/pdf_2/m_can/mcan_users_manual_v331.pdf",
+      "source_revision": "Part B 10 / Bosch M_CAN 3.3.1 2.3.8; reviewed 2026-10-01"
+    },
+    "can_sjw_tq": {
+      "label": "Actual resynchronization jump width",
+      "category": "physical",
+      "scope": "network",
+      "type": "number",
+      "description": "Declared CAN CC configuration, not proof of actual controller state, hardware conformance or bounded retransmissions.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "TQ",
+      "min": 1,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.bosch-semiconductors.com/media/ip_modules/pdf_2/m_can/mcan_users_manual_v331.pdf",
+      "source_revision": "Part B 10 / Bosch M_CAN 3.3.1 2.3.8; reviewed 2026-10-01"
+    },
+    "sample_point_percent": {
+      "label": "Actual nominal sample point",
+      "category": "physical",
+      "scope": "network",
+      "type": "number",
+      "description": "Declared CAN CC configuration, not proof of actual controller state, hardware conformance or bounded retransmissions.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "%",
+      "min": 1e-06,
+      "max": 99.999999,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.zlg.cn/data/upload/software/Can/CANag.pdf",
+      "source_revision": "Part B 10; reviewed 2026-10-01"
+    },
+    "can_error_state": {
+      "label": "Observed controller error state",
+      "category": "communication",
+      "scope": "network",
+      "type": "select",
+      "description": "Declared CAN CC configuration, not proof of actual controller state, hardware conformance or bounded retransmissions.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "ERROR_ACTIVE",
+        "ERROR_PASSIVE",
+        "BUS_OFF"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.zlg.cn/data/upload/software/Can/CANag.pdf",
+      "source_revision": "Part B 8; reviewed 2026-10-01"
+    },
+    "can_tx_error_count": {
+      "label": "Observed transmit error counter",
+      "category": "communication",
+      "scope": "network",
+      "type": "number",
+      "description": "Declared CAN CC configuration, not proof of actual controller state, hardware conformance or bounded retransmissions.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.zlg.cn/data/upload/software/Can/CANag.pdf",
+      "source_revision": "Part B 8; reviewed 2026-10-01"
+    },
+    "can_rx_error_count": {
+      "label": "Observed receive error counter",
+      "category": "communication",
+      "scope": "network",
+      "type": "number",
+      "description": "Declared CAN CC configuration, not proof of actual controller state, hardware conformance or bounded retransmissions.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.zlg.cn/data/upload/software/Can/CANag.pdf",
+      "source_revision": "Part B 8; reviewed 2026-10-01"
+    },
+    "can_ack_receiver_count": {
+      "label": "Actual receivers capable of acknowledgement",
+      "category": "communication",
+      "scope": "network",
+      "type": "number",
+      "description": "Declared CAN CC configuration, not proof of actual controller state, hardware conformance or bounded retransmissions.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "nodes",
+      "min": 0,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.zlg.cn/data/upload/software/Can/CANag.pdf",
+      "source_revision": "Part B 2 / 3.2.1; reviewed 2026-10-01"
+    },
+    "can_termination_ohms": {
+      "label": "HS line termination recommendation",
+      "category": "physical",
+      "scope": "network",
+      "type": "number",
+      "description": "Declared CAN CC configuration, not proof of actual controller state, hardware conformance or bounded retransmissions.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 120,
+      "unit": "Ohm",
+      "min": 1,
+      "integer": false,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED",
+      "source": "https://www.can-cia.org/can-knowledge/can-hs-transmission",
+      "source_revision": "CiA CAN HS transmission; reviewed 2026-10-01"
+    },
+    "can_bus_length_m": {
+      "label": "Actual main line length",
+      "category": "physical",
+      "scope": "network",
+      "type": "number",
+      "description": "Declared CAN CC configuration, not proof of actual controller state, hardware conformance or bounded retransmissions.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "m",
+      "min": 0,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.can-cia.org/can-knowledge/can-hs-transmission",
+      "source_revision": "CiA CAN HS transmission; reviewed 2026-10-01"
+    },
+    "can_stub_length_m": {
+      "label": "Actual longest stub",
+      "category": "physical",
+      "scope": "network",
+      "type": "number",
+      "description": "Declared CAN CC configuration, not proof of actual controller state, hardware conformance or bounded retransmissions.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "m",
+      "min": 0,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.can-cia.org/can-knowledge/can-hs-transmission",
+      "source_revision": "CiA CAN network design; reviewed 2026-10-01"
+    },
+    "can_fd_revision": {
+      "label": "CAN FD wire baseline",
+      "category": "physical",
+      "scope": "network",
+      "type": "select",
+      "description": "ISO CAN FD configuration. Actual hardware, wire data and timing remain unconfirmed; M_CAN fields apply to explicitly selected M_CAN3.3.1 only.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": "ISO_2015_2024",
+      "options": [
+        "ISO_2015_2024"
+      ],
+      "integer": false,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED",
+      "source": "https://www.bosch-semiconductors.com/media/ip_modules/pdf_2/m_can/mcan_users_manual_v331.pdf",
+      "source_revision": "Bosch M_CAN3.3.1 2023-03-11 section3.1.4"
+    },
+    "can_fd_brs": {
+      "label": "Actual bit rate switching",
+      "category": "physical",
+      "scope": "message",
+      "type": "boolean",
+      "description": "ISO CAN FD configuration. Actual hardware, wire data and timing remain unconfirmed; M_CAN fields apply to explicitly selected M_CAN3.3.1 only.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": false,
+      "integer": false,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED",
+      "source": "https://www.bosch-semiconductors.com/media/ip_modules/pdf_2/m_can/mcan_users_manual_v331.pdf",
+      "source_revision": "Bosch M_CAN3.3.1 2023-03-11 section3.1.4"
+    },
+    "can_fd_dlc": {
+      "label": "Actual encoded CAN FD DLC",
+      "category": "physical",
+      "scope": "message",
+      "type": "number",
+      "description": "ISO CAN FD configuration. Actual hardware, wire data and timing remain unconfirmed; M_CAN fields apply to explicitly selected M_CAN3.3.1 only.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "min": 0,
+      "max": 15,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.bosch-semiconductors.com/media/ip_modules/pdf_2/m_can/mcan_users_manual_v331.pdf",
+      "source_revision": "Bosch M_CAN3.3.1 2023-03-11 section3.1.4 Table54"
+    },
+    "can_fd_wire_data_bytes": {
+      "label": "Actual DLC data length including padding",
+      "category": "physical",
+      "scope": "message",
+      "type": "number",
+      "description": "ISO CAN FD configuration. Actual hardware, wire data and timing remain unconfirmed; M_CAN fields apply to explicitly selected M_CAN3.3.1 only.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "max": 64,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.bosch-semiconductors.com/media/ip_modules/pdf_2/m_can/mcan_users_manual_v331.pdf",
+      "source_revision": "Bosch M_CAN3.3.1 2023-03-11 section3.1.4 Table54",
+      "allowed_values": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        12,
+        16,
+        20,
+        24,
+        32,
+        48,
+        64
+      ]
+    },
+    "can_fd_error_passive": {
+      "label": "Actual ESI error-passive indicator",
+      "category": "physical",
+      "scope": "message",
+      "type": "boolean",
+      "description": "ISO CAN FD configuration. Actual hardware, wire data and timing remain unconfirmed; M_CAN fields apply to explicitly selected M_CAN3.3.1 only.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.bosch-semiconductors.com/media/ip_modules/pdf_2/m_can/mcan_users_manual_v331.pdf",
+      "source_revision": "Bosch M_CAN3.3.1 2023-03-11 section3.1.4"
+    },
+    "can_fd_crc_bits": {
+      "label": "Required CRC sequence length",
+      "category": "physical",
+      "scope": "message",
+      "type": "number",
+      "description": "ISO CAN FD configuration. Actual hardware, wire data and timing remain unconfirmed; M_CAN fields apply to explicitly selected M_CAN3.3.1 only.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "bit",
+      "min": 17,
+      "max": 21,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.bosch-semiconductors.com/media/ip_modules/pdf_2/m_can/mcan_users_manual_v331.pdf",
+      "source_revision": "Bosch M_CAN3.3.1 2023-03-11 sectionISO CRC17/21",
+      "allowed_values": [
+        17,
+        21
+      ]
+    },
+    "can_fd_transceiver_max_bps": {
+      "label": "Actual transceiver data-rate capability",
+      "category": "physical",
+      "scope": "network",
+      "type": "number",
+      "description": "ISO CAN FD configuration. Actual hardware, wire data and timing remain unconfirmed; M_CAN fields apply to explicitly selected M_CAN3.3.1 only.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "bit/s",
+      "min": 1,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.can-cia.org/can-knowledge/can-fd-the-basic-idea",
+      "source_revision": "CiA CAN FD basic idea / PMA options accessed2026-10-01; ISO11898-1:2015 / 2024"
+    },
+    "can_fd_data_prescaler": {
+      "label": "Actual data prescaler functional value",
+      "category": "physical",
+      "scope": "network",
+      "type": "number",
+      "description": "ISO CAN FD configuration. Actual hardware, wire data and timing remain unconfirmed; M_CAN fields apply to explicitly selected M_CAN3.3.1 only.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 1,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.bosch-semiconductors.com/media/ip_modules/pdf_2/m_can/mcan_users_manual_v331.pdf",
+      "source_revision": "Bosch M_CAN3.3.1 2023-03-11 section2.3.4"
+    },
+    "can_fd_data_tseg1_tq": {
+      "label": "Actual data TSEG1 functional value",
+      "category": "physical",
+      "scope": "network",
+      "type": "number",
+      "description": "ISO CAN FD configuration. Actual hardware, wire data and timing remain unconfirmed; M_CAN fields apply to explicitly selected M_CAN3.3.1 only.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "TQ",
+      "min": 1,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.bosch-semiconductors.com/media/ip_modules/pdf_2/m_can/mcan_users_manual_v331.pdf",
+      "source_revision": "Bosch M_CAN3.3.1 2023-03-11 section2.3.4"
+    },
+    "can_fd_data_tseg2_tq": {
+      "label": "Actual data TSEG2 functional value",
+      "category": "physical",
+      "scope": "network",
+      "type": "number",
+      "description": "ISO CAN FD configuration. Actual hardware, wire data and timing remain unconfirmed; M_CAN fields apply to explicitly selected M_CAN3.3.1 only.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "TQ",
+      "min": 1,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.bosch-semiconductors.com/media/ip_modules/pdf_2/m_can/mcan_users_manual_v331.pdf",
+      "source_revision": "Bosch M_CAN3.3.1 2023-03-11 section2.3.4"
+    },
+    "can_fd_data_sjw_tq": {
+      "label": "Actual data resynchronization jump",
+      "category": "physical",
+      "scope": "network",
+      "type": "number",
+      "description": "ISO CAN FD configuration. Actual hardware, wire data and timing remain unconfirmed; M_CAN fields apply to explicitly selected M_CAN3.3.1 only.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "TQ",
+      "min": 1,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.bosch-semiconductors.com/media/ip_modules/pdf_2/m_can/mcan_users_manual_v331.pdf",
+      "source_revision": "Bosch M_CAN3.3.1 2023-03-11 section2.3.4"
+    },
+    "can_fd_data_sample_point_percent": {
+      "label": "Actual data sample point",
+      "category": "physical",
+      "scope": "network",
+      "type": "number",
+      "description": "ISO CAN FD configuration. Actual hardware, wire data and timing remain unconfirmed; M_CAN fields apply to explicitly selected M_CAN3.3.1 only.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "%",
+      "min": 1e-06,
+      "max": 99.999999,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.bosch-semiconductors.com/media/ip_modules/pdf_2/m_can/mcan_users_manual_v331.pdf",
+      "source_revision": "Bosch M_CAN3.3.1 2023-03-11 section2.3.4"
+    },
+    "can_fd_tdc_enabled": {
+      "label": "Actual transmitter delay compensation",
+      "category": "physical",
+      "scope": "network",
+      "type": "boolean",
+      "description": "ISO CAN FD configuration. Actual hardware, wire data and timing remain unconfirmed; M_CAN fields apply to explicitly selected M_CAN3.3.1 only.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.bosch-semiconductors.com/media/ip_modules/pdf_2/m_can/mcan_users_manual_v331.pdf",
+      "source_revision": "Bosch M_CAN3.3.1 2023-03-11 section3.1.4.1"
+    },
+    "can_fd_mcan_delay_mtq": {
+      "label": "Actual M_CAN measured transmitter delay",
+      "category": "physical",
+      "scope": "network",
+      "type": "number",
+      "description": "ISO CAN FD configuration. Actual hardware, wire data and timing remain unconfirmed; M_CAN fields apply to explicitly selected M_CAN3.3.1 only.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "mtq",
+      "min": 0,
+      "max": 127,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.bosch-semiconductors.com/media/ip_modules/pdf_2/m_can/mcan_users_manual_v331.pdf",
+      "source_revision": "Bosch M_CAN3.3.1 2023-03-11 section3.1.4.1"
+    },
+    "can_fd_mcan_tdco_mtq": {
+      "label": "Actual M_CAN secondary sample offset",
+      "category": "physical",
+      "scope": "network",
+      "type": "number",
+      "description": "ISO CAN FD configuration. Actual hardware, wire data and timing remain unconfirmed; M_CAN fields apply to explicitly selected M_CAN3.3.1 only.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "mtq",
+      "min": 0,
+      "max": 127,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.bosch-semiconductors.com/media/ip_modules/pdf_2/m_can/mcan_users_manual_v331.pdf",
+      "source_revision": "Bosch M_CAN3.3.1 2023-03-11 section2.3.15"
+    },
+    "can_fd_mcan_tdcf_mtq": {
+      "label": "Actual M_CAN delay filter window",
+      "category": "physical",
+      "scope": "network",
+      "type": "number",
+      "description": "ISO CAN FD configuration. Actual hardware, wire data and timing remain unconfirmed; M_CAN fields apply to explicitly selected M_CAN3.3.1 only.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "mtq",
+      "min": 0,
+      "max": 127,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.bosch-semiconductors.com/media/ip_modules/pdf_2/m_can/mcan_users_manual_v331.pdf",
+      "source_revision": "Bosch M_CAN3.3.1 2023-03-11 section2.3.15"
+    },
+    "can_fd_mcan_ssp_mtq": {
+      "label": "Actual M_CAN secondary sample position",
+      "category": "physical",
+      "scope": "network",
+      "type": "number",
+      "description": "ISO CAN FD configuration. Actual hardware, wire data and timing remain unconfirmed; M_CAN fields apply to explicitly selected M_CAN3.3.1 only.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "mtq",
+      "min": 0,
+      "max": 127,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.bosch-semiconductors.com/media/ip_modules/pdf_2/m_can/mcan_users_manual_v331.pdf",
+      "source_revision": "Bosch M_CAN3.3.1 2023-03-11 section3.1.4.1"
+    }
+  },
+  "mechanisms": {
+    "integrity": [
+      "CAN_FD_CRC"
+    ],
+    "addressing": [
+      "CAN_IDENTIFIER"
+    ],
+    "supervision": [
+      "ERROR_COUNTER",
+      "ERROR_ACTIVE",
+      "ERROR_PASSIVE",
+      "BUS_OFF"
+    ]
+  },
+  "parameter_constraints": [
+    {
+      "when": {},
+      "parameter": "payload_bytes",
+      "maximum_parameter": "can_fd_wire_data_bytes",
+      "source": "https://www.bosch-semiconductors.com/media/ip_modules/pdf_2/m_can/mcan_users_manual_v331.pdf",
+      "source_revision": "Bosch M_CAN3.3.1 2023-03-11 sections2.3.4/2.3.15/3.1.4; CiA CAN FD ISO baseline"
+    },
+    {
+      "when": {},
+      "parameter": "data_bitrate_bps",
+      "maximum_parameter": "can_fd_transceiver_max_bps",
+      "source": "https://www.bosch-semiconductors.com/media/ip_modules/pdf_2/m_can/mcan_users_manual_v331.pdf",
+      "source_revision": "Bosch M_CAN3.3.1 2023-03-11 sections2.3.4/2.3.15/3.1.4; CiA CAN FD ISO baseline"
+    },
+    {
+      "when": {
+        "can_error_state": "ERROR_ACTIVE"
+      },
+      "parameter": "can_fd_error_passive",
+      "allowed": [
+        false
+      ],
+      "source": "https://www.bosch-semiconductors.com/media/ip_modules/pdf_2/m_can/mcan_users_manual_v331.pdf",
+      "source_revision": "Bosch M_CAN3.3.1 2023-03-11 sections2.3.4/2.3.15/3.1.4; CiA CAN FD ISO baseline"
+    },
+    {
+      "when": {
+        "can_error_state": "ERROR_PASSIVE"
+      },
+      "parameter": "can_fd_error_passive",
+      "allowed": [
+        true
+      ],
+      "source": "https://www.bosch-semiconductors.com/media/ip_modules/pdf_2/m_can/mcan_users_manual_v331.pdf",
+      "source_revision": "Bosch M_CAN3.3.1 2023-03-11 sections2.3.4/2.3.15/3.1.4; CiA CAN FD ISO baseline"
+    },
+    {
+      "when": {},
+      "when_ranges": {
+        "can_fd_wire_data_bytes": [
+          0,
+          16
+        ]
+      },
+      "parameter": "can_fd_crc_bits",
+      "allowed": [
+        17
+      ],
+      "source": "https://www.bosch-semiconductors.com/media/ip_modules/pdf_2/m_can/mcan_users_manual_v331.pdf",
+      "source_revision": "Bosch M_CAN3.3.1 2023-03-11 sections2.3.4/2.3.15/3.1.4; CiA CAN FD ISO baseline"
+    },
+    {
+      "when": {},
+      "when_ranges": {
+        "can_fd_wire_data_bytes": [
+          20,
+          64
+        ]
+      },
+      "parameter": "can_fd_crc_bits",
+      "allowed": [
+        21
+      ],
+      "source": "https://www.bosch-semiconductors.com/media/ip_modules/pdf_2/m_can/mcan_users_manual_v331.pdf",
+      "source_revision": "Bosch M_CAN3.3.1 2023-03-11 sections2.3.4/2.3.15/3.1.4; CiA CAN FD ISO baseline"
+    },
+    {
+      "when": {},
+      "parameter": "data_bitrate_bps",
+      "equal_ratio": {
+        "numerator_parameter": "can_clock_hz",
+        "denominator_product": [
+          "can_fd_data_prescaler"
+        ],
+        "denominator_sum": [
+          "can_fd_data_tseg1_tq",
+          "can_fd_data_tseg2_tq"
+        ],
+        "denominator_offset": 1
+      },
+      "source": "https://www.bosch-semiconductors.com/media/ip_modules/pdf_2/m_can/mcan_users_manual_v331.pdf",
+      "source_revision": "Bosch M_CAN3.3.1 2023-03-11 sections2.3.4/2.3.15/3.1.4; CiA CAN FD ISO baseline"
+    },
+    {
+      "when": {},
+      "parameter": "can_fd_data_sample_point_percent",
+      "equal_ratio": {
+        "numerator_sum": [
+          "can_fd_data_tseg1_tq"
+        ],
+        "numerator_offset": 1,
+        "factor": 100,
+        "denominator_sum": [
+          "can_fd_data_tseg1_tq",
+          "can_fd_data_tseg2_tq"
+        ],
+        "denominator_offset": 1
+      },
+      "source": "https://www.bosch-semiconductors.com/media/ip_modules/pdf_2/m_can/mcan_users_manual_v331.pdf",
+      "source_revision": "Bosch M_CAN3.3.1 2023-03-11 sections2.3.4/2.3.15/3.1.4; CiA CAN FD ISO baseline"
+    },
+    {
+      "when": {},
+      "parameter": "can_fd_data_sjw_tq",
+      "maximum_parameter": "can_fd_data_tseg1_tq",
+      "source": "https://www.bosch-semiconductors.com/media/ip_modules/pdf_2/m_can/mcan_users_manual_v331.pdf",
+      "source_revision": "Bosch M_CAN3.3.1 2023-03-11 sections2.3.4/2.3.15/3.1.4; CiA CAN FD ISO baseline"
+    },
+    {
+      "when": {},
+      "parameter": "can_fd_data_sjw_tq",
+      "maximum_parameter": "can_fd_data_tseg2_tq",
+      "source": "https://www.bosch-semiconductors.com/media/ip_modules/pdf_2/m_can/mcan_users_manual_v331.pdf",
+      "source_revision": "Bosch M_CAN3.3.1 2023-03-11 sections2.3.4/2.3.15/3.1.4; CiA CAN FD ISO baseline"
+    },
+    {
+      "when": {
+        "can_controller_profile": "M_CAN_3_3_1"
+      },
+      "parameter": "can_fd_data_prescaler",
+      "maximum": 32,
+      "source": "https://www.bosch-semiconductors.com/media/ip_modules/pdf_2/m_can/mcan_users_manual_v331.pdf",
+      "source_revision": "Bosch M_CAN3.3.1 2023-03-11 sections2.3.4/2.3.15/3.1.4; CiA CAN FD ISO baseline"
+    },
+    {
+      "when": {
+        "can_controller_profile": "M_CAN_3_3_1",
+        "can_fd_tdc_enabled": true
+      },
+      "parameter": "can_fd_data_prescaler",
+      "maximum": 2,
+      "source": "https://www.bosch-semiconductors.com/media/ip_modules/pdf_2/m_can/mcan_users_manual_v331.pdf",
+      "source_revision": "Bosch M_CAN3.3.1 2023-03-11 sections2.3.4/2.3.15/3.1.4; CiA CAN FD ISO baseline"
+    },
+    {
+      "when": {
+        "can_controller_profile": "M_CAN_3_3_1"
+      },
+      "parameter": "can_fd_data_tseg1_tq",
+      "maximum": 32,
+      "source": "https://www.bosch-semiconductors.com/media/ip_modules/pdf_2/m_can/mcan_users_manual_v331.pdf",
+      "source_revision": "Bosch M_CAN3.3.1 2023-03-11 sections2.3.4/2.3.15/3.1.4; CiA CAN FD ISO baseline"
+    },
+    {
+      "when": {
+        "can_controller_profile": "M_CAN_3_3_1"
+      },
+      "parameter": "can_fd_data_tseg2_tq",
+      "minimum": 2,
+      "maximum": 16,
+      "source": "https://www.bosch-semiconductors.com/media/ip_modules/pdf_2/m_can/mcan_users_manual_v331.pdf",
+      "source_revision": "Bosch M_CAN3.3.1 2023-03-11 sections2.3.4/2.3.15/3.1.4; CiA CAN FD ISO baseline"
+    },
+    {
+      "when": {
+        "can_controller_profile": "M_CAN_3_3_1"
+      },
+      "parameter": "can_fd_data_sjw_tq",
+      "maximum": 16,
+      "source": "https://www.bosch-semiconductors.com/media/ip_modules/pdf_2/m_can/mcan_users_manual_v331.pdf",
+      "source_revision": "Bosch M_CAN3.3.1 2023-03-11 sections2.3.4/2.3.15/3.1.4; CiA CAN FD ISO baseline"
+    },
+    {
+      "when": {
+        "can_controller_profile": "M_CAN_3_3_1"
+      },
+      "parameter": "data_bitrate_bps",
+      "minimum_parameter": "nominal_bitrate_bps",
+      "source": "https://www.bosch-semiconductors.com/media/ip_modules/pdf_2/m_can/mcan_users_manual_v331.pdf",
+      "source_revision": "Bosch M_CAN3.3.1 2023-03-11 sections2.3.4/2.3.15/3.1.4; CiA CAN FD ISO baseline"
+    },
+    {
+      "when": {
+        "can_controller_profile": "M_CAN_3_3_1"
+      },
+      "parameter": "can_fd_mcan_ssp_mtq",
+      "equal_sum": [
+        {
+          "parameter": "can_fd_mcan_delay_mtq"
+        },
+        {
+          "parameter": "can_fd_mcan_tdco_mtq"
+        }
+      ],
+      "source": "https://www.bosch-semiconductors.com/media/ip_modules/pdf_2/m_can/mcan_users_manual_v331.pdf",
+      "source_revision": "Bosch M_CAN3.3.1 2023-03-11 sections2.3.4/2.3.15/3.1.4; CiA CAN FD ISO baseline"
+    },
+    {
+      "when": {
+        "can_controller_profile": "M_CAN_3_3_1",
+        "can_fd_tdc_enabled": true
+      },
+      "parameter": "can_fd_mcan_ssp_mtq",
+      "maximum_ratio": {
+        "numerator_sum": [
+          "can_fd_data_tseg1_tq",
+          "can_fd_data_tseg2_tq"
+        ],
+        "numerator_offset": 1,
+        "numerator_product": [
+          "can_fd_data_prescaler"
+        ],
+        "factor": 6,
+        "denominator_offset": 1
+      },
+      "exclusive_maximum_ratio": true,
+      "source": "https://www.bosch-semiconductors.com/media/ip_modules/pdf_2/m_can/mcan_users_manual_v331.pdf",
+      "source_revision": "Bosch M_CAN3.3.1 2023-03-11 sections2.3.4/2.3.15/3.1.4; CiA CAN FD ISO baseline"
+    },
+    {
+      "when": {
+        "can_fd_dlc": 0
+      },
+      "parameter": "can_fd_wire_data_bytes",
+      "allowed": [
+        0
+      ],
+      "source": "https://www.bosch-semiconductors.com/media/ip_modules/pdf_2/m_can/mcan_users_manual_v331.pdf",
+      "source_revision": "Bosch M_CAN3.3.1 2023-03-11 sections2.3.4/2.3.15/3.1.4; CiA CAN FD ISO baseline"
+    },
+    {
+      "when": {
+        "can_fd_dlc": 1
+      },
+      "parameter": "can_fd_wire_data_bytes",
+      "allowed": [
+        1
+      ],
+      "source": "https://www.bosch-semiconductors.com/media/ip_modules/pdf_2/m_can/mcan_users_manual_v331.pdf",
+      "source_revision": "Bosch M_CAN3.3.1 2023-03-11 sections2.3.4/2.3.15/3.1.4; CiA CAN FD ISO baseline"
+    },
+    {
+      "when": {
+        "can_fd_dlc": 2
+      },
+      "parameter": "can_fd_wire_data_bytes",
+      "allowed": [
+        2
+      ],
+      "source": "https://www.bosch-semiconductors.com/media/ip_modules/pdf_2/m_can/mcan_users_manual_v331.pdf",
+      "source_revision": "Bosch M_CAN3.3.1 2023-03-11 sections2.3.4/2.3.15/3.1.4; CiA CAN FD ISO baseline"
+    },
+    {
+      "when": {
+        "can_fd_dlc": 3
+      },
+      "parameter": "can_fd_wire_data_bytes",
+      "allowed": [
+        3
+      ],
+      "source": "https://www.bosch-semiconductors.com/media/ip_modules/pdf_2/m_can/mcan_users_manual_v331.pdf",
+      "source_revision": "Bosch M_CAN3.3.1 2023-03-11 sections2.3.4/2.3.15/3.1.4; CiA CAN FD ISO baseline"
+    },
+    {
+      "when": {
+        "can_fd_dlc": 4
+      },
+      "parameter": "can_fd_wire_data_bytes",
+      "allowed": [
+        4
+      ],
+      "source": "https://www.bosch-semiconductors.com/media/ip_modules/pdf_2/m_can/mcan_users_manual_v331.pdf",
+      "source_revision": "Bosch M_CAN3.3.1 2023-03-11 sections2.3.4/2.3.15/3.1.4; CiA CAN FD ISO baseline"
+    },
+    {
+      "when": {
+        "can_fd_dlc": 5
+      },
+      "parameter": "can_fd_wire_data_bytes",
+      "allowed": [
+        5
+      ],
+      "source": "https://www.bosch-semiconductors.com/media/ip_modules/pdf_2/m_can/mcan_users_manual_v331.pdf",
+      "source_revision": "Bosch M_CAN3.3.1 2023-03-11 sections2.3.4/2.3.15/3.1.4; CiA CAN FD ISO baseline"
+    },
+    {
+      "when": {
+        "can_fd_dlc": 6
+      },
+      "parameter": "can_fd_wire_data_bytes",
+      "allowed": [
+        6
+      ],
+      "source": "https://www.bosch-semiconductors.com/media/ip_modules/pdf_2/m_can/mcan_users_manual_v331.pdf",
+      "source_revision": "Bosch M_CAN3.3.1 2023-03-11 sections2.3.4/2.3.15/3.1.4; CiA CAN FD ISO baseline"
+    },
+    {
+      "when": {
+        "can_fd_dlc": 7
+      },
+      "parameter": "can_fd_wire_data_bytes",
+      "allowed": [
+        7
+      ],
+      "source": "https://www.bosch-semiconductors.com/media/ip_modules/pdf_2/m_can/mcan_users_manual_v331.pdf",
+      "source_revision": "Bosch M_CAN3.3.1 2023-03-11 sections2.3.4/2.3.15/3.1.4; CiA CAN FD ISO baseline"
+    },
+    {
+      "when": {
+        "can_fd_dlc": 8
+      },
+      "parameter": "can_fd_wire_data_bytes",
+      "allowed": [
+        8
+      ],
+      "source": "https://www.bosch-semiconductors.com/media/ip_modules/pdf_2/m_can/mcan_users_manual_v331.pdf",
+      "source_revision": "Bosch M_CAN3.3.1 2023-03-11 sections2.3.4/2.3.15/3.1.4; CiA CAN FD ISO baseline"
+    },
+    {
+      "when": {
+        "can_fd_dlc": 9
+      },
+      "parameter": "can_fd_wire_data_bytes",
+      "allowed": [
+        12
+      ],
+      "source": "https://www.bosch-semiconductors.com/media/ip_modules/pdf_2/m_can/mcan_users_manual_v331.pdf",
+      "source_revision": "Bosch M_CAN3.3.1 2023-03-11 sections2.3.4/2.3.15/3.1.4; CiA CAN FD ISO baseline"
+    },
+    {
+      "when": {
+        "can_fd_dlc": 10
+      },
+      "parameter": "can_fd_wire_data_bytes",
+      "allowed": [
+        16
+      ],
+      "source": "https://www.bosch-semiconductors.com/media/ip_modules/pdf_2/m_can/mcan_users_manual_v331.pdf",
+      "source_revision": "Bosch M_CAN3.3.1 2023-03-11 sections2.3.4/2.3.15/3.1.4; CiA CAN FD ISO baseline"
+    },
+    {
+      "when": {
+        "can_fd_dlc": 11
+      },
+      "parameter": "can_fd_wire_data_bytes",
+      "allowed": [
+        20
+      ],
+      "source": "https://www.bosch-semiconductors.com/media/ip_modules/pdf_2/m_can/mcan_users_manual_v331.pdf",
+      "source_revision": "Bosch M_CAN3.3.1 2023-03-11 sections2.3.4/2.3.15/3.1.4; CiA CAN FD ISO baseline"
+    },
+    {
+      "when": {
+        "can_fd_dlc": 12
+      },
+      "parameter": "can_fd_wire_data_bytes",
+      "allowed": [
+        24
+      ],
+      "source": "https://www.bosch-semiconductors.com/media/ip_modules/pdf_2/m_can/mcan_users_manual_v331.pdf",
+      "source_revision": "Bosch M_CAN3.3.1 2023-03-11 sections2.3.4/2.3.15/3.1.4; CiA CAN FD ISO baseline"
+    },
+    {
+      "when": {
+        "can_fd_dlc": 13
+      },
+      "parameter": "can_fd_wire_data_bytes",
+      "allowed": [
+        32
+      ],
+      "source": "https://www.bosch-semiconductors.com/media/ip_modules/pdf_2/m_can/mcan_users_manual_v331.pdf",
+      "source_revision": "Bosch M_CAN3.3.1 2023-03-11 sections2.3.4/2.3.15/3.1.4; CiA CAN FD ISO baseline"
+    },
+    {
+      "when": {
+        "can_fd_dlc": 14
+      },
+      "parameter": "can_fd_wire_data_bytes",
+      "allowed": [
+        48
+      ],
+      "source": "https://www.bosch-semiconductors.com/media/ip_modules/pdf_2/m_can/mcan_users_manual_v331.pdf",
+      "source_revision": "Bosch M_CAN3.3.1 2023-03-11 sections2.3.4/2.3.15/3.1.4; CiA CAN FD ISO baseline"
+    },
+    {
+      "when": {
+        "can_fd_dlc": 15
+      },
+      "parameter": "can_fd_wire_data_bytes",
+      "allowed": [
+        64
+      ],
+      "source": "https://www.bosch-semiconductors.com/media/ip_modules/pdf_2/m_can/mcan_users_manual_v331.pdf",
+      "source_revision": "Bosch M_CAN3.3.1 2023-03-11 sections2.3.4/2.3.15/3.1.4; CiA CAN FD ISO baseline"
+    },
+    {
+      "when": {
+        "can_frame_format": "BASE_11"
+      },
+      "parameter": "can_identifier",
+      "maximum": 2047,
+      "source": "https://www.zlg.cn/data/upload/software/Can/CANag.pdf",
+      "source_revision": "Bosch CAN Specification 2.0 September 1991 Part B 3.2 / 8 / 10"
+    },
+    {
+      "when": {},
+      "parameter": "can_sjw_tq",
+      "maximum_parameter": "can_tseg2_tq",
+      "source": "https://www.zlg.cn/data/upload/software/Can/CANag.pdf",
+      "source_revision": "Bosch CAN Specification 2.0 September 1991 Part B 3.2 / 8 / 10"
+    },
+    {
+      "when": {},
+      "parameter": "can_sjw_tq",
+      "maximum_parameter": "can_tseg1_tq",
+      "source": "https://www.zlg.cn/data/upload/software/Can/CANag.pdf",
+      "source_revision": "Bosch CAN Specification 2.0 September 1991 Part B 3.2 / 8 / 10"
+    },
+    {
+      "when": {},
+      "parameter": "nominal_bitrate_bps",
+      "equal_ratio": {
+        "numerator_parameter": "can_clock_hz",
+        "denominator_product": [
+          "can_prescaler"
+        ],
+        "denominator_sum": [
+          "can_tseg1_tq",
+          "can_tseg2_tq"
+        ],
+        "denominator_offset": 1
+      },
+      "source": "https://www.zlg.cn/data/upload/software/Can/CANag.pdf",
+      "source_revision": "Bosch CAN Specification 2.0 September 1991 Part B 3.2 / 8 / 10"
+    },
+    {
+      "when": {},
+      "parameter": "sample_point_percent",
+      "equal_ratio": {
+        "numerator_sum": [
+          "can_tseg1_tq"
+        ],
+        "numerator_offset": 1,
+        "factor": 100,
+        "denominator_sum": [
+          "can_tseg1_tq",
+          "can_tseg2_tq"
+        ],
+        "denominator_offset": 1
+      },
+      "source": "https://www.zlg.cn/data/upload/software/Can/CANag.pdf",
+      "source_revision": "Bosch CAN Specification 2.0 September 1991 Part B 3.2 / 8 / 10"
+    },
+    {
+      "when": {
+        "can_controller_profile": "M_CAN_3_3_1"
+      },
+      "parameter": "can_prescaler",
+      "maximum": 512,
+      "source": "https://www.bosch-semiconductors.com/media/ip_modules/pdf_2/m_can/mcan_users_manual_v331.pdf",
+      "source_revision": "Bosch M_CAN User Manual 3.3.1 2023-03-11 section 2.3.8"
+    },
+    {
+      "when": {
+        "can_controller_profile": "M_CAN_3_3_1"
+      },
+      "parameter": "can_tseg1_tq",
+      "minimum": 2,
+      "maximum": 256,
+      "source": "https://www.bosch-semiconductors.com/media/ip_modules/pdf_2/m_can/mcan_users_manual_v331.pdf",
+      "source_revision": "Bosch M_CAN User Manual 3.3.1 2023-03-11 section 2.3.8"
+    },
+    {
+      "when": {
+        "can_controller_profile": "M_CAN_3_3_1"
+      },
+      "parameter": "can_tseg2_tq",
+      "minimum": 2,
+      "maximum": 128,
+      "source": "https://www.bosch-semiconductors.com/media/ip_modules/pdf_2/m_can/mcan_users_manual_v331.pdf",
+      "source_revision": "Bosch M_CAN User Manual 3.3.1 2023-03-11 section 2.3.8"
+    },
+    {
+      "when": {
+        "can_controller_profile": "M_CAN_3_3_1"
+      },
+      "parameter": "can_sjw_tq",
+      "maximum": 128,
+      "source": "https://www.bosch-semiconductors.com/media/ip_modules/pdf_2/m_can/mcan_users_manual_v331.pdf",
+      "source_revision": "Bosch M_CAN User Manual 3.3.1 2023-03-11 section 2.3.8"
+    },
+    {
+      "when": {
+        "can_error_state": "ERROR_ACTIVE"
+      },
+      "parameter": "can_tx_error_count",
+      "maximum": 127,
+      "source": "https://www.zlg.cn/data/upload/software/Can/CANag.pdf",
+      "source_revision": "Bosch CAN Specification 2.0 September 1991 Part B 3.2 / 8 / 10"
+    },
+    {
+      "when": {
+        "can_error_state": "ERROR_ACTIVE"
+      },
+      "parameter": "can_rx_error_count",
+      "maximum": 127,
+      "source": "https://www.zlg.cn/data/upload/software/Can/CANag.pdf",
+      "source_revision": "Bosch CAN Specification 2.0 September 1991 Part B 3.2 / 8 / 10"
+    },
+    {
+      "when": {
+        "can_error_state": "ERROR_PASSIVE"
+      },
+      "parameter": "can_tx_error_count",
+      "maximum": 255,
+      "source": "https://www.zlg.cn/data/upload/software/Can/CANag.pdf",
+      "source_revision": "Bosch CAN Specification 2.0 September 1991 Part B 3.2 / 8 / 10"
+    },
+    {
+      "when": {
+        "can_error_state": "BUS_OFF"
+      },
+      "parameter": "can_tx_error_count",
+      "minimum": 256,
+      "source": "https://www.zlg.cn/data/upload/software/Can/CANag.pdf",
+      "source_revision": "Bosch CAN Specification 2.0 September 1991 Part B 3.2 / 8 / 10"
+    },
+    {
+      "when": {},
+      "when_ranges": {
+        "can_tx_error_count": [
+          0,
+          127
+        ],
+        "can_rx_error_count": [
+          0,
+          127
+        ]
+      },
+      "parameter": "can_error_state",
+      "allowed": [
+        "ERROR_ACTIVE"
+      ],
+      "source": "https://www.zlg.cn/data/upload/software/Can/CANag.pdf",
+      "source_revision": "Bosch CAN Specification 2.0 September 1991 Part B 3.2 / 8 / 10"
+    }
+  ],
+  "physical_layer_profile_id": "CAN_DIFFERENTIAL_PAIR",
+  "medium_access_model": "BITWISE_PRIORITY",
+  "native_parameter_prefixes": [],
+  "parameter_aliases": {},
+  "parameter_alias_limits": {},
+  "parameter_evidence_scope": null,
+  "rate_source_profile_id": null,
+  "arbitration_model_id": "CAN_NON_DESTRUCTIVE",
+  "max_payload_bytes": 64,
+  "capabilities": {
+    "supports_signals": true,
+    "supports_data_objects": false,
+    "supports_streams": false,
+    "supports_multicast": true,
+    "supports_publish_subscribe": false,
+    "supports_request_response": false,
+    "supports_cyclic": true,
+    "supports_event": true,
+    "supports_redundancy": false,
+    "supports_time_sync": false,
+    "supports_safety_profile": false,
+    "supports_segmentation": false,
+    "supports_fragmentation": false,
+    "supports_qos": false
+  },
+  "deterministic": false,
+  "overhead_bytes": 8,
+  "implementation_status": "IMPLEMENTED",
+  "connection_type": "COMMUNICATION_TECHNOLOGY",
+  "parameter_proposals": {
+    "kind": "DEVICE_DEPENDENT",
+    "unit": "bit/s",
+    "status": "REVIEW_REQUIRED",
+    "source": "https://www.can-cia.org/can-knowledge/can-fd-the-basic-idea",
+    "source_revision": "CiA CAN FD basic idea / PMA options accessed2026-10-01; ISO11898-1:2015 / 2024",
+    "note": "No universal nominal/data-rate defaults. Nominal <=1M; actual data-rate ceiling depends on transceiver, controller and topology. BRS false uses nominal timing throughout the frame."
+  },
+  "capacity_evidence": {
+    "status": "MODEL_AVAILABLE",
+    "frame_model": "CAN_FD_PHASE_ESTIMATE",
+    "schedule_model": "CAN_SUFFICIENT_COMPLETION_BOUND_V1",
+    "requires_confirmed_device_parameters": true
+  },
+  "components": {
+    "binding": "can_fd.binding",
+    "generator": "can_fd.generator",
+    "validator": "can_fd.validator",
+    "timing_model": "can_fd.timing",
+    "load_model": "can_fd.load",
+    "encoder": "can_fd.encoder",
+    "decoder": "can_fd.decoder"
+  },
+  "known_limitations": "Technology-specific conformance details require a vendor/profile extension.",
+  "simulation_defaults": {
+    "id": "CAN_FD_SIMULATION_STARTER_V1",
+    "source": "User-authorized NIS simulation planning; no measured or confirmed hardware values",
+    "values": {
+      "payload_bytes": 8,
+      "can_frame_format": "BASE_11",
+      "can_identifier": 256,
+      "can_controller_profile": "M_CAN_3_3_1",
+      "can_clock_hz": 40000000,
+      "can_prescaler": 5,
+      "can_tseg1_tq": 13,
+      "can_tseg2_tq": 2,
+      "can_sjw_tq": 2,
+      "sample_point_percent": 87.5,
+      "can_error_state": "ERROR_ACTIVE",
+      "can_tx_error_count": 0,
+      "can_rx_error_count": 0,
+      "can_ack_receiver_count": 1,
+      "can_bus_length_m": 10,
+      "can_stub_length_m": 0.3,
+      "nominal_bitrate_bps": 500000,
+      "data_bitrate_bps": 500000,
+      "can_fd_dlc": 8,
+      "can_fd_wire_data_bytes": 8,
+      "can_fd_error_passive": false,
+      "can_fd_crc_bits": 17,
+      "can_fd_transceiver_max_bps": 2000000,
+      "can_fd_data_prescaler": 5,
+      "can_fd_data_tseg1_tq": 13,
+      "can_fd_data_tseg2_tq": 2,
+      "can_fd_data_sjw_tq": 2,
+      "can_fd_data_sample_point_percent": 87.5,
+      "can_fd_tdc_enabled": false,
+      "can_fd_mcan_delay_mtq": 0,
+      "can_fd_mcan_tdco_mtq": 0,
+      "can_fd_mcan_tdcf_mtq": 0,
+      "can_fd_mcan_ssp_mtq": 0
+    },
+    "hardware_evidence": false
+  }
+}

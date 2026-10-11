@@ -1,0 +1,45 @@
+{
+  "kind": "repair",
+  "repository": "I:\\PycharmProjects\\My_first_Network_Simulator",
+  "project_scope": "20261009072206008-4bb505f1",
+  "modify_code": true,
+  "allow_repair": true,
+  "revision_before": {
+    "backend/nis/engineering/network/physical_ports.py": "c2ce8ea91c9321ecc07c0ea1164a7e8e7037f0c691c7520ef7067e1c4ae2fb5e",
+    "backend/nis/agent/tools/wizard_generation.py": "26c0c58d168ff112f78dc8c5ff37386d798c6a2a6de9fe594f84b8699b5db966",
+    "backend/tests/test_physical_ports.py": "35969019b6d5f0150386ad457c8bf1d9ba788f13f5aa815cb9333830a8fa4db6",
+    "backend/tests/test_wizard_large_routing.py": "533d0e536c5962d9f180fe98fac0057f05f39a3e4743fc5e8afa78a5222cab57"
+  },
+  "unresolved_decisions": [],
+  "model_revision_control": {
+    "proposal_id": "2b6ae464-ce43-4797-851d-b1713ae3616e",
+    "revision": "2d965b40-4642-4d9a-abf1-9038fdbfdc4d",
+    "mechanism": "Canonical review/apply checks base_model_revision and every expected_version inside a project RequestUnit."
+  },
+  "repair": {
+    "owner": "PROJECT_PRODUCT",
+    "root_cause": "Capacity splitting drops old drawing ports but materialization does not reconcile the primary Message.hardware_interface_id with the approved physical senders. It creates replacement channels even when the same reviewed connector moves entirely to one network. Manual assignment and zoning already reconcile the primary.",
+    "first_failing_layer": "Persisted primary sender left behind after approved capacity split",
+    "reproduction": "Delivered canonical planner finds stale primary references against already approved current physical paths.",
+    "evidence": [
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\automatic-channel-reassignment-20261010\\existing-project-prepared-proposal.json",
+        "sha256": "a49b0d58d46e83c8cec2d19e4722eaf416203f2e7e3dd7dddba108217de614d0"
+      }
+    ],
+    "affected_files": [
+      "backend/nis/engineering/network/physical_ports.py",
+      "backend/nis/agent/tools/wizard_generation.py",
+      "backend/tests/test_physical_ports.py",
+      "backend/tests/test_wizard_large_routing.py"
+    ],
+    "acceptance_criteria": [
+      "Every selected primary matches approved topology bindings",
+      "No changes to signals, encodings, recipients, physical topology or hardware inventory"
+    ],
+    "targeted_tests": [
+      "55 isolated regressions and complete deployed release gate"
+    ],
+    "weaken_assertions_to_pass": false
+  }
+}

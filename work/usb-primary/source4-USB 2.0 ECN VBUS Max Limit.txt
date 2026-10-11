@@ -1,0 +1,185 @@
+
+PAGE 1
+USB Engineering Change Notice 
+ 
+USB ENGINEERING CHANGE NOTICE 
+Title: USB 2.0 VBUS Max Limit 
+Applies to: Universal Serial Bus Specification, Revision 2.0 
+ 
+Summary of ECN 
+Update the USB2.0 specification to align with the expanded VBUS voltage definition in the USB -IF Type-C 
+specification which defines VBUS as having a Max supply voltage of 5.50 V DC.  
+ 
+The Type-C cable and connector definition specifies a minimal current carrying capacity of 3A.  This increased 
+capacity creates a situation where losses in cables, connectors, PCB traces and power supply components will result 
+in the VBUS level available at the consumer end of the cable that is below the minimum acceptable leve l for 
+operation.  As a result, in order to have an implementable Type-C specification it is necessary to boost the upper limit 
+for VBUS at the supply side to 5.5V DC from the present spec value of 5.25 V DC.  
+Reasons for ECN 
+OEM’s can design products that support the higher power levels of the Type-C connector and provide VBUS levels at 
+or above 5.25V to ensure that the VBUS voltage that is available at the far -side connection is within a suitable working 
+range for USB products, and is also at a high enough level to charge batteries in as short a time interval as possible to 
+ensure customer satisfaction. 
+Impact on Existing Peripherals and Systems: 
+The impact is difficult to assess as there is a wide range of component vendors supporting USB, and also a wide 
+variation of design methodologies. 
+ 
+As a result, there are certainly going to be a subset of existing USB products that may be sensitive to operation at 
+VBUS levels of up to 5.5V.  The sensitivity will be mitigated in many cases by cable losses, so the devices themselves 
+may never experience the 5.5V. 
+Hardware Implications: 
+New designs adhering to this ECN will need to consider the new 5.5V VBUS max level during the component 
+selection process. 
+Software Implications: 
+There are no known software implications. 
+Compliance Testing Implications: 
+Compliance will need to make the small modifications necessary to accommodate the new upper limit.  
+ 
+ 
+ 
+ 
+ 
+  
+
+PAGE 2
+USB Engineering Change Notice 
+Specification Changes 
+ 
+(a) Section 7.1.1 USB Driver Characteristics 
+From Text: 
+Short Circuit Withstand 
+A USB transceiver is required to withstand a continuous short circuit of D+ and/or D - to VBUS, GND, other data line, or the cable 
+shield at the connector, for a minimum of 24 hours without degradation. It is recommended that transceivers be designed so as  to 
+withstand such short circuits indefinitely. The device must not be damaged under this short circuit condition when transmitti ng 
+50% of the time and receiving 50% of the time (in all supported speeds). The transmit phase consists of a symmetrical signal that 
+toggles between drive high and drive low. This requirement must be met for max value of V BUS (5.25 V). 
+It is recommended that these AC and short circuit stresses be used as qualification criteria against which the long -term reliability 
+of each device is evaluated. 
+ 
+To Text: 
+Short Circuit Withstand 
+A USB transceiver is required to withstand a continuous short circuit of D+ and/or  D- to VBUS, GND, other data line, or the cable 
+shield at the connector, for a minimum of 24 hours without degradation. It is recommended that transceivers be designed so as  to 
+withstand such short circuits indefinitely. The device must not be damaged under this short circuit condition when transmitting 
+50% of the time and receiving 50% of the time (in all supported speeds). The transmit phase consists of a symmetrical signal that 
+toggles between drive high and drive low. This requirement must be met for ma x value of VBUS (5.50 V). 
+It is recommended that these AC and short circuit stresses be used as qualification criteria against which the long -term reliability 
+of each device is evaluated. 
+  
+
+PAGE 3
+USB Engineering Change Notice 
+(b) Section 7.2.2 Voltage Drop Budget 
+From Text: 
+The voltage drop budget is determined from the following: 
+• The voltage supplied by high-powered hub ports is 4.75 V to 5.25 V. 
+• The voltage supplied by low-powered hub ports is 4.4 V to 5.25 V. 
+• Bus-powered hubs can have a maximum drop of 350 mV from their cable plug (where they attach to a source 
+of power) to their output port connectors (where they supply power). 
+• The maximum voltage drop (for detachable cables) between the A-series plug and B-series plug on VBUS is 
+125 mV (VBUSD). 
+• The maximum voltage drop for all cables between upstream and downstream on GND is 125 mV (VGNDD). 
+• All hubs and functions must be able to provide configuration information with as little as 4.40 V at the 
+connector end of their upstream cables. Only low-power functions need to be operational with this minimum 
+voltage. 
+• Functions drawing more than one unit load must operate with a 4.75 V minimum input voltage at the 
+connector end of their upstream cables. 
+ 
+To Text: 
+The voltage drop budget is determined from the following: 
+• The voltage supplied by high-powered hub ports is 4.75 V to 5.50 V. 
+• The voltage supplied by low-powered hub ports is 4.4 V to 5.50 V. 
+• Bus-powered hubs can have a maximum drop of 350 mV from their cable plug (where they attach to a source 
+of power) to their output port connectors (where they supply power). 
+• The maximum voltage drop (for detachable cables) between the A-series plug and B-series plug on VBUS is 
+125 mV (VBUSD). 
+• The maximum voltage drop for all cables between upstream and downstream on GND is 125 mV (VGNDD). 
+• All hubs and functions must be able to provide configuration information with as little as 4.40 V at the 
+connector end of their upstream cables. Only low-power functions need to be operational with this minimum 
+voltage. 
+• Functions drawing more than one unit load must operate with a 4.75 V minimum input voltage at the 
+connector end of their upstream cables. 
+  
+
+PAGE 4
+USB Engineering Change Notice 
+c) Section 7.3.2 Bus Timing/Electrical Characteristics 
+From Text/Table: 
+ 
+Table 7-1.  DC Electrical Characteristics 
+Parameter Symbol Conditions  Min. Max. Units 
+Supply Voltage: 
+High-power Port VBUS Note 2, Section 7.2.1 4.75 5.25 V 
+Low-power Port VBUS Note 2, Section 7.2.1 4.40 5.25 V 
+Supply Current: 
+High-power Hub Port (out) ICCPRT Section 7.2.1 500  mA 
+Low-power Hub Port (out) ICCUPT Section 7.2.1 100  mA 
+High-power Function (in) ICCHPF Section 7.2.1  500 mA 
+Low-power Function (in) ICCLPF Section 7.2.1  100 mA 
+Unconfigured Function/Hub (in) ICCINIT Section 7.2.1.4  100 mA 
+Suspended High-power Device ICCSH Section 7.2.3; Note 15  2.5 mA 
+Suspended Low-power Device ICCSL Section 7.2.3  500 µA 
+Input Levels for Low-/full-speed: 
+High (driven) VIH Note 4, Section 7.1.4 2.0  V 
+High (floating) VIHZ Note 4, Section 7.1.4 2.7 3.6 V 
+Low VIL Note 4, Section 7.1.4  0.8 V 
+Differential Input Sensitivity  VDI |(D+)-(D-)|;  
+Figure 7-19; Note 4 
+0.2  V 
+Differential Common Mode 
+Range 
+VCM Includes VDI range;  
+Figure 7-19; Note 4 
+0.8 2.5 V 
+Input Levels for High-speed: 
+High-speed squelch detection 
+threshold (differential signal 
+amplitude) 
+VHSSQ Section 7.1.7.2 
+(specification refers to 
+differential signal 
+amplitude) 
+100 150 mV 
+ 
+To Text/Table: 
+ 
+Table 7-2.  DC Electrical Characteristics 
+Parameter Symbol Conditions  Min. Max. Units 
+Supply Voltage: 
+High-power Port VBUS Note 2, Section 7.2.1 4.75 5.50 V 
+Low-power Port VBUS Note 2, Section 7.2.1 4.40 5.50 V 
+Supply Current: 
+High-power Hub Port (out) ICCPRT Section 7.2.1 500  mA 
+Low-power Hub Port (out) ICCUPT Section 7.2.1 100  mA 
+High-power Function (in) ICCHPF Section 7.2.1  500 mA 
+Low-power Function (in) ICCLPF Section 7.2.1  100 mA 
+Unconfigured Function/Hub (in) ICCINIT Section 7.2.1.4  100 mA 
+Suspended High-power Device ICCSH Section 7.2.3; Note 15  2.5 mA 
+
+PAGE 5
+USB Engineering Change Notice 
+Parameter Symbol Conditions  Min. Max. Units 
+Suspended Low-power Device ICCSL Section 7.2.3  500 µA 
+Input Levels for Low-/full-speed: 
+High (driven) VIH Note 4, Section 7.1.4 2.0  V 
+High (floating) VIHZ Note 4, Section 7.1.4 2.7 3.6 V 
+Low VIL Note 4, Section 7.1.4  0.8 V 
+Differential Input Sensitivity  VDI |(D+)-(D-)|;  
+Figure 7-19; Note 4 
+0.2  V 
+Differential Common Mode 
+Range 
+VCM Includes VDI range;  
+Figure 7-19; Note 4 
+0.8 2.5 V 
+Input Levels for High-speed: 
+High-speed squelch detection 
+threshold (differential signal 
+amplitude) 
+VHSSQ Section 7.1.7.2 
+(specification refers to 
+differential signal 
+amplitude) 
+100 150 mV 
+ 
+ 

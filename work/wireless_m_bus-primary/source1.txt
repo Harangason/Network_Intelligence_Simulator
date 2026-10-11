@@ -1,0 +1,1698 @@
+
+PAGE 1
+ Application Note   AN121 
+ 
+ 
+ SWRA423 Page 1 of 49  
+Wireless M-Bus Implementation with CC112x / CC120x High 
+Performance Transceiver Family 
+By Milen Stefanov and Torstein Ermesjø  
+ 
+ 
+Keywords 
+ 
+ Wireless M-Bus (868, 433, 169 MHz) 
+ Meter reading 
+ Data rate offset and drift 
+ Frequency offset and drift 
+ MSP430 
+ ETSI 300 220 v2.3.1 compliance 
+ wM-Bus N-mode full compliance 
+ CC1120, CC1121, CC1125, CC1175, 
+CC1200 
+ 
+ 
+1 Introduction 
+This application note describes how the 
+CC112x and CC120x high performance 
+line transceivers, when used together with 
+the ultra -low power MSP430 
+microcontrollers, implement a fully 
+compliant Wireless M -Bus (wM -Bus) sub -
+system.  
+ 
+The EN13757-4:2012 draft is a European 
+communication standar d for wireless 
+readout of meters and define s the physical 
+and the data link layer s. The CC112x and 
+CC120x ha ve market leading sensitivity 
+and blocking performance and combined 
+with the ability to comply with frequency 
+offset and data rate variations, as defined 
+in S- and T-mode, they are a perfect fit for 
+metering and sub -metering high -volume 
+wM-Bus applications. 
+ 
+The Na/b/c/d/e/f modes define 16 -bit 
+preamble length. The WaveMatch(tm) 
+feature allows packet reception with 
+preamble length of only 4 bits. Thus 
+CC112x family is a fully N -mode compliant 
+transceiver for 169 MHz wM -Bus systems 
+such as smart gas or water meters. 
+ 
+Various MSP430 devices are capable of 
+running the TI wM-Bus stack, including the 
+latest addition of the Wolverine family – 
+TI’s ULP FRAM -based MSP430 micro -
+controllers. 
+ 
+ 
+
+PAGE 2
+ Application Note   AN121 
+ 
+ 
+ SWRA423 Page 2 of 49  
+Table of Contents 
+KEYWORDS ........................................................................................................................................ 1 
+1 INTRODUCTION .......................................................................................................................... 1 
+2 ABBREVIATIONS ......................................................................................................................... 4 
+3 SUMMARY OF CC1120 WM-BUS COMPLIANCE ........................................................................... 5 
+4 WIRELESS M-BUS ........................................................................................................................ 6 
+4.1 WIRELESS M-BUS PHYSICAL LAYER ................................................................................................... 7 
+5 MEASUREMENT SETUP ............................................................................................................... 8 
+6 S-MODE MEASUREMENT RESULTS ............................................................................................ 10 
+6.1 S-MODE RX SENSITIVITY ............................................................................................................... 10 
+6.2 S-MODE RX SENSITIVITY VS FREQUENCY OFFSET ............................................................................... 11 
+6.3 S-MODE RX SENSITIVITY VS FREQUENCY DEVIATION........................................................................... 11 
+6.4 S-MODE RX SENSITIVITY VS DATA RATE OFFSET ................................................................................ 11 
+6.5 S-MODE BLOCKING PERFORMANCE ................................................................................................. 12 
+6.6 S-MODE PERFORMANCE SUMMARY ................................................................................................ 12 
+7 T-MODE MEASUREMENT RESULTS ............................................................................................ 13 
+7.1 T-MODE RX SENSITIVITY ............................................................................................................... 13 
+7.2 T-MODE RX SENSITIVITY VS FREQUENCY OFFSET ............................................................................... 14 
+7.3 T-MODE RX SENSITIVITY VS FREQUENCY DEVIATION .......................................................................... 14 
+7.4 T-MODE RX SENSITIVITY VS DATA RATE OFFSET ................................................................................ 14 
+7.5 T-MODE BLOCKING PERFORMANCE ................................................................................................. 15 
+7.6 T-MODE PERFORMANCE SUMMARY ................................................................................................ 15 
+8 R-MODE MEASUREMENT RESULTS ........................................................................................... 16 
+8.1 R-MODE RX SENSITIVITY ............................................................................................................... 16 
+8.2 R- MODE RX SENSITIVITY VS FREQUENCY OFFSET .............................................................................. 17 
+8.3 R- MODE RX SENSITIVITY VS FREQUENCY DEVIATION ......................................................................... 17 
+8.4 R-MODE RX SENSITIVITY VS DATA RATE OFFSET ................................................................................ 17 
+8.5 R-MODE BLOCKING PERFORMANCE................................................................................................. 18 
+8.6 R-MODE PERFORMANCE SUMMARY ................................................................................................ 18 
+9 C-MODE MEASUREMENT RESULTS ........................................................................................... 19 
+9.1 C-MODE RX SENSITIVITY ............................................................................................................... 19 
+9.2 C-MODE RX SENSITIVITY VS FREQUENCY OFFSET ............................................................................... 20 
+9.3 C-MODE RX SENSITIVITY VS FREQUENCY DEVIATION .......................................................................... 20 
+9.4 C-MODE RX SENSITIVITY VS DATA RATE OFFSET ................................................................................ 20 
+9.5 C-MODE BLOCKING PERFORMANCE ................................................................................................. 21 
+9.6 C-MODE PERFORMANCE SUMMARY ................................................................................................ 21 
+10 NA/B/E/F-MODE MEASUREMENT RESULTS .......................................................................... 22 
+10.1 NA/B/E/F-MODE RX SENSITIVITY ................................................................................................... 22 
+10.2 NA/B/E/F- MODE RX SENSITIVITY VS FREQUENCY OFFSET ................................................................... 23 
+10.3 NA/B/E/F-MODE RX SENSITIVITY VS FREQUENCY DEVIATION ............................................................... 23 
+10.4 NA/B/E/F-MODE RX SENSITIVITY VS DATA RATE OFFSET .................................................................... 23 
+10.5 NA/B/E/F-MODE BLOCKING PERFORMANCE ..................................................................................... 24 
+10.6 NA/B/E/F-MODE PERFORMANCE SUMMARY .................................................................................... 25 
+11 NC/D-MODE MEASUREMENT RESULTS ................................................................................. 26 
+
+PAGE 3
+ Application Note   AN121 
+ 
+ 
+ SWRA423 Page 3 of 49  
+11.1 NC/D-MODE RX SENSITIVITY ......................................................................................................... 26 
+11.2 NC/D-MODE RX SENSITIVITY VS FREQUENCY OFFSET ......................................................................... 27 
+11.3 NC/D-MODE RX SENSITIVITY VS FREQUENCY DEVIATION ..................................................................... 27 
+11.4 NC/D-MODE RX SENSITIVITY VS DATA RATE OFFSET .......................................................................... 27 
+11.5 NC/D-MODE BLOCKING PERFORMANCE ........................................................................................... 28 
+11.6 NC/D-MODE PERFORMANCE SUMMARY .......................................................................................... 29 
+12 NG-MODE MEASUREMENT RESULTS ..................................................................................... 30 
+12.1 NG-MODE RX SENSITIVITY ............................................................................................................ 30 
+12.2 NG-MODE RX SENSITIVITY VS FREQUENCY OFFSET ............................................................................. 31 
+12.3 NG-MODE RX SENSITIVITY VS FREQUENCY DEVIATION ........................................................................ 31 
+12.4 NG-MODE RX SENSITIVITY VS DATA RATE OFFSET ............................................................................. 31 
+12.5 NG-MODE BLOCKING PERFORMANCE .............................................................................................. 32 
+12.6 NG-MODE PERFORMANCE SUMMARY ............................................................................................. 33 
+13 F-MODE MEASUREMENT RESULTS ........................................................................................ 34 
+13.1 F-MODE RX SENSITIVITY ............................................................................................................... 34 
+13.2 F-MODE RX SENSITIVITY VS FREQUENCY OFFSET ............................................................................... 35 
+13.3 F-MODE RX SENSITIVITY VS FREQUENCY DEVIATION........................................................................... 35 
+13.4 F-MODE RX SENSITIVITY VS DATA RATE OFFSET ................................................................................ 35 
+13.5 F-MODE BLOCKING PERFORMANCE ................................................................................................. 36 
+13.6 F-MODE PERFORMANCE SUMMARY ................................................................................................ 36 
+14 REFERENCES.......................................................................................................................... 37 
+15 DOCUMENT HISTORY ............................................................................................................ 37 
+16 APPENDIX: S-MODE PARAMETERS ........................................................................................ 38 
+17 APPENDIX: T-MODE PARAMETERS ........................................................................................ 40 
+18 APPENDIX: C-MODE PARAMETERS ........................................................................................ 42 
+19 APPENDIX: R-MODE PARAMETERS........................................................................................ 44 
+20 APPENDIX: N-MODE PARAMETERS ....................................................................................... 46 
+21 APPENDIX: F-MODE PARAMETERS ........................................................................................ 49 
+ 
+
+PAGE 4
+ Application Note   AN121 
+ 
+ 
+ SWRA423 Page 4 of 49  
+2 Abbreviations 
+BER   Bit Error Rate 
+CRC16   Cyclic Redundancy Check of 16 bits, is commonly used in wM-Bus 
+DUT   Device Under Test 
+EM   Evaluation module 
+(G)FSK   (Gaussian) Frequency Shift Keying  
+IF   Intermediate Frequency 
+ISM   Industrial, Scientific, Medical 
+kcps   Chip rate, kchips/second 
+LNA   Low Noise Amplifier  
+MCU   Micro Controller Unit 
+NRZ   Non Return to Zero 
+PA   Power Amplifier 
+PER   Packet Error Rate 
+RX    Receive 
+SRD   Short Range Device 
+TX   Transmit 
+wM-Bus  Wireless Metering Bus (see EN13757-4 and -3 documents) 
+ 
+
+PAGE 5
+ Application Note   AN121 
+ 
+ 
+ SWRA423 Page 5 of 49  
+3 Summary of CC1120 wM-Bus Compliance  
+ 
+Mode Parameter RX Sensitivity at 
+PER=80% with 20 Bytes 
+Payload (per EN13757-4) 
+Comment 
+S1,S2 
+Sensitivity –109 dBm Meets EN13757-4:2012 
+specification definition. 
+Fulfills highest class 
+receiver Hr 
+Frequency offset, data rate 
+and deviation worst case Meets all Corners 
+T1, T2 
+Sensitivity –105.6 dBm Meets EN13757-4:2012 
+specification definition. 
+Fulfills highest class 
+receiver Hr 
+Frequency offset, data rate 
+and deviation worst case Meets all Corners 
+R2 
+Sensitivity –114.5 dBm Meets EN13757-4:2012 
+specification definition. 
+Fulfills highest class 
+receiver Hr 
+Frequency offset, data rate 
+and deviation worst case Meets all Corners 
+C1, C2 
+Sensitivity -105.3 dBm Meets EN13757-4:2012 
+specification definition. 
+Fulfills highest class 
+receiver Hr Frequency offset, data rate 
+and deviation worst case Meets All Corners 
+N(1,2)a/b/e/f 
+Sensitivity -119.7 dBm Meets EN13757-4:2012 
+specification definition. 
+Fulfills highest class 
+receiver Hr 
+Frequency offset, data rate 
+and deviation worst case Meets All Corners 
+N(1,2)c/d 
+Sensitivity –121.1 dBm Meets EN13757-4:2012 
+specification definition. 
+Fulfills highest class 
+receiver Hr 
+Frequency offset, data rate 
+and deviation worst case Meets all Corners 
+Ng 
+Sensitivity –114.3 dBm Meets EN13757-4:2012 
+specification definition. 
+Fulfills highest class 
+receiver Hr 
+(16-bits preamble as in 
+N-mode is fully 
+supported) 
+Frequency offset, data rate 
+and deviation worst case Meets all Corners 
+F 
+Sensitivity –119.5 dBm Meets EN13757-4:2012 
+specification definition. 
+Fulfills highest class 
+receiver Hr 
+Frequency offset, data rate 
+and deviation worst case 
+Meets all corners 
+Table 1. CC1120 wM-Bus Performance Summary  
+ 
+
+PAGE 6
+ Application Note   AN121 
+ 
+ 
+ SWRA423 Page 6 of 49  
+4 Wireless M-Bus 
+The wireless M -Bus standard specifies the communication between a meter and a n “other” 
+system component, e.g. mobile/stationary readout devices or data collectors, see Figure 1. 
+ 
+Figure 1. Wireless M-Bus Communication System 
+ 
+Three original PHY Layer modes from 2005 were defined  in [1] for the communication 
+between a meter and an “other”: 
+ S-Mode, Stationary Mode 
+o S1-Mode, one-way communication from meter to “other” 
+o S1m-Mode, one-way communication from meter to “other” 
+o S2-Mode, two-way communication between meter and “other” 
+ T-Mode, Frequent Transmit Mode 
+o T1-Mode, one-way communication from meter to “other” 
+o T2-Mode, two-way communication between meter and “other” 
+ R-Mode, Frequent Receive Mode 
+o R2-Mode, two-way communication between meter and “other” 
+ 
+The three new modes, introduced in 2011, are also supported by CC112x performance line: 
+ N-Mode, Stationary Mode 
+o N1-Mode, one-way communication from meter to “other” 
+o N2-Mode, two-way communication from meter to “other” 
+o N2g-Mode, two-way communication between meter and “other” 
+ C-Mode, Frequent Transmit Mode 
+o C1-Mode, one-way communication from meter to “other” 
+o C2-Mode, two-way communication between meter and “other” 
+ F-Mode, Frequent Transmit Mode 
+o F1-Mode, one-way communication from meter to “other” 
+o F2-Mode, two-way communication between meter and “other” 
+ 
+In addition, two more modes, named P  and Q, were defined in the EN13757-5:2008 standard, 
+with the goal to support the implementation of wM-Bus Repeaters. Both P and Q mode s are 
+defined for the 868MHz ISM band  and are fully supported by the CC112x family. In this 
+document P and Q modes are not reviewed due to their limited use in real world applications 
+so far. 
+ 
+ 
+Other 
+ 
+Antenna 
+Meter 
+Antenna 
+Meter 
+Antenna 
+Meter 
+Antenna 
+
+PAGE 7
+ Application Note   AN121 
+ 
+ 
+ SWRA423 Page 7 of 49  
+4.1 Wireless M-Bus Physical Layer 
+This document will address the most p opular wM-Bus modes: S, T, C, R, N and F. Table 2 
+shows the mapping between the different wireless M-Bus modes and the different SRD bands 
+used. 
+ 
+Mode SRD Band 
+S1, S2-Mode 868 MHz 
+T1, T2-Mode 868 MHz 
+C1, C2-Mode 868 MHz 
+R2-Mode 868 MHz 
+N1, N2-Mode 169 MHz 
+F1, F2-Mode 433 MHz 
+Table 2. Most Popular wM-Bus Modes 
+ 
+Since the Wireless M -Bus standard operates in the 868 -870 MHz, 433 MHz or 169 MHz ISM 
+bands, the radio requirements must also comply with the ETSI EN 300  220 [2] and 
+CEPT/ERC/REC 70-03 E [3] standards. 
+ 
+Using the TI wM -Bus Stack on a MSP430  [5] a fully compliant solution , including the OMS 
+profile v3.0.1 for Germany and NTA8130 for Netherlands, is available today. This application 
+note will focus on the RF parameters and wM -Bus compliance of CC1120 high performance 
+line transceiver devices. 
+ 
+Three different performance classes for RX sensitivity performance are defined in the 
+Wireless M-Bus standard for each mode. The CC112x devices fulfill the highest performance 
+class Hr for each of the described modes (S, T, C, R, N and F). 
+ 
+
+PAGE 8
+ Application Note   AN121 
+ 
+ 
+ SWRA423 Page 8 of 49  
+5 Measurement Setup 
+For the sensitivity measurements a n RF generator, capable of generating a given telegram or 
+data packet, is used to apply an RF signal with known signal strength.  
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+Figure 2. RF Generator and DUT (CC1120EM) Setup for Sensitivity 
+ 
+For the selectivity and blocking measurements a n RF generator , capable o f generating a 
+given telegram or data packet, is used to apply a RF signal with known signal strength. In 
+addition a second signal generator is used as an interferer at a given frequency with 
+programmable level. The two RF signals are applied to the DUT using an RF combiner.  
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+Figure 3. Two RF Generator and DUT (CC1120EM) Setup for Blocking and Selectivity 
+RF GENERATOR 
+RF Out 
+EXT1 In .  
+  
+PC running NI LabView 
+TRXEB 
+GPIB 
+DUT 
+  
+SPECTRUM ANALYZER 
+RF GENERATOR 
+RF Out 
+Ext .  
+PC running NI 
+LabView 
+GPIB 
+RF GENERATOR 
+1  
+RF Out 
+.  
+Ext 
+Ext 
+.  
+RF Out 
+Combiner  
+ 
+TRXEB  
+DUT 
+
+
+PAGE 9
+ Application Note   AN121 
+ 
+ 
+ SWRA423 Page 9 of 49  
+ For each wM -Bus mode, 6 different CC1120EM boards are tested at room temperature 
+(25oC) and 3V supply.  For T-mode 250 kHz RX BW is required to handle the 12% data 
+rate tolerance hence CC1125EMs with 40 MHz XTAL are tested. 
+ 
+ The system is calibrated to account for the cable loss between generator(s) and DUT.  
+ 
+ The frequency offset between DUT and RF generator is compensated for. 
+ 
+ Sensitivity / Packet Error Rate (PER) is tested according to EN13757 -4:2012 draft: 80% 
+PER with 20 bytes payload ; and additionally for 20% PER with 8 bytes payload and 1% 
+PER with 8 bytes payload. 
+ 
+ The CC1120 EM board (TI reference des ign) use s a single antenna 50 ohm SMA 
+connector – also known as combined TX and RX design.  The sensitivity ( PER) is  
+measured with a combined match at the single antenna port  (SMA connector ) - see 
+Figure 4. 
+ 
+ 
+Figure 4. CC1120EM  
+ 
+
+PAGE 10
+ Application Note   AN121 
+ 
+ 
+ SWRA423 Page 10 of 49  
+6 S-Mode Measurement Results 
+Table 3 gives the test conditions used (see also S-mode definition in Appendix [16]):  
+ 
+Parameter  
+TX/RX Centre Frequency [MHz] 868.3 
+Modulation 2-FSK 
+Frequency Deviation [kHz] ±50 
+Chip rate [kcps] 32.768 
+RX Filter Bandwidth [kHz] 200 
+Table 3. S-mode Test Conditions 
+Packet format: preamble (n=15) x (01) + sync word “000111011010010110” + P byte payload 
++ CRC16; with n ≥ 15 for the sub-mode S2 (short header) 
+ 
+6.1 S-mode RX Sensitivity  
+ 
+Frequency [MHz] Typical Sensitivity [dBm] PER [%] P = Payload 
+Bytes 
+868.3 
+-109 80 20 
+-108.2 20 8 
+-106.8 1 8 
+Table 4. S-mode Typical Sensitivity 
+NOTE: RX sensitivity numbers are measured at the single antenna port with combined TX/RX 
+matching (and not at the CC1120 chip pin). 
+ 
+-120 -100 -80 -60 -40 -20 00
+10
+20
+30
+40
+50
+60
+70
+80
+90
+PER vs offset WMBUS S
+Level [dBm]
+Parameter=PER
+ 
+Figure 5. S-mode PER vs Input Power Level 
+
+PAGE 11
+ Application Note   AN121 
+ 
+ 
+ SWRA423 Page 11 of 49  
+6.2 S-mode RX Sensitivity vs Frequency Offset 
+ 
+ 
+Figure 6. S-mode PER vs Frequency Offset vs Input Power Level 
+Red lines in Figure 6 show the EN13757-4:2012 Draft limits for frequency offset. 
+ 
+6.3 S-mode RX Sensitivity vs Frequency Deviation 
+S-mode allows the frequency deviation parameter to vary from ±40 kHz to ±80 kHz , where 
+±50 kHz is the nominal value. Table 5 gives the measurement results. 
+ 
+Frequency [MHz] Typical Sensitivity [dBm] Deviation [kHz] 
+868.3 
+-105.4 40 
+-108.2 50 (nominal) 
+-107.8 80 
+Table 5. S-mode Typical 20% PER Sensitivity 
+ 
+6.4 S-mode RX Sensitivity vs Data Rate Offset 
+S-mode allows the chip rate to vary up to ±2% during one packet frame. Table 6 gives the 
+measurement results. 
+ 
+Frequency [MHz] Typical Sensitivity [dBm] Chip Rate [kcps] 
+868.3 
+-108.3 32.1 
+-108.2 32.768 (nominal) 
+-108.3 33.4 
+Table 6. S-mode Typical 20% PER Sensitivity for 8 Bytes Payload 
+
+PAGE 12
+ Application Note   AN121 
+ 
+ 
+ SWRA423 Page 12 of 49  
+6.5 S-mode Blocking Performance 
+S-mode blocking performance is shown in Figure 7. 
+855 860 865 870 875 880
+-10
+0
+10
+20
+30
+40
+50
+60
+70
+80
+Interferer frequency [MHz]
+Selectivity [dB]
+Blocking
+ 
+Figure 7. S-mode Blocking Performance 
+ 
+ 
+6.6 S-mode Performance Summary 
+ CC1120 achieves -109 dBm RX sensitivity in wM-Bus S-mode, which is 9 dB better than S-
+mode requirements in wM-Bus standard [1]. 
+ 
+ CC1120 meets all worst case parameters for  frequency offset error, data rate error and 
+frequency deviation error as defined in wM-Bus standard [1]. 
+ 
+ wM-Bus S-mode telegrams can be received or transmitted using the CC1120 built-in Packet 
+engine (RX and TX FIFO mode) in all worst case conditions. 
+ 
+ CC1120 supports the Manchester encoding (TX) and decoding (RX) of the payload data in 
+HW in side the P acket Engine – this saves code size and complexity for the data packet 
+handling code in the MCU. 
+ 
+ CC1120 supports meets the ETSI Category 2 blocking requirements. 
+ 
+ CC1120 complies with the S-mode highest receiver performance class. 
+ 
+ 
+
+PAGE 13
+ Application Note   AN121 
+ 
+ 
+ SWRA423 Page 13 of 49  
+7 T-mode Measurement Results 
+Table 3 gives the test conditions used (see also T-mode definition in Appendix [17]):  
+ 
+Parameter  
+TX/RX Centre Frequency [MHz] 868.95 
+Modulation 2-FSK 
+Frequency Deviation [kHz] ±50 
+Chip rate [kcps] 100 
+RX Filter Bandwidth [kHz] 250 
+ 
+Packet format: preamble (n=19) x (01) + sync word “00001111001” + P byte payload + CRC 
+ 
+7.1 T-mode RX Sensitivity  
+ 
+Frequency [MHz] Typical Sensitivity [dBm] PER [%] P = Payload 
+Bytes 
+868.95 
+-105.6 80 20 
+-103.8 20 8 
+-101.8 1 8 
+Table 7. T-mode Typical Sensitivity 
+NOTE: RX sensitivity numbers are measured at the single antenna port with combined TX/RX 
+matching (and not at the CC1125 chip pin). 
+ 
+-140 -120 -100 -80 -60 -40 -200
+10
+20
+30
+40
+50
+60
+70
+80
+90
+100
+PER vs level WMBUS T 100kbps
+Level [dBm]
+Parameter=PER
+ 
+Figure 8. T-mode PER vs Input Power Level 
+
+PAGE 14
+ Application Note   AN121 
+ 
+ 
+ SWRA423 Page 14 of 49  
+7.2 T-mode RX Sensitivity vs Frequency Offset 
+ 
+ 
+Figure 9. T-mode PER vs Frequency Offset vs Input Power Level 
+Red lines in Figure 9 show the EN13757-4:2012 Draft limits for frequency offset. 
+ 
+7.3 T-mode RX Sensitivity vs Frequency Deviation 
+T-mode allows the frequency deviation parameter to vary from ±40 kHz to ±80 kHz, where ±50 
+kHz is the nominal value. Table 8 gives the measurement results. 
+ 
+Frequency [MHz] Typical Sensitivity [dBm] Deviation [kHz] 
+868.95 
+-102.3 40 
+-103.8 50 (nominal) 
+-103.8 80 
+Table 8. T-mode Typical 20% PER Sensitivity 
+ 
+7.4 T-mode RX Sensitivity vs Data Rate Offset 
+T-mode allows the chip rate to vary up to ±1 2% during the one packet frame. Table 9 gives 
+the measurement results. 
+ 
+Frequency [MHz] Typical Sensitivity [dBm] Chip Rate [kcps] 
+868.95 
+-103.9 88 
+-103.8 100 (nominal) 
+-102.9 112 
+Table 9. T-mode Typical 20% PER Sensitivity for 8 Bytes Payload 
+ 
+
+PAGE 15
+ Application Note   AN121 
+ 
+ 
+ SWRA423 Page 15 of 49  
+7.5 T-mode Blocking Performance 
+T-mode blocking performance is shown in Figure 10. 
+ 
+855 860 865 870 875 880
+-10
+0
+10
+20
+30
+40
+50
+60
+70
+Interferer frequency [MHz]
+Selectivity [dB]
+Blocking
+ 
+Figure 10. T-mode Blocking Performance 
+ 
+7.6 T-mode Performance Summary 
+ CC1125 achieves -105.6 dBm RX sensitivity in wM-Bus T-mode, which is 5.6 dB better than 
+T-mode requirements in wM-Bus standard [1]. 
+ 
+ CC1125 meets all worst case parameters for frequency offset error, data rate error and 
+frequency deviation error as defined in wM-Bus standard [1]. 
+ 
+ wM-Bus T-mode telegrams can be received or transmitted using the CC1125 built-in Packet 
+engine (RX and TX FIFO mode) in all worst case conditions , e.g. from 88  kbps to 112  kbps 
+and from +-40 kHz to +-80 kHz deviation. 
+ 
+ CC1125 does not support 3-of-6 encoding (TX) and decoding (RX) in HW - this can be  
+handled by look-up tables in the data packet processing code in the MCU. 
+ 
+ CC1125 meets the ETSI Category 2 blocking requirements. 
+ 
+ CC1125 complies with the T-mode highest receiver performance class. 
+
+PAGE 16
+ Application Note   AN121 
+ 
+ 
+ SWRA423 Page 16 of 49  
+8 R-mode Measurement Results 
+Table 10 gives the test conditions used (see also R-mode definition in Appendix [19]):  
+ 
+Parameter  
+TX/RX Centre Frequency [MHz] 868.33 
+Modulation 2-FSK 
+Frequency Deviation [kHz] ±6.0 
+Chip rate [kcps] 4.8 
+RX Filter Bandwidth [kHz] 50 
+Table 10. R-mode Test Conditions 
+Packet format: preamble (n=39) x (01)  + sync word “000111011010010110” + P byte payload 
++ CRC16. 
+ 
+8.1 R-mode RX Sensitivity  
+ 
+Frequency [MHz] Typical Sensitivity [dBm] PER [%] P = Payload 
+Bytes 
+868.33 
+-114.5 80 20 
+-113.8 20 8 
+-111.7 1 8 
+Table 11. R-mode Typical Sensitivity 
+NOTE: RX sensitivity numbers are measured at the single antenna port with combined TX/RX 
+matching (and not at the CC1120 chip pin). 
+-120 -100 -80 -60 -40 -20 0
+0
+10
+20
+30
+40
+50
+60
+70
+80
+90
+100
+PER
+Level [dBm]
+PER vs Offset WMBUS R2
+ 
+Figure 11. R-mode PER vs Input Power Level 
+
+PAGE 17
+ Application Note   AN121 
+ 
+ 
+ SWRA423 Page 17 of 49  
+8.2 R- mode RX Sensitivity vs Frequency Offset 
+ 
+Figure 12. R-mode PER vs Frequency Offset vs Input Power Level 
+Red lines in Figure 12 show the EN13757-4:2012 Draft limits for frequency offset. 
+ 
+8.3 R- mode RX Sensitivity vs Frequency Deviation 
+R-mode allows the frequency deviation parameter to vary from ±4.8 kHz to ±7.2 kHz, where 
+±6.0 kHz is the nominal value. Table 12 gives the measurement results. 
+ 
+Frequency [MHz] Typical Sensitivity [dBm] Deviation [kHz] 
+868.33 
+-112.9 4.8 
+-113.8 6.0 (nominal) 
+-112.9 7.2 
+Table 12. R-mode Typical 20% PER Sensitivity for 8 Bytes payload 
+ 
+8.4 R-mode RX Sensitivity vs Data Rate Offset 
+R-mode allows the chip rate to vary up to ±1.5 % during the one packe t frame. Table 13 gives 
+the measurement results. 
+ 
+Frequency [MHz] Typical Sensitivity [dBm] Chip Rate [kcps] 
+868.33 
+-113.7 4.73 
+-113.8 4.8 (nominal) 
+-113.6 4.87 
+Table 13.R-mode Typical 20% PER Sensitivity for 8 Bytes Payload 
+
+PAGE 18
+ Application Note   AN121 
+ 
+ 
+ SWRA423 Page 18 of 49  
+8.5 R-mode Blocking Performance 
+R-mode blocking performance is shown in Figure 13. 
+855 860 865 870 875 880
+-10
+0
+10
+20
+30
+40
+50
+60
+70
+80
+Interferer frequency [MHz]
+Selectivity [dB]
+Blocking
+ 
+Figure 13. R-mode Blocking Performance 
+ 
+8.6  R-mode Performance Summary 
+ CC1120 achieves -114.5 dBm RX sensitivity in R-mode, which is 9.5 dB better than the R-
+mode requirements in wM-Bus standard [1]. 
+ 
+ CC1120 meets all worst case parameters for frequency offset error, data rate error and 
+frequency deviation error as defined in wM-Bus standard [1]. 
+ 
+ wM-Bus R-mode telegrams can be received or transmitted using the CC1120 built-in Packet 
+engine (RX and TX FIFO mode) in all worst case conditions. 
+ 
+ CC1120 supports the Manch ester encoding (TX) and decoding (RX) for R-mode by HW in 
+the Packet Engine – this saves code size and complexity for the data packet code in the MCU. 
+ 
+ CC1120 meets the ETSI Category 2 blocking requirements for R-mode. 
+ 
+ CC1120 complies with the R-mode highest receiver performance class. 
+ 
+
+PAGE 19
+ Application Note   AN121 
+ 
+ 
+ SWRA423 Page 19 of 49  
+9 C-mode Measurement Results 
+The C-mode (also “compact mode) was introduced as an improvement to the T-mode. A new 
+packet format Frame B is defined (backwards compatible with T -mode using Frame A). Table 
+14 gives the test conditions used (see also C-mode definition in Appendix [18]):  
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+Table 14. C-mode Test Conditions 
+Packet format: preamble (n=16) x (01) + sync word “0101010000111101 0101010011001101” 
++ P byte payload + CRC16. 
+ 
+9.1 C-mode RX sensitivity 
+ 
+Frequency [MHz] Typical Sensitivity [dBm] PER [%] P = Payload 
+Bytes 
+868.95 
+-105.3 80 20 
+-104.0 20 8 
+-102.0 1 8 
+Table 15. C-mode Typical Sensitivity 
+NOTE: RX sensitivity numbers are measured at the single antenna port with combined TX/RX 
+matching (and not at the CC1120 chip pin). 
+ 
+Parameter  
+TX/RX Centre Frequency [MHz] 868.95 
+Modulation 2-FSK 
+Frequency Deviation [kHz] ±45.0 
+Chip rate [kcps] 100 
+RX Filter Bandwidth [kHz] 200 
+
+PAGE 20
+ Application Note   AN121 
+ 
+ 
+ SWRA423 Page 20 of 49  
+9.2 C-mode RX Sensitivity vs Frequency Offset 
+ 
+Figure 14. C-mode PER vs Frequency Offset vs Input Power Level 
+Red lines in Figure 14 show the EN13757-4:2012 Draft limits for frequency offset. 
+ 
+9.3  C-mode RX Sensitivity vs Frequency Deviation 
+C-mode allows the frequency deviation parameter to vary from ± 33.75 kHz to ± 56.25 kHz, 
+where ±45.0 kHz is the nominal value. Table 16 gives the measurement results. 
+ 
+Frequency [MHz] Typical Sensitivity [dBm] Deviation [kHz] 
+868.95 
+-102.8 33.75 
+-104.0 45.0 (nominal) 
+-104.3 56.25 
+Table 16. C-mode Typical 20% PER Sensitivity for 8 Bytes Data Payload 
+ 
+9.4  C-mode RX Sensitivity vs Data Rate Offset 
+C-mode chip rate tolerance is ±100 ppm. There is no variation in RX sensitivity as a function 
+of the chip rate tolerance. 
+ 
+
+PAGE 21
+ Application Note   AN121 
+ 
+ 
+ SWRA423 Page 21 of 49  
+9.5  C-mode Blocking Performance 
+C-mode blocking performance is shown in Figure 15. 
+855 860 865 870 875 880
+-10
+0
+10
+20
+30
+40
+50
+60
+70
+Interferer frequency [MHz]
+Selectivity [dB]
+Blocking
+ 
+Figure 15. C-mode Blocking Performance 
+ 
+ 
+9.6  C-mode Performance Summary 
+ CC1120 achieves -105.3 dBm RX sensitivity in wM-Bus C-mode, which is 5.3 dB better than 
+C-mode requirements in wM-Bus standard [1]. 
+ 
+ CC1120 meets all worst case parameters for frequency offset error, data rate error and 
+frequency deviation error as defined in wM-Bus standard [1]. 
+ 
+ wM-Bus C-mode telegrams can be received or transmitted using the CC1120 built-in Packet 
+engine (RX and TX FIFO mode) in all worst case conditions. 
+ 
+ CC1120 does supports NRZ encoding (TX) and decoding (RX) in HW by default 
+ 
+ CC1120 supports Frame A and Frame B reception simultaneous ly by using the regular Sync 
+Word for T-mode. 
+ 
+ CC1120 meets the ETSI Category 2 blocking requirements. 
+ 
+ CC1120 complies with the C-mode highest receiver performance class. 
+ 
+
+PAGE 22
+ Application Note   AN121 
+ 
+ 
+ SWRA423 Page 22 of 49  
+10 Na/b/e/f-mode Measurement Results 
+Table 17 gives the test conditions used (see also N-mode definition in Appendix [20]): 
+ 
+Parameter  
+TX/RX Centre Frequency [MHz] 169.41 
+Modulation 2-GFSK 
+Frequency Deviation [kHz] ±2.4 
+Bit rate [kbps] 4.8 
+RX Filter Bandwidth [kHz] 11.76 
+Table 17. Na/b/e/f-mode Test Conditions 
+ 
+Packet format: preamble (n=8) x (01) + sync word “ 11110110 10001101” + P byte payload + 
+CRC16. 
+ 
+10.1  Na/b/e/f-mode RX Sensitivity 
+ 
+Frequency [MHz] Typical Sensitivity [dBm] PER [%] P = Payload 
+Bytes 
+169.41 
+-119.7 80 20 
+-118.2 20 8 
+-116.4 1 8 
+Table 18. Na/b/e/f-mode Typical Sensitivity 
+ 
+NOTE: RX sensitivity numbers are measured at the single antenna port with combined TX/RX 
+matching (and not at the CC1120 chip pin). 
+ 
+-140 -120 -100 -80 -60 -40 -20 00
+10
+20
+30
+40
+50
+60
+70
+80
+90
+100
+WMBUS N1a, PER vs offset WMBUS N1a
+Level [dBm]
+Parameter=PER
+ 
+Figure 16. Na/b/e/f-mode PER vs Input Power Level 
+
+PAGE 23
+ Application Note   AN121 
+ 
+ 
+ SWRA423 Page 23 of 49  
+10.2  Na/b/e/f- mode RX Sensitivity vs Frequency Offset 
+ 
+ 
+Figure 17. Na/b/e/f-mode PER vs Frequency Offset vs Input Power Level 
+Red lines in Figure 17 show the EN13757-4:2012 Draft limits for frequency offset. 
+ 
+10.3  Na/b/e/f-mode RX Sensitivity vs Frequency Deviation 
+Na/b/e/f-mode allows the frequency deviation parameter to vary from ± 1.68 kHz to ±3.12 kHz, 
+where ±2.4 kHz is the nominal value. Table 19 gives the measurement results. 
+ 
+Frequency [MHz] Typical Sensitivity [dBm] Deviation [kHz] 
+169.41 
+-117.6 1.68 
+-118.2 2.4 (nominal) 
+-118.3 3.12 
+Table 19. Na/b/e/f -mode Typical 20% PER Sensitivity with 8 Byte Data Payload 
+ 
+10.4  Na/b/e/f-mode RX Sensitivity vs Data Rate Offset 
+Na/b/e/f-mode bit rate tolerance is ±100 ppm. There is no variation in RX sensitivity as a 
+function of bit rate tolerance. 
+
+PAGE 24
+ Application Note   AN121 
+ 
+ 
+ SWRA423 Page 24 of 49  
+10.5  Na/b/e/f-mode Blocking Performance 
+169.3 169.35 169.4 169.45 169.5 169.55-10
+0
+10
+20
+30
+40
+50
+60
+70
+WMBUS N1a, Blocking 200kHz span
+Interferer frequency [MHz]
+Selectivity [dB]
+ 
+Figure 18. Na/b/e/f-mode Blocking Performance with 200 kHz Span. 
+ 
+155 160 165 170 175 180-20
+0
+20
+40
+60
+80
+100
+WMBUS N1a, Blocking 20MHz span
+Interferer frequency [MHz]
+Selectivity [dB]
+ 
+Figure 19. Na/b/e/f-mode Blocking Performance with 200 MHz Span. 
+
+PAGE 25
+ Application Note   AN121 
+ 
+ 
+ SWRA423 Page 25 of 49  
+10.6  Na/b/e/f-mode Performance Summary 
+ CC1120 achieves -119.7 dBm RX sens itivity in wM -Bus Na/b/e/f -mode, which is 7.7 dB 
+better than Na/b/e/f -mode requirements in wM-Bus standard [1]. 
+ 
+ CC1120 meets all worst case parameters for frequency offset error, data rate error and 
+frequency deviation error as defined in wM-Bus standard [1]. 
+ 
+ wM-Bus N Na/b/e/f -mode telegrams can be received or transmitted using the CC1120 built-
+in Packet engine (RX and TX FIFO mode) in all worst case conditions. 
+ 
+ CC1120 supports NRZ encoding (TX) and decoding (RX) in HW by default. 
+ 
+ CC1120 supports Frame A and Frame B reception simultaneously using its DualSync 
+feature in the Packet engine to search for two 16-bit Sync Words concurrently. 
+ 
+ CC1120 meets the ETSI Category 2 blocking requirements. 
+ 
+ CC1120 complies with the Na/b/e/f-mode highest receiver performance class. 
+ 
+
+PAGE 26
+ Application Note   AN121 
+ 
+ 
+ SWRA423 Page 26 of 49  
+11 Nc/d-mode Measurement Results 
+Table 20 gives the test conditions used (see also N-mode definition in Appendix [20]): 
+ 
+Parameter  
+TX/RX Centre Frequency [MHz] 169.43 
+Modulation 2-GFSK 
+Frequency Deviation [kHz] ±2.4 
+Bit rate [kbps] 2.4 
+RX Filter Bandwidth [kHz] 10.52 
+Table 20. Nc/d-mode Test Conditions 
+Packet format: preamble (n=8) x (01) + sync word  “11110110 10001101” + P byte payload + 
+CRC16. 
+ 
+11.1  Nc/d-mode RX Sensitivity 
+ 
+Frequency [MHz] Typical Sensitivity [dBm] PER [%] P = Payload 
+Bytes 
+169.43 
+-121.1 80 20 
+-119.7 20 8 
+-118.1 1 8 
+Table 21. Nc/d-mode Typical Sensitivity 
+ 
+NOTE: RX sensitivity numbers are measured at the single antenna port with combined TX/RX 
+matching (and not at the CC1120 chip pin). 
+-140 -120 -100 -80 -60 -40 -20 00
+10
+20
+30
+40
+50
+60
+70
+80
+90
+100
+PER vs offset WMBUS N1c
+Level [dBm]
+Parameter=PER
+ 
+Figure 20. Nc/d-mode PER vs Input Power Level 
+
+PAGE 27
+ Application Note   AN121 
+ 
+ 
+ SWRA423 Page 27 of 49  
+11.2  Nc/d-mode RX Sensitivity vs Frequency Offset 
+ 
+Figure 21. Nc/d-mode PER vs Frequency Offset vs Input Power Level 
+Red lines in Figure 21 show the EN13757-4:2012 Draft limits for frequency offset. 
+ 
+11.3  Nc/d-mode RX Sensitivity vs Frequency Deviation 
+Nc/d-mode allows the frequency deviation parameter to vary from ± 1.68 kHz to ± 3.12 kHz, 
+where ±2.4 kHz is the nominal value. Table 22 gives the measurement results. 
+ 
+Frequency [MHz] Typical Sensitivity [dBm] Deviation [kHz] 
+169.43 
+-119.2 1.68 
+-119.7 2.4 (nominal) 
+-120.6 3.12 
+Table 22. Nc/d -mode Typical 20% PER Sensitivity with 8 Byte Data Payload 
+ 
+11.4  Nc/d-mode RX Sensitivity vs Data Rate Offset 
+Na/b/e/f-mode bit rate tolerance is ±100 ppm. There is no variation  in RX sensitivity as a 
+function bit rate tolerance. 
+ 
+
+PAGE 28
+ Application Note   AN121 
+ 
+ 
+ SWRA423 Page 28 of 49  
+11.5  Nc/d-mode Blocking Performance 
+169.3 169.35 169.4 169.45 169.5 169.55-10
+0
+10
+20
+30
+40
+50
+60
+70
+WMBUS N1c, Blocking 200kHz span
+Interferer frequency [MHz]
+Selectivity [dB]
+ 
+Figure 22. Nc/d-mode Blocking Performance with 200 kHz Span. 
+ 
+155 160 165 170 175 180-10
+0
+10
+20
+30
+40
+50
+60
+70
+80
+90
+WMBUS N1c, Blocking 20MHz span
+Interferer frequency [MHz]
+Selectivity [dB]
+ 
+Figure 23. Nc/d-mode Blocking Performance with 200 MHz Span. 
+
+PAGE 29
+ Application Note   AN121 
+ 
+ 
+ SWRA423 Page 29 of 49  
+11.6  Nc/d-mode Performance Summary 
+ CC1120 achieves -121.1 dBm RX sensitivity in wM -Bus Nc/d-mode, which is 6.1 dB better 
+than Nc/d -mode requirements in wM-Bus standard [1]. 
+ 
+ CC1120 meets all worst case para meters for frequency offset error, data rate error and 
+frequency deviation error as defined in wM-Bus standard [1]. 
+ 
+ wM-Bus Nc/d-mode telegrams can be received or transmitted using the CC1120  built-in 
+Packet engine (RX and TX FIFO mode) in all worst case conditions. 
+ 
+ CC1120 does supports NRZ encoding (TX) and decoding (RX) in HW by default. 
+ 
+ CC1120 supports Frame A and Fr ame B reception simultaneously using its DualSync 
+feature in the Packet engine to search for two 16-bit Sync Words concurrently. 
+ 
+ CC1120 meets the ETSI Category 2 blocking requirements. 
+ 
+ CC1120 complies with the Nc/d-mode highest receiver performance class. 
+
+PAGE 30
+ Application Note   AN121 
+ 
+ 
+ SWRA423 Page 30 of 49  
+12  Ng-mode Measurement Results 
+Table 23 gives the test conditions used (see also N-mode definition in Appendix [20]): 
+ 
+Parameter  
+TX/RX Centre Frequency [MHz] 169.40 
+Modulation 4-GFSK 
+Frequency Deviation [Hz] 7200 
+Bit rate [bps] 19200 
+RX Filter Bandwidth [kHz] 28.6 
+Table 23. Ng-mode Test Conditions 
+Packet format: preamble (n=8) x (01) + sync word “ 11110110 10001101” + P byte payload + 
+CRC16. 
+ 
+12.1  Ng-mode RX Sensitivity 
+ 
+Frequency [MHz] Typical Sensitivity [dBm] PER [%] P = Payload 
+Bytes 
+169.41 
+-114.3 80 20 
+-113.2 20 8 
+-111.0 1 8 
+Table 24. Ng-mode Typical Sensitivity 
+ 
+NOTE: RX sensitivity numbers are measured at the single antenna port with combined TX/RX 
+matching (and not at the CC1120 chip pin). 
+-140 -120 -100 -80 -60 -40 -20 00
+10
+20
+30
+40
+50
+60
+70
+80
+90
+100
+PER vs offset WMBUS N1g
+Level [dBm]
+Parameter=PER
+ 
+Figure 24. Ng-mode PER vs Input Power Level 
+
+PAGE 31
+ Application Note   AN121 
+ 
+ 
+ SWRA423 Page 31 of 49  
+12.2  Ng-mode RX Sensitivity vs Frequency Offset 
+ 
+ 
+Figure 25. Ng-mode PER vs Frequency Offset vs Input Power Level 
+Red lines in Figure 25  show the EN13757-4:2012 Draft limits for frequency offset. 
+ 
+12.3  Ng-mode RX Sensitivity vs Frequency Deviation 
+Ng-mode allows the frequency deviation parameter to vary from ±5.04 kHz to 9.36 kHz, where 
+±7.2 kHz is the nominal value. Table 25 gives the measurement results. 
+ 
+Frequency [MHz] Typical Sensitivity [dBm] Deviation [kHz] 
+169.41 
+-110.3 6.12 
+-113.2 7.20 (nominal) 
+-112.3 8.28 
+Table 25. Ng-mode Typical 20% PER Sensitivity with 8 Byte Data Payload 
+ 
+12.4 Ng-mode RX Sensitivity vs Data Rate Offset 
+Ng-mode bit rate tolerance is ±100 ppm. There is no variation in RX sensitivity as a function 
+bit rate tolerance. 
+ 
+
+PAGE 32
+ Application Note   AN121 
+ 
+ 
+ SWRA423 Page 32 of 49  
+12.5  Ng-mode Blocking Performance 
+169.3 169.35 169.4 169.45 169.5 169.55-10
+0
+10
+20
+30
+40
+50
+60
+WMBUS N1g, Blocking 200kHz span
+Interferer frequency [MHz]
+Selectivity [dB]
+ 
+Figure 26. Ng-mode Blocking Performance with 200 kHz Span. 
+ 
+155 160 165 170 175 180-20
+0
+20
+40
+60
+80
+100
+WMBUS N1g, Blocking 20MHz span
+Interferer frequency [MHz]
+Selectivity [dB]
+ 
+Figure 27. Ng-mode Blocking Performance with 200 MHz Span. 
+
+PAGE 33
+ Application Note   AN121 
+ 
+ 
+ SWRA423 Page 33 of 49  
+12.6 Ng-mode Performance Summary 
+ CC1120 achieves -114.3 dBm RX sensitivity in wM -Bus Ng-mode, which is 10.3 dB better 
+than Ng-mode requirements in wM-Bus standard [1]. 
+ 
+ CC1120 meets all worst case parameters for frequency offset error, data rate error and 
+frequency deviation error as defined in wM-Bus standard [1]. 
+ 
+ wM-Bus Ng-mode telegrams can b e received or transmitted using the CC1120  built-in 
+Packet engine (RX and TX FIFO mode) in all worst case conditions. 
+ 
+ CC1120 does supports NRZ encoding (TX) and decoding (RX) in HW by default. 
+ 
+ CC1120 supports Frame A and Frame B reception simultaneously: either using its DualSync 
+feature in the Packet engine to search for two 16-bit Sync Words concurrently. 
+ 
+ CC1120 meets the ETSI Category 2 blocking requirements. 
+ 
+ CC1120 complies with the Ng-mode highest receiver performance class. 
+ 
+
+PAGE 34
+ Application Note   AN121 
+ 
+ 
+ SWRA423 Page 34 of 49  
+13 F-mode Measurement Results 
+Table 26 gives the test conditions used (see also F-mode definition in Appendix [21]): 
+ 
+Parameter  
+TX/RX Centre Frequency [MHz] 433.82 
+Modulation 2-FSK 
+Frequency Deviation [kHz] 5.5 
+Bit rate [kbps] 2.4 
+RX Filter Bandwidth [kHz] 28 
+Table 26. F-mode Test Conditions 
+Packet format: preamble (n=8) x (01) + sync word “ 11110110 10001101” + P byte payload + 
+CRC16. 
+ 
+13.1 F-mode RX Sensitivity 
+ 
+Frequency [MHz] Typical Sensitivity [dBm] PER [%] P = Payload 
+Bytes 
+433.82 
+-119.5 80 20 
+-119.7 20 8 
+-117.4 1 8 
+Table 27. F-mode Typical Sensitivity 
+ 
+NOTE: RX sensitivity numbers are measured at the single antenna port with combined TX/RX 
+matching (and not at the CC1120 chip pin). 
+-120 -100 -80 -60 -40 -20 0
+0
+10
+20
+30
+40
+50
+60
+70
+80
+90
+100
+Level [dBm]
+PER
+PER vs Offset WMBUS F
+ 
+Figure 28. F-mode PER vs Input Power Level 
+
+PAGE 35
+ Application Note   AN121 
+ 
+ 
+ SWRA423 Page 35 of 49  
+13.2 F-mode RX Sensitivity vs Frequency Offset 
+-10 -8 -6 -4 -2 0 2 4 6 8 10
+-120
+-115
+-110
+-105
+-100
+-95
+-90
+Frequency offset [kHz]
+Input level [dBm]
+ 
+Figure 29. F-mode PER vs Frequency Offset vs Input Power Level 
+Red lines in Figure 29 show the EN13757-4:2012 Draft limits for frequency offset. 
+ 
+13.3  F-mode RX Sensitivity vs Frequency Deviation 
+F-mode allows the frequency devi ation parameter to vary from ±4.8 kHz to ±7.0 kHz, where 
+±5.5 kHz is the nominal value. Table 28 gives the measurement results.  
+ 
+Frequency [MHz] Typical Sensitivity [dBm] Deviation [kHz] 
+433.82 
+119.3 4.8 
+119.5 5.5 
+119.8 7.0 
+Table 28. F-mode Typical 80% PER Sensitivity with 20 Byte Data Payload 
+ 
+13.4 F-mode RX Sensitivity vs Data Rate Offset 
+F-mode bit rate tolerance is ±100 ppm. There is no variation in RX sensitivity as a function bit 
+rate tolerance. 
+
+PAGE 36
+ Application Note   AN121 
+ 
+ 
+ SWRA423 Page 36 of 49  
+13.5 F-mode Blocking Performance 
+420 425 430 435 440 445
+-10
+0
+10
+20
+30
+40
+50
+60
+70
+80
+90
+Interferer frequency [MHz]
+Selectivity [dB]
+Blocking
+ 
+Figure 30. F-mode Blocking Performance with 200 MHz Span.  
+ 
+ 
+13.6  F-mode Performance Summary 
+ CC1120 achieves -119.5 dBm RX sensitivity in wM-Bus F-mode, which is 4.5 dB better than 
+F-mode requirements in wM-Bus standard [1]. 
+ 
+ CC1120 meets all worst cas e parameters for frequency offset error, data rate error and 
+frequency deviation error as defined in wM-Bus standard [1]. 
+ 
+ wM-Bus F-mode telegrams can be received or transmitted using the CC1120 built -in Packet 
+engine (RX and TX FIFO mode) in all worst case conditions. 
+ 
+ CC1120 does supports NRZ encoding (TX) and decoding (RX) in HW by default. 
+ 
+ CC1120 supports Frame A and Fr ame B reception simultaneously using its DualSync 
+feature in the Packet engine to search for two 16-bit Sync Words concurrently. 
+ 
+ CC1120 supports meets the ETSI Category 2 blocking requirements for 433Mhz 
+ 
+ CC1120 complies with the F-mode highest receiver performance class. 
+ 
+
+PAGE 37
+ Application Note   AN121 
+ 
+ 
+ SWRA423 Page 37 of 49  
+14 References 
+[1] European standard EN 13757-4:2012 Draft "Communication system for meters and remote 
+reading of meters”. 
+[2] ETSI EN 300220 V2.3.1: Electromagnetic compatibility and Radio spectrum Matters (ERM); 
+Short Range Devices (SRD); Radio equipment to be used in the 25 MHz to 1000 MHz 
+frequency range with power levels ranging up to 500 mW” 
+[3] CEPT/ERC/Recommendation 70-03: “Relating to the use of Short Range Devices (SRD)” 
+[4] Design Note DN005 CC11xx Sensitivity versus Frequency Offset and Crystal Accuracy 
+[5] “Introducing TI’s complete WMBus solution”: http://www.ti.com/lit/ml/slyt433/slyt433.pdf 
+[6] TI CC1120 development kit: http://www.ti.com/tool/cc1120dk 
+[7] CC1120EM 169 MHz Reference Design (swrc220) 
+[8] CC1120EM 420/470 MHz Reference Design (swrc221) 
+[9] CC112x IPC 868/915 MHz 4-Layer Ref. Design Rev1.0 (swrr107) 
+[10]  CC112x IPC 868/915 MHz 2-Layer Ref. Design Rev1.0 (swrr106) 
+[11]  CC112x EM 868/915 MHz Reference Design (swrc224) 
+ 
+15 Document History 
+Revision Date Description/Changes 
+SWRA423 2013.02.20 Initial release. 
+ 
+ 
+
+PAGE 38
+ Application Note   AN121 
+ 
+ 
+ SWRA423 Page 38 of 49  
+16 Appendix: S-mode Parameters 
+ 
+ 
+Table 29. TX Parameters for S-mode (as defined in [1]) 
+
+PAGE 39
+ Application Note   AN121 
+ 
+ 
+ SWRA423 Page 39 of 49  
+ 
+ 
+ 
+Table 30. RX Parameters for S-mode (as defined in [1]) 
+
+PAGE 40
+ Application Note   AN121 
+ 
+ 
+ SWRA423 Page 40 of 49  
+17 Appendix: T-mode Parameters 
+As one of the “original” wM -Bus modes, T -mode was defined almost 10 years ago, when 
+integrated RF transceivers such as CC1101 or CC1120 were not available. The old discrete 
+RF implementations delivered high variation in term s of data rate used, frequency offset and 
+chip rate during transmission. This is the reason why T-mode defines such large tolerances 
+for the chip rate (90-110 kcps), FSK deviation (±40 to ±80 kHz) and chip rate variation of up to 
+±1.5%. The PHY layer requirements of T-mode are summarized in Table 31. 
+ 
+ 
+Table 31. Transmit Parameters for T-mode (as defined in [1]) 
+
+PAGE 41
+ Application Note   AN121 
+ 
+ 
+ SWRA423 Page 41 of 49  
+ 
+Table 32. Receive Parameters for T-mode (as defined in [1]) 
+ 
+The receiver requirement, named “Acceptable header chip rate range: (Other Device) ”, is one 
+of the most challenging ones for a RF transceiver to me et, as it requires dedicated HW 
+support in the demodulator to handle such wide data rate variation. Nevertheless, CC1120 
+easily fulfills this requirement, due to its in -built demodulator support of ±12.5% data ra te 
+variation. 
+
+PAGE 42
+ Application Note   AN121 
+ 
+ 
+ SWRA423 Page 42 of 49  
+18 Appendix: C-mode Parameters 
+The C-mode (also called “compact” mode) can be viewed as the “next generation” T -mode, 
+with its 100 kcps from Meter to Other device. In order to save battery power for the meters, C -
+mode uses simple NRZ coding (no “3 out of 6” anymore), introduces the Frame  format B 
+(where CRC16 fields are reduced to maximum two) and also adds the new frequency for 
+Other-to-Meter communication. Due to the new Frame format B changes in the encryption 
+scheme were also introduced – now AES-128 CTR mode is mandatory, as it allows to encrypt 
+telegrams “on the fly” without the addition of padding (or fill -up) bytes, which the previous 
+AES-128 CBC required in order to obtain multiple of 16 Bytes blocks. 
+ 
+A newly introduced frequency of 869.525  MHz is in an ETSI sub -band, where 500  mW (+27 
+dBm) EIRP can be applied. This allows for sig nificantly higher link budget (13 dB more than in 
+T-mode) from Other -to-Meter and can thus reduce system cost. Other de vices are typically 
+stationary d ata collectors, which have much higher available powe r budget (compared to 
+meters) and can afford to transmit with +500 mW EIRP. 
+ 
+Due to high efficiency power amplifiers (PA), like CC1190, battery powered operation for such 
+Data Collectors is realistic. The addition of an LNA function in the RX path as well as antenna 
+diversity in the Data Collector significantly improves the RX sensitivity and extends the link 
+budget for Meter-to-Other, as most Meters already operate in transmit at the ETSI limit of +14  
+dBm EIRP. 
+ 
+In summary C-mode reduces the length of the telegram compared to T -mode and lowers the 
+requirements for the RF transceivers, by using much narrower tolerances than T -mode, as 
+shown in Tables below. 
+ 
+ 
+
+PAGE 43
+ Application Note   AN121 
+ 
+ 
+ SWRA423 Page 43 of 49  
+ 
+Table 33. Transmit Parameters for C-mode (as defined in [1]) 
+ 
+ 
+Table 34. Receive Parameters for C-mode (as defined in [1]) 
+
+PAGE 44
+ Application Note   AN121 
+ 
+ 
+ SWRA423 Page 44 of 49  
+19 Appendix: R-mode Parameters 
+ 
+Table 35. Transmit Parameters for R-mode (as defined in [1]) 
+ 
+
+PAGE 45
+ Application Note   AN121 
+ 
+ 
+ SWRA423 Page 45 of 49  
+ 
+Table 36. Receive Parameters for R-mode (as defined in [1]) 
+
+PAGE 46
+ Application Note   AN121 
+ 
+ 
+ SWRA423 Page 46 of 49  
+20 Appendix: N-mode Parameters 
+In alignment with ETSI 300220v2.3.1, a new narrow-band “N”-mode physical (PHY) layer has 
+been introduced within the draft EN13757 -4:2011 document. The main reason for N -mode is 
+to further increase the link budget for RF communication between meters and data collectors. 
+ 
+The 75 kHz ETSI band at 169.400  MHz has been split into 6 narrowband chann els of 12.5 
+kHz each. Four channels of 4.8  kbps and two with 2.4 kbps, all using GFSK modulation, have 
+been defined.  A secondary communications link, capable of 19.2  kbps with 4 -GFSK 
+modulation, has been added as well with the purpose of optimizing data throughput in optional 
+multi-hop links (e.g. from the Data Collector to the backhaul system) or could be used for 
+battery power savings in the smart meters, if the distance to the data collector allows the 
+usage of this higher data rate. 
+ 
+ 
+Table 37. Frequencies for N-mode (as defined in [1]) 
+
+PAGE 47
+ Application Note   AN121 
+ 
+ 
+ SWRA423 Page 47 of 49  
+ 
+Table 38. Modulation and Timing for N-modes (as defined in [1]) 
+ 
+
+PAGE 48
+ Application Note   AN121 
+ 
+ 
+ SWRA423 Page 48 of 49  
+ 
+ 
+Table 39. Receive Parameters for N-mode (as defined in [1]) 
+
+PAGE 49
+ Application Note   AN121 
+ 
+ 
+ SWRA423 Page 49 of 49  
+21 Appendix: F-mode Parameters 
+ 
+ 
+Table 40. Transmit Parameters for F-mode (as defined in [1]) 
+ 
+ 
+Table 41. Receive Parameters for F-mode (as defined in [1]) 
+
+PAGE 50
+IMPORTANT NOTICE
+Texas Instruments Incorporated and its subsidiaries (TI) reserve the right to make corrections, enhancements, improvements and other
+changes to its semiconductor products and services per JESD46, latest issue, and to discontinue any product or service per JESD48, latest
+issue. Buyers should obtain the latest relevant information before placing orders and should verify that such information is current and
+complete. All semiconductor products (also referred to herein as “components”) are sold subject to TI’s terms and conditions of sale
+supplied at the time of order acknowledgment.
+TI warrants performance of its components to the specifications applicable at the time of sale, in accordance with the warranty in TI’s terms
+and conditions of sale of semiconductor products. Testing and other quality control techniques are used to the extent TI deems necessary
+to support this warranty. Except where mandated by applicable law, testing of all parameters of each component is not necessarily
+performed.
+TI assumes no liability for applications assistance or the design of Buyers’products. Buyers are responsible for their products and
+applications using TI components. To minimize the risks associated with Buyers’products and applications, Buyers should provide
+adequate design and operating safeguards.
+TI does not warrant or represent that any license, either express or implied, is granted under any patent right, copyright, mask work right, or
+other intellectual property right relating to any combination, machine, or process in which TI components or services are used. Information
+published by TI regarding third-party products or services does not constitute a license to use such products or services or a warranty or
+endorsement thereof. Use of such information may require a license from a third party under the patents or other intellectual property of the
+third party, or a license from TI under the patents or other intellectual property of TI.
+Reproduction of significant portions of TI information in TI data books or data sheets is permissible only if reproduction is without alteration
+and is accompanied by all associated warranties, conditions, limitations, and notices. TI is not responsible or liable for such altered
+documentation. Information of third parties may be subject to additional restrictions.
+Resale of TI components or services with statements different from or beyond the parameters stated by TI for that component or service
+voids all express and any implied warranties for the associated TI component or service and is an unfair and deceptive business practice.
+TI is not responsible or liable for any such statements.
+Buyer acknowledges and agrees that it is solely responsible for compliance with all legal, regulatory and safety-related requirements
+concerning its products, and any use of TI components in its applications, notwithstanding any applications-related information or support
+that may be provided by TI. Buyer represents and agrees that it has all the necessary expertise to create and implement safeguards which
+anticipate dangerous consequences of failures, monitor failures and their consequences, lessen the likelihood of failures that might cause
+harm and take appropriate remedial actions. Buyer will fully indemnify TI and its representatives against any damages arising out of the use
+of any TI components in safety-critical applications.
+In some cases, TI components may be promoted specifically to facilitate safety-related applications. With such components, TI’s goal is to
+help enable customers to design and create their own end-product solutions that meet applicable functional safety standards and
+requirements. Nonetheless, such components are subject to these terms.
+No TI components are authorized for use in FDA Class III (or similar life-critical medical equipment) unless authorized officers of the parties
+have executed a special agreement specifically governing such use.
+Only those TI components which TI has specifically designated as military grade or “enhanced plastic”are designed and intended for use in
+military/aerospace applications or environments. Buyer acknowledges and agrees that any military or aerospace use of TI components
+which have not been so designated is solely at the Buyer's risk, and that Buyer is solely responsible for compliance with all legal and
+regulatory requirements in connection with such use.
+TI has specifically designated certain components as meeting ISO/TS16949 requirements, mainly for automotive use. In any case of use of
+non-designated products, TI will not be responsible for any failure to meet ISO/TS16949.
+Products Applications
+Audio www.ti.com/audio Automotive and Transportation www.ti.com/automotive
+Amplifiers amplifier.ti.com Communications and Telecom www.ti.com/communications
+Data Converters dataconverter.ti.com Computers and Peripherals www.ti.com/computers
+DLP® Products www.dlp.com Consumer Electronics www.ti.com/consumer-apps
+DSP dsp.ti.com Energy and Lighting www.ti.com/energy
+Clocks and Timers www.ti.com/clocks Industrial www.ti.com/industrial
+Interface interface.ti.com Medical www.ti.com/medical
+Logic logic.ti.com Security www.ti.com/security
+Power Mgmt power.ti.com Space, Avionics and Defense www.ti.com/space-avionics-defense
+Microcontrollers microcontroller.ti.com Video and Imaging www.ti.com/video
+RFID www.ti-rfid.com
+OMAP Applications Processors www.ti.com/omap TI E2E Community e2e.ti.com
+Wireless Connectivity www.ti.com/wirelessconnectivity
+Mailing Address: Texas Instruments, Post Office Box 655303, Dallas, Texas 75265
+Copyright © 2013, Texas Instruments Incorporated

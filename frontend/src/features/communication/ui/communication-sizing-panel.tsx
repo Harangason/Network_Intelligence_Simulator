@@ -75,22 +75,28 @@ export function CommunicationSizingPanel() {
   const hasCanOrLin = protocols.some(protocol => ["CAN", "CAN_CLASSIC", "CAN_FD", "CANFD", "LIN"].includes(protocol));
 
   return <details className="panel communication-sizing-panel">
-    <summary><strong>Kommunikation automatisch dimensionieren</strong></summary>
-    <p>{protocols.length ? `Erkannte Technologien in ${projectId}: ${protocols.join(", ")}.` : "Die Dimensionierung verwendet ausschließlich die physischen Verbindungen und Anforderungen des aktiven Projekts."} Bestätigte Fristen, Datenalter und gesperrte Zyklen bleiben verbindlich. Die Planung vergleicht alle zulässigen Zyklusvarianten und ändert weder Technologieparameter noch Frame-Kodierungen.</p>
+    <summary className="communication-sizing-summary">
+      <span className="communication-sizing-icon" aria-hidden="true"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M6 7h12M6 17h12M6 7v10m12-10v10" stroke="currentColor" strokeWidth="1.5" /><circle cx="6" cy="7" r="2.5" fill="currentColor" /><circle cx="18" cy="7" r="2.5" fill="currentColor" /><circle cx="6" cy="17" r="2.5" fill="currentColor" /><circle cx="18" cy="17" r="2.5" fill="currentColor" /></svg></span>
+      <span className="communication-sizing-heading"><span className="eyebrow">Kommunikationsplanung</span><strong>Kommunikation automatisch dimensionieren</strong><span>Zulässige Zyklusvarianten vergleichen und passende Änderungen auswählen.</span></span>
+      <span className="communication-sizing-chevron" aria-hidden="true">⌄</span>
+    </summary>
+    <div className="communication-sizing-body" aria-busy={busy}>
+    <p className="communication-sizing-intro">{protocols.length ? `Erkannte Technologien: ${protocols.join(", ")}.` : "Die Dimensionierung verwendet ausschließlich die physischen Verbindungen und Anforderungen des aktiven Projekts."} Bestätigte Fristen, Datenalter und gesperrte Zyklen bleiben verbindlich. Die Planung vergleicht alle zulässigen Zyklusvarianten und ändert weder Technologieparameter noch Frame-Kodierungen.</p>
     {hasI2c && <p className="notice warning">I2C ist im Projekt vorhanden. Der Zeitnachweis bleibt offen, bis Master, Slave-Adresse, Clock-Stretching-Grenze und Transferumfang modelliert sind. LIN-Slots und CAN-Arbitrierung werden dafür nicht angesetzt.</p>}
-    <div className="analysis-scenario-row">
-      <label>Mindest-Sendeabstand (ms)<input type="number" min="1" disabled={busy} value={minimum} onChange={e => edit(setMinimum, e.target.value)} /></label>
-      <label>Maximaler generierter Zyklus (ms)<input type="number" min="1" disabled={busy} value={maximum} onChange={e => edit(setMaximum, e.target.value)} /></label>
-      {hasCanOrLin && <label>Ziel-Buslast (%)<input type="number" min="1" max="100" disabled={busy} value={target} onChange={e => edit(setTarget, e.target.value)} /></label>}
-      {protocols.includes("LIN") && <label>Maximale LIN-Slotbelegung (%)<input type="number" min="1" max="100" disabled={busy} value={slotLimit} onChange={e => edit(setSlotLimit, e.target.value)} /></label>}
+    <div className="communication-sizing-fields">
+      <label><span>Mindest-Sendeabstand (ms)</span><input type="number" min="1" disabled={busy} value={minimum} onChange={e => edit(setMinimum, e.target.value)} /></label>
+      <label><span>Maximaler generierter Zyklus (ms)</span><input type="number" min="1" disabled={busy} value={maximum} onChange={e => edit(setMaximum, e.target.value)} /></label>
+      {hasCanOrLin && <label><span>Ziel-Buslast (%)</span><input type="number" min="1" max="100" disabled={busy} value={target} onChange={e => edit(setTarget, e.target.value)} /></label>}
+      {protocols.includes("LIN") && <label><span>Maximale LIN-Slotbelegung (%)</span><input type="number" min="1" max="100" disabled={busy} value={slotLimit} onChange={e => edit(setSlotLimit, e.target.value)} /></label>}
     </div>
-    <button type="button" className="button primary" disabled={busy} onClick={() => void calculate()}>{busy ? "Prüft …" : "Zyklusvarianten für dieses Projekt prüfen"}</button>
-    {message && <p role="status">{message}</p>}
-    {plan && <>
-      <p><strong>{plan.changes.length} Nachrichtenänderungen</strong> · {plan.history_matches.length} passende Erfahrungen aus früheren Dimensionierungen. Alle zulässigen Varianten werden mit den aktuellen Anforderungen verglichen; Linkrate, Technologie, Payload und Kodierung bleiben fest.</p>
+    <div className="communication-sizing-actions"><span>Erst Varianten prüfen, anschließend geprüfte Änderungen übernehmen.</span><button type="button" className="button primary" disabled={busy} onClick={() => void calculate()}>{busy ? "Prüft …" : "Zyklusvarianten für dieses Projekt prüfen"}</button></div>
+    {message && <p className="notice communication-sizing-message" role="status">{message}</p>}
+    {plan && <div className="communication-sizing-result">
+      <div className="communication-sizing-result-heading"><strong>{plan.changes.length} Nachrichtenänderungen</strong><span>{plan.history_matches.length} passende Erfahrungen aus früheren Dimensionierungen</span></div>
+      <p>Alle zulässigen Varianten werden mit den aktuellen Anforderungen verglichen; Linkrate, Technologie, Payload und Kodierung bleiben fest.</p>
       {plan.status === "PARTIAL" && <p className="notice warning">Einige Netze benötigen weitere Maßnahmen. Änderungen werden nur für vollständig geprüfte Netze angeboten; offene Zeitnachweise bleiben unverändert.</p>}
-      <div style={{maxHeight: 520, overflow: "auto"}}>
-        {plan.networks.map(network => <details key={network.network_id} style={{padding: "12px 0", borderBottom: "1px solid var(--border, #293746)"}}>
+      <div className="communication-sizing-networks">
+        {plan.networks.map(network => <details className="communication-sizing-network" key={network.network_id}>
           <summary><strong>{network.network_name}</strong> · {network.protocol} · Zyklen: {network.effective_periods_ms?.join(" / ") || "offen"} ms · {percent(network.schedule?.nominal_load_percent)}</summary>
           <p>{network.explanation}</p>
           {network.schedule?.hardware_review_proposal && <div className="notice warning">
@@ -107,10 +113,11 @@ export function CommunicationSizingPanel() {
         </details>)}
       </div>
       {plan.changes.length > 0 && canDimension && <>
-        <details><summary>Nachrichtenänderungen prüfen</summary><ul>{plan.changes.map(change => <li key={change.message_id}>{change.name}: {change.before_ms} → {change.after_ms} ms{change.evaluation === "POLICY_ONLY_UNVERIFIED" ? " · Mindestabstandsregel; Ethernet-Zeitnachweis offen" : ""}</li>)}</ul></details>
+        <details className="communication-sizing-changes"><summary>Nachrichtenänderungen prüfen</summary><ul>{plan.changes.map(change => <li key={change.message_id}>{change.name}: {change.before_ms} → {change.after_ms} ms{change.evaluation === "POLICY_ONLY_UNVERIFIED" ? " · Mindestabstandsregel; Ethernet-Zeitnachweis offen" : ""}</li>)}</ul></details>
         <p>Die Übernahme aktualisiert Nachrichten, Signale, Routing und Sendeplan gemeinsam. Nachgelagerte Ergebnisse werden zur Neuberechnung markiert.</p>
         <button type="button" className="button primary" disabled={busy || edited || readActiveProjectId() !== projectId} onClick={() => void apply()}>Geprüfte Änderungen übernehmen</button>
       </>}
-    </>}
+    </div>}
+    </div>
   </details>;
 }

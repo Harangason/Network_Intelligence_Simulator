@@ -1,0 +1,64 @@
+--- before/frontend/src/features/communication/lib/technology-parameters.ts
++++ after/frontend/src/features/communication/lib/technology-parameters.ts
+@@ -4,6 +4,17 @@
+ export type DeclaredNetwork = Parameters & { id: string; name?: string; technology?: string };
+ const record = (value: unknown): Parameters => value && typeof value === 'object' && !Array.isArray(value) ? value as Parameters : {};
+ const present = (value: unknown) => value === '' || value === null ? undefined : value;
++const placeholderReference = (field: TechnologyParameterField, value: unknown) =>
++  field.value_role && field.value_role !== 'CONFIGURATION' && typeof value === 'string' && /^simulation:[^:]+:[^:]+$/.test(value);
++
++/** The native profile owns rates; everyday scenario controls precede details. */
++export function commonTechnologyParameters(technology: Technology): TechnologyParameterField[] {
++  const schema = technology.parameter_schema ?? [];
++  const keys = [...technologyRateParameters(technology).map(field => field.key),
++    'can_fd_brs', 'payload_bytes', 'cycle_ms', 'deadline_ms', 'duration_s', 'seed'];
++  return [...new Set(keys)].map(key => schema.find(field => field.key === key))
++    .filter((field): field is TechnologyParameterField => !!field && (!field.value_role || field.value_role === 'CONFIGURATION'));
++}
+ export const technologyKey = (value: unknown) => {
+   const key = String(value ?? '').toLowerCase().replace(/[ -]/g, '_');
+   return ({automotive_ethernet:'ethernet',canfd:'can_fd',some_ip:'someip'} as Record<string,string>)[key] ?? key;
+@@ -96,7 +107,10 @@
+   const saved = record(scoped.values);
+   const assumptions = record(record(record(parameters.simulation_parameter_assumptions)[technology.id]).values);
+   const values = Object.fromEntries((technology.parameter_schema ?? []).map(field => {
+-    const supplied = saved[field.key] ?? global[field.key];
++    const stored = saved[field.key] ?? global[field.key];
++    const storedProof = record(record(scoped.provenance)[field.key] ?? record(parameters.parameter_provenance)[field.key]);
++    const supplied = placeholderReference(field, stored) && storedProof.status !== 'CONFIRMED'
++      && storedProof.source !== 'EXPLICIT_USER_SPECIFICATION' ? undefined : stored;
+     const common = field.scope === 'network' ? commonNetworkParameter(parameters, technology.id, field.key) : undefined;
+     const value = present(common ? common[field.key] : supplied);
+     const proof = common ? record(record(common.parameter_provenance)[field.key]) : record(record(scoped.provenance)[field.key] ?? record(parameters.parameter_provenance)[field.key]);
+@@ -105,7 +119,7 @@
+     const confirmed = matching && (proof.status === 'CONFIRMED' && proof.source === 'USER_CONFIRMED' && proof.value === value || proof.source === 'EXPLICIT_USER_SPECIFICATION' && proof.value === value);
+     const invalidRate = rate && (typeof value !== 'number' || !Number.isFinite(value) || value <= 0 || field.min !== undefined && value < field.min || field.max !== undefined && value > field.max || field.allowed_bps?.length && !field.allowed_bps.includes(value));
+     const oldProposal = rate && (proof.status === 'REVIEW_REQUIRED' || proof.source === 'TECHNOLOGY_DEFAULT');
+-    const assumption = present(assumptions[field.key]);
++    const assumption = placeholderReference(field, assumptions[field.key]) ? undefined : present(assumptions[field.key]);
+     const preset = resolvedProfileProposal(field);
+     const fallback = assumption ?? (preset ? field.simulation_default : present(field.default) ?? present(proposed[field.key]) ?? field.simulation_default);
+     return [field.key, !matching ? fallback : confirmed ? value : assumption ?? (invalidRate || oldProposal ? fallback : value ?? fallback)];
+@@ -171,7 +185,7 @@
+     reason: 'NOT_IN_CURRENT_TECHNOLOGY_SCHEMA',
+   } : oldRetired;
+   const assumptionFields = new Set((technology.parameter_schema ?? []).filter(field =>
+-    options.preserveSimulationAssumptions && field.simulation_default !== undefined
++    options.preserveSimulationAssumptions && field.simulation_default != null
+     && technologyParameterApplicable(field, values)
+     && (field.default === undefined || resolvedProfileProposal(field))
+     && technologyParameterUnverified(parameters, field.key, technology.id)).map(field => field.key));
+@@ -198,6 +212,13 @@
+     delete result[key];
+     delete record(result.parameter_provenance)[key];
+   }
++  for (const field of technology.parameter_schema ?? []) {
++    if (placeholderReference(field, result[field.key]) && technologyParameterUnverified(parameters, field.key, technology.id)
++        && present(values[field.key]) === undefined) {
++      delete result[field.key];
++      delete record(result.parameter_provenance)[field.key];
++    }
++  }
+   if (parameters.technology) {
+     const previous = record(record(record(parameters.technology_parameters)[technologyKey(parameters.technology)]).values);
+     const knownPrevious = new Set([...Object.keys(previous), ...Object.keys(record(parameters.parameter_provenance)),

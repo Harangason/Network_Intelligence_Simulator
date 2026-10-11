@@ -1,0 +1,39 @@
+--- before/backend/nis/communication/registry.py
++++ after/backend/nis/communication/registry.py
+@@ -261,7 +261,7 @@
+ 
+     def parameter_fields(self, technology_id: str) -> list[dict[str, Any]]:
+         """One profile-owned schema for UI, wizard and API consumers."""
+-        from backend.nis.communication.catalog import PARAMETER_UI_ALIASES, simulation_parameter_values
++        from backend.nis.communication.catalog import PARAMETER_UI_ALIASES, simulation_parameter_values, parameter_value_role
+         profile = self._profiles[self.normalize_id(technology_id)].definition
+         proposals = simulation_parameter_values(profile['id'], profile)
+         result = []
+@@ -269,6 +269,7 @@
+             if not spec.get('label'):
+                 continue
+             field = {**deepcopy(spec), 'key': PARAMETER_UI_ALIASES.get(name, name), 'native_key': name}
++            field['value_role'] = parameter_value_role(name, spec)
+             proposal = deepcopy(proposals[name])
+             field['simulation_default'] = proposal['value']
+             field['simulation_default_provenance'] = proposal
+@@ -307,12 +308,19 @@
+             values, proofs = dict(previous.get('values') or {}), dict(previous.get('provenance') or {})
+             for field in fields:
+                 key = field['key']
++                if field['value_role'] != 'CONFIGURATION' and values.get(key) == f"simulation:{technology}:{field['native_key']}":
++                    # Remove only the exact old generated assumption. Explicit
++                    # user/group facts and operational values are untouched.
++                    values.pop(key, None)
++                    proofs.pop(key, None)
+                 if key in values or key in (saved.get('values') or {}):
+                     continue
+                 global_proof = (parameters.get('parameter_provenance') or {}).get(key) or {}
+                 if self.normalize_id(parameters.get('technology')) == technology and key in parameters and global_proof.get('source') in {'USER_CONFIRMED', 'EXPLICIT_USER_SPECIFICATION'}:
+                     continue
+                 proposal = deepcopy(field['simulation_default_provenance'])
++                if proposal['value'] is None:
++                    continue
+                 if proposal.get('applicable') is False:
+                     continue
+                 if proposal['basis'] in {'SCHEMA_SIMULATION_EXAMPLE', 'COMPARABLE_PROTOCOL_SCENARIO'}:

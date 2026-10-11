@@ -1,0 +1,453 @@
+"""CSI-2 revision, packet and selected PHY/device parameter review.
+
+Public MIPI feature matrices do not substitute for the member-only normative
+codec/CTS. Manufacturer constraints below apply only to the named implementation.
+"""
+
+MIPI = 'https://www.mipi.org/specifications/csi-2'
+MATRIX = 'https://www.mipi.org/hubfs/Specification-Feature-Tables/MIPI-CSI-2-Version-History-Table-March-2026.pdf'
+DPHY = 'https://www.mipi.org/specifications/d-phy'
+CPHY = 'https://www.mipi.org/specifications/c-phy'
+TI = 'https://www.ti.com/lit/ds/symlink/ds90ub960-q1.pdf'
+LATTICE = 'https://www.latticesemi.com/view_document?document_id=55101'
+RAW10 = 'https://www.kernel.org/doc/html/v4.8/media/uapi/v4l/pixfmt-srggb10p.html'
+RAW12 = 'https://cdn.kernel.org/doc/html/latest/userspace-api/media/v4l/pixfmt-srggb12p.html'
+SOURCES = {
+    MIPI: 'CSI-2 v4.2 adopted15December2025; public overview checked2026-10-02, normative specification/CTS member-only',
+    MATRIX: 'MIPI CSI-2 public version history March2026; reference PHY versions permit qualified backward/forward compatibility; footnote3-10 definitions absent in public PDF',
+    DPHY: 'D-PHY public overview v3.6 September2025; FCM vs ECM128b132b, not full normative electrical specification',
+    CPHY: 'C-PHY public overview v3.1 December2025;6wirestate16b7s vs18wirestate32b9s',
+    TI: 'DS90UB960-Q1 SNLS589D September2023;6.3/6.5/6.7 and7.4.13-23, registers7.6; qualified device limits, not every CSI-2 PHY',
+    LATTICE: 'FPGA-IPUG-02321-1.2 August2026, IP4.2.0; sections1-3/5/9; vendor implementation constraints and known error-reporting limits',
+    RAW10: 'Linux V4L2 packed RAW10 four-samples/five-octets format, v4.8 documentation; actual CSI codec binding required',
+    RAW12: 'Linux V4L2 packed RAW12 two-samples/three-octets format, documentation checked2026-10-02; actual CSI codec binding required',
+}
+VERSIONS = ['1.1','1.2','1.3','2.0','2.1','3.0','4.0','4.1','4.2','REGISTERED']
+DPHYS = ['DPHY_FCM','DPHY_ECM']
+CPHYS = ['CPHY_6WS','CPHY_18WS']
+LATTICES = ['LATTICE_SOFT','LATTICE_HARD']
+DECLARATIONS = []
+
+
+def d(key, kind, meaning, lo=None, hi=None, unit=None, options=None, integer=False, source=MATRIX, **kw):
+    DECLARATIONS.append(dict(key='cs_'+key,type=kind,description=meaning,min=lo,max=hi,unit=unit,
+        options=options,integer=integer,source=source,source_revision=SOURCES[source],**kw))
+
+
+for key, meaning, options in [
+    ('version','Actual selected CSI-2 revision; latest public version does not upgrade installed hardware.',VERSIONS),
+    ('phy','Actual imaging data path; CCI is separate from D-PHY lanes, C-PHY trios or A-PHY PAL.',DPHYS+CPHYS+['APHY_PAL','I3C_AOSC','REGISTERED']),
+    ('device','Actual selected implementation and qualified data sheet, not industry-based device choice.',['TI960']+LATTICES+['REGISTERED']),
+    ('direction','Actual CSI link transmitter/receiver or explicitly bridged path; no implicit network gateway.',['TX','RX','BRIDGE']),
+    ('clock_mode','Forwarded-clock continuous/discontinuous versus clock embedded in serial coding.',['CONTINUOUS','DISCONTINUOUS','EMBEDDED']),
+    ('header','Actual basic D-PHY four-VC packet or extended/PHY-specific header codec.',['BASE_DPHY','EXTENDED_DPHY','REGISTERED']),
+    ('packet','Short packet16bit data field versus long packet word-count octets.',['SHORT','LONG']),
+    ('format','Actual pixel/payload codec; optional formats require endpoint support, compression has own evidence.',
+        ['RAW6','RAW7','RAW8','RAW10','RAW12','RAW14','RAW16','RAW20','RAW24','RAW28','RGB888','RGB565','YUV','EMBEDDED','REGISTERED']),
+    ('packing','Actual wire packing versus byte passthrough; host16bit RAW10/12 pixels are not wire16bit samples.',['PACKED_RAW10','PACKED_RAW12','REGISTERED']),
+    ('interface','Actual vendor pixel conversion versus complete packet byte passthrough.',['UVSI','MBSI','REGISTERED']),
+    ('cci_mode','Actual separate command/control mode; Standard deprecated sinceCSI2.1, Fast mandatory all matrix revisions.',
+        ['I2C_STANDARD','I2C_FAST','I2C_FAST_PLUS','I3C_SDR','I3C_HDR_DDR','REGISTERED']),
+    ('forwarding','Actual TI aggregation topology; replication creates two outputs of same data, not twice unique payload.',
+        ['BEST_EFFORT_RR','BASIC_SYNC','LINE_INTERLEAVED','LINE_CONCATENATED','REPLICATED','REGISTERED']),
+    ('edge_clock','Actual Lattice Soft TX standalone clock versus same-bank shared source.',['INTERNAL','EXTERNAL']),
+    ('dp_channel','Actual D-PHY channel and electrical revision qualification.',['STANDARD','SHORT','CLIENT_PLATFORM','REGISTERED']),
+]: d(key,'select',meaning,options=options)
+
+for key, meaning in [
+    ('revision','Actual CSI/PHY/device firmware/IP versions and endpoint negotiated capability evidence.'),
+    ('binding_source','Actual canonical sender, receiver, lane/trio map, channel/port ownership and VC routing.'),
+    ('device_source','Actual device family/package/speed-grade/implemented options; catalog maxima are not installed defaults.'),
+    ('physical_source','Actual channel loss/termination/crosstalk/supply/temperature/clock and calibrated eye/timing qualification.'),
+    ('rate_source','Actual selected device/PHY mode clock and encoding factor; symbol rates differ from useful payload rate.'),
+    ('codec_source','Actual packet headers/ECC/CRC, pixel group packing/padding/compression/VCX and version-specific codec.'),
+    ('schedule_source','Actual frame/line cadence, packets per burst, blanking, transition/calibration/bridging and failed frames.'),
+    ('capacity_source','Actual full serialized protocol/PHY overhead, buffers, stalls and selected path; neither nominal rate nor average example is proof.'),
+    ('acceptance_source','Actual functional E2E/freshness and safety/security acceptance; packet ECC/CRC does not establish these.'),
+    ('cci_network_id','Actual separate canonical I2C/I3C control interface; no reuse of imaging bitrate.'),
+    ('cci_source','Actual control address/mode/transaction evidence resolved via selected I2C/I3C profile.'),
+    ('registered_source','Actual independently registered revision/PHY/codec/device profile, not a compatibility label.'),
+    ('feature_source','Actual optional LRTE/USL/AOSC/ESP/MPC/scrambling/DPCM/CSE support and source of missing matrix footnotes.'),
+    ('measurement_source','Actual calibrated UI/timing/electrical fixture, limits and operating envelope.'),
+    ('pll_source','Actual TI reference oscillator/PLL register selection or Lattice PLL/edge-clock source and lock.'),
+    ('timing_override_source','Actual TI per-port timing register writes with override bits; 400M configuration needs explicit sequence.'),
+    ('buffer_source','Actual allocated word width/depth/resource/padding/sideband rules and worst-case stalling.'),
+    ('port_id','Actual local CSI output port identifier; no invented installed port0.'),
+    ('edge_clock_source','Actual same-bank/same-bitrate Lattice Soft TX source and synchronized readiness/reset.'),
+    ('reconfiguration_source','Actual all-lanes idle/frame boundary/register-ready and required2ms settle sequence.'),
+    ('phy_revision','Actual applicable PHY revision; matrix reference is not an exact-only compatibility assertion.'),
+    ('ppi_source','Actual generated Lattice PPI width and controller configuration; Hard PHY permits8/16, not an unconditional16bit project default.'),
+    ('security_source','Actual separate Camera Security Framework/CSE security qualification; CRC is not authentication.'),
+]: d(key,'text',meaning)
+
+for key, meaning, lo, hi, unit, integer, source in [
+    ('lanes','Actual data lanes or C-PHY trios; onlyCSI1.1 universalmax4, later maximum device dependent.',1,None,None,True,MATRIX),
+    ('clock_lanes','Actual forwarded clock pair count, zero for embedded mode.',0,None,None,True,MATRIX),
+    ('lane_bitrate_bps','Actual D-PHY serialized bit rate per lane; no universal2.5G minimum/default.',0,None,'bit/s',True,DPHY),
+    ('symbol_rate_sps','Actual C-PHY symbol rate per trio; not bitrate or Ethernet clock.',0,None,'symbol/s',False,CPHY),
+    ('coding_bits','Information bits per complete coding group16/32 for C-PHY or128 for D-PHY ECM.',1,None,'bit',True,CPHY),
+    ('coding_symbols','Symbols per complete C-PHY group7/9; not a rounded2.28 factor.',1,None,'symbol',True,CPHY),
+    ('coded_block_bits','D-PHY ECM132serialized bits carry128information bits; further protocol overhead remains.',1,None,'bit',True,DPHY),
+    ('information_rate_bps','Actual per-lane/trio coding-only information rate; excludes packets/transitions/idle and is not capacity.',0,None,'bit/s',False,MATRIX),
+    ('aggregate_information_bps','Coding-only sum across actual lanes/trios; not sustained useful payload capacity.',0,None,'bit/s',False,MATRIX),
+    ('clock_hz','Actual D-PHY FCM forwarded high-speed clock at half lane bit rate; not C-PHY symbol clock.',0,None,'Hz',False,TI),
+    ('phy_width_bits','Actual generated deserialized PPI data width per lane:8Soft,8/16Hard; not editable hardware parameter or bits-per-pixel.',1,None,'bit',True,LATTICE),
+    ('byte_clock_hz','Actual vendor PPI clock=lane bit rate/PPI width, not always lane rate/8.',0,None,'Hz',False,LATTICE),
+    ('reference_clock_hz','Actual device reference:TI23..26M vs LatticeSoft60M/Hard60..200M.',0,None,'Hz',False,TI),
+    ('pll_code','TI CSI_PLL_CTL bits1:0 actual divisor0/1/2/3; reset2 is800M at25M, not lowest400M.',0,3,None,True,TI),
+    ('vc','Actual virtual channel;BASE4 versus version/PHY16or32 and installed endpoint limits.',0,31,None,True,MATRIX),
+    ('data_type','Actual6bit DT;short0..15/long16..63 does not establish reserved/optional opcode support.',0,63,None,True,TI),
+    ('data_id','Basic D-PHY DI=VC*64+DT only for nonextended header.',0,255,None,True,TI),
+    ('word_count','Actual long payload octets,not16bit words or complete packet bytes.',0,65535,'byte',True,TI),
+    ('short_data','Actual16bit short frame/line information; no long-payload/CRC footer.',0,65535,None,True,TI),
+    ('header_bytes','Classic D-PHY packet header4octets; advanced PHY/ESP requires own codec.',0,None,'byte',True,TI),
+    ('footer_bytes','Classic D-PHY long payloadCRC2octets,shortnone.',0,None,'byte',True,TI),
+    ('packet_bytes','Actual complete classic packet4forSHORT or WC+6forLONG, excluding PHY framing.',0,None,'byte',True,TI),
+    ('line_pixels','Actual samples per packed line,not hardcoded1920 example.',1,None,'pixel',True,LATTICE),
+    ('group_pixels','Actual packing group:RAW10four/RAW12two under explicitly selected packed codec.',1,None,'pixel',True,RAW10),
+    ('group_bytes','Actual packed group:RAW10five/RAW12three,not host16bit sample.',1,None,'byte',True,RAW12),
+    ('packing_remainder','Actual complete-group line pixel remainder; partial groups require separately registered padding codec.',0,None,None,True,RAW10),
+    ('pixel_bits','Actual on-wire uncompressed pixel depth,distinct UVSI per-pixel allocated width.',1,None,'bit',True,LATTICE),
+    ('host_pixel_bits','Actual UVSI per-pixel allocation rounded byte boundary;RGB565UVSI24 differs16wirebits.',1,None,'bit',True,LATTICE),
+    ('ppc','Actual Lattice pixels per clock1/2/4; figure8example not selectable production PPC.',1,None,None,True,LATTICE),
+    ('axis_width_bits','Actual UVSI host pixel allocation*PPC; MBSI32/64includesheaders/footer.',1,None,'bit',True,LATTICE),
+    ('controller_bits','Actual Lattice packet controller32or64;64onlyHard/4lanes.',1,None,'bit',True,LATTICE),
+    ('axis_clock_hz','Actual UVSI/MBSI source/sink clock; TXrecommendations require burst/stall/buffer proof rather than automatic rejection.',0,None,'Hz',False,LATTICE),
+    ('free_clock_hz','Actual Lattice RX free-running clock>=byte clock and>=60M.',0,None,'Hz',False,LATTICE),
+    ('csr_clock_hz','Actual AXI4-Lite clockmax60MTX/HardRX or200MSoftRX.',0,None,'Hz',False,LATTICE),
+    ('cci_rate_bps','Actual separate control bus clock; known maximum mode is proposed, not confirmed bus capacity.',0,None,'bit/s',True,MATRIX),
+    ('active_lines','Actual Lattice active lines1..65535,not default48as project requirement.',1,65535,'line',True,LATTICE),
+    ('hblank_units','Actual configured vendor horizontal LP11 blanking units,not unconditionally transmitted pixel bytes.',0,65535,None,True,LATTICE),
+    ('vblank_lines','Actual extra blanking intervals0..65535,minimum internaltransition delay remains atzero.',0,65535,'line',True,LATTICE),
+    ('fps','Actual requested/measured frame rate,not nominal aggregatebandwidth/pixels alone.',0,None,'frame/s',False,LATTICE),
+    ('blanking_us','Actual frame/line LP idle budget,including receiver minimum requirements.',0,None,'us',False,LATTICE),
+    ('packets_per_burst','Actual complete protocol packets multiplexed within each HS transaction.',1,None,'packet',True,LATTICE),
+    ('burst_bound_ns','Actual worst-case fullburst serialization/transitions/calibration/idle bound; not TItypicalTable7-16.',0,None,'ns',False,TI),
+    ('stall_bound_ns','Actual worst-case downstream stall and source behavior; a CSI receiver cannot stop a camera by AXI TREADY alone.',0,None,'ns',False,LATTICE),
+    ('buffer_words','Actual allocated vendor FIFOdepth,not inherited universal queue1024.',1,None,'word',True,LATTICE),
+    ('buffer_word_bits','Actual FIFO physical word width with sideband/padding; distinguish256bit TXUVSIfrom32/64MBSI.',1,None,'bit',True,LATTICE),
+    ('buffer_bytes','Actual payload-bearing byte allocation; manufacturerbookkeeping8 differs wirepacketoverhead6.',1,None,'byte',True,LATTICE),
+    ('buffer_payload_bytes','Actual Lattice TXMBSIusablepayload<=buffer_bytes-8, separate from classicwordcount65535.',0,None,'byte',True,LATTICE),
+    ('minimum_packet_gap_cycles','LatticeUVSITX WCnotmultiple32 requires at least4AXI cycles betweenstreams.',0,None,'cycle',True,LATTICE),
+    ('wc_mod32','Actual long word-count modulo32 for vendor packet-gap constraint.',0,31,None,True,LATTICE),
+    ('init_cycles','Actual Lattice tINITcounter1..65535;1000exampledoesnotprovephysicalinit minimum.',1,65535,'cycle',True,LATTICE),
+    ('init_ns','Actual selected initcycles*PPIperiod; requiredPHYinit independently qualified.',0,None,'ns',False,LATTICE),
+    ('skew_initial_cycles','LatticeHardinitialcalibrationregister15bits inbyteclockcycles.',1,32767,'cycle',True,LATTICE),
+    ('skew_periodic_cycles','LatticeHardperiodicregister12bits inbyteclockcycles.',1,4095,'cycle',True,LATTICE),
+    ('skew_initial_ns','Actual enabled initialcalibration duration and blanking/receiver requirements.',0,None,'ns',False,LATTICE),
+    ('skew_periodic_ns','Actual enabled periodiccalibration duration and frame blanking schedule.',0,None,'ns',False,LATTICE),
+    ('reconfiguration_wait_ms','Actual Lattice2mswait atspecified reconfiguration step,not all technologies universaldelay.',0,None,'ms',False,LATTICE),
+    ('ui_ns','Actual measured instantaneousTIUI0.6..2.7ns,nominal1e9/rateandvariationareseparate.',0,None,'ns',False,TI),
+    ('ui_variation_percent','Measured magnitude:TIUI>=1ns≤10percent,UI<1ns≤5percent.',0,None,'%',False,TI),
+    ('tx_skew_ui','Absolute transmitterdata-clockskew≤.15at≤1G/.20at1..1.5G.',0,None,'UI',False,TI),
+    ('tx_static_skew_ui','TIabove1.5G staticdata-clockskew magnitude≤.20UI.',0,None,'UI',False,TI),
+    ('tx_dynamic_skew_ui','TIabove1.5G dynamicdata-clockskew magnitude≤.15UI.',0,None,'UI',False,TI),
+    ('channel_isi_ui','Actual TI inter-symbol interference magnitude≤.20UI.',0,None,'UI',False,TI),
+    ('tx_rise_ps','TI20..80percenttransition rise; minimum50ps formaxcapability>1.5G else100ps, rate-dependentUImax.',0,None,'ps',False,TI),
+    ('tx_fall_ps','TI20..80percenttransition fall under same exact output/temperature/load qualification.',0,None,'ps',False,TI),
+    ('max_capability_bps','Actual device configured max-HS support controlling TItransition requirements,notcurrentbitrate alone.',0,None,'bit/s',True,TI),
+    ('hs_common_mv','Actual TIhighspeedTXcommonmode150..250mV atqualified6.5load.',0,None,'mV',False,TI),
+    ('hs_diff_mv','Actual TIhighspeeddifferentialTXamplitude140..270mV.',0,None,'mV',False,TI),
+    ('single_output_ohm','Actual TIHSTXsingle-endedoutput40..62.5ohm,not generic100ohmtermination.',0,None,'ohm',False,TI),
+    ('output_mismatch_percent','TIoutputimpedancedifferencepercentage≤10.',0,None,'%',False,TI),
+    ('common_lf_mvrms','TIcommonmodevariation50..450MHz≤25mVrms.',0,None,'mVrms',False,TI),
+    ('common_hf_mvrms','TIcommonmodevariationabove450MHz≤15mVrms.',0,None,'mVrms',False,TI),
+    ('lp_high_v','TI LPoutputhighminimum1.1V≤1.5G/.95V>1.5G andmaximum1.3V.',0,None,'V',False,TI),
+    ('lp_low_v','TI LPoutputlow-0.05..0.05V,not genericLVDSthreshold.',None,None,'V',False,TI),
+    ('sdd_lp_db','TIHSTXdifferentialreturnlosslimitatfLPMAX18dBnegativeSparameter.',None,None,'dB',False,TI),
+    ('sdd_h_db','TIHSTXdifferentialreturnlossatfH -9below1.5G/-4.5above1.5G; exact1.5G requires qualification.',None,None,'dB',False,TI),
+    ('sdd_max_db','TIHSTXdifferentialreturnlossatfMAX -3below1.5G/-2.5above1.5G.',None,None,'dB',False,TI),
+    ('scc_lp_db','TIcommonmodereturnlossDC..fLPMAX≤-20dB.',None,None,'dB',False,TI),
+    ('scc_h_db','TIcommonmodereturnlossatfH≤-15dB.',None,None,'dB',False,TI),
+    ('scc_max_db','TIcommonmodereturnlossatfMAX≤-9dB.',None,None,'dB',False,TI),
+]: d(key,'number',meaning,lo,hi,unit,integer=integer,source=source)
+
+for key, meaning in [
+    ('line_markers','Actual optional LS/LE packets; their overhead absent onlywhen trulydisabled.'),
+    ('frame_markers','FS/FEmandatoryminimumCSIstreamcapability; actual observed frame sequence still required.'),
+    ('eotp','Actual version/PHY-specific EoTp; publicmatrixfootnote3notdefined, no guessed mandatoryvalue.'),
+    ('lrte','Actual supported efficientpacketdelimiters and revision-specificPHY codec.'),
+    ('usl','Actual unifiedseriallink fromCSI3.0; DPHYFCM/4.2ECM orCPHY6WS,notCPHY18WSbypublicmatrix.'),
+    ('aosc','Actual CSI4+I3Calways-onsentinel data path,not anI2Cbitratealias.'),
+    ('esp','Actual CSI4.2+eventpacketcodec and source-defined payload.'),
+    ('mpc','Actual CSI4+multpixelcompressedcodec,not uncompressedpixelcount formula.'),
+    ('dpcm','Actual selected compression codec and worst-case output,not nominaldepthasencodedsize.'),
+    ('scrambling','Actual revision/PHYcompatiblelongpacketscrambling,requirescodecproof.'),
+    ('cse','Actual CSI4+CameraServiceExtensions including separate safety/security schema.'),
+    ('initial_skew','Actual enabled/successful initialcalibration,required TI PLL0orLatticeHard>1.5G.'),
+    ('periodic_skew','Actual enabledperiodiccalibration and scheduledblankinginterval.'),
+    ('timing_override','Actual TI400Mtimingoverride sequence appliedtoeachselectedport.'),
+    ('interlaced','Actual LatticeUVSIinterlacedunsupporteddespitegenericUVSIillustration.'),
+    ('escape','Actual escape support; LatticecurrentIPunsupported.'),
+    ('ulps','Actual ultralowpowerstate support; LatticecurrentIPunsupported.'),
+    ('bta','Actual busturnaround support; LatticecurrentIPunsupported.'),
+    ('ecc_check','Actual headerECCchecking; Latticeknown2biterrorreportingexceptionrequiresacceptance evidence.'),
+    ('crc_check','Actual payloadCRCchecking; doesnotauthenticate or certifyfunctional safety.'),
+    ('ecc_insert','Actual LatticeMBSITXregenerationreplacesECC/VCX; completeplaceholderheaderstillrequired.'),
+    ('crc_insert','Actual LatticeMBSITXregenerationrequiresCRCplaceholderfield,not omittedfooter.'),
+    ('dynamic','Actual enabledLatticedynamicreconfigurationviaAXI4Lite.'),
+    ('axi_lite','Actual LatticeAXI4Liteimplemented,notautomaticallytrue.'),
+    ('init_enabled','Actual internalLatticetINITwait; disabledcounterrequiresseparatephysicalinitializationevidence.'),
+    ('capacity_confirmed','Actual approval backedbycompletepathrecord; neverautotruefromscalarparameterVALID.'),
+]: d(key,'boolean',meaning,source=LATTICE if key in {'initial_skew','periodic_skew','interlaced','escape','ulps','bta','ecc_check','crc_check','ecc_insert','crc_insert','dynamic','axi_lite','init_enabled'} else MATRIX)
+
+for key, meaning in [('clk_post','HSclockexitbeforeclocktrail'),('clk_pre','HSclockbeforedataLPtoHS'),
+    ('clk_prepare','ClockLP00beforeHS0'),('clk_zero','ClockHS0beforetoggling'),('clk_settle','ClockreceiverignoreHStransitions'),
+    ('clk_term','Clockterminationenableafterthreshold'),('clk_trail','ClockHS0afterlastclockbit'),
+    ('data_term','Dataterminationenableafterthreshold'),('eot','FromstartHStrailtoLP11'),
+    ('hs_exit','DataLP11afterHSburst'),('hs_prepare','DataLP00entry'),('hs_zero','DataHS0beforeSoTsync'),
+    ('hs_settle','Datareceiverignorewindow'),('hs_skip','PostburstreceiverignoretoLP11'),('hs_trail','Flippedlastdatabittoexit'),
+    ('lpx','AnyLPstate'),('wakeup','RecoveryfromULPS')]:
+    d(key+'_ns','number','Actual TIqualified'+meaning+' in nanoseconds atinstantaneousUI; no unconstraineduniversalregisterdefault.',0,None,'ns',source=TI)
+
+REQUIRED = ['version','phy','device','direction','revision','binding_source','device_source','physical_source','rate_source',
+    'codec_source','schedule_source','capacity_source','acceptance_source','cci_network_id','cci_source']
+REMOVED = {k:'No universalCSI '+k+': select actualPHY/device/CCI packet/buffer/schedule instead of inherited CAN/IP bitrate/queue/retry/QoS/gateway policy.' for k in
+    ('bitrate','queue_size','queue_policy','qos_priority','traffic_class','reserved_bandwidth_percent','sync_method','rate_limit_bit_s',
+     'retransmission_enabled','retransmission_rate','retry_limit','retransmission_delay_ms','gateway_maximum_throughput',
+     'gateway_input_buffer','gateway_output_buffer','gateway_maximum_routes','gateway_maximum_messages_s')}
+
+
+def semantics():
+    rules = [dict(parameter='local_timing_evidence',allowed=[],source=MIPI,source_revision=SOURCES[MIPI])]
+    def r(key,when=None,source=MATRIX,**kw):
+        rules.append(dict(parameter=key if key=='payload_bytes' else 'cs_'+key,
+            when={'cs_'+k:v for k,v in (when or{}).items()},source=source,source_revision=SOURCES[source],**kw))
+    for key in ('version','phy','device','header','format','packing','interface','cci_mode','forwarding','dp_channel'):
+        r('registered_source',{key:'REGISTERED'},required=True)
+    for phy in DPHYS+CPHYS:
+        r('lanes',{'phy':phy},required=True)
+        r('phy_revision',{'phy':phy},required=True)
+    for phy in DPHYS:
+        r('lane_bitrate_bps',{'phy':phy},exclusive_minimum=0,required=True)
+        r('symbol_rate_sps',{'phy':phy},allowed=[])
+        r('clock_lanes',{'phy':phy},allowed=[1 if phy=='DPHY_FCM' else 0])
+        r('clock_mode',{'phy':phy},allowed=['CONTINUOUS','DISCONTINUOUS']if phy=='DPHY_FCM'else['EMBEDDED'],required=True)
+    for phy,bits,symbols in [('CPHY_6WS',16,7),('CPHY_18WS',32,9)]:
+        w={'phy':phy};r('symbol_rate_sps',w,exclusive_minimum=0,required=True)
+        r('clock_mode',w,allowed=['EMBEDDED'],required=True);r('clock_lanes',w,allowed=[0])
+        r('coding_bits',w,allowed=[bits]);r('coding_symbols',w,allowed=[symbols])
+        r('information_rate_bps',w,equal_expression={'product':['cs_symbol_rate_sps',bits,{'power':[symbols,-1]}]})
+        for key in ('lane_bitrate_bps','clock_hz'):r(key,w,allowed=[])
+    r('information_rate_bps',{'phy':'DPHY_FCM'},equal_parameter='cs_lane_bitrate_bps')
+    r('information_rate_bps',{'phy':'DPHY_ECM'},equal_expression={'product':['cs_lane_bitrate_bps',128,{'power':[132,-1]}]})
+    r('coding_bits',{'phy':'DPHY_ECM'},allowed=[128]);r('coded_block_bits',{'phy':'DPHY_ECM'},allowed=[132])
+    r('clock_hz',{'phy':'DPHY_FCM'},equal_expression={'product':['cs_lane_bitrate_bps',.5]},source=TI)
+    r('clock_hz',{'phy':'DPHY_ECM'},allowed=[])
+    r('aggregate_information_bps',equal_expression={'product':['cs_information_rate_bps','cs_lanes']})
+    for key in ('information_rate_bps','lanes'):r(key,when_present=['cs_aggregate_information_bps'],required=True)
+    r('phy',{'version':'1.1'},allowed=['DPHY_FCM']);r('lanes',{'version':'1.1'},maximum=4)
+    r('phy',{'version':'1.2'},allowed=['DPHY_FCM'])
+    for version in VERSIONS[:7]:
+        r('phy',{'version':version},forbidden=['CPHY_18WS','DPHY_ECM'])
+    r('version',{'phy':'DPHY_ECM'},allowed=['4.2','REGISTERED'])
+    r('phy_revision',{'phy':'DPHY_ECM'},allowed=['3.5','3.6','REGISTERED'],source=DPHY)
+    r('phy_revision',{'phy':'CPHY_18WS'},allowed=['3.0','3.1','REGISTERED'],source=CPHY)
+    r('registered_source',{'phy_revision':'REGISTERED'},required=True)
+    for phy in ('APHY_PAL','I3C_AOSC'):
+        r('version',{'phy':phy},forbidden=VERSIONS[:6])
+        r('registered_source',{'phy':phy},required=True)
+    for version in VERSIONS[:3]:r('vc',{'version':version},maximum=3)
+    for phy in DPHYS:r('vc',{'phy':phy},maximum=15)
+    for feature,first in [('lrte',3),('scrambling',3),('usl',5),('aosc',6),('mpc',6),('cse',6),('esp',8)]:
+        r('version',{feature:True},forbidden=VERSIONS[:first]);r('feature_source',{feature:True},required=True)
+    for key in ('eotp','dpcm'):r('feature_source',{key:True},required=True)
+    r('phy',{'usl':True},allowed=['DPHY_FCM','DPHY_ECM','CPHY_6WS'])
+    r('cci_mode',{'aosc':True},allowed=['I3C_SDR','I3C_HDR_DDR','REGISTERED'])
+    r('frame_markers',allowed=[True])
+    for fmt,first in [('RAW16',3),('RAW20',3),('RAW24',5),('RAW28',6)]:r('version',{'format':fmt},forbidden=VERSIONS[:first])
+    for version in VERSIONS[:4]:r('cci_mode',{'version':version},forbidden=['I2C_FAST_PLUS','I3C_SDR','I3C_HDR_DDR'])
+    for mode,maximum in [('I2C_STANDARD',100000),('I2C_FAST',400000),('I2C_FAST_PLUS',1000000),('I3C_SDR',12500000),('I3C_HDR_DDR',25000000)]:
+        r('cci_rate_bps',{'cci_mode':mode},exclusive_minimum=0,maximum=maximum,required=True)
+    # The standard-mode capability is deprecated from2.1, not universally forbidden
+    # on legacy hardware. Its explicit selection requires actual CCI support evidence.
+    for header in ('BASE_DPHY','EXTENDED_DPHY'):
+        w={'header':header};r('phy',w,allowed=DPHYS)
+        r('header_bytes',w,allowed=[4]);r('header_bytes',w,when_present=['cs_packet_bytes'],required=True)
+        r('footer_bytes',{**w,'packet':'LONG'},allowed=[2]);r('footer_bytes',{**w,'packet':'SHORT'},allowed=[0])
+        r('footer_bytes',w,when_present=['cs_packet_bytes'],required=True)
+        r('packet_bytes',{**w,'packet':'LONG'},equal_expression={'sum':['cs_word_count',6]})
+        r('word_count',{**w,'packet':'LONG'},required=True)
+        r('packet_bytes',{**w,'packet':'SHORT'},allowed=[4])
+        r('word_count',{**w,'packet':'SHORT'},allowed=[]);r('payload_bytes',{**w,'packet':'SHORT'},allowed=[0])
+        r('short_data',{**w,'packet':'SHORT'},required=True)
+        r('short_data',{**w,'packet':'LONG'},allowed=[])
+    r('vc',{'header':'BASE_DPHY'},maximum=3)
+    r('data_id',{'header':'BASE_DPHY'},equal_expression={'sum':[{'product':['cs_vc',64]},'cs_data_type']})
+    for key in ('vc','data_type'):r(key,{'header':'BASE_DPHY'},when_present=['cs_data_id'],required=True)
+    r('data_id',{'header':'EXTENDED_DPHY'},allowed=[])
+    r('data_type',{'packet':'SHORT'},maximum=15);r('data_type',{'packet':'LONG'},minimum=16)
+    r('payload_bytes',{'packet':'LONG'},maximum_parameter='cs_word_count')
+    for key in ('packet','header'):r(key,when_present=['cs_packet_bytes'],required=True)
+    r('packet',when_present=['payload_bytes'],required=True)
+    r('word_count',{'packet':'LONG'},when_present=['payload_bytes'],required=True)
+    for pack,fmt,pixels,octets,source in [('PACKED_RAW10','RAW10',4,5,RAW10),('PACKED_RAW12','RAW12',2,3,RAW12)]:
+        w={'packing':pack};r('format',w,allowed=[fmt]);r('packet',w,allowed=['LONG'])
+        r('group_pixels',w,allowed=[pixels]);r('group_bytes',w,allowed=[octets])
+        r('packing_remainder',w,equal_expression={'integer_remainder':['cs_line_pixels',pixels]},allowed=[0],required=True,source=source)
+        r('line_pixels',w,required=True,source=source)
+        r('word_count',w,equal_expression={'product':['cs_line_pixels',octets,{'power':[pixels,-1]}]},source=source)
+        for key in ('mpc','dpcm'):r(key,w,allowed=[False])
+    for key in ('information_rate_bps','aggregate_information_bps','clock_hz','byte_clock_hz','cci_rate_bps','axis_clock_hz',
+                'free_clock_hz','csr_clock_hz','fps','burst_bound_ns','max_capability_bps'):
+        r(key,exclusive_minimum=0)
+    # Qualified manufacturer profiles; generic CSI does not inherit their limits.
+    for device in ['TI960']+LATTICES:
+        w={'device':device};r('phy',w,allowed=['DPHY_FCM'])
+        r('clock_hz',w,equal_expression={'product':['cs_lane_bitrate_bps',.5]})
+    t={'device':'TI960'}
+    r('direction',t,allowed=['TX']);r('lanes',t,maximum=4);r('vc',t,maximum=3)
+    r('header',t,allowed=['BASE_DPHY']);r('reference_clock_hz',t,minimum=23000000,maximum=26000000)
+    r('lane_bitrate_bps',t,minimum=368000000,maximum=1664000000)
+    for code,rate in [(0,1600000000),(1,1200000000),(2,800000000),(3,400000000)]:
+        r('lane_bitrate_bps',{**t,'pll_code':code},equal_expression={'product':['cs_reference_clock_hz',rate/25000000]},exact_decimal_equality=True,source=TI)
+        r('reference_clock_hz',{**t,'pll_code':code},required=True,source=TI)
+    r('initial_skew',{**t,'pll_code':0},allowed=[True],required=True,source=TI)
+    r('timing_override',{**t,'pll_code':3},allowed=[True],required=True,source=TI)
+    r('timing_override_source',{**t,'pll_code':3},required=True,source=TI)
+    r('pll_source',t,when_present=['cs_pll_code'],required=True,source=TI)
+    # Only the1.2G row explicitly specifies25MHz in Table7-15.
+    r('reference_clock_hz',{**t,'pll_code':1},allowed=[25000000],source=TI)
+    r('initial_skew',{'device':'LATTICE_HARD'},when_greater_than={'cs_lane_bitrate_bps':1500000000},allowed=[True],required=True,source=LATTICE)
+    for key,lo,hi in [('ui_ns',.6,2.7),('ui_variation_percent',0,10),('hs_common_mv',150,250),('hs_diff_mv',140,270),
+        ('single_output_ohm',40,62.5),('output_mismatch_percent',0,10),('common_lf_mvrms',0,25),('common_hf_mvrms',0,15),
+        ('lp_low_v',-.05,.05),('lp_high_v',.95,1.3),('channel_isi_ui',0,.2),('tx_static_skew_ui',0,.2),('tx_dynamic_skew_ui',0,.15),
+        ('sdd_lp_db',None,-18),('scc_lp_db',None,-20),('scc_h_db',None,-15),('scc_max_db',None,-9),
+        ('clk_prepare_ns',38,95),('clk_settle_ns',95,300),('clk_term_ns',0,38),('clk_trail_ns',60,None),
+        ('hs_exit_ns',100,None),('lpx_ns',50,None),('wakeup_ns',1000000,None)]:r(key,t,minimum=lo,maximum=hi,source=TI)
+    r('ui_variation_percent',t,when_half_open_ranges={'cs_ui_ns':[.6,1]},maximum=5,source=TI)
+    r('ui_ns',t,when_present=['cs_ui_variation_percent'],required=True,source=TI)
+    r('tx_skew_ui',t,when_ranges={'cs_lane_bitrate_bps':[368000000,1000000000]},maximum=.15,source=TI)
+    r('tx_skew_ui',t,when_ranges={'cs_lane_bitrate_bps':[1000000000,1500000000]},maximum=.2,source=TI)
+    r('tx_skew_ui',t,when_greater_than={'cs_lane_bitrate_bps':1500000000},allowed=[],source=TI)
+    for key in ('tx_static_skew_ui','tx_dynamic_skew_ui'):
+        r(key,t,when_ranges={'cs_lane_bitrate_bps':[368000000,1500000000]},allowed=[],source=TI)
+    r('lp_high_v',t,when_ranges={'cs_lane_bitrate_bps':[368000000,1500000000]},minimum=1.1,source=TI)
+    for key,low,high in [('sdd_h_db',-9,-4.5),('sdd_max_db',-3,-2.5)]:
+        r(key,t,when_half_open_ranges={'cs_lane_bitrate_bps':[368000000,1500000000]},maximum=low,source=TI)
+        r(key,t,when_greater_than={'cs_lane_bitrate_bps':1500000000},maximum=high,source=TI)
+        r('registered_source',{**t,'lane_bitrate_bps':1500000000},when_present=['cs_'+key],required=True,source=TI)
+    for key in ('tx_rise_ps','tx_fall_ps'):
+        r('max_capability_bps',t,when_present=['cs_'+key],required=True,source=TI)
+        r('ui_ns',t,when_present=['cs_'+key],required=True,source=TI)
+        r(key,t,when_ranges={'cs_max_capability_bps':[368000000,1500000000]},minimum=100,source=TI)
+        r(key,t,when_greater_than={'cs_max_capability_bps':1500000000},minimum=50,
+            maximum_expression={'product':['cs_ui_ns',400]},exact_decimal_bounds=True,source=TI)
+        r(key,t,when_ranges={'cs_max_capability_bps':[368000000,1500000000],'cs_lane_bitrate_bps':[368000000,1000000000]},
+            maximum_expression={'product':['cs_ui_ns',300]},exact_decimal_bounds=True,source=TI)
+        r(key,t,when_ranges={'cs_max_capability_bps':[368000000,1500000000]},when_greater_than={'cs_lane_bitrate_bps':1000000000},
+            maximum_expression={'product':['cs_ui_ns',350]},exact_decimal_bounds=True,source=TI)
+    r('max_capability_bps',t,minimum_parameter='cs_lane_bitrate_bps',maximum=1664000000,source=TI)
+    UI='cs_ui_ns'
+    def affine(base,coefficient):return {'sum':[base,{'product':[UI,coefficient]}]}
+    for key,minimum,maximum in [('clk_post_ns',affine(60,52),None),('clk_pre_ns',{'product':[UI,8]},None),
+        ('data_term_ns',None,affine(35,4)),('eot_ns',None,affine(105,12)),('hs_prepare_ns',affine(40,4),affine(85,6)),
+        ('hs_settle_ns',affine(85,6),affine(145,10)),('hs_skip_ns',40,affine(55,4)),('hs_trail_ns',affine(60,4),None)]:
+        args={}
+        if minimum is not None:args['minimum_expression']=minimum
+        if maximum is not None:args['maximum_expression']=maximum
+        r(key,t,exact_decimal_bounds=True,source=TI,**args);r('ui_ns',t,when_present=['cs_'+key],required=True,source=TI)
+    r('hs_zero_ns',t,minimum_expression={'subtract':[affine(145,10),'cs_hs_prepare_ns']},source=TI,exact_decimal_bounds=True)
+    r('clk_zero_ns',t,minimum_expression={'subtract':[300,'cs_clk_prepare_ns']},source=TI,exact_decimal_bounds=True)
+    for key in ('hs_prepare_ns','ui_ns'):r(key,t,when_present=['cs_hs_zero_ns'],required=True,source=TI)
+    r('clk_prepare_ns',t,when_present=['cs_clk_zero_ns'],required=True,source=TI)
+    for device in LATTICES:
+        w={'device':device};r('lanes',w,allowed=[1,2,4],source=LATTICE)
+        for direction in ('TX','RX'):
+            lo=(160000000 if direction=='TX' else 80000000) if device=='LATTICE_SOFT' else (320000000 if direction=='TX' else 160000000)
+            r('lane_bitrate_bps',{**w,'direction':direction},minimum=lo,maximum=1500000000 if device=='LATTICE_SOFT' else 2500000000,source=LATTICE)
+        r('phy_width_bits',w,allowed=[8] if device=='LATTICE_SOFT' else [8,16],source=LATTICE)
+        r('ppi_source',w,when_present=['cs_phy_width_bits'],required=True,source=LATTICE)
+        r('phy_width_bits',w,when_present=['cs_byte_clock_hz'],required=True,source=LATTICE)
+        r('byte_clock_hz',w,equal_expression={'product':['cs_lane_bitrate_bps',{'power':['cs_phy_width_bits',-1]}]},source=LATTICE)
+        r('reference_clock_hz',w,minimum=60000000,maximum=60000000 if device=='LATTICE_SOFT' else 200000000,source=LATTICE)
+        r('ppc',w,allowed=[1,2,4],source=LATTICE)
+        for key in ('escape','ulps','bta'):r(key,w,allowed=[False],source=LATTICE)
+        r('interlaced',{**w,'interface':'UVSI'},allowed=[False],source=LATTICE)
+        r('format',{**w,'interface':'UVSI'},allowed=['RGB888','RGB565','RAW10','RAW12'],source=LATTICE)
+        for fmt,wire,host in [('RGB888',24,24),('RGB565',16,24),('RAW10',10,16),('RAW12',12,16)]:
+            r('pixel_bits',{**w,'interface':'UVSI','format':fmt},allowed=[wire],source=LATTICE)
+            r('host_pixel_bits',{**w,'interface':'UVSI','format':fmt},allowed=[host],source=LATTICE)
+        r('axis_width_bits',{**w,'interface':'UVSI'},equal_expression={'product':['cs_host_pixel_bits','cs_ppc']},source=LATTICE)
+        r('controller_bits',w,allowed=[32,64]if device=='LATTICE_HARD'else[32],source=LATTICE)
+        r('lanes',{**w,'controller_bits':64},allowed=[4],source=LATTICE)
+        r('phy_width_bits',{**w,'controller_bits':64},allowed=[16],required=True,source=LATTICE)
+        for width in (8,16):
+            for lanes in (1,2,4):
+                r('controller_bits',{**w,'direction':'RX','phy_width_bits':width,'lanes':lanes},
+                    allowed=[64 if width==16 and lanes==4 else 32],source=LATTICE)
+        r('word_count',{**w,'packet':'LONG','direction':'TX'},minimum=32,source=LATTICE)
+        for width,wc in [(32,6),(64,10)]:r('word_count',{**w,'packet':'LONG','direction':'RX','controller_bits':width},minimum=wc,source=LATTICE)
+        r('free_clock_hz',{**w,'direction':'RX'},minimum=60000000,minimum_parameter='cs_byte_clock_hz',source=LATTICE)
+        r('csr_clock_hz',{**w,'direction':'TX'},maximum=60000000,source=LATTICE)
+        r('csr_clock_hz',{**w,'direction':'RX'},maximum=200000000 if device=='LATTICE_SOFT' else 60000000,source=LATTICE)
+        r('axi_lite',{**w,'dynamic':True},allowed=[True],required=True,source=LATTICE)
+        r('reconfiguration_source',{**w,'dynamic':True},required=True,source=LATTICE)
+        r('reconfiguration_wait_ms',{**w,'dynamic':True},minimum=2,source=LATTICE)
+        for key in ('initial_skew','periodic_skew'):r(key,{'device':'LATTICE_SOFT'},allowed=[False],source=LATTICE)
+        r('buffer_payload_bytes',{**w,'direction':'TX','interface':'MBSI'},maximum_expression={'subtract':['cs_buffer_bytes',8]},source=LATTICE)
+        r('buffer_bytes',{**w,'direction':'TX','interface':'MBSI'},when_present=['cs_buffer_payload_bytes'],required=True,source=LATTICE)
+        r('word_count',{**w,'direction':'TX','interface':'MBSI'},maximum_parameter='cs_buffer_payload_bytes',source=LATTICE)
+        r('wc_mod32',w,equal_expression={'integer_remainder':['cs_word_count',32]},source=LATTICE)
+        r('word_count',w,when_present=['cs_wc_mod32'],required=True,source=LATTICE)
+        for remainder in range(1,32):r('minimum_packet_gap_cycles',{**w,'direction':'TX','interface':'UVSI','wc_mod32':remainder},minimum=4,required=True,source=LATTICE)
+        for cycles,ns in [('init_cycles','init_ns'),('skew_initial_cycles','skew_initial_ns'),('skew_periodic_cycles','skew_periodic_ns')]:
+            r(ns,w,equal_expression={'product':['cs_'+cycles,1000000000,{'power':['cs_byte_clock_hz',-1]}]},source=LATTICE)
+            for key in (cycles,'byte_clock_hz'):r(key,w,when_present=['cs_'+ns],required=True,source=LATTICE)
+        for key in ('byte_clock_hz','axis_width_bits','free_clock_hz'):r('buffer_source',w,when_present=['cs_'+key],required=True,source=LATTICE)
+        r('buffer_source',w,when_present=['cs_buffer_words'],required=True,source=LATTICE)
+        r('buffer_source',w,when_present=['cs_buffer_bytes'],required=True,source=LATTICE)
+        for fmt,bpp in [('RAW10',10),('RAW12',12),('RGB888',24),('RGB565',16)]:
+            r('axis_clock_hz',{**w,'direction':'RX','interface':'UVSI','format':fmt},
+                minimum_expression={'maximum':['cs_byte_clock_hz',{'product':['cs_lane_bitrate_bps','cs_lanes',{'power':['cs_ppc',-1]},1/bpp]}]},source=LATTICE)
+            for key in ('byte_clock_hz','ppc','lanes'):r(key,{**w,'direction':'RX','interface':'UVSI'},when_present=['cs_axis_clock_hz'],required=True,source=LATTICE)
+        r('hs_zero_ns',{'device':'LATTICE_SOFT','direction':'RX'},minimum_expression={'subtract':[
+            {'sum':[145,{'product':['cs_ui_ns',10]},{'product':[8000000000,{'power':['cs_reference_clock_hz',-1]}]}]},'cs_hs_prepare_ns']},
+            source=LATTICE,exact_decimal_bounds=True)
+        for key in ('reference_clock_hz','hs_prepare_ns','ui_ns'):r(key,{'device':'LATTICE_SOFT','direction':'RX'},when_present=['cs_hs_zero_ns'],required=True,source=LATTICE)
+    for field in DECLARATIONS:
+        key=field['key'].removeprefix('cs_')
+        if field['source']==TI and key not in ('clock_hz','reference_clock_hz','pll_code','data_type','data_id','word_count','short_data','header_bytes','footer_bytes','packet_bytes','max_capability_bps'):
+            r('measurement_source',{'device':'TI960'},when_present=[field['key']],required=True,source=TI)
+    return dict(rate_model={'type':'CSI_SELECTED_PHY_LANE_CLOCK_OR_TRIO_SYMBOL_RATE','fields':[]},
+        required_parameters=['cs_'+k for k in REQUIRED],native_parameter_prefixes=['cs_'],parameter_evidence_scope='EXPLICIT_LAYER',
+        parameter_constraints=rules,physical_layer_profile_id='csi_actual_selected_revision_phy_and_device',
+        medium_access_model='CAMERA_STREAM_PACKETS_AND_SEPARATE_CCI',arbitration_model_id='ACTUAL_STREAM_AGGREGATION_AND_SELECTED_PHY',
+        mechanisms={'encoding':['ACTUAL_CLASSIC_OR_EXTENDED_HEADER_AND_PIXEL_CODEC'],
+            'clocking':['DPHY_FCM_DDR_OR_ECM128B132B_OR_CPHY16B7S_32B9S'],
+            'integrity':['HEADER_ECC_PAYLOAD_CRC_NOT_SAFETY_OR_SECURITY_CERTIFICATE'],
+            'control':['SEPARATE_CANONICAL_I2C_I3C_CCI_PATH'],
+            'timing':['FULL_BURST_TRANSITION_BLANKING_CALIBRATION_BUFFER_AND_STALL_EVIDENCE']})
+
+
+def fields():
+    result=[]
+    for spec in DECLARATIONS:
+        item={k:v for k,v in spec.items()if v is not None};key=spec['key'].removeprefix('cs_')
+        item.update(label=key.replace('_',' '),category='physical',scope='network',editable=True,
+            required=key in REQUIRED,parameter_origin='DEVICE_CONFIGURATION',default_status='UNKNOWN',
+            validation_relevant=True,simulation_relevant=False)
+        conditional=[]
+        if key=='lane_bitrate_bps':
+            conditional=[dict(when={'cs_device':device,'cs_direction':direction},value=value,source=LATTICE,source_revision=SOURCES[LATTICE])
+                for device,direction,value in [('LATTICE_SOFT','TX',160000000),('LATTICE_SOFT','RX',80000000),('LATTICE_HARD','TX',320000000),('LATTICE_HARD','RX',160000000)]]
+            conditional.append(dict(when={'cs_device':'TI960','cs_reference_clock_hz':25000000,'cs_pll_code':3},value=400000000,source=TI,source_revision=SOURCES[TI]))
+        if key=='cci_rate_bps':
+            for mode,value in [('I2C_STANDARD',100000),('I2C_FAST',400000),('I2C_FAST_PLUS',1000000),('I3C_SDR',12500000),('I3C_HDR_DDR',25000000)]:
+                conditional.append(dict(when={'cs_cci_mode':mode},value=value,source=MATRIX,source_revision=SOURCES[MATRIX]))
+        if key=='cci_mode':
+            conditional=[dict(when={'cs_version':version},value='I2C_STANDARD'if version in VERSIONS[:4]else'I2C_FAST',source=MATRIX,source_revision=SOURCES[MATRIX])for version in VERSIONS[:-1]]
+        if key in ('header_bytes','footer_bytes'):
+            for packet,value in [('SHORT',4 if key=='header_bytes' else 0),('LONG',4 if key=='header_bytes' else 2)]:
+                conditional.extend(dict(when={'cs_header':header,'cs_packet':packet},value=value,source=TI,source_revision=SOURCES[TI])for header in ('BASE_DPHY','EXTENDED_DPHY'))
+        if key in ('coding_bits','coding_symbols','coded_block_bits','clock_lanes','phy_width_bits','frame_markers'):
+            constants={'coding_bits':[('cs_phy','CPHY_6WS',16,CPHY),('cs_phy','CPHY_18WS',32,CPHY),('cs_phy','DPHY_ECM',128,DPHY)],
+                'coding_symbols':[('cs_phy','CPHY_6WS',7,CPHY),('cs_phy','CPHY_18WS',9,CPHY)],
+                'coded_block_bits':[('cs_phy','DPHY_ECM',132,DPHY)],
+                'clock_lanes':[('cs_phy','DPHY_FCM',1,DPHY)]+[('cs_phy',phy,0,MATRIX)for phy in ['DPHY_ECM']+CPHYS],
+                'phy_width_bits':[('cs_device','LATTICE_SOFT',8,LATTICE)],
+                'frame_markers':[('cs_version',version,True,MATRIX)for version in VERSIONS[:-1]]}
+            conditional=[dict(when={selector:value},value=constant,source=src,source_revision=SOURCES[src])for selector,value,constant,src in constants[key]]
+        if conditional:item.update(default_status='PROPOSED_CONDITIONAL',conditional_defaults=conditional)
+        result.append(item)
+    return result

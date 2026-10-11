@@ -1,0 +1,3696 @@
+{
+  "id": "most",
+  "label": "MOST",
+  "domain": "generic_networking",
+  "layer": "DATA_LINK",
+  "transport_unit": "STREAM_CHUNK",
+  "payload_element_types": [
+    "AUDIO",
+    "RAW_DATA"
+  ],
+  "hardware_interface": "explicit_most_generation_phy",
+  "hardware_capability_aliases": [
+    "most_interface"
+  ],
+  "default_stack": [
+    "most"
+  ],
+  "stack_variants": [
+    [
+      "most"
+    ]
+  ],
+  "default_bitrate": null,
+  "rate_model": {
+    "type": "SINGLE_BITRATE",
+    "fields": [
+      "bitrate_bps"
+    ],
+    "minimum_bps": 1
+  },
+  "local_timing_schema": [],
+  "parameter_schema": {
+    "bitrate_bps": {
+      "label": "MOST carrier clock (bit/s)",
+      "type": "number",
+      "min": 1,
+      "integer": true,
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "description": "Exact carrier framebits times selected Fs, distinct host-port clock and usable channel allocation.",
+      "conditional_defaults": [
+        {
+          "when": {
+            "mo_generation": "MOST25",
+            "mo_target_fs_hz": 44100
+          },
+          "value": 22579200,
+          "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+          "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification"
+        },
+        {
+          "when": {
+            "mo_generation": "MOST25",
+            "mo_target_fs_hz": 48000
+          },
+          "value": 24576000,
+          "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+          "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification"
+        },
+        {
+          "when": {
+            "mo_generation": "MOST50",
+            "mo_target_fs_hz": 48000
+          },
+          "value": 49152000,
+          "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81092-Data-Sheet-60001271.pdf",
+          "source_revision": "OS81092 DS60001271B March2025 pp11-14/19-20/23/27-28/35-36/41/47-51/59/84; manufacturer-qualified MOST50, not universal host/PHY limits"
+        },
+        {
+          "when": {
+            "mo_generation": "MOST150",
+            "mo_target_fs_hz": 48000
+          },
+          "value": 147456000,
+          "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81118-Data-Sheet-60001252.pdf",
+          "source_revision": "OS81118 DS60001252D 2018 public indexed overview/page59/78/89 excerpts only; full PDF download unavailable.384bytes/Fs48000 with47900..48100 operating range; AF/BF integrated PHY distinction; no full API or timing-table review claimed"
+        }
+      ]
+    },
+    "payload_bytes": {
+      "label": "Payload",
+      "category": "physical",
+      "scope": "message",
+      "type": "number",
+      "description": "Actual channel application bytes; allocated carrier frame bytes differ from one message. Device/host-qualified MDP limits apply only to their actual binding; no generic1500Byte maximum.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "integer": true
+    },
+    "cycle_ms": {
+      "label": "Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "Standardperiode fuer zyklische Nachrichten.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "minimum_cycle_time_ms": {
+      "label": "Minimum Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "deadline_ms": {
+      "label": "Deadline",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "timeout_ms": {
+      "label": "Timeout",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_latency_ms": {
+      "label": "Maximum Latency",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "jitter_ms": {
+      "label": "Jitter Budget",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "freshness_ms": {
+      "label": "Data Freshness",
+      "category": "timing",
+      "scope": "signal",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "source_processing_delay_ms": {
+      "label": "Source Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_processing_delay_ms": {
+      "label": "Target Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "propagation_delay_ms": {
+      "label": "Propagation",
+      "category": "timing",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.01,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_bus_load_percent": {
+      "label": "Ziel-Buslast",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "Zielwert fuer die aus Routing, Payload, Zyklus und Bitrate berechnete Buslast.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "peak_factor": {
+      "label": "Peak Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.15,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_factor": {
+      "label": "Burst Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.5,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_window_ms": {
+      "label": "Burst Window",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "warning_threshold": {
+      "label": "Load Warning",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "critical_threshold": {
+      "label": "Load Critical",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 75,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "overload_threshold": {
+      "label": "Load Overload",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 90,
+      "unit": "%",
+      "min": 1,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "packet_loss_probability": {
+      "label": "Packet Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "frame_loss_probability": {
+      "label": "Frame Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "bit_error_rate": {
+      "label": "Bit Error Rate",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "corruption_probability": {
+      "label": "Corruption",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duplicate_probability": {
+      "label": "Duplication",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "reordering_probability": {
+      "label": "Reordering",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "retransmission_rate": {
+      "label": "Retransmission Rate",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "retransmission_delay_ms": {
+      "label": "Retry Delay",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "required_reliability": {
+      "label": "Required Reliability",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.999,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_offset_ms": {
+      "label": "Clock Offset",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_drift_ppm": {
+      "label": "Clock Drift",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 20,
+      "unit": "ppm",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_precision_ms": {
+      "label": "Sync Precision",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_interval_ms": {
+      "label": "Sync Interval",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1000,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_sync_error_ms": {
+      "label": "Maximum Sync Error",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_delay_ms": {
+      "label": "Gateway Processing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.2,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_queue_delay_ms": {
+      "label": "Gateway Queueing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "protocol_conversion_delay_ms": {
+      "label": "Protocol Conversion",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_maximum_throughput": {
+      "label": "Gateway Throughput",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100000000,
+      "unit": "bit/s",
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_input_buffer": {
+      "label": "Gateway Input Buffer",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 256,
+      "unit": "Frames",
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_output_buffer": {
+      "label": "Gateway Output Buffer",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 256,
+      "unit": "Frames",
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_maximum_routes": {
+      "label": "Gateway Maximum Routes",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 10000,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_maximum_messages_s": {
+      "label": "Gateway Messages per Second",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100000,
+      "unit": "msg/s",
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duration_s": {
+      "label": "Simulation Duration",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 1,
+      "unit": "s",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "seed": {
+      "label": "Random Seed",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 42,
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "max_events": {
+      "label": "Maximum Events",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 100000,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "dropout_probability": {
+      "label": "Failure Injection Dropout",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "mo_generation": {
+      "type": "select",
+      "description": "Actual MOST25/50/150 carrier generation; speed grade is not exact payload bitrate.",
+      "options": [
+        "MOST25",
+        "MOST50",
+        "MOST150",
+        "REGISTERED"
+      ],
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "label": "generation",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mo_device": {
+      "type": "select",
+      "description": "Actual INIC/silicon/firmware-qualified profile; generations cannot share device operating limits.",
+      "options": [
+        "OS81050",
+        "OS81092",
+        "OS81118",
+        "REGISTERED"
+      ],
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "label": "device",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mo_phy": {
+      "type": "select",
+      "description": "Actual optical POF, MOST50 UTP electrical or qualified MOST150 coax path, not Ethernet PHY.",
+      "options": [
+        "OPTICAL_POF",
+        "UTP_EPHY",
+        "COAX_CPHY",
+        "REGISTERED"
+      ],
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "label": "phy",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mo_topology": {
+      "type": "select",
+      "description": "Actual logical ring or qualified coax daisy-chain; physical hub needs explicit mapping.",
+      "options": [
+        "RING",
+        "DAISY_CHAIN",
+        "REGISTERED"
+      ],
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "label": "topology",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mo_clock_role": {
+      "type": "select",
+      "description": "Actual one timing-master generates network clock; timing-slave recovers clock.",
+      "options": [
+        "TIMING_MASTER",
+        "TIMING_SLAVE",
+        "REGISTERED"
+      ],
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "label": "clock role",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mo_channel": {
+      "type": "select",
+      "description": "Actual control arbitration, async packets, synchronous allocated stream or150 iso/Ethernet channel.",
+      "options": [
+        "CONTROL",
+        "ASYNC_PACKET",
+        "SYNC_STREAM",
+        "ISOCHRONOUS",
+        "EMBEDDED_ETHERNET",
+        "REGISTERED"
+      ],
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "label": "channel",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mo_host_port": {
+      "type": "select",
+      "description": "Actual separately configured host port; MediaLB/I2C/USB rate not network bitrate.",
+      "options": [
+        "I2C",
+        "MEDIALB3",
+        "MEDIALB5",
+        "MEDIALB6",
+        "STREAMING",
+        "SPI",
+        "USB",
+        "REGISTERED"
+      ],
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "label": "host port",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mo_stream_format": {
+      "type": "select",
+      "description": "Actual selected stream port format/socket; device-qualified sample packing.",
+      "options": [
+        "I2S",
+        "LEFT_JUSTIFIED",
+        "RIGHT_JUSTIFIED",
+        "SEQUENTIAL",
+        "REGISTERED"
+      ],
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "label": "stream format",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mo_variant": {
+      "type": "select",
+      "description": "Actual OS81118 AF integrated coax or BF optical device variant; no assumed variant.",
+      "options": [
+        "AF",
+        "BF",
+        "REGISTERED"
+      ],
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81118-Data-Sheet-60001252.pdf",
+      "source_revision": "OS81118 DS60001252D 2018 public indexed overview/page59/78/89 excerpts only; full PDF download unavailable.384bytes/Fs48000 with47900..48100 operating range; AF/BF integrated PHY distinction; no full API or timing-table review claimed",
+      "label": "variant",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mo_phy_mode": {
+      "type": "select",
+      "description": "Actual dual-simplex ring versus full-duplex coax links with qualified companion.",
+      "options": [
+        "DUAL_SIMPLEX",
+        "FULL_DUPLEX",
+        "REGISTERED"
+      ],
+      "source": "https://www.microchip.com/en-us/product/OS81118",
+      "source_revision": "Microchip OS81118 public product description read2026-10-02; oPHY/cPHY, generation150 and actual variant-dependent features",
+      "label": "phy mode",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mo_message_kind": {
+      "type": "select",
+      "description": "Actual MDP packet, MCM control or stream; host packet limits are not carrier frame size.",
+      "options": [
+        "MDP",
+        "MCM",
+        "STREAM",
+        "REGISTERED"
+      ],
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "label": "message kind",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mo_revision": {
+      "type": "text",
+      "description": "Actual hardware/product and embedded firmware revision; feature matrix requires exact device.",
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "label": "revision",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mo_network_id": {
+      "type": "text",
+      "description": "Actual canonical MOST carrier/network identity, independent application industry.",
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "label": "network id",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mo_binding_source": {
+      "type": "text",
+      "description": "Actual endpoints/generation/INIC configuration and selected physical path.",
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "label": "binding source",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mo_device_source": {
+      "type": "text",
+      "description": "Actual device silicon/firmware/API/configuration-string and feature evidence.",
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "label": "device source",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mo_clock_source": {
+      "type": "text",
+      "description": "Actual frame target/calibrated recovered clock, timing-master and oscillator qualification.",
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "label": "clock source",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mo_phy_source": {
+      "type": "text",
+      "description": "Actual optical front-end or cable/transformer/termination/coax/link topology qualification.",
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "label": "phy source",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mo_codec_source": {
+      "type": "text",
+      "description": "Actual channel control/packet/stream complete encoding, lengths and segmentation; host PMP is not network frame.",
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "label": "codec source",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mo_allocation_source": {
+      "type": "text",
+      "description": "Actual per-network shared control/packet versus granted stream bandwidth and resource mapping.",
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "label": "allocation source",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mo_schedule_source": {
+      "type": "text",
+      "description": "Actual arbitration/retry/processing/network-delay/lock/startup bounds and complete schedule.",
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "label": "schedule source",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mo_capacity_source": {
+      "type": "text",
+      "description": "Actual selected channel traffic, usable frame allocation and complete transmission schedule.",
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "label": "capacity source",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mo_acceptance_source": {
+      "type": "text",
+      "description": "Actual functional timing/freshness/safety/security acceptance; INIC protection not system certificate.",
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "label": "acceptance source",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mo_registered_source": {
+      "type": "text",
+      "description": "Actual registered generation/device/host/format/physical or nonstandard timing profile.",
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "label": "registered source",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mo_host_source": {
+      "type": "text",
+      "description": "Actual separate I2C/MediaLB/SPI/USB/stream interface network and codec/rate qualification.",
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "label": "host source",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mo_mapping_source": {
+      "type": "text",
+      "description": "Actual single stream source and receiver/socket/channel/resource/FBlock mapping.",
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "label": "mapping source",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mo_companion_source": {
+      "type": "text",
+      "description": "Actual OS81119 dual-port companion/topology qualification for daisy-chain, not arbitrary optical ring.",
+      "source": "https://www.microchip.com/en-us/product/OS81118",
+      "source_revision": "Microchip OS81118 public product description read2026-10-02; oPHY/cPHY, generation150 and actual variant-dependent features",
+      "label": "companion source",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mo_frame_bytes": {
+      "type": "number",
+      "description": "Actual complete carrier frame64/128/384 bytes by25/50/150; not one message payload.",
+      "min": 1,
+      "unit": "byte",
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "integer": true,
+      "label": "frame bytes",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "mo_generation": "MOST25"
+          },
+          "value": 64,
+          "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+          "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification"
+        },
+        {
+          "when": {
+            "mo_generation": "MOST50"
+          },
+          "value": 128,
+          "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81092-Data-Sheet-60001271.pdf",
+          "source_revision": "OS81092 DS60001271B March2025 pp11-14/19-20/23/27-28/35-36/41/47-51/59/84; manufacturer-qualified MOST50, not universal host/PHY limits"
+        },
+        {
+          "when": {
+            "mo_generation": "MOST150"
+          },
+          "value": 384,
+          "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81118-Data-Sheet-60001252.pdf",
+          "source_revision": "OS81118 DS60001252D 2018 public indexed overview/page59/78/89 excerpts only; full PDF download unavailable.384bytes/Fs48000 with47900..48100 operating range; AF/BF integrated PHY distinction; no full API or timing-table review claimed"
+        }
+      ]
+    },
+    "mo_frame_bits": {
+      "type": "number",
+      "description": "Actual complete carrier bits=8*frame_bytes;25/50/150speed labels rounded.",
+      "min": 1,
+      "unit": "bit",
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "integer": true,
+      "label": "frame bits",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "mo_generation": "MOST25"
+          },
+          "value": 512,
+          "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+          "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification"
+        },
+        {
+          "when": {
+            "mo_generation": "MOST50"
+          },
+          "value": 1024,
+          "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81092-Data-Sheet-60001271.pdf",
+          "source_revision": "OS81092 DS60001271B March2025 pp11-14/19-20/23/27-28/35-36/41/47-51/59/84; manufacturer-qualified MOST50, not universal host/PHY limits"
+        },
+        {
+          "when": {
+            "mo_generation": "MOST150"
+          },
+          "value": 3072,
+          "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81118-Data-Sheet-60001252.pdf",
+          "source_revision": "OS81118 DS60001252D 2018 public indexed overview/page59/78/89 excerpts only; full PDF download unavailable.384bytes/Fs48000 with47900..48100 operating range; AF/BF integrated PHY distinction; no full API or timing-table review claimed"
+        }
+      ]
+    },
+    "mo_timing_masters": {
+      "type": "number",
+      "description": "Actual one active network timing-master; no invented master node identity.",
+      "min": 1,
+      "max": 1,
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "integer": true,
+      "label": "timing masters",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mo_node_address": {
+      "type": "number",
+      "description": "Actual configured network node address and firmware/API allocation; no default identity or unreviewed API-width cap.",
+      "min": 0,
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "integer": true,
+      "label": "node address",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mo_frame_overhead_bytes": {
+      "type": "number",
+      "description": "Actual carrier framing/control overhead for selected generation/API, not generic CAN overhead.",
+      "min": 0,
+      "unit": "byte",
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "integer": true,
+      "label": "frame overhead bytes",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mo_control_allocation_bytes": {
+      "type": "number",
+      "description": "Actual per-frame control allocation from selected device configuration.",
+      "min": 0,
+      "unit": "byte",
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "integer": true,
+      "label": "control allocation bytes",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mo_stream_allocation_bytes": {
+      "type": "number",
+      "description": "Actual granted synchronous/isochronous channel bytes per carrier frame.",
+      "min": 0,
+      "unit": "byte",
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "integer": true,
+      "label": "stream allocation bytes",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mo_packet_allocation_bytes": {
+      "type": "number",
+      "description": "Actual async/Ethernet packet channel bytes per carrier frame, not packet-length limit.",
+      "min": 0,
+      "unit": "byte",
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "integer": true,
+      "label": "packet allocation bytes",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mo_application_bytes": {
+      "type": "number",
+      "description": "Actual complete application message/stream chunk, distinct allocated carrier bytes.",
+      "min": 0,
+      "unit": "byte",
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "integer": true,
+      "label": "application bytes",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mo_encoded_message_bytes": {
+      "type": "number",
+      "description": "Actual complete channel encoded message, may span multiple network frames.",
+      "min": 1,
+      "unit": "byte",
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "integer": true,
+      "label": "encoded message bytes",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mo_fragments": {
+      "type": "number",
+      "description": "Actual frames needed for async encoded message and allocation; stream/control timing separately qualified.",
+      "min": 1,
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "integer": true,
+      "label": "fragments",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mo_stream_sources": {
+      "type": "number",
+      "description": "Actual one granted transmitting source per synchronous streaming channel, one or more sinks.",
+      "min": 1,
+      "max": 1,
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "integer": true,
+      "label": "stream sources",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mo_stream_sinks": {
+      "type": "number",
+      "description": "Actual receivers of broadcast stream; replication does not multiply same carrier allocation.",
+      "min": 1,
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "integer": true,
+      "label": "stream sinks",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mo_lock_sync_frames": {
+      "type": "number",
+      "description": "Actual device three-frame streaming synchronization after lock, not universal transaction deadline.",
+      "min": 0,
+      "unit": "frame",
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "integer": true,
+      "label": "lock sync frames",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "mo_device": "OS81050"
+          },
+          "value": 3,
+          "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+          "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification"
+        },
+        {
+          "when": {
+            "mo_device": "OS81092"
+          },
+          "value": 3,
+          "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81092-Data-Sheet-60001271.pdf",
+          "source_revision": "OS81092 DS60001271B March2025 pp11-14/19-20/23/27-28/35-36/41/47-51/59/84; manufacturer-qualified MOST50, not universal host/PHY limits"
+        }
+      ]
+    },
+    "mo_host_clock_multiplier": {
+      "type": "number",
+      "description": "Actual MediaLB/streaming port clock multiple of network Fs, independent carrierframe size.",
+      "min": 1,
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "integer": true,
+      "label": "host clock multiplier",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mo_sample_bits": {
+      "type": "number",
+      "description": "Actual stream sample resolution and selected port packing; meaningful bits may differ socket bytes.",
+      "min": 1,
+      "unit": "bit",
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "integer": true,
+      "label": "sample bits",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mo_stream_channels": {
+      "type": "number",
+      "description": "Actual samples per selected port socket/frame; not network node count.",
+      "min": 1,
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "integer": true,
+      "label": "stream channels",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mo_stream_socket_bytes": {
+      "type": "number",
+      "description": "Actual host stream socket occupancy; fits selected bitclock/frame budget.",
+      "min": 1,
+      "unit": "byte",
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "integer": true,
+      "label": "stream socket bytes",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mo_host_message_bytes": {
+      "type": "number",
+      "description": "Actual complete port message including 2-byte PML, distinct MOST carrier frame.",
+      "min": 2,
+      "max": 65537,
+      "unit": "byte",
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "integer": true,
+      "label": "host message bytes",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mo_pml": {
+      "type": "number",
+      "description": "Actual port message length excluding its own 2-byte field.",
+      "min": 0,
+      "max": 65535,
+      "unit": "byte",
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "integer": true,
+      "label": "pml",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mo_pmhl": {
+      "type": "number",
+      "description": "Actual FIFO port header length excluding PML and PMHL.",
+      "min": 1,
+      "max": 255,
+      "unit": "byte",
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "integer": true,
+      "label": "pmhl",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mo_port_body_bytes": {
+      "type": "number",
+      "description": "Actual FIFO data body=PML-PMHL-1; includes function/packet metadata.",
+      "min": 0,
+      "max": 65533,
+      "unit": "byte",
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "integer": true,
+      "label": "port body bytes",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mo_target_fs_hz": {
+      "type": "number",
+      "description": "Actual nominal frame target;OS81050 44100/48000 versusOS81092/OS81118 targeted48000.",
+      "min": 1,
+      "unit": "Hz",
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "label": "target fs hz",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "mo_device": "OS81050"
+          },
+          "value": 44100,
+          "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+          "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification"
+        },
+        {
+          "when": {
+            "mo_device": "OS81092"
+          },
+          "value": 48000,
+          "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81092-Data-Sheet-60001271.pdf",
+          "source_revision": "OS81092 DS60001271B March2025 pp11-14/19-20/23/27-28/35-36/41/47-51/59/84; manufacturer-qualified MOST50, not universal host/PHY limits"
+        },
+        {
+          "when": {
+            "mo_device": "OS81118"
+          },
+          "value": 48000,
+          "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81118-Data-Sheet-60001252.pdf",
+          "source_revision": "OS81118 DS60001252D 2018 public indexed overview/page59/78/89 excerpts only; full PDF download unavailable.384bytes/Fs48000 with47900..48100 operating range; AF/BF integrated PHY distinction; no full API or timing-table review claimed"
+        }
+      ]
+    },
+    "mo_observed_fs_hz": {
+      "type": "number",
+      "description": "Actual calibrated operating frame clock; limits depend device and lockstate.",
+      "min": 1,
+      "unit": "Hz",
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "label": "observed fs hz",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mo_frame_period_us": {
+      "type": "number",
+      "description": "Actual nominal frame interval=1e6/targetFs, not end-to-end deadline.",
+      "min": 0,
+      "unit": "us",
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "label": "frame period us",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mo_oscillator_hz": {
+      "type": "number",
+      "description": "Actual reference oscillator256*Fs OS81050 or384*Fs OS81092; not all generations sameclock.",
+      "min": 1,
+      "unit": "Hz",
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "label": "oscillator hz",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mo_host_clock_hz": {
+      "type": "number",
+      "description": "Actual host MediaLB/stream bitclock=multiplier*Fs, not MOST bitrate.",
+      "min": 1,
+      "unit": "Hz",
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "label": "host clock hz",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mo_allocation_bps": {
+      "type": "number",
+      "description": "Actual selected packet allocation*8*Fs, not full carrier grossrate.",
+      "min": 0,
+      "unit": "bit/s",
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "label": "allocation bps",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mo_stream_start_delay_us": {
+      "type": "number",
+      "description": "Actual required streaming settle time after lock=threeframes for qualified25/50devices.",
+      "min": 0,
+      "unit": "us",
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "label": "stream start delay us",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mo_cable_impedance_ohm": {
+      "type": "number",
+      "description": "Actual MOST50 UTP nominal130ohm with100..140 tolerance, not Ethernet100ohm orCAN120.",
+      "min": 0,
+      "unit": "ohm",
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "label": "cable impedance ohm",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "mo_device": "OS81092",
+            "mo_phy": "UTP_EPHY"
+          },
+          "value": 130,
+          "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81092-Data-Sheet-60001271.pdf",
+          "source_revision": "OS81092 DS60001271B March2025 pp11-14/19-20/23/27-28/35-36/41/47-51/59/84; manufacturer-qualified MOST50, not universal host/PHY limits"
+        }
+      ]
+    },
+    "mo_temperature_c": {
+      "type": "number",
+      "description": "Actual junction temperature for selected qualifieddevice, distinct ambient/storage/absolute maxima.",
+      "min": -273.15,
+      "unit": "degC",
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "label": "temperature c",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mo_core_v": {
+      "type": "number",
+      "description": "Actual device core supply:25OS81050 2.5V±5percent vs50OS81092 1.8V±5percent.",
+      "min": 0,
+      "unit": "V",
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "label": "core v",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mo_peripheral_v": {
+      "type": "number",
+      "description": "Actual qualified3.3V±5percent peripheral supply; not network auxiliary12V.",
+      "min": 0,
+      "unit": "V",
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "label": "peripheral v",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mo_network_locked": {
+      "type": "boolean",
+      "description": "Actual recovered network clock locked; unlockedstreaming not validtraffic.",
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "label": "network locked",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mo_stream_ready": {
+      "type": "boolean",
+      "description": "Actual streaming enabled only after lock and required synchronization delay.",
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "label": "stream ready",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mo_host_i2c_master": {
+      "type": "boolean",
+      "description": "Actual OS81092 Control Port master capability only product C1D-or-later.",
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "label": "host i2c master",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "mo_revision_c1d_or_later": {
+      "type": "boolean",
+      "description": "Actual OS81092 product revision verified against feature matrix.",
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "label": "revision c1d or later",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    }
+  },
+  "mechanisms": {
+    "clocking": [
+      "GENERATION_FRAME_BITS_TIMES_SELECTED_FS",
+      "ONE_TIMING_MASTER"
+    ],
+    "channel": [
+      "SEPARATE_CONTROL_PACKET_GRANTED_STREAM",
+      "HOST_MEDIALB_I2C_SPI_USB_NOT_CARRIER"
+    ],
+    "physical": [
+      "EXPLICIT_GENERATION_DEVICE_OPTICAL_UTP_COAX"
+    ]
+  },
+  "parameter_constraints": [
+    {
+      "parameter": "local_timing_evidence",
+      "when": {},
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "allowed": []
+    },
+    {
+      "parameter": "mo_registered_source",
+      "when": {
+        "mo_generation": "REGISTERED"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "required": true
+    },
+    {
+      "parameter": "mo_registered_source",
+      "when": {
+        "mo_device": "REGISTERED"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "required": true
+    },
+    {
+      "parameter": "mo_registered_source",
+      "when": {
+        "mo_phy": "REGISTERED"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "required": true
+    },
+    {
+      "parameter": "mo_registered_source",
+      "when": {
+        "mo_topology": "REGISTERED"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "required": true
+    },
+    {
+      "parameter": "mo_registered_source",
+      "when": {
+        "mo_clock_role": "REGISTERED"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "required": true
+    },
+    {
+      "parameter": "mo_registered_source",
+      "when": {
+        "mo_channel": "REGISTERED"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "required": true
+    },
+    {
+      "parameter": "mo_registered_source",
+      "when": {
+        "mo_host_port": "REGISTERED"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "required": true
+    },
+    {
+      "parameter": "mo_registered_source",
+      "when": {
+        "mo_stream_format": "REGISTERED"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "required": true
+    },
+    {
+      "parameter": "mo_registered_source",
+      "when": {
+        "mo_variant": "REGISTERED"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "required": true
+    },
+    {
+      "parameter": "mo_registered_source",
+      "when": {
+        "mo_phy_mode": "REGISTERED"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "required": true
+    },
+    {
+      "parameter": "mo_registered_source",
+      "when": {
+        "mo_message_kind": "REGISTERED"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "required": true
+    },
+    {
+      "parameter": "mo_frame_bytes",
+      "when": {
+        "mo_generation": "MOST25"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "allowed": [
+        64
+      ]
+    },
+    {
+      "parameter": "mo_frame_bits",
+      "when": {
+        "mo_generation": "MOST25"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "allowed": [
+        512
+      ]
+    },
+    {
+      "parameter": "mo_frame_bytes",
+      "when": {
+        "mo_generation": "MOST50"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81092-Data-Sheet-60001271.pdf",
+      "source_revision": "OS81092 DS60001271B March2025 pp11-14/19-20/23/27-28/35-36/41/47-51/59/84; manufacturer-qualified MOST50, not universal host/PHY limits",
+      "allowed": [
+        128
+      ]
+    },
+    {
+      "parameter": "mo_frame_bits",
+      "when": {
+        "mo_generation": "MOST50"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81092-Data-Sheet-60001271.pdf",
+      "source_revision": "OS81092 DS60001271B March2025 pp11-14/19-20/23/27-28/35-36/41/47-51/59/84; manufacturer-qualified MOST50, not universal host/PHY limits",
+      "allowed": [
+        1024
+      ]
+    },
+    {
+      "parameter": "mo_frame_bytes",
+      "when": {
+        "mo_generation": "MOST150"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81118-Data-Sheet-60001252.pdf",
+      "source_revision": "OS81118 DS60001252D 2018 public indexed overview/page59/78/89 excerpts only; full PDF download unavailable.384bytes/Fs48000 with47900..48100 operating range; AF/BF integrated PHY distinction; no full API or timing-table review claimed",
+      "allowed": [
+        384
+      ]
+    },
+    {
+      "parameter": "mo_frame_bits",
+      "when": {
+        "mo_generation": "MOST150"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81118-Data-Sheet-60001252.pdf",
+      "source_revision": "OS81118 DS60001252D 2018 public indexed overview/page59/78/89 excerpts only; full PDF download unavailable.384bytes/Fs48000 with47900..48100 operating range; AF/BF integrated PHY distinction; no full API or timing-table review claimed",
+      "allowed": [
+        3072
+      ]
+    },
+    {
+      "parameter": "mo_generation",
+      "when": {
+        "mo_device": "OS81050"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "allowed": [
+        "MOST25"
+      ]
+    },
+    {
+      "parameter": "mo_phy",
+      "when": {
+        "mo_device": "OS81050"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "allowed": [
+        "OPTICAL_POF"
+      ]
+    },
+    {
+      "parameter": "mo_target_fs_hz",
+      "when": {
+        "mo_device": "OS81050"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "allowed": [
+        44100,
+        48000
+      ]
+    },
+    {
+      "parameter": "mo_channel",
+      "when": {
+        "mo_device": "OS81050"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "forbidden": [
+        "ISOCHRONOUS",
+        "EMBEDDED_ETHERNET"
+      ]
+    },
+    {
+      "parameter": "mo_host_port",
+      "when": {
+        "mo_device": "OS81050"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "allowed": [
+        "I2C",
+        "MEDIALB3",
+        "MEDIALB5",
+        "STREAMING"
+      ]
+    },
+    {
+      "parameter": "mo_temperature_c",
+      "when": {
+        "mo_device": "OS81050"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "minimum": -40,
+      "maximum": 125
+    },
+    {
+      "parameter": "mo_peripheral_v",
+      "when": {
+        "mo_device": "OS81050"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "minimum": 3.135,
+      "maximum": 3.465
+    },
+    {
+      "parameter": "mo_core_v",
+      "when": {
+        "mo_device": "OS81050"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "minimum": 2.375,
+      "maximum": 2.625
+    },
+    {
+      "parameter": "mo_lock_sync_frames",
+      "when": {
+        "mo_device": "OS81050"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "allowed": [
+        3
+      ]
+    },
+    {
+      "parameter": "mo_stream_start_delay_us",
+      "when": {
+        "mo_device": "OS81050"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "minimum_expression": {
+        "product": [
+          3000000,
+          {
+            "power": [
+              "mo_target_fs_hz",
+              -1
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "parameter": "mo_oscillator_hz",
+      "when": {
+        "mo_device": "OS81050"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "equal_expression": {
+        "product": [
+          "mo_target_fs_hz",
+          256
+        ]
+      }
+    },
+    {
+      "parameter": "mo_phy_mode",
+      "when": {
+        "mo_device": "OS81050"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "allowed": [
+        "DUAL_SIMPLEX"
+      ]
+    },
+    {
+      "parameter": "mo_host_i2c_master",
+      "when": {
+        "mo_device": "OS81050"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "allowed": [
+        false
+      ]
+    },
+    {
+      "parameter": "mo_application_bytes",
+      "when": {
+        "mo_device": "OS81050",
+        "mo_host_port": "I2C",
+        "mo_message_kind": "MDP"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "maximum": 50
+    },
+    {
+      "parameter": "mo_application_bytes",
+      "when": {
+        "mo_device": "OS81050",
+        "mo_host_port": "MEDIALB3",
+        "mo_message_kind": "MDP"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "maximum": 1014
+    },
+    {
+      "parameter": "mo_application_bytes",
+      "when": {
+        "mo_device": "OS81050",
+        "mo_host_port": "MEDIALB5",
+        "mo_message_kind": "MDP"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "maximum": 1014
+    },
+    {
+      "parameter": "mo_host_message_bytes",
+      "when": {
+        "mo_device": "OS81050"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "equal_expression": {
+        "sum": [
+          "mo_pml",
+          2
+        ]
+      },
+      "exact_decimal_equality": true
+    },
+    {
+      "parameter": "mo_pml",
+      "when": {
+        "mo_device": "OS81050"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "minimum_expression": {
+        "sum": [
+          "mo_pmhl",
+          1
+        ]
+      }
+    },
+    {
+      "parameter": "mo_port_body_bytes",
+      "when": {
+        "mo_device": "OS81050"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "equal_expression": {
+        "subtract": [
+          "mo_pml",
+          {
+            "sum": [
+              "mo_pmhl",
+              1
+            ]
+          }
+        ]
+      },
+      "exact_decimal_equality": true
+    },
+    {
+      "parameter": "mo_host_clock_multiplier",
+      "when": {
+        "mo_device": "OS81050",
+        "mo_host_port": "STREAMING",
+        "mo_stream_format": "LEFT_JUSTIFIED"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "allowed": [
+        64,
+        128
+      ]
+    },
+    {
+      "parameter": "mo_sample_bits",
+      "when": {
+        "mo_device": "OS81050",
+        "mo_host_port": "STREAMING",
+        "mo_stream_format": "LEFT_JUSTIFIED"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "allowed": [
+        16,
+        24
+      ]
+    },
+    {
+      "parameter": "mo_stream_channels",
+      "when": {
+        "mo_device": "OS81050",
+        "mo_host_port": "STREAMING",
+        "mo_stream_format": "LEFT_JUSTIFIED"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "allowed": [
+        1,
+        2
+      ]
+    },
+    {
+      "parameter": "mo_stream_channels",
+      "when": {
+        "mo_device": "OS81050",
+        "mo_host_port": "STREAMING",
+        "mo_stream_format": "LEFT_JUSTIFIED",
+        "mo_host_clock_multiplier": 128
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "allowed": [
+        2
+      ]
+    },
+    {
+      "parameter": "mo_stream_socket_bytes",
+      "when": {
+        "mo_device": "OS81050",
+        "mo_host_port": "STREAMING",
+        "mo_stream_format": "LEFT_JUSTIFIED"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "equal_expression": {
+        "product": [
+          "mo_sample_bits",
+          "mo_stream_channels",
+          0.125
+        ]
+      },
+      "exact_decimal_equality": true
+    },
+    {
+      "parameter": "mo_host_clock_multiplier",
+      "when": {
+        "mo_device": "OS81050",
+        "mo_host_port": "STREAMING",
+        "mo_stream_format": "RIGHT_JUSTIFIED"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "allowed": [
+        64,
+        128
+      ]
+    },
+    {
+      "parameter": "mo_sample_bits",
+      "when": {
+        "mo_device": "OS81050",
+        "mo_host_port": "STREAMING",
+        "mo_stream_format": "RIGHT_JUSTIFIED"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "allowed": [
+        16,
+        24
+      ]
+    },
+    {
+      "parameter": "mo_stream_channels",
+      "when": {
+        "mo_device": "OS81050",
+        "mo_host_port": "STREAMING",
+        "mo_stream_format": "RIGHT_JUSTIFIED"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "allowed": [
+        1,
+        2
+      ]
+    },
+    {
+      "parameter": "mo_stream_channels",
+      "when": {
+        "mo_device": "OS81050",
+        "mo_host_port": "STREAMING",
+        "mo_stream_format": "RIGHT_JUSTIFIED",
+        "mo_host_clock_multiplier": 128
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "allowed": [
+        2
+      ]
+    },
+    {
+      "parameter": "mo_stream_socket_bytes",
+      "when": {
+        "mo_device": "OS81050",
+        "mo_host_port": "STREAMING",
+        "mo_stream_format": "RIGHT_JUSTIFIED"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "equal_expression": {
+        "product": [
+          "mo_sample_bits",
+          "mo_stream_channels",
+          0.125
+        ]
+      },
+      "exact_decimal_equality": true
+    },
+    {
+      "parameter": "mo_host_clock_multiplier",
+      "when": {
+        "mo_device": "OS81050",
+        "mo_host_port": "STREAMING",
+        "mo_stream_format": "SEQUENTIAL"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "allowed": [
+        64,
+        128,
+        256
+      ]
+    },
+    {
+      "parameter": "mo_host_clock_multiplier",
+      "when": {
+        "mo_device": "OS81050",
+        "mo_host_port": "STREAMING",
+        "mo_stream_format": "I2S"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "allowed": [
+        64,
+        128,
+        256
+      ]
+    },
+    {
+      "parameter": "mo_observed_fs_hz",
+      "when": {
+        "mo_device": "OS81050"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "minimum": 44000,
+      "maximum": 48100
+    },
+    {
+      "parameter": "mo_generation",
+      "when": {
+        "mo_device": "OS81092"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81092-Data-Sheet-60001271.pdf",
+      "source_revision": "OS81092 DS60001271B March2025 pp11-14/19-20/23/27-28/35-36/41/47-51/59/84; manufacturer-qualified MOST50, not universal host/PHY limits",
+      "allowed": [
+        "MOST50"
+      ]
+    },
+    {
+      "parameter": "mo_phy",
+      "when": {
+        "mo_device": "OS81092"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81092-Data-Sheet-60001271.pdf",
+      "source_revision": "OS81092 DS60001271B March2025 pp11-14/19-20/23/27-28/35-36/41/47-51/59/84; manufacturer-qualified MOST50, not universal host/PHY limits",
+      "allowed": [
+        "UTP_EPHY"
+      ]
+    },
+    {
+      "parameter": "mo_target_fs_hz",
+      "when": {
+        "mo_device": "OS81092"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81092-Data-Sheet-60001271.pdf",
+      "source_revision": "OS81092 DS60001271B March2025 pp11-14/19-20/23/27-28/35-36/41/47-51/59/84; manufacturer-qualified MOST50, not universal host/PHY limits",
+      "allowed": [
+        48000
+      ]
+    },
+    {
+      "parameter": "mo_channel",
+      "when": {
+        "mo_device": "OS81092"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81092-Data-Sheet-60001271.pdf",
+      "source_revision": "OS81092 DS60001271B March2025 pp11-14/19-20/23/27-28/35-36/41/47-51/59/84; manufacturer-qualified MOST50, not universal host/PHY limits",
+      "forbidden": [
+        "ISOCHRONOUS",
+        "EMBEDDED_ETHERNET"
+      ]
+    },
+    {
+      "parameter": "mo_host_port",
+      "when": {
+        "mo_device": "OS81092"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81092-Data-Sheet-60001271.pdf",
+      "source_revision": "OS81092 DS60001271B March2025 pp11-14/19-20/23/27-28/35-36/41/47-51/59/84; manufacturer-qualified MOST50, not universal host/PHY limits",
+      "allowed": [
+        "I2C",
+        "MEDIALB3",
+        "MEDIALB5",
+        "STREAMING"
+      ]
+    },
+    {
+      "parameter": "mo_temperature_c",
+      "when": {
+        "mo_device": "OS81092"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81092-Data-Sheet-60001271.pdf",
+      "source_revision": "OS81092 DS60001271B March2025 pp11-14/19-20/23/27-28/35-36/41/47-51/59/84; manufacturer-qualified MOST50, not universal host/PHY limits",
+      "minimum": -40,
+      "maximum": 125
+    },
+    {
+      "parameter": "mo_peripheral_v",
+      "when": {
+        "mo_device": "OS81092"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81092-Data-Sheet-60001271.pdf",
+      "source_revision": "OS81092 DS60001271B March2025 pp11-14/19-20/23/27-28/35-36/41/47-51/59/84; manufacturer-qualified MOST50, not universal host/PHY limits",
+      "minimum": 3.135,
+      "maximum": 3.465
+    },
+    {
+      "parameter": "mo_core_v",
+      "when": {
+        "mo_device": "OS81092"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81092-Data-Sheet-60001271.pdf",
+      "source_revision": "OS81092 DS60001271B March2025 pp11-14/19-20/23/27-28/35-36/41/47-51/59/84; manufacturer-qualified MOST50, not universal host/PHY limits",
+      "minimum": 1.71,
+      "maximum": 1.89
+    },
+    {
+      "parameter": "mo_lock_sync_frames",
+      "when": {
+        "mo_device": "OS81092"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81092-Data-Sheet-60001271.pdf",
+      "source_revision": "OS81092 DS60001271B March2025 pp11-14/19-20/23/27-28/35-36/41/47-51/59/84; manufacturer-qualified MOST50, not universal host/PHY limits",
+      "allowed": [
+        3
+      ]
+    },
+    {
+      "parameter": "mo_stream_start_delay_us",
+      "when": {
+        "mo_device": "OS81092"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81092-Data-Sheet-60001271.pdf",
+      "source_revision": "OS81092 DS60001271B March2025 pp11-14/19-20/23/27-28/35-36/41/47-51/59/84; manufacturer-qualified MOST50, not universal host/PHY limits",
+      "minimum_expression": {
+        "product": [
+          3000000,
+          {
+            "power": [
+              "mo_target_fs_hz",
+              -1
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "parameter": "mo_oscillator_hz",
+      "when": {
+        "mo_device": "OS81092"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81092-Data-Sheet-60001271.pdf",
+      "source_revision": "OS81092 DS60001271B March2025 pp11-14/19-20/23/27-28/35-36/41/47-51/59/84; manufacturer-qualified MOST50, not universal host/PHY limits",
+      "equal_expression": {
+        "product": [
+          "mo_target_fs_hz",
+          384
+        ]
+      }
+    },
+    {
+      "parameter": "mo_phy_mode",
+      "when": {
+        "mo_device": "OS81092"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81092-Data-Sheet-60001271.pdf",
+      "source_revision": "OS81092 DS60001271B March2025 pp11-14/19-20/23/27-28/35-36/41/47-51/59/84; manufacturer-qualified MOST50, not universal host/PHY limits",
+      "allowed": [
+        "DUAL_SIMPLEX"
+      ]
+    },
+    {
+      "parameter": "mo_host_i2c_master",
+      "when": {
+        "mo_device": "OS81050"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "allowed": [
+        false
+      ]
+    },
+    {
+      "parameter": "mo_application_bytes",
+      "when": {
+        "mo_device": "OS81092",
+        "mo_host_port": "I2C",
+        "mo_message_kind": "MDP"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81092-Data-Sheet-60001271.pdf",
+      "source_revision": "OS81092 DS60001271B March2025 pp11-14/19-20/23/27-28/35-36/41/47-51/59/84; manufacturer-qualified MOST50, not universal host/PHY limits",
+      "maximum": 50
+    },
+    {
+      "parameter": "mo_application_bytes",
+      "when": {
+        "mo_device": "OS81092",
+        "mo_host_port": "MEDIALB3",
+        "mo_message_kind": "MDP"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81092-Data-Sheet-60001271.pdf",
+      "source_revision": "OS81092 DS60001271B March2025 pp11-14/19-20/23/27-28/35-36/41/47-51/59/84; manufacturer-qualified MOST50, not universal host/PHY limits",
+      "maximum": 1014
+    },
+    {
+      "parameter": "mo_application_bytes",
+      "when": {
+        "mo_device": "OS81092",
+        "mo_host_port": "MEDIALB5",
+        "mo_message_kind": "MDP"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81092-Data-Sheet-60001271.pdf",
+      "source_revision": "OS81092 DS60001271B March2025 pp11-14/19-20/23/27-28/35-36/41/47-51/59/84; manufacturer-qualified MOST50, not universal host/PHY limits",
+      "maximum": 1014
+    },
+    {
+      "parameter": "mo_host_message_bytes",
+      "when": {
+        "mo_device": "OS81092"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81092-Data-Sheet-60001271.pdf",
+      "source_revision": "OS81092 DS60001271B March2025 pp11-14/19-20/23/27-28/35-36/41/47-51/59/84; manufacturer-qualified MOST50, not universal host/PHY limits",
+      "equal_expression": {
+        "sum": [
+          "mo_pml",
+          2
+        ]
+      },
+      "exact_decimal_equality": true
+    },
+    {
+      "parameter": "mo_pml",
+      "when": {
+        "mo_device": "OS81092"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81092-Data-Sheet-60001271.pdf",
+      "source_revision": "OS81092 DS60001271B March2025 pp11-14/19-20/23/27-28/35-36/41/47-51/59/84; manufacturer-qualified MOST50, not universal host/PHY limits",
+      "minimum_expression": {
+        "sum": [
+          "mo_pmhl",
+          1
+        ]
+      }
+    },
+    {
+      "parameter": "mo_port_body_bytes",
+      "when": {
+        "mo_device": "OS81092"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81092-Data-Sheet-60001271.pdf",
+      "source_revision": "OS81092 DS60001271B March2025 pp11-14/19-20/23/27-28/35-36/41/47-51/59/84; manufacturer-qualified MOST50, not universal host/PHY limits",
+      "equal_expression": {
+        "subtract": [
+          "mo_pml",
+          {
+            "sum": [
+              "mo_pmhl",
+              1
+            ]
+          }
+        ]
+      },
+      "exact_decimal_equality": true
+    },
+    {
+      "parameter": "mo_host_clock_multiplier",
+      "when": {
+        "mo_device": "OS81092",
+        "mo_host_port": "STREAMING",
+        "mo_stream_format": "LEFT_JUSTIFIED"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81092-Data-Sheet-60001271.pdf",
+      "source_revision": "OS81092 DS60001271B March2025 pp11-14/19-20/23/27-28/35-36/41/47-51/59/84; manufacturer-qualified MOST50, not universal host/PHY limits",
+      "allowed": [
+        64,
+        128
+      ]
+    },
+    {
+      "parameter": "mo_sample_bits",
+      "when": {
+        "mo_device": "OS81092",
+        "mo_host_port": "STREAMING",
+        "mo_stream_format": "LEFT_JUSTIFIED"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81092-Data-Sheet-60001271.pdf",
+      "source_revision": "OS81092 DS60001271B March2025 pp11-14/19-20/23/27-28/35-36/41/47-51/59/84; manufacturer-qualified MOST50, not universal host/PHY limits",
+      "allowed": [
+        16,
+        24
+      ]
+    },
+    {
+      "parameter": "mo_stream_channels",
+      "when": {
+        "mo_device": "OS81092",
+        "mo_host_port": "STREAMING",
+        "mo_stream_format": "LEFT_JUSTIFIED"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81092-Data-Sheet-60001271.pdf",
+      "source_revision": "OS81092 DS60001271B March2025 pp11-14/19-20/23/27-28/35-36/41/47-51/59/84; manufacturer-qualified MOST50, not universal host/PHY limits",
+      "allowed": [
+        1,
+        2
+      ]
+    },
+    {
+      "parameter": "mo_stream_channels",
+      "when": {
+        "mo_device": "OS81092",
+        "mo_host_port": "STREAMING",
+        "mo_stream_format": "LEFT_JUSTIFIED",
+        "mo_host_clock_multiplier": 128
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81092-Data-Sheet-60001271.pdf",
+      "source_revision": "OS81092 DS60001271B March2025 pp11-14/19-20/23/27-28/35-36/41/47-51/59/84; manufacturer-qualified MOST50, not universal host/PHY limits",
+      "allowed": [
+        2
+      ]
+    },
+    {
+      "parameter": "mo_stream_socket_bytes",
+      "when": {
+        "mo_device": "OS81092",
+        "mo_host_port": "STREAMING",
+        "mo_stream_format": "LEFT_JUSTIFIED"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81092-Data-Sheet-60001271.pdf",
+      "source_revision": "OS81092 DS60001271B March2025 pp11-14/19-20/23/27-28/35-36/41/47-51/59/84; manufacturer-qualified MOST50, not universal host/PHY limits",
+      "equal_expression": {
+        "product": [
+          "mo_sample_bits",
+          "mo_stream_channels",
+          0.125
+        ]
+      },
+      "exact_decimal_equality": true
+    },
+    {
+      "parameter": "mo_host_clock_multiplier",
+      "when": {
+        "mo_device": "OS81092",
+        "mo_host_port": "STREAMING",
+        "mo_stream_format": "RIGHT_JUSTIFIED"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81092-Data-Sheet-60001271.pdf",
+      "source_revision": "OS81092 DS60001271B March2025 pp11-14/19-20/23/27-28/35-36/41/47-51/59/84; manufacturer-qualified MOST50, not universal host/PHY limits",
+      "allowed": [
+        64,
+        128
+      ]
+    },
+    {
+      "parameter": "mo_sample_bits",
+      "when": {
+        "mo_device": "OS81092",
+        "mo_host_port": "STREAMING",
+        "mo_stream_format": "RIGHT_JUSTIFIED"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81092-Data-Sheet-60001271.pdf",
+      "source_revision": "OS81092 DS60001271B March2025 pp11-14/19-20/23/27-28/35-36/41/47-51/59/84; manufacturer-qualified MOST50, not universal host/PHY limits",
+      "allowed": [
+        16,
+        24
+      ]
+    },
+    {
+      "parameter": "mo_stream_channels",
+      "when": {
+        "mo_device": "OS81092",
+        "mo_host_port": "STREAMING",
+        "mo_stream_format": "RIGHT_JUSTIFIED"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81092-Data-Sheet-60001271.pdf",
+      "source_revision": "OS81092 DS60001271B March2025 pp11-14/19-20/23/27-28/35-36/41/47-51/59/84; manufacturer-qualified MOST50, not universal host/PHY limits",
+      "allowed": [
+        1,
+        2
+      ]
+    },
+    {
+      "parameter": "mo_stream_channels",
+      "when": {
+        "mo_device": "OS81092",
+        "mo_host_port": "STREAMING",
+        "mo_stream_format": "RIGHT_JUSTIFIED",
+        "mo_host_clock_multiplier": 128
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81092-Data-Sheet-60001271.pdf",
+      "source_revision": "OS81092 DS60001271B March2025 pp11-14/19-20/23/27-28/35-36/41/47-51/59/84; manufacturer-qualified MOST50, not universal host/PHY limits",
+      "allowed": [
+        2
+      ]
+    },
+    {
+      "parameter": "mo_stream_socket_bytes",
+      "when": {
+        "mo_device": "OS81092",
+        "mo_host_port": "STREAMING",
+        "mo_stream_format": "RIGHT_JUSTIFIED"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81092-Data-Sheet-60001271.pdf",
+      "source_revision": "OS81092 DS60001271B March2025 pp11-14/19-20/23/27-28/35-36/41/47-51/59/84; manufacturer-qualified MOST50, not universal host/PHY limits",
+      "equal_expression": {
+        "product": [
+          "mo_sample_bits",
+          "mo_stream_channels",
+          0.125
+        ]
+      },
+      "exact_decimal_equality": true
+    },
+    {
+      "parameter": "mo_host_clock_multiplier",
+      "when": {
+        "mo_device": "OS81092",
+        "mo_host_port": "STREAMING",
+        "mo_stream_format": "SEQUENTIAL"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81092-Data-Sheet-60001271.pdf",
+      "source_revision": "OS81092 DS60001271B March2025 pp11-14/19-20/23/27-28/35-36/41/47-51/59/84; manufacturer-qualified MOST50, not universal host/PHY limits",
+      "allowed": [
+        8,
+        16,
+        32,
+        64,
+        128,
+        256
+      ]
+    },
+    {
+      "parameter": "mo_host_clock_multiplier",
+      "when": {
+        "mo_device": "OS81092",
+        "mo_host_port": "STREAMING",
+        "mo_stream_format": "I2S"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81092-Data-Sheet-60001271.pdf",
+      "source_revision": "OS81092 DS60001271B March2025 pp11-14/19-20/23/27-28/35-36/41/47-51/59/84; manufacturer-qualified MOST50, not universal host/PHY limits",
+      "allowed": [
+        64,
+        128,
+        256
+      ]
+    },
+    {
+      "parameter": "mo_observed_fs_hz",
+      "when": {
+        "mo_device": "OS81092"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81092-Data-Sheet-60001271.pdf",
+      "source_revision": "OS81092 DS60001271B March2025 pp11-14/19-20/23/27-28/35-36/41/47-51/59/84; manufacturer-qualified MOST50, not universal host/PHY limits",
+      "minimum": 47900,
+      "maximum": 48100
+    },
+    {
+      "parameter": "mo_generation",
+      "when": {
+        "mo_device": "OS81118"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81118-Data-Sheet-60001252.pdf",
+      "source_revision": "OS81118 DS60001252D 2018 public indexed overview/page59/78/89 excerpts only; full PDF download unavailable.384bytes/Fs48000 with47900..48100 operating range; AF/BF integrated PHY distinction; no full API or timing-table review claimed",
+      "allowed": [
+        "MOST150"
+      ]
+    },
+    {
+      "parameter": "mo_phy",
+      "when": {
+        "mo_device": "OS81118"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81118-Data-Sheet-60001252.pdf",
+      "source_revision": "OS81118 DS60001252D 2018 public indexed overview/page59/78/89 excerpts only; full PDF download unavailable.384bytes/Fs48000 with47900..48100 operating range; AF/BF integrated PHY distinction; no full API or timing-table review claimed",
+      "allowed": [
+        "OPTICAL_POF",
+        "COAX_CPHY"
+      ]
+    },
+    {
+      "parameter": "mo_target_fs_hz",
+      "when": {
+        "mo_device": "OS81118"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81118-Data-Sheet-60001252.pdf",
+      "source_revision": "OS81118 DS60001252D 2018 public indexed overview/page59/78/89 excerpts only; full PDF download unavailable.384bytes/Fs48000 with47900..48100 operating range; AF/BF integrated PHY distinction; no full API or timing-table review claimed",
+      "allowed": [
+        48000
+      ]
+    },
+    {
+      "parameter": "mo_observed_fs_hz",
+      "when": {
+        "mo_device": "OS81118"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81118-Data-Sheet-60001252.pdf",
+      "source_revision": "OS81118 DS60001252D 2018 public indexed overview/page59/78/89 excerpts only; full PDF download unavailable.384bytes/Fs48000 with47900..48100 operating range; AF/BF integrated PHY distinction; no full API or timing-table review claimed",
+      "minimum": 47900,
+      "maximum": 48100
+    },
+    {
+      "parameter": "mo_frame_bits",
+      "when": {},
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "equal_expression": {
+        "product": [
+          "mo_frame_bytes",
+          8
+        ]
+      },
+      "exact_decimal_equality": true
+    },
+    {
+      "parameter": "bitrate_bps",
+      "when": {},
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "equal_expression": {
+        "product": [
+          "mo_frame_bits",
+          "mo_target_fs_hz"
+        ]
+      },
+      "exact_decimal_equality": true
+    },
+    {
+      "parameter": "mo_frame_period_us",
+      "when": {},
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "equal_expression": {
+        "product": [
+          1000000,
+          {
+            "power": [
+              "mo_target_fs_hz",
+              -1
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "parameter": "payload_bytes",
+      "when": {},
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "equal_parameter": "mo_application_bytes"
+    },
+    {
+      "parameter": "mo_encoded_message_bytes",
+      "when": {},
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "minimum_parameter": "mo_application_bytes"
+    },
+    {
+      "parameter": "mo_frame_bytes",
+      "when": {},
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "when_present": [
+        "mo_frame_bits"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "mo_target_fs_hz",
+      "when": {},
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "when_present": [
+        "mo_frame_period_us"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "mo_frame_bits",
+      "when": {},
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "required": true
+    },
+    {
+      "parameter": "mo_target_fs_hz",
+      "when": {},
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "required": true
+    },
+    {
+      "parameter": "mo_frame_bytes",
+      "when": {},
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "equal_expression": {
+        "sum": [
+          "mo_frame_overhead_bytes",
+          "mo_control_allocation_bytes",
+          "mo_stream_allocation_bytes",
+          "mo_packet_allocation_bytes"
+        ]
+      },
+      "exact_decimal_equality": true
+    },
+    {
+      "parameter": "mo_frame_overhead_bytes",
+      "when": {},
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "maximum_parameter": "mo_frame_bytes"
+    },
+    {
+      "parameter": "mo_control_allocation_bytes",
+      "when": {},
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "maximum_parameter": "mo_frame_bytes"
+    },
+    {
+      "parameter": "mo_stream_allocation_bytes",
+      "when": {},
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "maximum_parameter": "mo_frame_bytes"
+    },
+    {
+      "parameter": "mo_packet_allocation_bytes",
+      "when": {},
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "maximum_parameter": "mo_frame_bytes"
+    },
+    {
+      "parameter": "mo_allocation_bps",
+      "when": {},
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "equal_expression": {
+        "product": [
+          "mo_packet_allocation_bytes",
+          8,
+          "mo_target_fs_hz"
+        ]
+      },
+      "exact_decimal_equality": true
+    },
+    {
+      "parameter": "mo_fragments",
+      "when": {
+        "mo_channel": "ASYNC_PACKET"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "when_positive": [
+        "mo_packet_allocation_bytes"
+      ],
+      "equal_expression": {
+        "ceiling": [
+          {
+            "product": [
+              "mo_encoded_message_bytes",
+              {
+                "power": [
+                  "mo_packet_allocation_bytes",
+                  -1
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "exact_decimal_equality": true
+    },
+    {
+      "parameter": "mo_encoded_message_bytes",
+      "when": {},
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "when_present": [
+        "mo_fragments"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "mo_packet_allocation_bytes",
+      "when": {},
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "when_present": [
+        "mo_fragments"
+      ],
+      "required": true,
+      "minimum": 1
+    },
+    {
+      "parameter": "mo_network_locked",
+      "when": {
+        "mo_stream_ready": true
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "allowed": [
+        true
+      ],
+      "required": true
+    },
+    {
+      "parameter": "mo_stream_start_delay_us",
+      "when": {
+        "mo_stream_ready": true
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "required": true
+    },
+    {
+      "parameter": "mo_mapping_source",
+      "when": {
+        "mo_channel": "SYNC_STREAM"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "required": true
+    },
+    {
+      "parameter": "mo_stream_sources",
+      "when": {
+        "mo_channel": "SYNC_STREAM"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "required": true
+    },
+    {
+      "parameter": "mo_stream_sinks",
+      "when": {
+        "mo_channel": "SYNC_STREAM"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "required": true
+    },
+    {
+      "parameter": "mo_host_source",
+      "when": {},
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "when_present": [
+        "mo_host_port"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "mo_host_clock_hz",
+      "when": {},
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "equal_expression": {
+        "product": [
+          "mo_host_clock_multiplier",
+          "mo_target_fs_hz"
+        ]
+      }
+    },
+    {
+      "parameter": "mo_host_clock_multiplier",
+      "when": {
+        "mo_device": "OS81050",
+        "mo_host_port": "MEDIALB3"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "allowed": [
+        256,
+        512,
+        1024
+      ]
+    },
+    {
+      "parameter": "mo_host_clock_multiplier",
+      "when": {
+        "mo_device": "OS81050",
+        "mo_host_port": "MEDIALB5"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "allowed": [
+        256,
+        512
+      ]
+    },
+    {
+      "parameter": "mo_host_clock_multiplier",
+      "when": {
+        "mo_device": "OS81092",
+        "mo_host_port": "MEDIALB3"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81092-Data-Sheet-60001271.pdf",
+      "source_revision": "OS81092 DS60001271B March2025 pp11-14/19-20/23/27-28/35-36/41/47-51/59/84; manufacturer-qualified MOST50, not universal host/PHY limits",
+      "allowed": [
+        256,
+        512,
+        1024
+      ]
+    },
+    {
+      "parameter": "mo_host_clock_multiplier",
+      "when": {
+        "mo_device": "OS81092",
+        "mo_host_port": "MEDIALB5"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81092-Data-Sheet-60001271.pdf",
+      "source_revision": "OS81092 DS60001271B March2025 pp11-14/19-20/23/27-28/35-36/41/47-51/59/84; manufacturer-qualified MOST50, not universal host/PHY limits",
+      "allowed": [
+        256,
+        512
+      ]
+    },
+    {
+      "parameter": "mo_stream_socket_bytes",
+      "when": {
+        "mo_host_port": "STREAMING"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "maximum_expression": {
+        "product": [
+          "mo_host_clock_multiplier",
+          0.125
+        ]
+      }
+    },
+    {
+      "parameter": "mo_host_clock_multiplier",
+      "when": {
+        "mo_host_port": "STREAMING"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "when_present": [
+        "mo_stream_socket_bytes"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "mo_revision_c1d_or_later",
+      "when": {
+        "mo_device": "OS81092",
+        "mo_host_i2c_master": true
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81092-Data-Sheet-60001271.pdf",
+      "source_revision": "OS81092 DS60001271B March2025 pp11-14/19-20/23/27-28/35-36/41/47-51/59/84; manufacturer-qualified MOST50, not universal host/PHY limits",
+      "allowed": [
+        true
+      ],
+      "required": true
+    },
+    {
+      "parameter": "mo_cable_impedance_ohm",
+      "when": {
+        "mo_device": "OS81092",
+        "mo_phy": "UTP_EPHY"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81092-Data-Sheet-60001271.pdf",
+      "source_revision": "OS81092 DS60001271B March2025 pp11-14/19-20/23/27-28/35-36/41/47-51/59/84; manufacturer-qualified MOST50, not universal host/PHY limits",
+      "minimum": 100,
+      "maximum": 140
+    },
+    {
+      "parameter": "mo_topology",
+      "when": {
+        "mo_device": "OS81050"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+      "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+      "allowed": [
+        "RING",
+        "REGISTERED"
+      ]
+    },
+    {
+      "parameter": "mo_topology",
+      "when": {
+        "mo_device": "OS81092"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81092-Data-Sheet-60001271.pdf",
+      "source_revision": "OS81092 DS60001271B March2025 pp11-14/19-20/23/27-28/35-36/41/47-51/59/84; manufacturer-qualified MOST50, not universal host/PHY limits",
+      "allowed": [
+        "RING",
+        "REGISTERED"
+      ]
+    },
+    {
+      "parameter": "mo_variant",
+      "when": {
+        "mo_device": "OS81118"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81118-Data-Sheet-60001252.pdf",
+      "source_revision": "OS81118 DS60001252D 2018 public indexed overview/page59/78/89 excerpts only; full PDF download unavailable.384bytes/Fs48000 with47900..48100 operating range; AF/BF integrated PHY distinction; no full API or timing-table review claimed",
+      "required": true
+    },
+    {
+      "parameter": "mo_phy",
+      "when": {
+        "mo_device": "OS81118",
+        "mo_variant": "BF"
+      },
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81118-Data-Sheet-60001252.pdf",
+      "source_revision": "OS81118 DS60001252D 2018 public indexed overview/page59/78/89 excerpts only; full PDF download unavailable.384bytes/Fs48000 with47900..48100 operating range; AF/BF integrated PHY distinction; no full API or timing-table review claimed",
+      "allowed": [
+        "OPTICAL_POF"
+      ]
+    },
+    {
+      "parameter": "mo_phy_mode",
+      "when": {
+        "mo_device": "OS81118",
+        "mo_phy": "OPTICAL_POF"
+      },
+      "source": "https://www.microchip.com/en-us/product/OS81118",
+      "source_revision": "Microchip OS81118 public product description read2026-10-02; oPHY/cPHY, generation150 and actual variant-dependent features",
+      "allowed": [
+        "DUAL_SIMPLEX"
+      ]
+    },
+    {
+      "parameter": "mo_phy",
+      "when": {
+        "mo_topology": "DAISY_CHAIN"
+      },
+      "source": "https://www.microchip.com/en-us/product/OS81118",
+      "source_revision": "Microchip OS81118 public product description read2026-10-02; oPHY/cPHY, generation150 and actual variant-dependent features",
+      "allowed": [
+        "COAX_CPHY"
+      ]
+    },
+    {
+      "parameter": "mo_generation",
+      "when": {
+        "mo_topology": "DAISY_CHAIN"
+      },
+      "source": "https://www.microchip.com/en-us/product/OS81118",
+      "source_revision": "Microchip OS81118 public product description read2026-10-02; oPHY/cPHY, generation150 and actual variant-dependent features",
+      "allowed": [
+        "MOST150"
+      ]
+    },
+    {
+      "parameter": "mo_phy_mode",
+      "when": {
+        "mo_topology": "DAISY_CHAIN"
+      },
+      "source": "https://www.microchip.com/en-us/product/OS81118",
+      "source_revision": "Microchip OS81118 public product description read2026-10-02; oPHY/cPHY, generation150 and actual variant-dependent features",
+      "allowed": [
+        "FULL_DUPLEX"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "mo_companion_source",
+      "when": {
+        "mo_topology": "DAISY_CHAIN"
+      },
+      "source": "https://www.microchip.com/en-us/product/OS81118",
+      "source_revision": "Microchip OS81118 public product description read2026-10-02; oPHY/cPHY, generation150 and actual variant-dependent features",
+      "required": true
+    }
+  ],
+  "physical_layer_profile_id": null,
+  "medium_access_model": null,
+  "native_parameter_prefixes": [
+    "mo_"
+  ],
+  "parameter_aliases": {},
+  "parameter_alias_limits": {},
+  "parameter_evidence_scope": "EXPLICIT_LAYER",
+  "rate_source_profile_id": null,
+  "arbitration_model_id": null,
+  "max_payload_bytes": null,
+  "capabilities": {
+    "supports_signals": true,
+    "supports_data_objects": false,
+    "supports_streams": true,
+    "supports_multicast": false,
+    "supports_publish_subscribe": false,
+    "supports_request_response": false,
+    "supports_cyclic": true,
+    "supports_event": true,
+    "supports_redundancy": false,
+    "supports_time_sync": true,
+    "supports_safety_profile": false,
+    "supports_segmentation": false,
+    "supports_fragmentation": false,
+    "supports_qos": false
+  },
+  "deterministic": true,
+  "overhead_bytes": 8,
+  "implementation_status": "LEGACY",
+  "connection_type": "COMMUNICATION_TECHNOLOGY",
+  "parameter_proposals": {
+    "kind": "DEVICE_GENERATION_FRAME_CLOCK",
+    "status": "REVIEW_REQUIRED",
+    "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/OS81050-Data-Sheet-DS81050AP11.pdf",
+    "source_revision": "OS81050 DS81050AP11 2003-2010 pp7-12/25/34/39/42/51-53/66; manufacturer-qualified MOST25, not full MOST normative/API specification",
+    "note": "Selected generation frame64/128/384 bytes times actual targetFs. Qualified MOST25 44.1kHz baseline yields22579200bit/s; 25/50/150 labels are rounded. Host MediaLB/I2C/USB clocks and message limits are separate; no unconditional installed rate."
+  },
+  "capacity_evidence": {
+    "status": "MODEL_MISSING",
+    "frame_model": null,
+    "schedule_model": null,
+    "requires_confirmed_device_parameters": true
+  },
+  "components": {
+    "binding": "most.binding",
+    "generator": "most.generator",
+    "validator": "most.validator",
+    "timing_model": null,
+    "load_model": null,
+    "encoder": "most.encoder",
+    "decoder": "most.decoder"
+  },
+  "known_limitations": "Technology-specific conformance details require a vendor/profile extension."
+}

@@ -1,0 +1,32 @@
+{"database": "nis_test_1639bbf6d909", "container": "nis-test-db-1639bbf6d909", "isolated": true}
+..F..............                                                        [100%]
+================================== FAILURES ===================================
+_ test_full_captured_model_and_all_routing_validate_without_rewriting_inputs __
+backend\tests\test_wizard_large_routing.py:120: in test_full_captured_model_and_all_routing_validate_without_rewriting_inputs
+    call('verify_full_capacity_repair', verify_capacity_repair)
+backend\tests\test_wizard_large_routing.py:21: in call
+    assert result.success, result.model_dump()
+E   AssertionError: {'success': False, 'status': <ToolStatus.INTERNAL_ERROR: 'INTERNAL_ERROR'>, 'data': None, 'findings': [{'severity': 'ERROR', 'message': 'Der Fachdienst ist fehlgeschlagen. Details stehen im Serverprotokoll.'}], ...}
+E   assert False
+E    +  where False = ToolResult(success=False, status=<ToolStatus.INTERNAL_ERROR: 'INTERNAL_ERROR'>, data=None, findings=[{'severity': 'ERR...fected_objects=[], next_actions=['Eingaben oder Dienststatus pr�fen'], trace_id='75645a87-4fb9-4a38-a33f-f6c1e480351b').success
+------------------------------ Captured log call ------------------------------
+ERROR    backend.engineering.agent_tools.runtime:runtime.py:91 Engineering tool verify_full_capacity_repair failed (75645a87-4fb9-4a38-a33f-f6c1e480351b)
+Traceback (most recent call last):
+  File "I:\PycharmProjects\My_first_Network_Simulator\backend\engineering\agent_tools\runtime.py", line 54, in execute
+    value = handler({**arguments, "_trace_id": trace_id, "_actor": authority.actor,
+                     "_permissions": [p.value for p in authority.permissions]})
+  File "I:\PycharmProjects\My_first_Network_Simulator\backend\tests\test_wizard_large_routing.py", line 20, in <lambda>
+    result = execute(authority, name, Permission.GENERATE_PROPOSAL, {}, lambda _: function())
+                                                                                  ~~~~~~~~^^
+  File "I:\PycharmProjects\My_first_Network_Simulator\backend\tests\test_wizard_large_routing.py", line 116, in verify_capacity_repair
+    assert result['results']['overview']['capacity_verified'] is True
+AssertionError: assert False is True
+============================== warnings summary ===============================
+backend\engineering\goal_execution\models.py:150
+  I:\PycharmProjects\My_first_Network_Simulator\backend\engineering\goal_execution\models.py:150: UserWarning: Field name "validate" in "EngineeringModelDelta" shadows an attribute in parent "Contract"
+    class EngineeringModelDelta(Contract):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED backend\tests\test_wizard_large_routing.py::test_full_captured_model_and_all_routing_validate_without_rewriting_inputs
+1 failed, 16 passed, 1 warning in 1230.33s (0:20:30)

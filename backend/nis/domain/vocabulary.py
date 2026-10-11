@@ -111,6 +111,7 @@ SIGNAL_BYTE_ORDERS = ("little_endian", "big_endian")
 # Engineering-Objekttypen, die in engineering_relations als source_type /
 # target_type referenziert werden können.
 RELATABLE_OBJECT_TYPES = (
+    "SafetyRequirement",
     "HardwareNode",
     "HardwareNetworkInterface",
     "Function",

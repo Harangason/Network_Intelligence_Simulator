@@ -1,0 +1,35 @@
+--- before/frontend/e2e/wizard.spec.ts
++++ after/frontend/e2e/wizard.spec.ts
+@@ -411,6 +411,32 @@
+   }
+   const requested = (await startRequest).postDataJSON().wizard_command.wizard_context;
+   expect(requested.technologies, 'An explicit CAN-FD task must not silently request LIN and SOME/IP.').toEqual(['CAN-FD (can_fd)']);
++  // Preserve a real pending model through parameter save and renewed review.
++  await expect.poll(async () => (await readProject(page,project,'/api/engineering/workflow?view=summary')).context.agent_execution?.state,
++    {timeout:180000}).toBe('REVIEW_REQUIRED');
++  const pending = (await readProject(page,project,'/api/engineering/agent/conversation')).data.active_proposal;
++  await page.goto(`/studio?mode=parameters&project=${project}&technology=can_fd&proposal=${pending}#parameter-findings`);
++  await expect(page.getByRole('region',{name:'Aktuelle Parameterbefunde'})).toContainText('noch nicht übernommenen Vorschlags');
++  const common = page.locator('.parameter-group-common');
++  await expect(common.locator('#arbitration_bitrate')).toHaveValue('500000');
++  await expect(common.locator('#data_bitrate')).toHaveValue('2000000');
++  await expect(page.locator('.parameter-details[open]')).toHaveCount(0);
++  await common.locator('#seed').fill('42');
++  await page.getByRole('button',{name:'Parameter speichern →',exact:true}).click();
++  await expect(page.getByText('Technologie- und Timing-Parameter gespeichert.')).toBeVisible();
++  const stale = await readProject(page,project,`/api/engineering/agent/proposals/${pending}?view=status`);
++  expect(stale.data.status).toBe('OUTDATED');
++  expect(stale.data.canonical_ids).toEqual([]);
++  expect((await allObjects(page,project,'hardware-nodes'))).toHaveLength(0);
++  await page.reload();
++  await expect(page.locator('#seed')).toHaveValue('42');
++  await page.getByRole('link',{name:'Zur Vorschlagsprüfung zurück →',exact:true}).click();
++  await expect(dialog).toBeVisible();
++  const review = dialog.getByRole('region',{name:'Engineering-Vorschlag'});
++  await expect(review).toContainText('Modellstand geändert');
++  await expect(review.getByRole('button',{name:'Freigeben, übernehmen & fortfahren',exact:true})).toHaveCount(0);
++  await review.getByRole('button',{name:'Erneut prüfen',exact:true}).click();
++  await expect(review).toContainText('Geprüft · Freigabe offen');
+   const continuity = await completeThroughWizard(page, project, true,
+     ['System', 'Motorsteuerung', 'Anzeige', 'MotorTemperature', 'MotorValve']);
+   const artifacts = await verifyArtifacts(page, project, 5);

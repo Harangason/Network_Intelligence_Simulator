@@ -1,0 +1,37 @@
+--- before/backend/simulator/standalone_cli.py
++++ after/backend/simulator/standalone_cli.py
+@@ -3,6 +3,7 @@
+ from __future__ import annotations
+ 
+ import re
++from copy import deepcopy
+ from dataclasses import dataclass
+ from pathlib import Path
+ from typing import Any, Callable
+@@ -80,6 +81,7 @@
+     dropout_probability: float = 0.0
+     corruption_probability: float = 0.0
+     network_id: str | None = None
++    technology_parameters: dict[str, Any] | None = None
+ 
+     def to_config(self) -> dict[str, Any]:
+         technology = DEFAULT_TECHNOLOGY_REGISTRY.resolve(self.technology)
+@@ -96,6 +98,18 @@
+             value = getattr(self, key)
+             if value is not None:
+                 network[key] = value
++        if self.technology_parameters is not None:
++            from backend.communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY as profiles
++            values = deepcopy(self.technology_parameters)
++            unknown = set(values) - profiles.parameter_keys(technology['id'])
++            if unknown:
++                raise ValueError('TECHNOLOGY_PARAMETER_NOT_APPLICABLE: ' + ', '.join(sorted(unknown)))
++            rates = {key: network[key] for key in ('bitrate', 'arbitration_bitrate', 'data_bitrate') if key in network}
++            if any(key in values and values[key] != value for key, value in rates.items()):
++                raise ValueError('TECHNOLOGY_PARAMETER_CONFLICT: native inputs contradict the explicit rate')
++            if profiles.validate_parameters(technology['id'], {**values, **rates})['status'] == 'INVALID':
++                raise ValueError('TECHNOLOGY_PARAMETERS_INVALID: native inputs contradict the selected profile')
++            network.update(values)
+ 
+         hardware: list[dict[str, Any]] = []
+         interface_ids: list[str] = []

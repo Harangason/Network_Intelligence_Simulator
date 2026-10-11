@@ -42,16 +42,15 @@ export function filterSignalSeries(
   const query = options.search.trim().toLocaleLowerCase("de");
   return series.filter((item) => {
     if (query && !`${item.signal} ${item.unit} ${item.behavior_type} ${item.semantic_type ?? ""}`.toLocaleLowerCase("de").includes(query)) return false;
-    const dynamic = signalIsDynamic(item);
-    if (options.behavior === "DYNAMIC" && !dynamic) return false;
-    if (options.behavior === "STATIC" && dynamic) return false;
+    if (options.behavior !== "ALL") {
+      const dynamic = signalIsDynamic(item);
+      if (options.behavior === "DYNAMIC" && !dynamic) return false;
+      if (options.behavior === "STATIC" && dynamic) return false;
+    }
     return options.kind === "ALL" || signalKind(item) === options.kind;
   });
 }
 
-export function initialSignalSelection(series: ModelSignalSeries[], limit = 18) {
-  return [...series]
-    .sort((left, right) => Number(signalIsDynamic(right)) - Number(signalIsDynamic(left)) || Number(signalKind(right) === "STATE") - Number(signalKind(left) === "STATE") || left.signal.localeCompare(right.signal))
-    .slice(0, limit)
-    .map((item) => item.signal_id);
+export function initialSignalSelection(series: ModelSignalSeries[]) {
+  return series.map((item) => item.signal_id);
 }

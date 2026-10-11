@@ -1,0 +1,14 @@
+--- before/backend/app/simulation_service.py
++++ after/backend/app/simulation_service.py
+@@ -151,6 +151,11 @@
+     def prepare_config(self, payload: dict[str, Any], output_dir: Path) -> dict[str, Any]:
+         if not isinstance(payload, dict):
+             raise TypeError("Die Simulationsanfrage muss ein JSON-Objekt sein.")
++        from ..communication.technologies.licensing import assert_technology_clearance, declared_technology_ids
++        # Check actual declared stack/network identities, including mixed buses.
++        # Client approval flags are deliberately not consumed.
++        selected = declared_technology_ids(payload, COMMUNICATION_TECHNOLOGY_REGISTRY)
++        assert_technology_clearance(str(payload.get('project_id') or 'default'), selected, COMMUNICATION_TECHNOLOGY_REGISTRY)
+         if isinstance(payload.get("config"), dict):
+             config = copy.deepcopy(payload["config"])
+             for key in (

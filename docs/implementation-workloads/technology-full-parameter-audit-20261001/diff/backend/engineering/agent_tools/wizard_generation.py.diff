@@ -1,0 +1,38 @@
+--- before/backend/engineering/agent_tools/wizard_generation.py
++++ after/backend/engineering/agent_tools/wizard_generation.py
+@@ -500,8 +500,8 @@
+         nominal = round(float(match.group(1).replace(',', '.')) * (1000 if match.group(2).lower() == 'k' else 1_000_000))
+         data = round(float(match.group(3).replace(',', '.')) * (1000 if match.group(4).lower() == 'k' else 1_000_000))
+         if (nominal <= 0 or data <= 0 or
+-                nominal > limits.get('nominal_maximum_bps', 0) or
+-                data > limits.get('data_maximum_bps', 0)):
++                limits.get('nominal_maximum_bps') is not None and nominal > limits['nominal_maximum_bps'] or
++                limits.get('data_maximum_bps') is not None and data > limits['data_maximum_bps']):
+             raise ValueError('CAN-FD: explizite Arbitration- oder Data-Rate liegt außerhalb des TechnologyProfile.')
+         current = {'arbitration_bitrate': nominal, 'data_bitrate': data}
+         if phases and phases != current:
+@@ -606,8 +606,23 @@
+         parameters, actor=str(arguments.get('_actor') or 'engineering-agent')
+     )
+     artifact_check = saved['artifact_checks']['parameters']
++    # Keep unresolved proposals reviewable; downstream gates use real completeness.
+     if not artifact_check['complete']:
+-        raise ValueError(f'Parameter-Defaults bleiben unvollständig: {artifact_check["required"]}')
++        missing = [key for key, ok in artifact_check['required'].items() if not ok]
++        findings = [{**finding, 'object_type': 'Workflow', 'object_id': primary,
++                     'technology_id': primary,
++                     'recommendation': 'Technologieparameter öffnen, fehlende Geräte-/Transaktionsangaben mit Quelle ergänzen und bestätigen.'}
++                    for finding in artifact_check.get('profile_findings', [])]
++        covered = {finding.get('parameter') for finding in findings}
++        findings.extend({'code': 'TECHNOLOGY_PARAMETER_MISSING', 'severity': 'REVIEW',
++                         'parameter': key, 'object_type': 'Workflow', 'object_id': primary,
++                         'technology_id': primary,
++                         'message': f'{primary}: {key} fehlt als geprüfter Projektwert.',
++                         'recommendation': 'Technologieparameter öffnen und diesen Wert mit seiner Nachweisquelle prüfen.'}
++                        for key in missing if key != 'profile_values' and key not in covered)
++        return {'parameters': parameters, 'technology_ids': technology_ids, 'artifact_check': artifact_check,
++                'status': 'REVIEW_REQUIRED', 'missing_parameters': missing, 'parameter_findings': findings}
++
+     if not parameters.get('spatial_zoning'):
+         from ..zoning_service import SpatialZoningService
+         zoning = SpatialZoningService(current_project_id())

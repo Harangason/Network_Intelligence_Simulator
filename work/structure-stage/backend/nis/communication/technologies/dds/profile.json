@@ -1,0 +1,4167 @@
+{
+  "id": "dds",
+  "label": "DDS",
+  "domain": "generic_networking",
+  "layer": "APPLICATION",
+  "transport_unit": "TOPIC_SAMPLE",
+  "payload_element_types": [
+    "DATA_OBJECT",
+    "STRUCT",
+    "ARRAY",
+    "IMAGE",
+    "POINT_CLOUD"
+  ],
+  "hardware_interface": "explicit_dds_transport_interface",
+  "hardware_capability_aliases": [
+    "ethernet_port"
+  ],
+  "default_stack": [
+    "dds"
+  ],
+  "stack_variants": [
+    [
+      "dds"
+    ],
+    [
+      "ethernet",
+      "ip",
+      "udp",
+      "dds"
+    ]
+  ],
+  "default_bitrate": null,
+  "rate_model": {
+    "type": "INHERITED_OR_NOT_APPLICABLE",
+    "fields": []
+  },
+  "local_timing_schema": [],
+  "parameter_schema": {
+    "payload_bytes": {
+      "label": "Payload",
+      "category": "physical",
+      "scope": "message",
+      "type": "number",
+      "description": "Actual serialized topic sample body octets, separate from selected XTypes/CDR/RTPS/transport framing and fragmentation. No universal65507/1500-byte body limit.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+      "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+      "integer": true
+    },
+    "cycle_ms": {
+      "label": "Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "Standardperiode fuer zyklische Nachrichten.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "minimum_cycle_time_ms": {
+      "label": "Minimum Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "deadline_ms": {
+      "label": "Deadline",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "timeout_ms": {
+      "label": "Timeout",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_latency_ms": {
+      "label": "Maximum Latency",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "jitter_ms": {
+      "label": "Jitter Budget",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "freshness_ms": {
+      "label": "Data Freshness",
+      "category": "timing",
+      "scope": "signal",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "source_processing_delay_ms": {
+      "label": "Source Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_processing_delay_ms": {
+      "label": "Target Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "propagation_delay_ms": {
+      "label": "Propagation",
+      "category": "timing",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.01,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_bus_load_percent": {
+      "label": "Ziel-Buslast",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "Zielwert fuer die aus Routing, Payload, Zyklus und Bitrate berechnete Buslast.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "peak_factor": {
+      "label": "Peak Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.15,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_factor": {
+      "label": "Burst Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.5,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_window_ms": {
+      "label": "Burst Window",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "warning_threshold": {
+      "label": "Load Warning",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "critical_threshold": {
+      "label": "Load Critical",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 75,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "overload_threshold": {
+      "label": "Load Overload",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 90,
+      "unit": "%",
+      "min": 1,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "queue_size": {
+      "label": "Queue Size",
+      "category": "qos",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 256,
+      "unit": "Frames",
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1",
+      "integer": true
+    },
+    "queue_policy": {
+      "label": "Queue Policy",
+      "category": "qos",
+      "scope": "network",
+      "type": "select",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": "FIFO",
+      "options": [
+        "FIFO",
+        "PRIORITY",
+        "CUSTOM"
+      ],
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "traffic_class": {
+      "label": "Traffic Class",
+      "category": "qos",
+      "scope": "route",
+      "type": "select",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": "BEST_EFFORT",
+      "options": [
+        "BEST_EFFORT",
+        "CONTROL",
+        "REALTIME",
+        "SAFETY_CRITICAL"
+      ],
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "packet_loss_probability": {
+      "label": "Packet Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "frame_loss_probability": {
+      "label": "Frame Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "bit_error_rate": {
+      "label": "Bit Error Rate",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "corruption_probability": {
+      "label": "Corruption",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duplicate_probability": {
+      "label": "Duplication",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "reordering_probability": {
+      "label": "Reordering",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "required_reliability": {
+      "label": "Required Reliability",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.999,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_offset_ms": {
+      "label": "Clock Offset",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_drift_ppm": {
+      "label": "Clock Drift",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 20,
+      "unit": "ppm",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_precision_ms": {
+      "label": "Sync Precision",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_interval_ms": {
+      "label": "Sync Interval",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1000,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_sync_error_ms": {
+      "label": "Maximum Sync Error",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_delay_ms": {
+      "label": "Gateway Processing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.2,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_queue_delay_ms": {
+      "label": "Gateway Queueing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "protocol_conversion_delay_ms": {
+      "label": "Protocol Conversion",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duration_s": {
+      "label": "Simulation Duration",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 1,
+      "unit": "s",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "seed": {
+      "label": "Random Seed",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 42,
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1",
+      "integer": true
+    },
+    "max_events": {
+      "label": "Maximum Events",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 100000,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1",
+      "integer": true
+    },
+    "dropout_probability": {
+      "label": "Failure Injection Dropout",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "history_depth": {
+      "label": "History Depth",
+      "category": "qos",
+      "scope": "route",
+      "type": "number",
+      "description": "OMG DDS1.4 entity-specific QoS declaration. Standard proposals apply only to the stated entity; actual middleware, wire protocol, peer compatibility and capacity remain unverified.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 1,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+      "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+      "conditional_defaults": [
+        {
+          "when": {
+            "dds_entity": "TOPIC",
+            "history_kind": "KEEP_LAST"
+          },
+          "value": 1
+        },
+        {
+          "when": {
+            "dds_entity": "DATAWRITER",
+            "history_kind": "KEEP_LAST"
+          },
+          "value": 1
+        },
+        {
+          "when": {
+            "dds_entity": "DATAREADER",
+            "history_kind": "KEEP_LAST"
+          },
+          "value": 1
+        }
+      ],
+      "integer": true,
+      "max": 2147483647
+    },
+    "history_kind": {
+      "label": "History",
+      "category": "qos",
+      "scope": "route",
+      "type": "select",
+      "description": "OMG DDS1.4 entity-specific QoS declaration. Standard proposals apply only to the stated entity; actual middleware, wire protocol, peer compatibility and capacity remain unverified.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "KEEP_LAST",
+        "KEEP_ALL"
+      ],
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+      "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+      "conditional_defaults": [
+        {
+          "when": {
+            "dds_entity": "TOPIC"
+          },
+          "value": "KEEP_LAST"
+        },
+        {
+          "when": {
+            "dds_entity": "DATAWRITER"
+          },
+          "value": "KEEP_LAST"
+        },
+        {
+          "when": {
+            "dds_entity": "DATAREADER"
+          },
+          "value": "KEEP_LAST"
+        }
+      ]
+    },
+    "durability": {
+      "label": "Durability",
+      "category": "qos",
+      "scope": "route",
+      "type": "select",
+      "description": "OMG DDS1.4 entity-specific QoS declaration. Standard proposals apply only to the stated entity; actual middleware, wire protocol, peer compatibility and capacity remain unverified.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "VOLATILE",
+        "TRANSIENT_LOCAL",
+        "TRANSIENT",
+        "PERSISTENT"
+      ],
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+      "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+      "conditional_defaults": [
+        {
+          "when": {
+            "dds_entity": "TOPIC"
+          },
+          "value": "VOLATILE"
+        },
+        {
+          "when": {
+            "dds_entity": "DATAWRITER"
+          },
+          "value": "VOLATILE"
+        },
+        {
+          "when": {
+            "dds_entity": "DATAREADER"
+          },
+          "value": "VOLATILE"
+        }
+      ]
+    },
+    "lifespan_ms": {
+      "label": "Lifespan",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "OMG DDS1.4 entity-specific QoS declaration. Standard proposals apply only to the stated entity; actual middleware, wire protocol, peer compatibility and capacity remain unverified.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+      "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL"
+    },
+    "liveliness": {
+      "label": "Liveliness",
+      "category": "qos",
+      "scope": "route",
+      "type": "select",
+      "description": "OMG DDS1.4 entity-specific QoS declaration. Standard proposals apply only to the stated entity; actual middleware, wire protocol, peer compatibility and capacity remain unverified.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "AUTOMATIC",
+        "MANUAL_BY_PARTICIPANT",
+        "MANUAL_BY_TOPIC"
+      ],
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+      "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+      "conditional_defaults": [
+        {
+          "when": {
+            "dds_entity": "TOPIC"
+          },
+          "value": "AUTOMATIC"
+        },
+        {
+          "when": {
+            "dds_entity": "DATAWRITER"
+          },
+          "value": "AUTOMATIC"
+        },
+        {
+          "when": {
+            "dds_entity": "DATAREADER"
+          },
+          "value": "AUTOMATIC"
+        }
+      ]
+    },
+    "reliability_mode": {
+      "label": "Reliability Mode",
+      "category": "reliability",
+      "scope": "route",
+      "type": "select",
+      "description": "OMG DDS1.4 entity-specific QoS declaration. Standard proposals apply only to the stated entity; actual middleware, wire protocol, peer compatibility and capacity remain unverified.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "BEST_EFFORT",
+        "RELIABLE"
+      ],
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+      "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+      "conditional_defaults": [
+        {
+          "when": {
+            "dds_entity": "TOPIC"
+          },
+          "value": "BEST_EFFORT"
+        },
+        {
+          "when": {
+            "dds_entity": "DATAWRITER"
+          },
+          "value": "RELIABLE"
+        },
+        {
+          "when": {
+            "dds_entity": "DATAREADER"
+          },
+          "value": "BEST_EFFORT"
+        }
+      ]
+    },
+    "dds_entity": {
+      "label": "Actual DDS entity",
+      "category": "qos",
+      "scope": "route",
+      "type": "select",
+      "description": "OMG DDS1.4 entity-specific QoS declaration. Standard proposals apply only to the stated entity; actual middleware, wire protocol, peer compatibility and capacity remain unverified.",
+      "required": true,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "TOPIC",
+        "DATAWRITER",
+        "DATAREADER",
+        "PUBLISHER",
+        "SUBSCRIBER",
+        "PARTICIPANT",
+        "PARTICIPANT_FACTORY"
+      ],
+      "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+      "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "integer": false
+    },
+    "dds_transport_binding": {
+      "label": "Actual DDS transport/wire profile reference",
+      "category": "qos",
+      "scope": "route",
+      "type": "text",
+      "description": "OMG DDS1.4 entity-specific QoS declaration. Standard proposals apply only to the stated entity; actual middleware, wire protocol, peer compatibility and capacity remain unverified.",
+      "required": true,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+      "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "integer": false
+    },
+    "dds_implementation_source": {
+      "label": "Actual DDS implementation/revision/QoS source",
+      "category": "qos",
+      "scope": "route",
+      "type": "text",
+      "description": "OMG DDS1.4 entity-specific QoS declaration. Standard proposals apply only to the stated entity; actual middleware, wire protocol, peer compatibility and capacity remain unverified.",
+      "required": true,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+      "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "integer": false
+    },
+    "dds_type_source": {
+      "label": "Actual topic type/encoding/key definition",
+      "category": "qos",
+      "scope": "route",
+      "type": "text",
+      "description": "OMG DDS1.4 entity-specific QoS declaration. Standard proposals apply only to the stated entity; actual middleware, wire protocol, peer compatibility and capacity remain unverified.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+      "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "integer": false
+    },
+    "dds_topic_name": {
+      "label": "Actual topic name",
+      "category": "qos",
+      "scope": "route",
+      "type": "text",
+      "description": "OMG DDS1.4 entity-specific QoS declaration. Standard proposals apply only to the stated entity; actual middleware, wire protocol, peer compatibility and capacity remain unverified.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+      "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "integer": false
+    },
+    "dds_domain_id": {
+      "label": "Actual implementation-supported DDS domain",
+      "category": "qos",
+      "scope": "route",
+      "type": "number",
+      "description": "OMG DDS1.4 entity-specific QoS declaration. Standard proposals apply only to the stated entity; actual middleware, wire protocol, peer compatibility and capacity remain unverified.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": -2147483648,
+      "max": 2147483647,
+      "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+      "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "integer": true
+    },
+    "dds_lifespan_kind": {
+      "label": "Lifespan duration mode",
+      "category": "qos",
+      "scope": "route",
+      "type": "select",
+      "description": "OMG DDS1.4 entity-specific QoS declaration. Standard proposals apply only to the stated entity; actual middleware, wire protocol, peer compatibility and capacity remain unverified.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "INFINITE",
+        "FINITE"
+      ],
+      "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+      "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "conditional_defaults": [
+        {
+          "when": {
+            "dds_entity": "TOPIC"
+          },
+          "value": "INFINITE"
+        },
+        {
+          "when": {
+            "dds_entity": "DATAWRITER"
+          },
+          "value": "INFINITE"
+        }
+      ],
+      "integer": false
+    },
+    "dds_deadline_kind": {
+      "label": "Deadline period mode",
+      "category": "qos",
+      "scope": "route",
+      "type": "select",
+      "description": "OMG DDS1.4 entity-specific QoS declaration. Standard proposals apply only to the stated entity; actual middleware, wire protocol, peer compatibility and capacity remain unverified.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "INFINITE",
+        "FINITE"
+      ],
+      "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+      "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "conditional_defaults": [
+        {
+          "when": {
+            "dds_entity": "TOPIC"
+          },
+          "value": "INFINITE"
+        },
+        {
+          "when": {
+            "dds_entity": "DATAWRITER"
+          },
+          "value": "INFINITE"
+        },
+        {
+          "when": {
+            "dds_entity": "DATAREADER"
+          },
+          "value": "INFINITE"
+        }
+      ],
+      "integer": false
+    },
+    "dds_deadline_ms": {
+      "label": "Actual finite DDS deadline period",
+      "category": "qos",
+      "scope": "route",
+      "type": "number",
+      "description": "OMG DDS1.4 entity-specific QoS declaration. Standard proposals apply only to the stated entity; actual middleware, wire protocol, peer compatibility and capacity remain unverified.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "ms",
+      "min": 0,
+      "max": 2147483647999.999,
+      "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+      "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "integer": false
+    },
+    "dds_latency_budget_ms": {
+      "label": "DDS latency-budget hint",
+      "category": "qos",
+      "scope": "route",
+      "type": "number",
+      "description": "OMG DDS1.4 entity-specific QoS declaration. Standard proposals apply only to the stated entity; actual middleware, wire protocol, peer compatibility and capacity remain unverified.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "ms",
+      "min": 0,
+      "max": 2147483647999.999,
+      "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+      "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "conditional_defaults": [
+        {
+          "when": {
+            "dds_entity": "TOPIC"
+          },
+          "value": 0
+        },
+        {
+          "when": {
+            "dds_entity": "DATAWRITER"
+          },
+          "value": 0
+        },
+        {
+          "when": {
+            "dds_entity": "DATAREADER"
+          },
+          "value": 0
+        }
+      ],
+      "integer": false
+    },
+    "dds_lease_kind": {
+      "label": "Liveliness lease mode",
+      "category": "qos",
+      "scope": "route",
+      "type": "select",
+      "description": "OMG DDS1.4 entity-specific QoS declaration. Standard proposals apply only to the stated entity; actual middleware, wire protocol, peer compatibility and capacity remain unverified.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "INFINITE",
+        "FINITE"
+      ],
+      "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+      "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "conditional_defaults": [
+        {
+          "when": {
+            "dds_entity": "TOPIC"
+          },
+          "value": "INFINITE"
+        },
+        {
+          "when": {
+            "dds_entity": "DATAWRITER"
+          },
+          "value": "INFINITE"
+        },
+        {
+          "when": {
+            "dds_entity": "DATAREADER"
+          },
+          "value": "INFINITE"
+        }
+      ],
+      "integer": false
+    },
+    "dds_lease_ms": {
+      "label": "Actual finite liveliness lease",
+      "category": "qos",
+      "scope": "route",
+      "type": "number",
+      "description": "OMG DDS1.4 entity-specific QoS declaration. Standard proposals apply only to the stated entity; actual middleware, wire protocol, peer compatibility and capacity remain unverified.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "ms",
+      "min": 0,
+      "max": 2147483647999.999,
+      "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+      "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "integer": false
+    },
+    "dds_max_blocking_ms": {
+      "label": "DDS reliable-write maximum blocking",
+      "category": "qos",
+      "scope": "route",
+      "type": "number",
+      "description": "OMG DDS1.4 entity-specific QoS declaration. Standard proposals apply only to the stated entity; actual middleware, wire protocol, peer compatibility and capacity remain unverified.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "ms",
+      "min": 0,
+      "max": 2147483647999.999,
+      "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+      "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "conditional_defaults": [
+        {
+          "when": {
+            "dds_entity": "DATAWRITER",
+            "reliability_mode": "RELIABLE"
+          },
+          "value": 100
+        }
+      ],
+      "integer": false
+    },
+    "dds_transport_priority": {
+      "label": "DDS transport-priority hint",
+      "category": "qos",
+      "scope": "route",
+      "type": "number",
+      "description": "OMG DDS1.4 entity-specific QoS declaration. Standard proposals apply only to the stated entity; actual middleware, wire protocol, peer compatibility and capacity remain unverified.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": -2147483648,
+      "max": 2147483647,
+      "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+      "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "conditional_defaults": [
+        {
+          "when": {
+            "dds_entity": "TOPIC"
+          },
+          "value": 0
+        },
+        {
+          "when": {
+            "dds_entity": "DATAWRITER"
+          },
+          "value": 0
+        }
+      ],
+      "integer": true
+    },
+    "dds_destination_order": {
+      "label": "DDS sample ordering",
+      "category": "qos",
+      "scope": "route",
+      "type": "select",
+      "description": "OMG DDS1.4 entity-specific QoS declaration. Standard proposals apply only to the stated entity; actual middleware, wire protocol, peer compatibility and capacity remain unverified.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "BY_RECEPTION_TIMESTAMP",
+        "BY_SOURCE_TIMESTAMP"
+      ],
+      "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+      "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "conditional_defaults": [
+        {
+          "when": {
+            "dds_entity": "TOPIC"
+          },
+          "value": "BY_RECEPTION_TIMESTAMP"
+        },
+        {
+          "when": {
+            "dds_entity": "DATAWRITER"
+          },
+          "value": "BY_RECEPTION_TIMESTAMP"
+        },
+        {
+          "when": {
+            "dds_entity": "DATAREADER"
+          },
+          "value": "BY_RECEPTION_TIMESTAMP"
+        }
+      ],
+      "integer": false
+    },
+    "dds_max_samples": {
+      "label": "DDS maximum retained samples (-1 unlimited)",
+      "category": "qos",
+      "scope": "route",
+      "type": "number",
+      "description": "OMG DDS1.4 entity-specific QoS declaration. Standard proposals apply only to the stated entity; actual middleware, wire protocol, peer compatibility and capacity remain unverified.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": -1,
+      "max": 2147483647,
+      "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+      "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "conditional_defaults": [
+        {
+          "when": {
+            "dds_entity": "TOPIC"
+          },
+          "value": -1
+        },
+        {
+          "when": {
+            "dds_entity": "DATAWRITER"
+          },
+          "value": -1
+        },
+        {
+          "when": {
+            "dds_entity": "DATAREADER"
+          },
+          "value": -1
+        }
+      ],
+      "integer": true,
+      "forbidden_values": [
+        0
+      ]
+    },
+    "dds_max_instances": {
+      "label": "DDS maximum managed instances (-1 unlimited)",
+      "category": "qos",
+      "scope": "route",
+      "type": "number",
+      "description": "OMG DDS1.4 entity-specific QoS declaration. Standard proposals apply only to the stated entity; actual middleware, wire protocol, peer compatibility and capacity remain unverified.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": -1,
+      "max": 2147483647,
+      "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+      "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "conditional_defaults": [
+        {
+          "when": {
+            "dds_entity": "TOPIC"
+          },
+          "value": -1
+        },
+        {
+          "when": {
+            "dds_entity": "DATAWRITER"
+          },
+          "value": -1
+        },
+        {
+          "when": {
+            "dds_entity": "DATAREADER"
+          },
+          "value": -1
+        }
+      ],
+      "integer": true,
+      "forbidden_values": [
+        0
+      ]
+    },
+    "dds_max_samples_per_instance": {
+      "label": "DDS samples per instance (-1 unlimited)",
+      "category": "qos",
+      "scope": "route",
+      "type": "number",
+      "description": "OMG DDS1.4 entity-specific QoS declaration. Standard proposals apply only to the stated entity; actual middleware, wire protocol, peer compatibility and capacity remain unverified.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": -1,
+      "max": 2147483647,
+      "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+      "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "conditional_defaults": [
+        {
+          "when": {
+            "dds_entity": "TOPIC"
+          },
+          "value": -1
+        },
+        {
+          "when": {
+            "dds_entity": "DATAWRITER"
+          },
+          "value": -1
+        },
+        {
+          "when": {
+            "dds_entity": "DATAREADER"
+          },
+          "value": -1
+        }
+      ],
+      "integer": true,
+      "forbidden_values": [
+        0
+      ]
+    },
+    "dds_ownership": {
+      "label": "DDS instance ownership",
+      "category": "qos",
+      "scope": "route",
+      "type": "select",
+      "description": "OMG DDS1.4 entity-specific QoS declaration. Standard proposals apply only to the stated entity; actual middleware, wire protocol, peer compatibility and capacity remain unverified.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "SHARED",
+        "EXCLUSIVE"
+      ],
+      "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+      "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "conditional_defaults": [
+        {
+          "when": {
+            "dds_entity": "TOPIC"
+          },
+          "value": "SHARED"
+        },
+        {
+          "when": {
+            "dds_entity": "DATAWRITER"
+          },
+          "value": "SHARED"
+        },
+        {
+          "when": {
+            "dds_entity": "DATAREADER"
+          },
+          "value": "SHARED"
+        }
+      ],
+      "integer": false
+    },
+    "dds_ownership_strength": {
+      "label": "DDS exclusive writer ownership strength",
+      "category": "qos",
+      "scope": "route",
+      "type": "number",
+      "description": "OMG DDS1.4 entity-specific QoS declaration. Standard proposals apply only to the stated entity; actual middleware, wire protocol, peer compatibility and capacity remain unverified.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": -2147483648,
+      "max": 2147483647,
+      "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+      "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "conditional_defaults": [
+        {
+          "when": {
+            "dds_entity": "DATAWRITER",
+            "dds_ownership": "EXCLUSIVE"
+          },
+          "value": 0
+        }
+      ],
+      "integer": true
+    },
+    "dds_time_based_filter_ms": {
+      "label": "DDS reader minimum separation",
+      "category": "qos",
+      "scope": "route",
+      "type": "number",
+      "description": "OMG DDS1.4 entity-specific QoS declaration. Standard proposals apply only to the stated entity; actual middleware, wire protocol, peer compatibility and capacity remain unverified.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "ms",
+      "min": 0,
+      "max": 2147483647999.999,
+      "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+      "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "conditional_defaults": [
+        {
+          "when": {
+            "dds_entity": "DATAREADER"
+          },
+          "value": 0
+        }
+      ],
+      "integer": false
+    },
+    "dds_presentation_scope": {
+      "label": "DDS publisher/subscriber presentation scope",
+      "category": "qos",
+      "scope": "route",
+      "type": "select",
+      "description": "OMG DDS1.4 entity-specific QoS declaration. Standard proposals apply only to the stated entity; actual middleware, wire protocol, peer compatibility and capacity remain unverified.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "INSTANCE",
+        "TOPIC",
+        "GROUP"
+      ],
+      "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+      "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "conditional_defaults": [
+        {
+          "when": {
+            "dds_entity": "PUBLISHER"
+          },
+          "value": "INSTANCE"
+        },
+        {
+          "when": {
+            "dds_entity": "SUBSCRIBER"
+          },
+          "value": "INSTANCE"
+        }
+      ],
+      "integer": false
+    },
+    "dds_coherent_access": {
+      "label": "DDS coherent presentation",
+      "category": "qos",
+      "scope": "route",
+      "type": "boolean",
+      "description": "OMG DDS1.4 entity-specific QoS declaration. Standard proposals apply only to the stated entity; actual middleware, wire protocol, peer compatibility and capacity remain unverified.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+      "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "conditional_defaults": [
+        {
+          "when": {
+            "dds_entity": "PUBLISHER"
+          },
+          "value": false
+        },
+        {
+          "when": {
+            "dds_entity": "SUBSCRIBER"
+          },
+          "value": false
+        }
+      ],
+      "integer": false
+    },
+    "dds_ordered_access": {
+      "label": "DDS ordered presentation",
+      "category": "qos",
+      "scope": "route",
+      "type": "boolean",
+      "description": "OMG DDS1.4 entity-specific QoS declaration. Standard proposals apply only to the stated entity; actual middleware, wire protocol, peer compatibility and capacity remain unverified.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+      "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "conditional_defaults": [
+        {
+          "when": {
+            "dds_entity": "PUBLISHER"
+          },
+          "value": false
+        },
+        {
+          "when": {
+            "dds_entity": "SUBSCRIBER"
+          },
+          "value": false
+        }
+      ],
+      "integer": false
+    },
+    "dds_partition_source": {
+      "label": "Actual partition string sequence",
+      "category": "qos",
+      "scope": "route",
+      "type": "text",
+      "description": "Actual source for ordered string sequence including wildcard syntax; default sequence is empty, matching default partition. This text reference is not the partition sequence or a validated compatibility proof.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+      "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "integer": false
+    },
+    "dds_autoenable_created_entities": {
+      "label": "DDS factory automatically enables entities",
+      "category": "qos",
+      "scope": "route",
+      "type": "boolean",
+      "description": "OMG DDS1.4 entity-specific QoS declaration. Standard proposals apply only to the stated entity; actual middleware, wire protocol, peer compatibility and capacity remain unverified.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+      "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "conditional_defaults": [
+        {
+          "when": {
+            "dds_entity": "PUBLISHER"
+          },
+          "value": true
+        },
+        {
+          "when": {
+            "dds_entity": "SUBSCRIBER"
+          },
+          "value": true
+        },
+        {
+          "when": {
+            "dds_entity": "PARTICIPANT"
+          },
+          "value": true
+        },
+        {
+          "when": {
+            "dds_entity": "PARTICIPANT_FACTORY"
+          },
+          "value": true
+        }
+      ],
+      "integer": false
+    },
+    "dds_autodispose_unregistered": {
+      "label": "DDS writer automatically disposes unregistered instances",
+      "category": "qos",
+      "scope": "route",
+      "type": "boolean",
+      "description": "OMG DDS1.4 entity-specific QoS declaration. Standard proposals apply only to the stated entity; actual middleware, wire protocol, peer compatibility and capacity remain unverified.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+      "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "conditional_defaults": [
+        {
+          "when": {
+            "dds_entity": "DATAWRITER"
+          },
+          "value": true
+        }
+      ],
+      "integer": false
+    },
+    "dds_nowriter_purge_kind": {
+      "label": "Reader purge delay without writers",
+      "category": "qos",
+      "scope": "route",
+      "type": "select",
+      "description": "OMG DDS1.4 entity-specific QoS declaration. Standard proposals apply only to the stated entity; actual middleware, wire protocol, peer compatibility and capacity remain unverified.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "INFINITE",
+        "FINITE"
+      ],
+      "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+      "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "conditional_defaults": [
+        {
+          "when": {
+            "dds_entity": "DATAREADER"
+          },
+          "value": "INFINITE"
+        }
+      ],
+      "integer": false
+    },
+    "dds_nowriter_purge_ms": {
+      "label": "Actual finite no-writer purge delay",
+      "category": "qos",
+      "scope": "route",
+      "type": "number",
+      "description": "OMG DDS1.4 entity-specific QoS declaration. Standard proposals apply only to the stated entity; actual middleware, wire protocol, peer compatibility and capacity remain unverified.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "ms",
+      "min": 0,
+      "max": 2147483647999.999,
+      "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+      "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "integer": false
+    },
+    "dds_disposed_purge_kind": {
+      "label": "Reader purge delay after dispose",
+      "category": "qos",
+      "scope": "route",
+      "type": "select",
+      "description": "OMG DDS1.4 entity-specific QoS declaration. Standard proposals apply only to the stated entity; actual middleware, wire protocol, peer compatibility and capacity remain unverified.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "INFINITE",
+        "FINITE"
+      ],
+      "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+      "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "conditional_defaults": [
+        {
+          "when": {
+            "dds_entity": "DATAREADER"
+          },
+          "value": "INFINITE"
+        }
+      ],
+      "integer": false
+    },
+    "dds_disposed_purge_ms": {
+      "label": "Actual finite disposed purge delay",
+      "category": "qos",
+      "scope": "route",
+      "type": "number",
+      "description": "OMG DDS1.4 entity-specific QoS declaration. Standard proposals apply only to the stated entity; actual middleware, wire protocol, peer compatibility and capacity remain unverified.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "ms",
+      "min": 0,
+      "max": 2147483647999.999,
+      "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+      "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "integer": false
+    },
+    "dds_service_cleanup_kind": {
+      "label": "Durability-service cleanup mode",
+      "category": "qos",
+      "scope": "route",
+      "type": "select",
+      "description": "OMG DDS1.4 entity-specific QoS declaration. Standard proposals apply only to the stated entity; actual middleware, wire protocol, peer compatibility and capacity remain unverified.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "INFINITE",
+        "FINITE"
+      ],
+      "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+      "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "conditional_defaults": [
+        {
+          "when": {
+            "dds_entity": "TOPIC"
+          },
+          "value": "FINITE"
+        },
+        {
+          "when": {
+            "dds_entity": "DATAWRITER"
+          },
+          "value": "FINITE"
+        }
+      ],
+      "integer": false
+    },
+    "dds_service_cleanup_ms": {
+      "label": "Durability-service cleanup delay",
+      "category": "qos",
+      "scope": "route",
+      "type": "number",
+      "description": "DDS1.4 default durability-service cleanup delay zero means never clean up cached samples. It is not zero lifespan, nor an immediate purge deadline.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "ms",
+      "min": 0,
+      "max": 2147483647999.999,
+      "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+      "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "conditional_defaults": [
+        {
+          "when": {
+            "dds_entity": "TOPIC"
+          },
+          "value": 0
+        },
+        {
+          "when": {
+            "dds_entity": "DATAWRITER"
+          },
+          "value": 0
+        }
+      ],
+      "integer": false
+    },
+    "dds_service_history_kind": {
+      "label": "Durability-service history",
+      "category": "qos",
+      "scope": "route",
+      "type": "select",
+      "description": "OMG DDS1.4 entity-specific QoS declaration. Standard proposals apply only to the stated entity; actual middleware, wire protocol, peer compatibility and capacity remain unverified.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "KEEP_LAST",
+        "KEEP_ALL"
+      ],
+      "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+      "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "conditional_defaults": [
+        {
+          "when": {
+            "dds_entity": "TOPIC"
+          },
+          "value": "KEEP_LAST"
+        },
+        {
+          "when": {
+            "dds_entity": "DATAWRITER"
+          },
+          "value": "KEEP_LAST"
+        }
+      ],
+      "integer": false
+    },
+    "dds_service_history_depth": {
+      "label": "Durability-service retained depth",
+      "category": "qos",
+      "scope": "route",
+      "type": "number",
+      "description": "OMG DDS1.4 entity-specific QoS declaration. Standard proposals apply only to the stated entity; actual middleware, wire protocol, peer compatibility and capacity remain unverified.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 1,
+      "max": 2147483647,
+      "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+      "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "conditional_defaults": [
+        {
+          "when": {
+            "dds_entity": "TOPIC",
+            "dds_service_history_kind": "KEEP_LAST"
+          },
+          "value": 1
+        },
+        {
+          "when": {
+            "dds_entity": "DATAWRITER",
+            "dds_service_history_kind": "KEEP_LAST"
+          },
+          "value": 1
+        }
+      ],
+      "integer": true
+    },
+    "dds_service_max_samples": {
+      "label": "Durability-service sample limit (-1 unlimited)",
+      "category": "qos",
+      "scope": "route",
+      "type": "number",
+      "description": "OMG DDS1.4 entity-specific QoS declaration. Standard proposals apply only to the stated entity; actual middleware, wire protocol, peer compatibility and capacity remain unverified.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": -1,
+      "max": 2147483647,
+      "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+      "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "conditional_defaults": [
+        {
+          "when": {
+            "dds_entity": "TOPIC"
+          },
+          "value": -1
+        },
+        {
+          "when": {
+            "dds_entity": "DATAWRITER"
+          },
+          "value": -1
+        }
+      ],
+      "integer": true,
+      "forbidden_values": [
+        0
+      ]
+    },
+    "dds_service_max_instances": {
+      "label": "Durability-service instance limit (-1 unlimited)",
+      "category": "qos",
+      "scope": "route",
+      "type": "number",
+      "description": "OMG DDS1.4 entity-specific QoS declaration. Standard proposals apply only to the stated entity; actual middleware, wire protocol, peer compatibility and capacity remain unverified.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": -1,
+      "max": 2147483647,
+      "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+      "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "conditional_defaults": [
+        {
+          "when": {
+            "dds_entity": "TOPIC"
+          },
+          "value": -1
+        },
+        {
+          "when": {
+            "dds_entity": "DATAWRITER"
+          },
+          "value": -1
+        }
+      ],
+      "integer": true,
+      "forbidden_values": [
+        0
+      ]
+    },
+    "dds_service_max_samples_per_instance": {
+      "label": "Durability-service per-instance sample limit (-1 unlimited)",
+      "category": "qos",
+      "scope": "route",
+      "type": "number",
+      "description": "OMG DDS1.4 entity-specific QoS declaration. Standard proposals apply only to the stated entity; actual middleware, wire protocol, peer compatibility and capacity remain unverified.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": -1,
+      "max": 2147483647,
+      "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+      "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "conditional_defaults": [
+        {
+          "when": {
+            "dds_entity": "TOPIC"
+          },
+          "value": -1
+        },
+        {
+          "when": {
+            "dds_entity": "DATAWRITER"
+          },
+          "value": -1
+        }
+      ],
+      "integer": true,
+      "forbidden_values": [
+        0
+      ]
+    },
+    "dds_user_data_source": {
+      "label": "Actual user-data octet sequence",
+      "category": "qos",
+      "scope": "route",
+      "type": "text",
+      "description": "OMG DDS1.4 entity-specific QoS declaration. Standard proposals apply only to the stated entity; actual middleware, wire protocol, peer compatibility and capacity remain unverified.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+      "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "integer": false
+    },
+    "dds_topic_data_source": {
+      "label": "Actual topic-data octet sequence",
+      "category": "qos",
+      "scope": "route",
+      "type": "text",
+      "description": "OMG DDS1.4 entity-specific QoS declaration. Standard proposals apply only to the stated entity; actual middleware, wire protocol, peer compatibility and capacity remain unverified.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+      "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "integer": false
+    },
+    "dds_group_data_source": {
+      "label": "Actual publisher/subscriber group-data octet sequence",
+      "category": "qos",
+      "scope": "route",
+      "type": "text",
+      "description": "OMG DDS1.4 entity-specific QoS declaration. Standard proposals apply only to the stated entity; actual middleware, wire protocol, peer compatibility and capacity remain unverified.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+      "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "integer": false
+    }
+  },
+  "mechanisms": {
+    "discovery": [
+      "DDS_PARTICIPANT_DISCOVERY",
+      "DDS_ENDPOINT_DISCOVERY",
+      "EXPLICIT_DDS_IMPLEMENTATION_AND_WIRE_PROFILE"
+    ],
+    "supervision": [
+      "LIVELINESS",
+      "DEADLINE"
+    ],
+    "transport": [
+      "EXPLICIT_LOWER_TRANSPORT_BINDING"
+    ],
+    "qos": [
+      "ENTITY_SPECIFIC_REQUESTED_OFFERED_POLICIES"
+    ]
+  },
+  "parameter_constraints": [
+    {
+      "when": {
+        "dds_entity": "PUBLISHER"
+      },
+      "parameter": "history_depth",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "SUBSCRIBER"
+      },
+      "parameter": "history_depth",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PARTICIPANT"
+      },
+      "parameter": "history_depth",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PARTICIPANT_FACTORY"
+      },
+      "parameter": "history_depth",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PUBLISHER"
+      },
+      "parameter": "history_kind",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "SUBSCRIBER"
+      },
+      "parameter": "history_kind",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PARTICIPANT"
+      },
+      "parameter": "history_kind",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PARTICIPANT_FACTORY"
+      },
+      "parameter": "history_kind",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PUBLISHER"
+      },
+      "parameter": "durability",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "SUBSCRIBER"
+      },
+      "parameter": "durability",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PARTICIPANT"
+      },
+      "parameter": "durability",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PARTICIPANT_FACTORY"
+      },
+      "parameter": "durability",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PUBLISHER"
+      },
+      "parameter": "liveliness",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "SUBSCRIBER"
+      },
+      "parameter": "liveliness",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PARTICIPANT"
+      },
+      "parameter": "liveliness",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PARTICIPANT_FACTORY"
+      },
+      "parameter": "liveliness",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PUBLISHER"
+      },
+      "parameter": "reliability_mode",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "SUBSCRIBER"
+      },
+      "parameter": "reliability_mode",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PARTICIPANT"
+      },
+      "parameter": "reliability_mode",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PARTICIPANT_FACTORY"
+      },
+      "parameter": "reliability_mode",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PUBLISHER"
+      },
+      "parameter": "dds_type_source",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "SUBSCRIBER"
+      },
+      "parameter": "dds_type_source",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PARTICIPANT"
+      },
+      "parameter": "dds_type_source",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PARTICIPANT_FACTORY"
+      },
+      "parameter": "dds_type_source",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PUBLISHER"
+      },
+      "parameter": "dds_topic_name",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "SUBSCRIBER"
+      },
+      "parameter": "dds_topic_name",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PARTICIPANT"
+      },
+      "parameter": "dds_topic_name",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PARTICIPANT_FACTORY"
+      },
+      "parameter": "dds_topic_name",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PUBLISHER"
+      },
+      "parameter": "dds_deadline_kind",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "SUBSCRIBER"
+      },
+      "parameter": "dds_deadline_kind",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PARTICIPANT"
+      },
+      "parameter": "dds_deadline_kind",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PARTICIPANT_FACTORY"
+      },
+      "parameter": "dds_deadline_kind",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PUBLISHER"
+      },
+      "parameter": "dds_deadline_ms",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "SUBSCRIBER"
+      },
+      "parameter": "dds_deadline_ms",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PARTICIPANT"
+      },
+      "parameter": "dds_deadline_ms",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PARTICIPANT_FACTORY"
+      },
+      "parameter": "dds_deadline_ms",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PUBLISHER"
+      },
+      "parameter": "dds_latency_budget_ms",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "SUBSCRIBER"
+      },
+      "parameter": "dds_latency_budget_ms",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PARTICIPANT"
+      },
+      "parameter": "dds_latency_budget_ms",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PARTICIPANT_FACTORY"
+      },
+      "parameter": "dds_latency_budget_ms",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PUBLISHER"
+      },
+      "parameter": "dds_lease_kind",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "SUBSCRIBER"
+      },
+      "parameter": "dds_lease_kind",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PARTICIPANT"
+      },
+      "parameter": "dds_lease_kind",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PARTICIPANT_FACTORY"
+      },
+      "parameter": "dds_lease_kind",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PUBLISHER"
+      },
+      "parameter": "dds_lease_ms",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "SUBSCRIBER"
+      },
+      "parameter": "dds_lease_ms",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PARTICIPANT"
+      },
+      "parameter": "dds_lease_ms",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PARTICIPANT_FACTORY"
+      },
+      "parameter": "dds_lease_ms",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PUBLISHER"
+      },
+      "parameter": "dds_destination_order",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "SUBSCRIBER"
+      },
+      "parameter": "dds_destination_order",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PARTICIPANT"
+      },
+      "parameter": "dds_destination_order",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PARTICIPANT_FACTORY"
+      },
+      "parameter": "dds_destination_order",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PUBLISHER"
+      },
+      "parameter": "dds_max_samples",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "SUBSCRIBER"
+      },
+      "parameter": "dds_max_samples",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PARTICIPANT"
+      },
+      "parameter": "dds_max_samples",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PARTICIPANT_FACTORY"
+      },
+      "parameter": "dds_max_samples",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PUBLISHER"
+      },
+      "parameter": "dds_max_instances",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "SUBSCRIBER"
+      },
+      "parameter": "dds_max_instances",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PARTICIPANT"
+      },
+      "parameter": "dds_max_instances",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PARTICIPANT_FACTORY"
+      },
+      "parameter": "dds_max_instances",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PUBLISHER"
+      },
+      "parameter": "dds_max_samples_per_instance",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "SUBSCRIBER"
+      },
+      "parameter": "dds_max_samples_per_instance",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PARTICIPANT"
+      },
+      "parameter": "dds_max_samples_per_instance",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PARTICIPANT_FACTORY"
+      },
+      "parameter": "dds_max_samples_per_instance",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PUBLISHER"
+      },
+      "parameter": "dds_ownership",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "SUBSCRIBER"
+      },
+      "parameter": "dds_ownership",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PARTICIPANT"
+      },
+      "parameter": "dds_ownership",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PARTICIPANT_FACTORY"
+      },
+      "parameter": "dds_ownership",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "DATAREADER"
+      },
+      "parameter": "lifespan_ms",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PUBLISHER"
+      },
+      "parameter": "lifespan_ms",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "SUBSCRIBER"
+      },
+      "parameter": "lifespan_ms",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PARTICIPANT"
+      },
+      "parameter": "lifespan_ms",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PARTICIPANT_FACTORY"
+      },
+      "parameter": "lifespan_ms",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "DATAREADER"
+      },
+      "parameter": "dds_lifespan_kind",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PUBLISHER"
+      },
+      "parameter": "dds_lifespan_kind",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "SUBSCRIBER"
+      },
+      "parameter": "dds_lifespan_kind",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PARTICIPANT"
+      },
+      "parameter": "dds_lifespan_kind",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PARTICIPANT_FACTORY"
+      },
+      "parameter": "dds_lifespan_kind",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "DATAREADER"
+      },
+      "parameter": "dds_transport_priority",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PUBLISHER"
+      },
+      "parameter": "dds_transport_priority",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "SUBSCRIBER"
+      },
+      "parameter": "dds_transport_priority",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PARTICIPANT"
+      },
+      "parameter": "dds_transport_priority",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PARTICIPANT_FACTORY"
+      },
+      "parameter": "dds_transport_priority",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "DATAREADER"
+      },
+      "parameter": "dds_service_cleanup_kind",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PUBLISHER"
+      },
+      "parameter": "dds_service_cleanup_kind",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "SUBSCRIBER"
+      },
+      "parameter": "dds_service_cleanup_kind",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PARTICIPANT"
+      },
+      "parameter": "dds_service_cleanup_kind",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PARTICIPANT_FACTORY"
+      },
+      "parameter": "dds_service_cleanup_kind",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "DATAREADER"
+      },
+      "parameter": "dds_service_cleanup_ms",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PUBLISHER"
+      },
+      "parameter": "dds_service_cleanup_ms",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "SUBSCRIBER"
+      },
+      "parameter": "dds_service_cleanup_ms",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PARTICIPANT"
+      },
+      "parameter": "dds_service_cleanup_ms",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PARTICIPANT_FACTORY"
+      },
+      "parameter": "dds_service_cleanup_ms",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "DATAREADER"
+      },
+      "parameter": "dds_service_history_kind",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PUBLISHER"
+      },
+      "parameter": "dds_service_history_kind",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "SUBSCRIBER"
+      },
+      "parameter": "dds_service_history_kind",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PARTICIPANT"
+      },
+      "parameter": "dds_service_history_kind",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PARTICIPANT_FACTORY"
+      },
+      "parameter": "dds_service_history_kind",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "DATAREADER"
+      },
+      "parameter": "dds_service_history_depth",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PUBLISHER"
+      },
+      "parameter": "dds_service_history_depth",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "SUBSCRIBER"
+      },
+      "parameter": "dds_service_history_depth",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PARTICIPANT"
+      },
+      "parameter": "dds_service_history_depth",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PARTICIPANT_FACTORY"
+      },
+      "parameter": "dds_service_history_depth",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "DATAREADER"
+      },
+      "parameter": "dds_service_max_samples",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PUBLISHER"
+      },
+      "parameter": "dds_service_max_samples",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "SUBSCRIBER"
+      },
+      "parameter": "dds_service_max_samples",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PARTICIPANT"
+      },
+      "parameter": "dds_service_max_samples",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PARTICIPANT_FACTORY"
+      },
+      "parameter": "dds_service_max_samples",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "DATAREADER"
+      },
+      "parameter": "dds_service_max_instances",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PUBLISHER"
+      },
+      "parameter": "dds_service_max_instances",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "SUBSCRIBER"
+      },
+      "parameter": "dds_service_max_instances",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PARTICIPANT"
+      },
+      "parameter": "dds_service_max_instances",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PARTICIPANT_FACTORY"
+      },
+      "parameter": "dds_service_max_instances",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "DATAREADER"
+      },
+      "parameter": "dds_service_max_samples_per_instance",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PUBLISHER"
+      },
+      "parameter": "dds_service_max_samples_per_instance",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "SUBSCRIBER"
+      },
+      "parameter": "dds_service_max_samples_per_instance",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PARTICIPANT"
+      },
+      "parameter": "dds_service_max_samples_per_instance",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PARTICIPANT_FACTORY"
+      },
+      "parameter": "dds_service_max_samples_per_instance",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "TOPIC"
+      },
+      "parameter": "dds_max_blocking_ms",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "DATAREADER"
+      },
+      "parameter": "dds_max_blocking_ms",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PUBLISHER"
+      },
+      "parameter": "dds_max_blocking_ms",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "SUBSCRIBER"
+      },
+      "parameter": "dds_max_blocking_ms",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PARTICIPANT"
+      },
+      "parameter": "dds_max_blocking_ms",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PARTICIPANT_FACTORY"
+      },
+      "parameter": "dds_max_blocking_ms",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "TOPIC"
+      },
+      "parameter": "dds_ownership_strength",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "DATAREADER"
+      },
+      "parameter": "dds_ownership_strength",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PUBLISHER"
+      },
+      "parameter": "dds_ownership_strength",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "SUBSCRIBER"
+      },
+      "parameter": "dds_ownership_strength",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PARTICIPANT"
+      },
+      "parameter": "dds_ownership_strength",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PARTICIPANT_FACTORY"
+      },
+      "parameter": "dds_ownership_strength",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "TOPIC"
+      },
+      "parameter": "dds_autodispose_unregistered",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "DATAREADER"
+      },
+      "parameter": "dds_autodispose_unregistered",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PUBLISHER"
+      },
+      "parameter": "dds_autodispose_unregistered",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "SUBSCRIBER"
+      },
+      "parameter": "dds_autodispose_unregistered",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PARTICIPANT"
+      },
+      "parameter": "dds_autodispose_unregistered",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PARTICIPANT_FACTORY"
+      },
+      "parameter": "dds_autodispose_unregistered",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "TOPIC"
+      },
+      "parameter": "dds_time_based_filter_ms",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "DATAWRITER"
+      },
+      "parameter": "dds_time_based_filter_ms",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PUBLISHER"
+      },
+      "parameter": "dds_time_based_filter_ms",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "SUBSCRIBER"
+      },
+      "parameter": "dds_time_based_filter_ms",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PARTICIPANT"
+      },
+      "parameter": "dds_time_based_filter_ms",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PARTICIPANT_FACTORY"
+      },
+      "parameter": "dds_time_based_filter_ms",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "TOPIC"
+      },
+      "parameter": "dds_nowriter_purge_kind",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "DATAWRITER"
+      },
+      "parameter": "dds_nowriter_purge_kind",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PUBLISHER"
+      },
+      "parameter": "dds_nowriter_purge_kind",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "SUBSCRIBER"
+      },
+      "parameter": "dds_nowriter_purge_kind",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PARTICIPANT"
+      },
+      "parameter": "dds_nowriter_purge_kind",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PARTICIPANT_FACTORY"
+      },
+      "parameter": "dds_nowriter_purge_kind",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "TOPIC"
+      },
+      "parameter": "dds_nowriter_purge_ms",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "DATAWRITER"
+      },
+      "parameter": "dds_nowriter_purge_ms",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PUBLISHER"
+      },
+      "parameter": "dds_nowriter_purge_ms",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "SUBSCRIBER"
+      },
+      "parameter": "dds_nowriter_purge_ms",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PARTICIPANT"
+      },
+      "parameter": "dds_nowriter_purge_ms",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PARTICIPANT_FACTORY"
+      },
+      "parameter": "dds_nowriter_purge_ms",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "TOPIC"
+      },
+      "parameter": "dds_disposed_purge_kind",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "DATAWRITER"
+      },
+      "parameter": "dds_disposed_purge_kind",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PUBLISHER"
+      },
+      "parameter": "dds_disposed_purge_kind",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "SUBSCRIBER"
+      },
+      "parameter": "dds_disposed_purge_kind",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PARTICIPANT"
+      },
+      "parameter": "dds_disposed_purge_kind",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PARTICIPANT_FACTORY"
+      },
+      "parameter": "dds_disposed_purge_kind",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "TOPIC"
+      },
+      "parameter": "dds_disposed_purge_ms",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "DATAWRITER"
+      },
+      "parameter": "dds_disposed_purge_ms",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PUBLISHER"
+      },
+      "parameter": "dds_disposed_purge_ms",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "SUBSCRIBER"
+      },
+      "parameter": "dds_disposed_purge_ms",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PARTICIPANT"
+      },
+      "parameter": "dds_disposed_purge_ms",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PARTICIPANT_FACTORY"
+      },
+      "parameter": "dds_disposed_purge_ms",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "TOPIC"
+      },
+      "parameter": "dds_presentation_scope",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "DATAWRITER"
+      },
+      "parameter": "dds_presentation_scope",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "DATAREADER"
+      },
+      "parameter": "dds_presentation_scope",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PARTICIPANT"
+      },
+      "parameter": "dds_presentation_scope",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PARTICIPANT_FACTORY"
+      },
+      "parameter": "dds_presentation_scope",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "TOPIC"
+      },
+      "parameter": "dds_coherent_access",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "DATAWRITER"
+      },
+      "parameter": "dds_coherent_access",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "DATAREADER"
+      },
+      "parameter": "dds_coherent_access",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PARTICIPANT"
+      },
+      "parameter": "dds_coherent_access",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PARTICIPANT_FACTORY"
+      },
+      "parameter": "dds_coherent_access",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "TOPIC"
+      },
+      "parameter": "dds_ordered_access",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "DATAWRITER"
+      },
+      "parameter": "dds_ordered_access",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "DATAREADER"
+      },
+      "parameter": "dds_ordered_access",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PARTICIPANT"
+      },
+      "parameter": "dds_ordered_access",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PARTICIPANT_FACTORY"
+      },
+      "parameter": "dds_ordered_access",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "TOPIC"
+      },
+      "parameter": "dds_partition_source",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "DATAWRITER"
+      },
+      "parameter": "dds_partition_source",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "DATAREADER"
+      },
+      "parameter": "dds_partition_source",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PARTICIPANT"
+      },
+      "parameter": "dds_partition_source",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PARTICIPANT_FACTORY"
+      },
+      "parameter": "dds_partition_source",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "TOPIC"
+      },
+      "parameter": "dds_group_data_source",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "DATAWRITER"
+      },
+      "parameter": "dds_group_data_source",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "DATAREADER"
+      },
+      "parameter": "dds_group_data_source",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PARTICIPANT"
+      },
+      "parameter": "dds_group_data_source",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PARTICIPANT_FACTORY"
+      },
+      "parameter": "dds_group_data_source",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "TOPIC"
+      },
+      "parameter": "dds_autoenable_created_entities",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "DATAWRITER"
+      },
+      "parameter": "dds_autoenable_created_entities",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "DATAREADER"
+      },
+      "parameter": "dds_autoenable_created_entities",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "TOPIC"
+      },
+      "parameter": "dds_user_data_source",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PUBLISHER"
+      },
+      "parameter": "dds_user_data_source",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "SUBSCRIBER"
+      },
+      "parameter": "dds_user_data_source",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PARTICIPANT_FACTORY"
+      },
+      "parameter": "dds_user_data_source",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "DATAWRITER"
+      },
+      "parameter": "dds_topic_data_source",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "DATAREADER"
+      },
+      "parameter": "dds_topic_data_source",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PUBLISHER"
+      },
+      "parameter": "dds_topic_data_source",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "SUBSCRIBER"
+      },
+      "parameter": "dds_topic_data_source",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PARTICIPANT"
+      },
+      "parameter": "dds_topic_data_source",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_entity": "PARTICIPANT_FACTORY"
+      },
+      "parameter": "dds_topic_data_source",
+      "allowed": [],
+      "source": "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+      "source_revision": "OMG DDS1.4 normative IDL QoS structure members"
+    },
+    {
+      "when": {
+        "dds_lifespan_kind": "INFINITE"
+      },
+      "parameter": "lifespan_ms",
+      "allowed": []
+    },
+    {
+      "when": {
+        "dds_deadline_kind": "INFINITE"
+      },
+      "parameter": "dds_deadline_ms",
+      "allowed": []
+    },
+    {
+      "when": {
+        "dds_lease_kind": "INFINITE"
+      },
+      "parameter": "dds_lease_ms",
+      "allowed": []
+    },
+    {
+      "when": {
+        "dds_nowriter_purge_kind": "INFINITE"
+      },
+      "parameter": "dds_nowriter_purge_ms",
+      "allowed": []
+    },
+    {
+      "when": {
+        "dds_disposed_purge_kind": "INFINITE"
+      },
+      "parameter": "dds_disposed_purge_ms",
+      "allowed": []
+    },
+    {
+      "when": {
+        "dds_service_cleanup_kind": "INFINITE"
+      },
+      "parameter": "dds_service_cleanup_ms",
+      "allowed": []
+    },
+    {
+      "when": {},
+      "when_half_open_ranges": {
+        "dds_max_samples": [
+          1,
+          null
+        ]
+      },
+      "parameter": "dds_max_samples_per_instance",
+      "minimum": 1,
+      "maximum_parameter": "dds_max_samples"
+    },
+    {
+      "when": {},
+      "when_half_open_ranges": {
+        "dds_service_max_samples": [
+          1,
+          null
+        ]
+      },
+      "parameter": "dds_service_max_samples_per_instance",
+      "minimum": 1,
+      "maximum_parameter": "dds_service_max_samples"
+    },
+    {
+      "when": {
+        "history_kind": "KEEP_LAST"
+      },
+      "when_half_open_ranges": {
+        "dds_max_samples_per_instance": [
+          1,
+          null
+        ]
+      },
+      "parameter": "history_depth",
+      "maximum_parameter": "dds_max_samples_per_instance"
+    },
+    {
+      "when": {
+        "dds_service_history_kind": "KEEP_LAST"
+      },
+      "when_half_open_ranges": {
+        "dds_service_max_samples_per_instance": [
+          1,
+          null
+        ]
+      },
+      "parameter": "dds_service_history_depth",
+      "maximum_parameter": "dds_service_max_samples_per_instance"
+    },
+    {
+      "when": {
+        "dds_entity": "DATAREADER",
+        "dds_deadline_kind": "FINITE"
+      },
+      "parameter": "dds_time_based_filter_ms",
+      "maximum_parameter": "dds_deadline_ms"
+    }
+  ],
+  "physical_layer_profile_id": null,
+  "medium_access_model": null,
+  "native_parameter_prefixes": [],
+  "parameter_aliases": {},
+  "parameter_alias_limits": {},
+  "parameter_evidence_scope": null,
+  "rate_source_profile_id": null,
+  "arbitration_model_id": null,
+  "max_payload_bytes": null,
+  "capabilities": {
+    "supports_signals": true,
+    "supports_data_objects": true,
+    "supports_streams": true,
+    "supports_multicast": true,
+    "supports_publish_subscribe": true,
+    "supports_request_response": false,
+    "supports_cyclic": true,
+    "supports_event": true,
+    "supports_redundancy": true,
+    "supports_time_sync": false,
+    "supports_safety_profile": false,
+    "supports_segmentation": false,
+    "supports_fragmentation": true,
+    "supports_qos": true
+  },
+  "deterministic": true,
+  "overhead_bytes": 8,
+  "implementation_status": "IMPLEMENTED",
+  "connection_type": "COMMUNICATION_TECHNOLOGY",
+  "parameter_proposals": {
+    "kind": "APPLICATION_TRANSPORT_DEPENDENT",
+    "status": "REVIEW_REQUIRED",
+    "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+    "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+    "note": "DDS data-centric middleware has no own link rate or universalUDP/IPv4/Ethernet payload bound. Actual entity/implementation/type/transport and requested-offered compatibility remain explicit."
+  },
+  "capacity_evidence": {
+    "status": "MODEL_MISSING",
+    "frame_model": null,
+    "schedule_model": null,
+    "requires_confirmed_device_parameters": true
+  },
+  "components": {
+    "binding": "dds.binding",
+    "generator": "dds.generator",
+    "validator": "dds.validator",
+    "timing_model": null,
+    "load_model": null,
+    "encoder": "dds.encoder",
+    "decoder": "dds.decoder"
+  },
+  "known_limitations": "Technology-specific conformance details require a vendor/profile extension."
+}

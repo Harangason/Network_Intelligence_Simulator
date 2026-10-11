@@ -1,0 +1,42 @@
+--- before/backend/tests/test_simulation_observation.py
++++ after/backend/tests/test_simulation_observation.py
+@@ -168,17 +168,19 @@
+     assert repeated.get("parameter_provenance") == generated.get("parameter_provenance")
+ 
+ 
+-def test_dds_parameter_defaults_inherit_registered_ethernet_rate():
++def test_dds_parameter_defaults_keep_explicit_lower_link_unverified():
+     from backend.engineering.agent_tools.wizard_generation import _parameter_defaults
+ 
+     dds = _parameter_defaults("dds")
+     ethernet = _parameter_defaults("ethernet")
+ 
+-    assert dds["bitrate"] == ethernet["bitrate"]
+-    assert dds["history_kind"] == "KEEP_LAST"
+-
+-
+-def test_mixed_robotics_defaults_are_complete_with_dds_as_primary(db_project, monkeypatch):
++    assert "bitrate" not in dds
++    assert 'dds_history_kind' not in dds  # Requires the actual selected DDS entity.
++    assert 'bitrate' in ethernet
++    assert "dds" not in ethernet.get("technology_stack", [])
++
++
++def test_mixed_robotics_defaults_require_native_review_with_dds_as_primary(db_project, monkeypatch):
+     from backend.engineering.agent_tools import wizard_generation
+     from backend.engineering.workflow.service import WorkflowStatusService
+ 
+@@ -197,9 +199,11 @@
+         "prompt": "- Projekt-Modelltyp: robotics_ros\nTechnologie-Defaults verwenden.",
+     })
+ 
+-    assert generated["artifact_check"]["complete"]
++    assert not generated["artifact_check"]["complete"]
++    assert generated["status"] == "REVIEW_REQUIRED"
++    assert generated["missing_parameters"]
+     assert generated["parameters"]["technology"] == "dds"
+-    assert generated["parameters"]["bitrate"] > 0
++    assert "bitrate" not in generated["parameters"]
+     assert set(generated["technology_ids"]) == {"dds", "ethercat", "ethernet", "can_fd"}
+ 
+ 

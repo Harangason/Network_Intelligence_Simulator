@@ -1,0 +1,23 @@
+--- before/backend/tests/test_proposal_capacity.py
++++ after/backend/tests/test_proposal_capacity.py
+@@ -1,3 +1,4 @@
++from backend.tests.native_transport_fixtures import lin_design, ethernet_mac
+ from backend.engineering.agent_tools import proposal_service
+ import pytest
+ 
+@@ -52,12 +53,12 @@
+     ('LIN', {'technology': 'CAN', 'networks': [{'id': 'bus', 'technology': 'LIN', 'protocol': 'CAN', 'bitrate': 500000}]}, {}, True),
+     ('LIN', {'technology': 'CAN', 'networks': [{'id': 'bus', 'technology': 'CAN', 'bitrate': 500000}]}, {}, True),
+     ('LIN', {'technology': 'CAN', 'networks': [{'id': 'bus', 'technology': 'unknown', 'bitrate': 500000}]}, {}, True),
+-    ('LIN', {'technology': 'CAN', 'networks': [{'id': 'bus', 'technology': 'LIN', 'bitrate': 19200}]}, {}, False),
++    ('LIN', {'technology': 'CAN', 'networks': [{'id': 'bus', 'technology': 'LIN', **lin_design(), 'bitrate': 19200}]}, {}, False),
+     ('LIN', {}, {'technology': 'CAN', 'bitrate': 500000}, True),
+-    ('LIN', {}, {'technology': 'LIN', 'bitrate': 19200}, False),
++    ('LIN', {}, {'technology': 'LIN', **lin_design(), 'bitrate': 19200}, False),
+     ('CAN_FD', {'technology': 'CAN_FD', 'arbitration_bitrate': 500000}, {}, True),
+     ('CAN_FD', {'technology': 'CAN_FD', 'arbitration_bitrate': 500000, 'data_bitrate': 2000000}, {}, False),
+-    ('Ethernet', {'technology': 'Ethernet', 'bitrate': 100000000}, {}, False),
++    ('Ethernet', {'technology': 'Ethernet', **ethernet_mac(), 'bitrate': 100000000}, {}, False),
+ ])
+ def test_proposal_capacity_resolves_only_matching_confirmed_rates(monkeypatch, technology, confirmed, network, expected):
+     from backend.engineering.agent_tools import validation

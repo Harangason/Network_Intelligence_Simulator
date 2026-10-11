@@ -1,0 +1,100 @@
+# Canonical NIS structure
+
+The repository remains the sole NIS source. Application code is owned by
+`backend.nis`; the `backend` prefix is retained in the installable Python package
+to preserve the established WSGI, CLI, MCP and external import contracts.
+
+| Owner | Responsibility |
+| --- | --- |
+| `backend/nis/app` | Application composition, startup and build identity |
+| `backend/nis/domain` | Technology independent objects and vocabulary |
+| `backend/nis/engineering` | Project editing, requirements, routing and sizing orchestration |
+| `backend/nis/communication` | One runtime registry, technology profiles and common contracts |
+| `backend/nis/communication/technologies/<id>` | Profile, native rules, adapters and technology specific formats |
+| `backend/nis/industries` | Vocabulary, templates and references to technologies |
+| `backend/nis/simulation` | Execution, runtime scheduling and signal generation |
+| `backend/nis/traces` | Common containers, sessions, analysis and trace realism |
+| `backend/nis/agent`, `intelligence`, `knowledge` | Agent execution, ML and retrieval respectively |
+| `backend/nis/workflow` | Shared workflow identity and state transitions |
+| `backend/nis/interfaces` | HTTP, MCP and CLI adapters |
+| `backend/nis/infrastructure` | Database and filesystem adapters |
+| `frontend/src/features` | Feature UI and client logic |
+| `frontend/src/shared` | Shared API contracts and generic utilities |
+| `frontend/src/app` | Established route entrypoints |
+| `scripts/build`, `release`, `maintenance`, `verification`, `migrations` | Operational tool implementations |
+
+## Technology ownership
+
+Each of the 125 runtime profile IDs has its own package. `definition.py` exposes
+the preserved `profile.json`; optional `rules.py`, format adapters and transport
+implementations reside in that same owner. `communication/catalog.py` projects
+these definitions into the single runtime registry. Industry manifests select
+technologies without declaring their technical parameters.
+
+Historical export presets are explicitly named `legacy_export_preset.json` in
+their technology owners. The old export API projects these 54 records; they
+are **not validated project defaults or additional capability registrations**.
+Nine legacy export identities have no corresponding runtime profile and remain
+export compatibility data only. Migration must not turn them into supported
+capacity models. Variants and stored IDs remain intact.
+
+When adding a technology, create its actual definition and existing executable
+rules, include its ID in `communication/catalog.py`, and run registry, parameter,
+capacity, stack and source/license tests. A profile alone does not prove executable
+capacity, a native writer or permission to redistribute its source specification.
+
+## Storage
+
+`nis/infrastructure/paths.py` resolves all roots independently of launch cwd.
+
+| Setting | Default | Contents |
+| --- | --- | --- |
+| `NIS_DATA_DIR` | `var/data` | Projects, traces, databases, resumable jobs, model and license evidence |
+| `NIS_RUNTIME_DIR` | `var/runtime` | Temporary working files and service logs |
+| `NIS_ARTIFACTS_DIR` | `artifacts` | Reproducible exports, package builds and verification reports |
+
+Relative settings resolve against the repository or installed package root.
+Explicit `SIMULATOR_RUNTIME_ROOT` remains compatible with isolated test roots;
+explicit `SIMULATOR_SAVED_ROOT` preserves existing external save mounts.
+Vercel uses its writable temporary directory. None of these roots belongs in a
+Python code directory. Durable traces must not be removed by runtime cache cleanup.
+
+`scripts/migrations/storage_layout.py` defaults to planning. `--apply` produces
+coherent SQLite backups, verifies destination integrity/checksums, refuses
+different existing destinations and retains originals. Its receipt documents
+the copied files. Unclassified historical traces, reports and diagnostic trees
+remain in place; no retention decision is inferred from a directory name.
+
+Production retains its existing named data volume and external project mount.
+The volume is mounted at `/app/var/data`; the stored files are not replaced.
+`NIS_LEGACY_DATA_ROOT` rebases old job artifact/settings paths only when the
+corresponding retained destination exists. External paths remain unchanged.
+
+## Compatibility removal criteria
+
+`backend/nis/compatibility.json` lists exact old imports. Its finder aliases the
+same module object, preserving registration and class identity. Old Python files
+contain forwarding code only; executable old paths also forward their CLI main.
+Old frontend paths re-export the feature owner; old documentation links point to
+the canonical document. Script wrappers execute the sole implementation using
+the caller's globals so existing import/test monkeypatch contracts still work.
+
+Remove an individual compatibility entry only after:
+
+1. No supported internal consumer uses it.
+2. Published CLI/MCP/import contracts and persisted module references are migrated.
+3. Independent source, installed package, CLI and saved project tests pass.
+4. A complete release gate and production check pass for the replacement.
+
+Root Compose files and starters retain established operator entrypoints. Their
+relative contexts, external save binds and environment files remain coordinated;
+they must not be moved by a pathname-only script. `vercel.json` remains at its
+deployment-required location. Historical checker campaigns remain unchanged.
+
+## Migration evidence
+
+`docs/migrations/structure_mapping.csv` records file owners and compatibility
+status. Detailed plans, original snapshots, equivalence comparisons and storage
+receipts are in `docs/implementation-workloads/project-structure-migration-20261003`.
+Local verification is not production completion: delivery requires the exact
+tested image and complete PASS receipt from `scripts/release-and-deploy.py`.

@@ -1,0 +1,241 @@
+{
+  "coverage": "ISOLATED_FROZEN_WORKFLOW_SUMMARY_REPLAY_NOT_RELEASE_PASS",
+  "phase": "after",
+  "seconds": [
+    0.8885334000224248,
+    0.5255620999960229,
+    0.532266299938783
+  ],
+  "identical_results": true,
+  "state_sha256": "d3adb4cb8f9fbbb92668c368c41549307c6eeae726ab7edfab2a82944474cc88",
+  "sql": [
+    {
+      "sql": "SELECT * FROM engineering_workflow_projects WHERE project_id = %s",
+      "seconds": 0.0586383999325335
+    },
+    {
+      "sql": "SELECT COUNT(*) AS count FROM engineering_hardware_nodes h WHERE h.project_id = %s AND NOT (h.source = 'ai_generated' AND NOT (COALESCE(h.review_state, '') = 'reviewed' AND COALESCE(h.approval_state, '') = 'approved') AND (LOWER(BTRIM(h.name)) IN ('ecu', 'ecus', 'gateway', 'gateways', 'sensor', 'sensoren', 'sensors') OR LOWER(BTRIM(h.name)) ~ '^[0-9]+[[:space:]].*(sensor(en|s)?|ecu(s)?|gateway(s)?)$'))",
+      "seconds": 0.004249699995853007
+    },
+    {
+      "sql": "SELECT COUNT(*) AS count FROM engineering_functions f JOIN engineering_hardware_nodes h ON h.id = f.hardware_node_id AND h.project_id = f.project_id WHERE f.project_id = %s AND NOT (h.source = 'ai_generated' AND NOT (COALESCE(h.review_state, '') = 'reviewed' AND COALESCE(h.approval_state, '') = 'approved') AND (LOWER(BTRIM(h.name)) IN ('ecu', 'ecus', 'gateway', 'gateways', 'sensor', 'sensoren', 'sensors') OR LOWER(BTRIM(h.name)) ~ '^[0-9]+[[:space:]].*(sensor(en|s)?|ecu(s)?|gateway(s)?)$'))",
+      "seconds": 0.002587699913419783
+    },
+    {
+      "sql": "SELECT COUNT(*) AS count FROM engineering_hardware_interfaces hi JOIN engineering_hardware_nodes h ON h.id = hi.hardware_node_id AND h.project_id = hi.project_id WHERE hi.project_id = %s AND NOT (h.source = 'ai_generated' AND NOT (COALESCE(h.review_state, '') = 'reviewed' AND COALESCE(h.approval_state, '') = 'approved') AND (LOWER(BTRIM(h.name)) IN ('ecu', 'ecus', 'gateway', 'gateways', 'sensor', 'sensoren', 'sensors') OR LOWER(BTRIM(h.name)) ~ '^[0-9]+[[:space:]].*(sensor(en|s)?|ecu(s)?|gateway(s)?)$'))",
+      "seconds": 0.006546900141984224
+    },
+    {
+      "sql": "SELECT COUNT(*) AS count FROM engineering_interfaces i JOIN engineering_hardware_nodes h ON h.id = i.hardware_node_id AND h.project_id = i.project_id WHERE i.project_id = %s AND NOT (h.source = 'ai_generated' AND NOT (COALESCE(h.review_state, '') = 'reviewed' AND COALESCE(h.approval_state, '') = 'approved') AND (LOWER(BTRIM(h.name)) IN ('ecu', 'ecus', 'gateway', 'gateways', 'sensor', 'sensoren', 'sensors') OR LOWER(BTRIM(h.name)) ~ '^[0-9]+[[:space:]].*(sensor(en|s)?|ecu(s)?|gateway(s)?)$'))",
+      "seconds": 0.003166800132021308
+    },
+    {
+      "sql": "SELECT COUNT(*) AS count FROM engineering_messages m JOIN engineering_interfaces i ON i.id = m.interface_id AND i.project_id = m.project_id JOIN engineering_hardware_nodes h ON h.id = i.hardware_node_id AND h.project_id = i.project_id WHERE m.project_id = %s AND NOT (h.source = 'ai_generated' AND NOT (COALESCE(h.review_state, '') = 'reviewed' AND COALESCE(h.approval_state, '') = 'approved') AND (LOWER(BTRIM(h.name)) IN ('ecu', 'ecus', 'gateway', 'gateways', 'sensor', 'sensoren', 'sensors') OR LOWER(BTRIM(h.name)) ~ '^[0-9]+[[:space:]].*(sensor(en|s)?|ecu(s)?|gateway(s)?)$'))",
+      "seconds": 0.015152600011788309
+    },
+    {
+      "sql": "SELECT COUNT(*) AS count FROM engineering_signals s JOIN engineering_messages m ON m.id = s.message_id AND m.project_id = s.project_id JOIN engineering_interfaces i ON i.id = m.interface_id AND i.project_id = m.project_id JOIN engineering_hardware_nodes h ON h.id = i.hardware_node_id AND h.project_id = i.project_id WHERE s.project_id = %s AND NOT (h.source = 'ai_generated' AND NOT (COALESCE(h.review_state, '') = 'reviewed' AND COALESCE(h.approval_state, '') = 'approved') AND (LOWER(BTRIM(h.name)) IN ('ecu', 'ecus', 'gateway', 'gateways', 'sensor', 'sensoren', 'sensors') OR LOWER(BTRIM(h.name)) ~ '^[0-9]+[[:space:]].*(sensor(en|s)?|ecu(s)?|gateway(s)?)$'))",
+      "seconds": 0.03730049997102469
+    },
+    {
+      "sql": "SELECT h.device_type, COUNT(*) AS count FROM engineering_hardware_nodes h WHERE h.project_id = %s AND NOT (h.source = 'ai_generated' AND NOT (COALESCE(h.review_state, '') = 'reviewed' AND COALESCE(h.approval_state, '') = 'approved') AND (LOWER(BTRIM(h.name)) IN ('ecu', 'ecus', 'gateway', 'gateways', 'sensor', 'sensoren', 'sensors') OR LOWER(BTRIM(h.name)) ~ '^[0-9]+[[:space:]].*(sensor(en|s)?|ecu(s)?|gateway(s)?)$')) GROUP BY h.device_type",
+      "seconds": 0.0024518000427633524
+    },
+    {
+      "sql": "SELECT (SELECT COUNT(*) FROM engineering_functions f WHERE f.project_id = %s AND (f.hardware_node_id IS NULL OR NOT EXISTS ( SELECT 1 FROM engineering_hardware_nodes n WHERE n.id = f.hardware_node_id AND n.project_id = f.project_id))) AS functions, (SELECT COUNT(*) FROM engineering_interfaces i WHERE i.project_id = %s AND (i.hardware_node_id IS NULL OR NOT EXISTS (SELECT 1 FROM engineering_hardware_nodes n WHERE n.id = i.hardware_node_id AND n.project_id = i.project_id) OR (i.function_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM engineering_functions f WHERE f.id = i.function_id AND f.project_id = i.project_id)))) AS interfaces, (SELECT COUNT(*) FROM engineering_messages m WHERE m.project_id = %s AND (m.interface_id IS NULL OR m.direction IS NULL OR m.hardware_interface_id IS NULL OR m.dlc IS NULL OR NOT EXISTS (SELECT 1 FROM engineering_interfaces i WHERE i.id = m.interface_id AND i.project_id = m.project_id) OR NOT EXISTS (SELECT 1 FROM engineering_hardware_interfaces hi WHERE hi.id = m.hardware_interface_id AND hi.project_id = m.project_id))) AS messages, (SELECT COUNT(*) FROM engineering_signals s WHERE s.project_id = %s AND (CASE WHEN s.configuration -> 'direct_signal_binding' IS NOT NULL THEN s.message_id IS NOT NULL OR s.length_bits IS NULL OR s.length_bits <= 0 OR s.data_type IS NULL OR COALESCE(s.configuration -> 'direct_signal_binding' ->> 'source_hardware_node_ref', '') = '' OR COALESCE(s.configuration -> 'direct_signal_binding' ->> 'destination_hardware_node_ref', '') = '' OR NOT EXISTS (SELECT 1 FROM engineering_hardware_interfaces hi WHERE hi.id::text = s.configuration -> 'direct_signal_binding' ->> 'physical_port_ref' AND hi.project_id = s.project_id AND hi.hardware_node_id::text = s.configuration -> 'direct_signal_binding' ->> 'source_hardware_node_ref' AND lower(hi.technology) = lower(s.configuration -> 'direct_signal_binding' ->> 'signal_type')) OR NOT EXISTS (SELECT 1 FROM engineering_hardware_nodes n WHERE n.id::text = s.configuration -> 'direct_signal_binding' ->> 'destination_hardware_node_ref' AND n.project_id = s.project_id) ELSE s.message_id IS NULL OR s.start_bit IS NULL OR s.length_bits IS NULL OR s.byte_order IS NULL OR s.data_type IS NULL OR s.factor IS NULL OR s.offset_value IS NULL OR NOT EXISTS (SELECT 1 FROM engineering_messages m WHERE m.id = s.message_id AND m.project_id = s.project_id) END)) AS signals",
+      "seconds": 0.0173184999730438
+    },
+    {
+      "sql": "SELECT cycle_ms, CASE WHEN jsonb_typeof(configuration) = 'object' THEN jsonb_build_object('communication_contract', configuration -> 'communication_contract') ELSE configuration END AS configuration FROM engineering_messages WHERE project_id = %s",
+      "seconds": 0.025528700090944767
+    },
+    {
+      "sql": "SELECT (SELECT COUNT(*) FROM engineering_hardware_nodes h WHERE h.project_id = %s AND COALESCE(h.device_class, 0) >= 3 AND h.lifecycle_state NOT IN ('deprecated', 'superseded')) AS function_required, (SELECT COUNT(*) FROM engineering_hardware_nodes h WHERE h.project_id = %s AND COALESCE(h.device_class, 0) >= 3 AND h.lifecycle_state NOT IN ('deprecated', 'superseded') AND NOT EXISTS (SELECT 1 FROM engineering_functions f WHERE f.project_id = h.project_id AND f.hardware_node_id = h.id AND f.lifecycle_state NOT IN ('deprecated', 'superseded') AND f.provenance ->> 'origin' IS DISTINCT FROM 'network-editor')) AS functions_missing, (SELECT COUNT(*) FROM engineering_functions f JOIN engineering_hardware_nodes h ON h.id = f.hardware_node_id AND h.project_id = f.project_id WHERE f.project_id = %s AND COALESCE(h.device_class, 0) < 3 AND f.lifecycle_state NOT IN ('deprecated', 'superseded') AND f.provenance ->> 'origin' IS DISTINCT FROM 'network-editor') AS functions_unexpected, (SELECT COALESCE(SUM(grouped.count - 1), 0) FROM ( SELECT f.hardware_node_id, COUNT(*) AS count FROM engineering_functions f WHERE f.project_id = %s AND f.lifecycle_state NOT IN ('deprecated', 'superseded') GROUP BY f.hardware_node_id, lower(trim(f.name)) HAVING COUNT(*) > 1 ) grouped) AS functions_duplicate, (SELECT COUNT(*) FROM engineering_hardware_nodes h WHERE h.project_id = %s AND h.lifecycle_state NOT IN ('deprecated', 'superseded') AND NOT EXISTS (SELECT 1 FROM engineering_hardware_interfaces hi WHERE hi.project_id = h.project_id AND hi.hardware_node_id = h.id AND hi.lifecycle_state NOT IN ('deprecated', 'superseded'))) AS hardware_interfaces_missing, (SELECT COUNT(*) FROM engineering_messages m WHERE m.project_id = %s AND m.lifecycle_state NOT IN ('deprecated', 'superseded') AND COALESCE(m.dlc, 0) * 8 < COALESCE(( SELECT MAX(s.start_bit + s.length_bits) FROM engineering_signals s WHERE s.project_id = m.project_id AND s.message_id = m.id AND s.lifecycle_state NOT IN ('deprecated', 'superseded') ), 0)) AS messages_overflow",
+      "seconds": 0.033028800040483475
+    },
+    {
+      "sql": "SELECT COUNT(*) AS total, COUNT(*) FILTER (WHERE approval_state = 'APPROVED') AS approved, COUNT(*) FILTER (WHERE validation ->> 'valid' = 'true') AS valid, COUNT(*) FILTER (WHERE validation ->> 'valid' = 'false') AS invalid, COUNT(*) FILTER (WHERE status = 'CONFLICT') AS conflicts FROM engineering_routing_entries WHERE project_id = %s AND status NOT IN ('SUPERSEDED', 'DEPRECATED', 'REJECTED', 'OUTDATED')",
+      "seconds": 0.03262749989517033
+    },
+    {
+      "sql": "WITH active_routes AS ( SELECT id, source, destinations FROM engineering_routing_entries WHERE project_id = %s AND status NOT IN ('SUPERSEDED', 'DEPRECATED', 'REJECTED', 'OUTDATED') ), route_interfaces AS ( SELECT id AS route_id, source ->> 'interface_id' AS interface_id FROM active_routes UNION ALL SELECT route.id AS route_id, destination.value ->> 'interface_id' AS interface_id FROM active_routes AS route CROSS JOIN LATERAL jsonb_array_elements( CASE WHEN jsonb_typeof(route.destinations) = 'array' THEN route.destinations ELSE '[]'::jsonb END ) AS destination(value) ) SELECT COUNT(DISTINCT route_interfaces.route_id) AS routes, COUNT(DISTINCT interfaces.id) AS interfaces FROM route_interfaces JOIN engineering_interfaces AS interfaces ON interfaces.id::text = route_interfaces.interface_id AND interfaces.project_id = %s WHERE interfaces.name ~* '^system_[0-9]+_[0-9]+$'",
+      "seconds": 0.006356500089168549
+    },
+    {
+      "sql": "SELECT id, name, lifecycle_state, CASE WHEN jsonb_typeof(configuration) = 'object' THEN jsonb_build_object('communication_contract', configuration -> 'communication_contract', 'routing', configuration -> 'routing') || CASE WHEN configuration ? 'transport_unit' THEN jsonb_build_object('transport_unit', configuration -> 'transport_unit') ELSE '{}'::jsonb END ELSE configuration END AS configuration FROM engineering_messages WHERE project_id = %s",
+      "seconds": 0.40477069991175085
+    },
+    {
+      "sql": "SELECT id, message_id, lifecycle_state, CASE WHEN message_id IS NULL THEN configuration -> 'direct_signal_binding' END AS direct_signal_binding FROM engineering_signals WHERE project_id = %s",
+      "seconds": 0.005961499875411391
+    },
+    {
+      "sql": "SELECT id, status, approval_state, validation ->> 'valid' AS valid, CASE WHEN jsonb_typeof(payload) = 'object' THEN jsonb_build_object('message_id', payload -> 'message_id', 'message_ids', payload -> 'message_ids', 'signal_id', payload -> 'signal_id', 'signal_ids', payload -> 'signal_ids') ELSE payload END AS payload FROM engineering_routing_entries WHERE project_id = %s",
+      "seconds": 0.026167499949224293
+    },
+    {
+      "sql": "SELECT id FROM engineering_hardware_nodes WHERE project_id = %s",
+      "seconds": 0.002500000176951289
+    },
+    {
+      "sql": "SELECT id, hardware_node_id, technology, network_ref, channel_index, controller_ref, physical_port_ref FROM engineering_hardware_interfaces WHERE project_id = %s",
+      "seconds": 0.004252900020219386
+    },
+    {
+      "sql": "SELECT id, analysis_type, status, is_outdated, outdated_reason, created_at FROM engineering_analysis_snapshots WHERE project_id = %s ORDER BY created_at DESC",
+      "seconds": 0.0026874999748542905
+    },
+    {
+      "sql": "SELECT * FROM engineering_workflow_projects WHERE project_id = %s",
+      "seconds": 0.061651599942706525
+    },
+    {
+      "sql": "SELECT COUNT(*) AS count FROM engineering_hardware_nodes h WHERE h.project_id = %s AND NOT (h.source = 'ai_generated' AND NOT (COALESCE(h.review_state, '') = 'reviewed' AND COALESCE(h.approval_state, '') = 'approved') AND (LOWER(BTRIM(h.name)) IN ('ecu', 'ecus', 'gateway', 'gateways', 'sensor', 'sensoren', 'sensors') OR LOWER(BTRIM(h.name)) ~ '^[0-9]+[[:space:]].*(sensor(en|s)?|ecu(s)?|gateway(s)?)$'))",
+      "seconds": 0.0025366999907419086
+    },
+    {
+      "sql": "SELECT COUNT(*) AS count FROM engineering_functions f JOIN engineering_hardware_nodes h ON h.id = f.hardware_node_id AND h.project_id = f.project_id WHERE f.project_id = %s AND NOT (h.source = 'ai_generated' AND NOT (COALESCE(h.review_state, '') = 'reviewed' AND COALESCE(h.approval_state, '') = 'approved') AND (LOWER(BTRIM(h.name)) IN ('ecu', 'ecus', 'gateway', 'gateways', 'sensor', 'sensoren', 'sensors') OR LOWER(BTRIM(h.name)) ~ '^[0-9]+[[:space:]].*(sensor(en|s)?|ecu(s)?|gateway(s)?)$'))",
+      "seconds": 0.001451799995265901
+    },
+    {
+      "sql": "SELECT COUNT(*) AS count FROM engineering_hardware_interfaces hi JOIN engineering_hardware_nodes h ON h.id = hi.hardware_node_id AND h.project_id = hi.project_id WHERE hi.project_id = %s AND NOT (h.source = 'ai_generated' AND NOT (COALESCE(h.review_state, '') = 'reviewed' AND COALESCE(h.approval_state, '') = 'approved') AND (LOWER(BTRIM(h.name)) IN ('ecu', 'ecus', 'gateway', 'gateways', 'sensor', 'sensoren', 'sensors') OR LOWER(BTRIM(h.name)) ~ '^[0-9]+[[:space:]].*(sensor(en|s)?|ecu(s)?|gateway(s)?)$'))",
+      "seconds": 0.006112499977461994
+    },
+    {
+      "sql": "SELECT COUNT(*) AS count FROM engineering_interfaces i JOIN engineering_hardware_nodes h ON h.id = i.hardware_node_id AND h.project_id = i.project_id WHERE i.project_id = %s AND NOT (h.source = 'ai_generated' AND NOT (COALESCE(h.review_state, '') = 'reviewed' AND COALESCE(h.approval_state, '') = 'approved') AND (LOWER(BTRIM(h.name)) IN ('ecu', 'ecus', 'gateway', 'gateways', 'sensor', 'sensoren', 'sensors') OR LOWER(BTRIM(h.name)) ~ '^[0-9]+[[:space:]].*(sensor(en|s)?|ecu(s)?|gateway(s)?)$'))",
+      "seconds": 0.0023409000132232904
+    },
+    {
+      "sql": "SELECT COUNT(*) AS count FROM engineering_messages m JOIN engineering_interfaces i ON i.id = m.interface_id AND i.project_id = m.project_id JOIN engineering_hardware_nodes h ON h.id = i.hardware_node_id AND h.project_id = i.project_id WHERE m.project_id = %s AND NOT (h.source = 'ai_generated' AND NOT (COALESCE(h.review_state, '') = 'reviewed' AND COALESCE(h.approval_state, '') = 'approved') AND (LOWER(BTRIM(h.name)) IN ('ecu', 'ecus', 'gateway', 'gateways', 'sensor', 'sensoren', 'sensors') OR LOWER(BTRIM(h.name)) ~ '^[0-9]+[[:space:]].*(sensor(en|s)?|ecu(s)?|gateway(s)?)$'))",
+      "seconds": 0.009845399996265769
+    },
+    {
+      "sql": "SELECT COUNT(*) AS count FROM engineering_signals s JOIN engineering_messages m ON m.id = s.message_id AND m.project_id = s.project_id JOIN engineering_interfaces i ON i.id = m.interface_id AND i.project_id = m.project_id JOIN engineering_hardware_nodes h ON h.id = i.hardware_node_id AND h.project_id = i.project_id WHERE s.project_id = %s AND NOT (h.source = 'ai_generated' AND NOT (COALESCE(h.review_state, '') = 'reviewed' AND COALESCE(h.approval_state, '') = 'approved') AND (LOWER(BTRIM(h.name)) IN ('ecu', 'ecus', 'gateway', 'gateways', 'sensor', 'sensoren', 'sensors') OR LOWER(BTRIM(h.name)) ~ '^[0-9]+[[:space:]].*(sensor(en|s)?|ecu(s)?|gateway(s)?)$'))",
+      "seconds": 0.035256800008937716
+    },
+    {
+      "sql": "SELECT h.device_type, COUNT(*) AS count FROM engineering_hardware_nodes h WHERE h.project_id = %s AND NOT (h.source = 'ai_generated' AND NOT (COALESCE(h.review_state, '') = 'reviewed' AND COALESCE(h.approval_state, '') = 'approved') AND (LOWER(BTRIM(h.name)) IN ('ecu', 'ecus', 'gateway', 'gateways', 'sensor', 'sensoren', 'sensors') OR LOWER(BTRIM(h.name)) ~ '^[0-9]+[[:space:]].*(sensor(en|s)?|ecu(s)?|gateway(s)?)$')) GROUP BY h.device_type",
+      "seconds": 0.0019368999637663364
+    },
+    {
+      "sql": "SELECT (SELECT COUNT(*) FROM engineering_functions f WHERE f.project_id = %s AND (f.hardware_node_id IS NULL OR NOT EXISTS ( SELECT 1 FROM engineering_hardware_nodes n WHERE n.id = f.hardware_node_id AND n.project_id = f.project_id))) AS functions, (SELECT COUNT(*) FROM engineering_interfaces i WHERE i.project_id = %s AND (i.hardware_node_id IS NULL OR NOT EXISTS (SELECT 1 FROM engineering_hardware_nodes n WHERE n.id = i.hardware_node_id AND n.project_id = i.project_id) OR (i.function_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM engineering_functions f WHERE f.id = i.function_id AND f.project_id = i.project_id)))) AS interfaces, (SELECT COUNT(*) FROM engineering_messages m WHERE m.project_id = %s AND (m.interface_id IS NULL OR m.direction IS NULL OR m.hardware_interface_id IS NULL OR m.dlc IS NULL OR NOT EXISTS (SELECT 1 FROM engineering_interfaces i WHERE i.id = m.interface_id AND i.project_id = m.project_id) OR NOT EXISTS (SELECT 1 FROM engineering_hardware_interfaces hi WHERE hi.id = m.hardware_interface_id AND hi.project_id = m.project_id))) AS messages, (SELECT COUNT(*) FROM engineering_signals s WHERE s.project_id = %s AND (CASE WHEN s.configuration -> 'direct_signal_binding' IS NOT NULL THEN s.message_id IS NOT NULL OR s.length_bits IS NULL OR s.length_bits <= 0 OR s.data_type IS NULL OR COALESCE(s.configuration -> 'direct_signal_binding' ->> 'source_hardware_node_ref', '') = '' OR COALESCE(s.configuration -> 'direct_signal_binding' ->> 'destination_hardware_node_ref', '') = '' OR NOT EXISTS (SELECT 1 FROM engineering_hardware_interfaces hi WHERE hi.id::text = s.configuration -> 'direct_signal_binding' ->> 'physical_port_ref' AND hi.project_id = s.project_id AND hi.hardware_node_id::text = s.configuration -> 'direct_signal_binding' ->> 'source_hardware_node_ref' AND lower(hi.technology) = lower(s.configuration -> 'direct_signal_binding' ->> 'signal_type')) OR NOT EXISTS (SELECT 1 FROM engineering_hardware_nodes n WHERE n.id::text = s.configuration -> 'direct_signal_binding' ->> 'destination_hardware_node_ref' AND n.project_id = s.project_id) ELSE s.message_id IS NULL OR s.start_bit IS NULL OR s.length_bits IS NULL OR s.byte_order IS NULL OR s.data_type IS NULL OR s.factor IS NULL OR s.offset_value IS NULL OR NOT EXISTS (SELECT 1 FROM engineering_messages m WHERE m.id = s.message_id AND m.project_id = s.project_id) END)) AS signals",
+      "seconds": 0.018139699939638376
+    },
+    {
+      "sql": "SELECT cycle_ms, CASE WHEN jsonb_typeof(configuration) = 'object' THEN jsonb_build_object('communication_contract', configuration -> 'communication_contract') ELSE configuration END AS configuration FROM engineering_messages WHERE project_id = %s",
+      "seconds": 0.02088510012254119
+    },
+    {
+      "sql": "SELECT (SELECT COUNT(*) FROM engineering_hardware_nodes h WHERE h.project_id = %s AND COALESCE(h.device_class, 0) >= 3 AND h.lifecycle_state NOT IN ('deprecated', 'superseded')) AS function_required, (SELECT COUNT(*) FROM engineering_hardware_nodes h WHERE h.project_id = %s AND COALESCE(h.device_class, 0) >= 3 AND h.lifecycle_state NOT IN ('deprecated', 'superseded') AND NOT EXISTS (SELECT 1 FROM engineering_functions f WHERE f.project_id = h.project_id AND f.hardware_node_id = h.id AND f.lifecycle_state NOT IN ('deprecated', 'superseded') AND f.provenance ->> 'origin' IS DISTINCT FROM 'network-editor')) AS functions_missing, (SELECT COUNT(*) FROM engineering_functions f JOIN engineering_hardware_nodes h ON h.id = f.hardware_node_id AND h.project_id = f.project_id WHERE f.project_id = %s AND COALESCE(h.device_class, 0) < 3 AND f.lifecycle_state NOT IN ('deprecated', 'superseded') AND f.provenance ->> 'origin' IS DISTINCT FROM 'network-editor') AS functions_unexpected, (SELECT COALESCE(SUM(grouped.count - 1), 0) FROM ( SELECT f.hardware_node_id, COUNT(*) AS count FROM engineering_functions f WHERE f.project_id = %s AND f.lifecycle_state NOT IN ('deprecated', 'superseded') GROUP BY f.hardware_node_id, lower(trim(f.name)) HAVING COUNT(*) > 1 ) grouped) AS functions_duplicate, (SELECT COUNT(*) FROM engineering_hardware_nodes h WHERE h.project_id = %s AND h.lifecycle_state NOT IN ('deprecated', 'superseded') AND NOT EXISTS (SELECT 1 FROM engineering_hardware_interfaces hi WHERE hi.project_id = h.project_id AND hi.hardware_node_id = h.id AND hi.lifecycle_state NOT IN ('deprecated', 'superseded'))) AS hardware_interfaces_missing, (SELECT COUNT(*) FROM engineering_messages m WHERE m.project_id = %s AND m.lifecycle_state NOT IN ('deprecated', 'superseded') AND COALESCE(m.dlc, 0) * 8 < COALESCE(( SELECT MAX(s.start_bit + s.length_bits) FROM engineering_signals s WHERE s.project_id = m.project_id AND s.message_id = m.id AND s.lifecycle_state NOT IN ('deprecated', 'superseded') ), 0)) AS messages_overflow",
+      "seconds": 0.03283399995416403
+    },
+    {
+      "sql": "SELECT COUNT(*) AS total, COUNT(*) FILTER (WHERE approval_state = 'APPROVED') AS approved, COUNT(*) FILTER (WHERE validation ->> 'valid' = 'true') AS valid, COUNT(*) FILTER (WHERE validation ->> 'valid' = 'false') AS invalid, COUNT(*) FILTER (WHERE status = 'CONFLICT') AS conflicts FROM engineering_routing_entries WHERE project_id = %s AND status NOT IN ('SUPERSEDED', 'DEPRECATED', 'REJECTED', 'OUTDATED')",
+      "seconds": 0.0290973000228405
+    },
+    {
+      "sql": "WITH active_routes AS ( SELECT id, source, destinations FROM engineering_routing_entries WHERE project_id = %s AND status NOT IN ('SUPERSEDED', 'DEPRECATED', 'REJECTED', 'OUTDATED') ), route_interfaces AS ( SELECT id AS route_id, source ->> 'interface_id' AS interface_id FROM active_routes UNION ALL SELECT route.id AS route_id, destination.value ->> 'interface_id' AS interface_id FROM active_routes AS route CROSS JOIN LATERAL jsonb_array_elements( CASE WHEN jsonb_typeof(route.destinations) = 'array' THEN route.destinations ELSE '[]'::jsonb END ) AS destination(value) ) SELECT COUNT(DISTINCT route_interfaces.route_id) AS routes, COUNT(DISTINCT interfaces.id) AS interfaces FROM route_interfaces JOIN engineering_interfaces AS interfaces ON interfaces.id::text = route_interfaces.interface_id AND interfaces.project_id = %s WHERE interfaces.name ~* '^system_[0-9]+_[0-9]+$'",
+      "seconds": 0.002672900096513331
+    },
+    {
+      "sql": "SELECT id, name, lifecycle_state, CASE WHEN jsonb_typeof(configuration) = 'object' THEN jsonb_build_object('communication_contract', configuration -> 'communication_contract', 'routing', configuration -> 'routing') || CASE WHEN configuration ? 'transport_unit' THEN jsonb_build_object('transport_unit', configuration -> 'transport_unit') ELSE '{}'::jsonb END ELSE configuration END AS configuration FROM engineering_messages WHERE project_id = %s",
+      "seconds": 0.05305110011249781
+    },
+    {
+      "sql": "SELECT id, message_id, lifecycle_state, CASE WHEN message_id IS NULL THEN configuration -> 'direct_signal_binding' END AS direct_signal_binding FROM engineering_signals WHERE project_id = %s",
+      "seconds": 0.005842299899086356
+    },
+    {
+      "sql": "SELECT id, status, approval_state, validation ->> 'valid' AS valid, CASE WHEN jsonb_typeof(payload) = 'object' THEN jsonb_build_object('message_id', payload -> 'message_id', 'message_ids', payload -> 'message_ids', 'signal_id', payload -> 'signal_id', 'signal_ids', payload -> 'signal_ids') ELSE payload END AS payload FROM engineering_routing_entries WHERE project_id = %s",
+      "seconds": 0.02701959991827607
+    },
+    {
+      "sql": "SELECT id FROM engineering_hardware_nodes WHERE project_id = %s",
+      "seconds": 0.0025119000347331166
+    },
+    {
+      "sql": "SELECT id, hardware_node_id, technology, network_ref, channel_index, controller_ref, physical_port_ref FROM engineering_hardware_interfaces WHERE project_id = %s",
+      "seconds": 0.0038621999556198716
+    },
+    {
+      "sql": "SELECT id, analysis_type, status, is_outdated, outdated_reason, created_at FROM engineering_analysis_snapshots WHERE project_id = %s ORDER BY created_at DESC",
+      "seconds": 0.0015808000462129712
+    },
+    {
+      "sql": "SELECT * FROM engineering_workflow_projects WHERE project_id = %s",
+      "seconds": 0.05481930007226765
+    },
+    {
+      "sql": "SELECT COUNT(*) AS count FROM engineering_hardware_nodes h WHERE h.project_id = %s AND NOT (h.source = 'ai_generated' AND NOT (COALESCE(h.review_state, '') = 'reviewed' AND COALESCE(h.approval_state, '') = 'approved') AND (LOWER(BTRIM(h.name)) IN ('ecu', 'ecus', 'gateway', 'gateways', 'sensor', 'sensoren', 'sensors') OR LOWER(BTRIM(h.name)) ~ '^[0-9]+[[:space:]].*(sensor(en|s)?|ecu(s)?|gateway(s)?)$'))",
+      "seconds": 0.0021957000717520714
+    },
+    {
+      "sql": "SELECT COUNT(*) AS count FROM engineering_functions f JOIN engineering_hardware_nodes h ON h.id = f.hardware_node_id AND h.project_id = f.project_id WHERE f.project_id = %s AND NOT (h.source = 'ai_generated' AND NOT (COALESCE(h.review_state, '') = 'reviewed' AND COALESCE(h.approval_state, '') = 'approved') AND (LOWER(BTRIM(h.name)) IN ('ecu', 'ecus', 'gateway', 'gateways', 'sensor', 'sensoren', 'sensors') OR LOWER(BTRIM(h.name)) ~ '^[0-9]+[[:space:]].*(sensor(en|s)?|ecu(s)?|gateway(s)?)$'))",
+      "seconds": 0.0014081000117585063
+    },
+    {
+      "sql": "SELECT COUNT(*) AS count FROM engineering_hardware_interfaces hi JOIN engineering_hardware_nodes h ON h.id = hi.hardware_node_id AND h.project_id = hi.project_id WHERE hi.project_id = %s AND NOT (h.source = 'ai_generated' AND NOT (COALESCE(h.review_state, '') = 'reviewed' AND COALESCE(h.approval_state, '') = 'approved') AND (LOWER(BTRIM(h.name)) IN ('ecu', 'ecus', 'gateway', 'gateways', 'sensor', 'sensoren', 'sensors') OR LOWER(BTRIM(h.name)) ~ '^[0-9]+[[:space:]].*(sensor(en|s)?|ecu(s)?|gateway(s)?)$'))",
+      "seconds": 0.007231400115415454
+    },
+    {
+      "sql": "SELECT COUNT(*) AS count FROM engineering_interfaces i JOIN engineering_hardware_nodes h ON h.id = i.hardware_node_id AND h.project_id = i.project_id WHERE i.project_id = %s AND NOT (h.source = 'ai_generated' AND NOT (COALESCE(h.review_state, '') = 'reviewed' AND COALESCE(h.approval_state, '') = 'approved') AND (LOWER(BTRIM(h.name)) IN ('ecu', 'ecus', 'gateway', 'gateways', 'sensor', 'sensoren', 'sensors') OR LOWER(BTRIM(h.name)) ~ '^[0-9]+[[:space:]].*(sensor(en|s)?|ecu(s)?|gateway(s)?)$'))",
+      "seconds": 0.00261929992120713
+    },
+    {
+      "sql": "SELECT COUNT(*) AS count FROM engineering_messages m JOIN engineering_interfaces i ON i.id = m.interface_id AND i.project_id = m.project_id JOIN engineering_hardware_nodes h ON h.id = i.hardware_node_id AND h.project_id = i.project_id WHERE m.project_id = %s AND NOT (h.source = 'ai_generated' AND NOT (COALESCE(h.review_state, '') = 'reviewed' AND COALESCE(h.approval_state, '') = 'approved') AND (LOWER(BTRIM(h.name)) IN ('ecu', 'ecus', 'gateway', 'gateways', 'sensor', 'sensoren', 'sensors') OR LOWER(BTRIM(h.name)) ~ '^[0-9]+[[:space:]].*(sensor(en|s)?|ecu(s)?|gateway(s)?)$'))",
+      "seconds": 0.01076530001591891
+    },
+    {
+      "sql": "SELECT COUNT(*) AS count FROM engineering_signals s JOIN engineering_messages m ON m.id = s.message_id AND m.project_id = s.project_id JOIN engineering_interfaces i ON i.id = m.interface_id AND i.project_id = m.project_id JOIN engineering_hardware_nodes h ON h.id = i.hardware_node_id AND h.project_id = i.project_id WHERE s.project_id = %s AND NOT (h.source = 'ai_generated' AND NOT (COALESCE(h.review_state, '') = 'reviewed' AND COALESCE(h.approval_state, '') = 'approved') AND (LOWER(BTRIM(h.name)) IN ('ecu', 'ecus', 'gateway', 'gateways', 'sensor', 'sensoren', 'sensors') OR LOWER(BTRIM(h.name)) ~ '^[0-9]+[[:space:]].*(sensor(en|s)?|ecu(s)?|gateway(s)?)$'))",
+      "seconds": 0.0381127999862656
+    },
+    {
+      "sql": "SELECT h.device_type, COUNT(*) AS count FROM engineering_hardware_nodes h WHERE h.project_id = %s AND NOT (h.source = 'ai_generated' AND NOT (COALESCE(h.review_state, '') = 'reviewed' AND COALESCE(h.approval_state, '') = 'approved') AND (LOWER(BTRIM(h.name)) IN ('ecu', 'ecus', 'gateway', 'gateways', 'sensor', 'sensoren', 'sensors') OR LOWER(BTRIM(h.name)) ~ '^[0-9]+[[:space:]].*(sensor(en|s)?|ecu(s)?|gateway(s)?)$')) GROUP BY h.device_type",
+      "seconds": 0.0023297000443562865
+    },
+    {
+      "sql": "SELECT (SELECT COUNT(*) FROM engineering_functions f WHERE f.project_id = %s AND (f.hardware_node_id IS NULL OR NOT EXISTS ( SELECT 1 FROM engineering_hardware_nodes n WHERE n.id = f.hardware_node_id AND n.project_id = f.project_id))) AS functions, (SELECT COUNT(*) FROM engineering_interfaces i WHERE i.project_id = %s AND (i.hardware_node_id IS NULL OR NOT EXISTS (SELECT 1 FROM engineering_hardware_nodes n WHERE n.id = i.hardware_node_id AND n.project_id = i.project_id) OR (i.function_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM engineering_functions f WHERE f.id = i.function_id AND f.project_id = i.project_id)))) AS interfaces, (SELECT COUNT(*) FROM engineering_messages m WHERE m.project_id = %s AND (m.interface_id IS NULL OR m.direction IS NULL OR m.hardware_interface_id IS NULL OR m.dlc IS NULL OR NOT EXISTS (SELECT 1 FROM engineering_interfaces i WHERE i.id = m.interface_id AND i.project_id = m.project_id) OR NOT EXISTS (SELECT 1 FROM engineering_hardware_interfaces hi WHERE hi.id = m.hardware_interface_id AND hi.project_id = m.project_id))) AS messages, (SELECT COUNT(*) FROM engineering_signals s WHERE s.project_id = %s AND (CASE WHEN s.configuration -> 'direct_signal_binding' IS NOT NULL THEN s.message_id IS NOT NULL OR s.length_bits IS NULL OR s.length_bits <= 0 OR s.data_type IS NULL OR COALESCE(s.configuration -> 'direct_signal_binding' ->> 'source_hardware_node_ref', '') = '' OR COALESCE(s.configuration -> 'direct_signal_binding' ->> 'destination_hardware_node_ref', '') = '' OR NOT EXISTS (SELECT 1 FROM engineering_hardware_interfaces hi WHERE hi.id::text = s.configuration -> 'direct_signal_binding' ->> 'physical_port_ref' AND hi.project_id = s.project_id AND hi.hardware_node_id::text = s.configuration -> 'direct_signal_binding' ->> 'source_hardware_node_ref' AND lower(hi.technology) = lower(s.configuration -> 'direct_signal_binding' ->> 'signal_type')) OR NOT EXISTS (SELECT 1 FROM engineering_hardware_nodes n WHERE n.id::text = s.configuration -> 'direct_signal_binding' ->> 'destination_hardware_node_ref' AND n.project_id = s.project_id) ELSE s.message_id IS NULL OR s.start_bit IS NULL OR s.length_bits IS NULL OR s.byte_order IS NULL OR s.data_type IS NULL OR s.factor IS NULL OR s.offset_value IS NULL OR NOT EXISTS (SELECT 1 FROM engineering_messages m WHERE m.id = s.message_id AND m.project_id = s.project_id) END)) AS signals",
+      "seconds": 0.02050509990658611
+    },
+    {
+      "sql": "SELECT cycle_ms, CASE WHEN jsonb_typeof(configuration) = 'object' THEN jsonb_build_object('communication_contract', configuration -> 'communication_contract') ELSE configuration END AS configuration FROM engineering_messages WHERE project_id = %s",
+      "seconds": 0.022473299875855446
+    },
+    {
+      "sql": "SELECT (SELECT COUNT(*) FROM engineering_hardware_nodes h WHERE h.project_id = %s AND COALESCE(h.device_class, 0) >= 3 AND h.lifecycle_state NOT IN ('deprecated', 'superseded')) AS function_required, (SELECT COUNT(*) FROM engineering_hardware_nodes h WHERE h.project_id = %s AND COALESCE(h.device_class, 0) >= 3 AND h.lifecycle_state NOT IN ('deprecated', 'superseded') AND NOT EXISTS (SELECT 1 FROM engineering_functions f WHERE f.project_id = h.project_id AND f.hardware_node_id = h.id AND f.lifecycle_state NOT IN ('deprecated', 'superseded') AND f.provenance ->> 'origin' IS DISTINCT FROM 'network-editor')) AS functions_missing, (SELECT COUNT(*) FROM engineering_functions f JOIN engineering_hardware_nodes h ON h.id = f.hardware_node_id AND h.project_id = f.project_id WHERE f.project_id = %s AND COALESCE(h.device_class, 0) < 3 AND f.lifecycle_state NOT IN ('deprecated', 'superseded') AND f.provenance ->> 'origin' IS DISTINCT FROM 'network-editor') AS functions_unexpected, (SELECT COALESCE(SUM(grouped.count - 1), 0) FROM ( SELECT f.hardware_node_id, COUNT(*) AS count FROM engineering_functions f WHERE f.project_id = %s AND f.lifecycle_state NOT IN ('deprecated', 'superseded') GROUP BY f.hardware_node_id, lower(trim(f.name)) HAVING COUNT(*) > 1 ) grouped) AS functions_duplicate, (SELECT COUNT(*) FROM engineering_hardware_nodes h WHERE h.project_id = %s AND h.lifecycle_state NOT IN ('deprecated', 'superseded') AND NOT EXISTS (SELECT 1 FROM engineering_hardware_interfaces hi WHERE hi.project_id = h.project_id AND hi.hardware_node_id = h.id AND hi.lifecycle_state NOT IN ('deprecated', 'superseded'))) AS hardware_interfaces_missing, (SELECT COUNT(*) FROM engineering_messages m WHERE m.project_id = %s AND m.lifecycle_state NOT IN ('deprecated', 'superseded') AND COALESCE(m.dlc, 0) * 8 < COALESCE(( SELECT MAX(s.start_bit + s.length_bits) FROM engineering_signals s WHERE s.project_id = m.project_id AND s.message_id = m.id AND s.lifecycle_state NOT IN ('deprecated', 'superseded') ), 0)) AS messages_overflow",
+      "seconds": 0.03297639999072999
+    },
+    {
+      "sql": "SELECT COUNT(*) AS total, COUNT(*) FILTER (WHERE approval_state = 'APPROVED') AS approved, COUNT(*) FILTER (WHERE validation ->> 'valid' = 'true') AS valid, COUNT(*) FILTER (WHERE validation ->> 'valid' = 'false') AS invalid, COUNT(*) FILTER (WHERE status = 'CONFLICT') AS conflicts FROM engineering_routing_entries WHERE project_id = %s AND status NOT IN ('SUPERSEDED', 'DEPRECATED', 'REJECTED', 'OUTDATED')",
+      "seconds": 0.027892099926248193
+    },
+    {
+      "sql": "WITH active_routes AS ( SELECT id, source, destinations FROM engineering_routing_entries WHERE project_id = %s AND status NOT IN ('SUPERSEDED', 'DEPRECATED', 'REJECTED', 'OUTDATED') ), route_interfaces AS ( SELECT id AS route_id, source ->> 'interface_id' AS interface_id FROM active_routes UNION ALL SELECT route.id AS route_id, destination.value ->> 'interface_id' AS interface_id FROM active_routes AS route CROSS JOIN LATERAL jsonb_array_elements( CASE WHEN jsonb_typeof(route.destinations) = 'array' THEN route.destinations ELSE '[]'::jsonb END ) AS destination(value) ) SELECT COUNT(DISTINCT route_interfaces.route_id) AS routes, COUNT(DISTINCT interfaces.id) AS interfaces FROM route_interfaces JOIN engineering_interfaces AS interfaces ON interfaces.id::text = route_interfaces.interface_id AND interfaces.project_id = %s WHERE interfaces.name ~* '^system_[0-9]+_[0-9]+$'",
+      "seconds": 0.004543200018815696
+    },
+    {
+      "sql": "SELECT id, name, lifecycle_state, CASE WHEN jsonb_typeof(configuration) = 'object' THEN jsonb_build_object('communication_contract', configuration -> 'communication_contract', 'routing', configuration -> 'routing') || CASE WHEN configuration ? 'transport_unit' THEN jsonb_build_object('transport_unit', configuration -> 'transport_unit') ELSE '{}'::jsonb END ELSE configuration END AS configuration FROM engineering_messages WHERE project_id = %s",
+      "seconds": 0.050979699939489365
+    },
+    {
+      "sql": "SELECT id, message_id, lifecycle_state, CASE WHEN message_id IS NULL THEN configuration -> 'direct_signal_binding' END AS direct_signal_binding FROM engineering_signals WHERE project_id = %s",
+      "seconds": 0.011203999863937497
+    },
+    {
+      "sql": "SELECT id, status, approval_state, validation ->> 'valid' AS valid, CASE WHEN jsonb_typeof(payload) = 'object' THEN jsonb_build_object('message_id', payload -> 'message_id', 'message_ids', payload -> 'message_ids', 'signal_id', payload -> 'signal_id', 'signal_ids', payload -> 'signal_ids') ELSE payload END AS payload FROM engineering_routing_entries WHERE project_id = %s",
+      "seconds": 0.027597300126217306
+    },
+    {
+      "sql": "SELECT id FROM engineering_hardware_nodes WHERE project_id = %s",
+      "seconds": 0.0030260999919846654
+    },
+    {
+      "sql": "SELECT id, hardware_node_id, technology, network_ref, channel_index, controller_ref, physical_port_ref FROM engineering_hardware_interfaces WHERE project_id = %s",
+      "seconds": 0.004522499977611005
+    },
+    {
+      "sql": "SELECT id, analysis_type, status, is_outdated, outdated_reason, created_at FROM engineering_analysis_snapshots WHERE project_id = %s ORDER BY created_at DESC",
+      "seconds": 0.001949499943293631
+    }
+  ]
+}

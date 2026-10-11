@@ -1,0 +1,18 @@
+--- before/frontend/src/features/agent/lib/proposal-client.ts
++++ after/frontend/src/features/agent/lib/proposal-client.ts
+@@ -55,6 +55,7 @@
+         "X-Review-CSRF": csrfToken, "X-Human-Review": "confirmed" },
+         body: JSON.stringify({ revision: proposal.revision }) },
+     ));
++    if (result.status !== 'APPLIED') throw new Error('Der Vorschlag wurde nicht übernommen. Projektwerte wurden geändert; bitte erneut prüfen und die aktuelle Fassung freigeben.');
+     return { ...proposal, ...result, canonical_count: result.canonical_ids?.length ?? proposal.canonical_count };
+   } catch (cause) {
+     try {
+@@ -78,6 +79,7 @@
+         "X-Review-CSRF": csrfToken, "X-Human-Review": "confirmed" },
+         body: JSON.stringify({ revision: proposal.revision }) },
+     ));
++    if (result.status !== 'APPLIED') throw new Error('Der Vorschlag wurde nicht übernommen. Projektwerte wurden geändert; bitte erneut prüfen und die aktuelle Fassung freigeben.');
+     return { ...proposal, ...result, canonical_count: result.canonical_ids?.length ?? proposal.canonical_count };
+   } catch (cause) {
+     try {

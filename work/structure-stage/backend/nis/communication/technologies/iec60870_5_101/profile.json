@@ -1,0 +1,2923 @@
+{
+  "id": "iec60870_5_101",
+  "label": "IEC 60870-5-101",
+  "domain": "generic_networking",
+  "layer": "APPLICATION",
+  "transport_unit": "TELEGRAM",
+  "payload_element_types": [
+    "DATA_OBJECT",
+    "STATUS",
+    "QUALITY"
+  ],
+  "hardware_interface": "explicit_iec101_serial_binding",
+  "hardware_capability_aliases": [
+    "serial_port"
+  ],
+  "default_stack": [
+    "iec60870_5_101"
+  ],
+  "stack_variants": [
+    [
+      "iec60870_5_101"
+    ]
+  ],
+  "default_bitrate": null,
+  "rate_model": {
+    "type": "IEC101_SERIAL_PROFILE",
+    "fields": []
+  },
+  "local_timing_schema": [],
+  "parameter_schema": {
+    "payload_bytes": {
+      "label": "Payload",
+      "category": "physical",
+      "scope": "message",
+      "type": "number",
+      "description": "Actual encoded application data. ASDU addresses/header, FT1.2 L and wire bytes are separately bounded by configured peers.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs101/cs101_asdu.c",
+      "source_revision": "lib60870C tagv2.3.2 ASDU header/VSQ/COT/addresses and sequence encoder",
+      "integer": true
+    },
+    "cycle_ms": {
+      "label": "Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "Standardperiode fuer zyklische Nachrichten.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "minimum_cycle_time_ms": {
+      "label": "Minimum Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "deadline_ms": {
+      "label": "Deadline",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "timeout_ms": {
+      "label": "Timeout",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_latency_ms": {
+      "label": "Maximum Latency",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "jitter_ms": {
+      "label": "Jitter Budget",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "freshness_ms": {
+      "label": "Data Freshness",
+      "category": "timing",
+      "scope": "signal",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "source_processing_delay_ms": {
+      "label": "Source Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_processing_delay_ms": {
+      "label": "Target Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "propagation_delay_ms": {
+      "label": "Propagation",
+      "category": "timing",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.01,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_bus_load_percent": {
+      "label": "Ziel-Buslast",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "Zielwert fuer die aus Routing, Payload, Zyklus und Bitrate berechnete Buslast.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "peak_factor": {
+      "label": "Peak Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.15,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_factor": {
+      "label": "Burst Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.5,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_window_ms": {
+      "label": "Burst Window",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "warning_threshold": {
+      "label": "Load Warning",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "critical_threshold": {
+      "label": "Load Critical",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 75,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "overload_threshold": {
+      "label": "Load Overload",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 90,
+      "unit": "%",
+      "min": 1,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "traffic_class": {
+      "label": "Traffic Class",
+      "category": "qos",
+      "scope": "route",
+      "type": "select",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": "BEST_EFFORT",
+      "options": [
+        "BEST_EFFORT",
+        "CONTROL",
+        "REALTIME",
+        "SAFETY_CRITICAL"
+      ],
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "packet_loss_probability": {
+      "label": "Packet Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "frame_loss_probability": {
+      "label": "Frame Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "bit_error_rate": {
+      "label": "Bit Error Rate",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "corruption_probability": {
+      "label": "Corruption",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duplicate_probability": {
+      "label": "Duplication",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "reordering_probability": {
+      "label": "Reordering",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "required_reliability": {
+      "label": "Required Reliability",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.999,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_offset_ms": {
+      "label": "Clock Offset",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_drift_ppm": {
+      "label": "Clock Drift",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 20,
+      "unit": "ppm",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_precision_ms": {
+      "label": "Sync Precision",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_interval_ms": {
+      "label": "Sync Interval",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1000,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_sync_error_ms": {
+      "label": "Maximum Sync Error",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_delay_ms": {
+      "label": "Gateway Processing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.2,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_queue_delay_ms": {
+      "label": "Gateway Queueing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "protocol_conversion_delay_ms": {
+      "label": "Protocol Conversion",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duration_s": {
+      "label": "Simulation Duration",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 1,
+      "unit": "s",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "seed": {
+      "label": "Random Seed",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 42,
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "max_events": {
+      "label": "Maximum Events",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 100000,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "dropout_probability": {
+      "label": "Failure Injection Dropout",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "iec101_implementation": {
+      "type": "select",
+      "description": "Actual implementation/revision, independently selected from industry.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/user_guide.adoc",
+      "source_revision": "lib60870C pinnedv2.3.2 user guide labelledv2.3.0; serial9600/8E1 is an example, not universal default",
+      "options": [
+        "IEC_INTEROPERABILITY",
+        "LIB60870_C_2_3_2",
+        "ABB_COM600_5_1"
+      ],
+      "label": "implementation",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec101_configuration_phase": {
+      "type": "select",
+      "description": "Actual configured profile versus explicit constructor/user-guide example proposals.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/user_guide.adoc",
+      "source_revision": "lib60870C pinnedv2.3.2 user guide labelledv2.3.0; serial9600/8E1 is an example, not universal default",
+      "options": [
+        "CONFIGURED",
+        "LIB_FACTORY_DEFAULT",
+        "USER_GUIDE_EXAMPLE"
+      ],
+      "label": "configuration phase",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec101_role": {
+      "type": "select",
+      "description": "Actual controlling/controlled station. Application role differs from primary/secondary link direction.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/user_guide.adoc",
+      "source_revision": "lib60870C pinnedv2.3.2 user guide labelledv2.3.0; serial9600/8E1 is an example, not universal default",
+      "options": [
+        "CONTROLLING",
+        "CONTROLLED"
+      ],
+      "label": "role",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec101_link_mode": {
+      "type": "select",
+      "description": "Balanced point-to-point peers versus unbalanced controlling station polling multiple addressed stations.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/user_guide.adoc",
+      "source_revision": "lib60870C pinnedv2.3.2 user guide labelledv2.3.0; serial9600/8E1 is an example, not universal default",
+      "options": [
+        "BALANCED",
+        "UNBALANCED"
+      ],
+      "label": "link mode",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec101_physical": {
+      "type": "select",
+      "description": "Actual serial realization; RS232/RS485/modem limits are not Ethernet link speeds.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/user_guide.adoc",
+      "source_revision": "lib60870C pinnedv2.3.2 user guide labelledv2.3.0; serial9600/8E1 is an example, not universal default",
+      "options": [
+        "RS232",
+        "RS422",
+        "RS485",
+        "MODEM",
+        "VIRTUAL_SERIAL"
+      ],
+      "label": "physical",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec101_serial_binding": {
+      "type": "text",
+      "description": "Actual canonical serial port/segment and all peers.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/user_guide.adoc",
+      "source_revision": "lib60870C pinnedv2.3.2 user guide labelledv2.3.0; serial9600/8E1 is an example, not universal default",
+      "label": "serial binding",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec101_device_source": {
+      "type": "text",
+      "description": "Actual device/firmware revision, serial and FT1.2 support.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/user_guide.adoc",
+      "source_revision": "lib60870C pinnedv2.3.2 user guide labelledv2.3.0; serial9600/8E1 is an example, not universal default",
+      "label": "device source",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec101_interoperability_source": {
+      "type": "text",
+      "description": "Actual common agreement on link addressing, ASDU sizes/types/COT and encodings.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/user_guide.adoc",
+      "source_revision": "lib60870C pinnedv2.3.2 user guide labelledv2.3.0; serial9600/8E1 is an example, not universal default",
+      "label": "interoperability source",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec101_physical_source": {
+      "type": "text",
+      "description": "Actual transceiver/modem, wiring/termination, propagation, turnaround and serial clock bounds.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/user_guide.adoc",
+      "source_revision": "lib60870C pinnedv2.3.2 user guide labelledv2.3.0; serial9600/8E1 is an example, not universal default",
+      "label": "physical source",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec101_schedule_source": {
+      "type": "text",
+      "description": "Actual polling/class1/class2/retry/turnaround/response and command acceptance schedule.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/user_guide.adoc",
+      "source_revision": "lib60870C pinnedv2.3.2 user guide labelledv2.3.0; serial9600/8E1 is an example, not universal default",
+      "label": "schedule source",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec101_type_source": {
+      "type": "text",
+      "description": "Actual ASDU type/quality/time/content interpretation; no invented payload encoding.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/user_guide.adoc",
+      "source_revision": "lib60870C pinnedv2.3.2 user guide labelledv2.3.0; serial9600/8E1 is an example, not universal default",
+      "label": "type source",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec101_command_source": {
+      "type": "text",
+      "description": "Actual select/execute/cancel/ACT_CON/ACT_TERM and timeout acceptance, separate from link ACK.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/user_guide.adoc",
+      "source_revision": "lib60870C pinnedv2.3.2 user guide labelledv2.3.0; serial9600/8E1 is an example, not universal default",
+      "label": "command source",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec101_address_source": {
+      "type": "text",
+      "description": "Actual link station, common ASDU and information-object address mapping, independently assigned.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/user_guide.adoc",
+      "source_revision": "lib60870C pinnedv2.3.2 user guide labelledv2.3.0; serial9600/8E1 is an example, not universal default",
+      "label": "address source",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec101_baud_bps": {
+      "type": "number",
+      "description": "Actual serial bit rate; ABB19200 is a device default, lib9600 is a user-guide example, neither a universal mode maximum.",
+      "source": "https://library.e.abb.com/public/e891a296f0af446b9f807ea7730b8e49/COM600_series_5.1_IEC_60870-5-101_Master_OPC_usm_756703_ENg.pdf",
+      "source_revision": "COM600series5.1 1MRS756703G 2018-03-06 sections3.4.2/3.4.3/6.1; vendor-qualified settings/interoperability",
+      "unit": "bit/s",
+      "min": 1,
+      "label": "baud bps",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "iec101_implementation": "ABB_COM600_5_1"
+          },
+          "value": 19200,
+          "source": "https://library.e.abb.com/public/e891a296f0af446b9f807ea7730b8e49/COM600_series_5.1_IEC_60870-5-101_Master_OPC_usm_756703_ENg.pdf"
+        },
+        {
+          "when": {
+            "iec101_implementation": "LIB60870_C_2_3_2",
+            "iec101_configuration_phase": "USER_GUIDE_EXAMPLE"
+          },
+          "value": 9600,
+          "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/user_guide.adoc"
+        }
+      ]
+    },
+    "iec101_data_bits": {
+      "type": "number",
+      "description": "Actual serial octet size, FT1.2 normal profile8 bits; other device settings need a separate proven encoding.",
+      "source": "https://library.e.abb.com/public/e891a296f0af446b9f807ea7730b8e49/COM600_series_5.1_IEC_60870-5-101_Master_OPC_usm_756703_ENg.pdf",
+      "source_revision": "COM600series5.1 1MRS756703G 2018-03-06 sections3.4.2/3.4.3/6.1; vendor-qualified settings/interoperability",
+      "min": 5,
+      "max": 8,
+      "label": "data bits",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "iec101_implementation": "ABB_COM600_5_1"
+          },
+          "value": 8,
+          "source": "https://library.e.abb.com/public/e891a296f0af446b9f807ea7730b8e49/COM600_series_5.1_IEC_60870-5-101_Master_OPC_usm_756703_ENg.pdf"
+        }
+      ]
+    },
+    "iec101_parity": {
+      "type": "select",
+      "description": "Actual parity; Even proposal for qualified profiles, not CAN CRC or arbitrary no-parity default.",
+      "source": "https://library.e.abb.com/public/e891a296f0af446b9f807ea7730b8e49/COM600_series_5.1_IEC_60870-5-101_Master_OPC_usm_756703_ENg.pdf",
+      "source_revision": "COM600series5.1 1MRS756703G 2018-03-06 sections3.4.2/3.4.3/6.1; vendor-qualified settings/interoperability",
+      "options": [
+        "EVEN",
+        "ODD",
+        "NONE"
+      ],
+      "label": "parity",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "iec101_implementation": "ABB_COM600_5_1"
+          },
+          "value": "EVEN",
+          "source": "https://library.e.abb.com/public/e891a296f0af446b9f807ea7730b8e49/COM600_series_5.1_IEC_60870-5-101_Master_OPC_usm_756703_ENg.pdf"
+        }
+      ]
+    },
+    "iec101_stop_bits": {
+      "type": "number",
+      "description": "Actual1/2 stop bits for configured serial port.",
+      "source": "https://library.e.abb.com/public/e891a296f0af446b9f807ea7730b8e49/COM600_series_5.1_IEC_60870-5-101_Master_OPC_usm_756703_ENg.pdf",
+      "source_revision": "COM600series5.1 1MRS756703G 2018-03-06 sections3.4.2/3.4.3/6.1; vendor-qualified settings/interoperability",
+      "min": 1,
+      "max": 2,
+      "label": "stop bits",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "iec101_implementation": "ABB_COM600_5_1"
+          },
+          "value": 1,
+          "source": "https://library.e.abb.com/public/e891a296f0af446b9f807ea7730b8e49/COM600_series_5.1_IEC_60870-5-101_Master_OPC_usm_756703_ENg.pdf"
+        }
+      ]
+    },
+    "iec101_character_bits": {
+      "type": "number",
+      "description": "Actual start+data+optional parity+stop bits per character; not8 payload bits per wire byte.",
+      "source": "https://library.e.abb.com/public/e891a296f0af446b9f807ea7730b8e49/COM600_series_5.1_IEC_60870-5-101_Master_OPC_usm_756703_ENg.pdf",
+      "source_revision": "COM600series5.1 1MRS756703G 2018-03-06 sections3.4.2/3.4.3/6.1; vendor-qualified settings/interoperability",
+      "min": 7,
+      "max": 12,
+      "label": "character bits",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec101_link_address_bytes": {
+      "type": "number",
+      "description": "Actual FT1.2 link address length. Balanced interoperability can omit it; unbalanced needs1/2 bytes.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/link_layer/link_layer.c",
+      "source_revision": "lib60870C tagv2.3.2 FT1.2 fixed/variable/ack framing and checksum/state machines",
+      "min": 0,
+      "max": 2,
+      "label": "link address bytes",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "iec101_implementation": "LIB60870_C_2_3_2",
+            "iec101_configuration_phase": "LIB_FACTORY_DEFAULT"
+          },
+          "value": 1,
+          "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs101/cs101_master.c",
+          "source_revision": "lib60870C tagv2.3.2 master constructors and defaults"
+        },
+        {
+          "when": {
+            "iec101_implementation": "ABB_COM600_5_1"
+          },
+          "value": 1,
+          "source": "https://library.e.abb.com/public/e891a296f0af446b9f807ea7730b8e49/COM600_series_5.1_IEC_60870-5-101_Master_OPC_usm_756703_ENg.pdf"
+        }
+      ]
+    },
+    "iec101_link_address": {
+      "type": "number",
+      "description": "Actual link_address in configured link-width; broadcast purpose explicit and never a station-default1.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/link_layer/link_layer.c",
+      "source_revision": "lib60870C tagv2.3.2 FT1.2 fixed/variable/ack framing and checksum/state machines",
+      "min": 0,
+      "max": 65535,
+      "label": "link address",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec101_peer_link_address": {
+      "type": "number",
+      "description": "Actual peer_link_address in configured link-width; broadcast purpose explicit and never a station-default1.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/link_layer/link_layer.c",
+      "source_revision": "lib60870C tagv2.3.2 FT1.2 fixed/variable/ack framing and checksum/state machines",
+      "min": 0,
+      "max": 65535,
+      "label": "peer link address",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec101_address_purpose": {
+      "type": "select",
+      "description": "Actual addressed station or broadcast; broadcast is all ones for configured address width.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/link_layer/link_layer.c",
+      "source_revision": "lib60870C tagv2.3.2 FT1.2 fixed/variable/ack framing and checksum/state machines",
+      "options": [
+        "STATION",
+        "BROADCAST"
+      ],
+      "label": "address purpose",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec101_balanced_dir": {
+      "type": "boolean",
+      "description": "Actual balanced DIR bit; opposite peer directions required, unrelated to unbalanced PRM.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/link_layer/link_layer.c",
+      "source_revision": "lib60870C tagv2.3.2 FT1.2 fixed/variable/ack framing and checksum/state machines",
+      "label": "balanced dir",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec101_peer_balanced_dir": {
+      "type": "boolean",
+      "description": "Actual balanced peer DIR bit, not inferred from industry or device name.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/link_layer/link_layer.c",
+      "source_revision": "lib60870C tagv2.3.2 FT1.2 fixed/variable/ack framing and checksum/state machines",
+      "label": "peer balanced dir",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec101_prm": {
+      "type": "boolean",
+      "description": "Actual primary/secondary link function context.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/link_layer/link_layer.c",
+      "source_revision": "lib60870C tagv2.3.2 FT1.2 fixed/variable/ack framing and checksum/state machines",
+      "label": "prm",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec101_function_code": {
+      "type": "number",
+      "description": "Actual4-bit FT1.2 function code; valid state/role-specific actions require link-layer evidence.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/link_layer/link_layer.c",
+      "source_revision": "lib60870C tagv2.3.2 FT1.2 fixed/variable/ack framing and checksum/state machines",
+      "min": 0,
+      "max": 15,
+      "label": "function code",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec101_frame_kind": {
+      "type": "select",
+      "description": "Actual variable-data, fixed-control or single-character E5 ACK; each has different wire length.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/link_layer/link_layer.c",
+      "source_revision": "lib60870C tagv2.3.2 FT1.2 fixed/variable/ack framing and checksum/state machines",
+      "options": [
+        "VARIABLE",
+        "FIXED",
+        "SINGLE_ACK"
+      ],
+      "label": "frame kind",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec101_single_char_ack": {
+      "type": "boolean",
+      "description": "Actual enabled single-character E5 acknowledgement for eligible responses; not application success.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs101/cs101_master.c",
+      "source_revision": "lib60870C tagv2.3.2 master constructors and defaults",
+      "label": "single char ack",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "iec101_implementation": "LIB60870_C_2_3_2",
+            "iec101_configuration_phase": "LIB_FACTORY_DEFAULT"
+          },
+          "value": true,
+          "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs101/cs101_master.c",
+          "source_revision": "lib60870C tagv2.3.2 master constructors and defaults"
+        }
+      ]
+    },
+    "iec101_length_l": {
+      "type": "number",
+      "description": "Actual duplicated variable-length L: control+link address+ASDU bytes; one-byte ceiling255, not total-wire-byte ceiling255.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/link_layer/link_layer.c",
+      "source_revision": "lib60870C tagv2.3.2 FT1.2 fixed/variable/ack framing and checksum/state machines",
+      "unit": "Byte",
+      "min": 0,
+      "max": 255,
+      "label": "length l",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec101_peer_length_limit": {
+      "type": "number",
+      "description": "Actual peer accepted L limit, not Ethernet MTU. ABB documented230 is a device proposal.",
+      "source": "https://library.e.abb.com/public/e891a296f0af446b9f807ea7730b8e49/COM600_series_5.1_IEC_60870-5-101_Master_OPC_usm_756703_ENg.pdf",
+      "source_revision": "COM600series5.1 1MRS756703G 2018-03-06 sections3.4.2/3.4.3/6.1; vendor-qualified settings/interoperability",
+      "unit": "Byte",
+      "min": 1,
+      "max": 255,
+      "label": "peer length limit",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "iec101_implementation": "ABB_COM600_5_1"
+          },
+          "value": 230,
+          "source": "https://library.e.abb.com/public/e891a296f0af446b9f807ea7730b8e49/COM600_series_5.1_IEC_60870-5-101_Master_OPC_usm_756703_ENg.pdf"
+        }
+      ]
+    },
+    "iec101_wire_bytes": {
+      "type": "number",
+      "description": "Actual full FT1.2 octets including length/start/checksum/stop; variableL+6, fixedaddress+4, singleACK1.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/link_layer/link_layer.c",
+      "source_revision": "lib60870C tagv2.3.2 FT1.2 fixed/variable/ack framing and checksum/state machines",
+      "unit": "Byte",
+      "min": 1,
+      "max": 261,
+      "label": "wire bytes",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec101_type_id_bytes": {
+      "type": "number",
+      "description": "Actual agreed type_id_bytes width; common address/COT/IOA differ and must match peers.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs101/cs101_asdu.c",
+      "source_revision": "lib60870C tagv2.3.2 ASDU header/VSQ/COT/addresses and sequence encoder",
+      "unit": "Byte",
+      "min": 1,
+      "max": 1,
+      "label": "type id bytes",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "iec101_implementation": "LIB60870_C_2_3_2",
+            "iec101_configuration_phase": "LIB_FACTORY_DEFAULT"
+          },
+          "value": 1,
+          "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs101/cs101_master.c",
+          "source_revision": "lib60870C tagv2.3.2 master constructors and defaults"
+        }
+      ]
+    },
+    "iec101_vsq_bytes": {
+      "type": "number",
+      "description": "Actual agreed vsq_bytes width; common address/COT/IOA differ and must match peers.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs101/cs101_asdu.c",
+      "source_revision": "lib60870C tagv2.3.2 ASDU header/VSQ/COT/addresses and sequence encoder",
+      "unit": "Byte",
+      "min": 1,
+      "max": 1,
+      "label": "vsq bytes",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "iec101_implementation": "LIB60870_C_2_3_2",
+            "iec101_configuration_phase": "LIB_FACTORY_DEFAULT"
+          },
+          "value": 1,
+          "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs101/cs101_master.c",
+          "source_revision": "lib60870C tagv2.3.2 master constructors and defaults"
+        }
+      ]
+    },
+    "iec101_cot_bytes": {
+      "type": "number",
+      "description": "Actual agreed cot_bytes width; common address/COT/IOA differ and must match peers.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs101/cs101_asdu.c",
+      "source_revision": "lib60870C tagv2.3.2 ASDU header/VSQ/COT/addresses and sequence encoder",
+      "unit": "Byte",
+      "min": 1,
+      "max": 2,
+      "label": "cot bytes",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "iec101_implementation": "LIB60870_C_2_3_2",
+            "iec101_configuration_phase": "LIB_FACTORY_DEFAULT"
+          },
+          "value": 2,
+          "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs101/cs101_master.c",
+          "source_revision": "lib60870C tagv2.3.2 master constructors and defaults"
+        },
+        {
+          "when": {
+            "iec101_implementation": "ABB_COM600_5_1"
+          },
+          "value": 1,
+          "source": "https://library.e.abb.com/public/e891a296f0af446b9f807ea7730b8e49/COM600_series_5.1_IEC_60870-5-101_Master_OPC_usm_756703_ENg.pdf"
+        }
+      ]
+    },
+    "iec101_ca_bytes": {
+      "type": "number",
+      "description": "Actual agreed ca_bytes width; common address/COT/IOA differ and must match peers.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs101/cs101_asdu.c",
+      "source_revision": "lib60870C tagv2.3.2 ASDU header/VSQ/COT/addresses and sequence encoder",
+      "unit": "Byte",
+      "min": 1,
+      "max": 2,
+      "label": "ca bytes",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "iec101_implementation": "LIB60870_C_2_3_2",
+            "iec101_configuration_phase": "LIB_FACTORY_DEFAULT"
+          },
+          "value": 2,
+          "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs101/cs101_master.c",
+          "source_revision": "lib60870C tagv2.3.2 master constructors and defaults"
+        },
+        {
+          "when": {
+            "iec101_implementation": "ABB_COM600_5_1"
+          },
+          "value": 1,
+          "source": "https://library.e.abb.com/public/e891a296f0af446b9f807ea7730b8e49/COM600_series_5.1_IEC_60870-5-101_Master_OPC_usm_756703_ENg.pdf"
+        }
+      ]
+    },
+    "iec101_ioa_bytes": {
+      "type": "number",
+      "description": "Actual agreed ioa_bytes width; common address/COT/IOA differ and must match peers.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs101/cs101_asdu.c",
+      "source_revision": "lib60870C tagv2.3.2 ASDU header/VSQ/COT/addresses and sequence encoder",
+      "unit": "Byte",
+      "min": 1,
+      "max": 3,
+      "label": "ioa bytes",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "iec101_implementation": "LIB60870_C_2_3_2",
+            "iec101_configuration_phase": "LIB_FACTORY_DEFAULT"
+          },
+          "value": 3,
+          "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs101/cs101_master.c",
+          "source_revision": "lib60870C tagv2.3.2 master constructors and defaults"
+        },
+        {
+          "when": {
+            "iec101_implementation": "ABB_COM600_5_1"
+          },
+          "value": 2,
+          "source": "https://library.e.abb.com/public/e891a296f0af446b9f807ea7730b8e49/COM600_series_5.1_IEC_60870-5-101_Master_OPC_usm_756703_ENg.pdf"
+        }
+      ]
+    },
+    "iec101_common_address": {
+      "type": "number",
+      "description": "Actual ASDU common address, not link address or Ethernet endpoint.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs101/cs101_asdu.c",
+      "source_revision": "lib60870C tagv2.3.2 ASDU header/VSQ/COT/addresses and sequence encoder",
+      "min": 0,
+      "max": 65535,
+      "label": "common address",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec101_originator": {
+      "type": "number",
+      "description": "Actual COT originator when COT2; absent for COT1, not confirmed constructor placeholder0.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs101/cs101_asdu.c",
+      "source_revision": "lib60870C tagv2.3.2 ASDU header/VSQ/COT/addresses and sequence encoder",
+      "min": 0,
+      "max": 255,
+      "label": "originator",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec101_first_ioa": {
+      "type": "number",
+      "description": "Actual first information object address for its configured1/2/3 byte width.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs101/cs101_asdu.c",
+      "source_revision": "lib60870C tagv2.3.2 ASDU header/VSQ/COT/addresses and sequence encoder",
+      "min": 0,
+      "max": 16777215,
+      "label": "first ioa",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec101_type_id": {
+      "type": "number",
+      "description": "Actual one-byte ASDU type identifier; private types require agreed content definition.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs101/cs101_asdu.c",
+      "source_revision": "lib60870C tagv2.3.2 ASDU header/VSQ/COT/addresses and sequence encoder",
+      "min": 1,
+      "max": 255,
+      "label": "type id",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec101_cot": {
+      "type": "number",
+      "description": "Actual6-bit cause of transmission; test/negative flags are separate.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs101/cs101_asdu.c",
+      "source_revision": "lib60870C tagv2.3.2 ASDU header/VSQ/COT/addresses and sequence encoder",
+      "min": 0,
+      "max": 63,
+      "label": "cot",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec101_test": {
+      "type": "boolean",
+      "description": "Actual ASDU test flag; not a silently disabled production requirement.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs101/cs101_asdu.c",
+      "source_revision": "lib60870C tagv2.3.2 ASDU header/VSQ/COT/addresses and sequence encoder",
+      "label": "test",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec101_negative": {
+      "type": "boolean",
+      "description": "Actual negative confirmation flag, not a bus transmission failure probability.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs101/cs101_asdu.c",
+      "source_revision": "lib60870C tagv2.3.2 ASDU header/VSQ/COT/addresses and sequence encoder",
+      "label": "negative",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec101_sequence": {
+      "type": "boolean",
+      "description": "Actual SQ contiguous objects with one IOA versus individual-address objects.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs101/cs101_asdu.c",
+      "source_revision": "lib60870C tagv2.3.2 ASDU header/VSQ/COT/addresses and sequence encoder",
+      "label": "sequence",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec101_object_count": {
+      "type": "number",
+      "description": "Actual7-bit VSQ object count; consecutive SQ addresses must fit IOA width.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs101/cs101_asdu.c",
+      "source_revision": "lib60870C tagv2.3.2 ASDU header/VSQ/COT/addresses and sequence encoder",
+      "min": 0,
+      "max": 127,
+      "label": "object count",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec101_object_bytes": {
+      "type": "number",
+      "description": "Actual encoded bytes per fixed-size object excluding IOA, including type-specific quality/time.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs101/cs101_asdu.c",
+      "source_revision": "lib60870C tagv2.3.2 ASDU header/VSQ/COT/addresses and sequence encoder",
+      "unit": "Byte",
+      "min": 0,
+      "label": "object bytes",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec101_objects_encoded_bytes": {
+      "type": "number",
+      "description": "Actual full information-object encoding incl addresses; variable-size types require explicit encoded total.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs101/cs101_asdu.c",
+      "source_revision": "lib60870C tagv2.3.2 ASDU header/VSQ/COT/addresses and sequence encoder",
+      "unit": "Byte",
+      "min": 0,
+      "label": "objects encoded bytes",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec101_object_layout": {
+      "type": "select",
+      "description": "Actual fixed-size objects versus variable/private content; no generic8-byte assumption.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs101/cs101_asdu.c",
+      "source_revision": "lib60870C tagv2.3.2 ASDU header/VSQ/COT/addresses and sequence encoder",
+      "options": [
+        "FIXED_OBJECT_SIZE",
+        "EXPLICIT_ENCODED"
+      ],
+      "label": "object layout",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec101_asdu_bytes": {
+      "type": "number",
+      "description": "Actual full ASDU header+encoded information objects, separate from FT1.2 L/wire size.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs101/cs101_asdu.c",
+      "source_revision": "lib60870C tagv2.3.2 ASDU header/VSQ/COT/addresses and sequence encoder",
+      "unit": "Byte",
+      "min": 0,
+      "max": 254,
+      "label": "asdu bytes",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec101_asdu_limit": {
+      "type": "number",
+      "description": "Actual peer/library ASDU limit; lib constructor249 is qualified, not universal255 payload.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs101/cs101_master.c",
+      "source_revision": "lib60870C tagv2.3.2 master constructors and defaults",
+      "unit": "Byte",
+      "min": 1,
+      "max": 254,
+      "label": "asdu limit",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "iec101_implementation": "LIB60870_C_2_3_2",
+            "iec101_configuration_phase": "LIB_FACTORY_DEFAULT"
+          },
+          "value": 249,
+          "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs101/cs101_master.c",
+          "source_revision": "lib60870C tagv2.3.2 master constructors and defaults"
+        }
+      ]
+    },
+    "iec101_byte_order": {
+      "type": "select",
+      "description": "IEC101 Mode1 least-significant octet first; explicit application float/text encodings remain type-specific.",
+      "source": "https://library.e.abb.com/public/e891a296f0af446b9f807ea7730b8e49/COM600_series_5.1_IEC_60870-5-101_Master_OPC_usm_756703_ENg.pdf",
+      "source_revision": "COM600series5.1 1MRS756703G 2018-03-06 sections3.4.2/3.4.3/6.1; vendor-qualified settings/interoperability",
+      "options": [
+        "LITTLE_ENDIAN_MODE1"
+      ],
+      "default": "LITTLE_ENDIAN_MODE1",
+      "label": "byte order",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_STANDARD",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec101_ack_timeout_ms": {
+      "type": "number",
+      "description": "Actual ack_timeout_ms in its own link/poll/command scope; hardware-specific response/recovery evidence required.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs101/cs101_master.c",
+      "source_revision": "lib60870C tagv2.3.2 master constructors and defaults",
+      "unit": "ms",
+      "min": 0,
+      "label": "ack timeout ms",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "iec101_implementation": "LIB60870_C_2_3_2",
+            "iec101_configuration_phase": "LIB_FACTORY_DEFAULT"
+          },
+          "value": 200,
+          "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs101/cs101_master.c",
+          "source_revision": "lib60870C tagv2.3.2 master constructors and defaults"
+        },
+        {
+          "when": {
+            "iec101_implementation": "ABB_COM600_5_1"
+          },
+          "value": 2000,
+          "source": "https://library.e.abb.com/public/e891a296f0af446b9f807ea7730b8e49/COM600_series_5.1_IEC_60870-5-101_Master_OPC_usm_756703_ENg.pdf"
+        }
+      ]
+    },
+    "iec101_repeat_timeout_ms": {
+      "type": "number",
+      "description": "Actual repeat_timeout_ms in its own link/poll/command scope; hardware-specific response/recovery evidence required.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs101/cs101_master.c",
+      "source_revision": "lib60870C tagv2.3.2 master constructors and defaults",
+      "unit": "ms",
+      "min": 0,
+      "label": "repeat timeout ms",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "iec101_implementation": "LIB60870_C_2_3_2",
+            "iec101_configuration_phase": "LIB_FACTORY_DEFAULT"
+          },
+          "value": 1000,
+          "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs101/cs101_master.c",
+          "source_revision": "lib60870C tagv2.3.2 master constructors and defaults"
+        }
+      ]
+    },
+    "iec101_link_state_timeout_ms": {
+      "type": "number",
+      "description": "Actual link_state_timeout_ms in its own link/poll/command scope; hardware-specific response/recovery evidence required.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs101/cs101_master.c",
+      "source_revision": "lib60870C tagv2.3.2 master constructors and defaults",
+      "unit": "ms",
+      "min": 0,
+      "label": "link state timeout ms",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "iec101_implementation": "LIB60870_C_2_3_2",
+            "iec101_configuration_phase": "LIB_FACTORY_DEFAULT",
+            "iec101_role": "CONTROLLING"
+          },
+          "value": 5000,
+          "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs101/cs101_master.c"
+        }
+      ]
+    },
+    "iec101_idle_timeout_ms": {
+      "type": "number",
+      "description": "Actual idle_timeout_ms in its own link/poll/command scope; hardware-specific response/recovery evidence required.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs101/cs101_master.c",
+      "source_revision": "lib60870C tagv2.3.2 master constructors and defaults",
+      "unit": "ms",
+      "min": 0,
+      "label": "idle timeout ms",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec101_poll_interval_ms": {
+      "type": "number",
+      "description": "Actual poll_interval_ms in its own link/poll/command scope; hardware-specific response/recovery evidence required.",
+      "source": "https://library.e.abb.com/public/e891a296f0af446b9f807ea7730b8e49/COM600_series_5.1_IEC_60870-5-101_Master_OPC_usm_756703_ENg.pdf",
+      "source_revision": "COM600series5.1 1MRS756703G 2018-03-06 sections3.4.2/3.4.3/6.1; vendor-qualified settings/interoperability",
+      "unit": "ms",
+      "min": 0,
+      "label": "poll interval ms",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec101_class1_poll_bound_ms": {
+      "type": "number",
+      "description": "Actual class1_poll_bound_ms in its own link/poll/command scope; hardware-specific response/recovery evidence required.",
+      "source": "https://library.e.abb.com/public/e891a296f0af446b9f807ea7730b8e49/COM600_series_5.1_IEC_60870-5-101_Master_OPC_usm_756703_ENg.pdf",
+      "source_revision": "COM600series5.1 1MRS756703G 2018-03-06 sections3.4.2/3.4.3/6.1; vendor-qualified settings/interoperability",
+      "unit": "ms",
+      "min": 0,
+      "label": "class1 poll bound ms",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec101_class2_poll_bound_ms": {
+      "type": "number",
+      "description": "Actual class2_poll_bound_ms in its own link/poll/command scope; hardware-specific response/recovery evidence required.",
+      "source": "https://library.e.abb.com/public/e891a296f0af446b9f807ea7730b8e49/COM600_series_5.1_IEC_60870-5-101_Master_OPC_usm_756703_ENg.pdf",
+      "source_revision": "COM600series5.1 1MRS756703G 2018-03-06 sections3.4.2/3.4.3/6.1; vendor-qualified settings/interoperability",
+      "unit": "ms",
+      "min": 0,
+      "label": "class2 poll bound ms",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec101_turnaround_ms": {
+      "type": "number",
+      "description": "Actual turnaround_ms in its own link/poll/command scope; hardware-specific response/recovery evidence required.",
+      "source": "https://library.e.abb.com/public/e891a296f0af446b9f807ea7730b8e49/COM600_series_5.1_IEC_60870-5-101_Master_OPC_usm_756703_ENg.pdf",
+      "source_revision": "COM600series5.1 1MRS756703G 2018-03-06 sections3.4.2/3.4.3/6.1; vendor-qualified settings/interoperability",
+      "unit": "ms",
+      "min": 0,
+      "label": "turnaround ms",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec101_cts_delay_ms": {
+      "type": "number",
+      "description": "Actual cts_delay_ms in its own link/poll/command scope; hardware-specific response/recovery evidence required.",
+      "source": "https://library.e.abb.com/public/e891a296f0af446b9f807ea7730b8e49/COM600_series_5.1_IEC_60870-5-101_Master_OPC_usm_756703_ENg.pdf",
+      "source_revision": "COM600series5.1 1MRS756703G 2018-03-06 sections3.4.2/3.4.3/6.1; vendor-qualified settings/interoperability",
+      "unit": "ms",
+      "min": 0,
+      "label": "cts delay ms",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "iec101_implementation": "ABB_COM600_5_1",
+            "iec101_link_mode": "BALANCED"
+          },
+          "value": 50,
+          "source": "https://library.e.abb.com/public/e891a296f0af446b9f807ea7730b8e49/COM600_series_5.1_IEC_60870-5-101_Master_OPC_usm_756703_ENg.pdf"
+        },
+        {
+          "when": {
+            "iec101_implementation": "ABB_COM600_5_1",
+            "iec101_link_mode": "UNBALANCED"
+          },
+          "value": 0,
+          "source": "https://library.e.abb.com/public/e891a296f0af446b9f807ea7730b8e49/COM600_series_5.1_IEC_60870-5-101_Master_OPC_usm_756703_ENg.pdf"
+        }
+      ]
+    },
+    "iec101_receiver_enable_delay_ms": {
+      "type": "number",
+      "description": "Actual receiver_enable_delay_ms in its own link/poll/command scope; hardware-specific response/recovery evidence required.",
+      "source": "https://library.e.abb.com/public/e891a296f0af446b9f807ea7730b8e49/COM600_series_5.1_IEC_60870-5-101_Master_OPC_usm_756703_ENg.pdf",
+      "source_revision": "COM600series5.1 1MRS756703G 2018-03-06 sections3.4.2/3.4.3/6.1; vendor-qualified settings/interoperability",
+      "unit": "ms",
+      "min": 0,
+      "label": "receiver enable delay ms",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec101_command_confirmation_ms": {
+      "type": "number",
+      "description": "Actual command_confirmation_ms in its own link/poll/command scope; hardware-specific response/recovery evidence required.",
+      "source": "https://library.e.abb.com/public/e891a296f0af446b9f807ea7730b8e49/COM600_series_5.1_IEC_60870-5-101_Master_OPC_usm_756703_ENg.pdf",
+      "source_revision": "COM600series5.1 1MRS756703G 2018-03-06 sections3.4.2/3.4.3/6.1; vendor-qualified settings/interoperability",
+      "unit": "ms",
+      "min": 0,
+      "label": "command confirmation ms",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec101_select_execute_ms": {
+      "type": "number",
+      "description": "Actual select_execute_ms in its own link/poll/command scope; hardware-specific response/recovery evidence required.",
+      "source": "https://library.e.abb.com/public/e891a296f0af446b9f807ea7730b8e49/COM600_series_5.1_IEC_60870-5-101_Master_OPC_usm_756703_ENg.pdf",
+      "source_revision": "COM600series5.1 1MRS756703G 2018-03-06 sections3.4.2/3.4.3/6.1; vendor-qualified settings/interoperability",
+      "unit": "ms",
+      "min": 0,
+      "label": "select execute ms",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec101_class1_queue": {
+      "type": "number",
+      "description": "Actual device/implementation class1_queue capacity or retry budget; no shared queue256 or guaranteed recovery.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs101/cs101_slave.c",
+      "source_revision": "lib60870C tagv2.3.2 slave constructors and defaults",
+      "min": 0,
+      "label": "class1 queue",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec101_class2_queue": {
+      "type": "number",
+      "description": "Actual device/implementation class2_queue capacity or retry budget; no shared queue256 or guaranteed recovery.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs101/cs101_slave.c",
+      "source_revision": "lib60870C tagv2.3.2 slave constructors and defaults",
+      "min": 0,
+      "label": "class2 queue",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec101_retry_limit": {
+      "type": "number",
+      "description": "Actual device/implementation retry_limit capacity or retry budget; no shared queue256 or guaranteed recovery.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs101/cs101_slave.c",
+      "source_revision": "lib60870C tagv2.3.2 slave constructors and defaults",
+      "min": 0,
+      "label": "retry limit",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "iec101_implementation": "ABB_COM600_5_1"
+          },
+          "value": 3,
+          "source": "https://library.e.abb.com/public/e891a296f0af446b9f807ea7730b8e49/COM600_series_5.1_IEC_60870-5-101_Master_OPC_usm_756703_ENg.pdf"
+        }
+      ]
+    },
+    "iec101_carrier_detect_required": {
+      "type": "boolean",
+      "description": "Actual serial carrier gating; ABB balanced/unbalanced defaults differ.",
+      "source": "https://library.e.abb.com/public/e891a296f0af446b9f807ea7730b8e49/COM600_series_5.1_IEC_60870-5-101_Master_OPC_usm_756703_ENg.pdf",
+      "source_revision": "COM600series5.1 1MRS756703G 2018-03-06 sections3.4.2/3.4.3/6.1; vendor-qualified settings/interoperability",
+      "label": "carrier detect required",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "iec101_implementation": "ABB_COM600_5_1",
+            "iec101_link_mode": "BALANCED"
+          },
+          "value": false,
+          "source": "https://library.e.abb.com/public/e891a296f0af446b9f807ea7730b8e49/COM600_series_5.1_IEC_60870-5-101_Master_OPC_usm_756703_ENg.pdf"
+        },
+        {
+          "when": {
+            "iec101_implementation": "ABB_COM600_5_1",
+            "iec101_link_mode": "UNBALANCED"
+          },
+          "value": true,
+          "source": "https://library.e.abb.com/public/e891a296f0af446b9f807ea7730b8e49/COM600_series_5.1_IEC_60870-5-101_Master_OPC_usm_756703_ENg.pdf"
+        }
+      ]
+    },
+    "iec101_command_procedure": {
+      "type": "select",
+      "description": "Actual direct execute versus select-before-operate with matching controlled-station acceptance.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/user_guide.adoc",
+      "source_revision": "lib60870C pinnedv2.3.2 user guide labelledv2.3.0; serial9600/8E1 is an example, not universal default",
+      "options": [
+        "DIRECT_EXECUTE",
+        "SELECT_BEFORE_OPERATE"
+      ],
+      "label": "command procedure",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec101_time_format": {
+      "type": "select",
+      "description": "Actual ASDU time representation; short clock information is not a complete timestamp.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/user_guide.adoc",
+      "source_revision": "lib60870C pinnedv2.3.2 user guide labelledv2.3.0; serial9600/8E1 is an example, not universal default",
+      "options": [
+        "NONE",
+        "CP24TIME2A",
+        "CP56TIME2A"
+      ],
+      "label": "time format",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "iec101_time_source": {
+      "type": "text",
+      "description": "Actual time-zone/clock-sync/hour-rollover/invalid-bit semantics and application freshness.",
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/user_guide.adoc",
+      "source_revision": "lib60870C pinnedv2.3.2 user guide labelledv2.3.0; serial9600/8E1 is an example, not universal default",
+      "label": "time source",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    }
+  },
+  "mechanisms": {
+    "framing": [
+      "FT1_2_FIXED_VARIABLE_E5"
+    ],
+    "integrity": [
+      "FT1_2_OCTET_SUM_AND_ACTUAL_SERIAL_PARITY"
+    ],
+    "addressing": [
+      "LINK_ADDRESS_CA_IOA_SEPARATE"
+    ],
+    "arbitration": [
+      "BALANCED_PTP_OR_UNBALANCED_POLL"
+    ],
+    "acceptance": [
+      "LINK_ACK_SEPARATE_FROM_ASDU_ACT_CON_ACT_TERM"
+    ]
+  },
+  "parameter_constraints": [
+    {
+      "parameter": "iec101_link_address_bytes",
+      "when": {
+        "iec101_link_mode": "UNBALANCED"
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/link_layer/link_layer.c",
+      "source_revision": "lib60870C tagv2.3.2 FT1.2 fixed/variable/ack framing and checksum/state machines",
+      "allowed": [
+        1,
+        2
+      ]
+    },
+    {
+      "parameter": "iec101_link_address_bytes",
+      "when": {
+        "iec101_implementation": "LIB60870_C_2_3_2"
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs101/cs101_master.c",
+      "source_revision": "lib60870C tagv2.3.2 master constructors and defaults",
+      "allowed": [
+        1,
+        2
+      ]
+    },
+    {
+      "parameter": "iec101_balanced_dir",
+      "when": {
+        "iec101_link_mode": "BALANCED"
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/link_layer/link_layer.c",
+      "source_revision": "lib60870C tagv2.3.2 FT1.2 fixed/variable/ack framing and checksum/state machines",
+      "required": true
+    },
+    {
+      "parameter": "iec101_peer_balanced_dir",
+      "when": {
+        "iec101_link_mode": "BALANCED"
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/link_layer/link_layer.c",
+      "source_revision": "lib60870C tagv2.3.2 FT1.2 fixed/variable/ack framing and checksum/state machines",
+      "required": true
+    },
+    {
+      "parameter": "iec101_balanced_dir",
+      "when": {
+        "iec101_link_mode": "BALANCED"
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/link_layer/link_layer.c",
+      "source_revision": "lib60870C tagv2.3.2 FT1.2 fixed/variable/ack framing and checksum/state machines",
+      "not_equal_parameter": "iec101_peer_balanced_dir"
+    },
+    {
+      "parameter": "iec101_balanced_dir",
+      "when": {
+        "iec101_link_mode": "UNBALANCED"
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/link_layer/link_layer.c",
+      "source_revision": "lib60870C tagv2.3.2 FT1.2 fixed/variable/ack framing and checksum/state machines",
+      "allowed": []
+    },
+    {
+      "parameter": "iec101_peer_balanced_dir",
+      "when": {
+        "iec101_link_mode": "UNBALANCED"
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/link_layer/link_layer.c",
+      "source_revision": "lib60870C tagv2.3.2 FT1.2 fixed/variable/ack framing and checksum/state machines",
+      "allowed": []
+    },
+    {
+      "parameter": "iec101_link_address",
+      "when": {
+        "iec101_link_address_bytes": 0
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/link_layer/link_layer.c",
+      "source_revision": "lib60870C tagv2.3.2 FT1.2 fixed/variable/ack framing and checksum/state machines",
+      "allowed": []
+    },
+    {
+      "parameter": "iec101_peer_link_address",
+      "when": {
+        "iec101_link_address_bytes": 0
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/link_layer/link_layer.c",
+      "source_revision": "lib60870C tagv2.3.2 FT1.2 fixed/variable/ack framing and checksum/state machines",
+      "allowed": []
+    },
+    {
+      "parameter": "iec101_link_address",
+      "when": {
+        "iec101_link_address_bytes": 1
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/link_layer/link_layer.c",
+      "source_revision": "lib60870C tagv2.3.2 FT1.2 fixed/variable/ack framing and checksum/state machines",
+      "maximum": 255
+    },
+    {
+      "parameter": "iec101_peer_link_address",
+      "when": {
+        "iec101_link_address_bytes": 1
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/link_layer/link_layer.c",
+      "source_revision": "lib60870C tagv2.3.2 FT1.2 fixed/variable/ack framing and checksum/state machines",
+      "maximum": 255
+    },
+    {
+      "parameter": "iec101_link_address",
+      "when": {
+        "iec101_link_address_bytes": 1,
+        "iec101_address_purpose": "STATION"
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/link_layer/link_layer.c",
+      "source_revision": "lib60870C tagv2.3.2 FT1.2 fixed/variable/ack framing and checksum/state machines",
+      "maximum": 254
+    },
+    {
+      "parameter": "iec101_link_address",
+      "when": {
+        "iec101_link_address_bytes": 1,
+        "iec101_address_purpose": "BROADCAST"
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/link_layer/link_layer.c",
+      "source_revision": "lib60870C tagv2.3.2 FT1.2 fixed/variable/ack framing and checksum/state machines",
+      "allowed": [
+        255
+      ]
+    },
+    {
+      "parameter": "iec101_link_address",
+      "when": {
+        "iec101_link_address_bytes": 2
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/link_layer/link_layer.c",
+      "source_revision": "lib60870C tagv2.3.2 FT1.2 fixed/variable/ack framing and checksum/state machines",
+      "maximum": 65535
+    },
+    {
+      "parameter": "iec101_peer_link_address",
+      "when": {
+        "iec101_link_address_bytes": 2
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/link_layer/link_layer.c",
+      "source_revision": "lib60870C tagv2.3.2 FT1.2 fixed/variable/ack framing and checksum/state machines",
+      "maximum": 65535
+    },
+    {
+      "parameter": "iec101_link_address",
+      "when": {
+        "iec101_link_address_bytes": 2,
+        "iec101_address_purpose": "STATION"
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/link_layer/link_layer.c",
+      "source_revision": "lib60870C tagv2.3.2 FT1.2 fixed/variable/ack framing and checksum/state machines",
+      "maximum": 65534
+    },
+    {
+      "parameter": "iec101_link_address",
+      "when": {
+        "iec101_link_address_bytes": 2,
+        "iec101_address_purpose": "BROADCAST"
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/link_layer/link_layer.c",
+      "source_revision": "lib60870C tagv2.3.2 FT1.2 fixed/variable/ack framing and checksum/state machines",
+      "allowed": [
+        65535
+      ]
+    },
+    {
+      "parameter": "iec101_character_bits",
+      "when": {
+        "iec101_parity": "NONE"
+      },
+      "source": "https://library.e.abb.com/public/e891a296f0af446b9f807ea7730b8e49/COM600_series_5.1_IEC_60870-5-101_Master_OPC_usm_756703_ENg.pdf",
+      "source_revision": "COM600series5.1 1MRS756703G 2018-03-06 sections3.4.2/3.4.3/6.1; vendor-qualified settings/interoperability",
+      "equal_expression": {
+        "sum": [
+          1,
+          "iec101_data_bits",
+          "iec101_stop_bits"
+        ]
+      }
+    },
+    {
+      "parameter": "iec101_character_bits",
+      "when": {
+        "iec101_parity": "EVEN"
+      },
+      "source": "https://library.e.abb.com/public/e891a296f0af446b9f807ea7730b8e49/COM600_series_5.1_IEC_60870-5-101_Master_OPC_usm_756703_ENg.pdf",
+      "source_revision": "COM600series5.1 1MRS756703G 2018-03-06 sections3.4.2/3.4.3/6.1; vendor-qualified settings/interoperability",
+      "equal_expression": {
+        "sum": [
+          2,
+          "iec101_data_bits",
+          "iec101_stop_bits"
+        ]
+      }
+    },
+    {
+      "parameter": "iec101_character_bits",
+      "when": {
+        "iec101_parity": "ODD"
+      },
+      "source": "https://library.e.abb.com/public/e891a296f0af446b9f807ea7730b8e49/COM600_series_5.1_IEC_60870-5-101_Master_OPC_usm_756703_ENg.pdf",
+      "source_revision": "COM600series5.1 1MRS756703G 2018-03-06 sections3.4.2/3.4.3/6.1; vendor-qualified settings/interoperability",
+      "equal_expression": {
+        "sum": [
+          2,
+          "iec101_data_bits",
+          "iec101_stop_bits"
+        ]
+      }
+    },
+    {
+      "parameter": "iec101_wire_bytes",
+      "when": {
+        "iec101_frame_kind": "VARIABLE"
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/link_layer/link_layer.c",
+      "source_revision": "lib60870C tagv2.3.2 FT1.2 fixed/variable/ack framing and checksum/state machines",
+      "equal_expression": {
+        "sum": [
+          6,
+          "iec101_length_l"
+        ]
+      }
+    },
+    {
+      "parameter": "iec101_length_l",
+      "when": {
+        "iec101_frame_kind": "VARIABLE"
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/link_layer/link_layer.c",
+      "source_revision": "lib60870C tagv2.3.2 FT1.2 fixed/variable/ack framing and checksum/state machines",
+      "equal_expression": {
+        "sum": [
+          1,
+          "iec101_link_address_bytes",
+          "iec101_asdu_bytes"
+        ]
+      }
+    },
+    {
+      "parameter": "iec101_length_l",
+      "when": {
+        "iec101_frame_kind": "VARIABLE"
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/link_layer/link_layer.c",
+      "source_revision": "lib60870C tagv2.3.2 FT1.2 fixed/variable/ack framing and checksum/state machines",
+      "maximum_parameter": "iec101_peer_length_limit"
+    },
+    {
+      "parameter": "iec101_wire_bytes",
+      "when": {
+        "iec101_frame_kind": "FIXED"
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/link_layer/link_layer.c",
+      "source_revision": "lib60870C tagv2.3.2 FT1.2 fixed/variable/ack framing and checksum/state machines",
+      "equal_expression": {
+        "sum": [
+          4,
+          "iec101_link_address_bytes"
+        ]
+      }
+    },
+    {
+      "parameter": "iec101_wire_bytes",
+      "when": {
+        "iec101_frame_kind": "SINGLE_ACK"
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/link_layer/link_layer.c",
+      "source_revision": "lib60870C tagv2.3.2 FT1.2 fixed/variable/ack framing and checksum/state machines",
+      "allowed": [
+        1
+      ]
+    },
+    {
+      "parameter": "iec101_single_char_ack",
+      "when": {
+        "iec101_frame_kind": "SINGLE_ACK"
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/link_layer/link_layer.c",
+      "source_revision": "lib60870C tagv2.3.2 FT1.2 fixed/variable/ack framing and checksum/state machines",
+      "required": true,
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "iec101_length_l",
+      "when": {
+        "iec101_frame_kind": "FIXED"
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/link_layer/link_layer.c",
+      "source_revision": "lib60870C tagv2.3.2 FT1.2 fixed/variable/ack framing and checksum/state machines",
+      "allowed": []
+    },
+    {
+      "parameter": "iec101_asdu_bytes",
+      "when": {
+        "iec101_frame_kind": "FIXED"
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/link_layer/link_layer.c",
+      "source_revision": "lib60870C tagv2.3.2 FT1.2 fixed/variable/ack framing and checksum/state machines",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "iec101_length_l",
+      "when": {
+        "iec101_frame_kind": "SINGLE_ACK"
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/link_layer/link_layer.c",
+      "source_revision": "lib60870C tagv2.3.2 FT1.2 fixed/variable/ack framing and checksum/state machines",
+      "allowed": []
+    },
+    {
+      "parameter": "iec101_asdu_bytes",
+      "when": {
+        "iec101_frame_kind": "SINGLE_ACK"
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/link_layer/link_layer.c",
+      "source_revision": "lib60870C tagv2.3.2 FT1.2 fixed/variable/ack framing and checksum/state machines",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "iec101_common_address",
+      "when": {
+        "iec101_ca_bytes": 1
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs101/cs101_asdu.c",
+      "source_revision": "lib60870C tagv2.3.2 ASDU header/VSQ/COT/addresses and sequence encoder",
+      "maximum": 255
+    },
+    {
+      "parameter": "iec101_common_address",
+      "when": {
+        "iec101_ca_bytes": 2
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs101/cs101_asdu.c",
+      "source_revision": "lib60870C tagv2.3.2 ASDU header/VSQ/COT/addresses and sequence encoder",
+      "maximum": 65535
+    },
+    {
+      "parameter": "iec101_originator",
+      "when": {
+        "iec101_cot_bytes": 1
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs101/cs101_asdu.c",
+      "source_revision": "lib60870C tagv2.3.2 ASDU header/VSQ/COT/addresses and sequence encoder",
+      "allowed": []
+    },
+    {
+      "parameter": "iec101_first_ioa",
+      "when": {
+        "iec101_ioa_bytes": 1
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs101/cs101_asdu.c",
+      "source_revision": "lib60870C tagv2.3.2 ASDU header/VSQ/COT/addresses and sequence encoder",
+      "maximum": 255
+    },
+    {
+      "parameter": "iec101_first_ioa",
+      "when": {
+        "iec101_ioa_bytes": 1,
+        "iec101_sequence": true
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs101/cs101_asdu.c",
+      "source_revision": "lib60870C tagv2.3.2 ASDU header/VSQ/COT/addresses and sequence encoder",
+      "maximum_expression": {
+        "subtract": [
+          256,
+          "iec101_object_count"
+        ]
+      }
+    },
+    {
+      "parameter": "iec101_first_ioa",
+      "when": {
+        "iec101_ioa_bytes": 2
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs101/cs101_asdu.c",
+      "source_revision": "lib60870C tagv2.3.2 ASDU header/VSQ/COT/addresses and sequence encoder",
+      "maximum": 65535
+    },
+    {
+      "parameter": "iec101_first_ioa",
+      "when": {
+        "iec101_ioa_bytes": 2,
+        "iec101_sequence": true
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs101/cs101_asdu.c",
+      "source_revision": "lib60870C tagv2.3.2 ASDU header/VSQ/COT/addresses and sequence encoder",
+      "maximum_expression": {
+        "subtract": [
+          65536,
+          "iec101_object_count"
+        ]
+      }
+    },
+    {
+      "parameter": "iec101_first_ioa",
+      "when": {
+        "iec101_ioa_bytes": 3
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs101/cs101_asdu.c",
+      "source_revision": "lib60870C tagv2.3.2 ASDU header/VSQ/COT/addresses and sequence encoder",
+      "maximum": 16777215
+    },
+    {
+      "parameter": "iec101_first_ioa",
+      "when": {
+        "iec101_ioa_bytes": 3,
+        "iec101_sequence": true
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs101/cs101_asdu.c",
+      "source_revision": "lib60870C tagv2.3.2 ASDU header/VSQ/COT/addresses and sequence encoder",
+      "maximum_expression": {
+        "subtract": [
+          16777216,
+          "iec101_object_count"
+        ]
+      }
+    },
+    {
+      "parameter": "iec101_objects_encoded_bytes",
+      "when": {
+        "iec101_object_layout": "FIXED_OBJECT_SIZE",
+        "iec101_object_count": 0
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs101/cs101_asdu.c",
+      "source_revision": "lib60870C tagv2.3.2 ASDU header/VSQ/COT/addresses and sequence encoder",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "iec101_objects_encoded_bytes",
+      "when": {
+        "iec101_object_layout": "FIXED_OBJECT_SIZE",
+        "iec101_sequence": true
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs101/cs101_asdu.c",
+      "source_revision": "lib60870C tagv2.3.2 ASDU header/VSQ/COT/addresses and sequence encoder",
+      "when_positive": [
+        "iec101_object_count"
+      ],
+      "equal_expression": {
+        "sum": [
+          "iec101_ioa_bytes",
+          {
+            "product": [
+              "iec101_object_count",
+              "iec101_object_bytes"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "parameter": "iec101_objects_encoded_bytes",
+      "when": {
+        "iec101_object_layout": "FIXED_OBJECT_SIZE",
+        "iec101_sequence": false
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs101/cs101_asdu.c",
+      "source_revision": "lib60870C tagv2.3.2 ASDU header/VSQ/COT/addresses and sequence encoder",
+      "equal_expression": {
+        "product": [
+          "iec101_object_count",
+          {
+            "sum": [
+              "iec101_ioa_bytes",
+              "iec101_object_bytes"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "parameter": "iec101_asdu_bytes",
+      "when": {
+        "iec101_frame_kind": "VARIABLE"
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs101/cs101_asdu.c",
+      "source_revision": "lib60870C tagv2.3.2 ASDU header/VSQ/COT/addresses and sequence encoder",
+      "equal_expression": {
+        "sum": [
+          2,
+          "iec101_cot_bytes",
+          "iec101_ca_bytes",
+          "iec101_objects_encoded_bytes"
+        ]
+      }
+    },
+    {
+      "parameter": "iec101_asdu_bytes",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs101/cs101_asdu.c",
+      "source_revision": "lib60870C tagv2.3.2 ASDU header/VSQ/COT/addresses and sequence encoder",
+      "maximum_parameter": "iec101_asdu_limit"
+    },
+    {
+      "parameter": "iec101_type_source",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/lib60870-C/src/iec60870/cs101/cs101_asdu.c",
+      "source_revision": "lib60870C tagv2.3.2 ASDU header/VSQ/COT/addresses and sequence encoder",
+      "when_present": [
+        "iec101_type_id"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "iec101_ack_timeout_ms",
+      "when": {
+        "iec101_implementation": "ABB_COM600_5_1"
+      },
+      "source": "https://library.e.abb.com/public/e891a296f0af446b9f807ea7730b8e49/COM600_series_5.1_IEC_60870-5-101_Master_OPC_usm_756703_ENg.pdf",
+      "source_revision": "COM600series5.1 1MRS756703G 2018-03-06 sections3.4.2/3.4.3/6.1; vendor-qualified settings/interoperability",
+      "maximum": 65535
+    },
+    {
+      "parameter": "iec101_repeat_timeout_ms",
+      "when": {
+        "iec101_implementation": "ABB_COM600_5_1"
+      },
+      "source": "https://library.e.abb.com/public/e891a296f0af446b9f807ea7730b8e49/COM600_series_5.1_IEC_60870-5-101_Master_OPC_usm_756703_ENg.pdf",
+      "source_revision": "COM600series5.1 1MRS756703G 2018-03-06 sections3.4.2/3.4.3/6.1; vendor-qualified settings/interoperability",
+      "maximum": 65535
+    },
+    {
+      "parameter": "iec101_link_state_timeout_ms",
+      "when": {
+        "iec101_implementation": "ABB_COM600_5_1"
+      },
+      "source": "https://library.e.abb.com/public/e891a296f0af446b9f807ea7730b8e49/COM600_series_5.1_IEC_60870-5-101_Master_OPC_usm_756703_ENg.pdf",
+      "source_revision": "COM600series5.1 1MRS756703G 2018-03-06 sections3.4.2/3.4.3/6.1; vendor-qualified settings/interoperability",
+      "maximum": 65535
+    },
+    {
+      "parameter": "iec101_cts_delay_ms",
+      "when": {
+        "iec101_implementation": "ABB_COM600_5_1"
+      },
+      "source": "https://library.e.abb.com/public/e891a296f0af446b9f807ea7730b8e49/COM600_series_5.1_IEC_60870-5-101_Master_OPC_usm_756703_ENg.pdf",
+      "source_revision": "COM600series5.1 1MRS756703G 2018-03-06 sections3.4.2/3.4.3/6.1; vendor-qualified settings/interoperability",
+      "maximum": 65535
+    },
+    {
+      "parameter": "iec101_receiver_enable_delay_ms",
+      "when": {
+        "iec101_implementation": "ABB_COM600_5_1"
+      },
+      "source": "https://library.e.abb.com/public/e891a296f0af446b9f807ea7730b8e49/COM600_series_5.1_IEC_60870-5-101_Master_OPC_usm_756703_ENg.pdf",
+      "source_revision": "COM600series5.1 1MRS756703G 2018-03-06 sections3.4.2/3.4.3/6.1; vendor-qualified settings/interoperability",
+      "maximum": 65535
+    },
+    {
+      "parameter": "iec101_retry_limit",
+      "when": {
+        "iec101_implementation": "ABB_COM600_5_1"
+      },
+      "source": "https://library.e.abb.com/public/e891a296f0af446b9f807ea7730b8e49/COM600_series_5.1_IEC_60870-5-101_Master_OPC_usm_756703_ENg.pdf",
+      "source_revision": "COM600series5.1 1MRS756703G 2018-03-06 sections3.4.2/3.4.3/6.1; vendor-qualified settings/interoperability",
+      "maximum": 255
+    },
+    {
+      "parameter": "iec101_baud_bps",
+      "when": {
+        "iec101_implementation": "ABB_COM600_5_1"
+      },
+      "source": "https://library.e.abb.com/public/e891a296f0af446b9f807ea7730b8e49/COM600_series_5.1_IEC_60870-5-101_Master_OPC_usm_756703_ENg.pdf",
+      "source_revision": "COM600series5.1 1MRS756703G 2018-03-06 sections3.4.2/3.4.3/6.1; vendor-qualified settings/interoperability",
+      "allowed": [
+        300,
+        600,
+        1200,
+        2400,
+        4800,
+        9600,
+        19200,
+        38400,
+        56000,
+        57600,
+        115200,
+        128000,
+        256000
+      ]
+    },
+    {
+      "parameter": "iec101_time_source",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/user_guide.adoc",
+      "source_revision": "lib60870C pinnedv2.3.2 user guide labelledv2.3.0; serial9600/8E1 is an example, not universal default",
+      "when_present": [
+        "iec101_time_format"
+      ],
+      "when_not": {
+        "iec101_time_format": "NONE"
+      },
+      "required": true
+    },
+    {
+      "parameter": "iec101_command_source",
+      "when": {
+        "iec101_command_procedure": "SELECT_BEFORE_OPERATE"
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/lib60870/v2.3.2/user_guide.adoc",
+      "source_revision": "lib60870C pinnedv2.3.2 user guide labelledv2.3.0; serial9600/8E1 is an example, not universal default",
+      "required": true
+    }
+  ],
+  "physical_layer_profile_id": null,
+  "medium_access_model": null,
+  "native_parameter_prefixes": [
+    "iec101_"
+  ],
+  "parameter_aliases": {},
+  "parameter_alias_limits": {},
+  "parameter_evidence_scope": null,
+  "rate_source_profile_id": null,
+  "arbitration_model_id": null,
+  "max_payload_bytes": null,
+  "capabilities": {
+    "supports_signals": true,
+    "supports_data_objects": true,
+    "supports_streams": false,
+    "supports_multicast": false,
+    "supports_publish_subscribe": false,
+    "supports_request_response": true,
+    "supports_cyclic": true,
+    "supports_event": true,
+    "supports_redundancy": false,
+    "supports_time_sync": false,
+    "supports_safety_profile": false,
+    "supports_segmentation": false,
+    "supports_fragmentation": false,
+    "supports_qos": false
+  },
+  "deterministic": false,
+  "overhead_bytes": 8,
+  "implementation_status": "PARTIAL",
+  "connection_type": "COMMUNICATION_TECHNOLOGY",
+  "parameter_proposals": {
+    "kind": "DEVICE_DEPENDENT",
+    "status": "REVIEW_REQUIRED",
+    "required_fields": [],
+    "note": "No universal rate is available; inspect the selected hardware/profile."
+  },
+  "capacity_evidence": {
+    "status": "MODEL_MISSING",
+    "frame_model": null,
+    "schedule_model": null,
+    "requires_confirmed_device_parameters": true
+  },
+  "components": {
+    "binding": "iec60870_5_101.binding",
+    "generator": "iec60870_5_101.generator",
+    "validator": "iec60870_5_101.validator",
+    "timing_model": null,
+    "load_model": null,
+    "encoder": "iec60870_5_101.encoder",
+    "decoder": "iec60870_5_101.decoder"
+  },
+  "known_limitations": "Technology-specific conformance details require a vendor/profile extension."
+}

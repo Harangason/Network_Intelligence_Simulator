@@ -1,0 +1,37 @@
+--- before/backend/nis/simulation/service.py
++++ after/backend/nis/simulation/service.py
+@@ -69,6 +69,7 @@
+         self.runtime_load_monitor = RuntimeBusLoadMonitor()
+         self._catalog_lock = RLock()
+         self._catalog_snapshot = None
++        self._source_directory_snapshot = None
+ 
+     def catalog(self) -> dict[str, Any]:
+         # Callers may edit their result without editing the registry or the
+@@ -78,6 +79,26 @@
+     def catalog_json(self) -> bytes:
+         """Serve the complete registry without serializing 14k fields per read."""
+         return self._catalog_entry()[3]
++
++    def source_directory(self, project_id: str) -> dict[str, Any]:
++        from backend.nis.communication.services.sources import directory_from_profiles
++        from backend.nis.communication.services.licensing import license_states
++        with self._catalog_lock:
++            entry = self._catalog_entry()
++            snapshot = self._source_directory_snapshot
++            if snapshot is None or snapshot[0] is not entry:
++                profiles = {profile['id']: profile for domain in entry[2]['domains']
++                            for profile in domain['technologies']}
++                directory = directory_from_profiles(list(profiles.values()))
++                policies = [{'id': profile['id'], 'licensing_policy': profile.get('licensing_policy')}
++                            for profile in profiles.values()]
++                snapshot = self._source_directory_snapshot = (entry, directory, policies)
++            directory = copy.deepcopy(snapshot[1])
++        # Bibliography is a projection of one canonical registry revision.
++        # Project evidence and expiry are evaluated afresh on every request.
++        directory['licenses'] = license_states(project_id, snapshot[2])
++        directory['project_id'] = project_id
++        return directory
+ 
+     def _catalog_entry(self):
+         with self._catalog_lock:

@@ -1,0 +1,5325 @@
+{
+  "id": "tcp",
+  "label": "TCP",
+  "domain": "generic_networking",
+  "layer": "TRANSPORT",
+  "transport_unit": "STREAM_CHUNK",
+  "payload_element_types": [
+    "FIELD",
+    "RAW_DATA"
+  ],
+  "hardware_interface": "explicit_ip_path",
+  "hardware_capability_aliases": [
+    "ethernet_port"
+  ],
+  "default_stack": [
+    "tcp"
+  ],
+  "stack_variants": [
+    [
+      "tcp"
+    ],
+    [
+      "ethernet",
+      "ip",
+      "tcp"
+    ]
+  ],
+  "default_bitrate": null,
+  "rate_model": {
+    "type": "STREAM_NO_UNIVERSAL_CLOCK",
+    "fields": []
+  },
+  "local_timing_schema": [],
+  "parameter_schema": {
+    "payload_bytes": {
+      "label": "Payload",
+      "category": "physical",
+      "scope": "message",
+      "type": "number",
+      "description": "Actual applicationstream bytes, no65535byte stream limit; independent segmentMSS/IP/reassembly and messageframing.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "source_revision": "RFC9293 August2022 sections2/3.1-3.8; base TCP no physical clock/application-message boundary."
+    },
+    "cycle_ms": {
+      "label": "Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "Standardperiode fuer zyklische Nachrichten.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "minimum_cycle_time_ms": {
+      "label": "Minimum Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "deadline_ms": {
+      "label": "Deadline",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "timeout_ms": {
+      "label": "Timeout",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_latency_ms": {
+      "label": "Maximum Latency",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "jitter_ms": {
+      "label": "Jitter Budget",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "freshness_ms": {
+      "label": "Data Freshness",
+      "category": "timing",
+      "scope": "signal",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "source_processing_delay_ms": {
+      "label": "Source Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_processing_delay_ms": {
+      "label": "Target Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "propagation_delay_ms": {
+      "label": "Propagation",
+      "category": "timing",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.01,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_bus_load_percent": {
+      "label": "Ziel-Buslast",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "Zielwert fuer die aus Routing, Payload, Zyklus und Bitrate berechnete Buslast.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "peak_factor": {
+      "label": "Peak Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.15,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_factor": {
+      "label": "Burst Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.5,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_window_ms": {
+      "label": "Burst Window",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "warning_threshold": {
+      "label": "Load Warning",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "critical_threshold": {
+      "label": "Load Critical",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 75,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "overload_threshold": {
+      "label": "Load Overload",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 90,
+      "unit": "%",
+      "min": 1,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "queue_size": {
+      "label": "Queue Size",
+      "category": "qos",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 256,
+      "unit": "Frames",
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "queue_policy": {
+      "label": "Queue Policy",
+      "category": "qos",
+      "scope": "network",
+      "type": "select",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": "FIFO",
+      "options": [
+        "FIFO",
+        "PRIORITY",
+        "STRICT_PRIORITY",
+        "WEIGHTED_PRIORITY",
+        "WRR",
+        "ROUND_ROBIN",
+        "TIME_TRIGGERED",
+        "TAS",
+        "CBS",
+        "CUSTOM"
+      ],
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "qos_priority": {
+      "label": "Default Priority",
+      "category": "qos",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 3,
+      "min": 0,
+      "max": 7,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "traffic_class": {
+      "label": "Traffic Class",
+      "category": "qos",
+      "scope": "route",
+      "type": "select",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": "BEST_EFFORT",
+      "options": [
+        "BEST_EFFORT",
+        "CONTROL",
+        "REALTIME",
+        "SAFETY_CRITICAL"
+      ],
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "packet_loss_probability": {
+      "label": "Packet Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "frame_loss_probability": {
+      "label": "Frame Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "bit_error_rate": {
+      "label": "Bit Error Rate",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "corruption_probability": {
+      "label": "Corruption",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duplicate_probability": {
+      "label": "Duplication",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "reordering_probability": {
+      "label": "Reordering",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "required_reliability": {
+      "label": "Required Reliability",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.999,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_offset_ms": {
+      "label": "Clock Offset",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_drift_ppm": {
+      "label": "Clock Drift",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 20,
+      "unit": "ppm",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_precision_ms": {
+      "label": "Sync Precision",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_interval_ms": {
+      "label": "Sync Interval",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1000,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_sync_error_ms": {
+      "label": "Maximum Sync Error",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_delay_ms": {
+      "label": "Gateway Processing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.2,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_queue_delay_ms": {
+      "label": "Gateway Queueing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "protocol_conversion_delay_ms": {
+      "label": "Protocol Conversion",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duration_s": {
+      "label": "Simulation Duration",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 1,
+      "unit": "s",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "seed": {
+      "label": "Random Seed",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 42,
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "max_events": {
+      "label": "Maximum Events",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 100000,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "dropout_probability": {
+      "label": "Failure Injection Dropout",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "tcp_edition": {
+      "type": "select",
+      "description": "Actual base edition or separately qualified variant.",
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "source_revision": "RFC9293 August2022 sections2/3.1-3.8; base TCP no physical clock/application-message boundary.",
+      "options": [
+        "RFC9293_2022",
+        "REGISTERED_ACTUAL"
+      ],
+      "label": "tcp edition",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "tcp_proposal_mode": {
+      "type": "select",
+      "description": "Explicit source baseline proposal versus actual negotiated configuration.",
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "source_revision": "RFC9293 August2022 sections2/3.1-3.8; base TCP no physical clock/application-message boundary.",
+      "options": [
+        "SOURCE_BASELINE",
+        "ACTUAL_CONFIG"
+      ],
+      "label": "tcp proposal mode",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "tcp_ip_version": {
+      "type": "select",
+      "description": "Actual bound IP version; TCP not implicitly Ethernet.",
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "source_revision": "RFC9293 August2022 sections2/3.1-3.8; base TCP no physical clock/application-message boundary.",
+      "options": [
+        "IPV4",
+        "IPV6"
+      ],
+      "label": "tcp ip version",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "tcp_phase": {
+      "type": "select",
+      "description": "Actual transmitted vs received segment; unknown receiver reserved bits ignored.",
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "source_revision": "RFC9293 August2022 sections2/3.1-3.8; base TCP no physical clock/application-message boundary.",
+      "options": [
+        "SEND",
+        "RECEIVE"
+      ],
+      "label": "tcp phase",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_state": {
+      "type": "select",
+      "description": "Actual endpoint state, ACK does not prove application consumption.",
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "source_revision": "RFC9293 August2022 sections2/3.1-3.8; base TCP no physical clock/application-message boundary.",
+      "options": [
+        "CLOSED",
+        "LISTEN",
+        "SYN_SENT",
+        "SYN_RECEIVED",
+        "ESTABLISHED",
+        "FIN_WAIT_1",
+        "FIN_WAIT_2",
+        "CLOSE_WAIT",
+        "CLOSING",
+        "LAST_ACK",
+        "TIME_WAIT"
+      ],
+      "label": "tcp state",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_congestion": {
+      "type": "select",
+      "description": "Actual selected algorithm; no Reno rule applied to CUBIC/registered algorithms.",
+      "source": "https://www.rfc-editor.org/rfc/rfc5681.html",
+      "source_revision": "RFC5681 September2009 sections2-4: Reno congestion/receive windows separate and loss recovery.",
+      "options": [
+        "RENO_RFC5681",
+        "CUBIC_RFC9438",
+        "REGISTERED_ACTUAL"
+      ],
+      "label": "tcp congestion",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_iw_profile": {
+      "type": "select",
+      "description": "Actual initial-window policy independent of congestion avoidance algorithm.",
+      "source": "https://www.rfc-editor.org/rfc/rfc5681.html",
+      "source_revision": "RFC5681 September2009 sections2-4: Reno congestion/receive windows separate and loss recovery.",
+      "options": [
+        "RFC5681",
+        "RFC6928_EXPERIMENT",
+        "REGISTERED_ACTUAL"
+      ],
+      "label": "tcp iw profile",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_rto_profile": {
+      "type": "select",
+      "description": "Actual timer policy; standard SHOULD floor vs separately evidenced deviation.",
+      "source": "https://www.rfc-editor.org/rfc/rfc6298.html",
+      "source_revision": "RFC6298 June2011 sections2-5: first/subsequentRTT, Karn, backoff; SHOULD defaults not hardware facts.",
+      "options": [
+        "RFC6298_BASELINE",
+        "REGISTERED_ACTUAL"
+      ],
+      "label": "tcp rto profile",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_rto_phase": {
+      "type": "select",
+      "description": "Actual initial, first RTT, updatedRTT or timeout state.",
+      "source": "https://www.rfc-editor.org/rfc/rfc6298.html",
+      "source_revision": "RFC6298 June2011 sections2-5: first/subsequentRTT, Karn, backoff; SHOULD defaults not hardware facts.",
+      "options": [
+        "INITIAL",
+        "FIRST_SAMPLE",
+        "SUBSEQUENT_SAMPLE",
+        "TIMEOUT"
+      ],
+      "label": "tcp rto phase",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_recovery_phase": {
+      "type": "select",
+      "description": "Actual no loss, slow start, Renoavoidance, timeout or fast recovery.",
+      "source": "https://www.rfc-editor.org/rfc/rfc5681.html",
+      "source_revision": "RFC5681 September2009 sections2-4: Reno congestion/receive windows separate and loss recovery.",
+      "options": [
+        "NORMAL",
+        "SLOW_START",
+        "CONGESTION_AVOIDANCE",
+        "TIMEOUT",
+        "FAST_RECOVERY"
+      ],
+      "label": "tcp recovery phase",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_outcome": {
+      "type": "select",
+      "description": "Actual correlated application data freshness/acceptance.",
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "source_revision": "RFC9293 August2022 sections2/3.1-3.8; base TCP no physical clock/application-message boundary.",
+      "options": [
+        "ACCEPTED",
+        "STALE",
+        "ERROR",
+        "UNKNOWN"
+      ],
+      "label": "tcp outcome",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_src_port": {
+      "type": "number",
+      "description": "Actual16-bit source port; wire value0 not a guessed service. ",
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "source_revision": "RFC9293 August2022 sections2/3.1-3.8; base TCP no physical clock/application-message boundary.",
+      "min": 0,
+      "max": 65535,
+      "integer": true,
+      "label": "tcp src port",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_dst_port": {
+      "type": "number",
+      "description": "Actual16-bit destination port, endpoint binding must be explicit.",
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "source_revision": "RFC9293 August2022 sections2/3.1-3.8; base TCP no physical clock/application-message boundary.",
+      "min": 0,
+      "max": 65535,
+      "integer": true,
+      "label": "tcp dst port",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_sequence": {
+      "type": "number",
+      "description": "Actual32bit first-octet/ISN number, modulo2^32.",
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "source_revision": "RFC9293 August2022 sections2/3.1-3.8; base TCP no physical clock/application-message boundary.",
+      "min": 0,
+      "max": 4294967295,
+      "integer": true,
+      "label": "tcp sequence",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_acknowledgment": {
+      "type": "number",
+      "description": "Actual32bit next expected octet, meaningful only ACKset.",
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "source_revision": "RFC9293 August2022 sections2/3.1-3.8; base TCP no physical clock/application-message boundary.",
+      "min": 0,
+      "max": 4294967295,
+      "integer": true,
+      "label": "tcp acknowledgment",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_next_sequence": {
+      "type": "number",
+      "description": "Actual sequence after data+SYN+FIN modulo2^32.",
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "source_revision": "RFC9293 August2022 sections2/3.1-3.8; base TCP no physical clock/application-message boundary.",
+      "min": 0,
+      "max": 4294967295,
+      "integer": true,
+      "label": "tcp next sequence",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_syn_units": {
+      "type": "number",
+      "description": "Actual SYN consumes1 sequenceunit when set.",
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "source_revision": "RFC9293 August2022 sections2/3.1-3.8; base TCP no physical clock/application-message boundary.",
+      "min": 0,
+      "max": 1,
+      "integer": true,
+      "label": "tcp syn units",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_fin_units": {
+      "type": "number",
+      "description": "Actual FIN consumes1 sequenceunit when set.",
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "source_revision": "RFC9293 August2022 sections2/3.1-3.8; base TCP no physical clock/application-message boundary.",
+      "min": 0,
+      "max": 1,
+      "integer": true,
+      "label": "tcp fin units",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_data_offset": {
+      "type": "number",
+      "description": "Actual count of32bit headerwords5..15.",
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "source_revision": "RFC9293 August2022 sections2/3.1-3.8; base TCP no physical clock/application-message boundary.",
+      "min": 5,
+      "max": 15,
+      "unit": "word",
+      "integer": true,
+      "label": "tcp data offset",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_header_bytes": {
+      "type": "number",
+      "description": "Actual TCPheader20..60bytes includes options/pad.",
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "source_revision": "RFC9293 August2022 sections2/3.1-3.8; base TCP no physical clock/application-message boundary.",
+      "min": 20,
+      "max": 60,
+      "unit": "byte",
+      "integer": true,
+      "label": "tcp header bytes",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "tcp_edition": "RFC9293_2022",
+            "tcp_proposal_mode": "SOURCE_BASELINE",
+            "tcp_options_bytes": 0
+          },
+          "value": 20,
+          "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+          "source_revision": "RFC9293 August2022 sections2/3.1-3.8; base TCP no physical clock/application-message boundary."
+        }
+      ],
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_options_bytes": {
+      "type": "number",
+      "description": "Actual option+padding space, header−20.",
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "source_revision": "RFC9293 August2022 sections2/3.1-3.8; base TCP no physical clock/application-message boundary.",
+      "min": 0,
+      "max": 40,
+      "unit": "byte",
+      "integer": true,
+      "label": "tcp options bytes",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_option_kind": {
+      "type": "number",
+      "description": "Actual IANAoption kind; mandatory0/1/2 and selected3/8 checked.",
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "source_revision": "RFC9293 August2022 sections2/3.1-3.8; base TCP no physical clock/application-message boundary.",
+      "min": 0,
+      "max": 255,
+      "integer": true,
+      "label": "tcp option kind",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_option_length": {
+      "type": "number",
+      "description": "Actual complete optionlength includes kind+length; EOL/NOP have no lengthfield.",
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "source_revision": "RFC9293 August2022 sections2/3.1-3.8; base TCP no physical clock/application-message boundary.",
+      "min": 0,
+      "max": 40,
+      "unit": "byte",
+      "integer": true,
+      "label": "tcp option length",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_reserved_bits": {
+      "type": "number",
+      "description": "Actual4bit reservedfield, SENDzero unless separately registeredextension; receiverignore.",
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "source_revision": "RFC9293 August2022 sections2/3.1-3.8; base TCP no physical clock/application-message boundary.",
+      "min": 0,
+      "max": 15,
+      "integer": true,
+      "label": "tcp reserved bits",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_urgent_pointer": {
+      "type": "number",
+      "description": "Actual16bit offset to octet afterurgentdata, not out-of-band deliveryproof.",
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "source_revision": "RFC9293 August2022 sections2/3.1-3.8; base TCP no physical clock/application-message boundary.",
+      "min": 0,
+      "max": 65535,
+      "integer": true,
+      "label": "tcp urgent pointer",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_checksum": {
+      "type": "number",
+      "description": "Actualmandatory16bit onescomplement checksum overheader/data/pseudoheader.",
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "source_revision": "RFC9293 August2022 sections2/3.1-3.8; base TCP no physical clock/application-message boundary.",
+      "min": 0,
+      "max": 65535,
+      "integer": true,
+      "label": "tcp checksum",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_pseudoheader_bytes": {
+      "type": "number",
+      "description": "ActualconceptualIPv4pseudoheader12/IPv640, not transmitted TCPbytes.",
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "source_revision": "RFC9293 August2022 sections2/3.1-3.8; base TCP no physical clock/application-message boundary.",
+      "min": 0,
+      "max": 40,
+      "unit": "byte",
+      "integer": true,
+      "label": "tcp pseudoheader bytes",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_ip_protocol": {
+      "type": "number",
+      "description": "ActualIPv4protocol/IPv6upperlayerNextHeader6.",
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "source_revision": "RFC9293 August2022 sections2/3.1-3.8; base TCP no physical clock/application-message boundary.",
+      "min": 0,
+      "max": 255,
+      "integer": true,
+      "label": "tcp ip protocol",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_data_bytes": {
+      "type": "number",
+      "description": "Actualsegmentdata, no relationship to socketwrite boundaries.",
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "source_revision": "RFC9293 August2022 sections2/3.1-3.8; base TCP no physical clock/application-message boundary.",
+      "min": 0,
+      "unit": "byte",
+      "integer": true,
+      "label": "tcp data bytes",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_segment_bytes": {
+      "type": "number",
+      "description": "Actual TCPheader+data, excludesIPheader/pseudoheader.",
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "source_revision": "RFC9293 August2022 sections2/3.1-3.8; base TCP no physical clock/application-message boundary.",
+      "min": 20,
+      "unit": "byte",
+      "integer": true,
+      "label": "tcp segment bytes",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_mss_received": {
+      "type": "number",
+      "description": "Actual16bit peerMSS offer or sourcefallback when absent.",
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "source_revision": "RFC9293 August2022 sections2/3.1-3.8; base TCP no physical clock/application-message boundary.",
+      "min": 1,
+      "max": 65535,
+      "unit": "byte",
+      "integer": true,
+      "label": "tcp mss received",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "tcp_edition": "RFC9293_2022",
+            "tcp_proposal_mode": "SOURCE_BASELINE",
+            "tcp_mss_option_received": false,
+            "tcp_ip_version": "IPV4"
+          },
+          "value": 536,
+          "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+          "source_revision": "RFC9293 August2022 sections2/3.1-3.8; base TCP no physical clock/application-message boundary."
+        },
+        {
+          "when": {
+            "tcp_edition": "RFC9293_2022",
+            "tcp_proposal_mode": "SOURCE_BASELINE",
+            "tcp_mss_option_received": false,
+            "tcp_ip_version": "IPV6"
+          },
+          "value": 1220,
+          "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+          "source_revision": "RFC9293 August2022 sections2/3.1-3.8; base TCP no physical clock/application-message boundary."
+        }
+      ],
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_mss_advertised": {
+      "type": "number",
+      "description": "ActuallocalofferedMSS limitedbyreceiveIPmessage−20.",
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "source_revision": "RFC9293 August2022 sections2/3.1-3.8; base TCP no physical clock/application-message boundary.",
+      "min": 1,
+      "max": 65535,
+      "unit": "byte",
+      "integer": true,
+      "label": "tcp mss advertised",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_effective_mss": {
+      "type": "number",
+      "description": "Actualeffective sendbudget afterTCP/IPoptions andpath/reassemblylimits.",
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "source_revision": "RFC9293 August2022 sections2/3.1-3.8; base TCP no physical clock/application-message boundary.",
+      "min": 0,
+      "unit": "byte",
+      "integer": true,
+      "label": "tcp effective mss",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_mms_s": {
+      "type": "number",
+      "description": "Actual IPmaximum transportmessage sendcapacity excludesfixedIPheader.",
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "source_revision": "RFC9293 August2022 sections2/3.1-3.8; base TCP no physical clock/application-message boundary.",
+      "min": 20,
+      "unit": "byte",
+      "integer": true,
+      "label": "tcp mms s",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_mms_r": {
+      "type": "number",
+      "description": "Actual IPreceive/reassemblymaximumtransportmessage capacity.",
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "source_revision": "RFC9293 August2022 sections2/3.1-3.8; base TCP no physical clock/application-message boundary.",
+      "min": 20,
+      "unit": "byte",
+      "integer": true,
+      "label": "tcp mms r",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_ip_options_bytes": {
+      "type": "number",
+      "description": "ActualIPv4options/IPv6extensionheaders perpacket, notalways0.",
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "source_revision": "RFC9293 August2022 sections2/3.1-3.8; base TCP no physical clock/application-message boundary.",
+      "min": 0,
+      "unit": "byte",
+      "integer": true,
+      "label": "tcp ip options bytes",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_window_wire": {
+      "type": "number",
+      "description": "Actualunsigned16bit advertisedwindow; zero can persist.",
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "source_revision": "RFC9293 August2022 sections2/3.1-3.8; base TCP no physical clock/application-message boundary.",
+      "min": 0,
+      "max": 65535,
+      "unit": "byte",
+      "integer": true,
+      "label": "tcp window wire",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_window_effective": {
+      "type": "number",
+      "description": "Actualscaledreceivewindow strictlyless1GiB.",
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "source_revision": "RFC9293 August2022 sections2/3.1-3.8; base TCP no physical clock/application-message boundary.",
+      "min": 0,
+      "max": 1073725440,
+      "unit": "byte",
+      "integer": true,
+      "label": "tcp window effective",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_window_scale": {
+      "type": "number",
+      "description": "Actuallocaltransmittedshift0..14, notglobaldefault14.",
+      "source": "https://www.rfc-editor.org/rfc/rfc7323.html",
+      "source_revision": "RFC7323 September2014 sections2-5; WS/TS negotiated, SYN window unscaled, PAWS clock distinct UTC.",
+      "min": 0,
+      "max": 14,
+      "integer": true,
+      "label": "tcp window scale",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_window_scale_received": {
+      "type": "number",
+      "description": "Actualreceived8bitshift, >14clampedwhenimplemented.",
+      "source": "https://www.rfc-editor.org/rfc/rfc7323.html",
+      "source_revision": "RFC7323 September2014 sections2-5; WS/TS negotiated, SYN window unscaled, PAWS clock distinct UTC.",
+      "min": 0,
+      "max": 255,
+      "integer": true,
+      "label": "tcp window scale received",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_window_scale_effective": {
+      "type": "number",
+      "description": "Actualclamped receivedshift max14.",
+      "source": "https://www.rfc-editor.org/rfc/rfc7323.html",
+      "source_revision": "RFC7323 September2014 sections2-5; WS/TS negotiated, SYN window unscaled, PAWS clock distinct UTC.",
+      "min": 0,
+      "max": 14,
+      "integer": true,
+      "label": "tcp window scale effective",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_cwnd_bytes": {
+      "type": "number",
+      "description": "Actualsendercongestionwindow byteunit, separate rwnd.",
+      "source": "https://www.rfc-editor.org/rfc/rfc5681.html",
+      "source_revision": "RFC5681 September2009 sections2-4: Reno congestion/receive windows separate and loss recovery.",
+      "min": 0,
+      "unit": "byte",
+      "integer": true,
+      "label": "tcp cwnd bytes",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_rwnd_bytes": {
+      "type": "number",
+      "description": "Actualreceiverwindow byteunit.",
+      "source": "https://www.rfc-editor.org/rfc/rfc5681.html",
+      "source_revision": "RFC5681 September2009 sections2-4: Reno congestion/receive windows separate and loss recovery.",
+      "min": 0,
+      "max": 1073725440,
+      "unit": "byte",
+      "integer": true,
+      "label": "tcp rwnd bytes",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_flight_bytes": {
+      "type": "number",
+      "description": "Actualoutstandingunacknowledgedbytecount, notcwnd.",
+      "source": "https://www.rfc-editor.org/rfc/rfc5681.html",
+      "source_revision": "RFC5681 September2009 sections2-4: Reno congestion/receive windows separate and loss recovery.",
+      "min": 0,
+      "unit": "byte",
+      "integer": true,
+      "label": "tcp flight bytes",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_new_data_bytes": {
+      "type": "number",
+      "description": "Actualadditionalnewdata allocation.",
+      "source": "https://www.rfc-editor.org/rfc/rfc5681.html",
+      "source_revision": "RFC5681 September2009 sections2-4: Reno congestion/receive windows separate and loss recovery.",
+      "min": 0,
+      "unit": "byte",
+      "integer": true,
+      "label": "tcp new data bytes",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_smss": {
+      "type": "number",
+      "description": "Actualsendermaximumsegmentsizeusedby congestioncontrol.",
+      "source": "https://www.rfc-editor.org/rfc/rfc5681.html",
+      "source_revision": "RFC5681 September2009 sections2-4: Reno congestion/receive windows separate and loss recovery.",
+      "min": 1,
+      "unit": "byte",
+      "integer": true,
+      "label": "tcp smss",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_initial_window_bytes": {
+      "type": "number",
+      "description": "Actualinitialcongestionwindow underselectedpolicy.",
+      "source": "https://www.rfc-editor.org/rfc/rfc5681.html",
+      "source_revision": "RFC5681 September2009 sections2-4: Reno congestion/receive windows separate and loss recovery.",
+      "min": 0,
+      "unit": "byte",
+      "integer": true,
+      "label": "tcp initial window bytes",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_ssthresh_bytes": {
+      "type": "number",
+      "description": "ActualRenoslowstartthreshold afterselectedlossevent.",
+      "source": "https://www.rfc-editor.org/rfc/rfc5681.html",
+      "source_revision": "RFC5681 September2009 sections2-4: Reno congestion/receive windows separate and loss recovery.",
+      "min": 0,
+      "unit": "byte",
+      "integer": true,
+      "label": "tcp ssthresh bytes",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_cwnd_increment_bytes": {
+      "type": "number",
+      "description": "ActualReno cwndgrowth per selectedACK/RTT scope.",
+      "source": "https://www.rfc-editor.org/rfc/rfc5681.html",
+      "source_revision": "RFC5681 September2009 sections2-4: Reno congestion/receive windows separate and loss recovery.",
+      "min": 0,
+      "unit": "byte",
+      "integer": true,
+      "label": "tcp cwnd increment bytes",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_newly_acked_bytes": {
+      "type": "number",
+      "description": "Actualnewly cumulativelyacknowledgedbytes.",
+      "source": "https://www.rfc-editor.org/rfc/rfc5681.html",
+      "source_revision": "RFC5681 September2009 sections2-4: Reno congestion/receive windows separate and loss recovery.",
+      "min": 0,
+      "unit": "byte",
+      "integer": true,
+      "label": "tcp newly acked bytes",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_duplicate_acks": {
+      "type": "number",
+      "description": "Actualsame-window/nonadvancingdupACKcount, notarbitraryrepeatmessages.",
+      "source": "https://www.rfc-editor.org/rfc/rfc5681.html",
+      "source_revision": "RFC5681 September2009 sections2-4: Reno congestion/receive windows separate and loss recovery.",
+      "min": 0,
+      "integer": true,
+      "label": "tcp duplicate acks",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_tsval": {
+      "type": "number",
+      "description": "Actual32bit monotonicTCPtimestampclock, notUnixepoch.",
+      "source": "https://www.rfc-editor.org/rfc/rfc7323.html",
+      "source_revision": "RFC7323 September2014 sections2-5; WS/TS negotiated, SYN window unscaled, PAWS clock distinct UTC.",
+      "min": 0,
+      "max": 4294967295,
+      "integer": true,
+      "label": "tcp tsval",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_tsecr": {
+      "type": "number",
+      "description": "Actual32bit echotimestamp, onlyACKmeaningful.",
+      "source": "https://www.rfc-editor.org/rfc/rfc7323.html",
+      "source_revision": "RFC7323 September2014 sections2-5; WS/TS negotiated, SYN window unscaled, PAWS clock distinct UTC.",
+      "min": 0,
+      "max": 4294967295,
+      "integer": true,
+      "label": "tcp tsecr",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_timestamp_tick_s": {
+      "type": "number",
+      "description": "Actualtimestampclockinterval, maynotwrapwithinMSL.",
+      "source": "https://www.rfc-editor.org/rfc/rfc7323.html",
+      "source_revision": "RFC7323 September2014 sections2-5; WS/TS negotiated, SYN window unscaled, PAWS clock distinct UTC.",
+      "min": 0,
+      "unit": "s",
+      "integer": false,
+      "label": "tcp timestamp tick s",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_timestamp_recycle_s": {
+      "type": "number",
+      "description": "Actual2^32*tick fullrecycletime.",
+      "source": "https://www.rfc-editor.org/rfc/rfc7323.html",
+      "source_revision": "RFC7323 September2014 sections2-5; WS/TS negotiated, SYN window unscaled, PAWS clock distinct UTC.",
+      "min": 0,
+      "unit": "s",
+      "integer": false,
+      "label": "tcp timestamp recycle s",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_msl_s": {
+      "type": "number",
+      "description": "Actualmaximumsegmentlifetime bound, source2minutes isdesignproposal notactualpathproof.",
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "source_revision": "RFC9293 August2022 sections2/3.1-3.8; base TCP no physical clock/application-message boundary.",
+      "min": 0,
+      "unit": "s",
+      "integer": false,
+      "label": "tcp msl s",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_time_wait_s": {
+      "type": "number",
+      "description": "ActualTIME_WAITduration normally2MSL.",
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "source_revision": "RFC9293 August2022 sections2/3.1-3.8; base TCP no physical clock/application-message boundary.",
+      "min": 0,
+      "unit": "s",
+      "integer": false,
+      "label": "tcp time wait s",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_idle_s": {
+      "type": "number",
+      "description": "Actualidle time pertinent to PAWS staleclock.",
+      "source": "https://www.rfc-editor.org/rfc/rfc7323.html",
+      "source_revision": "RFC7323 September2014 sections2-5; WS/TS negotiated, SYN window unscaled, PAWS clock distinct UTC.",
+      "min": 0,
+      "unit": "s",
+      "integer": false,
+      "label": "tcp idle s",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_keepalive_idle_s": {
+      "type": "number",
+      "description": "Actualconfigurableidleprobeinterval; defaultatleast7200, commissioningmaydiffer.",
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "source_revision": "RFC9293 August2022 sections2/3.1-3.8; base TCP no physical clock/application-message boundary.",
+      "min": 0,
+      "unit": "s",
+      "integer": false,
+      "label": "tcp keepalive idle s",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "tcp_edition": "RFC9293_2022",
+            "tcp_proposal_mode": "SOURCE_BASELINE"
+          },
+          "value": 7200,
+          "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+          "source_revision": "RFC9293 August2022 sections2/3.1-3.8; base TCP no physical clock/application-message boundary."
+        }
+      ],
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_keepalive_failures": {
+      "type": "number",
+      "description": "Actualcountmissedprobes, onecannotdeclareddead.",
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "source_revision": "RFC9293 August2022 sections2/3.1-3.8; base TCP no physical clock/application-message boundary.",
+      "min": 0,
+      "integer": true,
+      "label": "tcp keepalive failures",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_delayed_ack_s": {
+      "type": "number",
+      "description": "ActualACKdelay strictlyless0.5s, no500msinclusive.",
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "source_revision": "RFC9293 August2022 sections2/3.1-3.8; base TCP no physical clock/application-message boundary.",
+      "min": 0,
+      "max": 0.5,
+      "unit": "s",
+      "integer": false,
+      "label": "tcp delayed ack s",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_ack_every_segments": {
+      "type": "number",
+      "description": "Actualsourcebaselineeverysecondfullsegments recommendation.",
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "source_revision": "RFC9293 August2022 sections2/3.1-3.8; base TCP no physical clock/application-message boundary.",
+      "min": 1,
+      "integer": true,
+      "label": "tcp ack every segments",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "tcp_edition": "RFC9293_2022",
+            "tcp_proposal_mode": "SOURCE_BASELINE"
+          },
+          "value": 2,
+          "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+          "source_revision": "RFC9293 August2022 sections2/3.1-3.8; base TCP no physical clock/application-message boundary."
+        }
+      ],
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_initial_rto_s": {
+      "type": "number",
+      "description": "ActualinitialRTO1secondSHOULDbaseline; largerallowed.",
+      "source": "https://www.rfc-editor.org/rfc/rfc6298.html",
+      "source_revision": "RFC6298 June2011 sections2-5: first/subsequentRTT, Karn, backoff; SHOULD defaults not hardware facts.",
+      "min": 0,
+      "unit": "s",
+      "integer": false,
+      "label": "tcp initial rto s",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "tcp_edition": "RFC9293_2022",
+            "tcp_proposal_mode": "SOURCE_BASELINE",
+            "tcp_rto_profile": "RFC6298_BASELINE"
+          },
+          "value": 1,
+          "source": "https://www.rfc-editor.org/rfc/rfc6298.html",
+          "source_revision": "RFC6298 June2011 sections2-5: first/subsequentRTT, Karn, backoff; SHOULD defaults not hardware facts."
+        }
+      ],
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_rtt_sample_s": {
+      "type": "number",
+      "description": "Actualunambiguous RTTsample.",
+      "source": "https://www.rfc-editor.org/rfc/rfc6298.html",
+      "source_revision": "RFC6298 June2011 sections2-5: first/subsequentRTT, Karn, backoff; SHOULD defaults not hardware facts.",
+      "min": 0,
+      "unit": "s",
+      "integer": false,
+      "label": "tcp rtt sample s",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_srtt_s": {
+      "type": "number",
+      "description": "ActualsmoothedRTT, no guessedLAN1ms.",
+      "source": "https://www.rfc-editor.org/rfc/rfc6298.html",
+      "source_revision": "RFC6298 June2011 sections2-5: first/subsequentRTT, Karn, backoff; SHOULD defaults not hardware facts.",
+      "min": 0,
+      "unit": "s",
+      "integer": false,
+      "label": "tcp srtt s",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_rttvar_s": {
+      "type": "number",
+      "description": "ActualRTTvariation before4*multiplier.",
+      "source": "https://www.rfc-editor.org/rfc/rfc6298.html",
+      "source_revision": "RFC6298 June2011 sections2-5: first/subsequentRTT, Karn, backoff; SHOULD defaults not hardware facts.",
+      "min": 0,
+      "unit": "s",
+      "integer": false,
+      "label": "tcp rttvar s",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_previous_srtt_s": {
+      "type": "number",
+      "description": "ActualoldSRTTusedbeforeupdate.",
+      "source": "https://www.rfc-editor.org/rfc/rfc6298.html",
+      "source_revision": "RFC6298 June2011 sections2-5: first/subsequentRTT, Karn, backoff; SHOULD defaults not hardware facts.",
+      "min": 0,
+      "unit": "s",
+      "integer": false,
+      "label": "tcp previous srtt s",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_previous_rttvar_s": {
+      "type": "number",
+      "description": "ActualoldRTTVAR.",
+      "source": "https://www.rfc-editor.org/rfc/rfc6298.html",
+      "source_revision": "RFC6298 June2011 sections2-5: first/subsequentRTT, Karn, backoff; SHOULD defaults not hardware facts.",
+      "min": 0,
+      "unit": "s",
+      "integer": false,
+      "label": "tcp previous rttvar s",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_rto_s": {
+      "type": "number",
+      "description": "ActualqualifiedRTOafterfloor/cap.",
+      "source": "https://www.rfc-editor.org/rfc/rfc6298.html",
+      "source_revision": "RFC6298 June2011 sections2-5: first/subsequentRTT, Karn, backoff; SHOULD defaults not hardware facts.",
+      "min": 0,
+      "unit": "s",
+      "integer": false,
+      "label": "tcp rto s",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_raw_rto_s": {
+      "type": "number",
+      "description": "ActualSRTT+max(G,4RTTVAR).",
+      "source": "https://www.rfc-editor.org/rfc/rfc6298.html",
+      "source_revision": "RFC6298 June2011 sections2-5: first/subsequentRTT, Karn, backoff; SHOULD defaults not hardware facts.",
+      "min": 0,
+      "unit": "s",
+      "integer": false,
+      "label": "tcp raw rto s",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_previous_rto_s": {
+      "type": "number",
+      "description": "Actualprevioustimeout beforebackoff.",
+      "source": "https://www.rfc-editor.org/rfc/rfc6298.html",
+      "source_revision": "RFC6298 June2011 sections2-5: first/subsequentRTT, Karn, backoff; SHOULD defaults not hardware facts.",
+      "min": 0,
+      "unit": "s",
+      "integer": false,
+      "label": "tcp previous rto s",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_rto_max_s": {
+      "type": "number",
+      "description": "ActualoptionalRTOmaximum≥60s.",
+      "source": "https://www.rfc-editor.org/rfc/rfc6298.html",
+      "source_revision": "RFC6298 June2011 sections2-5: first/subsequentRTT, Karn, backoff; SHOULD defaults not hardware facts.",
+      "min": 0,
+      "unit": "s",
+      "integer": false,
+      "label": "tcp rto max s",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_clock_granularity_s": {
+      "type": "number",
+      "description": "ActualclockgranularityG, notuniversal1ms.",
+      "source": "https://www.rfc-editor.org/rfc/rfc6298.html",
+      "source_revision": "RFC6298 June2011 sections2-5: first/subsequentRTT, Karn, backoff; SHOULD defaults not hardware facts.",
+      "min": 0,
+      "unit": "s",
+      "integer": false,
+      "label": "tcp clock granularity s",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_alpha": {
+      "type": "number",
+      "description": "ActualSRTTupdateweight, source1/8SHOULDproposal.",
+      "source": "https://www.rfc-editor.org/rfc/rfc6298.html",
+      "source_revision": "RFC6298 June2011 sections2-5: first/subsequentRTT, Karn, backoff; SHOULD defaults not hardware facts.",
+      "min": 0,
+      "max": 1,
+      "integer": false,
+      "label": "tcp alpha",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "tcp_edition": "RFC9293_2022",
+            "tcp_proposal_mode": "SOURCE_BASELINE",
+            "tcp_rto_profile": "RFC6298_BASELINE"
+          },
+          "value": 0.125,
+          "source": "https://www.rfc-editor.org/rfc/rfc6298.html",
+          "source_revision": "RFC6298 June2011 sections2-5: first/subsequentRTT, Karn, backoff; SHOULD defaults not hardware facts."
+        }
+      ],
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_beta": {
+      "type": "number",
+      "description": "Actualvariationupdateweight, source1/4SHOULDproposal.",
+      "source": "https://www.rfc-editor.org/rfc/rfc6298.html",
+      "source_revision": "RFC6298 June2011 sections2-5: first/subsequentRTT, Karn, backoff; SHOULD defaults not hardware facts.",
+      "min": 0,
+      "max": 1,
+      "integer": false,
+      "label": "tcp beta",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "tcp_edition": "RFC9293_2022",
+            "tcp_proposal_mode": "SOURCE_BASELINE",
+            "tcp_rto_profile": "RFC6298_BASELINE"
+          },
+          "value": 0.25,
+          "source": "https://www.rfc-editor.org/rfc/rfc6298.html",
+          "source_revision": "RFC6298 June2011 sections2-5: first/subsequentRTT, Karn, backoff; SHOULD defaults not hardware facts."
+        }
+      ],
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_source_ms": {
+      "type": "number",
+      "description": "Actualsource/applicationframing/serializerbound.",
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "source_revision": "RFC9293 August2022 sections2/3.1-3.8; base TCP no physical clock/application-message boundary.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "label": "tcp source ms",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_transport_ms": {
+      "type": "number",
+      "description": "Actualhandshake/queue/stream/retransmit/IP/PHYbound.",
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "source_revision": "RFC9293 August2022 sections2/3.1-3.8; base TCP no physical clock/application-message boundary.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "label": "tcp transport ms",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_consumer_ms": {
+      "type": "number",
+      "description": "Actualreassembly/applicationframing/consume bound.",
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "source_revision": "RFC9293 August2022 sections2/3.1-3.8; base TCP no physical clock/application-message boundary.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "label": "tcp consumer ms",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_e2e_ms": {
+      "type": "number",
+      "description": "Actualcomplete source+transport+consumerbound.",
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "source_revision": "RFC9293 August2022 sections2/3.1-3.8; base TCP no physical clock/application-message boundary.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "label": "tcp e2e ms",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_deadline_ms": {
+      "type": "number",
+      "description": "Actualindependentfunctionaldeadline.",
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "source_revision": "RFC9293 August2022 sections2/3.1-3.8; base TCP no physical clock/application-message boundary.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "label": "tcp deadline ms",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_age_ms": {
+      "type": "number",
+      "description": "Actualcorrelatedconsumingdataage.",
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "source_revision": "RFC9293 August2022 sections2/3.1-3.8; base TCP no physical clock/application-message boundary.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "label": "tcp age ms",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_freshness_ms": {
+      "type": "number",
+      "description": "Actualallowedage.",
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "source_revision": "RFC9293 August2022 sections2/3.1-3.8; base TCP no physical clock/application-message boundary.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "label": "tcp freshness ms",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_syn": {
+      "type": "boolean",
+      "description": "ActualSYNcontrolbit.",
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "source_revision": "RFC9293 August2022 sections2/3.1-3.8; base TCP no physical clock/application-message boundary.",
+      "label": "tcp syn",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_fin": {
+      "type": "boolean",
+      "description": "ActualFINcontrolbit.",
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "source_revision": "RFC9293 August2022 sections2/3.1-3.8; base TCP no physical clock/application-message boundary.",
+      "label": "tcp fin",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_ack": {
+      "type": "boolean",
+      "description": "ActualACKcontrolbit.",
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "source_revision": "RFC9293 August2022 sections2/3.1-3.8; base TCP no physical clock/application-message boundary.",
+      "label": "tcp ack",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_rst": {
+      "type": "boolean",
+      "description": "ActualRSTcontrolbit.",
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "source_revision": "RFC9293 August2022 sections2/3.1-3.8; base TCP no physical clock/application-message boundary.",
+      "label": "tcp rst",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_urg": {
+      "type": "boolean",
+      "description": "ActualURGcontrolbit.",
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "source_revision": "RFC9293 August2022 sections2/3.1-3.8; base TCP no physical clock/application-message boundary.",
+      "label": "tcp urg",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_psh": {
+      "type": "boolean",
+      "description": "ActualPSHflag doesnotpreserveapplicationmessages.",
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "source_revision": "RFC9293 August2022 sections2/3.1-3.8; base TCP no physical clock/application-message boundary.",
+      "label": "tcp psh",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_ece": {
+      "type": "boolean",
+      "description": "ActualECNecho underseparatelyqualifiedECN.",
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "source_revision": "RFC9293 August2022 sections2/3.1-3.8; base TCP no physical clock/application-message boundary.",
+      "label": "tcp ece",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_cwr": {
+      "type": "boolean",
+      "description": "ActualECNwindow-reducedflag.",
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "source_revision": "RFC9293 August2022 sections2/3.1-3.8; base TCP no physical clock/application-message boundary.",
+      "label": "tcp cwr",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_mss_option_received": {
+      "type": "boolean",
+      "description": "ActualpeerMSSoptionreceivedin handshake.",
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "source_revision": "RFC9293 August2022 sections2/3.1-3.8; base TCP no physical clock/application-message boundary.",
+      "label": "tcp mss option received",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_ws_local_offer": {
+      "type": "boolean",
+      "description": "ActuallocalWSoptionin SYN.",
+      "source": "https://www.rfc-editor.org/rfc/rfc7323.html",
+      "source_revision": "RFC7323 September2014 sections2-5; WS/TS negotiated, SYN window unscaled, PAWS clock distinct UTC.",
+      "label": "tcp ws local offer",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_ws_peer_offer": {
+      "type": "boolean",
+      "description": "ActualpeerWSoptioninSYN.",
+      "source": "https://www.rfc-editor.org/rfc/rfc7323.html",
+      "source_revision": "RFC7323 September2014 sections2-5; WS/TS negotiated, SYN window unscaled, PAWS clock distinct UTC.",
+      "label": "tcp ws peer offer",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_ws_negotiated": {
+      "type": "boolean",
+      "description": "ActualbothsidesofferedWS.",
+      "source": "https://www.rfc-editor.org/rfc/rfc7323.html",
+      "source_revision": "RFC7323 September2014 sections2-5; WS/TS negotiated, SYN window unscaled, PAWS clock distinct UTC.",
+      "label": "tcp ws negotiated",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_ts_local_offer": {
+      "type": "boolean",
+      "description": "ActuallocalTSoptioninSYN.",
+      "source": "https://www.rfc-editor.org/rfc/rfc7323.html",
+      "source_revision": "RFC7323 September2014 sections2-5; WS/TS negotiated, SYN window unscaled, PAWS clock distinct UTC.",
+      "label": "tcp ts local offer",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_ts_peer_offer": {
+      "type": "boolean",
+      "description": "ActualpeerTSoptioninSYN.",
+      "source": "https://www.rfc-editor.org/rfc/rfc7323.html",
+      "source_revision": "RFC7323 September2014 sections2-5; WS/TS negotiated, SYN window unscaled, PAWS clock distinct UTC.",
+      "label": "tcp ts peer offer",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_ts_negotiated": {
+      "type": "boolean",
+      "description": "ActualbothsidesnegotiatedTS.",
+      "source": "https://www.rfc-editor.org/rfc/rfc7323.html",
+      "source_revision": "RFC7323 September2014 sections2-5; WS/TS negotiated, SYN window unscaled, PAWS clock distinct UTC.",
+      "label": "tcp ts negotiated",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_timestamp_present": {
+      "type": "boolean",
+      "description": "ActualTSoptionpresent inthissegment.",
+      "source": "https://www.rfc-editor.org/rfc/rfc7323.html",
+      "source_revision": "RFC7323 September2014 sections2-5; WS/TS negotiated, SYN window unscaled, PAWS clock distinct UTC.",
+      "label": "tcp timestamp present",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_timestamp_unambiguous": {
+      "type": "boolean",
+      "description": "Actualcorrelatedecho identifies retransmissionRTTsample.",
+      "source": "https://www.rfc-editor.org/rfc/rfc7323.html",
+      "source_revision": "RFC7323 September2014 sections2-5; WS/TS negotiated, SYN window unscaled, PAWS clock distinct UTC.",
+      "label": "tcp timestamp unambiguous",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_sample_retransmitted": {
+      "type": "boolean",
+      "description": "ActualRTTsample wouldderivefromretransmittedsegment.",
+      "source": "https://www.rfc-editor.org/rfc/rfc6298.html",
+      "source_revision": "RFC6298 June2011 sections2-5: first/subsequentRTT, Karn, backoff; SHOULD defaults not hardware facts.",
+      "label": "tcp sample retransmitted",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_keepalive_enabled": {
+      "type": "boolean",
+      "description": "Actualoptionalkeepalive enabled, defaultoff.",
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "source_revision": "RFC9293 August2022 sections2/3.1-3.8; base TCP no physical clock/application-message boundary.",
+      "label": "tcp keepalive enabled",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "tcp_edition": "RFC9293_2022",
+            "tcp_proposal_mode": "SOURCE_BASELINE"
+          },
+          "value": false,
+          "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+          "source_revision": "RFC9293 August2022 sections2/3.1-3.8; base TCP no physical clock/application-message boundary."
+        }
+      ],
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_connection_dead": {
+      "type": "boolean",
+      "description": "Actualconnection declareddead, singlemissedprobe insufficient.",
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "source_revision": "RFC9293 August2022 sections2/3.1-3.8; base TCP no physical clock/application-message boundary.",
+      "label": "tcp connection dead",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_rto_cap_enabled": {
+      "type": "boolean",
+      "description": "ActualconfiguredRTOcap, not an assumed60seconddefault.",
+      "source": "https://www.rfc-editor.org/rfc/rfc6298.html",
+      "source_revision": "RFC6298 June2011 sections2-5: first/subsequentRTT, Karn, backoff; SHOULD defaults not hardware facts.",
+      "label": "tcp rto cap enabled",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_paws_recent_valid": {
+      "type": "boolean",
+      "description": "ActualTS.Recentclockstillvalid, >24dayidle mustinvalidate.",
+      "source": "https://www.rfc-editor.org/rfc/rfc7323.html",
+      "source_revision": "RFC7323 September2014 sections2-5; WS/TS negotiated, SYN window unscaled, PAWS clock distinct UTC.",
+      "label": "tcp paws recent valid",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_checksum_verified": {
+      "type": "boolean",
+      "description": "ActualwholeTCP+IPpseudoheader checksumvalidation.",
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "source_revision": "RFC9293 August2022 sections2/3.1-3.8; base TCP no physical clock/application-message boundary.",
+      "label": "tcp checksum verified",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_padding_zero": {
+      "type": "boolean",
+      "description": "ActualheaderpaddingafterEOLzero.",
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "source_revision": "RFC9293 August2022 sections2/3.1-3.8; base TCP no physical clock/application-message boundary.",
+      "label": "tcp padding zero",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_nagle_enabled": {
+      "type": "boolean",
+      "description": "Actualshortsegmentcoalescing, applicationmustbeabletodisable.",
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "source_revision": "RFC9293 August2022 sections2/3.1-3.8; base TCP no physical clock/application-message boundary.",
+      "label": "tcp nagle enabled",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "tcp_edition": "RFC9293_2022",
+            "tcp_proposal_mode": "SOURCE_BASELINE"
+          },
+          "value": true,
+          "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+          "source_revision": "RFC9293 August2022 sections2/3.1-3.8; base TCP no physical clock/application-message boundary."
+        }
+      ],
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_nagle_disable_supported": {
+      "type": "boolean",
+      "description": "Actualperconnectionapplicationcontrol.",
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "source_revision": "RFC9293 August2022 sections2/3.1-3.8; base TCP no physical clock/application-message boundary.",
+      "label": "tcp nagle disable supported",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_sws_verified": {
+      "type": "boolean",
+      "description": "Actualsender/receiverSWSavoidancequalified.",
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "source_revision": "RFC9293 August2022 sections2/3.1-3.8; base TCP no physical clock/application-message boundary.",
+      "label": "tcp sws verified",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_zero_window_probe_verified": {
+      "type": "boolean",
+      "description": "Actualzero-window probes supported.",
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "source_revision": "RFC9293 August2022 sections2/3.1-3.8; base TCP no physical clock/application-message boundary.",
+      "label": "tcp zero window probe verified",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_ip_binding_verified": {
+      "type": "boolean",
+      "description": "ActualseparateIPandlowerPHYpathconfiguration verified.",
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "source_revision": "RFC9293 August2022 sections2/3.1-3.8; base TCP no physical clock/application-message boundary.",
+      "label": "tcp ip binding verified",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_framing_verified": {
+      "type": "boolean",
+      "description": "Actualapplicationmessageframing/reassemblyverified.",
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "source_revision": "RFC9293 August2022 sections2/3.1-3.8; base TCP no physical clock/application-message boundary.",
+      "label": "tcp framing verified",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_congestion_verified": {
+      "type": "boolean",
+      "description": "Actualselectedalgorithmimplementationqualification.",
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "source_revision": "RFC9293 August2022 sections2/3.1-3.8; base TCP no physical clock/application-message boundary.",
+      "label": "tcp congestion verified",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_data_accepted": {
+      "type": "boolean",
+      "description": "Actualconsumingapplicationaccepted independently.",
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "source_revision": "RFC9293 August2022 sections2/3.1-3.8; base TCP no physical clock/application-message boundary.",
+      "label": "tcp data accepted",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_revision": {
+      "type": "text",
+      "description": "ActualOS/firmware/TCPimplementation revision.",
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "source_revision": "RFC9293 August2022 sections2/3.1-3.8; base TCP no physical clock/application-message boundary.",
+      "label": "tcp revision",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "tcp_binding_source": {
+      "type": "text",
+      "description": "Actualendpointtuple/IPversion/lowerprofilebinding.",
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "source_revision": "RFC9293 August2022 sections2/3.1-3.8; base TCP no physical clock/application-message boundary.",
+      "label": "tcp binding source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "tcp_configuration_source": {
+      "type": "text",
+      "description": "Actualconnection/socket/negotiationconfiguration.",
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "source_revision": "RFC9293 August2022 sections2/3.1-3.8; base TCP no physical clock/application-message boundary.",
+      "label": "tcp configuration source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "tcp_path_source": {
+      "type": "text",
+      "description": "ActualIP/PHY/PMTU/reassembly/queue/pathqualification.",
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "source_revision": "RFC9293 August2022 sections2/3.1-3.8; base TCP no physical clock/application-message boundary.",
+      "label": "tcp path source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "tcp_algorithm_source": {
+      "type": "text",
+      "description": "Actualcongestion/recovery/RTO/extensionimplementation source.",
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "source_revision": "RFC9293 August2022 sections2/3.1-3.8; base TCP no physical clock/application-message boundary.",
+      "label": "tcp algorithm source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "tcp_framing_source": {
+      "type": "text",
+      "description": "Actualapplicationcodec/framing/reassemblyrules.",
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "source_revision": "RFC9293 August2022 sections2/3.1-3.8; base TCP no physical clock/application-message boundary.",
+      "label": "tcp framing source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "tcp_schedule_source": {
+      "type": "text",
+      "description": "Actualwholehandshake/queue/loss/probe/service/timingbounds.",
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "source_revision": "RFC9293 August2022 sections2/3.1-3.8; base TCP no physical clock/application-message boundary.",
+      "label": "tcp schedule source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "tcp_acceptance_source": {
+      "type": "text",
+      "description": "Actualfunctional deadline/consumingage/behavior requirement.",
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "source_revision": "RFC9293 August2022 sections2/3.1-3.8; base TCP no physical clock/application-message boundary.",
+      "label": "tcp acceptance source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "tcp_observation_source": {
+      "type": "text",
+      "description": "Actualcorrelatedsource/segment/ACK/consumertrace.",
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "source_revision": "RFC9293 August2022 sections2/3.1-3.8; base TCP no physical clock/application-message boundary.",
+      "label": "tcp observation source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_registered_source": {
+      "type": "text",
+      "description": "Actualseparatelyregisteredversions/algorithms/extensionsschema.",
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "source_revision": "RFC9293 August2022 sections2/3.1-3.8; base TCP no physical clock/application-message boundary.",
+      "label": "tcp registered source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "tcp_source_address": {
+      "type": "text",
+      "description": "ActualboundunicastsourceIPaddress, nosocketdefaultguess.",
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "source_revision": "RFC9293 August2022 sections2/3.1-3.8; base TCP no physical clock/application-message boundary.",
+      "format": "IP_ADDRESS",
+      "label": "tcp source address",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_destination_address": {
+      "type": "text",
+      "description": "ActualboundunicastdestinationIPaddress.",
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "source_revision": "RFC9293 August2022 sections2/3.1-3.8; base TCP no physical clock/application-message boundary.",
+      "format": "IP_ADDRESS",
+      "label": "tcp destination address",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_cubic_c": {
+      "type": "number",
+      "description": "ActualCUBICaggressivenessconstant, source0.4SHOULD.",
+      "source": "https://www.rfc-editor.org/rfc/rfc9438.pdf",
+      "source_revision": "RFC9438 August2023 sections3/4/5.1; originalPDF figures1/2 visually reviewed onprinted9. Own CUBIC windows use SMSS-sized segments not byte counters.",
+      "min": 0,
+      "unit": "segment/s^3",
+      "integer": false,
+      "label": "tcp cubic c",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "tcp_edition": "RFC9293_2022",
+            "tcp_proposal_mode": "SOURCE_BASELINE",
+            "tcp_congestion": "CUBIC_RFC9438"
+          },
+          "value": 0.4,
+          "source": "https://www.rfc-editor.org/rfc/rfc9438.pdf",
+          "source_revision": "RFC9438 August2023 sections3/4/5.1; originalPDF figures1/2 visually reviewed onprinted9. Own CUBIC windows use SMSS-sized segments not byte counters."
+        }
+      ],
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_cubic_beta": {
+      "type": "number",
+      "description": "ActualCUBICmultiplicativedecrease source0.7SHOULD, notReno0.5.",
+      "source": "https://www.rfc-editor.org/rfc/rfc9438.pdf",
+      "source_revision": "RFC9438 August2023 sections3/4/5.1; originalPDF figures1/2 visually reviewed onprinted9. Own CUBIC windows use SMSS-sized segments not byte counters.",
+      "min": 0,
+      "max": 1,
+      "integer": false,
+      "label": "tcp cubic beta",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "tcp_edition": "RFC9293_2022",
+            "tcp_proposal_mode": "SOURCE_BASELINE",
+            "tcp_congestion": "CUBIC_RFC9438"
+          },
+          "value": 0.7,
+          "source": "https://www.rfc-editor.org/rfc/rfc9438.pdf",
+          "source_revision": "RFC9438 August2023 sections3/4/5.1; originalPDF figures1/2 visually reviewed onprinted9. Own CUBIC windows use SMSS-sized segments not byte counters."
+        }
+      ],
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_cubic_t_s": {
+      "type": "number",
+      "description": "Actualeligibleelapsedavoidancetime excludesapplicationlimitedidle.",
+      "source": "https://www.rfc-editor.org/rfc/rfc9438.pdf",
+      "source_revision": "RFC9438 August2023 sections3/4/5.1; originalPDF figures1/2 visually reviewed onprinted9. Own CUBIC windows use SMSS-sized segments not byte counters.",
+      "min": 0,
+      "unit": "s",
+      "integer": false,
+      "label": "tcp cubic t s",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_cubic_k_s": {
+      "type": "number",
+      "description": "Actualsignedcube-root time from(Wmax−epochwindow)/C.",
+      "source": "https://www.rfc-editor.org/rfc/rfc9438.pdf",
+      "source_revision": "RFC9438 August2023 sections3/4/5.1; originalPDF figures1/2 visually reviewed onprinted9. Own CUBIC windows use SMSS-sized segments not byte counters.",
+      "unit": "s",
+      "integer": false,
+      "label": "tcp cubic k s",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_cubic_wmax": {
+      "type": "number",
+      "description": "Actualprior saturationwindow inSMSS-sizedsegments.",
+      "source": "https://www.rfc-editor.org/rfc/rfc9438.pdf",
+      "source_revision": "RFC9438 August2023 sections3/4/5.1; originalPDF figures1/2 visually reviewed onprinted9. Own CUBIC windows use SMSS-sized segments not byte counters.",
+      "min": 0,
+      "unit": "segment",
+      "integer": false,
+      "label": "tcp cubic wmax",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_cubic_epoch_window": {
+      "type": "number",
+      "description": "Actualwindowatavoidanceepoch inSMSS-sizedsegments.",
+      "source": "https://www.rfc-editor.org/rfc/rfc9438.pdf",
+      "source_revision": "RFC9438 August2023 sections3/4/5.1; originalPDF figures1/2 visually reviewed onprinted9. Own CUBIC windows use SMSS-sized segments not byte counters.",
+      "min": 0,
+      "unit": "segment",
+      "integer": false,
+      "label": "tcp cubic epoch window",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_cubic_window": {
+      "type": "number",
+      "description": "ActualC*(t−K)^3+Wmax, segmentunit.",
+      "source": "https://www.rfc-editor.org/rfc/rfc9438.pdf",
+      "source_revision": "RFC9438 August2023 sections3/4/5.1; originalPDF figures1/2 visually reviewed onprinted9. Own CUBIC windows use SMSS-sized segments not byte counters.",
+      "min": 0,
+      "unit": "segment",
+      "integer": false,
+      "label": "tcp cubic window",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_cubic_target": {
+      "type": "number",
+      "description": "ActualclampednextRTTtarget between cwnd and1.5*cwnd.",
+      "source": "https://www.rfc-editor.org/rfc/rfc9438.pdf",
+      "source_revision": "RFC9438 August2023 sections3/4/5.1; originalPDF figures1/2 visually reviewed onprinted9. Own CUBIC windows use SMSS-sized segments not byte counters.",
+      "min": 0,
+      "unit": "segment",
+      "integer": false,
+      "label": "tcp cubic target",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    },
+    "tcp_cubic_cwnd": {
+      "type": "number",
+      "description": "ActualCUBICcurrentcwnd inSMSS-sizedsegments, notbytes.",
+      "source": "https://www.rfc-editor.org/rfc/rfc9438.pdf",
+      "source_revision": "RFC9438 August2023 sections3/4/5.1; originalPDF figures1/2 visually reviewed onprinted9. Own CUBIC windows use SMSS-sized segments not byte counters.",
+      "min": 0,
+      "unit": "segment",
+      "integer": false,
+      "label": "tcp cubic cwnd",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "tcp_edition": "RFC9293_2022"
+      }
+    }
+  },
+  "mechanisms": {
+    "stream": [
+      "NO_APPLICATION_MESSAGE_BOUNDARIES",
+      "MSS_OPTION_AND_EFFECTIVE_SEND_BUDGET"
+    ],
+    "flow": [
+      "RWND_SEPARATE_CWND",
+      "NEGOTIATED_WS_TS"
+    ],
+    "qualification": [
+      "OWN_ALGORITHM_AND_TIMERS",
+      "IP_PHY_AND_FUNCTIONAL_EVIDENCE_SEPARATE"
+    ]
+  },
+  "parameter_constraints": [
+    {
+      "parameter": "tcp_registered_source",
+      "when": {
+        "tcp_edition": "REGISTERED_ACTUAL"
+      },
+      "required": true,
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html"
+    },
+    {
+      "parameter": "tcp_source_address",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_ip_version": "IPV4"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "ip_address_version": 4
+    },
+    {
+      "parameter": "tcp_source_address",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_ip_version": "IPV6"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "ip_address_version": 6
+    },
+    {
+      "parameter": "tcp_destination_address",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_ip_version": "IPV4"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "ip_address_version": 4
+    },
+    {
+      "parameter": "tcp_destination_address",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_ip_version": "IPV6"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "ip_address_version": 6
+    },
+    {
+      "parameter": "tcp_header_bytes",
+      "when": {
+        "tcp_edition": "RFC9293_2022"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "equal_expression": {
+        "product": [
+          "tcp_data_offset",
+          4
+        ]
+      }
+    },
+    {
+      "parameter": "tcp_options_bytes",
+      "when": {
+        "tcp_edition": "RFC9293_2022"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "equal_expression": {
+        "subtract": [
+          "tcp_header_bytes",
+          20
+        ]
+      }
+    },
+    {
+      "parameter": "tcp_segment_bytes",
+      "when": {
+        "tcp_edition": "RFC9293_2022"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "equal_expression": {
+        "sum": [
+          "tcp_header_bytes",
+          "tcp_data_bytes"
+        ]
+      }
+    },
+    {
+      "parameter": "tcp_ip_protocol",
+      "when": {
+        "tcp_edition": "RFC9293_2022"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "allowed": [
+        6
+      ]
+    },
+    {
+      "parameter": "tcp_reserved_bits",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_phase": "SEND"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "tcp_pseudoheader_bytes",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_ip_version": "IPV4"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "allowed": [
+        12
+      ]
+    },
+    {
+      "parameter": "tcp_pseudoheader_bytes",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_ip_version": "IPV6"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "allowed": [
+        40
+      ]
+    },
+    {
+      "parameter": "tcp_checksum_verified",
+      "when": {
+        "tcp_edition": "RFC9293_2022"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "tcp_padding_zero",
+      "when": {
+        "tcp_edition": "RFC9293_2022"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "tcp_syn_units",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_syn": true
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "allowed": [
+        1
+      ]
+    },
+    {
+      "parameter": "tcp_syn_units",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_syn": false
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "tcp_fin_units",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_fin": true
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "allowed": [
+        1
+      ]
+    },
+    {
+      "parameter": "tcp_fin_units",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_fin": false
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "tcp_next_sequence",
+      "when": {
+        "tcp_edition": "RFC9293_2022"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "equal_expression": {
+        "integer_remainder": [
+          {
+            "sum": [
+              "tcp_sequence",
+              "tcp_data_bytes",
+              "tcp_syn_units",
+              "tcp_fin_units"
+            ]
+          },
+          4294967296
+        ]
+      }
+    },
+    {
+      "parameter": "tcp_mss_received",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_mss_option_received": false,
+        "tcp_ip_version": "IPV4"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "allowed": [
+        536
+      ]
+    },
+    {
+      "parameter": "tcp_mss_received",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_mss_option_received": false,
+        "tcp_ip_version": "IPV6"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "allowed": [
+        1220
+      ]
+    },
+    {
+      "parameter": "tcp_mss_advertised",
+      "when": {
+        "tcp_edition": "RFC9293_2022"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "maximum_expression": {
+        "subtract": [
+          "tcp_mms_r",
+          20
+        ]
+      }
+    },
+    {
+      "parameter": "tcp_effective_mss",
+      "when": {
+        "tcp_edition": "RFC9293_2022"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "equal_expression": {
+        "subtract": [
+          {
+            "minimum": [
+              {
+                "sum": [
+                  "tcp_mss_received",
+                  20
+                ]
+              },
+              "tcp_mms_s"
+            ]
+          },
+          {
+            "sum": [
+              "tcp_header_bytes",
+              "tcp_ip_options_bytes"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "parameter": "tcp_data_bytes",
+      "when": {
+        "tcp_edition": "RFC9293_2022"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "maximum_parameter": "tcp_effective_mss"
+    },
+    {
+      "parameter": "tcp_option_length",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_option_kind": 2
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "allowed": [
+        4
+      ]
+    },
+    {
+      "parameter": "tcp_option_length",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_option_kind": 3
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "allowed": [
+        3
+      ]
+    },
+    {
+      "parameter": "tcp_option_length",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_option_kind": 8
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "allowed": [
+        10
+      ]
+    },
+    {
+      "parameter": "tcp_option_length",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_option_kind": 0
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "allowed": []
+    },
+    {
+      "parameter": "tcp_option_length",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_option_kind": 1
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "allowed": []
+    },
+    {
+      "parameter": "tcp_syn",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_phase": "SEND",
+        "tcp_option_kind": 3
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "required": true,
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "tcp_window_scale_effective",
+      "when": {
+        "tcp_edition": "RFC9293_2022"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc7323.html",
+      "equal_expression": {
+        "minimum": [
+          "tcp_window_scale_received",
+          14
+        ]
+      }
+    },
+    {
+      "parameter": "tcp_ws_local_offer",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_ws_negotiated": true
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc7323.html",
+      "required": true,
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "tcp_ws_peer_offer",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_ws_negotiated": true
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc7323.html",
+      "required": true,
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "tcp_window_effective",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_syn": true
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc7323.html",
+      "equal_parameter": "tcp_window_wire"
+    },
+    {
+      "parameter": "tcp_window_effective",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_ws_negotiated": false
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc7323.html",
+      "equal_parameter": "tcp_window_wire"
+    },
+    {
+      "parameter": "tcp_window_effective",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_syn": false,
+        "tcp_ws_negotiated": true
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc7323.html",
+      "equal_expression": {
+        "product": [
+          "tcp_window_wire",
+          {
+            "power": [
+              2,
+              "tcp_window_scale_effective"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "parameter": "tcp_ts_local_offer",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_ts_negotiated": true
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc7323.html",
+      "required": true,
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "tcp_ts_peer_offer",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_ts_negotiated": true
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc7323.html",
+      "required": true,
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "tcp_timestamp_present",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_ts_negotiated": true,
+        "tcp_rst": false
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc7323.html",
+      "required": true,
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "tcp_timestamp_recycle_s",
+      "when": {
+        "tcp_edition": "RFC9293_2022"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc7323.html",
+      "equal_expression": {
+        "product": [
+          "tcp_timestamp_tick_s",
+          4294967296
+        ]
+      }
+    },
+    {
+      "parameter": "tcp_timestamp_recycle_s",
+      "when": {
+        "tcp_edition": "RFC9293_2022"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc7323.html",
+      "exclusive_minimum_expression": "tcp_msl_s"
+    },
+    {
+      "parameter": "tcp_paws_recent_valid",
+      "when": {
+        "tcp_edition": "RFC9293_2022"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc7323.html",
+      "when_greater_than": {
+        "tcp_idle_s": 2073600
+      },
+      "allowed": [
+        false
+      ]
+    },
+    {
+      "parameter": "tcp_time_wait_s",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_state": "TIME_WAIT"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "equal_expression": {
+        "product": [
+          2,
+          "tcp_msl_s"
+        ]
+      }
+    },
+    {
+      "parameter": "tcp_delayed_ack_s",
+      "when": {
+        "tcp_edition": "RFC9293_2022"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "exclusive_maximum": 0.5
+    },
+    {
+      "parameter": "tcp_nagle_disable_supported",
+      "when": {
+        "tcp_edition": "RFC9293_2022"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "tcp_sws_verified",
+      "when": {
+        "tcp_edition": "RFC9293_2022"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "tcp_zero_window_probe_verified",
+      "when": {
+        "tcp_edition": "RFC9293_2022"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "tcp_connection_dead",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_keepalive_enabled": true,
+        "tcp_keepalive_failures": 1
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "allowed": [
+        false
+      ]
+    },
+    {
+      "parameter": "tcp_initial_rto_s",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_rto_profile": "RFC6298_BASELINE"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc6298.html",
+      "minimum": 1
+    },
+    {
+      "parameter": "tcp_rto_max_s",
+      "when": {
+        "tcp_edition": "RFC9293_2022"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc6298.html",
+      "minimum": 60
+    },
+    {
+      "parameter": "tcp_raw_rto_s",
+      "when": {
+        "tcp_edition": "RFC9293_2022"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc6298.html",
+      "equal_expression": {
+        "sum": [
+          "tcp_srtt_s",
+          {
+            "maximum": [
+              "tcp_clock_granularity_s",
+              {
+                "product": [
+                  4,
+                  "tcp_rttvar_s"
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "parameter": "tcp_rto_cap_enabled",
+      "when": {
+        "tcp_edition": "RFC9293_2022"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc6298.html",
+      "when_present": [
+        "tcp_rto_s"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "tcp_rto_max_s",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_rto_cap_enabled": true
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc6298.html",
+      "required": true
+    },
+    {
+      "parameter": "tcp_rto_s",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_rto_profile": "RFC6298_BASELINE",
+        "tcp_rto_cap_enabled": false
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc6298.html",
+      "minimum_expression": {
+        "maximum": [
+          1,
+          "tcp_raw_rto_s"
+        ]
+      }
+    },
+    {
+      "parameter": "tcp_rto_s",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_rto_profile": "RFC6298_BASELINE",
+        "tcp_rto_cap_enabled": true
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc6298.html",
+      "minimum_expression": {
+        "minimum": [
+          {
+            "maximum": [
+              1,
+              "tcp_raw_rto_s"
+            ]
+          },
+          "tcp_rto_max_s"
+        ]
+      }
+    },
+    {
+      "parameter": "tcp_rto_s",
+      "when": {
+        "tcp_edition": "RFC9293_2022"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc6298.html",
+      "maximum_parameter": "tcp_rto_max_s"
+    },
+    {
+      "parameter": "tcp_srtt_s",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_rto_phase": "FIRST_SAMPLE"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc6298.html",
+      "equal_parameter": "tcp_rtt_sample_s"
+    },
+    {
+      "parameter": "tcp_rttvar_s",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_rto_phase": "FIRST_SAMPLE"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc6298.html",
+      "equal_expression": {
+        "product": [
+          0.5,
+          "tcp_rtt_sample_s"
+        ]
+      }
+    },
+    {
+      "parameter": "tcp_srtt_s",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_rto_phase": "SUBSEQUENT_SAMPLE"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc6298.html",
+      "equal_expression": {
+        "sum": [
+          {
+            "product": [
+              {
+                "subtract": [
+                  1,
+                  "tcp_alpha"
+                ]
+              },
+              "tcp_previous_srtt_s"
+            ]
+          },
+          {
+            "product": [
+              "tcp_alpha",
+              "tcp_rtt_sample_s"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "parameter": "tcp_rttvar_s",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_rto_phase": "SUBSEQUENT_SAMPLE"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc6298.html",
+      "equal_expression": {
+        "sum": [
+          {
+            "product": [
+              {
+                "subtract": [
+                  1,
+                  "tcp_beta"
+                ]
+              },
+              "tcp_previous_rttvar_s"
+            ]
+          },
+          {
+            "product": [
+              "tcp_beta",
+              {
+                "maximum": [
+                  {
+                    "subtract": [
+                      "tcp_previous_srtt_s",
+                      "tcp_rtt_sample_s"
+                    ]
+                  },
+                  {
+                    "subtract": [
+                      "tcp_rtt_sample_s",
+                      "tcp_previous_srtt_s"
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "parameter": "tcp_timestamp_unambiguous",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_sample_retransmitted": true
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc6298.html",
+      "required": true,
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "tcp_ts_negotiated",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_sample_retransmitted": true,
+        "tcp_timestamp_unambiguous": true
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc6298.html",
+      "required": true,
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "tcp_rto_s",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_rto_phase": "INITIAL"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc6298.html",
+      "equal_parameter": "tcp_initial_rto_s"
+    },
+    {
+      "parameter": "tcp_rto_s",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_rto_phase": "TIMEOUT",
+        "tcp_rto_cap_enabled": false
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc6298.html",
+      "minimum_expression": {
+        "product": [
+          2,
+          "tcp_previous_rto_s"
+        ]
+      }
+    },
+    {
+      "parameter": "tcp_rto_s",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_rto_phase": "TIMEOUT",
+        "tcp_rto_cap_enabled": true
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc6298.html",
+      "minimum_expression": {
+        "minimum": [
+          {
+            "product": [
+              2,
+              "tcp_previous_rto_s"
+            ]
+          },
+          "tcp_rto_max_s"
+        ]
+      }
+    },
+    {
+      "parameter": "tcp_srtt_s",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_rto_phase": "FIRST_SAMPLE"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc6298.html",
+      "required": true
+    },
+    {
+      "parameter": "tcp_rttvar_s",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_rto_phase": "FIRST_SAMPLE"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc6298.html",
+      "required": true
+    },
+    {
+      "parameter": "tcp_rtt_sample_s",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_rto_phase": "FIRST_SAMPLE"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc6298.html",
+      "required": true
+    },
+    {
+      "parameter": "tcp_srtt_s",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_rto_phase": "SUBSEQUENT_SAMPLE"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc6298.html",
+      "required": true
+    },
+    {
+      "parameter": "tcp_rttvar_s",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_rto_phase": "SUBSEQUENT_SAMPLE"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc6298.html",
+      "required": true
+    },
+    {
+      "parameter": "tcp_rtt_sample_s",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_rto_phase": "SUBSEQUENT_SAMPLE"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc6298.html",
+      "required": true
+    },
+    {
+      "parameter": "tcp_previous_srtt_s",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_rto_phase": "SUBSEQUENT_SAMPLE"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc6298.html",
+      "required": true
+    },
+    {
+      "parameter": "tcp_previous_rttvar_s",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_rto_phase": "SUBSEQUENT_SAMPLE"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc6298.html",
+      "required": true
+    },
+    {
+      "parameter": "tcp_alpha",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_rto_phase": "SUBSEQUENT_SAMPLE"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc6298.html",
+      "required": true
+    },
+    {
+      "parameter": "tcp_beta",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_rto_phase": "SUBSEQUENT_SAMPLE"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc6298.html",
+      "required": true
+    },
+    {
+      "parameter": "tcp_new_data_bytes",
+      "when": {
+        "tcp_edition": "RFC9293_2022"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc5681.html",
+      "maximum_expression": {
+        "maximum": [
+          0,
+          {
+            "subtract": [
+              {
+                "minimum": [
+                  "tcp_cwnd_bytes",
+                  "tcp_rwnd_bytes"
+                ]
+              },
+              "tcp_flight_bytes"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "parameter": "tcp_initial_window_bytes",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_iw_profile": "RFC5681"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc5681.html",
+      "when_half_open_ranges": {
+        "tcp_smss": [
+          0,
+          1096
+        ]
+      },
+      "maximum_expression": {
+        "product": [
+          4,
+          "tcp_smss"
+        ]
+      }
+    },
+    {
+      "parameter": "tcp_initial_window_bytes",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_iw_profile": "RFC5681"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc5681.html",
+      "when_half_open_ranges": {
+        "tcp_smss": [
+          1096,
+          2191
+        ]
+      },
+      "maximum_expression": {
+        "product": [
+          3,
+          "tcp_smss"
+        ]
+      }
+    },
+    {
+      "parameter": "tcp_initial_window_bytes",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_iw_profile": "RFC5681"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc5681.html",
+      "when_half_open_ranges": {
+        "tcp_smss": [
+          2191,
+          null
+        ]
+      },
+      "maximum_expression": {
+        "product": [
+          2,
+          "tcp_smss"
+        ]
+      }
+    },
+    {
+      "parameter": "tcp_initial_window_bytes",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_iw_profile": "RFC6928_EXPERIMENT"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc6928.html",
+      "maximum_expression": {
+        "minimum": [
+          {
+            "product": [
+              10,
+              "tcp_smss"
+            ]
+          },
+          {
+            "maximum": [
+              {
+                "product": [
+                  2,
+                  "tcp_smss"
+                ]
+              },
+              14600
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "parameter": "tcp_ssthresh_bytes",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_congestion": "RENO_RFC5681",
+        "tcp_recovery_phase": "TIMEOUT"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc5681.html",
+      "maximum_expression": {
+        "maximum": [
+          {
+            "product": [
+              0.5,
+              "tcp_flight_bytes"
+            ]
+          },
+          {
+            "product": [
+              2,
+              "tcp_smss"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "parameter": "tcp_cwnd_bytes",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_congestion": "RENO_RFC5681",
+        "tcp_recovery_phase": "TIMEOUT"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc5681.html",
+      "maximum_parameter": "tcp_smss"
+    },
+    {
+      "parameter": "tcp_cwnd_increment_bytes",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_congestion": "RENO_RFC5681",
+        "tcp_recovery_phase": "SLOW_START"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc5681.html",
+      "maximum_expression": {
+        "minimum": [
+          "tcp_smss",
+          "tcp_newly_acked_bytes"
+        ]
+      }
+    },
+    {
+      "parameter": "tcp_cwnd_increment_bytes",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_congestion": "RENO_RFC5681",
+        "tcp_recovery_phase": "CONGESTION_AVOIDANCE"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc5681.html",
+      "maximum_parameter": "tcp_smss"
+    },
+    {
+      "parameter": "tcp_algorithm_source",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_congestion": "REGISTERED_ACTUAL"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc5681.html",
+      "required": true
+    },
+    {
+      "parameter": "tcp_registered_source",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_congestion": "REGISTERED_ACTUAL"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc5681.html",
+      "required": true
+    },
+    {
+      "parameter": "tcp_cubic_c",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_congestion": "CUBIC_RFC9438"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc9438.pdf",
+      "exclusive_minimum": 0
+    },
+    {
+      "parameter": "tcp_cubic_beta",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_congestion": "CUBIC_RFC9438"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc9438.pdf",
+      "exclusive_minimum": 0,
+      "exclusive_maximum": 1
+    },
+    {
+      "parameter": "tcp_cubic_window",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_congestion": "CUBIC_RFC9438"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc9438.pdf",
+      "equal_expression": {
+        "sum": [
+          {
+            "product": [
+              "tcp_cubic_c",
+              {
+                "power": [
+                  {
+                    "subtract": [
+                      "tcp_cubic_t_s",
+                      "tcp_cubic_k_s"
+                    ]
+                  },
+                  3
+                ]
+              }
+            ]
+          },
+          "tcp_cubic_wmax"
+        ]
+      }
+    },
+    {
+      "parameter": "tcp_cubic_epoch_window",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_congestion": "CUBIC_RFC9438"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc9438.pdf",
+      "equal_expression": {
+        "subtract": [
+          "tcp_cubic_wmax",
+          {
+            "product": [
+              "tcp_cubic_c",
+              {
+                "power": [
+                  "tcp_cubic_k_s",
+                  3
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "parameter": "tcp_cubic_target",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_congestion": "CUBIC_RFC9438"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc9438.pdf",
+      "equal_expression": {
+        "minimum": [
+          {
+            "maximum": [
+              {
+                "sum": [
+                  {
+                    "product": [
+                      "tcp_cubic_c",
+                      {
+                        "power": [
+                          {
+                            "subtract": [
+                              {
+                                "sum": [
+                                  "tcp_cubic_t_s",
+                                  "tcp_srtt_s"
+                                ]
+                              },
+                              "tcp_cubic_k_s"
+                            ]
+                          },
+                          3
+                        ]
+                      }
+                    ]
+                  },
+                  "tcp_cubic_wmax"
+                ]
+              },
+              "tcp_cubic_cwnd"
+            ]
+          },
+          {
+            "product": [
+              1.5,
+              "tcp_cubic_cwnd"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "parameter": "tcp_cubic_target",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_congestion": "CUBIC_RFC9438"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc9438.pdf",
+      "minimum_parameter": "tcp_cubic_cwnd",
+      "maximum_expression": {
+        "product": [
+          1.5,
+          "tcp_cubic_cwnd"
+        ]
+      }
+    },
+    {
+      "parameter": "tcp_cubic_c",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_congestion": "CUBIC_RFC9438"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc9438.pdf",
+      "when_present": [
+        "tcp_cubic_window"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "tcp_cubic_k_s",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_congestion": "CUBIC_RFC9438"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc9438.pdf",
+      "when_present": [
+        "tcp_cubic_window"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "tcp_cubic_t_s",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_congestion": "CUBIC_RFC9438"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc9438.pdf",
+      "when_present": [
+        "tcp_cubic_window"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "tcp_cubic_wmax",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_congestion": "CUBIC_RFC9438"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc9438.pdf",
+      "when_present": [
+        "tcp_cubic_window"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "tcp_cubic_c",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_congestion": "CUBIC_RFC9438"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc9438.pdf",
+      "required": true
+    },
+    {
+      "parameter": "tcp_cubic_beta",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_congestion": "CUBIC_RFC9438"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc9438.pdf",
+      "required": true
+    },
+    {
+      "parameter": "tcp_cubic_c",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_congestion": "CUBIC_RFC9438"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc9438.pdf",
+      "when_present": [
+        "tcp_cubic_epoch_window"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "tcp_cubic_k_s",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_congestion": "CUBIC_RFC9438"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc9438.pdf",
+      "when_present": [
+        "tcp_cubic_epoch_window"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "tcp_cubic_wmax",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_congestion": "CUBIC_RFC9438"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc9438.pdf",
+      "when_present": [
+        "tcp_cubic_epoch_window"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "tcp_cubic_c",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_congestion": "CUBIC_RFC9438"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc9438.pdf",
+      "when_present": [
+        "tcp_cubic_target"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "tcp_cubic_k_s",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_congestion": "CUBIC_RFC9438"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc9438.pdf",
+      "when_present": [
+        "tcp_cubic_target"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "tcp_cubic_t_s",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_congestion": "CUBIC_RFC9438"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc9438.pdf",
+      "when_present": [
+        "tcp_cubic_target"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "tcp_cubic_wmax",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_congestion": "CUBIC_RFC9438"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc9438.pdf",
+      "when_present": [
+        "tcp_cubic_target"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "tcp_cubic_cwnd",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_congestion": "CUBIC_RFC9438"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc9438.pdf",
+      "when_present": [
+        "tcp_cubic_target"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "tcp_srtt_s",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_congestion": "CUBIC_RFC9438"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc9438.pdf",
+      "when_present": [
+        "tcp_cubic_target"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "tcp_e2e_ms",
+      "when": {
+        "tcp_edition": "RFC9293_2022"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "equal_expression": {
+        "sum": [
+          "tcp_source_ms",
+          "tcp_transport_ms",
+          "tcp_consumer_ms"
+        ]
+      }
+    },
+    {
+      "parameter": "tcp_e2e_ms",
+      "when": {
+        "tcp_edition": "RFC9293_2022"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "maximum_parameter": "tcp_deadline_ms"
+    },
+    {
+      "parameter": "tcp_age_ms",
+      "when": {
+        "tcp_edition": "RFC9293_2022"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "maximum_parameter": "tcp_freshness_ms"
+    },
+    {
+      "parameter": "tcp_source_ms",
+      "when": {
+        "tcp_edition": "RFC9293_2022"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "when_present": [
+        "tcp_e2e_ms"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "tcp_transport_ms",
+      "when": {
+        "tcp_edition": "RFC9293_2022"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "when_present": [
+        "tcp_e2e_ms"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "tcp_consumer_ms",
+      "when": {
+        "tcp_edition": "RFC9293_2022"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "when_present": [
+        "tcp_e2e_ms"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "tcp_source_address",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_data_accepted": true
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "required": true
+    },
+    {
+      "parameter": "tcp_destination_address",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_data_accepted": true
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "required": true
+    },
+    {
+      "parameter": "tcp_src_port",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_data_accepted": true
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "required": true
+    },
+    {
+      "parameter": "tcp_dst_port",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_data_accepted": true
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "required": true
+    },
+    {
+      "parameter": "tcp_state",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_data_accepted": true
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "required": true
+    },
+    {
+      "parameter": "tcp_congestion",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_data_accepted": true
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "required": true
+    },
+    {
+      "parameter": "tcp_observation_source",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_data_accepted": true
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "required": true
+    },
+    {
+      "parameter": "tcp_e2e_ms",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_data_accepted": true
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "required": true
+    },
+    {
+      "parameter": "tcp_deadline_ms",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_data_accepted": true
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "required": true
+    },
+    {
+      "parameter": "tcp_age_ms",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_data_accepted": true
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "required": true
+    },
+    {
+      "parameter": "tcp_freshness_ms",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_data_accepted": true
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "required": true
+    },
+    {
+      "parameter": "tcp_ip_binding_verified",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_data_accepted": true
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "required": true,
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "tcp_framing_verified",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_data_accepted": true
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "required": true,
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "tcp_congestion_verified",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_data_accepted": true
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "required": true,
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "tcp_outcome",
+      "when": {
+        "tcp_edition": "RFC9293_2022",
+        "tcp_data_accepted": true
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "required": true,
+      "allowed": [
+        "ACCEPTED"
+      ]
+    }
+  ],
+  "physical_layer_profile_id": null,
+  "medium_access_model": null,
+  "native_parameter_prefixes": [
+    "tcp_"
+  ],
+  "parameter_aliases": {},
+  "parameter_alias_limits": {},
+  "parameter_evidence_scope": "EXPLICIT_LAYER",
+  "rate_source_profile_id": null,
+  "arbitration_model_id": null,
+  "max_payload_bytes": null,
+  "capabilities": {
+    "supports_signals": true,
+    "supports_data_objects": true,
+    "supports_streams": true,
+    "supports_multicast": false,
+    "supports_publish_subscribe": false,
+    "supports_request_response": true,
+    "supports_cyclic": true,
+    "supports_event": true,
+    "supports_redundancy": false,
+    "supports_time_sync": false,
+    "supports_safety_profile": false,
+    "supports_segmentation": true,
+    "supports_fragmentation": true,
+    "supports_qos": true
+  },
+  "deterministic": false,
+  "overhead_bytes": 8,
+  "implementation_status": "IMPLEMENTED",
+  "connection_type": "COMMUNICATION_TECHNOLOGY",
+  "parameter_proposals": {
+    "kind": "DEVICE_DEPENDENT",
+    "status": "REVIEW_REQUIRED",
+    "required_fields": [],
+    "note": "No universal rate is available; inspect the selected hardware/profile."
+  },
+  "capacity_evidence": {
+    "status": "MODEL_MISSING",
+    "frame_model": null,
+    "schedule_model": null,
+    "requires_confirmed_device_parameters": true
+  },
+  "components": {
+    "binding": "tcp.binding",
+    "generator": "tcp.generator",
+    "validator": "tcp.validator",
+    "timing_model": null,
+    "load_model": null,
+    "encoder": "tcp.encoder",
+    "decoder": "tcp.decoder"
+  },
+  "known_limitations": "Technology-specific conformance details require a vendor/profile extension."
+}

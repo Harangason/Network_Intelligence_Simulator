@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 
-SCHEMA_VERSION = 27
+SCHEMA_VERSION = 28
 MIGRATION_LOCK_ID = 1_947_042_611
 
 
@@ -943,6 +943,33 @@ MIGRATION_STATEMENTS: tuple[str, ...] = (
         PRIMARY KEY(project_id, workload_id)
     )
     """,
+    """
+    CREATE TABLE IF NOT EXISTS engineering_safety_requirements (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        project_id TEXT NOT NULL DEFAULT 'default',
+        name TEXT NOT NULL,
+        description TEXT,
+        domain TEXT,
+        function_id UUID NOT NULL REFERENCES engineering_functions(id) ON DELETE RESTRICT,
+        configuration JSONB NOT NULL DEFAULT '{}'::jsonb,
+        version INTEGER NOT NULL DEFAULT 1 CHECK (version > 0),
+        lifecycle_state TEXT NOT NULL DEFAULT 'draft'
+            CHECK (lifecycle_state IN ('draft', 'active', 'deprecated', 'superseded')),
+        source TEXT NOT NULL DEFAULT 'manual'
+            CHECK (source IN ('manual', 'import', 'ai_generated', 'simulation_derived')),
+        provenance JSONB NOT NULL DEFAULT '{}'::jsonb,
+        confidence DOUBLE PRECISION CHECK (confidence IS NULL OR confidence BETWEEN 0 AND 1),
+        review_state TEXT NOT NULL DEFAULT 'unreviewed'
+            CHECK (review_state IN ('unreviewed', 'in_review', 'reviewed', 'rejected')),
+        approval_state TEXT NOT NULL DEFAULT 'pending'
+            CHECK (approval_state IN ('pending', 'approved', 'rejected')),
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+        created_by TEXT,
+        modified_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+        modified_by TEXT
+    )
+    """,
+    "CREATE INDEX IF NOT EXISTS idx_safety_requirements_project ON engineering_safety_requirements(project_id)",
 )
 
 

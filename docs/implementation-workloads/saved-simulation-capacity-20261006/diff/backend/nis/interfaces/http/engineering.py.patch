@@ -1,0 +1,32 @@
+--- before/backend/nis/interfaces/http/engineering.py
++++ after/backend/nis/interfaces/http/engineering.py
+@@ -849,7 +849,7 @@
+ 
+ @engineering_api.route('/workflow/parameters/review', methods=['GET'])
+ def parameter_review_route():
+-    from backend.nis.agent.tools.validation import review_parameter_findings, review_bus_rate_plans
++    from backend.nis.agent.tools.validation import review_parameter_findings, review_bus_rate_plans, review_simulation_capacity
+     service = WorkflowStatusService(_project_id())
+     state = service.get()
+     proposal_id = request.args.get('proposal')
+@@ -860,8 +860,9 @@
+         proposal = proposal_service.latest(proposal_id)
+         if proposal['status'] not in {'APPLIED', 'REJECTED'}:
+             changes = proposal['changes']
+-    findings = review_parameter_findings(state, changes)
+-    rate_plans = review_bus_rate_plans(state) if changes is None else []
++    simulation_capacity = review_simulation_capacity(state, changes)
++    findings = review_parameter_findings(state, changes, simulation_checks=simulation_capacity)
++    rate_plans = review_bus_rate_plans(state, changes)
+     current = service.get()
+     if state['versions'] != current['versions'] or state['edit_tokens']['parameters'] != current['edit_tokens']['parameters']:
+         return jsonify({'error': 'Das Modell wurde während der Prüfung geändert. Bitte erneut prüfen.'}), 409
+@@ -870,7 +871,7 @@
+     return jsonify({'project_id': state['project_id'], 'versions': state['versions'],
+                     'edit_token': state['edit_tokens']['parameters'], 'source': 'PENDING_PROPOSAL' if changes is not None else 'CURRENT_CANONICAL_MODEL',
+                     'proposal': {'proposal_id': proposal['proposal_id'], 'revision': proposal['revision'], 'status': proposal['status']} if proposal else None,
+-                    'findings': findings, 'bus_rate_plans': rate_plans})
++                    'findings': findings, 'bus_rate_plans': rate_plans, 'simulation_capacity': simulation_capacity})
+ 
+ 
+ @engineering_api.route('/workflow/parameters/user-defined-values', methods=['GET'])

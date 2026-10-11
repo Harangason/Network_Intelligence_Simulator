@@ -1,0 +1,54 @@
+{"database": "nis_test_0fe4aa06ec5d", "container": "nis-test-db-0fe4aa06ec5d", "isolated": true}
+....F............................................F...................... [ 43%]
+......................F...................................................F......F...F.. [ 96%]
+.F...                                                                    [100%]
+================================== FAILURES ===================================
+__ test_canonical_requirements_and_both_physical_segments_reach_actual_trace __
+backend\tests\test_transport_integrity.py:143: in test_canonical_requirements_and_both_physical_segments_reach_actual_trace
+    assert event["end_to_end_latency_ms"] >= upstream["transmission_latency_ms"] + event["transmission_latency_ms"] + 2
+E   assert 5.6133333333333315 >= ((0.27999999999999997 + 3.3333333333333335) + 2)
+_______ test_dds_parameter_defaults_keep_explicit_lower_link_unverified _______
+backend\tests\test_simulation_observation.py:178: in test_dds_parameter_defaults_keep_explicit_lower_link_unverified
+    assert dds["technology"] == "dds"
+           ^^^^^^^^^^^^^^^^^
+E   KeyError: 'technology'
+____ test_simulator_export_preserves_physical_segments_and_protocol_speed _____
+backend\tests\test_network_distribution.py:485: in test_simulator_export_preserves_physical_segments_and_protocol_speed
+    assert all(item['bitrate'] == 9_600 and item['_rate_evidenced'] is True for item in secondary['networks'])
+E   assert False
+E    +  where False = all(<generator object test_simulator_export_preserves_physical_segments_and_protocol_speed.<locals>.<genexpr> at 0x0000018A41635630>)
+_____________ test_invalid_or_foreign_lin_group_rejected[values0] _____________
+backend\tests\test_technology_parameter_review.py:59: in test_invalid_or_foreign_lin_group_rejected
+    with pytest.raises(ValueError): WorkflowStatusService._validate_parameter_reviews(p, mixed())
+         ^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE ValueError
+_____________ test_invalid_network_edit_rejected_without_mutation _____________
+backend\tests\test_technology_parameter_review.py:95: in test_invalid_network_edit_rejected_without_mutation
+    with pytest.raises(ValueError): service.save_parameters(changed)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE ValueError
+___________ test_preflight_rejects_rate_outside_technology_profile ____________
+backend\tests\test_workflow.py:730: in test_preflight_rejects_rate_outside_technology_profile
+    assert any(item["code"] == "TECHNOLOGY_PARAMETER_OUT_OF_RANGE" for item in result["category_checks"]["technology"])
+E   assert False
+E    +  where False = any(<generator object test_preflight_rejects_rate_outside_technology_profile.<locals>.<genexpr> at 0x0000018A41635490>)
+_ test_capacity_timing_analysis_covers_load_requirements_gateway_reliability_and_sync _
+backend\tests\test_workflow.py:914: in test_capacity_timing_analysis_covers_load_requirements_gateway_reliability_and_sync
+    assert network["average_load_percent"] < network["peak_load_percent"] < network["burst_load_percent"]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: '<' not supported between instances of 'NoneType' and 'NoneType'
+============================== warnings summary ===============================
+tests/test_simulation_observation.py::test_http_manual_identical_duration_cannot_retain_or_spoof_default_origin
+  I:\PycharmProjects\My_first_Network_Simulator\backend\engineering\goal_execution\models.py:150: UserWarning: Field name "validate" in "EngineeringModelDelta" shadows an attribute in parent "Contract"
+    class EngineeringModelDelta(Contract):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED backend\tests\test_transport_integrity.py::test_canonical_requirements_and_both_physical_segments_reach_actual_trace
+FAILED backend\tests\test_simulation_observation.py::test_dds_parameter_defaults_keep_explicit_lower_link_unverified
+FAILED backend\tests\test_network_distribution.py::test_simulator_export_preserves_physical_segments_and_protocol_speed
+FAILED backend\tests\test_technology_parameter_review.py::test_invalid_or_foreign_lin_group_rejected[values0]
+FAILED backend\tests\test_technology_parameter_review.py::test_invalid_network_edit_rejected_without_mutation
+FAILED backend\tests\test_workflow.py::test_preflight_rejects_rate_outside_technology_profile
+FAILED backend\tests\test_workflow.py::test_capacity_timing_analysis_covers_load_requirements_gateway_reliability_and_sync
+7 failed, 158 passed, 1 warning, 56 subtests passed in 15.54s

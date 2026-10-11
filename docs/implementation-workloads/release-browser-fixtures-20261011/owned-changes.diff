@@ -1,0 +1,61 @@
+--- before/frontend/e2e/safety-assurance.spec.ts
++++ after/frontend/e2e/safety-assurance.spec.ts
+@@ -17,11 +17,11 @@
+   await panel.getByLabel('Name', {exact: true}).fill('Explizite Safety-Anforderung');
+   await panel.getByRole('combobox', {name: 'Funktion', exact: true}).selectOption(owner.id);
+   await expect(panel.getByLabel('Versionierte Konfiguration')).toHaveCount(0);
+-  await panel.getByLabel('Norm', {exact: true}).selectOption('ISO 26262');
++  await panel.getByRole('combobox', {name: 'Norm', exact: true}).selectOption('ISO 26262');
+   await panel.getByLabel('Ausgabe / Änderungsserie', {exact: true}).fill('2018');
+   await panel.getByLabel('Anwendungsbereich', {exact: true}).fill('road_vehicle');
+-  await panel.getByLabel('Anwendbarkeit', {exact: true}).selectOption('UNRESOLVED');
+-  await panel.getByLabel('Begründung', {exact: true}).fill('Fachliches Review erforderlich');
++  await panel.getByRole('combobox', {name: 'Anwendbarkeit', exact: true}).selectOption('UNRESOLVED');
++  await panel.getByRole('textbox', {name: 'Begründung', exact: true}).fill('Fachliches Review erforderlich');
+   await panel.getByLabel('Gefährdungsreferenz', {exact: true}).fill('H-1');
+   await panel.getByLabel('Sicherheitszielreferenz', {exact: true}).fill('SG-1');
+   await panel.getByRole('checkbox', {name: /Lenkung → Lenkung/}).check();
+--- before/frontend/e2e/studio-export-controls.spec.ts
++++ after/frontend/e2e/studio-export-controls.spec.ts
+@@ -49,9 +49,16 @@
+   // UI contract fixture only. Canonical generation/apply/persist is covered by wizard.spec.ts.
+   const project = 'nis-e2e-display-' + randomUUID();
+   const jobId = 'display-job';
++  const catalogResponse = await page.request.get('/api/technologies');
++  expect(catalogResponse.ok(), await catalogResponse.text()).toBe(true);
++  const registeredCatalog = await catalogResponse.json();
++  let releaseCatalog: () => void = () => undefined;
++  const catalogReady = new Promise<void>(resolve => { releaseCatalog = resolve; });
+   const versions = { engineering_model: 0, routing: 0, network_editor: 0, parameters: 0 };
+   const workflow = { project_id: project, versions, edit_tokens: { parameters: 'p', topology: 't' },
+-    statuses: { validation: 'APPROVED' }, parameters: {}, topology: { nodes: [], edges: [] } };
++    statuses: { validation: 'APPROVED' },
++    parameters: { industry: 'custom', technology: 'ethernet', networks: [{ id: 'display-net', technology: 'ETHERNET' }] },
++    topology: { nodes: [], edges: [] } };
+   const signals = Array.from({ length: 125 }, (_, index) => ({
+     signal_id: `signal-${index}`, signal: `Signal ${String(index).padStart(3, '0')}`, unit: '%',
+     minimum: 0, maximum: 100, resolution: .1, behavior_type: 'PHYSICS_MODEL', model_label: 'PHYSICS_BASED',
+@@ -68,7 +75,7 @@
+     let response: unknown;
+     if (path === `/api/simulations/${jobId}`) response = { id: jobId, status: 'completed',
+       result: { model_simulation: trace, runtime_metrics: { sequence_model: model } } };
+-    else if (path === '/api/technologies') response = { domains: [], formats: [] };
++    else if (path === '/api/technologies') { await catalogReady; response = registeredCatalog; }
+     else if (path.endsWith('/workflow/parameters')) response = { ...workflow, edit_token: 'p' };
+     else if (path.endsWith('/workflow/topology')) response = { ...workflow, edit_token: 't' };
+     else if (path.endsWith('/workflow/snapshots')) response = { simulations: [] };
+@@ -81,6 +88,14 @@
+   await page.goto(`/studio/simulation?project=${project}`);
+   await expect(page.getByLabel('Dynamik filtern')).toHaveValue('ALL');
+   await expect(page.locator('.signal-filter-summary')).toContainText('125 im Filter gewählt');
++  try {
++    await expect(page.getByRole('button', { name: 'Start', exact: true })).toBeDisabled();
++    await expect(page.locator('.trace-format-trigger')).toContainText('Projektformate werden geladen');
++    await expect(page.locator('.trace-format-trigger strong')).toHaveText('…');
++  } finally {
++    releaseCatalog();
++  }
++  await expect(page.locator('.trace-format-trigger')).toContainText('PCAP');
+   await expect(page.getByRole('button', { name: 'Start', exact: true })).toBeEnabled();
+   await expect(page.locator('.signal-lane')).toHaveCount(60);
+   const signalPages = page.getByRole('navigation', { name: 'Signale durchblättern' });

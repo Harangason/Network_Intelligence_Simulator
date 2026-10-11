@@ -1,0 +1,2023 @@
+{
+  "id": "fsoe",
+  "label": "FSoE",
+  "domain": "generic_networking",
+  "layer": "APPLICATION",
+  "transport_unit": "PDU",
+  "payload_element_types": [
+    "FIELD",
+    "STATUS",
+    "QUALITY"
+  ],
+  "hardware_interface": "explicit_black_channel_binding",
+  "hardware_capability_aliases": [
+    "ethercat_port"
+  ],
+  "default_stack": [
+    "fsoe"
+  ],
+  "stack_variants": [
+    [
+      "fsoe"
+    ],
+    [
+      "ethernet",
+      "ethercat",
+      "fsoe"
+    ]
+  ],
+  "default_bitrate": null,
+  "rate_model": {
+    "type": "APPLICATION_TRANSPORT_DEPENDENT",
+    "fields": []
+  },
+  "local_timing_schema": [],
+  "parameter_schema": {
+    "payload_bytes": {
+      "label": "Payload",
+      "category": "physical",
+      "scope": "message",
+      "type": "number",
+      "description": "Actual selected-direction safe data: one byte or even count for reviewed base format; mapped complete container capacity is separate.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 1,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.beckhoff.com/media/downloads/information-media/pc-control/pcc_0107_e.pdf",
+      "source_revision": "Beckhoff PC-Control01/2007 pages24-26; HMS public FSoE PDU/state tutorial July23/24 2026 interpreted for base ETG5100v1.2.0, not licensed full text",
+      "integer": true,
+      "schema_when": {
+        "fsoe_profile": "BASE_5100_1_2"
+      }
+    },
+    "cycle_ms": {
+      "label": "Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "Standardperiode fuer zyklische Nachrichten.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "minimum_cycle_time_ms": {
+      "label": "Minimum Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "deadline_ms": {
+      "label": "Deadline",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "timeout_ms": {
+      "label": "Timeout",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_latency_ms": {
+      "label": "Maximum Latency",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "jitter_ms": {
+      "label": "Jitter Budget",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "freshness_ms": {
+      "label": "Data Freshness",
+      "category": "timing",
+      "scope": "signal",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "source_processing_delay_ms": {
+      "label": "Source Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_processing_delay_ms": {
+      "label": "Target Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "propagation_delay_ms": {
+      "label": "Propagation",
+      "category": "timing",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.01,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_bus_load_percent": {
+      "label": "Ziel-Buslast",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "Zielwert fuer die aus Routing, Payload, Zyklus und Bitrate berechnete Buslast.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "peak_factor": {
+      "label": "Peak Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.15,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_factor": {
+      "label": "Burst Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.5,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_window_ms": {
+      "label": "Burst Window",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "warning_threshold": {
+      "label": "Load Warning",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "critical_threshold": {
+      "label": "Load Critical",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 75,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "overload_threshold": {
+      "label": "Load Overload",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 90,
+      "unit": "%",
+      "min": 1,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "traffic_class": {
+      "label": "Traffic Class",
+      "category": "qos",
+      "scope": "route",
+      "type": "select",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": "BEST_EFFORT",
+      "options": [
+        "BEST_EFFORT",
+        "CONTROL",
+        "REALTIME",
+        "SAFETY_CRITICAL"
+      ],
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "packet_loss_probability": {
+      "label": "Packet Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "frame_loss_probability": {
+      "label": "Frame Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "bit_error_rate": {
+      "label": "Bit Error Rate",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "corruption_probability": {
+      "label": "Corruption",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duplicate_probability": {
+      "label": "Duplication",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "reordering_probability": {
+      "label": "Reordering",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "required_reliability": {
+      "label": "Required Reliability",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.999,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_offset_ms": {
+      "label": "Clock Offset",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_drift_ppm": {
+      "label": "Clock Drift",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 20,
+      "unit": "ppm",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_precision_ms": {
+      "label": "Sync Precision",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_interval_ms": {
+      "label": "Sync Interval",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1000,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_sync_error_ms": {
+      "label": "Maximum Sync Error",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_delay_ms": {
+      "label": "Gateway Processing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.2,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_queue_delay_ms": {
+      "label": "Gateway Queueing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "protocol_conversion_delay_ms": {
+      "label": "Protocol Conversion",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duration_s": {
+      "label": "Simulation Duration",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 1,
+      "unit": "s",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "seed": {
+      "label": "Random Seed",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 42,
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "max_events": {
+      "label": "Maximum Events",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 100000,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "dropout_probability": {
+      "label": "Failure Injection Dropout",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "fsoe_profile": {
+      "label": "profile",
+      "category": "physical",
+      "scope": "route",
+      "type": "select",
+      "description": "Source-qualified base declaration proposal; ETG5120 enhancements require independent matched edition/implementation bounds.",
+      "required": true,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": "BASE_5100_1_2",
+      "options": [
+        "BASE_5100_1_2",
+        "ENHANCEMENTS_5120",
+        "DEVICE_SPECIFIC"
+      ],
+      "integer": false,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED",
+      "source": "https://www.beckhoff.com/media/downloads/information-media/pc-control/pcc_0107_e.pdf",
+      "source_revision": "Beckhoff PC-Control01/2007 pages24-26; HMS public FSoE PDU/state tutorial July23/24 2026 interpreted for base ETG5100v1.2.0, not licensed full text"
+    },
+    "fsoe_role": {
+      "label": "role",
+      "category": "physical",
+      "scope": "route",
+      "type": "select",
+      "description": "Actual safety protocol instance role; EtherCAT main-device/subdevice roles are independent.",
+      "required": true,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "MASTER",
+        "SLAVE"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.beckhoff.com/media/downloads/information-media/pc-control/pcc_0107_e.pdf",
+      "source_revision": "Beckhoff PC-Control01/2007 pages24-26; HMS public FSoE PDU/state tutorial July23/24 2026 interpreted for base ETG5100v1.2.0, not licensed full text"
+    },
+    "fsoe_transport_binding": {
+      "label": "transport binding",
+      "category": "physical",
+      "scope": "route",
+      "type": "text",
+      "description": "Required actual black-channel link/process-data/buffer mapping reference; no implicit EtherCAT100M/Ethernet inherited rate.",
+      "required": true,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.beckhoff.com/media/downloads/information-media/pc-control/pcc_0107_e.pdf",
+      "source_revision": "Beckhoff PC-Control01/2007 pages24-26; HMS public FSoE PDU/state tutorial July23/24 2026 interpreted for base ETG5100v1.2.0, not licensed full text"
+    },
+    "fsoe_implementation_source": {
+      "label": "implementation source",
+      "category": "physical",
+      "scope": "route",
+      "type": "text",
+      "description": "Required matched actual safety device/firmware/protocol edition and supported data limits reference, unknown.",
+      "required": true,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.beckhoff.com/media/downloads/information-media/pc-control/pcc_0107_e.pdf",
+      "source_revision": "Beckhoff PC-Control01/2007 pages24-26; HMS public FSoE PDU/state tutorial July23/24 2026 interpreted for base ETG5100v1.2.0, not licensed full text"
+    },
+    "fsoe_connection_source": {
+      "label": "connection source",
+      "category": "physical",
+      "scope": "route",
+      "type": "text",
+      "description": "Required actual unique connection ID/slave address/parameter/configuration reference, unknown.",
+      "required": true,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.beckhoff.com/media/downloads/information-media/pc-control/pcc_0107_e.pdf",
+      "source_revision": "Beckhoff PC-Control01/2007 pages24-26; HMS public FSoE PDU/state tutorial July23/24 2026 interpreted for base ETG5100v1.2.0, not licensed full text"
+    },
+    "fsoe_timing_source": {
+      "label": "timing source",
+      "category": "physical",
+      "scope": "route",
+      "type": "text",
+      "description": "Required actual direction-dependent watchdog/whole exchange/transport mapping bounds and endpoint timing reference, unknown.",
+      "required": true,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.beckhoff.com/media/downloads/information-media/pc-control/pcc_0107_e.pdf",
+      "source_revision": "Beckhoff PC-Control01/2007 pages24-26; HMS public FSoE PDU/state tutorial July23/24 2026 interpreted for base ETG5100v1.2.0, not licensed full text"
+    },
+    "fsoe_direction": {
+      "label": "direction",
+      "category": "physical",
+      "scope": "route",
+      "type": "select",
+      "description": "Actual safe-data direction. Configured input/output lengths may differ; never duplicate one length into both.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "MASTER_TO_SLAVE",
+        "SLAVE_TO_MASTER"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.beckhoff.com/media/downloads/information-media/pc-control/pcc_0107_e.pdf",
+      "source_revision": "Beckhoff PC-Control01/2007 pages24-26; HMS public FSoE PDU/state tutorial July23/24 2026 interpreted for base ETG5100v1.2.0, not licensed full text",
+      "schema_when": {
+        "fsoe_profile": "BASE_5100_1_2"
+      }
+    },
+    "fsoe_master_safe_bytes": {
+      "label": "master safe bytes",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual master-to-slave safe-data capacity, unknown. One byte or even count; bounded by actual device/process-data mapping.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 1,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.beckhoff.com/media/downloads/information-media/pc-control/pcc_0107_e.pdf",
+      "source_revision": "Beckhoff PC-Control01/2007 pages24-26; HMS public FSoE PDU/state tutorial July23/24 2026 interpreted for base ETG5100v1.2.0, not licensed full text",
+      "schema_when": {
+        "fsoe_profile": "BASE_5100_1_2"
+      }
+    },
+    "fsoe_slave_safe_bytes": {
+      "label": "slave safe bytes",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual slave-to-master safe-data capacity, unknown, independent of master direction. No universal1486-byte maximum.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 1,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.beckhoff.com/media/downloads/information-media/pc-control/pcc_0107_e.pdf",
+      "source_revision": "Beckhoff PC-Control01/2007 pages24-26; HMS public FSoE PDU/state tutorial July23/24 2026 interpreted for base ETG5100v1.2.0, not licensed full text",
+      "schema_when": {
+        "fsoe_profile": "BASE_5100_1_2"
+      }
+    },
+    "fsoe_crc_count": {
+      "label": "crc count",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual CRC word count=ceil(selected safe bytes/2). One-byte exception uses virtual zero in CRC calculation, not an extra wire payload byte.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 1,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.beckhoff.com/media/downloads/information-media/pc-control/pcc_0107_e.pdf",
+      "source_revision": "Beckhoff PC-Control01/2007 pages24-26; HMS public FSoE PDU/state tutorial July23/24 2026 interpreted for base ETG5100v1.2.0, not licensed full text",
+      "schema_when": {
+        "fsoe_profile": "BASE_5100_1_2"
+      }
+    },
+    "fsoe_crc_word_bytes": {
+      "label": "crc word bytes",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Baseline two-octet CRC field per block; not a single checksum overhead for all safe data.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 2,
+      "max": 2,
+      "integer": true,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "source": "https://www.beckhoff.com/media/downloads/information-media/pc-control/pcc_0107_e.pdf",
+      "source_revision": "Beckhoff PC-Control01/2007 pages24-26; HMS public FSoE PDU/state tutorial July23/24 2026 interpreted for base ETG5100v1.2.0, not licensed full text",
+      "conditional_defaults": [
+        {
+          "when": {
+            "fsoe_profile": "BASE_5100_1_2"
+          },
+          "value": 2
+        }
+      ],
+      "schema_when": {
+        "fsoe_profile": "BASE_5100_1_2"
+      }
+    },
+    "fsoe_command_bytes": {
+      "label": "command bytes",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Baseline one command octet; not an EtherCAT datagram header.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 1,
+      "max": 1,
+      "integer": true,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "source": "https://www.beckhoff.com/media/downloads/information-media/pc-control/pcc_0107_e.pdf",
+      "source_revision": "Beckhoff PC-Control01/2007 pages24-26; HMS public FSoE PDU/state tutorial July23/24 2026 interpreted for base ETG5100v1.2.0, not licensed full text",
+      "conditional_defaults": [
+        {
+          "when": {
+            "fsoe_profile": "BASE_5100_1_2"
+          },
+          "value": 1
+        }
+      ],
+      "schema_when": {
+        "fsoe_profile": "BASE_5100_1_2"
+      }
+    },
+    "fsoe_connection_bytes": {
+      "label": "connection bytes",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Baseline two ConnID octets at end of PDU; connection identifier differs from safety slave address.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 2,
+      "max": 2,
+      "integer": true,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "source": "https://www.beckhoff.com/media/downloads/information-media/pc-control/pcc_0107_e.pdf",
+      "source_revision": "Beckhoff PC-Control01/2007 pages24-26; HMS public FSoE PDU/state tutorial July23/24 2026 interpreted for base ETG5100v1.2.0, not licensed full text",
+      "conditional_defaults": [
+        {
+          "when": {
+            "fsoe_profile": "BASE_5100_1_2"
+          },
+          "value": 2
+        }
+      ],
+      "schema_when": {
+        "fsoe_profile": "BASE_5100_1_2"
+      }
+    },
+    "fsoe_frame_bytes": {
+      "label": "frame bytes",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual safety container CMD+safe data+2*CRCcount+ConnID. Six-byte minimum corresponds to one safe byte; excludes black-channel framing.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 6,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.beckhoff.com/media/downloads/information-media/pc-control/pcc_0107_e.pdf",
+      "source_revision": "Beckhoff PC-Control01/2007 pages24-26; HMS public FSoE PDU/state tutorial July23/24 2026 interpreted for base ETG5100v1.2.0, not licensed full text",
+      "schema_when": {
+        "fsoe_profile": "BASE_5100_1_2"
+      }
+    },
+    "fsoe_pdo_capacity_bytes": {
+      "label": "pdo capacity bytes",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual mapped black-channel process-data container capacity; full FSoE frame must fit, not just safe payload.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 6,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.beckhoff.com/media/downloads/information-media/pc-control/pcc_0107_e.pdf",
+      "source_revision": "Beckhoff PC-Control01/2007 pages24-26; HMS public FSoE PDU/state tutorial July23/24 2026 interpreted for base ETG5100v1.2.0, not licensed full text",
+      "schema_when": {
+        "fsoe_profile": "BASE_5100_1_2"
+      }
+    },
+    "fsoe_state": {
+      "label": "state",
+      "category": "physical",
+      "scope": "route",
+      "type": "select",
+      "description": "Actual protocol state, unknown. Saved state declaration does not execute handshake or release safe outputs.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "RESET",
+        "SESSION",
+        "CONNECTION",
+        "PARAMETER",
+        "DATA"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.beckhoff.com/media/downloads/information-media/pc-control/pcc_0107_e.pdf",
+      "source_revision": "Beckhoff PC-Control01/2007 pages24-26; HMS public FSoE PDU/state tutorial July23/24 2026 interpreted for base ETG5100v1.2.0, not licensed full text",
+      "schema_when": {
+        "fsoe_profile": "BASE_5100_1_2"
+      }
+    },
+    "fsoe_data_command": {
+      "label": "data command",
+      "category": "physical",
+      "scope": "route",
+      "type": "select",
+      "description": "Actual outgoing data-state command, unknown. Independent peer command is not inferred; no auto ProcessData release.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "PROCESS_DATA",
+        "FAILSAFE_DATA"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.beckhoff.com/media/downloads/information-media/pc-control/pcc_0107_e.pdf",
+      "source_revision": "Beckhoff PC-Control01/2007 pages24-26; HMS public FSoE PDU/state tutorial July23/24 2026 interpreted for base ETG5100v1.2.0, not licensed full text",
+      "schema_when": {
+        "fsoe_profile": "BASE_5100_1_2"
+      }
+    },
+    "fsoe_command": {
+      "label": "command",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual wire command octet. Public base Reset0x2A/Data Process0x36/FailSafe0x08 constraints; remaining startup command encoding requires source.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "max": 255,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.beckhoff.com/media/downloads/information-media/pc-control/pcc_0107_e.pdf",
+      "source_revision": "Beckhoff PC-Control01/2007 pages24-26; HMS public FSoE PDU/state tutorial July23/24 2026 interpreted for base ETG5100v1.2.0, not licensed full text",
+      "schema_when": {
+        "fsoe_profile": "BASE_5100_1_2"
+      }
+    },
+    "fsoe_conn_id": {
+      "label": "conn id",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual16-bit ConnID unknown. Zero before connection allocation/reset; Data requires nonzero. Uniqueness requires actual network configuration.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "max": 65535,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.beckhoff.com/media/downloads/information-media/pc-control/pcc_0107_e.pdf",
+      "source_revision": "Beckhoff PC-Control01/2007 pages24-26; HMS public FSoE PDU/state tutorial July23/24 2026 interpreted for base ETG5100v1.2.0, not licensed full text",
+      "schema_when": {
+        "fsoe_profile": "BASE_5100_1_2"
+      }
+    },
+    "fsoe_slave_address": {
+      "label": "slave address",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual configured16-bit safety slave address, unknown; must match endpoint setting. Distinct from EtherCAT address and ConnID.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 1,
+      "max": 65535,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.beckhoff.com/media/downloads/information-media/pc-control/pcc_0107_e.pdf",
+      "source_revision": "Beckhoff PC-Control01/2007 pages24-26; HMS public FSoE PDU/state tutorial July23/24 2026 interpreted for base ETG5100v1.2.0, not licensed full text",
+      "schema_when": {
+        "fsoe_profile": "BASE_5100_1_2"
+      }
+    },
+    "fsoe_peer_address": {
+      "label": "peer address",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual peer accepted/configured safety slave address, unknown, must equal selected endpoint address; scalar equality is not commissioning evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 1,
+      "max": 65535,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.beckhoff.com/media/downloads/information-media/pc-control/pcc_0107_e.pdf",
+      "source_revision": "Beckhoff PC-Control01/2007 pages24-26; HMS public FSoE PDU/state tutorial July23/24 2026 interpreted for base ETG5100v1.2.0, not licensed full text",
+      "schema_when": {
+        "fsoe_profile": "BASE_5100_1_2"
+      }
+    },
+    "fsoe_session_id": {
+      "label": "session id",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual locally generated16-bit session ID, unknown. Not default0, not an on-wire field in every Data PDU.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "max": 65535,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.beckhoff.com/media/downloads/information-media/pc-control/pcc_0107_e.pdf",
+      "source_revision": "Beckhoff PC-Control01/2007 pages24-26; HMS public FSoE PDU/state tutorial July23/24 2026 interpreted for base ETG5100v1.2.0, not licensed full text",
+      "schema_when": {
+        "fsoe_profile": "BASE_5100_1_2"
+      }
+    },
+    "fsoe_peer_session_id": {
+      "label": "peer session id",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual independently generated peer session ID, unknown. Not forced equal to local session or copied from it.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "max": 65535,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.beckhoff.com/media/downloads/information-media/pc-control/pcc_0107_e.pdf",
+      "source_revision": "Beckhoff PC-Control01/2007 pages24-26; HMS public FSoE PDU/state tutorial July23/24 2026 interpreted for base ETG5100v1.2.0, not licensed full text",
+      "schema_when": {
+        "fsoe_profile": "BASE_5100_1_2"
+      }
+    },
+    "fsoe_sequence": {
+      "label": "sequence",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual internal virtual sequence, unknown; base Data1..65535, absent as a standalone wire field. Increment/rollover/CRC-change mechanism needs executor.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "max": 65535,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.beckhoff.com/media/downloads/information-media/pc-control/pcc_0107_e.pdf",
+      "source_revision": "Beckhoff PC-Control01/2007 pages24-26; HMS public FSoE PDU/state tutorial July23/24 2026 interpreted for base ETG5100v1.2.0, not licensed full text",
+      "schema_when": {
+        "fsoe_profile": "BASE_5100_1_2"
+      }
+    },
+    "fsoe_crc0": {
+      "label": "crc0",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual current16-bit CRC0, unknown. Scalar bounds do not recompute CRC chain/virtual sequence/session/ConnID/block index.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "max": 65535,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.beckhoff.com/media/downloads/information-media/pc-control/pcc_0107_e.pdf",
+      "source_revision": "Beckhoff PC-Control01/2007 pages24-26; HMS public FSoE PDU/state tutorial July23/24 2026 interpreted for base ETG5100v1.2.0, not licensed full text",
+      "schema_when": {
+        "fsoe_profile": "BASE_5100_1_2"
+      }
+    },
+    "fsoe_previous_crc0": {
+      "label": "previous crc0",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual previous received CRC0 in inherited chain, unknown. Not default0 outside actual reset.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "max": 65535,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.beckhoff.com/media/downloads/information-media/pc-control/pcc_0107_e.pdf",
+      "source_revision": "Beckhoff PC-Control01/2007 pages24-26; HMS public FSoE PDU/state tutorial July23/24 2026 interpreted for base ETG5100v1.2.0, not licensed full text",
+      "schema_when": {
+        "fsoe_profile": "BASE_5100_1_2"
+      }
+    },
+    "fsoe_crc_source": {
+      "label": "crc source",
+      "category": "physical",
+      "scope": "route",
+      "type": "text",
+      "description": "Actual encoded/container/chain/sequence/session/block-index integrity evidence, unknown. Safety CRC is not cryptographic authentication.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.beckhoff.com/media/downloads/information-media/pc-control/pcc_0107_e.pdf",
+      "source_revision": "Beckhoff PC-Control01/2007 pages24-26; HMS public FSoE PDU/state tutorial July23/24 2026 interpreted for base ETG5100v1.2.0, not licensed full text",
+      "schema_when": {
+        "fsoe_profile": "BASE_5100_1_2"
+      }
+    },
+    "fsoe_master_watchdog_ms": {
+      "label": "master watchdog ms",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual base communication watchdog1..65535ms from matched configuration; no universal shortest1ms or sampled1000ms default.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "ms",
+      "min": 1,
+      "max": 65535,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.beckhoff.com/media/downloads/information-media/pc-control/pcc_0107_e.pdf",
+      "source_revision": "Beckhoff PC-Control01/2007 pages24-26; HMS public FSoE PDU/state tutorial July23/24 2026 interpreted for base ETG5100v1.2.0, not licensed full text",
+      "schema_when": {
+        "fsoe_profile": "BASE_5100_1_2"
+      }
+    },
+    "fsoe_slave_watchdog_ms": {
+      "label": "slave watchdog ms",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual peer accepted same connection communication watchdog, independently sourced; setting alone is not a live watchdog or safety-response certificate.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "ms",
+      "min": 1,
+      "max": 65535,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.beckhoff.com/media/downloads/information-media/pc-control/pcc_0107_e.pdf",
+      "source_revision": "Beckhoff PC-Control01/2007 pages24-26; HMS public FSoE PDU/state tutorial July23/24 2026 interpreted for base ETG5100v1.2.0, not licensed full text",
+      "schema_when": {
+        "fsoe_profile": "BASE_5100_1_2"
+      }
+    },
+    "fsoe_exchange_bound_ms": {
+      "label": "exchange bound ms",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual complete bidirectional exchange bound, unknown, must be below both configured watchdogs. Not a single EtherCAT frame cycle.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "ms",
+      "min": 0.001,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.beckhoff.com/media/downloads/information-media/pc-control/pcc_0107_e.pdf",
+      "source_revision": "Beckhoff PC-Control01/2007 pages24-26; HMS public FSoE PDU/state tutorial July23/24 2026 interpreted for base ETG5100v1.2.0, not licensed full text",
+      "schema_when": {
+        "fsoe_profile": "BASE_5100_1_2"
+      }
+    },
+    "fsoe_parameter_bytes": {
+      "label": "parameter bytes",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual complete parameter-transfer stream bytes, unknown. Fragmented across frames if needed; not restricted to one frame or copied safe-data length.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.beckhoff.com/media/downloads/information-media/pc-control/pcc_0107_e.pdf",
+      "source_revision": "Beckhoff PC-Control01/2007 pages24-26; HMS public FSoE PDU/state tutorial July23/24 2026 interpreted for base ETG5100v1.2.0, not licensed full text",
+      "schema_when": {
+        "fsoe_profile": "BASE_5100_1_2"
+      }
+    },
+    "fsoe_parameter_remaining_bytes": {
+      "label": "parameter remaining bytes",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual remaining parameter stream count0..actual total, unknown. Counter alone does not certify accepted safety application parameters.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.beckhoff.com/media/downloads/information-media/pc-control/pcc_0107_e.pdf",
+      "source_revision": "Beckhoff PC-Control01/2007 pages24-26; HMS public FSoE PDU/state tutorial July23/24 2026 interpreted for base ETG5100v1.2.0, not licensed full text",
+      "schema_when": {
+        "fsoe_profile": "BASE_5100_1_2"
+      }
+    },
+    "fsoe_parameters_accepted": {
+      "label": "parameters accepted",
+      "category": "physical",
+      "scope": "route",
+      "type": "boolean",
+      "description": "Actual peer parameter acceptance unknown; Data requires true declaration, but protocol/runtime acceptance remains unexecuted.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.beckhoff.com/media/downloads/information-media/pc-control/pcc_0107_e.pdf",
+      "source_revision": "Beckhoff PC-Control01/2007 pages24-26; HMS public FSoE PDU/state tutorial July23/24 2026 interpreted for base ETG5100v1.2.0, not licensed full text",
+      "schema_when": {
+        "fsoe_profile": "BASE_5100_1_2"
+      }
+    },
+    "fsoe_mapping_source": {
+      "label": "mapping source",
+      "category": "physical",
+      "scope": "route",
+      "type": "text",
+      "description": "Actual ESI/PDO/black-channel buffering and direction/mapping version evidence, unknown; require verification after parameter changes.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.beckhoff.com/media/downloads/information-media/pc-control/pcc_0107_e.pdf",
+      "source_revision": "Beckhoff PC-Control01/2007 pages24-26; HMS public FSoE PDU/state tutorial July23/24 2026 interpreted for base ETG5100v1.2.0, not licensed full text",
+      "schema_when": {
+        "fsoe_profile": "BASE_5100_1_2"
+      }
+    },
+    "fsoe_safe_output_source": {
+      "label": "safe output source",
+      "category": "physical",
+      "scope": "route",
+      "type": "text",
+      "description": "Actual defined failure/output response and safety application configuration, unknown. Do not infer all-zero application safe state universally.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.beckhoff.com/media/downloads/information-media/pc-control/pcc_0107_e.pdf",
+      "source_revision": "Beckhoff PC-Control01/2007 pages24-26; HMS public FSoE PDU/state tutorial July23/24 2026 interpreted for base ETG5100v1.2.0, not licensed full text",
+      "schema_when": {
+        "fsoe_profile": "BASE_5100_1_2"
+      }
+    },
+    "fsoe_safety_requirement": {
+      "label": "safety requirement",
+      "category": "physical",
+      "scope": "route",
+      "type": "select",
+      "description": "Actual project safety-integrity requirement, unknown. Protocol capability alone does not certify device/system SIL or PL.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "SIL1",
+        "SIL2",
+        "SIL3",
+        "PL_A",
+        "PL_B",
+        "PL_C",
+        "PL_D",
+        "PL_E",
+        "DEVICE_SPECIFIC"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.beckhoff.com/media/downloads/information-media/pc-control/pcc_0107_e.pdf",
+      "source_revision": "Beckhoff PC-Control01/2007 pages24-26; HMS public FSoE PDU/state tutorial July23/24 2026 interpreted for base ETG5100v1.2.0, not licensed full text",
+      "schema_when": {
+        "fsoe_profile": "BASE_5100_1_2"
+      }
+    },
+    "fsoe_assurance_source": {
+      "label": "assurance source",
+      "category": "physical",
+      "scope": "route",
+      "type": "text",
+      "description": "Actual matched safety-device/system validation/response/certificate reference, unknown. NIS declaration checks are not a safety certification.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.beckhoff.com/media/downloads/information-media/pc-control/pcc_0107_e.pdf",
+      "source_revision": "Beckhoff PC-Control01/2007 pages24-26; HMS public FSoE PDU/state tutorial July23/24 2026 interpreted for base ETG5100v1.2.0, not licensed full text",
+      "schema_when": {
+        "fsoe_profile": "BASE_5100_1_2"
+      }
+    }
+  },
+  "mechanisms": {
+    "access": [
+      "MASTER_SLAVE_HANDSHAKE_OVER_EXPLICIT_BLACK_CHANNEL"
+    ],
+    "integrity": [
+      "CRC16_PER_TWO_SAFE_OCTETS",
+      "INHERITED_CRC_VIRTUAL_SEQUENCE_SESSION_AND_CONN_ID"
+    ],
+    "supervision": [
+      "BIDIRECTIONAL_WATCHDOG",
+      "SAFE_STATE_APPLICATION_DEFINED"
+    ]
+  },
+  "parameter_constraints": [
+    {
+      "when": {
+        "fsoe_profile": "BASE_5100_1_2"
+      },
+      "parameter": "payload_bytes",
+      "minimum": 1,
+      "source": "https://www.beckhoff.com/media/downloads/information-media/pc-control/pcc_0107_e.pdf",
+      "source_revision": "Beckhoff PC-Control01/2007 pages24-26; HMS public FSoE PDU/state tutorial July23/24 2026 interpreted for base ETG5100v1.2.0, not licensed full text"
+    },
+    {
+      "when": {
+        "fsoe_profile": "BASE_5100_1_2"
+      },
+      "when_greater_than": {
+        "payload_bytes": 1
+      },
+      "parameter": "payload_bytes",
+      "multiple_of": 2,
+      "source": "https://www.beckhoff.com/media/downloads/information-media/pc-control/pcc_0107_e.pdf",
+      "source_revision": "Beckhoff PC-Control01/2007 pages24-26; HMS public FSoE PDU/state tutorial July23/24 2026 interpreted for base ETG5100v1.2.0, not licensed full text"
+    },
+    {
+      "when": {
+        "fsoe_profile": "BASE_5100_1_2"
+      },
+      "parameter": "fsoe_master_safe_bytes",
+      "minimum": 1,
+      "source": "https://www.beckhoff.com/media/downloads/information-media/pc-control/pcc_0107_e.pdf",
+      "source_revision": "Beckhoff PC-Control01/2007 pages24-26; HMS public FSoE PDU/state tutorial July23/24 2026 interpreted for base ETG5100v1.2.0, not licensed full text"
+    },
+    {
+      "when": {
+        "fsoe_profile": "BASE_5100_1_2"
+      },
+      "when_greater_than": {
+        "fsoe_master_safe_bytes": 1
+      },
+      "parameter": "fsoe_master_safe_bytes",
+      "multiple_of": 2,
+      "source": "https://www.beckhoff.com/media/downloads/information-media/pc-control/pcc_0107_e.pdf",
+      "source_revision": "Beckhoff PC-Control01/2007 pages24-26; HMS public FSoE PDU/state tutorial July23/24 2026 interpreted for base ETG5100v1.2.0, not licensed full text"
+    },
+    {
+      "when": {
+        "fsoe_profile": "BASE_5100_1_2"
+      },
+      "parameter": "fsoe_slave_safe_bytes",
+      "minimum": 1,
+      "source": "https://www.beckhoff.com/media/downloads/information-media/pc-control/pcc_0107_e.pdf",
+      "source_revision": "Beckhoff PC-Control01/2007 pages24-26; HMS public FSoE PDU/state tutorial July23/24 2026 interpreted for base ETG5100v1.2.0, not licensed full text"
+    },
+    {
+      "when": {
+        "fsoe_profile": "BASE_5100_1_2"
+      },
+      "when_greater_than": {
+        "fsoe_slave_safe_bytes": 1
+      },
+      "parameter": "fsoe_slave_safe_bytes",
+      "multiple_of": 2,
+      "source": "https://www.beckhoff.com/media/downloads/information-media/pc-control/pcc_0107_e.pdf",
+      "source_revision": "Beckhoff PC-Control01/2007 pages24-26; HMS public FSoE PDU/state tutorial July23/24 2026 interpreted for base ETG5100v1.2.0, not licensed full text"
+    },
+    {
+      "when": {
+        "fsoe_profile": "BASE_5100_1_2",
+        "fsoe_direction": "MASTER_TO_SLAVE"
+      },
+      "parameter": "payload_bytes",
+      "equal_parameter": "fsoe_master_safe_bytes",
+      "source": "https://www.beckhoff.com/media/downloads/information-media/pc-control/pcc_0107_e.pdf",
+      "source_revision": "Beckhoff PC-Control01/2007 pages24-26; HMS public FSoE PDU/state tutorial July23/24 2026 interpreted for base ETG5100v1.2.0, not licensed full text"
+    },
+    {
+      "when": {
+        "fsoe_profile": "BASE_5100_1_2",
+        "fsoe_direction": "SLAVE_TO_MASTER"
+      },
+      "parameter": "payload_bytes",
+      "equal_parameter": "fsoe_slave_safe_bytes",
+      "source": "https://www.beckhoff.com/media/downloads/information-media/pc-control/pcc_0107_e.pdf",
+      "source_revision": "Beckhoff PC-Control01/2007 pages24-26; HMS public FSoE PDU/state tutorial July23/24 2026 interpreted for base ETG5100v1.2.0, not licensed full text"
+    },
+    {
+      "when": {
+        "fsoe_profile": "BASE_5100_1_2"
+      },
+      "parameter": "fsoe_crc_count",
+      "equal_expression": {
+        "ceiling": [
+          {
+            "product": [
+              0.5,
+              "payload_bytes"
+            ]
+          }
+        ]
+      },
+      "source": "https://www.beckhoff.com/media/downloads/information-media/pc-control/pcc_0107_e.pdf",
+      "source_revision": "Beckhoff PC-Control01/2007 pages24-26; HMS public FSoE PDU/state tutorial July23/24 2026 interpreted for base ETG5100v1.2.0, not licensed full text"
+    },
+    {
+      "when": {
+        "fsoe_profile": "BASE_5100_1_2"
+      },
+      "parameter": "fsoe_frame_bytes",
+      "equal_expression": {
+        "sum": [
+          "fsoe_command_bytes",
+          "payload_bytes",
+          {
+            "product": [
+              "fsoe_crc_count",
+              "fsoe_crc_word_bytes"
+            ]
+          },
+          "fsoe_connection_bytes"
+        ]
+      },
+      "source": "https://www.beckhoff.com/media/downloads/information-media/pc-control/pcc_0107_e.pdf",
+      "source_revision": "Beckhoff PC-Control01/2007 pages24-26; HMS public FSoE PDU/state tutorial July23/24 2026 interpreted for base ETG5100v1.2.0, not licensed full text"
+    },
+    {
+      "when": {
+        "fsoe_profile": "BASE_5100_1_2"
+      },
+      "parameter": "fsoe_frame_bytes",
+      "maximum_parameter": "fsoe_pdo_capacity_bytes",
+      "source": "https://www.beckhoff.com/media/downloads/information-media/pc-control/pcc_0107_e.pdf",
+      "source_revision": "Beckhoff PC-Control01/2007 pages24-26; HMS public FSoE PDU/state tutorial July23/24 2026 interpreted for base ETG5100v1.2.0, not licensed full text"
+    },
+    {
+      "when": {
+        "fsoe_profile": "BASE_5100_1_2"
+      },
+      "parameter": "fsoe_slave_address",
+      "equal_parameter": "fsoe_peer_address",
+      "source": "https://www.beckhoff.com/media/downloads/information-media/pc-control/pcc_0107_e.pdf",
+      "source_revision": "Beckhoff PC-Control01/2007 pages24-26; HMS public FSoE PDU/state tutorial July23/24 2026 interpreted for base ETG5100v1.2.0, not licensed full text"
+    },
+    {
+      "when": {
+        "fsoe_profile": "BASE_5100_1_2"
+      },
+      "parameter": "fsoe_master_watchdog_ms",
+      "equal_parameter": "fsoe_slave_watchdog_ms",
+      "source": "https://www.beckhoff.com/media/downloads/information-media/pc-control/pcc_0107_e.pdf",
+      "source_revision": "Beckhoff PC-Control01/2007 pages24-26; HMS public FSoE PDU/state tutorial July23/24 2026 interpreted for base ETG5100v1.2.0, not licensed full text"
+    },
+    {
+      "when": {
+        "fsoe_profile": "BASE_5100_1_2"
+      },
+      "parameter": "fsoe_master_watchdog_ms",
+      "minimum_parameter": "fsoe_exchange_bound_ms",
+      "source": "https://www.beckhoff.com/media/downloads/information-media/pc-control/pcc_0107_e.pdf",
+      "source_revision": "Beckhoff PC-Control01/2007 pages24-26; HMS public FSoE PDU/state tutorial July23/24 2026 interpreted for base ETG5100v1.2.0, not licensed full text"
+    },
+    {
+      "when": {
+        "fsoe_profile": "BASE_5100_1_2"
+      },
+      "when_present": [
+        "fsoe_exchange_bound_ms"
+      ],
+      "parameter": "fsoe_master_watchdog_ms",
+      "not_equal_parameter": "fsoe_exchange_bound_ms",
+      "source": "https://www.beckhoff.com/media/downloads/information-media/pc-control/pcc_0107_e.pdf",
+      "source_revision": "Beckhoff PC-Control01/2007 pages24-26; HMS public FSoE PDU/state tutorial July23/24 2026 interpreted for base ETG5100v1.2.0, not licensed full text"
+    },
+    {
+      "when": {
+        "fsoe_profile": "BASE_5100_1_2"
+      },
+      "parameter": "fsoe_slave_watchdog_ms",
+      "minimum_parameter": "fsoe_exchange_bound_ms",
+      "source": "https://www.beckhoff.com/media/downloads/information-media/pc-control/pcc_0107_e.pdf",
+      "source_revision": "Beckhoff PC-Control01/2007 pages24-26; HMS public FSoE PDU/state tutorial July23/24 2026 interpreted for base ETG5100v1.2.0, not licensed full text"
+    },
+    {
+      "when": {
+        "fsoe_profile": "BASE_5100_1_2"
+      },
+      "when_present": [
+        "fsoe_exchange_bound_ms"
+      ],
+      "parameter": "fsoe_slave_watchdog_ms",
+      "not_equal_parameter": "fsoe_exchange_bound_ms",
+      "source": "https://www.beckhoff.com/media/downloads/information-media/pc-control/pcc_0107_e.pdf",
+      "source_revision": "Beckhoff PC-Control01/2007 pages24-26; HMS public FSoE PDU/state tutorial July23/24 2026 interpreted for base ETG5100v1.2.0, not licensed full text"
+    },
+    {
+      "when": {
+        "fsoe_profile": "BASE_5100_1_2"
+      },
+      "parameter": "fsoe_parameter_remaining_bytes",
+      "maximum_parameter": "fsoe_parameter_bytes",
+      "source": "https://www.beckhoff.com/media/downloads/information-media/pc-control/pcc_0107_e.pdf",
+      "source_revision": "Beckhoff PC-Control01/2007 pages24-26; HMS public FSoE PDU/state tutorial July23/24 2026 interpreted for base ETG5100v1.2.0, not licensed full text"
+    },
+    {
+      "when": {
+        "fsoe_profile": "BASE_5100_1_2",
+        "fsoe_state": "RESET"
+      },
+      "parameter": "fsoe_data_command",
+      "allowed": [],
+      "source": "https://www.beckhoff.com/media/downloads/information-media/pc-control/pcc_0107_e.pdf",
+      "source_revision": "Beckhoff PC-Control01/2007 pages24-26; HMS public FSoE PDU/state tutorial July23/24 2026 interpreted for base ETG5100v1.2.0, not licensed full text"
+    },
+    {
+      "when": {
+        "fsoe_profile": "BASE_5100_1_2",
+        "fsoe_state": "RESET"
+      },
+      "parameter": "fsoe_conn_id",
+      "allowed": [
+        0
+      ],
+      "source": "https://www.beckhoff.com/media/downloads/information-media/pc-control/pcc_0107_e.pdf",
+      "source_revision": "Beckhoff PC-Control01/2007 pages24-26; HMS public FSoE PDU/state tutorial July23/24 2026 interpreted for base ETG5100v1.2.0, not licensed full text"
+    },
+    {
+      "when": {
+        "fsoe_profile": "BASE_5100_1_2",
+        "fsoe_state": "SESSION"
+      },
+      "parameter": "fsoe_conn_id",
+      "allowed": [
+        0
+      ],
+      "source": "https://www.beckhoff.com/media/downloads/information-media/pc-control/pcc_0107_e.pdf",
+      "source_revision": "Beckhoff PC-Control01/2007 pages24-26; HMS public FSoE PDU/state tutorial July23/24 2026 interpreted for base ETG5100v1.2.0, not licensed full text"
+    },
+    {
+      "when": {
+        "fsoe_profile": "BASE_5100_1_2",
+        "fsoe_state": "RESET"
+      },
+      "parameter": "fsoe_crc0",
+      "allowed": [
+        0
+      ],
+      "source": "https://www.beckhoff.com/media/downloads/information-media/pc-control/pcc_0107_e.pdf",
+      "source_revision": "Beckhoff PC-Control01/2007 pages24-26; HMS public FSoE PDU/state tutorial July23/24 2026 interpreted for base ETG5100v1.2.0, not licensed full text"
+    },
+    {
+      "when": {
+        "fsoe_profile": "BASE_5100_1_2",
+        "fsoe_state": "RESET"
+      },
+      "parameter": "fsoe_command",
+      "allowed": [
+        42
+      ],
+      "source": "https://www.beckhoff.com/media/downloads/information-media/pc-control/pcc_0107_e.pdf",
+      "source_revision": "Beckhoff PC-Control01/2007 pages24-26; HMS public FSoE PDU/state tutorial July23/24 2026 interpreted for base ETG5100v1.2.0, not licensed full text"
+    },
+    {
+      "when": {
+        "fsoe_profile": "BASE_5100_1_2",
+        "fsoe_state": "DATA"
+      },
+      "parameter": "fsoe_conn_id",
+      "minimum": 1,
+      "source": "https://www.beckhoff.com/media/downloads/information-media/pc-control/pcc_0107_e.pdf",
+      "source_revision": "Beckhoff PC-Control01/2007 pages24-26; HMS public FSoE PDU/state tutorial July23/24 2026 interpreted for base ETG5100v1.2.0, not licensed full text"
+    },
+    {
+      "when": {
+        "fsoe_profile": "BASE_5100_1_2",
+        "fsoe_state": "DATA"
+      },
+      "parameter": "fsoe_sequence",
+      "minimum": 1,
+      "source": "https://www.beckhoff.com/media/downloads/information-media/pc-control/pcc_0107_e.pdf",
+      "source_revision": "Beckhoff PC-Control01/2007 pages24-26; HMS public FSoE PDU/state tutorial July23/24 2026 interpreted for base ETG5100v1.2.0, not licensed full text"
+    },
+    {
+      "when": {
+        "fsoe_profile": "BASE_5100_1_2",
+        "fsoe_state": "DATA"
+      },
+      "parameter": "fsoe_parameters_accepted",
+      "allowed": [
+        true
+      ],
+      "source": "https://www.beckhoff.com/media/downloads/information-media/pc-control/pcc_0107_e.pdf",
+      "source_revision": "Beckhoff PC-Control01/2007 pages24-26; HMS public FSoE PDU/state tutorial July23/24 2026 interpreted for base ETG5100v1.2.0, not licensed full text"
+    },
+    {
+      "when": {
+        "fsoe_profile": "BASE_5100_1_2",
+        "fsoe_state": "DATA",
+        "fsoe_data_command": "PROCESS_DATA"
+      },
+      "parameter": "fsoe_command",
+      "allowed": [
+        54
+      ],
+      "source": "https://www.beckhoff.com/media/downloads/information-media/pc-control/pcc_0107_e.pdf",
+      "source_revision": "Beckhoff PC-Control01/2007 pages24-26; HMS public FSoE PDU/state tutorial July23/24 2026 interpreted for base ETG5100v1.2.0, not licensed full text"
+    },
+    {
+      "when": {
+        "fsoe_profile": "BASE_5100_1_2",
+        "fsoe_state": "DATA",
+        "fsoe_data_command": "FAILSAFE_DATA"
+      },
+      "parameter": "fsoe_command",
+      "allowed": [
+        8
+      ],
+      "source": "https://www.beckhoff.com/media/downloads/information-media/pc-control/pcc_0107_e.pdf",
+      "source_revision": "Beckhoff PC-Control01/2007 pages24-26; HMS public FSoE PDU/state tutorial July23/24 2026 interpreted for base ETG5100v1.2.0, not licensed full text"
+    },
+    {
+      "when": {
+        "fsoe_profile": "BASE_5100_1_2",
+        "fsoe_state": "DATA"
+      },
+      "parameter": "fsoe_direction",
+      "required": true,
+      "source": "https://www.beckhoff.com/media/downloads/information-media/pc-control/pcc_0107_e.pdf",
+      "source_revision": "Beckhoff PC-Control01/2007 pages24-26; HMS public FSoE PDU/state tutorial July23/24 2026 interpreted for base ETG5100v1.2.0, not licensed full text"
+    },
+    {
+      "when": {
+        "fsoe_profile": "BASE_5100_1_2",
+        "fsoe_state": "DATA"
+      },
+      "parameter": "fsoe_conn_id",
+      "required": true,
+      "source": "https://www.beckhoff.com/media/downloads/information-media/pc-control/pcc_0107_e.pdf",
+      "source_revision": "Beckhoff PC-Control01/2007 pages24-26; HMS public FSoE PDU/state tutorial July23/24 2026 interpreted for base ETG5100v1.2.0, not licensed full text"
+    },
+    {
+      "when": {
+        "fsoe_profile": "BASE_5100_1_2",
+        "fsoe_state": "DATA"
+      },
+      "parameter": "fsoe_slave_address",
+      "required": true,
+      "source": "https://www.beckhoff.com/media/downloads/information-media/pc-control/pcc_0107_e.pdf",
+      "source_revision": "Beckhoff PC-Control01/2007 pages24-26; HMS public FSoE PDU/state tutorial July23/24 2026 interpreted for base ETG5100v1.2.0, not licensed full text"
+    },
+    {
+      "when": {
+        "fsoe_profile": "BASE_5100_1_2",
+        "fsoe_state": "DATA"
+      },
+      "parameter": "fsoe_peer_address",
+      "required": true,
+      "source": "https://www.beckhoff.com/media/downloads/information-media/pc-control/pcc_0107_e.pdf",
+      "source_revision": "Beckhoff PC-Control01/2007 pages24-26; HMS public FSoE PDU/state tutorial July23/24 2026 interpreted for base ETG5100v1.2.0, not licensed full text"
+    },
+    {
+      "when": {
+        "fsoe_profile": "BASE_5100_1_2",
+        "fsoe_state": "DATA"
+      },
+      "parameter": "fsoe_parameters_accepted",
+      "required": true,
+      "source": "https://www.beckhoff.com/media/downloads/information-media/pc-control/pcc_0107_e.pdf",
+      "source_revision": "Beckhoff PC-Control01/2007 pages24-26; HMS public FSoE PDU/state tutorial July23/24 2026 interpreted for base ETG5100v1.2.0, not licensed full text"
+    },
+    {
+      "when": {
+        "fsoe_profile": "BASE_5100_1_2",
+        "fsoe_state": "DATA"
+      },
+      "parameter": "fsoe_master_watchdog_ms",
+      "required": true,
+      "source": "https://www.beckhoff.com/media/downloads/information-media/pc-control/pcc_0107_e.pdf",
+      "source_revision": "Beckhoff PC-Control01/2007 pages24-26; HMS public FSoE PDU/state tutorial July23/24 2026 interpreted for base ETG5100v1.2.0, not licensed full text"
+    },
+    {
+      "when": {
+        "fsoe_profile": "BASE_5100_1_2",
+        "fsoe_state": "DATA"
+      },
+      "parameter": "fsoe_slave_watchdog_ms",
+      "required": true,
+      "source": "https://www.beckhoff.com/media/downloads/information-media/pc-control/pcc_0107_e.pdf",
+      "source_revision": "Beckhoff PC-Control01/2007 pages24-26; HMS public FSoE PDU/state tutorial July23/24 2026 interpreted for base ETG5100v1.2.0, not licensed full text"
+    },
+    {
+      "when": {
+        "fsoe_profile": "BASE_5100_1_2",
+        "fsoe_state": "DATA"
+      },
+      "parameter": "fsoe_exchange_bound_ms",
+      "required": true,
+      "source": "https://www.beckhoff.com/media/downloads/information-media/pc-control/pcc_0107_e.pdf",
+      "source_revision": "Beckhoff PC-Control01/2007 pages24-26; HMS public FSoE PDU/state tutorial July23/24 2026 interpreted for base ETG5100v1.2.0, not licensed full text"
+    },
+    {
+      "when": {
+        "fsoe_profile": "BASE_5100_1_2",
+        "fsoe_state": "DATA"
+      },
+      "parameter": "fsoe_mapping_source",
+      "required": true,
+      "source": "https://www.beckhoff.com/media/downloads/information-media/pc-control/pcc_0107_e.pdf",
+      "source_revision": "Beckhoff PC-Control01/2007 pages24-26; HMS public FSoE PDU/state tutorial July23/24 2026 interpreted for base ETG5100v1.2.0, not licensed full text"
+    },
+    {
+      "when": {
+        "fsoe_profile": "BASE_5100_1_2",
+        "fsoe_state": "DATA"
+      },
+      "parameter": "fsoe_crc_source",
+      "required": true,
+      "source": "https://www.beckhoff.com/media/downloads/information-media/pc-control/pcc_0107_e.pdf",
+      "source_revision": "Beckhoff PC-Control01/2007 pages24-26; HMS public FSoE PDU/state tutorial July23/24 2026 interpreted for base ETG5100v1.2.0, not licensed full text"
+    },
+    {
+      "when": {
+        "fsoe_profile": "BASE_5100_1_2",
+        "fsoe_state": "DATA"
+      },
+      "parameter": "fsoe_safe_output_source",
+      "required": true,
+      "source": "https://www.beckhoff.com/media/downloads/information-media/pc-control/pcc_0107_e.pdf",
+      "source_revision": "Beckhoff PC-Control01/2007 pages24-26; HMS public FSoE PDU/state tutorial July23/24 2026 interpreted for base ETG5100v1.2.0, not licensed full text"
+    },
+    {
+      "when": {
+        "fsoe_profile": "BASE_5100_1_2",
+        "fsoe_state": "DATA"
+      },
+      "parameter": "fsoe_assurance_source",
+      "required": true,
+      "source": "https://www.beckhoff.com/media/downloads/information-media/pc-control/pcc_0107_e.pdf",
+      "source_revision": "Beckhoff PC-Control01/2007 pages24-26; HMS public FSoE PDU/state tutorial July23/24 2026 interpreted for base ETG5100v1.2.0, not licensed full text"
+    }
+  ],
+  "physical_layer_profile_id": null,
+  "medium_access_model": null,
+  "native_parameter_prefixes": [],
+  "parameter_aliases": {},
+  "parameter_alias_limits": {},
+  "parameter_evidence_scope": null,
+  "rate_source_profile_id": null,
+  "arbitration_model_id": null,
+  "max_payload_bytes": null,
+  "capabilities": {
+    "supports_signals": true,
+    "supports_data_objects": false,
+    "supports_streams": false,
+    "supports_multicast": false,
+    "supports_publish_subscribe": false,
+    "supports_request_response": true,
+    "supports_cyclic": true,
+    "supports_event": true,
+    "supports_redundancy": false,
+    "supports_time_sync": false,
+    "supports_safety_profile": true,
+    "supports_segmentation": false,
+    "supports_fragmentation": false,
+    "supports_qos": false
+  },
+  "deterministic": false,
+  "overhead_bytes": 8,
+  "implementation_status": "PLANNED",
+  "connection_type": "COMMUNICATION_TECHNOLOGY",
+  "parameter_proposals": {
+    "kind": "APPLICATION_TRANSPORT_DEPENDENT",
+    "status": "REVIEW_REQUIRED",
+    "source": "https://www.beckhoff.com/media/downloads/information-media/pc-control/pcc_0107_e.pdf",
+    "source_revision": "Beckhoff PC-Control01/2007 pages24-26; HMS public FSoE PDU/state tutorial July23/24 2026 interpreted for base ETG5100v1.2.0, not licensed full text",
+    "note": "FSoE has no own bitrate, universal safe-data maximum or universal watchdog default. Base one-byte/even-block container requires configured directional data/mapping, CRC chain and endpoint watchdog. Black channel and optional enhancements need their own profiles; no automatic SIL/PL acceptance."
+  },
+  "capacity_evidence": {
+    "status": "MODEL_MISSING",
+    "frame_model": null,
+    "schedule_model": null,
+    "requires_confirmed_device_parameters": true
+  },
+  "components": {
+    "binding": "fsoe.binding",
+    "generator": "fsoe.generator",
+    "validator": "fsoe.validator",
+    "timing_model": null,
+    "load_model": null,
+    "encoder": "fsoe.encoder",
+    "decoder": "fsoe.decoder"
+  },
+  "known_limitations": "Technology-specific conformance details require a vendor/profile extension."
+}

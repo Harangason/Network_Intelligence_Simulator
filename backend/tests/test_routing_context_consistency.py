@@ -10,6 +10,30 @@ from backend.tests.test_routing import FakeValidator, route_payload, SOURCE, TAR
 
 
 @pytest.mark.parametrize('role', ['source', 'destination'])
+@pytest.mark.parametrize('lifecycle', ['deprecated', 'superseded'])
+def test_retired_selected_channel_is_invalid_even_when_bus_and_reachable_path_match(role, lifecycle):
+    class Validator(FakeValidator):
+        def _physical_path_mapping(self, *args):
+            return True, []
+
+        def _rows(self, table, ids):
+            rows = super()._rows(table, ids)
+            if table == 'engineering_hardware_interfaces':
+                for identifier, row in rows.items():
+                    row['network_ref'] = 'bus'
+                    if identifier == (SOURCE_PORT if role == 'source' else TARGET_PORT):
+                        row['lifecycle_state'] = lifecycle
+            return rows
+
+    route = route_payload()
+    route['source'].update(port_id=SOURCE_PORT, network_id='bus')
+    route['destinations'][0].update(port_id=TARGET_PORT, network_id='bus')
+    result = Validator().validate(route)
+    assert result['valid'] is False
+    assert role.upper() + '_HARDWARE_INTERFACE_RETIRED' in {issue['code'] for issue in result['errors']}
+
+
+@pytest.mark.parametrize('role', ['source', 'destination'])
 @pytest.mark.parametrize('network,code', [(None, 'HARDWARE_INTERFACE_UNASSIGNED'), ('different-bus', 'HARDWARE_NETWORK_MISMATCH'), ('bus', None)])
 def test_selected_channel_must_match_current_bus_even_if_another_channel_is_reachable(role, network, code):
     class Validator(FakeValidator):

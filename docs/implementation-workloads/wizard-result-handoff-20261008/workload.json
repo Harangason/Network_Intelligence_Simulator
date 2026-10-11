@@ -1,0 +1,515 @@
+{
+  "goal_id": "wizard-result-handoff-20261008",
+  "goal_type": "repair",
+  "kind": "repair",
+  "repository": "I:\\PycharmProjects\\My_first_Network_Simulator",
+  "requested_change": "Persistently display existing wizard simulation after finishing, including fresh browser session and reload; no rerun or invented results",
+  "project_scope": "20261008035128534-d555f433",
+  "modify_code": true,
+  "allow_repair": true,
+  "constraints": [
+    "Existing snapshot/job store authoritative",
+    "Project isolation",
+    "No approval or simulation mutation of human project",
+    "Do not bypass validity/outdated gates",
+    "Exact tested production deployment"
+  ],
+  "required_outcomes": [
+    "finish_result_handoff",
+    "persisted_run_restoration",
+    "project_and_history_integrity",
+    "production_delivery"
+  ],
+  "validation_requirements": [
+    "targeted_regression",
+    "complete_release",
+    "production_verification"
+  ],
+  "unresolved_decisions": [],
+  "revision_before": {
+    "frontend/src/features/agent/ui/agent-chat-core.tsx": "1686b31f7fb8c6efde375a6d6cd90505e044c21eb29998c0351adb473c605526",
+    "frontend/src/features/simulation/lib/simulation-result.ts": "015b8c2cc3a18c9b351b23f04a337f91dafc8af7d6b72cecc6f253d975e77422",
+    "frontend/src/features/simulation/lib/simulation-result.test.mjs": "1655eb52e5d8f7403df1a756dc491e20323f1a63b41f1b46cb86f06c42cc4dbe",
+    "frontend/src/features/simulation/ui/model-simulation-runner.tsx": "236bfe00fc9bf57bdd50556bd54ec79137986fe2b22c8fd60693b6a40a14c724",
+    "frontend/src/features/workflow/stage_08_results_analysis/results-workbench.tsx": "7c52e29e3174752c99473c6ceca43e8f13f0d45aeeea76ce551ba8d9795b24ea",
+    "frontend/src/app/studio/results/page.tsx": "85b49023d39ef9593deb1d0bdaf597b5e460a1d801f17ec1072d6d00f8040c6d",
+    "frontend/src/app/studio/simulation/page.tsx": "f4daaed6e70c1dd2a250621822cf06bc76af9815ed57378285fb0ea99ddae45f",
+    "frontend/src/shared/api/api.ts": "d7e2ea1f2c5f2f820648485e08cbf9d166a4432987a19a71d6324818ba847c6b",
+    "frontend/src/features/workflow/lib/workflow-api.ts": "98d3a611062c8bbcb64f72d6a46df7e5b227365214d1316c8705b9ee4586ecb1",
+    "frontend/e2e/wizard.spec.ts": "df830a3256f74140bf03231c5da7f68e872a3b51b3f3c6256307d5bb408e43c6",
+    ".tool-checker/tests/20261007_src_wizard_parameter_return_testfall.md": "e880ee693fbd1c1acd5d3eeef0bd3021f6ac09c494790a822e9076ceeee70a57"
+  },
+  "repair": {
+    "owner": "PROJECT_PRODUCT",
+    "root_cause": "Frontend: dialog completion only closes; simulation restoration consults only sessionStorage; periodic snapshot metadata refresh dropped frozen calculated metrics and configuration",
+    "first_failing_layer": "Frontend result selection and wizard finish navigation",
+    "reproduction": "Finish only calls onFinish/onClose; runner without session key sets restored state but no job, despite persisted snapshots. Source captured in before/",
+    "evidence": [
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-result-handoff-20261008\\diagnosis.json",
+        "sha256": "39e5255bf83c18d9c968a59b9bcf1cd1e7733b25057fbdc869050800dd27b78a"
+      }
+    ],
+    "affected_files": [
+      "frontend/src/features/agent/ui/agent-chat-core.tsx",
+      "frontend/src/features/simulation/lib/simulation-result.ts",
+      "frontend/src/features/simulation/lib/simulation-result.test.mjs",
+      "frontend/src/features/simulation/ui/model-simulation-runner.tsx",
+      "frontend/src/features/workflow/stage_08_results_analysis/results-workbench.tsx",
+      "frontend/src/app/studio/results/page.tsx",
+      "frontend/src/app/studio/simulation/page.tsx",
+      "frontend/src/shared/api/api.ts",
+      "frontend/src/features/workflow/lib/workflow-api.ts",
+      "frontend/e2e/wizard.spec.ts",
+      ".tool-checker/tests/20261007_src_wizard_parameter_return_testfall.md"
+    ],
+    "acceptance_criteria": [
+      "Successful finish with completed snapshot opens exact results",
+      "Simulation displays persisted job without session storage",
+      "Reload preserves snapshot/job and no second simulation",
+      "Missing/cross-project explicit snapshot fails visibly",
+      "Reset clears view without deletion and history remains accessible"
+    ],
+    "targeted_tests": [
+      "Existing real small nine-stage wizard extended after finish",
+      "simulation-result library regression"
+    ],
+    "weaken_assertions_to_pass": false,
+    "status": "VERIFIED"
+  },
+  "implementation_plan": [
+    "Select only project returned snapshots and explicit snapshot query",
+    "Finish navigate using successful server receipt",
+    "Restore full result via existing job and snapshot APIs",
+    "Extend existing small wizard browser assertions",
+    "Full release/deploy and read-only live verification"
+  ],
+  "files_changed": [
+    "frontend/src/features/agent/ui/agent-chat-core.tsx",
+    "frontend/src/features/simulation/lib/simulation-result.ts",
+    "frontend/src/features/simulation/lib/simulation-result.test.mjs",
+    "frontend/src/features/simulation/ui/model-simulation-runner.tsx",
+    "frontend/src/features/workflow/stage_08_results_analysis/results-workbench.tsx",
+    "frontend/src/app/studio/results/page.tsx",
+    "frontend/src/app/studio/simulation/page.tsx",
+    "frontend/src/shared/api/api.ts",
+    "frontend/src/features/workflow/lib/workflow-api.ts",
+    "frontend/e2e/wizard.spec.ts"
+  ],
+  "completion_status": "COMPLETED",
+  "delivery": {
+    "decision": "YES",
+    "authorization": "AGENTS.md standing authorization for verified production delivery",
+    "target": "canonical NIS Docker production localhost:13500",
+    "tested_version": "sha256:7a4e9fc711cf8fcb7407b6599cd9dd0c7c559ae73488678a1de7c811290549ca",
+    "running_version": "sha256:7a4e9fc711cf8fcb7407b6599cd9dd0c7c559ae73488678a1de7c811290549ca",
+    "checks": {
+      "release": {
+        "status": "PASSED",
+        "evidence": [
+          {
+            "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\delivery-488ac00bf2cd\\b106f2e968ff\\receipt.json",
+            "sha256": "c643b8768b9a97d10b4b1383daeede9f4463e95e661bef8f45279c49b0b317a2"
+          }
+        ]
+      },
+      "deployment": {
+        "status": "PASSED",
+        "evidence": [
+          {
+            "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-result-handoff-20261008\\delivery-final.log",
+            "sha256": "4cba57fbebda88fa55af278081a4b57a83073b62546acd6509812437166b7194"
+          },
+          {
+            "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-result-handoff-20261008\\production-verification.json",
+            "sha256": "7e86d77599ccd5b806269bf3aa3ccb62ff3cf147fb28ff5ce44e06f7b86fab86"
+          }
+        ]
+      },
+      "health": {
+        "status": "PASSED",
+        "evidence": [
+          {
+            "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-result-handoff-20261008\\production-verification.json",
+            "sha256": "7e86d77599ccd5b806269bf3aa3ccb62ff3cf147fb28ff5ce44e06f7b86fab86"
+          }
+        ]
+      },
+      "functional": {
+        "status": "PASSED",
+        "evidence": [
+          {
+            "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-result-handoff-20261008\\production-verification.json",
+            "sha256": "7e86d77599ccd5b806269bf3aa3ccb62ff3cf147fb28ff5ce44e06f7b86fab86"
+          },
+          {
+            "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-result-handoff-20261008\\production-ui.json",
+            "sha256": "0c5cf03919eaefaac1b4853712fb1401a0917619492f6d001d3384b923e090f7"
+          },
+          {
+            "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\delivery-488ac00bf2cd\\b106f2e968ff\\browser.json",
+            "sha256": "07f8f24653b1e40fe81cc08fbfe1cd8842ae713f32d9e34b1a8e649c63e59617"
+          }
+        ]
+      }
+    }
+  },
+  "revision_checks": [
+    {
+      "frontend/src/features/agent/ui/agent-chat-core.tsx": "49eeafb927d8261b2f6458bfde6e1dc2aa820c82b19eecdc9d9a6f805d8d1e5b",
+      "frontend/src/features/simulation/lib/simulation-result.ts": "d6a48a3b6906099cd354930c3c7567e33322b379677cd80510ed7b8464e12b31",
+      "frontend/src/features/simulation/lib/simulation-result.test.mjs": "631fcf205e671eb303215616cfefab623ed68778844fa057c370614ee6a816e5",
+      "frontend/src/features/simulation/ui/model-simulation-runner.tsx": "4219a3370ed1c3e79bb099c874a8c53b7da8a9d1b172b1453f86acb3135d4ef0",
+      "frontend/src/features/workflow/stage_08_results_analysis/results-workbench.tsx": "334cfd881d29e6e1b859b691d21cb9d140dddb9d910af8351c83c6c18d679381",
+      "frontend/src/app/studio/results/page.tsx": "a540dd00e7695f736327c20c9ed5a1fd1daac5d900c3681dbbf761eea0dcac2e",
+      "frontend/src/app/studio/simulation/page.tsx": "aca1cb4873b82027bc5cfc95a0905cec9bb3414abbb7c2df2a9a8d66e8014cfa",
+      "frontend/src/shared/api/api.ts": "37f46a3b9c05799be1dfa1bf74704fddeb6612b48b898204cd02443bc3a0badc",
+      "frontend/src/features/workflow/lib/workflow-api.ts": "35985f7bfeacfcb2b348576e875dcc0a5a1c0af0ce3902e4699193ee17437c92",
+      "frontend/e2e/wizard.spec.ts": "edce425b5cbe696e4489c6107625164c158dbe8a3b4f72a076b492a5ac32f401",
+      ".tool-checker/tests/20261007_src_wizard_parameter_return_testfall.md": "e880ee693fbd1c1acd5d3eeef0bd3021f6ac09c494790a822e9076ceeee70a57"
+    },
+    {
+      "frontend/src/features/agent/ui/agent-chat-core.tsx": "cb5aba15384e335ebe4e05a758ce980295f540a31d5e1415774f2b7d9156cc74",
+      "frontend/src/features/simulation/lib/simulation-result.ts": "74d6af6dac39fbab028b83efd587022099eace9f0e9e020945ea559caa87748d",
+      "frontend/src/features/simulation/lib/simulation-result.test.mjs": "f92f00d05b9aaba1ae0808369725e3ee138c94b6c09ddfaa1e87cb19b6232aa0",
+      "frontend/src/features/simulation/ui/model-simulation-runner.tsx": "86f14dab5346a843e365bca67763b1d2316fffa0c5e69719a3c95d07d2b8e560",
+      "frontend/src/features/workflow/stage_08_results_analysis/results-workbench.tsx": "bec00b237447c16e4cd0cb8d7a2d5b09c8205396224ee0b77cdd176f5f62d150",
+      "frontend/src/app/studio/results/page.tsx": "689aae4c6d16417c624806635cc7a58b51a30c95508c8e3e003ae92dbebb5498",
+      "frontend/src/app/studio/simulation/page.tsx": "21a2c6f0d9a6104d8f6b84d184b01346afbb9d949bd40177a6cbb4556f9e79a3",
+      "frontend/src/shared/api/api.ts": "d7e2ea1f2c5f2f820648485e08cbf9d166a4432987a19a71d6324818ba847c6b",
+      "frontend/src/features/workflow/lib/workflow-api.ts": "98d3a611062c8bbcb64f72d6a46df7e5b227365214d1316c8705b9ee4586ecb1",
+      "frontend/e2e/wizard.spec.ts": "df830a3256f74140bf03231c5da7f68e872a3b51b3f3c6256307d5bb408e43c6",
+      ".tool-checker/tests/20261007_src_wizard_parameter_return_testfall.md": "e880ee693fbd1c1acd5d3eeef0bd3021f6ac09c494790a822e9076ceeee70a57"
+    },
+    {
+      "frontend/src/features/agent/ui/agent-chat-core.tsx": "1686b31f7fb8c6efde375a6d6cd90505e044c21eb29998c0351adb473c605526",
+      "frontend/src/features/simulation/lib/simulation-result.ts": "74d6af6dac39fbab028b83efd587022099eace9f0e9e020945ea559caa87748d",
+      "frontend/src/features/simulation/lib/simulation-result.test.mjs": "f92f00d05b9aaba1ae0808369725e3ee138c94b6c09ddfaa1e87cb19b6232aa0",
+      "frontend/src/features/simulation/ui/model-simulation-runner.tsx": "86f14dab5346a843e365bca67763b1d2316fffa0c5e69719a3c95d07d2b8e560",
+      "frontend/src/features/workflow/stage_08_results_analysis/results-workbench.tsx": "bec00b237447c16e4cd0cb8d7a2d5b09c8205396224ee0b77cdd176f5f62d150",
+      "frontend/src/app/studio/results/page.tsx": "689aae4c6d16417c624806635cc7a58b51a30c95508c8e3e003ae92dbebb5498",
+      "frontend/src/app/studio/simulation/page.tsx": "21a2c6f0d9a6104d8f6b84d184b01346afbb9d949bd40177a6cbb4556f9e79a3",
+      "frontend/src/shared/api/api.ts": "d7e2ea1f2c5f2f820648485e08cbf9d166a4432987a19a71d6324818ba847c6b",
+      "frontend/src/features/workflow/lib/workflow-api.ts": "98d3a611062c8bbcb64f72d6a46df7e5b227365214d1316c8705b9ee4586ecb1",
+      "frontend/e2e/wizard.spec.ts": "df830a3256f74140bf03231c5da7f68e872a3b51b3f3c6256307d5bb408e43c6",
+      ".tool-checker/tests/20261007_src_wizard_parameter_return_testfall.md": "e880ee693fbd1c1acd5d3eeef0bd3021f6ac09c494790a822e9076ceeee70a57"
+    },
+    {
+      "frontend/src/features/agent/ui/agent-chat-core.tsx": "1686b31f7fb8c6efde375a6d6cd90505e044c21eb29998c0351adb473c605526",
+      "frontend/src/features/simulation/lib/simulation-result.ts": "74d6af6dac39fbab028b83efd587022099eace9f0e9e020945ea559caa87748d",
+      "frontend/src/features/simulation/lib/simulation-result.test.mjs": "f92f00d05b9aaba1ae0808369725e3ee138c94b6c09ddfaa1e87cb19b6232aa0",
+      "frontend/src/features/simulation/ui/model-simulation-runner.tsx": "86f14dab5346a843e365bca67763b1d2316fffa0c5e69719a3c95d07d2b8e560",
+      "frontend/src/features/workflow/stage_08_results_analysis/results-workbench.tsx": "bec00b237447c16e4cd0cb8d7a2d5b09c8205396224ee0b77cdd176f5f62d150",
+      "frontend/src/app/studio/results/page.tsx": "85b49023d39ef9593deb1d0bdaf597b5e460a1d801f17ec1072d6d00f8040c6d",
+      "frontend/src/app/studio/simulation/page.tsx": "f4daaed6e70c1dd2a250621822cf06bc76af9815ed57378285fb0ea99ddae45f",
+      "frontend/src/shared/api/api.ts": "d7e2ea1f2c5f2f820648485e08cbf9d166a4432987a19a71d6324818ba847c6b",
+      "frontend/src/features/workflow/lib/workflow-api.ts": "98d3a611062c8bbcb64f72d6a46df7e5b227365214d1316c8705b9ee4586ecb1",
+      "frontend/e2e/wizard.spec.ts": "df830a3256f74140bf03231c5da7f68e872a3b51b3f3c6256307d5bb408e43c6",
+      ".tool-checker/tests/20261007_src_wizard_parameter_return_testfall.md": "e880ee693fbd1c1acd5d3eeef0bd3021f6ac09c494790a822e9076ceeee70a57"
+    },
+    {
+      "frontend/src/features/agent/ui/agent-chat-core.tsx": "1686b31f7fb8c6efde375a6d6cd90505e044c21eb29998c0351adb473c605526",
+      "frontend/src/features/simulation/lib/simulation-result.ts": "74d6af6dac39fbab028b83efd587022099eace9f0e9e020945ea559caa87748d",
+      "frontend/src/features/simulation/lib/simulation-result.test.mjs": "f92f00d05b9aaba1ae0808369725e3ee138c94b6c09ddfaa1e87cb19b6232aa0",
+      "frontend/src/features/simulation/ui/model-simulation-runner.tsx": "236bfe00fc9bf57bdd50556bd54ec79137986fe2b22c8fd60693b6a40a14c724",
+      "frontend/src/features/workflow/stage_08_results_analysis/results-workbench.tsx": "bec00b237447c16e4cd0cb8d7a2d5b09c8205396224ee0b77cdd176f5f62d150",
+      "frontend/src/app/studio/results/page.tsx": "85b49023d39ef9593deb1d0bdaf597b5e460a1d801f17ec1072d6d00f8040c6d",
+      "frontend/src/app/studio/simulation/page.tsx": "f4daaed6e70c1dd2a250621822cf06bc76af9815ed57378285fb0ea99ddae45f",
+      "frontend/src/shared/api/api.ts": "d7e2ea1f2c5f2f820648485e08cbf9d166a4432987a19a71d6324818ba847c6b",
+      "frontend/src/features/workflow/lib/workflow-api.ts": "98d3a611062c8bbcb64f72d6a46df7e5b227365214d1316c8705b9ee4586ecb1",
+      "frontend/e2e/wizard.spec.ts": "df830a3256f74140bf03231c5da7f68e872a3b51b3f3c6256307d5bb408e43c6",
+      ".tool-checker/tests/20261007_src_wizard_parameter_return_testfall.md": "e880ee693fbd1c1acd5d3eeef0bd3021f6ac09c494790a822e9076ceeee70a57"
+    }
+  ],
+  "before": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-result-handoff-20261008\\before\\frontend\\src\\features\\agent\\ui\\agent-chat-core.tsx",
+      "sha256": "49eeafb927d8261b2f6458bfde6e1dc2aa820c82b19eecdc9d9a6f805d8d1e5b"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-result-handoff-20261008\\before\\frontend\\src\\features\\simulation\\lib\\simulation-result.ts",
+      "sha256": "d6a48a3b6906099cd354930c3c7567e33322b379677cd80510ed7b8464e12b31"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-result-handoff-20261008\\before\\frontend\\src\\features\\simulation\\lib\\simulation-result.test.mjs",
+      "sha256": "631fcf205e671eb303215616cfefab623ed68778844fa057c370614ee6a816e5"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-result-handoff-20261008\\before\\frontend\\src\\features\\simulation\\ui\\model-simulation-runner.tsx",
+      "sha256": "4219a3370ed1c3e79bb099c874a8c53b7da8a9d1b172b1453f86acb3135d4ef0"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-result-handoff-20261008\\before\\frontend\\src\\features\\workflow\\stage_08_results_analysis\\results-workbench.tsx",
+      "sha256": "334cfd881d29e6e1b859b691d21cb9d140dddb9d910af8351c83c6c18d679381"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-result-handoff-20261008\\before\\frontend\\src\\app\\studio\\results\\page.tsx",
+      "sha256": "a540dd00e7695f736327c20c9ed5a1fd1daac5d900c3681dbbf761eea0dcac2e"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-result-handoff-20261008\\before\\frontend\\src\\app\\studio\\simulation\\page.tsx",
+      "sha256": "aca1cb4873b82027bc5cfc95a0905cec9bb3414abbb7c2df2a9a8d66e8014cfa"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-result-handoff-20261008\\before\\frontend\\src\\shared\\api\\api.ts",
+      "sha256": "37f46a3b9c05799be1dfa1bf74704fddeb6612b48b898204cd02443bc3a0badc"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-result-handoff-20261008\\before\\frontend\\src\\features\\workflow\\lib\\workflow-api.ts",
+      "sha256": "35985f7bfeacfcb2b348576e875dcc0a5a1c0af0ce3902e4699193ee17437c92"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-result-handoff-20261008\\before\\frontend\\e2e\\wizard.spec.ts",
+      "sha256": "edce425b5cbe696e4489c6107625164c158dbe8a3b4f72a076b492a5ac32f401"
+    }
+  ],
+  "after": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-result-handoff-20261008\\after\\frontend\\src\\features\\agent\\ui\\agent-chat-core.tsx",
+      "sha256": "1686b31f7fb8c6efde375a6d6cd90505e044c21eb29998c0351adb473c605526"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-result-handoff-20261008\\after\\frontend\\src\\features\\simulation\\lib\\simulation-result.ts",
+      "sha256": "015b8c2cc3a18c9b351b23f04a337f91dafc8af7d6b72cecc6f253d975e77422"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-result-handoff-20261008\\after\\frontend\\src\\features\\simulation\\lib\\simulation-result.test.mjs",
+      "sha256": "1655eb52e5d8f7403df1a756dc491e20323f1a63b41f1b46cb86f06c42cc4dbe"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-result-handoff-20261008\\after\\frontend\\src\\features\\simulation\\ui\\model-simulation-runner.tsx",
+      "sha256": "236bfe00fc9bf57bdd50556bd54ec79137986fe2b22c8fd60693b6a40a14c724"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-result-handoff-20261008\\after\\frontend\\src\\features\\workflow\\stage_08_results_analysis\\results-workbench.tsx",
+      "sha256": "7c52e29e3174752c99473c6ceca43e8f13f0d45aeeea76ce551ba8d9795b24ea"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-result-handoff-20261008\\after\\frontend\\src\\app\\studio\\results\\page.tsx",
+      "sha256": "85b49023d39ef9593deb1d0bdaf597b5e460a1d801f17ec1072d6d00f8040c6d"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-result-handoff-20261008\\after\\frontend\\src\\app\\studio\\simulation\\page.tsx",
+      "sha256": "f4daaed6e70c1dd2a250621822cf06bc76af9815ed57378285fb0ea99ddae45f"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-result-handoff-20261008\\after\\frontend\\src\\shared\\api\\api.ts",
+      "sha256": "d7e2ea1f2c5f2f820648485e08cbf9d166a4432987a19a71d6324818ba847c6b"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-result-handoff-20261008\\after\\frontend\\src\\features\\workflow\\lib\\workflow-api.ts",
+      "sha256": "98d3a611062c8bbcb64f72d6a46df7e5b227365214d1316c8705b9ee4586ecb1"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-result-handoff-20261008\\after\\frontend\\e2e\\wizard.spec.ts",
+      "sha256": "df830a3256f74140bf03231c5da7f68e872a3b51b3f3c6256307d5bb408e43c6"
+    }
+  ],
+  "diff": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-result-handoff-20261008\\change.diff",
+      "sha256": "baafa510b4fb23a324f1757e08a3d2c0d646681d45acfb21e894a83b5030c16b"
+    }
+  ],
+  "files_inspected": [
+    "frontend/src/features/agent/ui/agent-chat-core.tsx",
+    "frontend/src/features/simulation/lib/simulation-result.ts",
+    "frontend/src/features/simulation/lib/simulation-result.test.mjs",
+    "frontend/src/features/simulation/ui/model-simulation-runner.tsx",
+    "frontend/src/features/workflow/stage_08_results_analysis/results-workbench.tsx",
+    "frontend/src/app/studio/results/page.tsx",
+    "frontend/src/app/studio/simulation/page.tsx",
+    "frontend/src/shared/api/api.ts",
+    "frontend/src/features/workflow/lib/workflow-api.ts",
+    "frontend/e2e/wizard.spec.ts",
+    ".tool-checker/tests/20261007_src_wizard_parameter_return_testfall.md"
+  ],
+  "context": {
+    "contracts": [
+      "WIZARD_EXECUTION_CONTRACT",
+      "WIZARD_RELEASE_GATE",
+      "COMMUNICATION_DESIGN_CONTRACT",
+      "NIS_E2E_SEQUENCE_DIAGRAM_SIMULATION_TRACE_TARGET"
+    ],
+    "authority": "Existing simulation snapshots/jobs only; no new store or simulation start during restore",
+    "campaign_state": "REPAIR_1_ACTIVE; independent campaign untouched",
+    "local_models": "Personal roles null; deterministic implementation, no local model inference needed"
+  },
+  "tests": {
+    "frontend": {
+      "passed": 592,
+      "evidence": {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-result-handoff-20261008\\frontend-tests.log",
+        "sha256": "228ccce76f25d2863c74871dcc2994bf06d658ee0a3ebd2adbcd7206d016fc4f"
+      }
+    },
+    "targeted_browser": {
+      "passed": 1,
+      "duration": "1.2m",
+      "scope": "Existing actual small nine-stage wizard + results/trace restoration, reload, fresh session, reset, project isolation",
+      "evidence": {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-result-handoff-20261008\\targeted-browser.json",
+        "sha256": "ec90a4e3770fc92963d0342490faf8a41f304613e84cb417734d0f22283a9800"
+      }
+    },
+    "frontend_final": {
+      "passed": 593,
+      "evidence": {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-result-handoff-20261008\\frontend-tests-final.log",
+        "sha256": "0db8927f6d4726954b46ba2e8b3e10974e72938aff962e8b4a1a4588e4ad788c"
+      }
+    },
+    "final_release": {
+      "source_sha256": "bd8d6bd227705edb6aaadf00aafe6cb99e51a3cddb007a459125015580018f15",
+      "verification_sha256": "90faff82bfef630980bfc17948b0cb5006bfee3ed0060f8f7c9e6b44ac766cfe",
+      "backend": {
+        "passed": 21726,
+        "skipped": 2,
+        "warnings": 1,
+        "subtests_passed": 56,
+        "duration": "1492.74s (0:24:52)"
+      },
+      "frontend_passed": 593,
+      "browser": {
+        "startTime": "2026-10-08T06:44:05.311Z",
+        "duration": 3079269.553,
+        "expected": 96,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "receipt": {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\delivery-488ac00bf2cd\\b106f2e968ff\\receipt.json",
+        "sha256": "c643b8768b9a97d10b4b1383daeede9f4463e95e661bef8f45279c49b0b317a2"
+      },
+      "small_http": {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\delivery-488ac00bf2cd\\b106f2e968ff\\small-http.json",
+        "sha256": "ea68600e390a4f17290206d101d9b2601723601b1021b8b585e75e2b830201df"
+      },
+      "large_http": {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\delivery-488ac00bf2cd\\b106f2e968ff\\large-http.json",
+        "sha256": "9330504683c7483a511649a1dcebba76c666a5c38092b1844b042a4aa4ed9021"
+      },
+      "result_image": {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-result-handoff-20261008\\final-results.png",
+        "sha256": "8fd15087af0cb501f8f3d1262e6aa53542abffecb00ddb5974f84023ac55be4a"
+      }
+    }
+  },
+  "validations": {
+    "targeted_regression": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\delivery-488ac00bf2cd\\b106f2e968ff\\browser.json",
+          "sha256": "07f8f24653b1e40fe81cc08fbfe1cd8842ae713f32d9e34b1a8e649c63e59617"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\delivery-488ac00bf2cd\\b106f2e968ff\\frontend-tests.log",
+          "sha256": "ffe78cd93b1cd0f4ee56f66b59451252c4e3cbd7839f949853d4dabd3927b851"
+        }
+      ]
+    },
+    "complete_release": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\delivery-488ac00bf2cd\\b106f2e968ff\\receipt.json",
+          "sha256": "c643b8768b9a97d10b4b1383daeede9f4463e95e661bef8f45279c49b0b317a2"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\delivery-488ac00bf2cd\\b106f2e968ff\\browser.json",
+          "sha256": "07f8f24653b1e40fe81cc08fbfe1cd8842ae713f32d9e34b1a8e649c63e59617"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\delivery-488ac00bf2cd\\b106f2e968ff\\backend-tests.log",
+          "sha256": "ec56453eb4d0bd52c152f02f10bba5e9547217203d11effd755554befa026632"
+        }
+      ]
+    },
+    "production_verification": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-result-handoff-20261008\\production-verification.json",
+          "sha256": "7e86d77599ccd5b806269bf3aa3ccb62ff3cf147fb28ff5ce44e06f7b86fab86"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-result-handoff-20261008\\production-ui.json",
+          "sha256": "0c5cf03919eaefaac1b4853712fb1401a0917619492f6d001d3384b923e090f7"
+        }
+      ]
+    }
+  },
+  "outcomes": {
+    "finish_result_handoff": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\delivery-488ac00bf2cd\\b106f2e968ff\\browser.json",
+          "sha256": "07f8f24653b1e40fe81cc08fbfe1cd8842ae713f32d9e34b1a8e649c63e59617"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\delivery-488ac00bf2cd\\b106f2e968ff\\frontend-tests.log",
+          "sha256": "ffe78cd93b1cd0f4ee56f66b59451252c4e3cbd7839f949853d4dabd3927b851"
+        }
+      ]
+    },
+    "persisted_run_restoration": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\delivery-488ac00bf2cd\\b106f2e968ff\\browser.json",
+          "sha256": "07f8f24653b1e40fe81cc08fbfe1cd8842ae713f32d9e34b1a8e649c63e59617"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\delivery-488ac00bf2cd\\b106f2e968ff\\frontend-tests.log",
+          "sha256": "ffe78cd93b1cd0f4ee56f66b59451252c4e3cbd7839f949853d4dabd3927b851"
+        }
+      ]
+    },
+    "project_and_history_integrity": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\delivery-488ac00bf2cd\\b106f2e968ff\\browser.json",
+          "sha256": "07f8f24653b1e40fe81cc08fbfe1cd8842ae713f32d9e34b1a8e649c63e59617"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\delivery-488ac00bf2cd\\b106f2e968ff\\frontend-tests.log",
+          "sha256": "ffe78cd93b1cd0f4ee56f66b59451252c4e3cbd7839f949853d4dabd3927b851"
+        }
+      ]
+    },
+    "production_delivery": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\delivery-488ac00bf2cd\\b106f2e968ff\\receipt.json",
+          "sha256": "c643b8768b9a97d10b4b1383daeede9f4463e95e661bef8f45279c49b0b317a2"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-result-handoff-20261008\\production-verification.json",
+          "sha256": "7e86d77599ccd5b806269bf3aa3ccb62ff3cf147fb28ff5ce44e06f7b86fab86"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-result-handoff-20261008\\production-ui.json",
+          "sha256": "0c5cf03919eaefaac1b4853712fb1401a0917619492f6d001d3384b923e090f7"
+        }
+      ]
+    }
+  },
+  "verification_history": [
+    {
+      "receipt": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\delivery-598e574496cb\\54a8f70a0299\\receipt.json",
+      "status": "FAIL",
+      "reason": "Deliberately stopped owned pytest to correct historical-snapshot label before delivery; gate cleanup completed; no deployment"
+    },
+    {
+      "receipt": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\delivery-513330a9c21a\\765d253c25c4\\receipt.json",
+      "status": "FAIL",
+      "reason": "Deliberately stopped own pytest to preserve cached snapshot prediction/configuration through periodic metadata refresh. No deployment; normal test cleanup completed."
+    }
+  ],
+  "remaining_findings": []
+}

@@ -1,0 +1,87 @@
+{
+  "goal_id": "studio-toolbar-trace-defaults-20261009",
+  "kind": "repair",
+  "modify_code": true,
+  "allow_repair": true,
+  "repository": "I:\\PycharmProjects\\My_first_Network_Simulator",
+  "project_scope": "20261009072206008-4bb505f1",
+  "required_outcomes": [
+    "responsive_toolbar",
+    "native_trace_defaults",
+    "canonical_blf_dbc",
+    "light_explanation",
+    "production_delivery"
+  ],
+  "validation_requirements": [
+    "targeted_regression",
+    "typecheck",
+    "release_gate",
+    "live_verification"
+  ],
+  "revision_before": {
+    "backend/nis/simulation/model_based_simulation.py": "ed9e838c2e6a3a30227f237438ec085c2e9cfe52493d6ca7624ddad4e0a6eed5",
+    "backend/nis/communication/technologies/can/formats/can_format_writers.py": "a916d4b9bd6c26b22b2f66f3c641819133ee1bbed954a840160bd9d802fd93ca",
+    "backend/nis/simulation/communication_simulator.py": "0350b542289d93fe9bc24c96abb2f2a9dbbc4a572660fdb1026dae4a76f8c4b5"
+  },
+  "files_changed": [
+    "frontend/src/features/network/ui/network-editor.tsx",
+    "frontend/src/app/globals.css",
+    "frontend/src/features/simulation/lib/simulation-formats.ts",
+    "frontend/src/features/simulation/lib/simulation-formats.test.mjs",
+    "frontend/src/features/simulation/ui/model-simulation-runner.tsx",
+    "backend/nis/simulation/communication_simulator.py",
+    "backend/nis/communication/technologies/can/formats/can_format_writers.py",
+    "backend/nis/communication/technologies/can/profile.json",
+    "backend/nis/communication/technologies/can_fd/profile.json",
+    "backend/nis/communication/technologies/ethernet/profile.json",
+    "backend/requirements.txt",
+    "backend/pyproject.toml",
+    "backend/tests/test_project_can_exports.py",
+    "frontend/e2e/studio-export-controls.spec.ts",
+    "backend/nis/simulation/model_based_simulation.py"
+  ],
+  "unresolved_decisions": [],
+  "repair": {
+    "root_cause": {
+      "owner": "PROJECT_PRODUCT",
+      "toolbar": "Flex space-between and right-justified wrapping mixes add/search/navigation/edit actions across uneven lines",
+      "defaults": "ModelSimulationRunner initializes universal JSONL/CSV unconditionally",
+      "exports": "Canonical model-based simulation calls sample restbus CAN writer: actual event IDs/payloads/signals are not passed to BLF/DBC. Ethernet already serializes actual events correctly.",
+      "light_warning": "Old hardware interface 2284b9f0-fb59-408b-9cb4-dee06377f353 on Karosserie_Komfort_06-S01 is disconnected, still primary message binding; active additional binding d95fe9d2-c33c-475d-b125-f994a0587838 on Komfort_02 CAP-S02 has a real edge. Two checks: port and dependent message. No project mutation requested."
+    },
+    "owner": "PROJECT_PRODUCT",
+    "first_failing_layer": "Toolbar layout, simulation format initialization and sample CAN native adapter",
+    "reproduction": "User browser screenshots and source guards; canonical project APIs confirm old and active Licht bindings",
+    "evidence": [
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\studio-toolbar-trace-defaults-20261009\\diagnosis.json",
+        "sha256": "956f194cb2ca3cec13ed37c12b145f495121b34ddf0155b553602e654f0adb04"
+      }
+    ],
+    "affected_files": [
+      "frontend/src/features/network/ui/network-editor.tsx",
+      "frontend/src/app/globals.css",
+      "frontend/src/features/simulation/lib/simulation-formats.ts",
+      "frontend/src/features/simulation/lib/simulation-formats.test.mjs",
+      "frontend/src/features/simulation/ui/model-simulation-runner.tsx",
+      "backend/nis/simulation/communication_simulator.py",
+      "backend/nis/communication/technologies/can/formats/can_format_writers.py",
+      "backend/nis/communication/technologies/can/profile.json",
+      "backend/nis/communication/technologies/can_fd/profile.json",
+      "backend/nis/communication/technologies/ethernet/profile.json",
+      "backend/requirements.txt",
+      "backend/pyproject.toml",
+      "backend/tests/test_project_can_exports.py",
+      "frontend/e2e/studio-export-controls.spec.ts"
+    ],
+    "acceptance_criteria": "Clear responsive toolbar; native project defaults; real CAN events and exact canonical encodings in valid DBC; explain warnings without changing project; tested image deployed",
+    "targeted_tests": "BLFReader and cantools decode roundtrip, rejection of invalid encoding/ID; responsive browser controls and format selection",
+    "weaken_assertions_to_pass": false
+  },
+  "delivery": {
+    "decision": "YES",
+    "authorization": "User AGENTS.md standing authorization for verified production delivery",
+    "target": "Canonical NIS 13500/15050"
+  },
+  "completion_status": "IMPLEMENTING"
+}

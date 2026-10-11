@@ -1,0 +1,2160 @@
+{
+  "id": "xcp",
+  "label": "XCP",
+  "domain": "generic_networking",
+  "layer": "APPLICATION",
+  "transport_unit": "SERVICE_REQUEST",
+  "payload_element_types": [
+    "COMMAND",
+    "DATA_OBJECT"
+  ],
+  "hardware_interface": "xcp_actual_lower_transport",
+  "hardware_capability_aliases": [
+    "can_or_ethernet_interface"
+  ],
+  "default_stack": [
+    "xcp"
+  ],
+  "stack_variants": [
+    [
+      "xcp"
+    ],
+    [
+      "can",
+      "xcp"
+    ]
+  ],
+  "default_bitrate": null,
+  "rate_model": {
+    "type": "XCP_ACTUAL_LOWER_TRANSPORT",
+    "fields": []
+  },
+  "local_timing_schema": [],
+  "parameter_schema": {
+    "payload_bytes": {
+      "label": "Payload",
+      "category": "physical",
+      "scope": "message",
+      "type": "number",
+      "description": "Actual XCP payload within negotiated CTO/DTO and qualifiedlowertransportbudget; not CAN/Ethernetdefault65535.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "UNKNOWN",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_XCP.pdf",
+      "source_revision": "OriginalAUTOSARCPR25-11XCP82p selected7.1-7.4/10.2.1/10.2.8: nativeCAN/FlexRay/TCP/UDPbindings, noPHYrate, MAX_CTO8..255/MAX_DTO8..65535no default, DAQ/ODT/event bounds, timeunit and0noncyclic, ODTconsistency/DAQdefault. Configuration scope not full ASAMcodec or commissionedA2L.",
+      "integer": true
+    },
+    "cycle_ms": {
+      "label": "Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "Standardperiode fuer zyklische Nachrichten.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "minimum_cycle_time_ms": {
+      "label": "Minimum Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "deadline_ms": {
+      "label": "Deadline",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "timeout_ms": {
+      "label": "Timeout",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_latency_ms": {
+      "label": "Maximum Latency",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "jitter_ms": {
+      "label": "Jitter Budget",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "freshness_ms": {
+      "label": "Data Freshness",
+      "category": "timing",
+      "scope": "signal",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "source_processing_delay_ms": {
+      "label": "Source Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_processing_delay_ms": {
+      "label": "Target Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "propagation_delay_ms": {
+      "label": "Propagation",
+      "category": "timing",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.01,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_bus_load_percent": {
+      "label": "Ziel-Buslast",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "Zielwert fuer die aus Routing, Payload, Zyklus und Bitrate berechnete Buslast.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "peak_factor": {
+      "label": "Peak Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.15,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_factor": {
+      "label": "Burst Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.5,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_window_ms": {
+      "label": "Burst Window",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "warning_threshold": {
+      "label": "Load Warning",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "critical_threshold": {
+      "label": "Load Critical",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 75,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "overload_threshold": {
+      "label": "Load Overload",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 90,
+      "unit": "%",
+      "min": 1,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "queue_size": {
+      "label": "Queue Size",
+      "category": "qos",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 256,
+      "unit": "Frames",
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "queue_policy": {
+      "label": "Queue Policy",
+      "category": "qos",
+      "scope": "network",
+      "type": "select",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": "FIFO",
+      "options": [
+        "FIFO",
+        "PRIORITY",
+        "STRICT_PRIORITY",
+        "WEIGHTED_PRIORITY",
+        "WRR",
+        "ROUND_ROBIN",
+        "TIME_TRIGGERED",
+        "TAS",
+        "CBS",
+        "CUSTOM"
+      ],
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "qos_priority": {
+      "label": "Default Priority",
+      "category": "qos",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 3,
+      "min": 0,
+      "max": 7,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "traffic_class": {
+      "label": "Traffic Class",
+      "category": "qos",
+      "scope": "route",
+      "type": "select",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": "BEST_EFFORT",
+      "options": [
+        "BEST_EFFORT",
+        "CONTROL",
+        "REALTIME",
+        "SAFETY_CRITICAL"
+      ],
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "packet_loss_probability": {
+      "label": "Packet Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "frame_loss_probability": {
+      "label": "Frame Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "bit_error_rate": {
+      "label": "Bit Error Rate",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "corruption_probability": {
+      "label": "Corruption",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duplicate_probability": {
+      "label": "Duplication",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "reordering_probability": {
+      "label": "Reordering",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "required_reliability": {
+      "label": "Required Reliability",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.999,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_offset_ms": {
+      "label": "Clock Offset",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_drift_ppm": {
+      "label": "Clock Drift",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 20,
+      "unit": "ppm",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_precision_ms": {
+      "label": "Sync Precision",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_interval_ms": {
+      "label": "Sync Interval",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1000,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_sync_error_ms": {
+      "label": "Maximum Sync Error",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_delay_ms": {
+      "label": "Gateway Processing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.2,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_queue_delay_ms": {
+      "label": "Gateway Queueing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "protocol_conversion_delay_ms": {
+      "label": "Protocol Conversion",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duration_s": {
+      "label": "Simulation Duration",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 1,
+      "unit": "s",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "seed": {
+      "label": "Random Seed",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 42,
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "max_events": {
+      "label": "Maximum Events",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 100000,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "dropout_probability": {
+      "label": "Failure Injection Dropout",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "xc_edition": {
+      "type": "select",
+      "description": "Actual qualified normative/device implementation edition.",
+      "source": "https://www.asam.net/standards/detail/mcd-1-xcp/",
+      "source_revision": "OriginalASAMMCD1XCP1.5.0Nov2017overview read: busindependent measurement/calibration, actualA2L/addresses/units, CAN/FlexRay/EthernetTCPUDP/SCI/SPI/USBdistinct transports. Full member protocol specification not claimed.",
+      "options": [
+        "AUTOSAR_R25_11",
+        "ASAM1_5_REGISTERED",
+        "REGISTERED_ACTUAL"
+      ],
+      "label": "xc edition",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "xc_transport": {
+      "type": "select",
+      "description": "Actual commissioned lower transport; never default CAN or Ethernet.",
+      "source": "https://www.asam.net/standards/detail/mcd-1-xcp/",
+      "source_revision": "OriginalASAMMCD1XCP1.5.0Nov2017overview read: busindependent measurement/calibration, actualA2L/addresses/units, CAN/FlexRay/EthernetTCPUDP/SCI/SPI/USBdistinct transports. Full member protocol specification not claimed.",
+      "options": [
+        "CAN",
+        "CAN_FD_REGISTERED",
+        "FLEXRAY",
+        "UDP_IP",
+        "TCP_IP",
+        "SCI",
+        "SPI",
+        "USB",
+        "REGISTERED_ACTUAL"
+      ],
+      "label": "xc transport",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "xc_packet_kind": {
+      "type": "select",
+      "description": "Actual CTO commandresponse versus synchronous DTOdata.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_XCP.pdf",
+      "source_revision": "OriginalAUTOSARCPR25-11XCP82p selected7.1-7.4/10.2.1/10.2.8: nativeCAN/FlexRay/TCP/UDPbindings, noPHYrate, MAX_CTO8..255/MAX_DTO8..65535no default, DAQ/ODT/event bounds, timeunit and0noncyclic, ODTconsistency/DAQdefault. Configuration scope not full ASAMcodec or commissionedA2L.",
+      "options": [
+        "CTO",
+        "DTO"
+      ],
+      "label": "xc packet kind",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "xc_daq_config": {
+      "type": "select",
+      "description": "Actual static or dynamicDAQownership.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_XCP.pdf",
+      "source_revision": "OriginalAUTOSARCPR25-11XCP82p selected7.1-7.4/10.2.1/10.2.8: nativeCAN/FlexRay/TCP/UDPbindings, noPHYrate, MAX_CTO8..255/MAX_DTO8..65535no default, DAQ/ODT/event bounds, timeunit and0noncyclic, ODTconsistency/DAQdefault. Configuration scope not full ASAMcodec or commissionedA2L.",
+      "options": [
+        "STATIC",
+        "DYNAMIC"
+      ],
+      "label": "xc daq config",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "xc_consistency": {
+      "type": "select",
+      "description": "Actual independent consistency scope.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_XCP.pdf",
+      "source_revision": "OriginalAUTOSARCPR25-11XCP82p selected7.1-7.4/10.2.1/10.2.8: nativeCAN/FlexRay/TCP/UDPbindings, noPHYrate, MAX_CTO8..255/MAX_DTO8..65535no default, DAQ/ODT/event bounds, timeunit and0noncyclic, ODTconsistency/DAQdefault. Configuration scope not full ASAMcodec or commissionedA2L.",
+      "options": [
+        "ODT",
+        "DAQ",
+        "EVENT"
+      ],
+      "label": "xc consistency",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "xc_edition": "AUTOSAR_R25_11"
+          },
+          "value": "ODT",
+          "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_XCP.pdf",
+          "source_revision": "OriginalAUTOSARCPR25-11XCP82p selected7.1-7.4/10.2.1/10.2.8: nativeCAN/FlexRay/TCP/UDPbindings, noPHYrate, MAX_CTO8..255/MAX_DTO8..65535no default, DAQ/ODT/event bounds, timeunit and0noncyclic, ODTconsistency/DAQdefault. Configuration scope not full ASAMcodec or commissionedA2L."
+        }
+      ]
+    },
+    "xc_event_type": {
+      "type": "select",
+      "description": "Actual event channel DAQ/STIMcapability.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_XCP.pdf",
+      "source_revision": "OriginalAUTOSARCPR25-11XCP82p selected7.1-7.4/10.2.1/10.2.8: nativeCAN/FlexRay/TCP/UDPbindings, noPHYrate, MAX_CTO8..255/MAX_DTO8..65535no default, DAQ/ODT/event bounds, timeunit and0noncyclic, ODTconsistency/DAQdefault. Configuration scope not full ASAMcodec or commissionedA2L.",
+      "options": [
+        "DAQ",
+        "STIM",
+        "DAQ_STIM"
+      ],
+      "label": "xc event type",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "xc_edition": "AUTOSAR_R25_11"
+          },
+          "value": "DAQ",
+          "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_XCP.pdf",
+          "source_revision": "OriginalAUTOSARCPR25-11XCP82p selected7.1-7.4/10.2.1/10.2.8: nativeCAN/FlexRay/TCP/UDPbindings, noPHYrate, MAX_CTO8..255/MAX_DTO8..65535no default, DAQ/ODT/event bounds, timeunit and0noncyclic, ODTconsistency/DAQdefault. Configuration scope not full ASAMcodec or commissionedA2L."
+        }
+      ]
+    },
+    "xc_outcome": {
+      "type": "select",
+      "description": "Actual independent consumingfunction result.",
+      "source": "https://www.asam.net/standards/detail/mcd-1-xcp/",
+      "source_revision": "OriginalASAMMCD1XCP1.5.0Nov2017overview read: busindependent measurement/calibration, actualA2L/addresses/units, CAN/FlexRay/EthernetTCPUDP/SCI/SPI/USBdistinct transports. Full member protocol specification not claimed.",
+      "options": [
+        "ACCEPTED",
+        "PACKET_ONLY",
+        "ERROR",
+        "UNKNOWN"
+      ],
+      "label": "xc outcome",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "xc_event_unit": {
+      "type": "select",
+      "description": "Actual event time unit ignored when event_cycle0, not inherited CANcycle.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_XCP.pdf",
+      "source_revision": "OriginalAUTOSARCPR25-11XCP82p selected7.1-7.4/10.2.1/10.2.8: nativeCAN/FlexRay/TCP/UDPbindings, noPHYrate, MAX_CTO8..255/MAX_DTO8..65535no default, DAQ/ODT/event bounds, timeunit and0noncyclic, ODTconsistency/DAQdefault. Configuration scope not full ASAMcodec or commissionedA2L.",
+      "options": [
+        "1PS",
+        "10PS",
+        "100PS",
+        "1NS",
+        "10NS",
+        "100NS",
+        "1US",
+        "10US",
+        "100US",
+        "1MS",
+        "10MS",
+        "100MS",
+        "1S"
+      ],
+      "label": "xc event unit",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "xc_max_cto": {
+      "type": "number",
+      "description": "Actual announced/configured MAX_CTO; no standardchosen8 hardware capability.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_XCP.pdf",
+      "source_revision": "OriginalAUTOSARCPR25-11XCP82p selected7.1-7.4/10.2.1/10.2.8: nativeCAN/FlexRay/TCP/UDPbindings, noPHYrate, MAX_CTO8..255/MAX_DTO8..65535no default, DAQ/ODT/event bounds, timeunit and0noncyclic, ODTconsistency/DAQdefault. Configuration scope not full ASAMcodec or commissionedA2L.",
+      "min": 8,
+      "max": 255,
+      "unit": "byte",
+      "integer": true,
+      "label": "xc max cto",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "xc_max_dto": {
+      "type": "number",
+      "description": "Actual announced/configured MAX_DTO; not application65535payload.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_XCP.pdf",
+      "source_revision": "OriginalAUTOSARCPR25-11XCP82p selected7.1-7.4/10.2.1/10.2.8: nativeCAN/FlexRay/TCP/UDPbindings, noPHYrate, MAX_CTO8..255/MAX_DTO8..65535no default, DAQ/ODT/event bounds, timeunit and0noncyclic, ODTconsistency/DAQdefault. Configuration scope not full ASAMcodec or commissionedA2L.",
+      "min": 8,
+      "max": 65535,
+      "unit": "byte",
+      "integer": true,
+      "label": "xc max dto",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "xc_min_daq": {
+      "type": "number",
+      "description": "Actual predefined readonlyDAQlistcount.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_XCP.pdf",
+      "source_revision": "OriginalAUTOSARCPR25-11XCP82p selected7.1-7.4/10.2.1/10.2.8: nativeCAN/FlexRay/TCP/UDPbindings, noPHYrate, MAX_CTO8..255/MAX_DTO8..65535no default, DAQ/ODT/event bounds, timeunit and0noncyclic, ODTconsistency/DAQdefault. Configuration scope not full ASAMcodec or commissionedA2L.",
+      "min": 0,
+      "max": 255,
+      "integer": true,
+      "label": "xc min daq",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "xc_odt_count": {
+      "type": "number",
+      "description": "Actual dynamicDAQODTcount.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_XCP.pdf",
+      "source_revision": "OriginalAUTOSARCPR25-11XCP82p selected7.1-7.4/10.2.1/10.2.8: nativeCAN/FlexRay/TCP/UDPbindings, noPHYrate, MAX_CTO8..255/MAX_DTO8..65535no default, DAQ/ODT/event bounds, timeunit and0noncyclic, ODTconsistency/DAQdefault. Configuration scope not full ASAMcodec or commissionedA2L.",
+      "min": 0,
+      "max": 252,
+      "integer": true,
+      "label": "xc odt count",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "xc_odt_entries": {
+      "type": "number",
+      "description": "Actual dynamicDAQ ODTentrycount.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_XCP.pdf",
+      "source_revision": "OriginalAUTOSARCPR25-11XCP82p selected7.1-7.4/10.2.1/10.2.8: nativeCAN/FlexRay/TCP/UDPbindings, noPHYrate, MAX_CTO8..255/MAX_DTO8..65535no default, DAQ/ODT/event bounds, timeunit and0noncyclic, ODTconsistency/DAQdefault. Configuration scope not full ASAMcodec or commissionedA2L.",
+      "min": 0,
+      "max": 255,
+      "integer": true,
+      "label": "xc odt entries",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "xc_odt_entry_daq_bytes": {
+      "type": "number",
+      "description": "Actual DAQentrysize.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_XCP.pdf",
+      "source_revision": "OriginalAUTOSARCPR25-11XCP82p selected7.1-7.4/10.2.1/10.2.8: nativeCAN/FlexRay/TCP/UDPbindings, noPHYrate, MAX_CTO8..255/MAX_DTO8..65535no default, DAQ/ODT/event bounds, timeunit and0noncyclic, ODTconsistency/DAQdefault. Configuration scope not full ASAMcodec or commissionedA2L.",
+      "min": 0,
+      "max": 255,
+      "unit": "byte",
+      "integer": true,
+      "label": "xc odt entry daq bytes",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "xc_odt_entry_stim_bytes": {
+      "type": "number",
+      "description": "Actual STIMentrysize.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_XCP.pdf",
+      "source_revision": "OriginalAUTOSARCPR25-11XCP82p selected7.1-7.4/10.2.1/10.2.8: nativeCAN/FlexRay/TCP/UDPbindings, noPHYrate, MAX_CTO8..255/MAX_DTO8..65535no default, DAQ/ODT/event bounds, timeunit and0noncyclic, ODTconsistency/DAQdefault. Configuration scope not full ASAMcodec or commissionedA2L.",
+      "min": 0,
+      "max": 255,
+      "unit": "byte",
+      "integer": true,
+      "label": "xc odt entry stim bytes",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "xc_max_event_channels": {
+      "type": "number",
+      "description": "Actual configured eventchannelcount.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_XCP.pdf",
+      "source_revision": "OriginalAUTOSARCPR25-11XCP82p selected7.1-7.4/10.2.1/10.2.8: nativeCAN/FlexRay/TCP/UDPbindings, noPHYrate, MAX_CTO8..255/MAX_DTO8..65535no default, DAQ/ODT/event bounds, timeunit and0noncyclic, ODTconsistency/DAQdefault. Configuration scope not full ASAMcodec or commissionedA2L.",
+      "min": 0,
+      "max": 65535,
+      "integer": true,
+      "label": "xc max event channels",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "xc_event_number": {
+      "type": "number",
+      "description": "Actual symbolic eventchannelnumber.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_XCP.pdf",
+      "source_revision": "OriginalAUTOSARCPR25-11XCP82p selected7.1-7.4/10.2.1/10.2.8: nativeCAN/FlexRay/TCP/UDPbindings, noPHYrate, MAX_CTO8..255/MAX_DTO8..65535no default, DAQ/ODT/event bounds, timeunit and0noncyclic, ODTconsistency/DAQdefault. Configuration scope not full ASAMcodec or commissionedA2L.",
+      "min": 0,
+      "max": 65534,
+      "integer": true,
+      "label": "xc event number",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "xc_event_priority": {
+      "type": "number",
+      "description": "Actual eventpriority.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_XCP.pdf",
+      "source_revision": "OriginalAUTOSARCPR25-11XCP82p selected7.1-7.4/10.2.1/10.2.8: nativeCAN/FlexRay/TCP/UDPbindings, noPHYrate, MAX_CTO8..255/MAX_DTO8..65535no default, DAQ/ODT/event bounds, timeunit and0noncyclic, ODTconsistency/DAQdefault. Configuration scope not full ASAMcodec or commissionedA2L.",
+      "min": 0,
+      "max": 255,
+      "integer": true,
+      "label": "xc event priority",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "xc_event_max_daq": {
+      "type": "number",
+      "description": "Actual eventDAQlistallocation.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_XCP.pdf",
+      "source_revision": "OriginalAUTOSARCPR25-11XCP82p selected7.1-7.4/10.2.1/10.2.8: nativeCAN/FlexRay/TCP/UDPbindings, noPHYrate, MAX_CTO8..255/MAX_DTO8..65535no default, DAQ/ODT/event bounds, timeunit and0noncyclic, ODTconsistency/DAQdefault. Configuration scope not full ASAMcodec or commissionedA2L.",
+      "min": 0,
+      "max": 255,
+      "integer": true,
+      "label": "xc event max daq",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "xc_event_cycle": {
+      "type": "number",
+      "description": "Actualsamplingcycleinselectedunit;0notcyclic.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_XCP.pdf",
+      "source_revision": "OriginalAUTOSARCPR25-11XCP82p selected7.1-7.4/10.2.1/10.2.8: nativeCAN/FlexRay/TCP/UDPbindings, noPHYrate, MAX_CTO8..255/MAX_DTO8..65535no default, DAQ/ODT/event bounds, timeunit and0noncyclic, ODTconsistency/DAQdefault. Configuration scope not full ASAMcodec or commissionedA2L.",
+      "min": 0,
+      "max": 255,
+      "integer": true,
+      "label": "xc event cycle",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "xc_event_ms": {
+      "type": "number",
+      "description": "Nominalsamplingperiod; not source-to-use deadline.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_XCP.pdf",
+      "source_revision": "OriginalAUTOSARCPR25-11XCP82p selected7.1-7.4/10.2.1/10.2.8: nativeCAN/FlexRay/TCP/UDPbindings, noPHYrate, MAX_CTO8..255/MAX_DTO8..65535no default, DAQ/ODT/event bounds, timeunit and0noncyclic, ODTconsistency/DAQdefault. Configuration scope not full ASAMcodec or commissionedA2L.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "label": "xc event ms",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "xc_packet_bytes": {
+      "type": "number",
+      "description": "Actual complete CTO/DTOprotocolpacket includingPID/DAQ/timestamp/fill.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_XCP.pdf",
+      "source_revision": "OriginalAUTOSARCPR25-11XCP82p selected7.1-7.4/10.2.1/10.2.8: nativeCAN/FlexRay/TCP/UDPbindings, noPHYrate, MAX_CTO8..255/MAX_DTO8..65535no default, DAQ/ODT/event bounds, timeunit and0noncyclic, ODTconsistency/DAQdefault. Configuration scope not full ASAMcodec or commissionedA2L.",
+      "min": 0,
+      "unit": "byte",
+      "integer": true,
+      "label": "xc packet bytes",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "xc_protocol_overhead_bytes": {
+      "type": "number",
+      "description": "Actual selected PID/DAQ/timestamp/filloverhead.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_XCP.pdf",
+      "source_revision": "OriginalAUTOSARCPR25-11XCP82p selected7.1-7.4/10.2.1/10.2.8: nativeCAN/FlexRay/TCP/UDPbindings, noPHYrate, MAX_CTO8..255/MAX_DTO8..65535no default, DAQ/ODT/event bounds, timeunit and0noncyclic, ODTconsistency/DAQdefault. Configuration scope not full ASAMcodec or commissionedA2L.",
+      "min": 0,
+      "unit": "byte",
+      "integer": true,
+      "label": "xc protocol overhead bytes",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "xc_lower_packet_max": {
+      "type": "number",
+      "description": "Actual lowertransportpacketbudget accountingitsheaders/alignment.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_XCP.pdf",
+      "source_revision": "OriginalAUTOSARCPR25-11XCP82p selected7.1-7.4/10.2.1/10.2.8: nativeCAN/FlexRay/TCP/UDPbindings, noPHYrate, MAX_CTO8..255/MAX_DTO8..65535no default, DAQ/ODT/event bounds, timeunit and0noncyclic, ODTconsistency/DAQdefault. Configuration scope not full ASAMcodec or commissionedA2L.",
+      "min": 1,
+      "unit": "byte",
+      "integer": true,
+      "label": "xc lower packet max",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "xc_can_tx_id": {
+      "type": "number",
+      "description": "Actual transmit CANidentifier.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_XCP.pdf",
+      "source_revision": "OriginalAUTOSARCPR25-11XCP82p selected7.1-7.4/10.2.1/10.2.8: nativeCAN/FlexRay/TCP/UDPbindings, noPHYrate, MAX_CTO8..255/MAX_DTO8..65535no default, DAQ/ODT/event bounds, timeunit and0noncyclic, ODTconsistency/DAQdefault. Configuration scope not full ASAMcodec or commissionedA2L.",
+      "min": 0,
+      "max": 536870911,
+      "integer": true,
+      "label": "xc can tx id",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "xc_can_rx_id": {
+      "type": "number",
+      "description": "Actual distinct receive CANidentifier.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_XCP.pdf",
+      "source_revision": "OriginalAUTOSARCPR25-11XCP82p selected7.1-7.4/10.2.1/10.2.8: nativeCAN/FlexRay/TCP/UDPbindings, noPHYrate, MAX_CTO8..255/MAX_DTO8..65535no default, DAQ/ODT/event bounds, timeunit and0noncyclic, ODTconsistency/DAQdefault. Configuration scope not full ASAMcodec or commissionedA2L.",
+      "min": 0,
+      "max": 536870911,
+      "integer": true,
+      "label": "xc can rx id",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "xc_port": {
+      "type": "number",
+      "description": "Actual commissionedTCP/UDPport; no inventedserviceport.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_XCP.pdf",
+      "source_revision": "OriginalAUTOSARCPR25-11XCP82p selected7.1-7.4/10.2.1/10.2.8: nativeCAN/FlexRay/TCP/UDPbindings, noPHYrate, MAX_CTO8..255/MAX_DTO8..65535no default, DAQ/ODT/event bounds, timeunit and0noncyclic, ODTconsistency/DAQdefault. Configuration scope not full ASAMcodec or commissionedA2L.",
+      "min": 1,
+      "max": 65535,
+      "integer": true,
+      "label": "xc port",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "xc_connections": {
+      "type": "number",
+      "description": "Actual slave activeconnectioncount.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_XCP.pdf",
+      "source_revision": "OriginalAUTOSARCPR25-11XCP82p selected7.1-7.4/10.2.1/10.2.8: nativeCAN/FlexRay/TCP/UDPbindings, noPHYrate, MAX_CTO8..255/MAX_DTO8..65535no default, DAQ/ODT/event bounds, timeunit and0noncyclic, ODTconsistency/DAQdefault. Configuration scope not full ASAMcodec or commissionedA2L.",
+      "min": 0,
+      "integer": true,
+      "label": "xc connections",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "xc_source_ms": {
+      "type": "number",
+      "description": "Actual measuredsample/event/A2Lprocessing bound.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_XCP.pdf",
+      "source_revision": "OriginalAUTOSARCPR25-11XCP82p selected7.1-7.4/10.2.1/10.2.8: nativeCAN/FlexRay/TCP/UDPbindings, noPHYrate, MAX_CTO8..255/MAX_DTO8..65535no default, DAQ/ODT/event bounds, timeunit and0noncyclic, ODTconsistency/DAQdefault. Configuration scope not full ASAMcodec or commissionedA2L.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "label": "xc source ms",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "xc_transport_ms": {
+      "type": "number",
+      "description": "Actual selectedbus/framing/queues/retries bound.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_XCP.pdf",
+      "source_revision": "OriginalAUTOSARCPR25-11XCP82p selected7.1-7.4/10.2.1/10.2.8: nativeCAN/FlexRay/TCP/UDPbindings, noPHYrate, MAX_CTO8..255/MAX_DTO8..65535no default, DAQ/ODT/event bounds, timeunit and0noncyclic, ODTconsistency/DAQdefault. Configuration scope not full ASAMcodec or commissionedA2L.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "label": "xc transport ms",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "xc_use_ms": {
+      "type": "number",
+      "description": "Actual decoded/calibrationconsumer bound.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_XCP.pdf",
+      "source_revision": "OriginalAUTOSARCPR25-11XCP82p selected7.1-7.4/10.2.1/10.2.8: nativeCAN/FlexRay/TCP/UDPbindings, noPHYrate, MAX_CTO8..255/MAX_DTO8..65535no default, DAQ/ODT/event bounds, timeunit and0noncyclic, ODTconsistency/DAQdefault. Configuration scope not full ASAMcodec or commissionedA2L.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "label": "xc use ms",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "xc_e2e_ms": {
+      "type": "number",
+      "description": "Actual source-to-use total independentlyqualified.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_XCP.pdf",
+      "source_revision": "OriginalAUTOSARCPR25-11XCP82p selected7.1-7.4/10.2.1/10.2.8: nativeCAN/FlexRay/TCP/UDPbindings, noPHYrate, MAX_CTO8..255/MAX_DTO8..65535no default, DAQ/ODT/event bounds, timeunit and0noncyclic, ODTconsistency/DAQdefault. Configuration scope not full ASAMcodec or commissionedA2L.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "label": "xc e2e ms",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "xc_deadline_ms": {
+      "type": "number",
+      "description": "Independent consumingfunctiondeadline.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_XCP.pdf",
+      "source_revision": "OriginalAUTOSARCPR25-11XCP82p selected7.1-7.4/10.2.1/10.2.8: nativeCAN/FlexRay/TCP/UDPbindings, noPHYrate, MAX_CTO8..255/MAX_DTO8..65535no default, DAQ/ODT/event bounds, timeunit and0noncyclic, ODTconsistency/DAQdefault. Configuration scope not full ASAMcodec or commissionedA2L.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "label": "xc deadline ms",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "xc_age_ms": {
+      "type": "number",
+      "description": "Actual consumeddataage.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_XCP.pdf",
+      "source_revision": "OriginalAUTOSARCPR25-11XCP82p selected7.1-7.4/10.2.1/10.2.8: nativeCAN/FlexRay/TCP/UDPbindings, noPHYrate, MAX_CTO8..255/MAX_DTO8..65535no default, DAQ/ODT/event bounds, timeunit and0noncyclic, ODTconsistency/DAQdefault. Configuration scope not full ASAMcodec or commissionedA2L.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "label": "xc age ms",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "xc_freshness_ms": {
+      "type": "number",
+      "description": "Independent allowableage.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_XCP.pdf",
+      "source_revision": "OriginalAUTOSARCPR25-11XCP82p selected7.1-7.4/10.2.1/10.2.8: nativeCAN/FlexRay/TCP/UDPbindings, noPHYrate, MAX_CTO8..255/MAX_DTO8..65535no default, DAQ/ODT/event bounds, timeunit and0noncyclic, ODTconsistency/DAQdefault. Configuration scope not full ASAMcodec or commissionedA2L.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "label": "xc freshness ms",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "xc_path_verified": {
+      "type": "boolean",
+      "description": "Actual A2L/event/buffer/lowertransportpath qualified.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_XCP.pdf",
+      "source_revision": "OriginalAUTOSARCPR25-11XCP82p selected7.1-7.4/10.2.1/10.2.8: nativeCAN/FlexRay/TCP/UDPbindings, noPHYrate, MAX_CTO8..255/MAX_DTO8..65535no default, DAQ/ODT/event bounds, timeunit and0noncyclic, ODTconsistency/DAQdefault. Configuration scope not full ASAMcodec or commissionedA2L.",
+      "label": "xc path verified",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "xc_data_accepted": {
+      "type": "boolean",
+      "description": "Actual independent consumingfunction succeeds.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_XCP.pdf",
+      "source_revision": "OriginalAUTOSARCPR25-11XCP82p selected7.1-7.4/10.2.1/10.2.8: nativeCAN/FlexRay/TCP/UDPbindings, noPHYrate, MAX_CTO8..255/MAX_DTO8..65535no default, DAQ/ODT/event bounds, timeunit and0noncyclic, ODTconsistency/DAQdefault. Configuration scope not full ASAMcodec or commissionedA2L.",
+      "label": "xc data accepted",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "xc_revision": {
+      "type": "text",
+      "description": "Actual protocol/deviceedition.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_XCP.pdf",
+      "source_revision": "OriginalAUTOSARCPR25-11XCP82p selected7.1-7.4/10.2.1/10.2.8: nativeCAN/FlexRay/TCP/UDPbindings, noPHYrate, MAX_CTO8..255/MAX_DTO8..65535no default, DAQ/ODT/event bounds, timeunit and0noncyclic, ODTconsistency/DAQdefault. Configuration scope not full ASAMcodec or commissionedA2L.",
+      "label": "xc revision",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "xc_a2l_source": {
+      "type": "text",
+      "description": "Actual A2L memoryaddresses/encodings/units/event/DAQlist evidence.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_XCP.pdf",
+      "source_revision": "OriginalAUTOSARCPR25-11XCP82p selected7.1-7.4/10.2.1/10.2.8: nativeCAN/FlexRay/TCP/UDPbindings, noPHYrate, MAX_CTO8..255/MAX_DTO8..65535no default, DAQ/ODT/event bounds, timeunit and0noncyclic, ODTconsistency/DAQdefault. Configuration scope not full ASAMcodec or commissionedA2L.",
+      "label": "xc a2l source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "xc_device_source": {
+      "type": "text",
+      "description": "Actual negotiatedMAX_CTO/MAX_DTO/capabilities/buffers.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_XCP.pdf",
+      "source_revision": "OriginalAUTOSARCPR25-11XCP82p selected7.1-7.4/10.2.1/10.2.8: nativeCAN/FlexRay/TCP/UDPbindings, noPHYrate, MAX_CTO8..255/MAX_DTO8..65535no default, DAQ/ODT/event bounds, timeunit and0noncyclic, ODTconsistency/DAQdefault. Configuration scope not full ASAMcodec or commissionedA2L.",
+      "label": "xc device source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "xc_transport_source": {
+      "type": "text",
+      "description": "Actual separatelyqualified selectedlowerbus/binding andpacketbudget.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_XCP.pdf",
+      "source_revision": "OriginalAUTOSARCPR25-11XCP82p selected7.1-7.4/10.2.1/10.2.8: nativeCAN/FlexRay/TCP/UDPbindings, noPHYrate, MAX_CTO8..255/MAX_DTO8..65535no default, DAQ/ODT/event bounds, timeunit and0noncyclic, ODTconsistency/DAQdefault. Configuration scope not full ASAMcodec or commissionedA2L.",
+      "label": "xc transport source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "xc_acceptance_source": {
+      "type": "text",
+      "description": "Independent functiondeadline/freshness/errorcontract.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_XCP.pdf",
+      "source_revision": "OriginalAUTOSARCPR25-11XCP82p selected7.1-7.4/10.2.1/10.2.8: nativeCAN/FlexRay/TCP/UDPbindings, noPHYrate, MAX_CTO8..255/MAX_DTO8..65535no default, DAQ/ODT/event bounds, timeunit and0noncyclic, ODTconsistency/DAQdefault. Configuration scope not full ASAMcodec or commissionedA2L.",
+      "label": "xc acceptance source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "xc_ip": {
+      "type": "text",
+      "description": "Actual commissioned peer IPv4orIPv6address.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_XCP.pdf",
+      "source_revision": "OriginalAUTOSARCPR25-11XCP82p selected7.1-7.4/10.2.1/10.2.8: nativeCAN/FlexRay/TCP/UDPbindings, noPHYrate, MAX_CTO8..255/MAX_DTO8..65535no default, DAQ/ODT/event bounds, timeunit and0noncyclic, ODTconsistency/DAQdefault. Configuration scope not full ASAMcodec or commissionedA2L.",
+      "label": "xc ip",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "xc_observation_source": {
+      "type": "text",
+      "description": "Actual correlated producer/packet/lowertransport/functiontrace.",
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_XCP.pdf",
+      "source_revision": "OriginalAUTOSARCPR25-11XCP82p selected7.1-7.4/10.2.1/10.2.8: nativeCAN/FlexRay/TCP/UDPbindings, noPHYrate, MAX_CTO8..255/MAX_DTO8..65535no default, DAQ/ODT/event bounds, timeunit and0noncyclic, ODTconsistency/DAQdefault. Configuration scope not full ASAMcodec or commissionedA2L.",
+      "label": "xc observation source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    }
+  },
+  "mechanisms": {
+    "network": [
+      "XCP_BUS_INDEPENDENT_A2L_NEGOTIATED_CAPABILITIES"
+    ],
+    "timing": [
+      "ACTUAL_EVENT_BUFFER_AND_LOWER_TRANSPORT"
+    ]
+  },
+  "parameter_constraints": [
+    {
+      "parameter": "bitrate",
+      "when": {},
+      "allowed": [],
+      "source": "https://www.asam.net/standards/detail/mcd-1-xcp/"
+    },
+    {
+      "parameter": "reserved_bandwidth_percent",
+      "when": {},
+      "allowed": [],
+      "source": "https://www.asam.net/standards/detail/mcd-1-xcp/"
+    },
+    {
+      "parameter": "sync_method",
+      "when": {},
+      "allowed": [],
+      "source": "https://www.asam.net/standards/detail/mcd-1-xcp/"
+    },
+    {
+      "parameter": "retransmission_enabled",
+      "when": {},
+      "allowed": [],
+      "source": "https://www.asam.net/standards/detail/mcd-1-xcp/"
+    },
+    {
+      "parameter": "retransmission_rate",
+      "when": {},
+      "allowed": [],
+      "source": "https://www.asam.net/standards/detail/mcd-1-xcp/"
+    },
+    {
+      "parameter": "retry_limit",
+      "when": {},
+      "allowed": [],
+      "source": "https://www.asam.net/standards/detail/mcd-1-xcp/"
+    },
+    {
+      "parameter": "retransmission_delay_ms",
+      "when": {},
+      "allowed": [],
+      "source": "https://www.asam.net/standards/detail/mcd-1-xcp/"
+    },
+    {
+      "parameter": "gateway_maximum_throughput",
+      "when": {},
+      "allowed": [],
+      "source": "https://www.asam.net/standards/detail/mcd-1-xcp/"
+    },
+    {
+      "parameter": "gateway_input_buffer",
+      "when": {},
+      "allowed": [],
+      "source": "https://www.asam.net/standards/detail/mcd-1-xcp/"
+    },
+    {
+      "parameter": "gateway_output_buffer",
+      "when": {},
+      "allowed": [],
+      "source": "https://www.asam.net/standards/detail/mcd-1-xcp/"
+    },
+    {
+      "parameter": "gateway_maximum_routes",
+      "when": {},
+      "allowed": [],
+      "source": "https://www.asam.net/standards/detail/mcd-1-xcp/"
+    },
+    {
+      "parameter": "gateway_maximum_messages_s",
+      "when": {},
+      "allowed": [],
+      "source": "https://www.asam.net/standards/detail/mcd-1-xcp/"
+    },
+    {
+      "parameter": "mtu_bytes",
+      "when": {},
+      "allowed": [],
+      "source": "https://www.asam.net/standards/detail/mcd-1-xcp/"
+    },
+    {
+      "parameter": "duplex",
+      "when": {},
+      "allowed": [],
+      "source": "https://www.asam.net/standards/detail/mcd-1-xcp/"
+    },
+    {
+      "parameter": "vlan_id",
+      "when": {},
+      "allowed": [],
+      "source": "https://www.asam.net/standards/detail/mcd-1-xcp/"
+    },
+    {
+      "parameter": "rate_limit_bit_s",
+      "when": {},
+      "allowed": [],
+      "source": "https://www.asam.net/standards/detail/mcd-1-xcp/"
+    },
+    {
+      "parameter": "xc_packet_bytes",
+      "when": {
+        "xc_packet_kind": "CTO"
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_XCP.pdf",
+      "maximum_parameter": "xc_max_cto"
+    },
+    {
+      "parameter": "xc_packet_bytes",
+      "when": {
+        "xc_packet_kind": "DTO"
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_XCP.pdf",
+      "maximum_parameter": "xc_max_dto"
+    },
+    {
+      "parameter": "xc_packet_bytes",
+      "when": {},
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_XCP.pdf",
+      "equal_expression": {
+        "sum": [
+          "payload_bytes",
+          "xc_protocol_overhead_bytes"
+        ]
+      },
+      "maximum_parameter": "xc_lower_packet_max"
+    },
+    {
+      "parameter": "xc_can_tx_id",
+      "when": {
+        "xc_transport": "CAN"
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_XCP.pdf",
+      "not_equal_parameter": "xc_can_rx_id"
+    },
+    {
+      "parameter": "xc_connections",
+      "when": {
+        "xc_edition": "AUTOSAR_R25_11",
+        "xc_transport": "UDP_IP"
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_XCP.pdf",
+      "maximum": 1
+    },
+    {
+      "parameter": "xc_connections",
+      "when": {
+        "xc_edition": "AUTOSAR_R25_11",
+        "xc_transport": "TCP_IP"
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_XCP.pdf",
+      "maximum": 1
+    },
+    {
+      "parameter": "xc_odt_count",
+      "when": {
+        "xc_daq_config": "STATIC"
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_XCP.pdf",
+      "allowed": []
+    },
+    {
+      "parameter": "xc_odt_entries",
+      "when": {
+        "xc_daq_config": "STATIC"
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_XCP.pdf",
+      "allowed": []
+    },
+    {
+      "parameter": "xc_event_ms",
+      "when": {
+        "xc_event_unit": "1PS"
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_XCP.pdf",
+      "when_positive": [
+        "xc_event_cycle"
+      ],
+      "equal_expression": {
+        "product": [
+          "xc_event_cycle",
+          1e-09
+        ]
+      }
+    },
+    {
+      "parameter": "xc_event_ms",
+      "when": {
+        "xc_event_unit": "10PS"
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_XCP.pdf",
+      "when_positive": [
+        "xc_event_cycle"
+      ],
+      "equal_expression": {
+        "product": [
+          "xc_event_cycle",
+          1e-08
+        ]
+      }
+    },
+    {
+      "parameter": "xc_event_ms",
+      "when": {
+        "xc_event_unit": "100PS"
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_XCP.pdf",
+      "when_positive": [
+        "xc_event_cycle"
+      ],
+      "equal_expression": {
+        "product": [
+          "xc_event_cycle",
+          1e-07
+        ]
+      }
+    },
+    {
+      "parameter": "xc_event_ms",
+      "when": {
+        "xc_event_unit": "1NS"
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_XCP.pdf",
+      "when_positive": [
+        "xc_event_cycle"
+      ],
+      "equal_expression": {
+        "product": [
+          "xc_event_cycle",
+          1e-06
+        ]
+      }
+    },
+    {
+      "parameter": "xc_event_ms",
+      "when": {
+        "xc_event_unit": "10NS"
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_XCP.pdf",
+      "when_positive": [
+        "xc_event_cycle"
+      ],
+      "equal_expression": {
+        "product": [
+          "xc_event_cycle",
+          1e-05
+        ]
+      }
+    },
+    {
+      "parameter": "xc_event_ms",
+      "when": {
+        "xc_event_unit": "100NS"
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_XCP.pdf",
+      "when_positive": [
+        "xc_event_cycle"
+      ],
+      "equal_expression": {
+        "product": [
+          "xc_event_cycle",
+          0.0001
+        ]
+      }
+    },
+    {
+      "parameter": "xc_event_ms",
+      "when": {
+        "xc_event_unit": "1US"
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_XCP.pdf",
+      "when_positive": [
+        "xc_event_cycle"
+      ],
+      "equal_expression": {
+        "product": [
+          "xc_event_cycle",
+          0.001
+        ]
+      }
+    },
+    {
+      "parameter": "xc_event_ms",
+      "when": {
+        "xc_event_unit": "10US"
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_XCP.pdf",
+      "when_positive": [
+        "xc_event_cycle"
+      ],
+      "equal_expression": {
+        "product": [
+          "xc_event_cycle",
+          0.01
+        ]
+      }
+    },
+    {
+      "parameter": "xc_event_ms",
+      "when": {
+        "xc_event_unit": "100US"
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_XCP.pdf",
+      "when_positive": [
+        "xc_event_cycle"
+      ],
+      "equal_expression": {
+        "product": [
+          "xc_event_cycle",
+          0.1
+        ]
+      }
+    },
+    {
+      "parameter": "xc_event_ms",
+      "when": {
+        "xc_event_unit": "1MS"
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_XCP.pdf",
+      "when_positive": [
+        "xc_event_cycle"
+      ],
+      "equal_expression": {
+        "product": [
+          "xc_event_cycle",
+          1
+        ]
+      }
+    },
+    {
+      "parameter": "xc_event_ms",
+      "when": {
+        "xc_event_unit": "10MS"
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_XCP.pdf",
+      "when_positive": [
+        "xc_event_cycle"
+      ],
+      "equal_expression": {
+        "product": [
+          "xc_event_cycle",
+          10
+        ]
+      }
+    },
+    {
+      "parameter": "xc_event_ms",
+      "when": {
+        "xc_event_unit": "100MS"
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_XCP.pdf",
+      "when_positive": [
+        "xc_event_cycle"
+      ],
+      "equal_expression": {
+        "product": [
+          "xc_event_cycle",
+          100
+        ]
+      }
+    },
+    {
+      "parameter": "xc_event_ms",
+      "when": {
+        "xc_event_unit": "1S"
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_XCP.pdf",
+      "when_positive": [
+        "xc_event_cycle"
+      ],
+      "equal_expression": {
+        "product": [
+          "xc_event_cycle",
+          1000
+        ]
+      }
+    },
+    {
+      "parameter": "xc_event_ms",
+      "when": {
+        "xc_event_cycle": 0
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_XCP.pdf",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "xc_e2e_ms",
+      "when": {},
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_XCP.pdf",
+      "equal_expression": {
+        "sum": [
+          "xc_source_ms",
+          "xc_transport_ms",
+          "xc_use_ms"
+        ]
+      },
+      "maximum_parameter": "xc_deadline_ms"
+    },
+    {
+      "parameter": "xc_age_ms",
+      "when": {},
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_XCP.pdf",
+      "maximum_parameter": "xc_freshness_ms"
+    },
+    {
+      "parameter": "xc_source_ms",
+      "when": {},
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_XCP.pdf",
+      "when_present": [
+        "xc_e2e_ms"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "xc_transport_ms",
+      "when": {},
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_XCP.pdf",
+      "when_present": [
+        "xc_e2e_ms"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "xc_use_ms",
+      "when": {},
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_XCP.pdf",
+      "when_present": [
+        "xc_e2e_ms"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "xc_e2e_ms",
+      "when": {
+        "xc_data_accepted": true
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_XCP.pdf",
+      "required": true
+    },
+    {
+      "parameter": "xc_deadline_ms",
+      "when": {
+        "xc_data_accepted": true
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_XCP.pdf",
+      "required": true
+    },
+    {
+      "parameter": "xc_age_ms",
+      "when": {
+        "xc_data_accepted": true
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_XCP.pdf",
+      "required": true
+    },
+    {
+      "parameter": "xc_freshness_ms",
+      "when": {
+        "xc_data_accepted": true
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_XCP.pdf",
+      "required": true
+    },
+    {
+      "parameter": "xc_observation_source",
+      "when": {
+        "xc_data_accepted": true
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_XCP.pdf",
+      "required": true
+    },
+    {
+      "parameter": "xc_path_verified",
+      "when": {
+        "xc_data_accepted": true
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_XCP.pdf",
+      "required": true,
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "xc_outcome",
+      "when": {
+        "xc_data_accepted": true
+      },
+      "source": "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_XCP.pdf",
+      "required": true,
+      "allowed": [
+        "ACCEPTED"
+      ]
+    }
+  ],
+  "physical_layer_profile_id": null,
+  "medium_access_model": null,
+  "native_parameter_prefixes": [
+    "xc_"
+  ],
+  "parameter_aliases": {},
+  "parameter_alias_limits": {},
+  "parameter_evidence_scope": "EXPLICIT_LAYER",
+  "rate_source_profile_id": null,
+  "arbitration_model_id": null,
+  "max_payload_bytes": null,
+  "capabilities": {
+    "supports_signals": true,
+    "supports_data_objects": true,
+    "supports_streams": false,
+    "supports_multicast": false,
+    "supports_publish_subscribe": false,
+    "supports_request_response": true,
+    "supports_cyclic": true,
+    "supports_event": true,
+    "supports_redundancy": false,
+    "supports_time_sync": false,
+    "supports_safety_profile": false,
+    "supports_segmentation": true,
+    "supports_fragmentation": false,
+    "supports_qos": false
+  },
+  "deterministic": false,
+  "overhead_bytes": 8,
+  "implementation_status": "PLANNED",
+  "connection_type": "COMMUNICATION_TECHNOLOGY",
+  "parameter_proposals": {
+    "kind": "DEVICE_DEPENDENT",
+    "status": "REVIEW_REQUIRED",
+    "required_fields": [],
+    "note": "No universal rate is available; inspect the selected hardware/profile."
+  },
+  "capacity_evidence": {
+    "status": "MODEL_MISSING",
+    "frame_model": null,
+    "schedule_model": null,
+    "requires_confirmed_device_parameters": true
+  },
+  "components": {
+    "binding": "xcp.binding",
+    "generator": "xcp.generator",
+    "validator": "xcp.validator",
+    "timing_model": null,
+    "load_model": null,
+    "encoder": "xcp.encoder",
+    "decoder": "xcp.decoder"
+  },
+  "known_limitations": "Technology-specific conformance details require a vendor/profile extension."
+}

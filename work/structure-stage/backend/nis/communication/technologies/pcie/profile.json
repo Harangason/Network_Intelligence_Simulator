@@ -1,0 +1,4361 @@
+{
+  "id": "pcie",
+  "label": "PCIe",
+  "domain": "generic_networking",
+  "layer": "DATA_LINK",
+  "transport_unit": "PACKET",
+  "payload_element_types": [
+    "RAW_DATA",
+    "DATA_OBJECT"
+  ],
+  "hardware_interface": "explicit_pcie_trained_channel",
+  "hardware_capability_aliases": [
+    "pcie_interface"
+  ],
+  "default_stack": [
+    "pcie"
+  ],
+  "stack_variants": [
+    [
+      "pcie"
+    ]
+  ],
+  "default_bitrate": null,
+  "rate_model": {
+    "type": "NEGOTIATED_GENERATION_LANES_CODEC",
+    "fields": []
+  },
+  "local_timing_schema": [],
+  "parameter_schema": {
+    "payload_bytes": {
+      "label": "Payload",
+      "category": "physical",
+      "scope": "message",
+      "type": "number",
+      "description": "Actual whole application bytes distinct TLP payload/MPS/read request/MRRS/completions or FLIT. No universal8byte or4096byte application maximum.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.12/include/uapi/linux/pci_regs.h",
+      "source_revision": "Linux v6.12 explicit PCIe capability/control/status masks. Register meanings/encodings, not full normative protocol or every optional capability.",
+      "integer": true
+    },
+    "cycle_ms": {
+      "label": "Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "Standardperiode fuer zyklische Nachrichten.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "minimum_cycle_time_ms": {
+      "label": "Minimum Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "deadline_ms": {
+      "label": "Deadline",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "timeout_ms": {
+      "label": "Timeout",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_latency_ms": {
+      "label": "Maximum Latency",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "jitter_ms": {
+      "label": "Jitter Budget",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "freshness_ms": {
+      "label": "Data Freshness",
+      "category": "timing",
+      "scope": "signal",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "source_processing_delay_ms": {
+      "label": "Source Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_processing_delay_ms": {
+      "label": "Target Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "propagation_delay_ms": {
+      "label": "Propagation",
+      "category": "timing",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.01,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_bus_load_percent": {
+      "label": "Ziel-Buslast",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "Zielwert fuer die aus Routing, Payload, Zyklus und Bitrate berechnete Buslast.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "peak_factor": {
+      "label": "Peak Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.15,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_factor": {
+      "label": "Burst Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.5,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_window_ms": {
+      "label": "Burst Window",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "warning_threshold": {
+      "label": "Load Warning",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "critical_threshold": {
+      "label": "Load Critical",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 75,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "overload_threshold": {
+      "label": "Load Overload",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 90,
+      "unit": "%",
+      "min": 1,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "traffic_class": {
+      "label": "Traffic Class",
+      "category": "qos",
+      "scope": "route",
+      "type": "select",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": "BEST_EFFORT",
+      "options": [
+        "BEST_EFFORT",
+        "CONTROL",
+        "REALTIME",
+        "SAFETY_CRITICAL"
+      ],
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "packet_loss_probability": {
+      "label": "Packet Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "frame_loss_probability": {
+      "label": "Frame Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "bit_error_rate": {
+      "label": "Bit Error Rate",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "corruption_probability": {
+      "label": "Corruption",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duplicate_probability": {
+      "label": "Duplication",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "reordering_probability": {
+      "label": "Reordering",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "required_reliability": {
+      "label": "Required Reliability",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.999,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_offset_ms": {
+      "label": "Clock Offset",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_drift_ppm": {
+      "label": "Clock Drift",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 20,
+      "unit": "ppm",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_precision_ms": {
+      "label": "Sync Precision",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_interval_ms": {
+      "label": "Sync Interval",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1000,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_sync_error_ms": {
+      "label": "Maximum Sync Error",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_delay_ms": {
+      "label": "Gateway Processing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.2,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_queue_delay_ms": {
+      "label": "Gateway Queueing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "protocol_conversion_delay_ms": {
+      "label": "Protocol Conversion",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_maximum_throughput": {
+      "label": "Gateway Throughput",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100000000,
+      "unit": "bit/s",
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_input_buffer": {
+      "label": "Gateway Input Buffer",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 256,
+      "unit": "Frames",
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_output_buffer": {
+      "label": "Gateway Output Buffer",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 256,
+      "unit": "Frames",
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_maximum_routes": {
+      "label": "Gateway Maximum Routes",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 10000,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_maximum_messages_s": {
+      "label": "Gateway Messages per Second",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100000,
+      "unit": "msg/s",
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duration_s": {
+      "label": "Simulation Duration",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 1,
+      "unit": "s",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "seed": {
+      "label": "Random Seed",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 42,
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "max_events": {
+      "label": "Maximum Events",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 100000,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "dropout_probability": {
+      "label": "Failure Injection Dropout",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "pcie_implementation": {
+      "type": "select",
+      "description": "Actual controller/firmware family; registered actual values distinct reviewed Altera implementation.",
+      "options": [
+        "REGISTERED_ACTUAL",
+        "AGILEX3_GTS_25_3",
+        "AGILEX5_GTS_25_3"
+      ],
+      "source": "https://docs.altera.com/r/docs/813754/25.3/gts-axi-streaming-ip-for-pci-express-user-guide-agilextm-5-and-agilextm-3-fpgas-and-socs/supported-features?contentId=oYPcJulNu6b8S9_OxwM4Zg",
+      "source_revision": "Altera813754 v25.3 2025-12-16 supported features: Agilex3/5 rates/lanes/tags/MPS512/MRRS4096/oneVC/clock modes, conventional reset1s caveat.",
+      "integer": false,
+      "label": "implementation",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pcie_mode": {
+      "type": "select",
+      "description": "Actual negotiated FLIT status, independent generation capability or downtraining.",
+      "options": [
+        "NON_FLIT",
+        "FLIT"
+      ],
+      "source": "https://pcisig.com/blog/evolution-pci-express-specification-its-sixth-generation-third-decade-and-still-going-strong",
+      "source_revision": "PCI-SIG 2022-01-11 technical article,64GT/s PAM4, FLIT256 with236TLP/6DLP/8CRC/6FEC. Public excerpt, not full licensed specification.",
+      "integer": false,
+      "label": "mode",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pcie_encoding": {
+      "type": "select",
+      "description": "Actual link coding, lower-rate FLIT needs an explicitly qualified coding source.",
+      "options": [
+        "8B10B",
+        "128B130B",
+        "FLIT_PAM4",
+        "REGISTERED_LOWER_RATE_FLIT"
+      ],
+      "source": "https://www.intel.com/content/www/us/en/docs/programmable/683724/18-0/physical-layer.html",
+      "source_revision": "Intel/Altera archive18.0 physical-layer public search excerpt: Gen1/2 8b10b, Gen3 128b130b, per-lane rates; direct page redirected, not claimed full document.",
+      "integer": false,
+      "label": "encoding",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "pcie_generation": 1,
+            "pcie_mode": "NON_FLIT"
+          },
+          "value": "8B10B",
+          "source": "https://www.intel.com/content/www/us/en/docs/programmable/683724/18-0/physical-layer.html",
+          "source_revision": "Intel/Altera archive18.0 physical-layer public search excerpt: Gen1/2 8b10b, Gen3 128b130b, per-lane rates; direct page redirected, not claimed full document."
+        },
+        {
+          "when": {
+            "pcie_generation": 2,
+            "pcie_mode": "NON_FLIT"
+          },
+          "value": "8B10B",
+          "source": "https://www.intel.com/content/www/us/en/docs/programmable/683724/18-0/physical-layer.html",
+          "source_revision": "Intel/Altera archive18.0 physical-layer public search excerpt: Gen1/2 8b10b, Gen3 128b130b, per-lane rates; direct page redirected, not claimed full document."
+        },
+        {
+          "when": {
+            "pcie_generation": 3,
+            "pcie_mode": "NON_FLIT"
+          },
+          "value": "128B130B",
+          "source": "https://www.intel.com/content/www/us/en/docs/programmable/683724/18-0/physical-layer.html",
+          "source_revision": "Intel/Altera archive18.0 physical-layer public search excerpt: Gen1/2 8b10b, Gen3 128b130b, per-lane rates; direct page redirected, not claimed full document."
+        },
+        {
+          "when": {
+            "pcie_generation": 4,
+            "pcie_mode": "NON_FLIT"
+          },
+          "value": "128B130B",
+          "source": "https://edc.intel.com/content/www/us/en/design/products/platforms/details/raptor-lake-s/13th-generation-core-processors-datasheet-volume-1-of-2/004/pci-express-architecture/",
+          "source_revision": "Intel ID743844 revision004 2023-01-30, rates and128b130b for Gen4/5; actual processor port limits are device-specific."
+        },
+        {
+          "when": {
+            "pcie_generation": 5,
+            "pcie_mode": "NON_FLIT"
+          },
+          "value": "128B130B",
+          "source": "https://edc.intel.com/content/www/us/en/design/products/platforms/details/raptor-lake-s/13th-generation-core-processors-datasheet-volume-1-of-2/004/pci-express-architecture/",
+          "source_revision": "Intel ID743844 revision004 2023-01-30, rates and128b130b for Gen4/5; actual processor port limits are device-specific."
+        }
+      ]
+    },
+    "pcie_role": {
+      "type": "select",
+      "description": "Actual port role; PCIe is not a multi-master CAN bus.",
+      "options": [
+        "ROOT_PORT",
+        "ENDPOINT",
+        "UPSTREAM_SWITCH",
+        "DOWNSTREAM_SWITCH"
+      ],
+      "source": "https://docs.altera.com/r/docs/813754/25.3/gts-axi-streaming-ip-for-pci-express-user-guide-agilextm-5-and-agilextm-3-fpgas-and-socs/supported-features?contentId=oYPcJulNu6b8S9_OxwM4Zg",
+      "source_revision": "Altera813754 v25.3 2025-12-16 supported features: Agilex3/5 rates/lanes/tags/MPS512/MRRS4096/oneVC/clock modes, conventional reset1s caveat.",
+      "integer": false,
+      "label": "role",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pcie_traffic": {
+      "type": "select",
+      "description": "Actual posted/nonposted/completion transaction flow; distinct frame class and service acceptance.",
+      "options": [
+        "POSTED",
+        "NON_POSTED",
+        "COMPLETION"
+      ],
+      "source": "https://docs.altera.com/r/docs/813754/25.3/gts-axi-streaming-ip-for-pci-express-user-guide-agilextm-5-and-agilextm-3-fpgas-and-socs/transmit-flow-control-credit-interface?contentId=4jxXGgx_nObvvH4KBB6tjA",
+      "source_revision": "Altera813754 v25.3 2025-12-16 credit interface, header credit and data credit16bytes; actual limits versus available space.",
+      "integer": false,
+      "label": "traffic",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pcie_clock": {
+      "type": "select",
+      "description": "Actual common/separate reference clock configuration and partner compatibility.",
+      "options": [
+        "COMMON",
+        "SRIS",
+        "SRNS",
+        "REGISTERED_ACTUAL"
+      ],
+      "source": "https://docs.altera.com/r/docs/813754/25.3/gts-axi-streaming-ip-for-pci-express-user-guide-agilextm-5-and-agilextm-3-fpgas-and-socs/supported-features?contentId=oYPcJulNu6b8S9_OxwM4Zg",
+      "source_revision": "Altera813754 v25.3 2025-12-16 supported features: Agilex3/5 rates/lanes/tags/MPS512/MRRS4096/oneVC/clock modes, conventional reset1s caveat.",
+      "integer": false,
+      "label": "clock",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pcie_link_state": {
+      "type": "select",
+      "description": "Actual LTSSM/low-power state, not a speed capability.",
+      "options": [
+        "L0",
+        "L0P",
+        "L0S",
+        "L1",
+        "L2",
+        "DETECT",
+        "POLLING",
+        "CONFIGURATION",
+        "RECOVERY",
+        "DISABLED",
+        "OTHER"
+      ],
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.12/include/uapi/linux/pci_regs.h",
+      "source_revision": "Linux v6.12 explicit PCIe capability/control/status masks. Register meanings/encodings, not full normative protocol or every optional capability.",
+      "integer": false,
+      "label": "link state",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pcie_outcome": {
+      "type": "select",
+      "description": "Actual correlated application acceptance, distinct successful link training.",
+      "options": [
+        "ACCEPTED",
+        "REJECTED",
+        "PENDING",
+        "UNKNOWN"
+      ],
+      "source": "https://docs.altera.com/r/docs/813754/25.3/gts-axi-streaming-ip-for-pci-express-user-guide-agilextm-5-and-agilextm-3-fpgas-and-socs/completion-timeout-interface?contentId=EBTDmC2PKISZT4Arera3qQ",
+      "source_revision": "Altera813754 v25.3 2025-12-16 non-posted completion timeout correlation by tag/function/remainingbytes/TC/attributes.",
+      "integer": false,
+      "label": "outcome",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pcie_address_space": {
+      "type": "select",
+      "description": "Actual memory/IO/configuration request; their payload and completion rules differ.",
+      "options": [
+        "MEMORY",
+        "IO",
+        "CONFIGURATION",
+        "OTHER"
+      ],
+      "source": "https://docs.altera.com/r/docs/683411/current/transaction-layer-errors",
+      "source_revision": "Altera683411 document15.1, page timestamp2025-12-16 transaction-error table70: length/TD/byte enables,4KB boundary, correlation/credits/poison. Legacy implementation-qualified checks, not Agilex25.3 certification.",
+      "integer": false,
+      "label": "address space",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pcie_edition_source": {
+      "type": "text",
+      "description": "Actual Base/CEM/ECN edition and enabled feature set. Public source review is not full conformance.",
+      "source": "https://pcisig.com/blog/pcie-70-specification-next-generation-performance-meet-needs-advanced-ai-applications-webinar",
+      "source_revision": "PCI-SIG 2025-09-03 Q&A, released7.0 128GT/s PAM4, identical256byte FLIT layout; implementation-dependent bifurcation/channel compliance.",
+      "integer": false,
+      "label": "edition source",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pcie_device_source": {
+      "type": "text",
+      "description": "Actual device capabilities, register snapshot and configured values on each hop.",
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.12/include/uapi/linux/pci_regs.h",
+      "source_revision": "Linux v6.12 explicit PCIe capability/control/status masks. Register meanings/encodings, not full normative protocol or every optional capability.",
+      "integer": false,
+      "label": "device source",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pcie_link_source": {
+      "type": "text",
+      "description": "Actual trained generation/width/mode, lane layout and link status at this hop.",
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.12/include/uapi/linux/pci_regs.h",
+      "source_revision": "Linux v6.12 explicit PCIe capability/control/status masks. Register meanings/encodings, not full normative protocol or every optional capability.",
+      "integer": false,
+      "label": "link source",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pcie_physical_source": {
+      "type": "text",
+      "description": "Actual channel/connector/loss/clock/retimer/equalization and measured compliance evidence.",
+      "source": "https://pcisig.com/blog/pcie-70-specification-next-generation-performance-meet-needs-advanced-ai-applications-webinar",
+      "source_revision": "PCI-SIG 2025-09-03 Q&A, released7.0 128GT/s PAM4, identical256byte FLIT layout; implementation-dependent bifurcation/channel compliance.",
+      "integer": false,
+      "label": "physical source",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pcie_schedule_source": {
+      "type": "text",
+      "description": "Actual per-direction traffic, credits/backpressure/replay/power-state service bounds.",
+      "source": "https://docs.altera.com/r/docs/813754/25.3/gts-axi-streaming-ip-for-pci-express-user-guide-agilextm-5-and-agilextm-3-fpgas-and-socs/transmit-flow-control-credit-interface?contentId=4jxXGgx_nObvvH4KBB6tjA",
+      "source_revision": "Altera813754 v25.3 2025-12-16 credit interface, header credit and data credit16bytes; actual limits versus available space.",
+      "integer": false,
+      "label": "schedule source",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pcie_transaction_source": {
+      "type": "text",
+      "description": "Actual request/completion tags, lengths, addresses, ordering and error status.",
+      "source": "https://docs.altera.com/r/docs/813754/25.3/gts-axi-streaming-ip-for-pci-express-user-guide-agilextm-5-and-agilextm-3-fpgas-and-socs/completion-timeout-interface?contentId=EBTDmC2PKISZT4Arera3qQ",
+      "source_revision": "Altera813754 v25.3 2025-12-16 non-posted completion timeout correlation by tag/function/remainingbytes/TC/attributes.",
+      "integer": false,
+      "label": "transaction source",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pcie_acceptance_source": {
+      "type": "text",
+      "description": "Actual application age/deadline/validity and correlated consumption evidence.",
+      "source": "https://docs.altera.com/r/docs/813754/25.3/gts-axi-streaming-ip-for-pci-express-user-guide-agilextm-5-and-agilextm-3-fpgas-and-socs/completion-timeout-interface?contentId=EBTDmC2PKISZT4Arera3qQ",
+      "source_revision": "Altera813754 v25.3 2025-12-16 non-posted completion timeout correlation by tag/function/remainingbytes/TC/attributes.",
+      "integer": false,
+      "label": "acceptance source",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pcie_clock_source": {
+      "type": "text",
+      "description": "Actual partner clock capability and measured implementation tolerances.",
+      "source": "https://docs.altera.com/r/docs/813754/25.3/gts-axi-streaming-ip-for-pci-express-user-guide-agilextm-5-and-agilextm-3-fpgas-and-socs/supported-features?contentId=oYPcJulNu6b8S9_OxwM4Zg",
+      "source_revision": "Altera813754 v25.3 2025-12-16 supported features: Agilex3/5 rates/lanes/tags/MPS512/MRRS4096/oneVC/clock modes, conventional reset1s caveat.",
+      "integer": false,
+      "label": "clock source",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pcie_address_hex": {
+      "type": "text",
+      "description": "Actual 32/64-bit request address encoded losslessly as hexadecimal, not floating-point number.",
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.12/include/uapi/linux/pci_regs.h",
+      "source_revision": "Linux v6.12 explicit PCIe capability/control/status masks. Register meanings/encodings, not full normative protocol or every optional capability.",
+      "integer": false,
+      "label": "address hex",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pcie_ordering_source": {
+      "type": "text",
+      "description": "Actual relaxed/no-snoop/VC/TC mapping and end-to-end coherency contract.",
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.12/include/uapi/linux/pci_regs.h",
+      "source_revision": "Linux v6.12 explicit PCIe capability/control/status masks. Register meanings/encodings, not full normative protocol or every optional capability.",
+      "integer": false,
+      "label": "ordering source",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pcie_link_status_hex": {
+      "type": "text",
+      "description": "Actual four hexadecimal digits for the Link Status register, decoded losslessly against generation/lanes/training/active values.",
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.12/include/uapi/linux/pci_regs.h",
+      "source_revision": "Linux v6.12 explicit PCIe capability/control/status masks. Register meanings/encodings, not full normative protocol or every optional capability.",
+      "integer": false,
+      "label": "link status hex",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pcie_generation": {
+      "type": "number",
+      "description": "Actual negotiated generation1..7, not maximum card capability or hypothetical Gen8 draft.",
+      "min": 1,
+      "max": 7,
+      "source": "https://pcisig.com/blog/pcie-70-specification-next-generation-performance-meet-needs-advanced-ai-applications-webinar",
+      "source_revision": "PCI-SIG 2025-09-03 Q&A, released7.0 128GT/s PAM4, identical256byte FLIT layout; implementation-dependent bifurcation/channel compliance.",
+      "integer": true,
+      "label": "generation",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "default": 1
+    },
+    "pcie_max_generation": {
+      "type": "number",
+      "description": "Actual endpoint/port supported maximum generation.",
+      "min": 1,
+      "max": 7,
+      "source": "https://pcisig.com/blog/pcie-70-specification-next-generation-performance-meet-needs-advanced-ai-applications-webinar",
+      "source_revision": "PCI-SIG 2025-09-03 Q&A, released7.0 128GT/s PAM4, identical256byte FLIT layout; implementation-dependent bifurcation/channel compliance.",
+      "integer": true,
+      "label": "max generation",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pcie_lanes": {
+      "type": "number",
+      "description": "Actual negotiated width; independent slot mechanical width and bifurcation.",
+      "min": 1,
+      "max": 32,
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.12/include/uapi/linux/pci_regs.h",
+      "source_revision": "Linux v6.12 explicit PCIe capability/control/status masks. Register meanings/encodings, not full normative protocol or every optional capability.",
+      "integer": true,
+      "label": "lanes",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "default": 1
+    },
+    "pcie_max_lanes": {
+      "type": "number",
+      "description": "Actual port maximum lane count.",
+      "min": 1,
+      "max": 32,
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.12/include/uapi/linux/pci_regs.h",
+      "source_revision": "Linux v6.12 explicit PCIe capability/control/status masks. Register meanings/encodings, not full normative protocol or every optional capability.",
+      "integer": true,
+      "label": "max lanes",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pcie_rate_gts": {
+      "type": "number",
+      "description": "Actual per-lane transfer rate GT/s, not byte throughput or PAM4 baud.",
+      "min": 2.5,
+      "max": 128,
+      "unit": "GT/s",
+      "source": "https://pcisig.com/blog/pcie-70-specification-next-generation-performance-meet-needs-advanced-ai-applications-webinar",
+      "source_revision": "PCI-SIG 2025-09-03 Q&A, released7.0 128GT/s PAM4, identical256byte FLIT layout; implementation-dependent bifurcation/channel compliance.",
+      "integer": false,
+      "label": "rate gts",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "pcie_generation": 1
+          },
+          "value": 2.5,
+          "source": "https://www.intel.com/content/www/us/en/docs/programmable/683724/18-0/physical-layer.html",
+          "source_revision": "Intel/Altera archive18.0 physical-layer public search excerpt: Gen1/2 8b10b, Gen3 128b130b, per-lane rates; direct page redirected, not claimed full document."
+        },
+        {
+          "when": {
+            "pcie_generation": 2
+          },
+          "value": 5,
+          "source": "https://www.intel.com/content/www/us/en/docs/programmable/683724/18-0/physical-layer.html",
+          "source_revision": "Intel/Altera archive18.0 physical-layer public search excerpt: Gen1/2 8b10b, Gen3 128b130b, per-lane rates; direct page redirected, not claimed full document."
+        },
+        {
+          "when": {
+            "pcie_generation": 3
+          },
+          "value": 8,
+          "source": "https://www.intel.com/content/www/us/en/docs/programmable/683724/18-0/physical-layer.html",
+          "source_revision": "Intel/Altera archive18.0 physical-layer public search excerpt: Gen1/2 8b10b, Gen3 128b130b, per-lane rates; direct page redirected, not claimed full document."
+        },
+        {
+          "when": {
+            "pcie_generation": 4
+          },
+          "value": 16,
+          "source": "https://edc.intel.com/content/www/us/en/design/products/platforms/details/raptor-lake-s/13th-generation-core-processors-datasheet-volume-1-of-2/004/pci-express-architecture/",
+          "source_revision": "Intel ID743844 revision004 2023-01-30, rates and128b130b for Gen4/5; actual processor port limits are device-specific."
+        },
+        {
+          "when": {
+            "pcie_generation": 5
+          },
+          "value": 32,
+          "source": "https://edc.intel.com/content/www/us/en/design/products/platforms/details/raptor-lake-s/13th-generation-core-processors-datasheet-volume-1-of-2/004/pci-express-architecture/",
+          "source_revision": "Intel ID743844 revision004 2023-01-30, rates and128b130b for Gen4/5; actual processor port limits are device-specific."
+        },
+        {
+          "when": {
+            "pcie_generation": 6
+          },
+          "value": 64,
+          "source": "https://pcisig.com/blog/pcie-70-specification-next-generation-performance-meet-needs-advanced-ai-applications-webinar",
+          "source_revision": "PCI-SIG 2025-09-03 Q&A, released7.0 128GT/s PAM4, identical256byte FLIT layout; implementation-dependent bifurcation/channel compliance."
+        },
+        {
+          "when": {
+            "pcie_generation": 7
+          },
+          "value": 128,
+          "source": "https://pcisig.com/blog/pcie-70-specification-next-generation-performance-meet-needs-advanced-ai-applications-webinar",
+          "source_revision": "PCI-SIG 2025-09-03 Q&A, released7.0 128GT/s PAM4, identical256byte FLIT layout; implementation-dependent bifurcation/channel compliance."
+        }
+      ]
+    },
+    "pcie_raw_direction_bps": {
+      "type": "number",
+      "description": "Derived raw aggregate one-direction bit rate, before codec/packets/credits/replay/power gaps.",
+      "min": 1,
+      "unit": "bit/s",
+      "source": "https://pcisig.com/blog/pcie-70-specification-next-generation-performance-meet-needs-advanced-ai-applications-webinar",
+      "source_revision": "PCI-SIG 2025-09-03 Q&A, released7.0 128GT/s PAM4, identical256byte FLIT layout; implementation-dependent bifurcation/channel compliance.",
+      "integer": false,
+      "label": "raw direction bps",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pcie_decoded_ceiling_bps": {
+      "type": "number",
+      "description": "Theoretical NON_FLIT decoded bit ceiling; not application goodput/capacity evidence.",
+      "min": 1,
+      "unit": "bit/s",
+      "source": "https://www.intel.com/content/www/us/en/docs/programmable/683724/18-0/physical-layer.html",
+      "source_revision": "Intel/Altera archive18.0 physical-layer public search excerpt: Gen1/2 8b10b, Gen3 128b130b, per-lane rates; direct page redirected, not claimed full document.",
+      "integer": false,
+      "label": "decoded ceiling bps",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pcie_mps": {
+      "type": "number",
+      "description": "Actual configured Max_Payload_Size, independent read request length.",
+      "min": 128,
+      "max": 4096,
+      "unit": "byte",
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.12/include/uapi/linux/pci_regs.h",
+      "source_revision": "Linux v6.12 explicit PCIe capability/control/status masks. Register meanings/encodings, not full normative protocol or every optional capability.",
+      "integer": true,
+      "label": "mps",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "default": 128
+    },
+    "pcie_mps_supported": {
+      "type": "number",
+      "description": "Actual read-only device MPS capability, not configured MPS.",
+      "min": 128,
+      "max": 4096,
+      "unit": "byte",
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.12/include/uapi/linux/pci_regs.h",
+      "source_revision": "Linux v6.12 explicit PCIe capability/control/status masks. Register meanings/encodings, not full normative protocol or every optional capability.",
+      "integer": true,
+      "label": "mps supported",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pcie_path_mps": {
+      "type": "number",
+      "description": "Actual compatible maximum payload along every traversed port/function.",
+      "min": 128,
+      "max": 4096,
+      "unit": "byte",
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.12/include/uapi/linux/pci_regs.h",
+      "source_revision": "Linux v6.12 explicit PCIe capability/control/status masks. Register meanings/encodings, not full normative protocol or every optional capability.",
+      "integer": true,
+      "label": "path mps",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pcie_mrrs": {
+      "type": "number",
+      "description": "Actual configured Max_Read_Request_Size, may exceed configured MPS.",
+      "min": 128,
+      "max": 4096,
+      "unit": "byte",
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.12/include/uapi/linux/pci_regs.h",
+      "source_revision": "Linux v6.12 explicit PCIe capability/control/status masks. Register meanings/encodings, not full normative protocol or every optional capability.",
+      "integer": true,
+      "label": "mrrs",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "default": 128
+    },
+    "pcie_mps_code": {
+      "type": "number",
+      "description": "Actual three-bit payload encoding0..5;6/7 reserved.",
+      "min": 0,
+      "max": 5,
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.12/include/uapi/linux/pci_regs.h",
+      "source_revision": "Linux v6.12 explicit PCIe capability/control/status masks. Register meanings/encodings, not full normative protocol or every optional capability.",
+      "integer": true,
+      "label": "mps code",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pcie_mrrs_code": {
+      "type": "number",
+      "description": "Actual read-request encoding0..5, independently decoded.",
+      "min": 0,
+      "max": 5,
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.12/include/uapi/linux/pci_regs.h",
+      "source_revision": "Linux v6.12 explicit PCIe capability/control/status masks. Register meanings/encodings, not full normative protocol or every optional capability.",
+      "integer": true,
+      "label": "mrrs code",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pcie_tlp_payload_bytes": {
+      "type": "number",
+      "description": "Actual DWORD-aligned on-wire data of one TLP, includes disabled/padding bytes; distinct whole application/read request/completion.",
+      "min": 0,
+      "max": 4096,
+      "unit": "byte",
+      "source": "https://docs.altera.com/r/docs/683411/current/transaction-layer-errors",
+      "source_revision": "Altera683411 document15.1, page timestamp2025-12-16 transaction-error table70: length/TD/byte enables,4KB boundary, correlation/credits/poison. Legacy implementation-qualified checks, not Agilex25.3 certification.",
+      "integer": true,
+      "label": "tlp payload bytes",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pcie_request_bytes": {
+      "type": "number",
+      "description": "Actual nonposted read request length, distinct response splitting into several completions.",
+      "min": 1,
+      "max": 4096,
+      "unit": "byte",
+      "source": "https://docs.altera.com/r/docs/813754/25.3/gts-axi-streaming-ip-for-pci-express-user-guide-agilextm-5-and-agilextm-3-fpgas-and-socs/completion-timeout-interface?contentId=EBTDmC2PKISZT4Arera3qQ",
+      "source_revision": "Altera813754 v25.3 2025-12-16 non-posted completion timeout correlation by tag/function/remainingbytes/TC/attributes.",
+      "integer": true,
+      "label": "request bytes",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pcie_remaining_bytes": {
+      "type": "number",
+      "description": "Actual still outstanding completion bytes for same request, not full application buffer.",
+      "min": 0,
+      "max": 4096,
+      "unit": "byte",
+      "source": "https://docs.altera.com/r/docs/813754/25.3/gts-axi-streaming-ip-for-pci-express-user-guide-agilextm-5-and-agilextm-3-fpgas-and-socs/completion-timeout-interface?contentId=EBTDmC2PKISZT4Arera3qQ",
+      "source_revision": "Altera813754 v25.3 2025-12-16 non-posted completion timeout correlation by tag/function/remainingbytes/TC/attributes.",
+      "integer": true,
+      "label": "remaining bytes",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pcie_header_bytes": {
+      "type": "number",
+      "description": "Actual NON_FLIT base header size from3DW/4DW; prefix/digest separately.",
+      "min": 12,
+      "max": 16,
+      "unit": "byte",
+      "source": "https://docs.altera.com/r/docs/813754/25.3/gts-axi-streaming-ip-for-pci-express-user-guide-agilextm-5-and-agilextm-3-fpgas-and-socs/supported-features?contentId=oYPcJulNu6b8S9_OxwM4Zg",
+      "source_revision": "Altera813754 v25.3 2025-12-16 supported features: Agilex3/5 rates/lanes/tags/MPS512/MRRS4096/oneVC/clock modes, conventional reset1s caveat.",
+      "integer": true,
+      "label": "header bytes",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pcie_prefix_bytes": {
+      "type": "number",
+      "description": "Actual enabled TLP prefix bytes; requires selected format/device source.",
+      "min": 0,
+      "unit": "byte",
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.12/include/uapi/linux/pci_regs.h",
+      "source_revision": "Linux v6.12 explicit PCIe capability/control/status masks. Register meanings/encodings, not full normative protocol or every optional capability.",
+      "integer": true,
+      "label": "prefix bytes",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pcie_digest_bytes": {
+      "type": "number",
+      "description": "Actual optional NON_FLIT ECRC digest, distinct link CRC.",
+      "min": 0,
+      "max": 4,
+      "unit": "byte",
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.12/include/uapi/linux/pci_regs.h",
+      "source_revision": "Linux v6.12 explicit PCIe capability/control/status masks. Register meanings/encodings, not full normative protocol or every optional capability.",
+      "integer": true,
+      "label": "digest bytes",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pcie_lcrc_bytes": {
+      "type": "number",
+      "description": "Actual NON_FLIT link checksum4bytes, not Ethernet FCS or FLIT CRC8.",
+      "min": 0,
+      "max": 4,
+      "unit": "byte",
+      "source": "https://pcisig.com/blog/evolution-pci-express-specification-its-sixth-generation-third-decade-and-still-going-strong",
+      "source_revision": "PCI-SIG 2022-01-11 technical article,64GT/s PAM4, FLIT256 with236TLP/6DLP/8CRC/6FEC. Public excerpt, not full licensed specification.",
+      "integer": true,
+      "label": "lcrc bytes",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pcie_framing_bytes": {
+      "type": "number",
+      "description": "Actual selected coding framing/sequence overhead, no fixed Ethernet header.",
+      "min": 0,
+      "unit": "byte",
+      "source": "https://pcisig.com/blog/evolution-pci-express-specification-its-sixth-generation-third-decade-and-still-going-strong",
+      "source_revision": "PCI-SIG 2022-01-11 technical article,64GT/s PAM4, FLIT256 with236TLP/6DLP/8CRC/6FEC. Public excerpt, not full licensed specification.",
+      "integer": true,
+      "label": "framing bytes",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pcie_packet_bytes": {
+      "type": "number",
+      "description": "Actual NON_FLIT packet sum before line coding/SKP.",
+      "min": 12,
+      "unit": "byte",
+      "source": "https://pcisig.com/blog/evolution-pci-express-specification-its-sixth-generation-third-decade-and-still-going-strong",
+      "source_revision": "PCI-SIG 2022-01-11 technical article,64GT/s PAM4, FLIT256 with236TLP/6DLP/8CRC/6FEC. Public excerpt, not full licensed specification.",
+      "integer": true,
+      "label": "packet bytes",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pcie_flit_bytes": {
+      "type": "number",
+      "description": "Selected FLIT fixed whole unit size256.",
+      "min": 256,
+      "max": 256,
+      "unit": "byte",
+      "source": "https://pcisig.com/blog/evolution-pci-express-specification-its-sixth-generation-third-decade-and-still-going-strong",
+      "source_revision": "PCI-SIG 2022-01-11 technical article,64GT/s PAM4, FLIT256 with236TLP/6DLP/8CRC/6FEC. Public excerpt, not full licensed specification.",
+      "integer": true,
+      "label": "flit bytes",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "pcie_mode": "FLIT"
+          },
+          "value": 256,
+          "source": "https://pcisig.com/blog/evolution-pci-express-specification-its-sixth-generation-third-decade-and-still-going-strong",
+          "source_revision": "PCI-SIG 2022-01-11 technical article,64GT/s PAM4, FLIT256 with236TLP/6DLP/8CRC/6FEC. Public excerpt, not full licensed specification."
+        }
+      ]
+    },
+    "pcie_flit_tlp_bytes": {
+      "type": "number",
+      "description": "FLIT area236 for TLPs, not236application bytes guaranteed.",
+      "min": 236,
+      "max": 236,
+      "unit": "byte",
+      "source": "https://pcisig.com/blog/evolution-pci-express-specification-its-sixth-generation-third-decade-and-still-going-strong",
+      "source_revision": "PCI-SIG 2022-01-11 technical article,64GT/s PAM4, FLIT256 with236TLP/6DLP/8CRC/6FEC. Public excerpt, not full licensed specification.",
+      "integer": true,
+      "label": "flit tlp bytes",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "pcie_mode": "FLIT"
+          },
+          "value": 236,
+          "source": "https://pcisig.com/blog/evolution-pci-express-specification-its-sixth-generation-third-decade-and-still-going-strong",
+          "source_revision": "PCI-SIG 2022-01-11 technical article,64GT/s PAM4, FLIT256 with236TLP/6DLP/8CRC/6FEC. Public excerpt, not full licensed specification."
+        }
+      ]
+    },
+    "pcie_flit_dlp_bytes": {
+      "type": "number",
+      "description": "FLIT data-link area6, distinct TLP data.",
+      "min": 6,
+      "max": 6,
+      "unit": "byte",
+      "source": "https://pcisig.com/blog/evolution-pci-express-specification-its-sixth-generation-third-decade-and-still-going-strong",
+      "source_revision": "PCI-SIG 2022-01-11 technical article,64GT/s PAM4, FLIT256 with236TLP/6DLP/8CRC/6FEC. Public excerpt, not full licensed specification.",
+      "integer": true,
+      "label": "flit dlp bytes",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "pcie_mode": "FLIT"
+          },
+          "value": 6,
+          "source": "https://pcisig.com/blog/evolution-pci-express-specification-its-sixth-generation-third-decade-and-still-going-strong",
+          "source_revision": "PCI-SIG 2022-01-11 technical article,64GT/s PAM4, FLIT256 with236TLP/6DLP/8CRC/6FEC. Public excerpt, not full licensed specification."
+        }
+      ]
+    },
+    "pcie_flit_crc_bytes": {
+      "type": "number",
+      "description": "FLIT checksum8, independent NON_FLIT LCRC4.",
+      "min": 8,
+      "max": 8,
+      "unit": "byte",
+      "source": "https://pcisig.com/blog/evolution-pci-express-specification-its-sixth-generation-third-decade-and-still-going-strong",
+      "source_revision": "PCI-SIG 2022-01-11 technical article,64GT/s PAM4, FLIT256 with236TLP/6DLP/8CRC/6FEC. Public excerpt, not full licensed specification.",
+      "integer": true,
+      "label": "flit crc bytes",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "pcie_mode": "FLIT"
+          },
+          "value": 8,
+          "source": "https://pcisig.com/blog/evolution-pci-express-specification-its-sixth-generation-third-decade-and-still-going-strong",
+          "source_revision": "PCI-SIG 2022-01-11 technical article,64GT/s PAM4, FLIT256 with236TLP/6DLP/8CRC/6FEC. Public excerpt, not full licensed specification."
+        }
+      ]
+    },
+    "pcie_flit_fec_bytes": {
+      "type": "number",
+      "description": "FLIT FEC6, no guaranteed application validity implied.",
+      "min": 6,
+      "max": 6,
+      "unit": "byte",
+      "source": "https://pcisig.com/blog/evolution-pci-express-specification-its-sixth-generation-third-decade-and-still-going-strong",
+      "source_revision": "PCI-SIG 2022-01-11 technical article,64GT/s PAM4, FLIT256 with236TLP/6DLP/8CRC/6FEC. Public excerpt, not full licensed specification.",
+      "integer": true,
+      "label": "flit fec bytes",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "pcie_mode": "FLIT"
+          },
+          "value": 6,
+          "source": "https://pcisig.com/blog/evolution-pci-express-specification-its-sixth-generation-third-decade-and-still-going-strong",
+          "source_revision": "PCI-SIG 2022-01-11 technical article,64GT/s PAM4, FLIT256 with236TLP/6DLP/8CRC/6FEC. Public excerpt, not full licensed specification."
+        }
+      ]
+    },
+    "pcie_traffic_class": {
+      "type": "number",
+      "description": "Actual TC0..7; not CAN arbitration priority.",
+      "min": 0,
+      "max": 7,
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.12/include/uapi/linux/pci_regs.h",
+      "source_revision": "Linux v6.12 explicit PCIe capability/control/status masks. Register meanings/encodings, not full normative protocol or every optional capability.",
+      "integer": true,
+      "label": "traffic class",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pcie_virtual_channel": {
+      "type": "number",
+      "description": "Actual mapped VC0..7 within enabled endpoint capabilities.",
+      "min": 0,
+      "max": 7,
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.12/include/uapi/linux/pci_regs.h",
+      "source_revision": "Linux v6.12 explicit PCIe capability/control/status masks. Register meanings/encodings, not full normative protocol or every optional capability.",
+      "integer": true,
+      "label": "virtual channel",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pcie_vc_count": {
+      "type": "number",
+      "description": "Actual enabled virtual channel count, source-qualified arbitration/backpressure.",
+      "min": 1,
+      "max": 8,
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.12/include/uapi/linux/pci_regs.h",
+      "source_revision": "Linux v6.12 explicit PCIe capability/control/status masks. Register meanings/encodings, not full normative protocol or every optional capability.",
+      "integer": true,
+      "label": "vc count",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pcie_header_credits": {
+      "type": "number",
+      "description": "Actual available usable header credits for this flow/VC, not raw advertised counter.",
+      "min": 0,
+      "source": "https://docs.altera.com/r/docs/813754/25.3/gts-axi-streaming-ip-for-pci-express-user-guide-agilextm-5-and-agilextm-3-fpgas-and-socs/transmit-flow-control-credit-interface?contentId=4jxXGgx_nObvvH4KBB6tjA",
+      "source_revision": "Altera813754 v25.3 2025-12-16 credit interface, header credit and data credit16bytes; actual limits versus available space.",
+      "integer": true,
+      "label": "header credits",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pcie_data_credits": {
+      "type": "number",
+      "description": "Actual available usable data credits, distinct scaled/modular advertised limit.",
+      "min": 0,
+      "source": "https://docs.altera.com/r/docs/813754/25.3/gts-axi-streaming-ip-for-pci-express-user-guide-agilextm-5-and-agilextm-3-fpgas-and-socs/transmit-flow-control-credit-interface?contentId=4jxXGgx_nObvvH4KBB6tjA",
+      "source_revision": "Altera813754 v25.3 2025-12-16 credit interface, header credit and data credit16bytes; actual limits versus available space.",
+      "integer": true,
+      "label": "data credits",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pcie_data_credit_bytes": {
+      "type": "number",
+      "description": "Reviewed data-credit size16bytes for selected Altera NON_FLIT interface.",
+      "min": 16,
+      "max": 16,
+      "unit": "byte",
+      "source": "https://docs.altera.com/r/docs/813754/25.3/gts-axi-streaming-ip-for-pci-express-user-guide-agilextm-5-and-agilextm-3-fpgas-and-socs/transmit-flow-control-credit-interface?contentId=4jxXGgx_nObvvH4KBB6tjA",
+      "source_revision": "Altera813754 v25.3 2025-12-16 credit interface, header credit and data credit16bytes; actual limits versus available space.",
+      "integer": true,
+      "label": "data credit bytes",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pcie_needed_data_credits": {
+      "type": "number",
+      "description": "Data credits needed, rounded up on actual TLP data bytes.",
+      "min": 0,
+      "source": "https://docs.altera.com/r/docs/813754/25.3/gts-axi-streaming-ip-for-pci-express-user-guide-agilextm-5-and-agilextm-3-fpgas-and-socs/transmit-flow-control-credit-interface?contentId=4jxXGgx_nObvvH4KBB6tjA",
+      "source_revision": "Altera813754 v25.3 2025-12-16 credit interface, header credit and data credit16bytes; actual limits versus available space.",
+      "integer": true,
+      "label": "needed data credits",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pcie_tag_bits": {
+      "type": "number",
+      "description": "Actual enabled requester tag width, not all generations always8.",
+      "min": 5,
+      "max": 10,
+      "unit": "bit",
+      "source": "https://docs.altera.com/r/docs/813754/25.3/gts-axi-streaming-ip-for-pci-express-user-guide-agilextm-5-and-agilextm-3-fpgas-and-socs/supported-features?contentId=oYPcJulNu6b8S9_OxwM4Zg",
+      "source_revision": "Altera813754 v25.3 2025-12-16 supported features: Agilex3/5 rates/lanes/tags/MPS512/MRRS4096/oneVC/clock modes, conventional reset1s caveat.",
+      "integer": true,
+      "label": "tag bits",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pcie_tag": {
+      "type": "number",
+      "description": "Actual outstanding tag under enabled width and correlated requester/function.",
+      "min": 0,
+      "max": 1023,
+      "source": "https://docs.altera.com/r/docs/813754/25.3/gts-axi-streaming-ip-for-pci-express-user-guide-agilextm-5-and-agilextm-3-fpgas-and-socs/completion-timeout-interface?contentId=EBTDmC2PKISZT4Arera3qQ",
+      "source_revision": "Altera813754 v25.3 2025-12-16 non-posted completion timeout correlation by tag/function/remainingbytes/TC/attributes.",
+      "integer": true,
+      "label": "tag",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pcie_tag_capacity": {
+      "type": "number",
+      "description": "Actual supported outstanding tags for selected controller.",
+      "min": 1,
+      "max": 1024,
+      "source": "https://docs.altera.com/r/docs/813754/25.3/gts-axi-streaming-ip-for-pci-express-user-guide-agilextm-5-and-agilextm-3-fpgas-and-socs/supported-features?contentId=oYPcJulNu6b8S9_OxwM4Zg",
+      "source_revision": "Altera813754 v25.3 2025-12-16 supported features: Agilex3/5 rates/lanes/tags/MPS512/MRRS4096/oneVC/clock modes, conventional reset1s caveat.",
+      "integer": true,
+      "label": "tag capacity",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pcie_outstanding_requests": {
+      "type": "number",
+      "description": "Actual currently allocated request tags, no duplicate reuse while outstanding.",
+      "min": 0,
+      "max": 1024,
+      "source": "https://docs.altera.com/r/docs/813754/25.3/gts-axi-streaming-ip-for-pci-express-user-guide-agilextm-5-and-agilextm-3-fpgas-and-socs/supported-features?contentId=oYPcJulNu6b8S9_OxwM4Zg",
+      "source_revision": "Altera813754 v25.3 2025-12-16 supported features: Agilex3/5 rates/lanes/tags/MPS512/MRRS4096/oneVC/clock modes, conventional reset1s caveat.",
+      "integer": true,
+      "label": "outstanding requests",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pcie_requester_bus": {
+      "type": "number",
+      "description": "Actual BDF bus identifier.",
+      "min": 0,
+      "max": 255,
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.12/include/uapi/linux/pci_regs.h",
+      "source_revision": "Linux v6.12 explicit PCIe capability/control/status masks. Register meanings/encodings, not full normative protocol or every optional capability.",
+      "integer": true,
+      "label": "requester bus",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pcie_requester_device": {
+      "type": "number",
+      "description": "Actual conventional BDF device identifier; ARI requires registered interpretation.",
+      "min": 0,
+      "max": 31,
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.12/include/uapi/linux/pci_regs.h",
+      "source_revision": "Linux v6.12 explicit PCIe capability/control/status masks. Register meanings/encodings, not full normative protocol or every optional capability.",
+      "integer": true,
+      "label": "requester device",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pcie_requester_function": {
+      "type": "number",
+      "description": "Actual conventional BDF function0..7; ARI source-qualified separately.",
+      "min": 0,
+      "max": 7,
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.12/include/uapi/linux/pci_regs.h",
+      "source_revision": "Linux v6.12 explicit PCIe capability/control/status masks. Register meanings/encodings, not full normative protocol or every optional capability.",
+      "integer": true,
+      "label": "requester function",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pcie_completion_timeout_us": {
+      "type": "number",
+      "description": "Actual device timeout selection, not a copied CAN or generic50ms default.",
+      "min": 0,
+      "unit": "us",
+      "source": "https://docs.altera.com/r/docs/813754/25.3/gts-axi-streaming-ip-for-pci-express-user-guide-agilextm-5-and-agilextm-3-fpgas-and-socs/completion-timeout-interface?contentId=EBTDmC2PKISZT4Arera3qQ",
+      "source_revision": "Altera813754 v25.3 2025-12-16 non-posted completion timeout correlation by tag/function/remainingbytes/TC/attributes.",
+      "integer": false,
+      "label": "completion timeout us",
+      "category": "timing",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pcie_completion_elapsed_us": {
+      "type": "number",
+      "description": "Actual elapsed nonposted request time at observation.",
+      "min": 0,
+      "unit": "us",
+      "source": "https://docs.altera.com/r/docs/813754/25.3/gts-axi-streaming-ip-for-pci-express-user-guide-agilextm-5-and-agilextm-3-fpgas-and-socs/completion-timeout-interface?contentId=EBTDmC2PKISZT4Arera3qQ",
+      "source_revision": "Altera813754 v25.3 2025-12-16 non-posted completion timeout correlation by tag/function/remainingbytes/TC/attributes.",
+      "integer": false,
+      "label": "completion elapsed us",
+      "category": "timing",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pcie_replay_bound_us": {
+      "type": "number",
+      "description": "Actual ACK/NAK/replay service bound for active format/rate/width/device.",
+      "min": 0,
+      "unit": "us",
+      "source": "https://pcisig.com/blog/evolution-pci-express-specification-its-sixth-generation-third-decade-and-still-going-strong",
+      "source_revision": "PCI-SIG 2022-01-11 technical article,64GT/s PAM4, FLIT256 with236TLP/6DLP/8CRC/6FEC. Public excerpt, not full licensed specification.",
+      "integer": false,
+      "label": "replay bound us",
+      "category": "timing",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pcie_wake_bound_us": {
+      "type": "number",
+      "description": "Actual power-state exit latency, not always zero.",
+      "min": 0,
+      "unit": "us",
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.12/include/uapi/linux/pci_regs.h",
+      "source_revision": "Linux v6.12 explicit PCIe capability/control/status masks. Register meanings/encodings, not full normative protocol or every optional capability.",
+      "integer": false,
+      "label": "wake bound us",
+      "category": "timing",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pcie_age_us": {
+      "type": "number",
+      "description": "Actual source-data age at correlated application consumption.",
+      "min": 0,
+      "unit": "us",
+      "source": "https://docs.altera.com/r/docs/813754/25.3/gts-axi-streaming-ip-for-pci-express-user-guide-agilextm-5-and-agilextm-3-fpgas-and-socs/completion-timeout-interface?contentId=EBTDmC2PKISZT4Arera3qQ",
+      "source_revision": "Altera813754 v25.3 2025-12-16 non-posted completion timeout correlation by tag/function/remainingbytes/TC/attributes.",
+      "integer": false,
+      "label": "age us",
+      "category": "timing",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pcie_freshness_limit_us": {
+      "type": "number",
+      "description": "Actual required maximum source-data age.",
+      "min": 0,
+      "unit": "us",
+      "source": "https://docs.altera.com/r/docs/813754/25.3/gts-axi-streaming-ip-for-pci-express-user-guide-agilextm-5-and-agilextm-3-fpgas-and-socs/completion-timeout-interface?contentId=EBTDmC2PKISZT4Arera3qQ",
+      "source_revision": "Altera813754 v25.3 2025-12-16 non-posted completion timeout correlation by tag/function/remainingbytes/TC/attributes.",
+      "integer": false,
+      "label": "freshness limit us",
+      "category": "timing",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pcie_reset_wait_us": {
+      "type": "number",
+      "description": "Actual Conventional Reset configuration-request wait; separate link-training duration.",
+      "min": 0,
+      "unit": "us",
+      "source": "https://docs.altera.com/r/docs/813754/25.3/gts-axi-streaming-ip-for-pci-express-user-guide-agilextm-5-and-agilextm-3-fpgas-and-socs/supported-features?contentId=oYPcJulNu6b8S9_OxwM4Zg",
+      "source_revision": "Altera813754 v25.3 2025-12-16 supported features: Agilex3/5 rates/lanes/tags/MPS512/MRRS4096/oneVC/clock modes, conventional reset1s caveat.",
+      "integer": false,
+      "label": "reset wait us",
+      "category": "timing",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pcie_link_status": {
+      "type": "number",
+      "description": "Actual16-bit Link Status register snapshot, source-version qualified.",
+      "min": 0,
+      "max": 65535,
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.12/include/uapi/linux/pci_regs.h",
+      "source_revision": "Linux v6.12 explicit PCIe capability/control/status masks. Register meanings/encodings, not full normative protocol or every optional capability.",
+      "integer": true,
+      "label": "link status",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pcie_aer_uncorrectable": {
+      "type": "number",
+      "description": "Actual32-bit AER uncorrectable status; not a CRC-success boolean.",
+      "min": 0,
+      "max": 4294967295,
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.12/include/uapi/linux/pci_regs.h",
+      "source_revision": "Linux v6.12 explicit PCIe capability/control/status masks. Register meanings/encodings, not full normative protocol or every optional capability.",
+      "integer": true,
+      "label": "aer uncorrectable",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pcie_aer_correctable": {
+      "type": "number",
+      "description": "Actual32-bit AER correctable status, replay need not imply application failure.",
+      "min": 0,
+      "max": 4294967295,
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.12/include/uapi/linux/pci_regs.h",
+      "source_revision": "Linux v6.12 explicit PCIe capability/control/status masks. Register meanings/encodings, not full normative protocol or every optional capability.",
+      "integer": true,
+      "label": "aer correctable",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pcie_page_offset": {
+      "type": "number",
+      "description": "Actual request address low12bits, compared to the selected memory request span; not full64bit floating address.",
+      "min": 0,
+      "max": 4095,
+      "unit": "byte",
+      "source": "https://docs.altera.com/r/docs/683411/current/transaction-layer-errors",
+      "source_revision": "Altera683411 document15.1, page timestamp2025-12-16 transaction-error table70: length/TD/byte enables,4KB boundary, correlation/credits/poison. Legacy implementation-qualified checks, not Agilex25.3 certification.",
+      "integer": true,
+      "label": "page offset",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pcie_flit_supported": {
+      "type": "boolean",
+      "description": "Actual both-partner FLIT capability; separate negotiated status.",
+      "source": "https://pcisig.com/blog/evolution-pci-express-specification-its-sixth-generation-third-decade-and-still-going-strong",
+      "source_revision": "PCI-SIG 2022-01-11 technical article,64GT/s PAM4, FLIT256 with236TLP/6DLP/8CRC/6FEC. Public excerpt, not full licensed specification.",
+      "integer": false,
+      "label": "flit supported",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pcie_link_active": {
+      "type": "boolean",
+      "description": "Actual Data Link Layer Link Active, separate physical speed.",
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.12/include/uapi/linux/pci_regs.h",
+      "source_revision": "Linux v6.12 explicit PCIe capability/control/status masks. Register meanings/encodings, not full normative protocol or every optional capability.",
+      "integer": false,
+      "label": "link active",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pcie_training": {
+      "type": "boolean",
+      "description": "Actual Link Training status; not a steady service bound.",
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.12/include/uapi/linux/pci_regs.h",
+      "source_revision": "Linux v6.12 explicit PCIe capability/control/status masks. Register meanings/encodings, not full normative protocol or every optional capability.",
+      "integer": false,
+      "label": "training",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pcie_ecrc_enabled": {
+      "type": "boolean",
+      "description": "Actual optional end-to-end digest enable, not automatic all-packet validity.",
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.12/include/uapi/linux/pci_regs.h",
+      "source_revision": "Linux v6.12 explicit PCIe capability/control/status masks. Register meanings/encodings, not full normative protocol or every optional capability.",
+      "integer": false,
+      "label": "ecrc enabled",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pcie_ecrc_supported": {
+      "type": "boolean",
+      "description": "Actual generator/checker capability for chosen direction.",
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.12/include/uapi/linux/pci_regs.h",
+      "source_revision": "Linux v6.12 explicit PCIe capability/control/status masks. Register meanings/encodings, not full normative protocol or every optional capability.",
+      "integer": false,
+      "label": "ecrc supported",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pcie_relaxed_ordering": {
+      "type": "boolean",
+      "description": "Actual selected ordering attribute requires application coherency evidence.",
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.12/include/uapi/linux/pci_regs.h",
+      "source_revision": "Linux v6.12 explicit PCIe capability/control/status masks. Register meanings/encodings, not full normative protocol or every optional capability.",
+      "integer": false,
+      "label": "relaxed ordering",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pcie_no_snoop": {
+      "type": "boolean",
+      "description": "Actual selected no-snoop attribute, not safe by default for all memory.",
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.12/include/uapi/linux/pci_regs.h",
+      "source_revision": "Linux v6.12 explicit PCIe capability/control/status masks. Register meanings/encodings, not full normative protocol or every optional capability.",
+      "integer": false,
+      "label": "no snoop",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pcie_completion_timeout_disabled": {
+      "type": "boolean",
+      "description": "Actual disable setting; no timeout means no finite completion proof.",
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.12/include/uapi/linux/pci_regs.h",
+      "source_revision": "Linux v6.12 explicit PCIe capability/control/status masks. Register meanings/encodings, not full normative protocol or every optional capability.",
+      "integer": false,
+      "label": "completion timeout disabled",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pcie_completion_timeout_disable_supported": {
+      "type": "boolean",
+      "description": "Actual device disable capability.",
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.12/include/uapi/linux/pci_regs.h",
+      "source_revision": "Linux v6.12 explicit PCIe capability/control/status masks. Register meanings/encodings, not full normative protocol or every optional capability.",
+      "integer": false,
+      "label": "completion timeout disable supported",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pcie_transmission_started": {
+      "type": "boolean",
+      "description": "Actual TLP emission subject to link and usable credits.",
+      "source": "https://docs.altera.com/r/docs/813754/25.3/gts-axi-streaming-ip-for-pci-express-user-guide-agilextm-5-and-agilextm-3-fpgas-and-socs/transmit-flow-control-credit-interface?contentId=4jxXGgx_nObvvH4KBB6tjA",
+      "source_revision": "Altera813754 v25.3 2025-12-16 credit interface, header credit and data credit16bytes; actual limits versus available space.",
+      "integer": false,
+      "label": "transmission started",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pcie_completion_received": {
+      "type": "boolean",
+      "description": "Actual completion received for correlated request/tag/function.",
+      "source": "https://docs.altera.com/r/docs/813754/25.3/gts-axi-streaming-ip-for-pci-express-user-guide-agilextm-5-and-agilextm-3-fpgas-and-socs/completion-timeout-interface?contentId=EBTDmC2PKISZT4Arera3qQ",
+      "source_revision": "Altera813754 v25.3 2025-12-16 non-posted completion timeout correlation by tag/function/remainingbytes/TC/attributes.",
+      "integer": false,
+      "label": "completion received",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pcie_completion_success": {
+      "type": "boolean",
+      "description": "Actual completion status Success, not only link ACK.",
+      "source": "https://docs.altera.com/r/docs/813754/25.3/gts-axi-streaming-ip-for-pci-express-user-guide-agilextm-5-and-agilextm-3-fpgas-and-socs/completion-timeout-interface?contentId=EBTDmC2PKISZT4Arera3qQ",
+      "source_revision": "Altera813754 v25.3 2025-12-16 non-posted completion timeout correlation by tag/function/remainingbytes/TC/attributes.",
+      "integer": false,
+      "label": "completion success",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pcie_poisoned": {
+      "type": "boolean",
+      "description": "Actual transaction poison indication.",
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.12/include/uapi/linux/pci_regs.h",
+      "source_revision": "Linux v6.12 explicit PCIe capability/control/status masks. Register meanings/encodings, not full normative protocol or every optional capability.",
+      "integer": false,
+      "label": "poisoned",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pcie_tag_unique": {
+      "type": "boolean",
+      "description": "Actual outstanding tag uniqueness/correlation verified by source.",
+      "source": "https://docs.altera.com/r/docs/813754/25.3/gts-axi-streaming-ip-for-pci-express-user-guide-agilextm-5-and-agilextm-3-fpgas-and-socs/supported-features?contentId=oYPcJulNu6b8S9_OxwM4Zg",
+      "source_revision": "Altera813754 v25.3 2025-12-16 supported features: Agilex3/5 rates/lanes/tags/MPS512/MRRS4096/oneVC/clock modes, conventional reset1s caveat.",
+      "integer": false,
+      "label": "tag unique",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pcie_data_accepted": {
+      "type": "boolean",
+      "description": "Actual functional consumption, separate raw rate/CRC/physical qualification.",
+      "source": "https://docs.altera.com/r/docs/813754/25.3/gts-axi-streaming-ip-for-pci-express-user-guide-agilextm-5-and-agilextm-3-fpgas-and-socs/completion-timeout-interface?contentId=EBTDmC2PKISZT4Arera3qQ",
+      "source_revision": "Altera813754 v25.3 2025-12-16 non-posted completion timeout correlation by tag/function/remainingbytes/TC/attributes.",
+      "integer": false,
+      "label": "data accepted",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pcie_readiness_notification": {
+      "type": "boolean",
+      "description": "Actual RN mechanism used after Conventional Reset.",
+      "source": "https://docs.altera.com/r/docs/813754/25.3/gts-axi-streaming-ip-for-pci-express-user-guide-agilextm-5-and-agilextm-3-fpgas-and-socs/supported-features?contentId=oYPcJulNu6b8S9_OxwM4Zg",
+      "source_revision": "Altera813754 v25.3 2025-12-16 supported features: Agilex3/5 rates/lanes/tags/MPS512/MRRS4096/oneVC/clock modes, conventional reset1s caveat.",
+      "integer": false,
+      "label": "readiness notification",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "pcie_conventional_reset": {
+      "type": "boolean",
+      "description": "Actual reset event; not every power transition.",
+      "source": "https://docs.altera.com/r/docs/813754/25.3/gts-axi-streaming-ip-for-pci-express-user-guide-agilextm-5-and-agilextm-3-fpgas-and-socs/supported-features?contentId=oYPcJulNu6b8S9_OxwM4Zg",
+      "source_revision": "Altera813754 v25.3 2025-12-16 supported features: Agilex3/5 rates/lanes/tags/MPS512/MRRS4096/oneVC/clock modes, conventional reset1s caveat.",
+      "integer": false,
+      "label": "conventional reset",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    }
+  },
+  "mechanisms": {
+    "framing": [
+      "NON_FLIT_VERSUS_FLIT_FEC"
+    ],
+    "qualification": [
+      "NEGOTIATED_RATE_NOT_APPLICATION_GOODPUT",
+      "DEVICE_CAPABILITY_DISTINCT_CONFIGURATION",
+      "NO_CAN_ETHERNET_FALLBACK"
+    ]
+  },
+  "parameter_constraints": [
+    {
+      "parameter": "pcie_implementation",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.12/include/uapi/linux/pci_regs.h",
+      "source_revision": "Linux v6.12 explicit PCIe capability/control/status masks. Register meanings/encodings, not full normative protocol or every optional capability.",
+      "required": true
+    },
+    {
+      "parameter": "pcie_mode",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.12/include/uapi/linux/pci_regs.h",
+      "source_revision": "Linux v6.12 explicit PCIe capability/control/status masks. Register meanings/encodings, not full normative protocol or every optional capability.",
+      "required": true
+    },
+    {
+      "parameter": "pcie_encoding",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.12/include/uapi/linux/pci_regs.h",
+      "source_revision": "Linux v6.12 explicit PCIe capability/control/status masks. Register meanings/encodings, not full normative protocol or every optional capability.",
+      "required": true
+    },
+    {
+      "parameter": "pcie_role",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.12/include/uapi/linux/pci_regs.h",
+      "source_revision": "Linux v6.12 explicit PCIe capability/control/status masks. Register meanings/encodings, not full normative protocol or every optional capability.",
+      "required": true
+    },
+    {
+      "parameter": "pcie_generation",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.12/include/uapi/linux/pci_regs.h",
+      "source_revision": "Linux v6.12 explicit PCIe capability/control/status masks. Register meanings/encodings, not full normative protocol or every optional capability.",
+      "required": true
+    },
+    {
+      "parameter": "pcie_lanes",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.12/include/uapi/linux/pci_regs.h",
+      "source_revision": "Linux v6.12 explicit PCIe capability/control/status masks. Register meanings/encodings, not full normative protocol or every optional capability.",
+      "required": true
+    },
+    {
+      "parameter": "pcie_edition_source",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.12/include/uapi/linux/pci_regs.h",
+      "source_revision": "Linux v6.12 explicit PCIe capability/control/status masks. Register meanings/encodings, not full normative protocol or every optional capability.",
+      "required": true
+    },
+    {
+      "parameter": "pcie_device_source",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.12/include/uapi/linux/pci_regs.h",
+      "source_revision": "Linux v6.12 explicit PCIe capability/control/status masks. Register meanings/encodings, not full normative protocol or every optional capability.",
+      "required": true
+    },
+    {
+      "parameter": "pcie_link_source",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.12/include/uapi/linux/pci_regs.h",
+      "source_revision": "Linux v6.12 explicit PCIe capability/control/status masks. Register meanings/encodings, not full normative protocol or every optional capability.",
+      "required": true
+    },
+    {
+      "parameter": "pcie_physical_source",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.12/include/uapi/linux/pci_regs.h",
+      "source_revision": "Linux v6.12 explicit PCIe capability/control/status masks. Register meanings/encodings, not full normative protocol or every optional capability.",
+      "required": true
+    },
+    {
+      "parameter": "pcie_schedule_source",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.12/include/uapi/linux/pci_regs.h",
+      "source_revision": "Linux v6.12 explicit PCIe capability/control/status masks. Register meanings/encodings, not full normative protocol or every optional capability.",
+      "required": true
+    },
+    {
+      "parameter": "pcie_transaction_source",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.12/include/uapi/linux/pci_regs.h",
+      "source_revision": "Linux v6.12 explicit PCIe capability/control/status masks. Register meanings/encodings, not full normative protocol or every optional capability.",
+      "required": true
+    },
+    {
+      "parameter": "pcie_acceptance_source",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.12/include/uapi/linux/pci_regs.h",
+      "source_revision": "Linux v6.12 explicit PCIe capability/control/status masks. Register meanings/encodings, not full normative protocol or every optional capability.",
+      "required": true
+    },
+    {
+      "parameter": "bitrate_bps",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.12/include/uapi/linux/pci_regs.h",
+      "source_revision": "Linux v6.12 explicit PCIe capability/control/status masks. Register meanings/encodings, not full normative protocol or every optional capability.",
+      "allowed": []
+    },
+    {
+      "parameter": "local_timing_evidence",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.12/include/uapi/linux/pci_regs.h",
+      "source_revision": "Linux v6.12 explicit PCIe capability/control/status masks. Register meanings/encodings, not full normative protocol or every optional capability.",
+      "allowed": []
+    },
+    {
+      "parameter": "pcie_lanes",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.12/include/uapi/linux/pci_regs.h",
+      "source_revision": "Linux v6.12 explicit PCIe capability/control/status masks. Register meanings/encodings, not full normative protocol or every optional capability.",
+      "allowed": [
+        1,
+        2,
+        4,
+        8,
+        12,
+        16,
+        32
+      ]
+    },
+    {
+      "parameter": "pcie_max_lanes",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.12/include/uapi/linux/pci_regs.h",
+      "source_revision": "Linux v6.12 explicit PCIe capability/control/status masks. Register meanings/encodings, not full normative protocol or every optional capability.",
+      "allowed": [
+        1,
+        2,
+        4,
+        8,
+        12,
+        16,
+        32
+      ]
+    },
+    {
+      "parameter": "pcie_generation",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.12/include/uapi/linux/pci_regs.h",
+      "source_revision": "Linux v6.12 explicit PCIe capability/control/status masks. Register meanings/encodings, not full normative protocol or every optional capability.",
+      "maximum_parameter": "pcie_max_generation"
+    },
+    {
+      "parameter": "pcie_lanes",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.12/include/uapi/linux/pci_regs.h",
+      "source_revision": "Linux v6.12 explicit PCIe capability/control/status masks. Register meanings/encodings, not full normative protocol or every optional capability.",
+      "maximum_parameter": "pcie_max_lanes"
+    },
+    {
+      "parameter": "pcie_rate_gts",
+      "when": {
+        "pcie_generation": 1
+      },
+      "source": "https://pcisig.com/blog/pcie-70-specification-next-generation-performance-meet-needs-advanced-ai-applications-webinar",
+      "source_revision": "PCI-SIG 2025-09-03 Q&A, released7.0 128GT/s PAM4, identical256byte FLIT layout; implementation-dependent bifurcation/channel compliance.",
+      "allowed": [
+        2.5
+      ]
+    },
+    {
+      "parameter": "pcie_encoding",
+      "when": {
+        "pcie_generation": 1,
+        "pcie_mode": "NON_FLIT"
+      },
+      "source": "https://www.intel.com/content/www/us/en/docs/programmable/683724/18-0/physical-layer.html",
+      "source_revision": "Intel/Altera archive18.0 physical-layer public search excerpt: Gen1/2 8b10b, Gen3 128b130b, per-lane rates; direct page redirected, not claimed full document.",
+      "allowed": [
+        "8B10B"
+      ]
+    },
+    {
+      "parameter": "pcie_rate_gts",
+      "when": {
+        "pcie_generation": 2
+      },
+      "source": "https://pcisig.com/blog/pcie-70-specification-next-generation-performance-meet-needs-advanced-ai-applications-webinar",
+      "source_revision": "PCI-SIG 2025-09-03 Q&A, released7.0 128GT/s PAM4, identical256byte FLIT layout; implementation-dependent bifurcation/channel compliance.",
+      "allowed": [
+        5
+      ]
+    },
+    {
+      "parameter": "pcie_encoding",
+      "when": {
+        "pcie_generation": 2,
+        "pcie_mode": "NON_FLIT"
+      },
+      "source": "https://www.intel.com/content/www/us/en/docs/programmable/683724/18-0/physical-layer.html",
+      "source_revision": "Intel/Altera archive18.0 physical-layer public search excerpt: Gen1/2 8b10b, Gen3 128b130b, per-lane rates; direct page redirected, not claimed full document.",
+      "allowed": [
+        "8B10B"
+      ]
+    },
+    {
+      "parameter": "pcie_rate_gts",
+      "when": {
+        "pcie_generation": 3
+      },
+      "source": "https://pcisig.com/blog/pcie-70-specification-next-generation-performance-meet-needs-advanced-ai-applications-webinar",
+      "source_revision": "PCI-SIG 2025-09-03 Q&A, released7.0 128GT/s PAM4, identical256byte FLIT layout; implementation-dependent bifurcation/channel compliance.",
+      "allowed": [
+        8
+      ]
+    },
+    {
+      "parameter": "pcie_encoding",
+      "when": {
+        "pcie_generation": 3,
+        "pcie_mode": "NON_FLIT"
+      },
+      "source": "https://www.intel.com/content/www/us/en/docs/programmable/683724/18-0/physical-layer.html",
+      "source_revision": "Intel/Altera archive18.0 physical-layer public search excerpt: Gen1/2 8b10b, Gen3 128b130b, per-lane rates; direct page redirected, not claimed full document.",
+      "allowed": [
+        "128B130B"
+      ]
+    },
+    {
+      "parameter": "pcie_rate_gts",
+      "when": {
+        "pcie_generation": 4
+      },
+      "source": "https://pcisig.com/blog/pcie-70-specification-next-generation-performance-meet-needs-advanced-ai-applications-webinar",
+      "source_revision": "PCI-SIG 2025-09-03 Q&A, released7.0 128GT/s PAM4, identical256byte FLIT layout; implementation-dependent bifurcation/channel compliance.",
+      "allowed": [
+        16
+      ]
+    },
+    {
+      "parameter": "pcie_encoding",
+      "when": {
+        "pcie_generation": 4,
+        "pcie_mode": "NON_FLIT"
+      },
+      "source": "https://edc.intel.com/content/www/us/en/design/products/platforms/details/raptor-lake-s/13th-generation-core-processors-datasheet-volume-1-of-2/004/pci-express-architecture/",
+      "source_revision": "Intel ID743844 revision004 2023-01-30, rates and128b130b for Gen4/5; actual processor port limits are device-specific.",
+      "allowed": [
+        "128B130B"
+      ]
+    },
+    {
+      "parameter": "pcie_rate_gts",
+      "when": {
+        "pcie_generation": 5
+      },
+      "source": "https://pcisig.com/blog/pcie-70-specification-next-generation-performance-meet-needs-advanced-ai-applications-webinar",
+      "source_revision": "PCI-SIG 2025-09-03 Q&A, released7.0 128GT/s PAM4, identical256byte FLIT layout; implementation-dependent bifurcation/channel compliance.",
+      "allowed": [
+        32
+      ]
+    },
+    {
+      "parameter": "pcie_encoding",
+      "when": {
+        "pcie_generation": 5,
+        "pcie_mode": "NON_FLIT"
+      },
+      "source": "https://edc.intel.com/content/www/us/en/design/products/platforms/details/raptor-lake-s/13th-generation-core-processors-datasheet-volume-1-of-2/004/pci-express-architecture/",
+      "source_revision": "Intel ID743844 revision004 2023-01-30, rates and128b130b for Gen4/5; actual processor port limits are device-specific.",
+      "allowed": [
+        "128B130B"
+      ]
+    },
+    {
+      "parameter": "pcie_rate_gts",
+      "when": {
+        "pcie_generation": 6
+      },
+      "source": "https://pcisig.com/blog/pcie-70-specification-next-generation-performance-meet-needs-advanced-ai-applications-webinar",
+      "source_revision": "PCI-SIG 2025-09-03 Q&A, released7.0 128GT/s PAM4, identical256byte FLIT layout; implementation-dependent bifurcation/channel compliance.",
+      "allowed": [
+        64
+      ]
+    },
+    {
+      "parameter": "pcie_mode",
+      "when": {
+        "pcie_generation": 6
+      },
+      "source": "https://pcisig.com/blog/pcie-70-specification-next-generation-performance-meet-needs-advanced-ai-applications-webinar",
+      "source_revision": "PCI-SIG 2025-09-03 Q&A, released7.0 128GT/s PAM4, identical256byte FLIT layout; implementation-dependent bifurcation/channel compliance.",
+      "allowed": [
+        "FLIT"
+      ]
+    },
+    {
+      "parameter": "pcie_encoding",
+      "when": {
+        "pcie_generation": 6
+      },
+      "source": "https://pcisig.com/blog/pcie-70-specification-next-generation-performance-meet-needs-advanced-ai-applications-webinar",
+      "source_revision": "PCI-SIG 2025-09-03 Q&A, released7.0 128GT/s PAM4, identical256byte FLIT layout; implementation-dependent bifurcation/channel compliance.",
+      "allowed": [
+        "FLIT_PAM4"
+      ]
+    },
+    {
+      "parameter": "pcie_rate_gts",
+      "when": {
+        "pcie_generation": 7
+      },
+      "source": "https://pcisig.com/blog/pcie-70-specification-next-generation-performance-meet-needs-advanced-ai-applications-webinar",
+      "source_revision": "PCI-SIG 2025-09-03 Q&A, released7.0 128GT/s PAM4, identical256byte FLIT layout; implementation-dependent bifurcation/channel compliance.",
+      "allowed": [
+        128
+      ]
+    },
+    {
+      "parameter": "pcie_mode",
+      "when": {
+        "pcie_generation": 7
+      },
+      "source": "https://pcisig.com/blog/pcie-70-specification-next-generation-performance-meet-needs-advanced-ai-applications-webinar",
+      "source_revision": "PCI-SIG 2025-09-03 Q&A, released7.0 128GT/s PAM4, identical256byte FLIT layout; implementation-dependent bifurcation/channel compliance.",
+      "allowed": [
+        "FLIT"
+      ]
+    },
+    {
+      "parameter": "pcie_encoding",
+      "when": {
+        "pcie_generation": 7
+      },
+      "source": "https://pcisig.com/blog/pcie-70-specification-next-generation-performance-meet-needs-advanced-ai-applications-webinar",
+      "source_revision": "PCI-SIG 2025-09-03 Q&A, released7.0 128GT/s PAM4, identical256byte FLIT layout; implementation-dependent bifurcation/channel compliance.",
+      "allowed": [
+        "FLIT_PAM4"
+      ]
+    },
+    {
+      "parameter": "pcie_flit_supported",
+      "when": {
+        "pcie_mode": "FLIT"
+      },
+      "source": "https://pcisig.com/blog/evolution-pci-express-specification-its-sixth-generation-third-decade-and-still-going-strong",
+      "source_revision": "PCI-SIG 2022-01-11 technical article,64GT/s PAM4, FLIT256 with236TLP/6DLP/8CRC/6FEC. Public excerpt, not full licensed specification.",
+      "required": true,
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "pcie_encoding",
+      "when": {
+        "pcie_mode": "FLIT"
+      },
+      "source": "https://pcisig.com/blog/evolution-pci-express-specification-its-sixth-generation-third-decade-and-still-going-strong",
+      "source_revision": "PCI-SIG 2022-01-11 technical article,64GT/s PAM4, FLIT256 with236TLP/6DLP/8CRC/6FEC. Public excerpt, not full licensed specification.",
+      "when_ranges": {
+        "pcie_generation": [
+          1,
+          5
+        ]
+      },
+      "allowed": [
+        "REGISTERED_LOWER_RATE_FLIT"
+      ]
+    },
+    {
+      "parameter": "pcie_raw_direction_bps",
+      "when": {},
+      "source": "https://pcisig.com/blog/pcie-70-specification-next-generation-performance-meet-needs-advanced-ai-applications-webinar",
+      "source_revision": "PCI-SIG 2025-09-03 Q&A, released7.0 128GT/s PAM4, identical256byte FLIT layout; implementation-dependent bifurcation/channel compliance.",
+      "equal_expression": {
+        "product": [
+          "pcie_rate_gts",
+          1000000000,
+          "pcie_lanes"
+        ]
+      }
+    },
+    {
+      "parameter": "pcie_rate_gts",
+      "when": {},
+      "source": "https://pcisig.com/blog/pcie-70-specification-next-generation-performance-meet-needs-advanced-ai-applications-webinar",
+      "source_revision": "PCI-SIG 2025-09-03 Q&A, released7.0 128GT/s PAM4, identical256byte FLIT layout; implementation-dependent bifurcation/channel compliance.",
+      "when_present": [
+        "pcie_raw_direction_bps"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "pcie_lanes",
+      "when": {},
+      "source": "https://pcisig.com/blog/pcie-70-specification-next-generation-performance-meet-needs-advanced-ai-applications-webinar",
+      "source_revision": "PCI-SIG 2025-09-03 Q&A, released7.0 128GT/s PAM4, identical256byte FLIT layout; implementation-dependent bifurcation/channel compliance.",
+      "when_present": [
+        "pcie_raw_direction_bps"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "pcie_decoded_ceiling_bps",
+      "when": {
+        "pcie_mode": "NON_FLIT",
+        "pcie_encoding": "8B10B"
+      },
+      "source": "https://www.intel.com/content/www/us/en/docs/programmable/683724/18-0/physical-layer.html",
+      "source_revision": "Intel/Altera archive18.0 physical-layer public search excerpt: Gen1/2 8b10b, Gen3 128b130b, per-lane rates; direct page redirected, not claimed full document.",
+      "equal_expression": {
+        "product": [
+          "pcie_raw_direction_bps",
+          0.8
+        ]
+      }
+    },
+    {
+      "parameter": "pcie_decoded_ceiling_bps",
+      "when": {
+        "pcie_mode": "NON_FLIT",
+        "pcie_encoding": "128B130B"
+      },
+      "source": "https://www.intel.com/content/www/us/en/docs/programmable/683724/18-0/physical-layer.html",
+      "source_revision": "Intel/Altera archive18.0 physical-layer public search excerpt: Gen1/2 8b10b, Gen3 128b130b, per-lane rates; direct page redirected, not claimed full document.",
+      "equal_expression": {
+        "product": [
+          "pcie_raw_direction_bps",
+          0.9846153846153847
+        ]
+      }
+    },
+    {
+      "parameter": "pcie_raw_direction_bps",
+      "when": {},
+      "source": "https://www.intel.com/content/www/us/en/docs/programmable/683724/18-0/physical-layer.html",
+      "source_revision": "Intel/Altera archive18.0 physical-layer public search excerpt: Gen1/2 8b10b, Gen3 128b130b, per-lane rates; direct page redirected, not claimed full document.",
+      "when_present": [
+        "pcie_decoded_ceiling_bps"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "pcie_decoded_ceiling_bps",
+      "when": {
+        "pcie_mode": "FLIT"
+      },
+      "source": "https://pcisig.com/blog/evolution-pci-express-specification-its-sixth-generation-third-decade-and-still-going-strong",
+      "source_revision": "PCI-SIG 2022-01-11 technical article,64GT/s PAM4, FLIT256 with236TLP/6DLP/8CRC/6FEC. Public excerpt, not full licensed specification.",
+      "allowed": []
+    },
+    {
+      "parameter": "pcie_mps",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.12/include/uapi/linux/pci_regs.h",
+      "source_revision": "Linux v6.12 explicit PCIe capability/control/status masks. Register meanings/encodings, not full normative protocol or every optional capability.",
+      "allowed": [
+        128,
+        256,
+        512,
+        1024,
+        2048,
+        4096
+      ]
+    },
+    {
+      "parameter": "pcie_mps_supported",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.12/include/uapi/linux/pci_regs.h",
+      "source_revision": "Linux v6.12 explicit PCIe capability/control/status masks. Register meanings/encodings, not full normative protocol or every optional capability.",
+      "allowed": [
+        128,
+        256,
+        512,
+        1024,
+        2048,
+        4096
+      ]
+    },
+    {
+      "parameter": "pcie_path_mps",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.12/include/uapi/linux/pci_regs.h",
+      "source_revision": "Linux v6.12 explicit PCIe capability/control/status masks. Register meanings/encodings, not full normative protocol or every optional capability.",
+      "allowed": [
+        128,
+        256,
+        512,
+        1024,
+        2048,
+        4096
+      ]
+    },
+    {
+      "parameter": "pcie_mrrs",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.12/include/uapi/linux/pci_regs.h",
+      "source_revision": "Linux v6.12 explicit PCIe capability/control/status masks. Register meanings/encodings, not full normative protocol or every optional capability.",
+      "allowed": [
+        128,
+        256,
+        512,
+        1024,
+        2048,
+        4096
+      ]
+    },
+    {
+      "parameter": "pcie_mps",
+      "when": {
+        "pcie_mps_code": 0
+      },
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.12/include/uapi/linux/pci_regs.h",
+      "source_revision": "Linux v6.12 explicit PCIe capability/control/status masks. Register meanings/encodings, not full normative protocol or every optional capability.",
+      "allowed": [
+        128
+      ]
+    },
+    {
+      "parameter": "pcie_mrrs",
+      "when": {
+        "pcie_mrrs_code": 0
+      },
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.12/include/uapi/linux/pci_regs.h",
+      "source_revision": "Linux v6.12 explicit PCIe capability/control/status masks. Register meanings/encodings, not full normative protocol or every optional capability.",
+      "allowed": [
+        128
+      ]
+    },
+    {
+      "parameter": "pcie_mps",
+      "when": {
+        "pcie_mps_code": 1
+      },
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.12/include/uapi/linux/pci_regs.h",
+      "source_revision": "Linux v6.12 explicit PCIe capability/control/status masks. Register meanings/encodings, not full normative protocol or every optional capability.",
+      "allowed": [
+        256
+      ]
+    },
+    {
+      "parameter": "pcie_mrrs",
+      "when": {
+        "pcie_mrrs_code": 1
+      },
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.12/include/uapi/linux/pci_regs.h",
+      "source_revision": "Linux v6.12 explicit PCIe capability/control/status masks. Register meanings/encodings, not full normative protocol or every optional capability.",
+      "allowed": [
+        256
+      ]
+    },
+    {
+      "parameter": "pcie_mps",
+      "when": {
+        "pcie_mps_code": 2
+      },
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.12/include/uapi/linux/pci_regs.h",
+      "source_revision": "Linux v6.12 explicit PCIe capability/control/status masks. Register meanings/encodings, not full normative protocol or every optional capability.",
+      "allowed": [
+        512
+      ]
+    },
+    {
+      "parameter": "pcie_mrrs",
+      "when": {
+        "pcie_mrrs_code": 2
+      },
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.12/include/uapi/linux/pci_regs.h",
+      "source_revision": "Linux v6.12 explicit PCIe capability/control/status masks. Register meanings/encodings, not full normative protocol or every optional capability.",
+      "allowed": [
+        512
+      ]
+    },
+    {
+      "parameter": "pcie_mps",
+      "when": {
+        "pcie_mps_code": 3
+      },
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.12/include/uapi/linux/pci_regs.h",
+      "source_revision": "Linux v6.12 explicit PCIe capability/control/status masks. Register meanings/encodings, not full normative protocol or every optional capability.",
+      "allowed": [
+        1024
+      ]
+    },
+    {
+      "parameter": "pcie_mrrs",
+      "when": {
+        "pcie_mrrs_code": 3
+      },
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.12/include/uapi/linux/pci_regs.h",
+      "source_revision": "Linux v6.12 explicit PCIe capability/control/status masks. Register meanings/encodings, not full normative protocol or every optional capability.",
+      "allowed": [
+        1024
+      ]
+    },
+    {
+      "parameter": "pcie_mps",
+      "when": {
+        "pcie_mps_code": 4
+      },
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.12/include/uapi/linux/pci_regs.h",
+      "source_revision": "Linux v6.12 explicit PCIe capability/control/status masks. Register meanings/encodings, not full normative protocol or every optional capability.",
+      "allowed": [
+        2048
+      ]
+    },
+    {
+      "parameter": "pcie_mrrs",
+      "when": {
+        "pcie_mrrs_code": 4
+      },
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.12/include/uapi/linux/pci_regs.h",
+      "source_revision": "Linux v6.12 explicit PCIe capability/control/status masks. Register meanings/encodings, not full normative protocol or every optional capability.",
+      "allowed": [
+        2048
+      ]
+    },
+    {
+      "parameter": "pcie_mps",
+      "when": {
+        "pcie_mps_code": 5
+      },
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.12/include/uapi/linux/pci_regs.h",
+      "source_revision": "Linux v6.12 explicit PCIe capability/control/status masks. Register meanings/encodings, not full normative protocol or every optional capability.",
+      "allowed": [
+        4096
+      ]
+    },
+    {
+      "parameter": "pcie_mrrs",
+      "when": {
+        "pcie_mrrs_code": 5
+      },
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.12/include/uapi/linux/pci_regs.h",
+      "source_revision": "Linux v6.12 explicit PCIe capability/control/status masks. Register meanings/encodings, not full normative protocol or every optional capability.",
+      "allowed": [
+        4096
+      ]
+    },
+    {
+      "parameter": "pcie_mps",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.12/include/uapi/linux/pci_regs.h",
+      "source_revision": "Linux v6.12 explicit PCIe capability/control/status masks. Register meanings/encodings, not full normative protocol or every optional capability.",
+      "maximum_parameter": "pcie_mps_supported"
+    },
+    {
+      "parameter": "pcie_mps",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.12/include/uapi/linux/pci_regs.h",
+      "source_revision": "Linux v6.12 explicit PCIe capability/control/status masks. Register meanings/encodings, not full normative protocol or every optional capability.",
+      "maximum_parameter": "pcie_path_mps"
+    },
+    {
+      "parameter": "pcie_tlp_payload_bytes",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.12/include/uapi/linux/pci_regs.h",
+      "source_revision": "Linux v6.12 explicit PCIe capability/control/status masks. Register meanings/encodings, not full normative protocol or every optional capability.",
+      "maximum_parameter": "pcie_mps"
+    },
+    {
+      "parameter": "pcie_request_bytes",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.12/include/uapi/linux/pci_regs.h",
+      "source_revision": "Linux v6.12 explicit PCIe capability/control/status masks. Register meanings/encodings, not full normative protocol or every optional capability.",
+      "maximum_parameter": "pcie_mrrs"
+    },
+    {
+      "parameter": "pcie_tlp_payload_bytes",
+      "when": {},
+      "source": "https://docs.altera.com/r/docs/683411/current/transaction-layer-errors",
+      "source_revision": "Altera683411 document15.1, page timestamp2025-12-16 transaction-error table70: length/TD/byte enables,4KB boundary, correlation/credits/poison. Legacy implementation-qualified checks, not Agilex25.3 certification.",
+      "multiple_of": 4
+    },
+    {
+      "parameter": "pcie_remaining_bytes",
+      "when": {},
+      "source": "https://docs.altera.com/r/docs/813754/25.3/gts-axi-streaming-ip-for-pci-express-user-guide-agilextm-5-and-agilextm-3-fpgas-and-socs/completion-timeout-interface?contentId=EBTDmC2PKISZT4Arera3qQ",
+      "source_revision": "Altera813754 v25.3 2025-12-16 non-posted completion timeout correlation by tag/function/remainingbytes/TC/attributes.",
+      "maximum_parameter": "pcie_request_bytes"
+    },
+    {
+      "parameter": "pcie_header_bytes",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.12/include/uapi/linux/pci_regs.h",
+      "source_revision": "Linux v6.12 explicit PCIe capability/control/status masks. Register meanings/encodings, not full normative protocol or every optional capability.",
+      "allowed": [
+        12,
+        16
+      ]
+    },
+    {
+      "parameter": "pcie_digest_bytes",
+      "when": {
+        "pcie_ecrc_enabled": true
+      },
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.12/include/uapi/linux/pci_regs.h",
+      "source_revision": "Linux v6.12 explicit PCIe capability/control/status masks. Register meanings/encodings, not full normative protocol or every optional capability.",
+      "allowed": [
+        4
+      ]
+    },
+    {
+      "parameter": "pcie_digest_bytes",
+      "when": {
+        "pcie_ecrc_enabled": false
+      },
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.12/include/uapi/linux/pci_regs.h",
+      "source_revision": "Linux v6.12 explicit PCIe capability/control/status masks. Register meanings/encodings, not full normative protocol or every optional capability.",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "pcie_ecrc_supported",
+      "when": {
+        "pcie_ecrc_enabled": true
+      },
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.12/include/uapi/linux/pci_regs.h",
+      "source_revision": "Linux v6.12 explicit PCIe capability/control/status masks. Register meanings/encodings, not full normative protocol or every optional capability.",
+      "required": true,
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "pcie_digest_bytes",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.12/include/uapi/linux/pci_regs.h",
+      "source_revision": "Linux v6.12 explicit PCIe capability/control/status masks. Register meanings/encodings, not full normative protocol or every optional capability.",
+      "allowed": [
+        0,
+        4
+      ]
+    },
+    {
+      "parameter": "pcie_lcrc_bytes",
+      "when": {
+        "pcie_mode": "NON_FLIT"
+      },
+      "source": "https://pcisig.com/blog/evolution-pci-express-specification-its-sixth-generation-third-decade-and-still-going-strong",
+      "source_revision": "PCI-SIG 2022-01-11 technical article,64GT/s PAM4, FLIT256 with236TLP/6DLP/8CRC/6FEC. Public excerpt, not full licensed specification.",
+      "allowed": [
+        4
+      ]
+    },
+    {
+      "parameter": "pcie_packet_bytes",
+      "when": {
+        "pcie_mode": "NON_FLIT"
+      },
+      "source": "https://pcisig.com/blog/evolution-pci-express-specification-its-sixth-generation-third-decade-and-still-going-strong",
+      "source_revision": "PCI-SIG 2022-01-11 technical article,64GT/s PAM4, FLIT256 with236TLP/6DLP/8CRC/6FEC. Public excerpt, not full licensed specification.",
+      "equal_expression": {
+        "sum": [
+          "pcie_header_bytes",
+          "pcie_prefix_bytes",
+          "pcie_tlp_payload_bytes",
+          "pcie_digest_bytes",
+          "pcie_lcrc_bytes",
+          "pcie_framing_bytes"
+        ]
+      }
+    },
+    {
+      "parameter": "pcie_header_bytes",
+      "when": {},
+      "source": "https://pcisig.com/blog/evolution-pci-express-specification-its-sixth-generation-third-decade-and-still-going-strong",
+      "source_revision": "PCI-SIG 2022-01-11 technical article,64GT/s PAM4, FLIT256 with236TLP/6DLP/8CRC/6FEC. Public excerpt, not full licensed specification.",
+      "when_present": [
+        "pcie_packet_bytes"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "pcie_header_bytes",
+      "when": {
+        "pcie_mode": "FLIT"
+      },
+      "source": "https://pcisig.com/blog/evolution-pci-express-specification-its-sixth-generation-third-decade-and-still-going-strong",
+      "source_revision": "PCI-SIG 2022-01-11 technical article,64GT/s PAM4, FLIT256 with236TLP/6DLP/8CRC/6FEC. Public excerpt, not full licensed specification.",
+      "allowed": []
+    },
+    {
+      "parameter": "pcie_prefix_bytes",
+      "when": {},
+      "source": "https://pcisig.com/blog/evolution-pci-express-specification-its-sixth-generation-third-decade-and-still-going-strong",
+      "source_revision": "PCI-SIG 2022-01-11 technical article,64GT/s PAM4, FLIT256 with236TLP/6DLP/8CRC/6FEC. Public excerpt, not full licensed specification.",
+      "when_present": [
+        "pcie_packet_bytes"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "pcie_prefix_bytes",
+      "when": {
+        "pcie_mode": "FLIT"
+      },
+      "source": "https://pcisig.com/blog/evolution-pci-express-specification-its-sixth-generation-third-decade-and-still-going-strong",
+      "source_revision": "PCI-SIG 2022-01-11 technical article,64GT/s PAM4, FLIT256 with236TLP/6DLP/8CRC/6FEC. Public excerpt, not full licensed specification.",
+      "allowed": []
+    },
+    {
+      "parameter": "pcie_tlp_payload_bytes",
+      "when": {},
+      "source": "https://pcisig.com/blog/evolution-pci-express-specification-its-sixth-generation-third-decade-and-still-going-strong",
+      "source_revision": "PCI-SIG 2022-01-11 technical article,64GT/s PAM4, FLIT256 with236TLP/6DLP/8CRC/6FEC. Public excerpt, not full licensed specification.",
+      "when_present": [
+        "pcie_packet_bytes"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "pcie_digest_bytes",
+      "when": {},
+      "source": "https://pcisig.com/blog/evolution-pci-express-specification-its-sixth-generation-third-decade-and-still-going-strong",
+      "source_revision": "PCI-SIG 2022-01-11 technical article,64GT/s PAM4, FLIT256 with236TLP/6DLP/8CRC/6FEC. Public excerpt, not full licensed specification.",
+      "when_present": [
+        "pcie_packet_bytes"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "pcie_digest_bytes",
+      "when": {
+        "pcie_mode": "FLIT"
+      },
+      "source": "https://pcisig.com/blog/evolution-pci-express-specification-its-sixth-generation-third-decade-and-still-going-strong",
+      "source_revision": "PCI-SIG 2022-01-11 technical article,64GT/s PAM4, FLIT256 with236TLP/6DLP/8CRC/6FEC. Public excerpt, not full licensed specification.",
+      "allowed": []
+    },
+    {
+      "parameter": "pcie_lcrc_bytes",
+      "when": {},
+      "source": "https://pcisig.com/blog/evolution-pci-express-specification-its-sixth-generation-third-decade-and-still-going-strong",
+      "source_revision": "PCI-SIG 2022-01-11 technical article,64GT/s PAM4, FLIT256 with236TLP/6DLP/8CRC/6FEC. Public excerpt, not full licensed specification.",
+      "when_present": [
+        "pcie_packet_bytes"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "pcie_lcrc_bytes",
+      "when": {
+        "pcie_mode": "FLIT"
+      },
+      "source": "https://pcisig.com/blog/evolution-pci-express-specification-its-sixth-generation-third-decade-and-still-going-strong",
+      "source_revision": "PCI-SIG 2022-01-11 technical article,64GT/s PAM4, FLIT256 with236TLP/6DLP/8CRC/6FEC. Public excerpt, not full licensed specification.",
+      "allowed": []
+    },
+    {
+      "parameter": "pcie_framing_bytes",
+      "when": {},
+      "source": "https://pcisig.com/blog/evolution-pci-express-specification-its-sixth-generation-third-decade-and-still-going-strong",
+      "source_revision": "PCI-SIG 2022-01-11 technical article,64GT/s PAM4, FLIT256 with236TLP/6DLP/8CRC/6FEC. Public excerpt, not full licensed specification.",
+      "when_present": [
+        "pcie_packet_bytes"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "pcie_framing_bytes",
+      "when": {
+        "pcie_mode": "FLIT"
+      },
+      "source": "https://pcisig.com/blog/evolution-pci-express-specification-its-sixth-generation-third-decade-and-still-going-strong",
+      "source_revision": "PCI-SIG 2022-01-11 technical article,64GT/s PAM4, FLIT256 with236TLP/6DLP/8CRC/6FEC. Public excerpt, not full licensed specification.",
+      "allowed": []
+    },
+    {
+      "parameter": "pcie_packet_bytes",
+      "when": {
+        "pcie_mode": "FLIT"
+      },
+      "source": "https://pcisig.com/blog/evolution-pci-express-specification-its-sixth-generation-third-decade-and-still-going-strong",
+      "source_revision": "PCI-SIG 2022-01-11 technical article,64GT/s PAM4, FLIT256 with236TLP/6DLP/8CRC/6FEC. Public excerpt, not full licensed specification.",
+      "allowed": []
+    },
+    {
+      "parameter": "pcie_flit_bytes",
+      "when": {
+        "pcie_mode": "NON_FLIT"
+      },
+      "source": "https://pcisig.com/blog/evolution-pci-express-specification-its-sixth-generation-third-decade-and-still-going-strong",
+      "source_revision": "PCI-SIG 2022-01-11 technical article,64GT/s PAM4, FLIT256 with236TLP/6DLP/8CRC/6FEC. Public excerpt, not full licensed specification.",
+      "allowed": []
+    },
+    {
+      "parameter": "pcie_flit_tlp_bytes",
+      "when": {
+        "pcie_mode": "NON_FLIT"
+      },
+      "source": "https://pcisig.com/blog/evolution-pci-express-specification-its-sixth-generation-third-decade-and-still-going-strong",
+      "source_revision": "PCI-SIG 2022-01-11 technical article,64GT/s PAM4, FLIT256 with236TLP/6DLP/8CRC/6FEC. Public excerpt, not full licensed specification.",
+      "allowed": []
+    },
+    {
+      "parameter": "pcie_flit_dlp_bytes",
+      "when": {
+        "pcie_mode": "NON_FLIT"
+      },
+      "source": "https://pcisig.com/blog/evolution-pci-express-specification-its-sixth-generation-third-decade-and-still-going-strong",
+      "source_revision": "PCI-SIG 2022-01-11 technical article,64GT/s PAM4, FLIT256 with236TLP/6DLP/8CRC/6FEC. Public excerpt, not full licensed specification.",
+      "allowed": []
+    },
+    {
+      "parameter": "pcie_flit_crc_bytes",
+      "when": {
+        "pcie_mode": "NON_FLIT"
+      },
+      "source": "https://pcisig.com/blog/evolution-pci-express-specification-its-sixth-generation-third-decade-and-still-going-strong",
+      "source_revision": "PCI-SIG 2022-01-11 technical article,64GT/s PAM4, FLIT256 with236TLP/6DLP/8CRC/6FEC. Public excerpt, not full licensed specification.",
+      "allowed": []
+    },
+    {
+      "parameter": "pcie_flit_fec_bytes",
+      "when": {
+        "pcie_mode": "NON_FLIT"
+      },
+      "source": "https://pcisig.com/blog/evolution-pci-express-specification-its-sixth-generation-third-decade-and-still-going-strong",
+      "source_revision": "PCI-SIG 2022-01-11 technical article,64GT/s PAM4, FLIT256 with236TLP/6DLP/8CRC/6FEC. Public excerpt, not full licensed specification.",
+      "allowed": []
+    },
+    {
+      "parameter": "pcie_tag_bits",
+      "when": {},
+      "source": "https://docs.altera.com/r/docs/813754/25.3/gts-axi-streaming-ip-for-pci-express-user-guide-agilextm-5-and-agilextm-3-fpgas-and-socs/supported-features?contentId=oYPcJulNu6b8S9_OxwM4Zg",
+      "source_revision": "Altera813754 v25.3 2025-12-16 supported features: Agilex3/5 rates/lanes/tags/MPS512/MRRS4096/oneVC/clock modes, conventional reset1s caveat.",
+      "allowed": [
+        5,
+        8,
+        10
+      ]
+    },
+    {
+      "parameter": "pcie_tag",
+      "when": {},
+      "source": "https://docs.altera.com/r/docs/813754/25.3/gts-axi-streaming-ip-for-pci-express-user-guide-agilextm-5-and-agilextm-3-fpgas-and-socs/supported-features?contentId=oYPcJulNu6b8S9_OxwM4Zg",
+      "source_revision": "Altera813754 v25.3 2025-12-16 supported features: Agilex3/5 rates/lanes/tags/MPS512/MRRS4096/oneVC/clock modes, conventional reset1s caveat.",
+      "maximum_expression": {
+        "subtract": [
+          {
+            "power": [
+              2,
+              "pcie_tag_bits"
+            ]
+          },
+          1
+        ]
+      }
+    },
+    {
+      "parameter": "pcie_tag_bits",
+      "when": {},
+      "source": "https://docs.altera.com/r/docs/813754/25.3/gts-axi-streaming-ip-for-pci-express-user-guide-agilextm-5-and-agilextm-3-fpgas-and-socs/supported-features?contentId=oYPcJulNu6b8S9_OxwM4Zg",
+      "source_revision": "Altera813754 v25.3 2025-12-16 supported features: Agilex3/5 rates/lanes/tags/MPS512/MRRS4096/oneVC/clock modes, conventional reset1s caveat.",
+      "when_present": [
+        "pcie_tag"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "pcie_outstanding_requests",
+      "when": {},
+      "source": "https://docs.altera.com/r/docs/813754/25.3/gts-axi-streaming-ip-for-pci-express-user-guide-agilextm-5-and-agilextm-3-fpgas-and-socs/supported-features?contentId=oYPcJulNu6b8S9_OxwM4Zg",
+      "source_revision": "Altera813754 v25.3 2025-12-16 supported features: Agilex3/5 rates/lanes/tags/MPS512/MRRS4096/oneVC/clock modes, conventional reset1s caveat.",
+      "maximum_parameter": "pcie_tag_capacity"
+    },
+    {
+      "parameter": "pcie_virtual_channel",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.12/include/uapi/linux/pci_regs.h",
+      "source_revision": "Linux v6.12 explicit PCIe capability/control/status masks. Register meanings/encodings, not full normative protocol or every optional capability.",
+      "maximum_expression": {
+        "subtract": [
+          "pcie_vc_count",
+          1
+        ]
+      }
+    },
+    {
+      "parameter": "pcie_ordering_source",
+      "when": {
+        "pcie_relaxed_ordering": true
+      },
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.12/include/uapi/linux/pci_regs.h",
+      "source_revision": "Linux v6.12 explicit PCIe capability/control/status masks. Register meanings/encodings, not full normative protocol or every optional capability.",
+      "required": true
+    },
+    {
+      "parameter": "pcie_ordering_source",
+      "when": {
+        "pcie_no_snoop": true
+      },
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.12/include/uapi/linux/pci_regs.h",
+      "source_revision": "Linux v6.12 explicit PCIe capability/control/status masks. Register meanings/encodings, not full normative protocol or every optional capability.",
+      "required": true
+    },
+    {
+      "parameter": "pcie_address_hex",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.12/include/uapi/linux/pci_regs.h",
+      "source_revision": "Linux v6.12 explicit PCIe capability/control/status masks. Register meanings/encodings, not full normative protocol or every optional capability.",
+      "pattern": "(?:[0-9A-Fa-f]{8}|[0-9A-Fa-f]{16})"
+    },
+    {
+      "parameter": "pcie_address_hex",
+      "when": {},
+      "source": "https://docs.altera.com/r/docs/683411/current/transaction-layer-errors",
+      "source_revision": "Altera683411 document15.1, page timestamp2025-12-16 transaction-error table70: length/TD/byte enables,4KB boundary, correlation/credits/poison. Legacy implementation-qualified checks, not Agilex25.3 certification.",
+      "integer_bitfields": [
+        {
+          "parameter": "pcie_page_offset",
+          "offset": 0,
+          "width": 12
+        }
+      ]
+    },
+    {
+      "parameter": "pcie_address_hex",
+      "when": {},
+      "source": "https://docs.altera.com/r/docs/683411/current/transaction-layer-errors",
+      "source_revision": "Altera683411 document15.1, page timestamp2025-12-16 transaction-error table70: length/TD/byte enables,4KB boundary, correlation/credits/poison. Legacy implementation-qualified checks, not Agilex25.3 certification.",
+      "when_present": [
+        "pcie_page_offset"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "pcie_request_bytes",
+      "when": {
+        "pcie_address_space": "MEMORY"
+      },
+      "source": "https://docs.altera.com/r/docs/683411/current/transaction-layer-errors",
+      "source_revision": "Altera683411 document15.1, page timestamp2025-12-16 transaction-error table70: length/TD/byte enables,4KB boundary, correlation/credits/poison. Legacy implementation-qualified checks, not Agilex25.3 certification.",
+      "maximum_expression": {
+        "subtract": [
+          4096,
+          "pcie_page_offset"
+        ]
+      }
+    },
+    {
+      "parameter": "pcie_page_offset",
+      "when": {
+        "pcie_address_space": "MEMORY"
+      },
+      "source": "https://docs.altera.com/r/docs/683411/current/transaction-layer-errors",
+      "source_revision": "Altera683411 document15.1, page timestamp2025-12-16 transaction-error table70: length/TD/byte enables,4KB boundary, correlation/credits/poison. Legacy implementation-qualified checks, not Agilex25.3 certification.",
+      "when_present": [
+        "pcie_request_bytes"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "pcie_link_status_hex",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.12/include/uapi/linux/pci_regs.h",
+      "source_revision": "Linux v6.12 explicit PCIe capability/control/status masks. Register meanings/encodings, not full normative protocol or every optional capability.",
+      "pattern": "[0-9A-Fa-f]{4}",
+      "integer_bitfields": [
+        {
+          "parameter": "pcie_link_status",
+          "offset": 0,
+          "width": 16
+        },
+        {
+          "parameter": "pcie_generation",
+          "offset": 0,
+          "width": 4
+        },
+        {
+          "parameter": "pcie_lanes",
+          "offset": 4,
+          "width": 6
+        },
+        {
+          "parameter": "pcie_training",
+          "offset": 11,
+          "width": 1,
+          "boolean": true
+        },
+        {
+          "parameter": "pcie_link_active",
+          "offset": 13,
+          "width": 1,
+          "boolean": true
+        }
+      ]
+    },
+    {
+      "parameter": "pcie_generation",
+      "when": {
+        "pcie_implementation": "AGILEX3_GTS_25_3"
+      },
+      "source": "https://docs.altera.com/r/docs/813754/25.3/gts-axi-streaming-ip-for-pci-express-user-guide-agilextm-5-and-agilextm-3-fpgas-and-socs/supported-features?contentId=oYPcJulNu6b8S9_OxwM4Zg",
+      "source_revision": "Altera813754 v25.3 2025-12-16 supported features: Agilex3/5 rates/lanes/tags/MPS512/MRRS4096/oneVC/clock modes, conventional reset1s caveat.",
+      "maximum": 3
+    },
+    {
+      "parameter": "pcie_lanes",
+      "when": {
+        "pcie_implementation": "AGILEX3_GTS_25_3"
+      },
+      "source": "https://docs.altera.com/r/docs/813754/25.3/gts-axi-streaming-ip-for-pci-express-user-guide-agilextm-5-and-agilextm-3-fpgas-and-socs/supported-features?contentId=oYPcJulNu6b8S9_OxwM4Zg",
+      "source_revision": "Altera813754 v25.3 2025-12-16 supported features: Agilex3/5 rates/lanes/tags/MPS512/MRRS4096/oneVC/clock modes, conventional reset1s caveat.",
+      "allowed": [
+        1,
+        2,
+        4
+      ]
+    },
+    {
+      "parameter": "pcie_mode",
+      "when": {
+        "pcie_implementation": "AGILEX3_GTS_25_3"
+      },
+      "source": "https://docs.altera.com/r/docs/813754/25.3/gts-axi-streaming-ip-for-pci-express-user-guide-agilextm-5-and-agilextm-3-fpgas-and-socs/supported-features?contentId=oYPcJulNu6b8S9_OxwM4Zg",
+      "source_revision": "Altera813754 v25.3 2025-12-16 supported features: Agilex3/5 rates/lanes/tags/MPS512/MRRS4096/oneVC/clock modes, conventional reset1s caveat.",
+      "allowed": [
+        "NON_FLIT"
+      ]
+    },
+    {
+      "parameter": "pcie_role",
+      "when": {
+        "pcie_implementation": "AGILEX3_GTS_25_3"
+      },
+      "source": "https://docs.altera.com/r/docs/813754/25.3/gts-axi-streaming-ip-for-pci-express-user-guide-agilextm-5-and-agilextm-3-fpgas-and-socs/supported-features?contentId=oYPcJulNu6b8S9_OxwM4Zg",
+      "source_revision": "Altera813754 v25.3 2025-12-16 supported features: Agilex3/5 rates/lanes/tags/MPS512/MRRS4096/oneVC/clock modes, conventional reset1s caveat.",
+      "allowed": [
+        "ROOT_PORT",
+        "ENDPOINT"
+      ]
+    },
+    {
+      "parameter": "pcie_mps_supported",
+      "when": {
+        "pcie_implementation": "AGILEX3_GTS_25_3"
+      },
+      "source": "https://docs.altera.com/r/docs/813754/25.3/gts-axi-streaming-ip-for-pci-express-user-guide-agilextm-5-and-agilextm-3-fpgas-and-socs/pcie0/pcie1-device?contentId=QNUfbZtk~fLvEcCt9_ylNQ",
+      "source_revision": "Altera813754 v25.3 2025-12-16 device table38: capabilities versus actual configured MPS, PF/VF and source-specific settings.",
+      "allowed": [
+        128,
+        256,
+        512
+      ]
+    },
+    {
+      "parameter": "pcie_vc_count",
+      "when": {
+        "pcie_implementation": "AGILEX3_GTS_25_3"
+      },
+      "source": "https://docs.altera.com/r/docs/813754/25.3/gts-axi-streaming-ip-for-pci-express-user-guide-agilextm-5-and-agilextm-3-fpgas-and-socs/supported-features?contentId=oYPcJulNu6b8S9_OxwM4Zg",
+      "source_revision": "Altera813754 v25.3 2025-12-16 supported features: Agilex3/5 rates/lanes/tags/MPS512/MRRS4096/oneVC/clock modes, conventional reset1s caveat.",
+      "allowed": [
+        1
+      ]
+    },
+    {
+      "parameter": "pcie_virtual_channel",
+      "when": {
+        "pcie_implementation": "AGILEX3_GTS_25_3"
+      },
+      "source": "https://docs.altera.com/r/docs/813754/25.3/gts-axi-streaming-ip-for-pci-express-user-guide-agilextm-5-and-agilextm-3-fpgas-and-socs/supported-features?contentId=oYPcJulNu6b8S9_OxwM4Zg",
+      "source_revision": "Altera813754 v25.3 2025-12-16 supported features: Agilex3/5 rates/lanes/tags/MPS512/MRRS4096/oneVC/clock modes, conventional reset1s caveat.",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "pcie_needed_data_credits",
+      "when": {
+        "pcie_implementation": "AGILEX3_GTS_25_3"
+      },
+      "source": "https://docs.altera.com/r/docs/813754/25.3/gts-axi-streaming-ip-for-pci-express-user-guide-agilextm-5-and-agilextm-3-fpgas-and-socs/transmit-flow-control-credit-interface?contentId=4jxXGgx_nObvvH4KBB6tjA",
+      "source_revision": "Altera813754 v25.3 2025-12-16 credit interface, header credit and data credit16bytes; actual limits versus available space.",
+      "equal_expression": {
+        "ceiling": [
+          {
+            "product": [
+              "pcie_tlp_payload_bytes",
+              0.0625
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "parameter": "pcie_tlp_payload_bytes",
+      "when": {
+        "pcie_implementation": "AGILEX3_GTS_25_3"
+      },
+      "source": "https://docs.altera.com/r/docs/813754/25.3/gts-axi-streaming-ip-for-pci-express-user-guide-agilextm-5-and-agilextm-3-fpgas-and-socs/transmit-flow-control-credit-interface?contentId=4jxXGgx_nObvvH4KBB6tjA",
+      "source_revision": "Altera813754 v25.3 2025-12-16 credit interface, header credit and data credit16bytes; actual limits versus available space.",
+      "when_present": [
+        "pcie_needed_data_credits"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "pcie_clock",
+      "when": {
+        "pcie_implementation": "AGILEX3_GTS_25_3"
+      },
+      "source": "https://docs.altera.com/r/docs/813754/25.3/gts-axi-streaming-ip-for-pci-express-user-guide-agilextm-5-and-agilextm-3-fpgas-and-socs/supported-features?contentId=oYPcJulNu6b8S9_OxwM4Zg",
+      "source_revision": "Altera813754 v25.3 2025-12-16 supported features: Agilex3/5 rates/lanes/tags/MPS512/MRRS4096/oneVC/clock modes, conventional reset1s caveat.",
+      "allowed": [
+        "COMMON",
+        "SRIS",
+        "SRNS"
+      ]
+    },
+    {
+      "parameter": "pcie_tag_capacity",
+      "when": {
+        "pcie_implementation": "AGILEX3_GTS_25_3"
+      },
+      "source": "https://docs.altera.com/r/docs/813754/25.3/gts-axi-streaming-ip-for-pci-express-user-guide-agilextm-5-and-agilextm-3-fpgas-and-socs/supported-features?contentId=oYPcJulNu6b8S9_OxwM4Zg",
+      "source_revision": "Altera813754 v25.3 2025-12-16 supported features: Agilex3/5 rates/lanes/tags/MPS512/MRRS4096/oneVC/clock modes, conventional reset1s caveat.",
+      "when_ranges": {
+        "pcie_lanes": [
+          1,
+          4
+        ]
+      },
+      "allowed": [
+        32,
+        64,
+        128,
+        256
+      ]
+    },
+    {
+      "parameter": "pcie_tag_bits",
+      "when": {
+        "pcie_implementation": "AGILEX3_GTS_25_3"
+      },
+      "source": "https://docs.altera.com/r/docs/813754/25.3/gts-axi-streaming-ip-for-pci-express-user-guide-agilextm-5-and-agilextm-3-fpgas-and-socs/supported-features?contentId=oYPcJulNu6b8S9_OxwM4Zg",
+      "source_revision": "Altera813754 v25.3 2025-12-16 supported features: Agilex3/5 rates/lanes/tags/MPS512/MRRS4096/oneVC/clock modes, conventional reset1s caveat.",
+      "when_ranges": {
+        "pcie_lanes": [
+          1,
+          4
+        ]
+      },
+      "allowed": [
+        5,
+        8
+      ]
+    },
+    {
+      "parameter": "pcie_tag_capacity",
+      "when": {
+        "pcie_implementation": "AGILEX3_GTS_25_3"
+      },
+      "source": "https://docs.altera.com/r/docs/813754/25.3/gts-axi-streaming-ip-for-pci-express-user-guide-agilextm-5-and-agilextm-3-fpgas-and-socs/supported-features?contentId=oYPcJulNu6b8S9_OxwM4Zg",
+      "source_revision": "Altera813754 v25.3 2025-12-16 supported features: Agilex3/5 rates/lanes/tags/MPS512/MRRS4096/oneVC/clock modes, conventional reset1s caveat.",
+      "when_ranges": {
+        "pcie_lanes": [
+          8,
+          8
+        ]
+      },
+      "allowed": [
+        32,
+        64,
+        128,
+        256,
+        512
+      ]
+    },
+    {
+      "parameter": "pcie_needed_data_credits",
+      "when": {
+        "pcie_implementation": "AGILEX3_GTS_25_3",
+        "pcie_transmission_started": true
+      },
+      "source": "https://docs.altera.com/r/docs/813754/25.3/gts-axi-streaming-ip-for-pci-express-user-guide-agilextm-5-and-agilextm-3-fpgas-and-socs/transmit-flow-control-credit-interface?contentId=4jxXGgx_nObvvH4KBB6tjA",
+      "source_revision": "Altera813754 v25.3 2025-12-16 credit interface, header credit and data credit16bytes; actual limits versus available space.",
+      "maximum_parameter": "pcie_data_credits"
+    },
+    {
+      "parameter": "pcie_needed_data_credits",
+      "when": {
+        "pcie_implementation": "AGILEX3_GTS_25_3",
+        "pcie_transmission_started": true
+      },
+      "source": "https://docs.altera.com/r/docs/813754/25.3/gts-axi-streaming-ip-for-pci-express-user-guide-agilextm-5-and-agilextm-3-fpgas-and-socs/transmit-flow-control-credit-interface?contentId=4jxXGgx_nObvvH4KBB6tjA",
+      "source_revision": "Altera813754 v25.3 2025-12-16 credit interface, header credit and data credit16bytes; actual limits versus available space.",
+      "required": true
+    },
+    {
+      "parameter": "pcie_data_credits",
+      "when": {
+        "pcie_implementation": "AGILEX3_GTS_25_3",
+        "pcie_transmission_started": true
+      },
+      "source": "https://docs.altera.com/r/docs/813754/25.3/gts-axi-streaming-ip-for-pci-express-user-guide-agilextm-5-and-agilextm-3-fpgas-and-socs/transmit-flow-control-credit-interface?contentId=4jxXGgx_nObvvH4KBB6tjA",
+      "source_revision": "Altera813754 v25.3 2025-12-16 credit interface, header credit and data credit16bytes; actual limits versus available space.",
+      "required": true
+    },
+    {
+      "parameter": "pcie_tlp_payload_bytes",
+      "when": {
+        "pcie_implementation": "AGILEX3_GTS_25_3",
+        "pcie_transmission_started": true
+      },
+      "source": "https://docs.altera.com/r/docs/813754/25.3/gts-axi-streaming-ip-for-pci-express-user-guide-agilextm-5-and-agilextm-3-fpgas-and-socs/transmit-flow-control-credit-interface?contentId=4jxXGgx_nObvvH4KBB6tjA",
+      "source_revision": "Altera813754 v25.3 2025-12-16 credit interface, header credit and data credit16bytes; actual limits versus available space.",
+      "required": true
+    },
+    {
+      "parameter": "pcie_generation",
+      "when": {
+        "pcie_implementation": "AGILEX5_GTS_25_3"
+      },
+      "source": "https://docs.altera.com/r/docs/813754/25.3/gts-axi-streaming-ip-for-pci-express-user-guide-agilextm-5-and-agilextm-3-fpgas-and-socs/supported-features?contentId=oYPcJulNu6b8S9_OxwM4Zg",
+      "source_revision": "Altera813754 v25.3 2025-12-16 supported features: Agilex3/5 rates/lanes/tags/MPS512/MRRS4096/oneVC/clock modes, conventional reset1s caveat.",
+      "maximum": 4
+    },
+    {
+      "parameter": "pcie_lanes",
+      "when": {
+        "pcie_implementation": "AGILEX5_GTS_25_3"
+      },
+      "source": "https://docs.altera.com/r/docs/813754/25.3/gts-axi-streaming-ip-for-pci-express-user-guide-agilextm-5-and-agilextm-3-fpgas-and-socs/supported-features?contentId=oYPcJulNu6b8S9_OxwM4Zg",
+      "source_revision": "Altera813754 v25.3 2025-12-16 supported features: Agilex3/5 rates/lanes/tags/MPS512/MRRS4096/oneVC/clock modes, conventional reset1s caveat.",
+      "allowed": [
+        1,
+        2,
+        4,
+        8
+      ]
+    },
+    {
+      "parameter": "pcie_mode",
+      "when": {
+        "pcie_implementation": "AGILEX5_GTS_25_3"
+      },
+      "source": "https://docs.altera.com/r/docs/813754/25.3/gts-axi-streaming-ip-for-pci-express-user-guide-agilextm-5-and-agilextm-3-fpgas-and-socs/supported-features?contentId=oYPcJulNu6b8S9_OxwM4Zg",
+      "source_revision": "Altera813754 v25.3 2025-12-16 supported features: Agilex3/5 rates/lanes/tags/MPS512/MRRS4096/oneVC/clock modes, conventional reset1s caveat.",
+      "allowed": [
+        "NON_FLIT"
+      ]
+    },
+    {
+      "parameter": "pcie_role",
+      "when": {
+        "pcie_implementation": "AGILEX5_GTS_25_3"
+      },
+      "source": "https://docs.altera.com/r/docs/813754/25.3/gts-axi-streaming-ip-for-pci-express-user-guide-agilextm-5-and-agilextm-3-fpgas-and-socs/supported-features?contentId=oYPcJulNu6b8S9_OxwM4Zg",
+      "source_revision": "Altera813754 v25.3 2025-12-16 supported features: Agilex3/5 rates/lanes/tags/MPS512/MRRS4096/oneVC/clock modes, conventional reset1s caveat.",
+      "allowed": [
+        "ROOT_PORT",
+        "ENDPOINT"
+      ]
+    },
+    {
+      "parameter": "pcie_mps_supported",
+      "when": {
+        "pcie_implementation": "AGILEX5_GTS_25_3"
+      },
+      "source": "https://docs.altera.com/r/docs/813754/25.3/gts-axi-streaming-ip-for-pci-express-user-guide-agilextm-5-and-agilextm-3-fpgas-and-socs/pcie0/pcie1-device?contentId=QNUfbZtk~fLvEcCt9_ylNQ",
+      "source_revision": "Altera813754 v25.3 2025-12-16 device table38: capabilities versus actual configured MPS, PF/VF and source-specific settings.",
+      "allowed": [
+        128,
+        256,
+        512
+      ]
+    },
+    {
+      "parameter": "pcie_vc_count",
+      "when": {
+        "pcie_implementation": "AGILEX5_GTS_25_3"
+      },
+      "source": "https://docs.altera.com/r/docs/813754/25.3/gts-axi-streaming-ip-for-pci-express-user-guide-agilextm-5-and-agilextm-3-fpgas-and-socs/supported-features?contentId=oYPcJulNu6b8S9_OxwM4Zg",
+      "source_revision": "Altera813754 v25.3 2025-12-16 supported features: Agilex3/5 rates/lanes/tags/MPS512/MRRS4096/oneVC/clock modes, conventional reset1s caveat.",
+      "allowed": [
+        1
+      ]
+    },
+    {
+      "parameter": "pcie_virtual_channel",
+      "when": {
+        "pcie_implementation": "AGILEX5_GTS_25_3"
+      },
+      "source": "https://docs.altera.com/r/docs/813754/25.3/gts-axi-streaming-ip-for-pci-express-user-guide-agilextm-5-and-agilextm-3-fpgas-and-socs/supported-features?contentId=oYPcJulNu6b8S9_OxwM4Zg",
+      "source_revision": "Altera813754 v25.3 2025-12-16 supported features: Agilex3/5 rates/lanes/tags/MPS512/MRRS4096/oneVC/clock modes, conventional reset1s caveat.",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "pcie_needed_data_credits",
+      "when": {
+        "pcie_implementation": "AGILEX5_GTS_25_3"
+      },
+      "source": "https://docs.altera.com/r/docs/813754/25.3/gts-axi-streaming-ip-for-pci-express-user-guide-agilextm-5-and-agilextm-3-fpgas-and-socs/transmit-flow-control-credit-interface?contentId=4jxXGgx_nObvvH4KBB6tjA",
+      "source_revision": "Altera813754 v25.3 2025-12-16 credit interface, header credit and data credit16bytes; actual limits versus available space.",
+      "equal_expression": {
+        "ceiling": [
+          {
+            "product": [
+              "pcie_tlp_payload_bytes",
+              0.0625
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "parameter": "pcie_tlp_payload_bytes",
+      "when": {
+        "pcie_implementation": "AGILEX5_GTS_25_3"
+      },
+      "source": "https://docs.altera.com/r/docs/813754/25.3/gts-axi-streaming-ip-for-pci-express-user-guide-agilextm-5-and-agilextm-3-fpgas-and-socs/transmit-flow-control-credit-interface?contentId=4jxXGgx_nObvvH4KBB6tjA",
+      "source_revision": "Altera813754 v25.3 2025-12-16 credit interface, header credit and data credit16bytes; actual limits versus available space.",
+      "when_present": [
+        "pcie_needed_data_credits"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "pcie_clock",
+      "when": {
+        "pcie_implementation": "AGILEX5_GTS_25_3"
+      },
+      "source": "https://docs.altera.com/r/docs/813754/25.3/gts-axi-streaming-ip-for-pci-express-user-guide-agilextm-5-and-agilextm-3-fpgas-and-socs/supported-features?contentId=oYPcJulNu6b8S9_OxwM4Zg",
+      "source_revision": "Altera813754 v25.3 2025-12-16 supported features: Agilex3/5 rates/lanes/tags/MPS512/MRRS4096/oneVC/clock modes, conventional reset1s caveat.",
+      "allowed": [
+        "COMMON",
+        "SRIS",
+        "SRNS"
+      ]
+    },
+    {
+      "parameter": "pcie_tag_capacity",
+      "when": {
+        "pcie_implementation": "AGILEX5_GTS_25_3"
+      },
+      "source": "https://docs.altera.com/r/docs/813754/25.3/gts-axi-streaming-ip-for-pci-express-user-guide-agilextm-5-and-agilextm-3-fpgas-and-socs/supported-features?contentId=oYPcJulNu6b8S9_OxwM4Zg",
+      "source_revision": "Altera813754 v25.3 2025-12-16 supported features: Agilex3/5 rates/lanes/tags/MPS512/MRRS4096/oneVC/clock modes, conventional reset1s caveat.",
+      "when_ranges": {
+        "pcie_lanes": [
+          1,
+          4
+        ]
+      },
+      "allowed": [
+        32,
+        64,
+        128,
+        256
+      ]
+    },
+    {
+      "parameter": "pcie_tag_bits",
+      "when": {
+        "pcie_implementation": "AGILEX5_GTS_25_3"
+      },
+      "source": "https://docs.altera.com/r/docs/813754/25.3/gts-axi-streaming-ip-for-pci-express-user-guide-agilextm-5-and-agilextm-3-fpgas-and-socs/supported-features?contentId=oYPcJulNu6b8S9_OxwM4Zg",
+      "source_revision": "Altera813754 v25.3 2025-12-16 supported features: Agilex3/5 rates/lanes/tags/MPS512/MRRS4096/oneVC/clock modes, conventional reset1s caveat.",
+      "when_ranges": {
+        "pcie_lanes": [
+          1,
+          4
+        ]
+      },
+      "allowed": [
+        5,
+        8
+      ]
+    },
+    {
+      "parameter": "pcie_tag_capacity",
+      "when": {
+        "pcie_implementation": "AGILEX5_GTS_25_3"
+      },
+      "source": "https://docs.altera.com/r/docs/813754/25.3/gts-axi-streaming-ip-for-pci-express-user-guide-agilextm-5-and-agilextm-3-fpgas-and-socs/supported-features?contentId=oYPcJulNu6b8S9_OxwM4Zg",
+      "source_revision": "Altera813754 v25.3 2025-12-16 supported features: Agilex3/5 rates/lanes/tags/MPS512/MRRS4096/oneVC/clock modes, conventional reset1s caveat.",
+      "when_ranges": {
+        "pcie_lanes": [
+          8,
+          8
+        ]
+      },
+      "allowed": [
+        32,
+        64,
+        128,
+        256,
+        512
+      ]
+    },
+    {
+      "parameter": "pcie_needed_data_credits",
+      "when": {
+        "pcie_implementation": "AGILEX5_GTS_25_3",
+        "pcie_transmission_started": true
+      },
+      "source": "https://docs.altera.com/r/docs/813754/25.3/gts-axi-streaming-ip-for-pci-express-user-guide-agilextm-5-and-agilextm-3-fpgas-and-socs/transmit-flow-control-credit-interface?contentId=4jxXGgx_nObvvH4KBB6tjA",
+      "source_revision": "Altera813754 v25.3 2025-12-16 credit interface, header credit and data credit16bytes; actual limits versus available space.",
+      "maximum_parameter": "pcie_data_credits"
+    },
+    {
+      "parameter": "pcie_needed_data_credits",
+      "when": {
+        "pcie_implementation": "AGILEX5_GTS_25_3",
+        "pcie_transmission_started": true
+      },
+      "source": "https://docs.altera.com/r/docs/813754/25.3/gts-axi-streaming-ip-for-pci-express-user-guide-agilextm-5-and-agilextm-3-fpgas-and-socs/transmit-flow-control-credit-interface?contentId=4jxXGgx_nObvvH4KBB6tjA",
+      "source_revision": "Altera813754 v25.3 2025-12-16 credit interface, header credit and data credit16bytes; actual limits versus available space.",
+      "required": true
+    },
+    {
+      "parameter": "pcie_data_credits",
+      "when": {
+        "pcie_implementation": "AGILEX5_GTS_25_3",
+        "pcie_transmission_started": true
+      },
+      "source": "https://docs.altera.com/r/docs/813754/25.3/gts-axi-streaming-ip-for-pci-express-user-guide-agilextm-5-and-agilextm-3-fpgas-and-socs/transmit-flow-control-credit-interface?contentId=4jxXGgx_nObvvH4KBB6tjA",
+      "source_revision": "Altera813754 v25.3 2025-12-16 credit interface, header credit and data credit16bytes; actual limits versus available space.",
+      "required": true
+    },
+    {
+      "parameter": "pcie_tlp_payload_bytes",
+      "when": {
+        "pcie_implementation": "AGILEX5_GTS_25_3",
+        "pcie_transmission_started": true
+      },
+      "source": "https://docs.altera.com/r/docs/813754/25.3/gts-axi-streaming-ip-for-pci-express-user-guide-agilextm-5-and-agilextm-3-fpgas-and-socs/transmit-flow-control-credit-interface?contentId=4jxXGgx_nObvvH4KBB6tjA",
+      "source_revision": "Altera813754 v25.3 2025-12-16 credit interface, header credit and data credit16bytes; actual limits versus available space.",
+      "required": true
+    },
+    {
+      "parameter": "pcie_data_credit_bytes",
+      "when": {
+        "pcie_implementation": "REGISTERED_ACTUAL"
+      },
+      "source": "https://docs.altera.com/r/docs/813754/25.3/gts-axi-streaming-ip-for-pci-express-user-guide-agilextm-5-and-agilextm-3-fpgas-and-socs/transmit-flow-control-credit-interface?contentId=4jxXGgx_nObvvH4KBB6tjA",
+      "source_revision": "Altera813754 v25.3 2025-12-16 credit interface, header credit and data credit16bytes; actual limits versus available space.",
+      "allowed": []
+    },
+    {
+      "parameter": "pcie_link_active",
+      "when": {
+        "pcie_transmission_started": true
+      },
+      "source": "https://docs.altera.com/r/docs/813754/25.3/gts-axi-streaming-ip-for-pci-express-user-guide-agilextm-5-and-agilextm-3-fpgas-and-socs/transmit-flow-control-credit-interface?contentId=4jxXGgx_nObvvH4KBB6tjA",
+      "source_revision": "Altera813754 v25.3 2025-12-16 credit interface, header credit and data credit16bytes; actual limits versus available space.",
+      "required": true,
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "pcie_training",
+      "when": {
+        "pcie_transmission_started": true
+      },
+      "source": "https://docs.altera.com/r/docs/813754/25.3/gts-axi-streaming-ip-for-pci-express-user-guide-agilextm-5-and-agilextm-3-fpgas-and-socs/transmit-flow-control-credit-interface?contentId=4jxXGgx_nObvvH4KBB6tjA",
+      "source_revision": "Altera813754 v25.3 2025-12-16 credit interface, header credit and data credit16bytes; actual limits versus available space.",
+      "required": true,
+      "allowed": [
+        false
+      ]
+    },
+    {
+      "parameter": "pcie_header_credits",
+      "when": {
+        "pcie_transmission_started": true
+      },
+      "source": "https://docs.altera.com/r/docs/813754/25.3/gts-axi-streaming-ip-for-pci-express-user-guide-agilextm-5-and-agilextm-3-fpgas-and-socs/transmit-flow-control-credit-interface?contentId=4jxXGgx_nObvvH4KBB6tjA",
+      "source_revision": "Altera813754 v25.3 2025-12-16 credit interface, header credit and data credit16bytes; actual limits versus available space.",
+      "required": true,
+      "minimum": 1
+    },
+    {
+      "parameter": "pcie_completion_timeout_us",
+      "when": {},
+      "source": "https://docs.altera.com/r/docs/813754/25.3/gts-axi-streaming-ip-for-pci-express-user-guide-agilextm-5-and-agilextm-3-fpgas-and-socs/completion-timeout-interface?contentId=EBTDmC2PKISZT4Arera3qQ",
+      "source_revision": "Altera813754 v25.3 2025-12-16 non-posted completion timeout correlation by tag/function/remainingbytes/TC/attributes.",
+      "exclusive_minimum": 0
+    },
+    {
+      "parameter": "pcie_completion_timeout_disable_supported",
+      "when": {
+        "pcie_completion_timeout_disabled": true
+      },
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.12/include/uapi/linux/pci_regs.h",
+      "source_revision": "Linux v6.12 explicit PCIe capability/control/status masks. Register meanings/encodings, not full normative protocol or every optional capability.",
+      "required": true,
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "pcie_completion_elapsed_us",
+      "when": {
+        "pcie_completion_timeout_disabled": false
+      },
+      "source": "https://docs.altera.com/r/docs/813754/25.3/gts-axi-streaming-ip-for-pci-express-user-guide-agilextm-5-and-agilextm-3-fpgas-and-socs/completion-timeout-interface?contentId=EBTDmC2PKISZT4Arera3qQ",
+      "source_revision": "Altera813754 v25.3 2025-12-16 non-posted completion timeout correlation by tag/function/remainingbytes/TC/attributes.",
+      "maximum_parameter": "pcie_completion_timeout_us"
+    },
+    {
+      "parameter": "pcie_transaction_source",
+      "when": {
+        "pcie_data_accepted": true
+      },
+      "source": "https://docs.altera.com/r/docs/813754/25.3/gts-axi-streaming-ip-for-pci-express-user-guide-agilextm-5-and-agilextm-3-fpgas-and-socs/completion-timeout-interface?contentId=EBTDmC2PKISZT4Arera3qQ",
+      "source_revision": "Altera813754 v25.3 2025-12-16 non-posted completion timeout correlation by tag/function/remainingbytes/TC/attributes.",
+      "required": true
+    },
+    {
+      "parameter": "pcie_acceptance_source",
+      "when": {
+        "pcie_data_accepted": true
+      },
+      "source": "https://docs.altera.com/r/docs/813754/25.3/gts-axi-streaming-ip-for-pci-express-user-guide-agilextm-5-and-agilextm-3-fpgas-and-socs/completion-timeout-interface?contentId=EBTDmC2PKISZT4Arera3qQ",
+      "source_revision": "Altera813754 v25.3 2025-12-16 non-posted completion timeout correlation by tag/function/remainingbytes/TC/attributes.",
+      "required": true
+    },
+    {
+      "parameter": "pcie_outcome",
+      "when": {
+        "pcie_data_accepted": true
+      },
+      "source": "https://docs.altera.com/r/docs/813754/25.3/gts-axi-streaming-ip-for-pci-express-user-guide-agilextm-5-and-agilextm-3-fpgas-and-socs/completion-timeout-interface?contentId=EBTDmC2PKISZT4Arera3qQ",
+      "source_revision": "Altera813754 v25.3 2025-12-16 non-posted completion timeout correlation by tag/function/remainingbytes/TC/attributes.",
+      "required": true,
+      "allowed": [
+        "ACCEPTED"
+      ]
+    },
+    {
+      "parameter": "pcie_poisoned",
+      "when": {
+        "pcie_data_accepted": true
+      },
+      "source": "https://raw.githubusercontent.com/torvalds/linux/v6.12/include/uapi/linux/pci_regs.h",
+      "source_revision": "Linux v6.12 explicit PCIe capability/control/status masks. Register meanings/encodings, not full normative protocol or every optional capability.",
+      "required": true,
+      "allowed": [
+        false
+      ]
+    },
+    {
+      "parameter": "pcie_completion_received",
+      "when": {
+        "pcie_data_accepted": true,
+        "pcie_traffic": "NON_POSTED"
+      },
+      "source": "https://docs.altera.com/r/docs/813754/25.3/gts-axi-streaming-ip-for-pci-express-user-guide-agilextm-5-and-agilextm-3-fpgas-and-socs/completion-timeout-interface?contentId=EBTDmC2PKISZT4Arera3qQ",
+      "source_revision": "Altera813754 v25.3 2025-12-16 non-posted completion timeout correlation by tag/function/remainingbytes/TC/attributes.",
+      "required": true,
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "pcie_completion_success",
+      "when": {
+        "pcie_data_accepted": true,
+        "pcie_traffic": "NON_POSTED"
+      },
+      "source": "https://docs.altera.com/r/docs/813754/25.3/gts-axi-streaming-ip-for-pci-express-user-guide-agilextm-5-and-agilextm-3-fpgas-and-socs/completion-timeout-interface?contentId=EBTDmC2PKISZT4Arera3qQ",
+      "source_revision": "Altera813754 v25.3 2025-12-16 non-posted completion timeout correlation by tag/function/remainingbytes/TC/attributes.",
+      "required": true,
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "pcie_tag_unique",
+      "when": {
+        "pcie_data_accepted": true,
+        "pcie_traffic": "NON_POSTED"
+      },
+      "source": "https://docs.altera.com/r/docs/813754/25.3/gts-axi-streaming-ip-for-pci-express-user-guide-agilextm-5-and-agilextm-3-fpgas-and-socs/completion-timeout-interface?contentId=EBTDmC2PKISZT4Arera3qQ",
+      "source_revision": "Altera813754 v25.3 2025-12-16 non-posted completion timeout correlation by tag/function/remainingbytes/TC/attributes.",
+      "required": true,
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "pcie_completion_timeout_us",
+      "when": {
+        "pcie_data_accepted": true,
+        "pcie_traffic": "NON_POSTED",
+        "pcie_completion_timeout_disabled": false
+      },
+      "source": "https://docs.altera.com/r/docs/813754/25.3/gts-axi-streaming-ip-for-pci-express-user-guide-agilextm-5-and-agilextm-3-fpgas-and-socs/completion-timeout-interface?contentId=EBTDmC2PKISZT4Arera3qQ",
+      "source_revision": "Altera813754 v25.3 2025-12-16 non-posted completion timeout correlation by tag/function/remainingbytes/TC/attributes.",
+      "required": true
+    },
+    {
+      "parameter": "pcie_completion_elapsed_us",
+      "when": {
+        "pcie_data_accepted": true,
+        "pcie_traffic": "NON_POSTED",
+        "pcie_completion_timeout_disabled": false
+      },
+      "source": "https://docs.altera.com/r/docs/813754/25.3/gts-axi-streaming-ip-for-pci-express-user-guide-agilextm-5-and-agilextm-3-fpgas-and-socs/completion-timeout-interface?contentId=EBTDmC2PKISZT4Arera3qQ",
+      "source_revision": "Altera813754 v25.3 2025-12-16 non-posted completion timeout correlation by tag/function/remainingbytes/TC/attributes.",
+      "required": true
+    },
+    {
+      "parameter": "pcie_age_us",
+      "when": {},
+      "source": "https://docs.altera.com/r/docs/813754/25.3/gts-axi-streaming-ip-for-pci-express-user-guide-agilextm-5-and-agilextm-3-fpgas-and-socs/completion-timeout-interface?contentId=EBTDmC2PKISZT4Arera3qQ",
+      "source_revision": "Altera813754 v25.3 2025-12-16 non-posted completion timeout correlation by tag/function/remainingbytes/TC/attributes.",
+      "maximum_parameter": "pcie_freshness_limit_us"
+    },
+    {
+      "parameter": "pcie_freshness_limit_us",
+      "when": {},
+      "source": "https://docs.altera.com/r/docs/813754/25.3/gts-axi-streaming-ip-for-pci-express-user-guide-agilextm-5-and-agilextm-3-fpgas-and-socs/completion-timeout-interface?contentId=EBTDmC2PKISZT4Arera3qQ",
+      "source_revision": "Altera813754 v25.3 2025-12-16 non-posted completion timeout correlation by tag/function/remainingbytes/TC/attributes.",
+      "when_present": [
+        "pcie_age_us"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "pcie_reset_wait_us",
+      "when": {
+        "pcie_conventional_reset": true,
+        "pcie_readiness_notification": false
+      },
+      "source": "https://docs.altera.com/r/docs/813754/25.3/gts-axi-streaming-ip-for-pci-express-user-guide-agilextm-5-and-agilextm-3-fpgas-and-socs/supported-features?contentId=oYPcJulNu6b8S9_OxwM4Zg",
+      "source_revision": "Altera813754 v25.3 2025-12-16 supported features: Agilex3/5 rates/lanes/tags/MPS512/MRRS4096/oneVC/clock modes, conventional reset1s caveat.",
+      "minimum": 1000000
+    }
+  ],
+  "physical_layer_profile_id": null,
+  "medium_access_model": null,
+  "native_parameter_prefixes": [
+    "pcie_"
+  ],
+  "parameter_aliases": {},
+  "parameter_alias_limits": {},
+  "parameter_evidence_scope": "EXPLICIT_LAYER",
+  "rate_source_profile_id": null,
+  "arbitration_model_id": null,
+  "max_payload_bytes": null,
+  "capabilities": {
+    "supports_signals": true,
+    "supports_data_objects": true,
+    "supports_streams": true,
+    "supports_multicast": false,
+    "supports_publish_subscribe": false,
+    "supports_request_response": false,
+    "supports_cyclic": true,
+    "supports_event": true,
+    "supports_redundancy": false,
+    "supports_time_sync": false,
+    "supports_safety_profile": false,
+    "supports_segmentation": false,
+    "supports_fragmentation": false,
+    "supports_qos": true
+  },
+  "deterministic": false,
+  "overhead_bytes": 8,
+  "implementation_status": "PARTIAL",
+  "connection_type": "COMMUNICATION_TECHNOLOGY",
+  "parameter_proposals": {
+    "kind": "NEGOTIATED_GENERATION_LANES_CODEC",
+    "status": "REVIEW_REQUIRED",
+    "source": "https://raw.githubusercontent.com/torvalds/linux/v6.12/include/uapi/linux/pci_regs.h",
+    "source_revision": "Linux v6.12 explicit PCIe capability/control/status masks. Register meanings/encodings, not full normative protocol or every optional capability.",
+    "values": {},
+    "minimum_standard_bitrate_bps": null,
+    "note": "Gen1/x1/128byte MPS and MRRS baseline proposals; actual generation/lane/mode/credits/PHY and traffic remain explicit. GT/s not application throughput."
+  },
+  "capacity_evidence": {
+    "status": "MODEL_MISSING",
+    "frame_model": null,
+    "schedule_model": null,
+    "requires_confirmed_device_parameters": true
+  },
+  "components": {
+    "binding": "pcie.binding",
+    "generator": "pcie.generator",
+    "validator": "pcie.validator",
+    "timing_model": null,
+    "load_model": null,
+    "encoder": "pcie.encoder",
+    "decoder": "pcie.decoder"
+  },
+  "known_limitations": "Technology-specific conformance details require a vendor/profile extension."
+}

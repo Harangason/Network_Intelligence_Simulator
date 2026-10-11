@@ -1,0 +1,24 @@
+--- before/backend/tests/test_wizard_generation.py
++++ after/backend/tests/test_wizard_generation.py
+@@ -662,6 +662,9 @@
+ - Lauf-ID: test-wizard-12345678
+ - Industrie: Automotive
+ - Netzwerktechnologien: CAN-FD (can_fd); LIN (lin)
++CAN-FD: 500 kbit/s arbitration, 2 Mbit/s data
++LIN: 19,2 kbit/s
++Ethernet: 100 Mbit/s
+ - Hardware-Sollwerte: {"gateways":1,"ecus":50,"sensors":100,"actuators":100}
+ Konkrete Aufgabe des Nutzers, per Wizard-Uebernehmen bestaetigt:
+ Erzeuge ein Fahrzeugnetzwerk mit 100 Sensoren, 100 Aktuatoren, 50 ECUs und 1 Gateway.
+@@ -748,8 +751,10 @@
+         selected_nodes = {str(item['id']) for item in (ecu, sensor, actuator, hmi)}
+         confirmed_rates = {'CAN_FD': 500_000, 'LIN': 19_200, 'Ethernet': 100_000_000}
+         def confirmed_bus_rates(technology):
++            from backend.tests.native_transport_fixtures import lin_design, ethernet_mac
+             return {'bitrate': confirmed_rates[technology], **({'arbitration_bitrate': 500_000,
+-                'data_bitrate': 2_000_000} if technology == 'CAN_FD' else {})}
++                'data_bitrate': 2_000_000} if technology == 'CAN_FD' else
++                lin_design() if technology == 'LIN' else ethernet_mac())}
+         for port in model.objects('HardwareNetworkInterface'):
+             network = 'fixture-confirmed-shared-bus' if port['technology'] == ecu_type else 'fixture-' + port['technology'].lower()
+             # This positive simulation fixture explicitly confirms the bus rate.

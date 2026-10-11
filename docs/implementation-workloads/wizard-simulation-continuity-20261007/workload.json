@@ -1,0 +1,2117 @@
+{
+  "goal_id": "wizard-simulation-continuity-20261007",
+  "goal_type": "SIMULATION_WIZARD_CONTINUITY",
+  "kind": "repair",
+  "repository": "I:\\PycharmProjects\\My_first_Network_Simulator",
+  "project_scope": "20261007041943709-40764014; all persisted simulation configurations",
+  "requested_change": "Restore the running wizard without a first-step flash or restarting; refresh stale proposal review from saved values. Missing device qualification alone is informational for simulation.",
+  "modify_code": true,
+  "allow_repair": true,
+  "unresolved_decisions": [],
+  "required_outcomes": [
+    "wizard_continuity",
+    "saved_value_precedence",
+    "simulation_readiness_without_device_qualification",
+    "production_delivery"
+  ],
+  "validation_requirements": [
+    "targeted_regression",
+    "full_release_gate",
+    "production_verification"
+  ],
+  "constraints": [
+    "Persisted provenance and native TechnologyProfile validation remain authoritative",
+    "Model/schedule/invalid parameter blockers remain enforced",
+    "Preserve dirty changes and pending user model review"
+  ],
+  "forbidden_changes": [
+    "Product database test fixtures",
+    "Automatic human approval or model application",
+    "Invented hardware evidence",
+    "Foreign technology fallbacks"
+  ],
+  "files_inspected": [
+    "frontend/src/features/agent/ui/agent-chat-core.tsx",
+    "frontend/src/features/agent/lib/proposal-client.ts",
+    "frontend/src/features/agent/ui/engineering-agent-event.tsx",
+    "frontend/src/features/simulation/ui/simulation-wizard.tsx",
+    "backend/nis/agent/tools/validation.py",
+    "backend/nis/agent/tools/wizard_generation.py",
+    "backend/nis/workflow/services/service.py",
+    "backend/nis/engineering/capacity/service.py",
+    "backend/nis/engineering/routing/config_builder.py",
+    "backend/nis/engineering/simulation.py",
+    "frontend/src/features/agent/lib/proposal-client.test.mjs",
+    "frontend/e2e/wizard.spec.ts",
+    "frontend/e2e/technology-parameter-review.spec.ts",
+    "backend/tests/test_technology_parameter_review.py",
+    "backend/tests/test_simulation_parameter_defaults.py",
+    "backend/tests/test_workflow.py",
+    "backend/nis/traces/universal_trace.py",
+    "backend/tests/test_simulation_observation.py",
+    "backend/nis/engineering/capacity/dimensioning.py",
+    "backend/tests/test_bus_rate_planning.py",
+    "scripts/dev/launch-networkis.py",
+    "backend/tests/test_server_startup.py",
+    "frontend/src/shared/api/api.ts",
+    "frontend/src/shared/api/lossless-json.ts",
+    "frontend/src/shared/api/lossless-json.test.mjs",
+    "frontend/src/shared/api/catalog-response.ts",
+    "frontend/src/shared/api/catalog-response.test.mjs",
+    "backend/nis/communication/registry.py",
+    "backend/nis/communication/technologies/lin/timing.py",
+    "backend/tests/test_technology_registry_metadata.py",
+    "backend/nis/agent/tools/proposal_service.py",
+    "backend/tests/test_proposal_capacity.py",
+    "backend/tests/test_routing_prospective_model.py",
+    "backend/nis/interfaces/http/engineering.py",
+    "frontend/src/features/agent/lib/wizard-progress-watchdog.test.mjs",
+    "backend/nis/communication/technologies/ethernet/timing.py",
+    "backend/nis/agent/core/engineering_agent.py",
+    "backend/tests/test_capacity_can_schedule.py",
+    "backend/tests/test_wizard_generation.py",
+    "backend/nis/agent/tools/services.py",
+    "backend/tests/test_wizard_large_routing.py",
+    "docs/migrations/structure_mapping.csv",
+    "backend/nis/intelligence/engineering/intelligence/network_planning.py",
+    "backend/tests/test_automatic_resource_planning.py",
+    "backend/nis/engineering/simulation_observation.py",
+    "frontend/src/features/workflow/lib/workflow-api.ts",
+    "frontend/src/features/workflow/lib/workflow-api.test.mjs",
+    "backend/nis/engineering/simulation_coverage.py",
+    "backend/tests/test_non_routed_output_coverage.py",
+    "backend/tests/test_simulation_coverage.py"
+  ],
+  "revision_before": {
+    "frontend/src/features/agent/ui/agent-chat-core.tsx": "49eeafb927d8261b2f6458bfde6e1dc2aa820c82b19eecdc9d9a6f805d8d1e5b",
+    "frontend/src/features/agent/lib/proposal-client.ts": "b85d53c31d1e52aaa56a104c59ab7d0d992eec22f9e79d6add001c16169d1c50",
+    "frontend/src/features/agent/ui/engineering-agent-event.tsx": "c10d85dd6d10fdf050d8fac0ac45734b0fc14adf6c6e2c97e7e40fceb2524645",
+    "frontend/src/features/simulation/ui/simulation-wizard.tsx": "c4b7216be667b6cdfa9f0a4239a9a2ab603f29d0c1ca41da96259b9af47318b2",
+    "backend/nis/agent/tools/validation.py": "ea2e9724fa812a301b062c5eb0dd1a8241b9355794381d5c8135bca268e1dbdb",
+    "backend/nis/agent/tools/wizard_generation.py": "535009e945a722913191f014f7a4bbe7d3162b25fb140f00500f5da6268be0c6",
+    "backend/nis/workflow/services/service.py": "c922f521c693609663eafbb66b97f3425658481b48ea24c4c4535b56aef128ef",
+    "backend/nis/engineering/capacity/service.py": "eba0a4f7fb44146e476678fd6689c3272c87316c29a352c3a7f049c00fdf8c94",
+    "backend/nis/engineering/routing/config_builder.py": "595e96f1fcd54cd09142de3129b536c705ceeb6e3c8f033c163fbc6cf99ee8a0",
+    "backend/nis/engineering/simulation.py": "2aceb25bde79550c3da1dae66cd16338d5e49d5546d946e72617cf68dd69cb7d",
+    "frontend/src/features/agent/lib/proposal-client.test.mjs": "8ac3379a9e06df7756daa5b2dc7436989ded46d026f6db4d9c19ba189598e6aa",
+    "frontend/e2e/wizard.spec.ts": "edce425b5cbe696e4489c6107625164c158dbe8a3b4f72a076b492a5ac32f401",
+    "frontend/e2e/technology-parameter-review.spec.ts": "c67b75dd4369da82b09c9067ba8b897dbf989e555260c04645bc2171240fd643",
+    "backend/tests/test_technology_parameter_review.py": "429545bafdb6a17aa5d4edd110a2f16632a91506b79fd4c447c917ab8a2a1960",
+    "backend/tests/test_simulation_parameter_defaults.py": "f60652f2378ee95d27cb57879cf317248188d948dc855e62246d38de4b8201c2",
+    "backend/tests/test_workflow.py": "4ad8ebb75a5fdc1cde97d2597c3813b3e79ef410ee9816c12f970ecc951d68b8",
+    "backend/nis/traces/universal_trace.py": "90f6803acc88f11b9702f7f3346b7e945274514bc75f91dee335705ec8b1c818",
+    "backend/tests/test_simulation_observation.py": "2519b64414518d601ceae37c6e3f41f885e7d21a18103c81479be32d4c8299fa",
+    "backend/nis/engineering/capacity/dimensioning.py": "d8a3f1af4bcce8d1ed69ee8426f650e562c52937fc2e3aa371ce39b4a3f4e3e8",
+    "backend/tests/test_bus_rate_planning.py": "4a6bcf038edf355a1fdcbb0c1c14ae075df379c7f4eaf8f61a42e4342bbc36ad",
+    "scripts/dev/launch-networkis.py": "8ef93fdcb3a9ad44d54828fddb943a09655436a656f1eda1a282a1124cebe6ba",
+    "backend/tests/test_server_startup.py": "dafaaff525f62f3a1d65f00c178bcd9508902e25f3bdaad0b1d725550f2a865d",
+    "frontend/src/shared/api/api.ts": "37f46a3b9c05799be1dfa1bf74704fddeb6612b48b898204cd02443bc3a0badc",
+    "frontend/src/shared/api/lossless-json.ts": "508a7ebf1e65c3a5d1aa5e017d3119bd9fded8fa9de199684f311ad2af2a4aa6",
+    "frontend/src/shared/api/lossless-json.test.mjs": "849b8e11ac9025d9fe45e1d409b497412511199c774f4ee981a46bc00e86432f",
+    "frontend/src/shared/api/catalog-response.ts": "0a8ee5236bb3a32dd5bc2b57d27575c275582e8c6da7ebddafc485b68f991a32",
+    "frontend/src/shared/api/catalog-response.test.mjs": "116bbda484457fc4310d61650853e37862fcf39da0fd9d904bbdf18a5c99d194",
+    "backend/nis/communication/registry.py": "606c319d227870ad91dc27e0c18ff7e3a6325925d41f97ffb7d4c830a8d9d5c4",
+    "backend/nis/communication/technologies/lin/timing.py": "56742f53559348b77ad593cfd1238a6515ac7575030f4ec1ff84f532f2c1f133",
+    "backend/tests/test_technology_registry_metadata.py": "b9128e537809d234912d40c7d220c5c4cf85566c8e384b77eaccb49d7ca1e75a",
+    "backend/nis/agent/tools/proposal_service.py": "36ecc1708d84ed03ba088365d722b7020533ff8c69a5a1bd6c7f70afb173569b",
+    "backend/tests/test_proposal_capacity.py": "f4d728211ecf3b620258d0072113a7c3ac860eddcf217e4e28a0c45b5de81740",
+    "backend/tests/test_routing_prospective_model.py": "8a66a0bcf706ad43b3c47f6b6e13cdee41c2c6588a92d67846e7efdbf9da2da0",
+    "backend/nis/interfaces/http/engineering.py": "582b57c17d0c75e21a50cdea79c68800779e6396d418c9484ac04cee9bba14cb",
+    "frontend/src/features/agent/lib/wizard-progress-watchdog.test.mjs": "8c49a126113ec2fb27cccc9d5bd06fab1c1027c3ac6dc8aabe203c8f8c45b3a5",
+    "backend/nis/communication/technologies/ethernet/timing.py": "a989a961d4dca652f7f4e11f36dd348aaf6169589c882418510f03990d3936d1",
+    "backend/nis/agent/core/engineering_agent.py": "4e067afd9d1558b91b0df87cf76a954b542c24f8c5fc03f54adb99dc66c442a8",
+    "backend/tests/test_capacity_can_schedule.py": "2a44727eb5f39e998bd86b65049147a7601a1c66b44895ff00feb0b3fa45505e",
+    "backend/tests/test_wizard_generation.py": "9efd9bcad75bb29a2704d90b4b9dbe1314f142dae59407d689ef3bd81d0ef1a6",
+    "backend/nis/agent/tools/services.py": "ee0ca17df180a5467f7d5700896a31920d2240cc90420561abcab83f4511d77d",
+    "backend/tests/test_wizard_large_routing.py": "4c0f6c415cf415564041c37038914ab956136f25465c5ad9e6b764dff766869f",
+    "docs/migrations/structure_mapping.csv": "d931b378490bec171eb89db1b828c5117d00c5390d96006aba21934069728e49",
+    "backend/nis/intelligence/engineering/intelligence/network_planning.py": "356eaee27700c2af63c6e75ce380a060b0750aee8953347e8053f6ff3cc20aed",
+    "backend/tests/test_automatic_resource_planning.py": "592909165fc29ce2d8bde68714c6b8fb4cae39c23a0361943e45b4dd7e57cd26",
+    "backend/nis/engineering/simulation_observation.py": "2a8c6c75b5ade663e4069b8cdb7786f92122be6ef06de936b3cc4642fe5e5f8c",
+    "frontend/src/features/workflow/lib/workflow-api.ts": "35985f7bfeacfcb2b348576e875dcc0a5a1c0af0ce3902e4699193ee17437c92",
+    "frontend/src/features/workflow/lib/workflow-api.test.mjs": "6c63ca3de907346c395d47067779758acaf231fe1dd97170db6107db9e597c88",
+    "backend/nis/engineering/simulation_coverage.py": "3c508914b23329211a417f3bec070b8e93da5cbdd60c5a6a879fd959cc6aa546",
+    "backend/tests/test_non_routed_output_coverage.py": "251d9bf624703941cb4b87e61555cd55fc0d42965fbf1fa797d2484ca70cb99d",
+    "backend/tests/test_simulation_coverage.py": "2968f41ab397f60f2dcc128afed40d9c0fc9e53ef6c08f4031c30f88e1ba95ca"
+  },
+  "completion_status": "COMPLETED",
+  "context": {
+    "independent_campaign_id": "nis-ea-independent-20260924-run1",
+    "campaign_passed": false
+  },
+  "implementation_plan": [
+    "Gate wizard display on successful restoration and refresh OUTDATED review without starting or approving.",
+    "Retain saved user configuration over original prompt rates on continuation.",
+    "Use the existing provenance-aware scenario resolver for workflow/preflight/runtime; report device qualification separately from native scenario validity.",
+    "Extend existing regression cases, run the full release gate, deploy the exact tested image and verify the affected live project.",
+    "Require configuration for every declared bus technology so a saved primary bus cannot skip generation for secondary buses.",
+    "Reject interrupted or invalid successful JSON responses; retry native catalog loading once, retain project state and expose an explicit catalog retry."
+  ],
+  "delivery": {
+    "decision": "YES",
+    "authorization": "Standing user AGENTS.md rule",
+    "target": "NetworkIS localhost:13500",
+    "tested_version": "sha256:d3e0832d2fb6e241da0f09112150203386edee5e3d937cbe8854e668e1a4a16e",
+    "running_version": "sha256:d3e0832d2fb6e241da0f09112150203386edee5e3d937cbe8854e668e1a4a16e",
+    "checks": {
+      "release": {
+        "status": "PASSED",
+        "evidence": [
+          {
+            "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\delivery-2f2fe0b1d1cf\\bd97b35d951d\\receipt.json",
+            "sha256": "8c51bbe3b313ba70958f9b520688466072c49e6d26480ffeb0c1ad2bb4a21b3e"
+          }
+        ]
+      },
+      "deployment": {
+        "status": "PASSED",
+        "evidence": [
+          {
+            "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\delivery.log",
+            "sha256": "d143e8212b3e2081914067852ea1e8e3603b651e64f94168faae68aa558085fb"
+          }
+        ]
+      },
+      "health": {
+        "status": "PASSED",
+        "evidence": [
+          {
+            "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\live-after.json",
+            "sha256": "206dddb3a4b29aeb53424f9c03abbee8b637dccce33c4e560ebbd60351fa3cd0"
+          }
+        ]
+      },
+      "functional": {
+        "status": "PASSED",
+        "evidence": [
+          {
+            "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\live-after.json",
+            "sha256": "206dddb3a4b29aeb53424f9c03abbee8b637dccce33c4e560ebbd60351fa3cd0"
+          }
+        ]
+      }
+    }
+  },
+  "files_changed": [
+    "frontend/src/features/agent/ui/agent-chat-core.tsx",
+    "frontend/src/features/agent/lib/proposal-client.ts",
+    "frontend/src/features/agent/ui/engineering-agent-event.tsx",
+    "frontend/src/features/simulation/ui/simulation-wizard.tsx",
+    "backend/nis/agent/tools/validation.py",
+    "backend/nis/agent/tools/wizard_generation.py",
+    "backend/nis/workflow/services/service.py",
+    "backend/nis/engineering/capacity/service.py",
+    "backend/nis/engineering/routing/config_builder.py",
+    "backend/nis/engineering/simulation.py",
+    "frontend/src/features/agent/lib/proposal-client.test.mjs",
+    "frontend/e2e/wizard.spec.ts",
+    "frontend/e2e/technology-parameter-review.spec.ts",
+    "backend/tests/test_technology_parameter_review.py",
+    "backend/tests/test_simulation_parameter_defaults.py",
+    "backend/tests/test_workflow.py",
+    "backend/nis/traces/universal_trace.py",
+    "backend/tests/test_simulation_observation.py",
+    "backend/nis/engineering/capacity/dimensioning.py",
+    "backend/tests/test_bus_rate_planning.py",
+    "scripts/dev/launch-networkis.py",
+    "backend/tests/test_server_startup.py",
+    "frontend/src/shared/api/api.ts",
+    "frontend/src/shared/api/lossless-json.ts",
+    "frontend/src/shared/api/lossless-json.test.mjs",
+    "frontend/src/shared/api/catalog-response.ts",
+    "frontend/src/shared/api/catalog-response.test.mjs",
+    "backend/nis/communication/registry.py",
+    "backend/nis/communication/technologies/lin/timing.py",
+    "backend/tests/test_technology_registry_metadata.py",
+    "backend/nis/agent/tools/proposal_service.py",
+    "backend/tests/test_proposal_capacity.py",
+    "backend/tests/test_routing_prospective_model.py",
+    "backend/nis/interfaces/http/engineering.py",
+    "backend/nis/communication/technologies/ethernet/timing.py",
+    "backend/nis/agent/core/engineering_agent.py",
+    "backend/tests/test_wizard_generation.py",
+    "backend/nis/agent/tools/services.py",
+    "backend/tests/test_wizard_large_routing.py",
+    "docs/migrations/structure_mapping.csv",
+    "backend/nis/intelligence/engineering/intelligence/network_planning.py",
+    "backend/tests/test_automatic_resource_planning.py",
+    "backend/nis/engineering/simulation_observation.py",
+    "frontend/src/features/workflow/lib/workflow-api.ts",
+    "frontend/src/features/workflow/lib/workflow-api.test.mjs",
+    "backend/nis/engineering/simulation_coverage.py",
+    "backend/tests/test_non_routed_output_coverage.py"
+  ],
+  "before": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\before\\frontend\\src\\features\\agent\\ui\\agent-chat-core.tsx",
+      "sha256": "c46c27be3d127076729ee21b38af9568f6364b2601f60774fe420f031ab18c77"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\before\\frontend\\src\\features\\agent\\lib\\proposal-client.ts",
+      "sha256": "4ff0f658b94ae74c341fb5f3fd4ea08f28554c6ba87e49bb7bfb1a12478f29f7"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\before\\frontend\\src\\features\\agent\\ui\\engineering-agent-event.tsx",
+      "sha256": "87d18e26b5094450b4a4e4243457389d28b66753173dbac1007cdf8ebaaf3b1f"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\before\\frontend\\src\\features\\simulation\\ui\\simulation-wizard.tsx",
+      "sha256": "81f2483302ec194e27797a2aa96560142b4f96c503afa6eea07b29fdd80aee4a"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\before\\backend\\nis\\agent\\tools\\validation.py",
+      "sha256": "e2b045fb30dffd62d1568cd43893b1a2dbccdb674364e837bc1db9f904ed3aef"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\before\\backend\\nis\\agent\\tools\\wizard_generation.py",
+      "sha256": "6e433d9a009d74000c2de73e704f7af92a7c8d733be91f2641bb6253ae188d32"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\before\\backend\\nis\\workflow\\services\\service.py",
+      "sha256": "1257e6e864158b44775ccdc887043a5a1af5cc2d3b17d6118e71d0cc1058d97a"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\before\\backend\\nis\\engineering\\capacity\\service.py",
+      "sha256": "1f18b039ebef753f26f1b774bc0ff66c0eccb5d174a7bea7dfe873c597231a66"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\before\\backend\\nis\\engineering\\routing\\config_builder.py",
+      "sha256": "0d75bf586f93d4baac3eab5b02aca24c30990c5f6f2ee318b6d757bf6d0dd3bf"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\before\\backend\\nis\\engineering\\simulation.py",
+      "sha256": "2bb4a6f62a5eb23fc1a774d4bc8f747a96037ddde4c7657db7054c01b1f6eea3"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\before\\frontend\\src\\features\\agent\\lib\\proposal-client.test.mjs",
+      "sha256": "84ff0fdae0b0c4e1abe22a35788dfc5bc0b77fd50b75a40bee1967e387d12dba"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\before\\frontend\\e2e\\wizard.spec.ts",
+      "sha256": "0a5904d99a473a4d8bd7d9788b409aa54100d651f25f1c742c99e8ba792a50e6"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\before\\frontend\\e2e\\technology-parameter-review.spec.ts",
+      "sha256": "aed34f81065c8f65ea5adb94f5acf2ba0aafa53155452dcf359446ecff3422b7"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\before\\backend\\tests\\test_technology_parameter_review.py",
+      "sha256": "d29c8406cd79d2854db9550dd0f36c2f982fadfb789d3f51d9579c640526bfee"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\before\\backend\\tests\\test_simulation_parameter_defaults.py",
+      "sha256": "f14165b3c3d4895322379aa72fab02a3247cf17a06e8bbaf303bf7a0121d36a6"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\before\\backend\\tests\\test_workflow.py",
+      "sha256": "cfe173b5c153f253f294adbe66628486f703064fdc1b11e0cc2713561fa9511e"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\before\\backend\\nis\\traces\\universal_trace.py",
+      "sha256": "29bf46d0255fb6b346f75932ea9adc3183d8fc403022aa481298ceeb024cea56"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\before\\backend\\tests\\test_simulation_observation.py",
+      "sha256": "b0beaca6a807625e1d0d32144ef28686bbf273bcd0040c6cc8f565413f99af91"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\before\\backend\\nis\\engineering\\capacity\\dimensioning.py",
+      "sha256": "550e320fc3cbb175d688632c64b3fc2221761bff4020d0cc32a9e6744b117cab"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\before\\backend\\tests\\test_bus_rate_planning.py",
+      "sha256": "050f4d074334a166d5b522f792cf8d82fb8698f2c8f758213a6b1b02d092f366"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\before\\scripts\\dev\\launch-networkis.py",
+      "sha256": "e65adb8fc29ff97d68662d02c38aa5073b86a3fad385f87f3851ee122bf9190a"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\before\\backend\\tests\\test_server_startup.py",
+      "sha256": "563a273a94736a0f9d0a9ad8754d91eb2f6ec54f8e3bfde2382bd86691780af4"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\before\\frontend\\src\\shared\\api\\api.ts",
+      "sha256": "e515ca15eb765404365f7331cc70c71870904fabe516eff5ebf8515dbe5c7bcd"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\before\\frontend\\src\\shared\\api\\lossless-json.ts",
+      "sha256": "b1a2655e2b6d0430a1151e18f01961f5a54686212d4de2a795b400d66a53311f"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\before\\frontend\\src\\shared\\api\\lossless-json.test.mjs",
+      "sha256": "7a15aa35dc18255f4be2e34bd7227f2dc14fe759f491dc7bd5e18f5fd7cac8dc"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\before\\frontend\\src\\shared\\api\\catalog-response.ts",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\before\\frontend\\src\\shared\\api\\catalog-response.test.mjs",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\before\\backend\\nis\\communication\\registry.py",
+      "sha256": "b19f73768bee9181231e686d9581f2b38523df76f94a015f017804ba42f0c68e"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\before\\backend\\nis\\communication\\technologies\\lin\\timing.py",
+      "sha256": "40619da0aa4454202b0d61b53fb4503f36fbe3694a9a5af6dad4993ea780af67"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\before\\backend\\tests\\test_technology_registry_metadata.py",
+      "sha256": "4ebe739a44fda5c2d7e199efeac12df37b45abb7a7c16c284d3e8f0cb46be128"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\before\\backend\\nis\\agent\\tools\\proposal_service.py",
+      "sha256": "aad4b02eb5c00feb3caffb8f2415be459d80dba0d20169a9a69e8f5fd4995bd0"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\before\\backend\\tests\\test_proposal_capacity.py",
+      "sha256": "962f8e24832e35fca9754d6455612fde38202a0b7aaea2e768b1c3c9a9523afa"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\before\\backend\\tests\\test_routing_prospective_model.py",
+      "sha256": "7a46f04702615537960677e4bfe1b9b2d197a2b642c3a65bdfca202fcc04e3a4"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\before\\backend\\nis\\interfaces\\http\\engineering.py",
+      "sha256": "f4c0bbeb22b3801f9a0b5755d515dc6e6feac4aba2e2d8bc8490055c3d78709d"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\before\\backend\\nis\\communication\\technologies\\ethernet\\timing.py",
+      "sha256": "bef8d92c1a4d98153dc200a3d9dae744eb5618903074c2c27c7c6d856f1b420d"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\before\\backend\\nis\\agent\\core\\engineering_agent.py",
+      "sha256": "e87fccbacff82656dcad4e30ece51db5e625019c69952bf3f7e01f3407069ba2"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\before\\backend\\tests\\test_wizard_generation.py",
+      "sha256": "72ff7187932a1c09394aae5414e9f37141f5567b28bcffd557ac431c92a8e31b"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\before\\backend\\nis\\agent\\tools\\services.py",
+      "sha256": "481ef629a9c44ec9c30292f4128fb83caaa84427c1303e3ea6f168560b5efdcf"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\before\\backend\\tests\\test_wizard_large_routing.py",
+      "sha256": "c83c6867e594877b07df6279b028379fc01e5d9e141de9271d6ad0f942f36c29"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\before\\docs\\migrations\\structure_mapping.csv",
+      "sha256": "a85e3ab15aa31e21e9595cf2ef659e16b286edf687fd92eed6c3e406c5ac2690"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\before\\backend\\nis\\intelligence\\engineering\\intelligence\\network_planning.py",
+      "sha256": "3abd23df29fd22111e112b70b65fcea54bb324fc21dd412e028ed74ad38ec418"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\before\\backend\\tests\\test_automatic_resource_planning.py",
+      "sha256": "2d194357e6c24c0b0eef1fba3b11f52be30d6f51f9ac553338310f15818b3776"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\before\\backend\\nis\\engineering\\simulation_observation.py",
+      "sha256": "4d442c24f33c0c84568798489a4104e4175d0099faca9acf8669b97272f11704"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\before\\frontend\\src\\features\\workflow\\lib\\workflow-api.ts",
+      "sha256": "5eddc7fe3a58b41948d1fe3c97626474620403f805bb4befa7296ae45a655a36"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\before\\frontend\\src\\features\\workflow\\lib\\workflow-api.test.mjs",
+      "sha256": "d88e9d7e1c03802a9aac1eb58ea0c0e2457befa3f6c326406f3ea76577c2cd2b"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\before\\backend\\nis\\engineering\\simulation_coverage.py",
+      "sha256": "3c508914b23329211a417f3bec070b8e93da5cbdd60c5a6a879fd959cc6aa546"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\before\\backend\\tests\\test_non_routed_output_coverage.py",
+      "sha256": "251d9bf624703941cb4b87e61555cd55fc0d42965fbf1fa797d2484ca70cb99d"
+    }
+  ],
+  "after": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\after\\frontend\\src\\features\\agent\\ui\\agent-chat-core.tsx",
+      "sha256": "49eeafb927d8261b2f6458bfde6e1dc2aa820c82b19eecdc9d9a6f805d8d1e5b"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\after\\frontend\\src\\features\\agent\\lib\\proposal-client.ts",
+      "sha256": "b85d53c31d1e52aaa56a104c59ab7d0d992eec22f9e79d6add001c16169d1c50"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\after\\frontend\\src\\features\\agent\\ui\\engineering-agent-event.tsx",
+      "sha256": "c10d85dd6d10fdf050d8fac0ac45734b0fc14adf6c6e2c97e7e40fceb2524645"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\after\\frontend\\src\\features\\simulation\\ui\\simulation-wizard.tsx",
+      "sha256": "c4b7216be667b6cdfa9f0a4239a9a2ab603f29d0c1ca41da96259b9af47318b2"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\after\\backend\\nis\\agent\\tools\\validation.py",
+      "sha256": "ea2e9724fa812a301b062c5eb0dd1a8241b9355794381d5c8135bca268e1dbdb"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\after\\backend\\nis\\agent\\tools\\wizard_generation.py",
+      "sha256": "535009e945a722913191f014f7a4bbe7d3162b25fb140f00500f5da6268be0c6"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\after\\backend\\nis\\workflow\\services\\service.py",
+      "sha256": "71ef7a537c6461b685232676faf13e45aada3e494ca7396b49af0cda61cc2fb6"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\after\\backend\\nis\\engineering\\capacity\\service.py",
+      "sha256": "eba0a4f7fb44146e476678fd6689c3272c87316c29a352c3a7f049c00fdf8c94"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\after\\backend\\nis\\engineering\\routing\\config_builder.py",
+      "sha256": "595e96f1fcd54cd09142de3129b536c705ceeb6e3c8f033c163fbc6cf99ee8a0"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\after\\backend\\nis\\engineering\\simulation.py",
+      "sha256": "2aceb25bde79550c3da1dae66cd16338d5e49d5546d946e72617cf68dd69cb7d"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\after\\frontend\\src\\features\\agent\\lib\\proposal-client.test.mjs",
+      "sha256": "8ac3379a9e06df7756daa5b2dc7436989ded46d026f6db4d9c19ba189598e6aa"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\after\\frontend\\e2e\\wizard.spec.ts",
+      "sha256": "edce425b5cbe696e4489c6107625164c158dbe8a3b4f72a076b492a5ac32f401"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\after\\frontend\\e2e\\technology-parameter-review.spec.ts",
+      "sha256": "c67b75dd4369da82b09c9067ba8b897dbf989e555260c04645bc2171240fd643"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\after\\backend\\tests\\test_technology_parameter_review.py",
+      "sha256": "429545bafdb6a17aa5d4edd110a2f16632a91506b79fd4c447c917ab8a2a1960"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\after\\backend\\tests\\test_simulation_parameter_defaults.py",
+      "sha256": "f60652f2378ee95d27cb57879cf317248188d948dc855e62246d38de4b8201c2"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\after\\backend\\tests\\test_workflow.py",
+      "sha256": "014cb40d090114942dce2a2f65a56421fa5a89d75a064114dd63320874cb0568"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\after\\backend\\nis\\traces\\universal_trace.py",
+      "sha256": "90f6803acc88f11b9702f7f3346b7e945274514bc75f91dee335705ec8b1c818"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\after\\backend\\tests\\test_simulation_observation.py",
+      "sha256": "2519b64414518d601ceae37c6e3f41f885e7d21a18103c81479be32d4c8299fa"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\after\\backend\\nis\\engineering\\capacity\\dimensioning.py",
+      "sha256": "d8a3f1af4bcce8d1ed69ee8426f650e562c52937fc2e3aa371ce39b4a3f4e3e8"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\after\\backend\\tests\\test_bus_rate_planning.py",
+      "sha256": "4a6bcf038edf355a1fdcbb0c1c14ae075df379c7f4eaf8f61a42e4342bbc36ad"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\after\\scripts\\dev\\launch-networkis.py",
+      "sha256": "8ef93fdcb3a9ad44d54828fddb943a09655436a656f1eda1a282a1124cebe6ba"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\after\\backend\\tests\\test_server_startup.py",
+      "sha256": "dafaaff525f62f3a1d65f00c178bcd9508902e25f3bdaad0b1d725550f2a865d"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\after\\frontend\\src\\shared\\api\\api.ts",
+      "sha256": "37f46a3b9c05799be1dfa1bf74704fddeb6612b48b898204cd02443bc3a0badc"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\after\\frontend\\src\\shared\\api\\lossless-json.ts",
+      "sha256": "508a7ebf1e65c3a5d1aa5e017d3119bd9fded8fa9de199684f311ad2af2a4aa6"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\after\\frontend\\src\\shared\\api\\lossless-json.test.mjs",
+      "sha256": "849b8e11ac9025d9fe45e1d409b497412511199c774f4ee981a46bc00e86432f"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\after\\frontend\\src\\shared\\api\\catalog-response.ts",
+      "sha256": "0a8ee5236bb3a32dd5bc2b57d27575c275582e8c6da7ebddafc485b68f991a32"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\after\\frontend\\src\\shared\\api\\catalog-response.test.mjs",
+      "sha256": "116bbda484457fc4310d61650853e37862fcf39da0fd9d904bbdf18a5c99d194"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\after\\backend\\nis\\communication\\registry.py",
+      "sha256": "606c319d227870ad91dc27e0c18ff7e3a6325925d41f97ffb7d4c830a8d9d5c4"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\after\\backend\\nis\\communication\\technologies\\lin\\timing.py",
+      "sha256": "56742f53559348b77ad593cfd1238a6515ac7575030f4ec1ff84f532f2c1f133"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\after\\backend\\tests\\test_technology_registry_metadata.py",
+      "sha256": "b9128e537809d234912d40c7d220c5c4cf85566c8e384b77eaccb49d7ca1e75a"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\after\\backend\\nis\\agent\\tools\\proposal_service.py",
+      "sha256": "36ecc1708d84ed03ba088365d722b7020533ff8c69a5a1bd6c7f70afb173569b"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\after\\backend\\tests\\test_proposal_capacity.py",
+      "sha256": "f4d728211ecf3b620258d0072113a7c3ac860eddcf217e4e28a0c45b5de81740"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\after\\backend\\tests\\test_routing_prospective_model.py",
+      "sha256": "8a66a0bcf706ad43b3c47f6b6e13cdee41c2c6588a92d67846e7efdbf9da2da0"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\after\\backend\\nis\\interfaces\\http\\engineering.py",
+      "sha256": "582b57c17d0c75e21a50cdea79c68800779e6396d418c9484ac04cee9bba14cb"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\after\\backend\\nis\\communication\\technologies\\ethernet\\timing.py",
+      "sha256": "a989a961d4dca652f7f4e11f36dd348aaf6169589c882418510f03990d3936d1"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\after\\backend\\nis\\agent\\core\\engineering_agent.py",
+      "sha256": "4e067afd9d1558b91b0df87cf76a954b542c24f8c5fc03f54adb99dc66c442a8"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\after\\backend\\tests\\test_wizard_generation.py",
+      "sha256": "9efd9bcad75bb29a2704d90b4b9dbe1314f142dae59407d689ef3bd81d0ef1a6"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\after\\backend\\nis\\agent\\tools\\services.py",
+      "sha256": "ee0ca17df180a5467f7d5700896a31920d2240cc90420561abcab83f4511d77d"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\after\\backend\\tests\\test_wizard_large_routing.py",
+      "sha256": "4c0f6c415cf415564041c37038914ab956136f25465c5ad9e6b764dff766869f"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\after\\docs\\migrations\\structure_mapping.csv",
+      "sha256": "d931b378490bec171eb89db1b828c5117d00c5390d96006aba21934069728e49"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\after\\backend\\nis\\intelligence\\engineering\\intelligence\\network_planning.py",
+      "sha256": "356eaee27700c2af63c6e75ce380a060b0750aee8953347e8053f6ff3cc20aed"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\after\\backend\\tests\\test_automatic_resource_planning.py",
+      "sha256": "592909165fc29ce2d8bde68714c6b8fb4cae39c23a0361943e45b4dd7e57cd26"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\after\\backend\\nis\\engineering\\simulation_observation.py",
+      "sha256": "2a8c6c75b5ade663e4069b8cdb7786f92122be6ef06de936b3cc4642fe5e5f8c"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\after\\frontend\\src\\features\\workflow\\lib\\workflow-api.ts",
+      "sha256": "35985f7bfeacfcb2b348576e875dcc0a5a1c0af0ce3902e4699193ee17437c92"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\after\\frontend\\src\\features\\workflow\\lib\\workflow-api.test.mjs",
+      "sha256": "6c63ca3de907346c395d47067779758acaf231fe1dd97170db6107db9e597c88"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\after\\backend\\nis\\engineering\\simulation_coverage.py",
+      "sha256": "6847efaee7fc5a4ed88956b5a8058c42f7ed9599a5e9b4fbf04e51fcee28265b"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\after\\backend\\tests\\test_non_routed_output_coverage.py",
+      "sha256": "167867d3f6f2c99af0c606ba19fcc8273383599e536b32937c9c1d6b2b89dc7e"
+    }
+  ],
+  "diff": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\change.diff",
+      "sha256": "29746052323e78598b472bad331ec22f42c398129cbdcf3c8a35405872693511"
+    }
+  ],
+  "remaining_findings": [],
+  "repair": {
+    "finding_ids": [
+      "REPEATED_WORKFLOW_STATUS_GRAPH_DECODING"
+    ],
+    "owner": "PROJECT_PRODUCT",
+    "category": "IMPLEMENTATION",
+    "cause": "FULL_JSON_DECODE_AND_REPEATED_SIGNAL_SCAN",
+    "root_cause": "The unchanged20-minute large case times out during workflow status polling although the eventual server assessment has766PASS and full signal coverage. Frozen isolated profiling gives identical results on three reads but2.031s of2.538s in repeated source artifact checks: full message JSON decode, full hardware rows and a route-by-signal scan. The status checks consume only transmission/transport contracts, canonical channel columns and ID links; unrelated configuration is repeatedly decoded. Parameter validation also repeatedly enumerates the same registry keys per network.",
+    "first_failing_layer": "Repeated workflow source-artifact reads under large wizard execution",
+    "reproduction": "FAIL receipt860f9d4a7375 real1200000ms timeout at readProject;543summaryGETs. Isolated frozen replay with552hardware,653messages,1404signals,766routes has1.114/0.702/0.736s reads and identical stateSHA d3adb4cb8f9fbbb92668c368c41549307c6eeae726ab7edfab2a82944474cc88.",
+    "affected_files": [
+      "backend/nis/workflow/services/service.py",
+      "backend/nis/engineering/simulation_coverage.py",
+      "backend/tests/test_non_routed_output_coverage.py",
+      "backend/tests/test_simulation_coverage.py",
+      "backend/tests/test_workflow.py"
+    ],
+    "affected_services": [
+      "WorkflowStatusService source reconciliation",
+      "Shared ID-based simulation coverage"
+    ],
+    "required_fix": "Project only consumed canonical JSON fields and physical channel columns at SQL read boundaries, preserving malformed types and explicitnull versus absent transport semantics. Build one ID-based child index for coverage and hoist stable native registry key enumeration. No result cache, no narrower inventory, no removed checks or changed timeout budgets.",
+    "acceptance_criteria": [
+      "Frozen full workflow state and all checks are byte-equivalent before/after on three repeated reads",
+      "Missing/native invalid parameters, malformed transmission contracts, explicitnull transport data and authored outdated routes stay strict",
+      "ALL/SELECTED/directIO/partial signal transport coverage and exclusions remain exact",
+      "Full large wizard completes allnine stages with766evaluatedPASS under its existing20-minute bound",
+      "No added live API probes during timing-sensitive full rounds; status comes from existing test logs",
+      "Deploy only the completePASS exactimage and preserve the human pendingproposal/run/projectvalues"
+    ],
+    "targeted_tests": [
+      "Isolated frozen profile before/after equivalence",
+      "Workflow/coverage/unused-output SQL regressions",
+      "Full unchanged release gate and production delivery"
+    ],
+    "regression_scope": "Canonical workflow source artifacts, native parameter validation and ID-based transport scope",
+    "evidence": [
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\workflow-polling-before-result.json",
+        "sha256": "d447bdc804bc756f592e39023961d13e107b15010b84837d8ecf7e39444ba3bd"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\workflow-polling-before-profile.txt",
+        "sha256": "cfc13055fbd52d764f654e64d4bd6a7cc5a25896f7d518438aa3c5ce737c4fb0"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\duration-full-trace-analysis.json",
+        "sha256": "9e9e7f5b86728a7702af6ffd8b9397aec9313c519ff59b053e6952d1e43be4bf"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\duration-intent-d7d049e2b8d6\\860f9d4a7375\\receipt.json",
+        "sha256": "abd8478d019ba303a4a70a5dc363189afea6fd1639c7c394d733c885c2ef5687"
+      }
+    ],
+    "weaken_assertions_to_pass": false,
+    "status": "VERIFIED",
+    "evidence_parser_corrections": [
+      {
+        "owner": "TOOL_CHECKER",
+        "first_failing_layer": "Local completion evidence parser, not the product or release tests",
+        "root_cause": "The regex for any numeric error count matches the isolated runner cleanup line0errors. The actual preserved pytest summary is34passed and the full current release is completePASS.",
+        "required_fix": "Reject positive failure/error counts only; retain negative parser assertions for1error,13errors,100failed and accept0errors/0failed. No source/test/budget changes.",
+        "evidence": {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\qualification-stress-targeted.log",
+          "sha256": "da5f695986be1ccee38a682cd54d75b0f67717b2835e20e7231d69ed57c26282"
+        },
+        "weaken_assertions_to_pass": false
+      }
+    ]
+  },
+  "repair_history": [
+    {
+      "finding_ids": [
+        "SIMULATION_CSV_PROVENANCE_SCHEMA",
+        "OBSOLETE_ROBOTICS_HARDWARE_GATE_ASSERTION"
+      ],
+      "owner": "SHARED",
+      "independent_causes": [
+        "PROJECT_PRODUCT: native scenario trace metadata absent from CSV field schema",
+        "TEST_DATA: robotics simulation test expects actual hardware proof to block valid saved assumptions"
+      ],
+      "root_cause": "CSV serialization rejects new explicit simulation evidence metadata. A mixed robotics artifact test retains the superseded actual-only completeness rule.",
+      "first_failing_layer": "CSV serializer; robotics artifact acceptance assertion",
+      "reproduction": "Complete isolated backend gate: 21654 passed, 2 failed; errors captured in backend-tests.log.",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\delivery-efe7b22bb26e\\da5ddb213950\\backend-tests.log",
+          "sha256": "9d69787d641ab6b99c0b6b4dac7449fd57d35194187ca81f38d664a10613fc14"
+        }
+      ],
+      "affected_files": [
+        "backend/nis/traces/universal_trace.py",
+        "backend/tests/test_simulation_parameter_defaults.py",
+        "backend/tests/test_simulation_observation.py"
+      ],
+      "affected_services": [
+        "universal trace export",
+        "simulation parameter artifact"
+      ],
+      "required_fix": "Export simulation provenance without discarding fields. Verify valid native DDS simulation assumptions are complete without cross-technology bitrate or fabricated device evidence, and forged provenance is still rejected.",
+      "acceptance_criteria": [
+        "CSV and JSONL preserve scenario timing basis and false hardware/functional evidence",
+        "Saved native DDS assumptions permit simulation configuration, not hardware qualification",
+        "Forged DDS scenario provenance remains incomplete"
+      ],
+      "targeted_tests": [
+        "test_simulation_parameter_defaults.py",
+        "test_simulation_observation.py",
+        "test_wizard_generation.py::test_combined_wizard_creates_validated_model_without_reasoner"
+      ],
+      "regression_scope": "Complete mandatory release gate after targeted tests",
+      "status": "READY",
+      "weaken_assertions_to_pass": false
+    },
+    {
+      "finding_ids": [
+        "RESTORE_TEST_ROUTE_CLEANUP_RACE",
+        "NATIVE_CONFIGURATION_ASSERTIONS"
+      ],
+      "owner": "TEST_DATA",
+      "root_cause": "The delayed real request handler is removed before it finishes, causing route.continue to be handled twice. Nonautomotive assertions expect missing device evidence while native condition/rate findings actually block the saved configuration.",
+      "first_failing_layer": "Playwright route handler cleanup and outdated test assertion",
+      "reproduction": "Full browser suite: new small route.continue already handled; I2C device key undefined; Modbus native dependency mismatch instead of missing proof.",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\delivery-e9e540f4d7a2\\951b0d517929\\browser\\wizard-exact-confirmed-50--c2f3c-gh-real-wizard-review-large\\error-context.md",
+          "sha256": "0b4b47bc6003cbe73cac6e601c8403fbcfff736b1123e49ceb9db77076cac0d0"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\delivery-e9e540f4d7a2\\951b0d517929\\browser\\wizard-new-small-wizard-tr-c83d1-rvives-reload-restart-small\\error-context.md",
+          "sha256": "840bcac74361a174be984accbfbb6e3f0c3e983bbc62e0975844d19476209f14"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\delivery-e9e540f4d7a2\\951b0d517929\\browser\\wizard-Raspberry-Pi-I2C-pr-311a9-city-evidence-nonautomotive\\error-context.md",
+          "sha256": "a2c3755c363d5ac051b3564507cc3c1b8ee62016fb6758bcdacf3e45a9701bf1"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\delivery-e9e540f4d7a2\\951b0d517929\\browser\\wizard-Raspberry-Pi-Modbus-41e36-city-evidence-nonautomotive\\error-context.md",
+          "sha256": "e76d0b80997a2d567bd1eadee861e03ebdc82e147108ef7fb0149d260f3f4b75"
+        }
+      ],
+      "affected_files": [
+        "frontend/e2e/wizard.spec.ts"
+      ],
+      "acceptance_criteria": [
+        "Await request handler completion without swallowing its errors",
+        "Preserve restore spinner, same run, saved rates, no START and no automatic model application assertions",
+        "Assert native dependency errors remain blockers, hardware sources are not invented, and no simulation job starts",
+        "Frozen simulation snapshot retains the edited parameter values after full continuation"
+      ],
+      "targeted_tests": [
+        "new small wizard",
+        "Raspberry Pi I2C",
+        "Raspberry Pi Modbus RTU"
+      ],
+      "weaken_assertions_to_pass": false,
+      "status": "READY"
+    },
+    {
+      "finding_ids": [
+        "LARGE_PARAMETER_PHASE_REPEATED_WORK"
+      ],
+      "owner": "SHARED",
+      "root_cause": "The profiled parameter phase takes 615 seconds: zoning apply already dimensions and calculates the new buses, then generate_parameters repeats sizing preview. Bus grouping copies the entire registered profile for every message although it only needs medium_access_model (35.5 seconds over three grouping calls). Native rate planning also recomputes identical payload frames at each fixed operating point.",
+      "first_failing_layer": "Parameter generation shared sizing and grouping services",
+      "reproduction": "Existing full captured 50/250/250 isolated test, cProfile observes generate_parameters unchanged.",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\parameter-generation-profile.txt",
+          "sha256": "83bf69401bf6e7eb624328af593374803fc799f36ceba385becc86ed098bd8fb"
+        }
+      ],
+      "affected_files": [
+        "backend/nis/agent/tools/wizard_generation.py",
+        "backend/nis/agent/tools/validation.py",
+        "backend/nis/engineering/capacity/dimensioning.py"
+      ],
+      "acceptance_criteria": [
+        "Reuse completed zoning dimensioning for the same unchanged physical buses",
+        "Read detached profile medium access once per technology per grouping",
+        "Reuse native frame calculations only within an identical operating point and payload size",
+        "Preserve all messages, scopes, provenance, native validation and existing watchdog budgets"
+      ],
+      "targeted_tests": [
+        "test_simulation_parameter_defaults.py",
+        "test_technology_parameter_review.py",
+        "test_communication_dimensioning.py",
+        "test_spatial_zoning.py",
+        "exact confirmed 50/250/250 graph"
+      ],
+      "weaken_assertions_to_pass": false,
+      "status": "READY"
+    },
+    {
+      "finding_ids": [
+        "LARGE_PARAMETER_PHASE_REPEATED_WORK"
+      ],
+      "owner": "PROJECT_PRODUCT",
+      "root_cause": "The profiled parameter phase takes 615 seconds: zoning apply already dimensions and calculates the new buses, then generate_parameters repeats sizing preview. Bus grouping copies the entire registered profile for every message although it only needs medium_access_model (35.5 seconds over three grouping calls). Native rate planning also recomputes identical payload frames at each fixed operating point.",
+      "first_failing_layer": "Parameter generation shared sizing and grouping services",
+      "reproduction": "Existing full captured 50/250/250 isolated test, cProfile observes generate_parameters unchanged.",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\parameter-generation-profile.txt",
+          "sha256": "83bf69401bf6e7eb624328af593374803fc799f36ceba385becc86ed098bd8fb"
+        }
+      ],
+      "affected_files": [
+        "backend/nis/agent/tools/wizard_generation.py",
+        "backend/nis/agent/tools/validation.py",
+        "backend/nis/engineering/capacity/dimensioning.py",
+        "backend/tests/test_bus_rate_planning.py"
+      ],
+      "acceptance_criteria": [
+        "Reuse completed zoning dimensioning for the same unchanged physical buses",
+        "Read detached profile medium access once per technology per grouping",
+        "Reuse native frame calculations only within an identical operating point and payload size",
+        "Preserve all messages, scopes, provenance, native validation and existing watchdog budgets"
+      ],
+      "targeted_tests": [
+        "test_simulation_parameter_defaults.py",
+        "test_technology_parameter_review.py",
+        "test_communication_dimensioning.py",
+        "test_spatial_zoning.py",
+        "exact confirmed 50/250/250 graph"
+      ],
+      "weaken_assertions_to_pass": false,
+      "status": "READY"
+    },
+    {
+      "finding_ids": [
+        "FROZEN_RATE_SCOPE_ASSERTION"
+      ],
+      "owner": "TEST_DATA",
+      "root_cause": "The new assertion expects scoped transport fields at the runtime parameter root. Actual frozen CAN-FD network retains data_bitrate 1000000 and can_fd_data_prescaler 2; seed remains runtime-wide.",
+      "first_failing_layer": "New browser snapshot assertion uses wrong storage scope",
+      "reproduction": "Small wizard completes nine stages; captured frozen response has native rate/prescaler on its CAN-FD network.",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\frozen-rate-trace-observation.json",
+          "sha256": "d4d91cb74cf9c51042342169e9ede6328651fd934bf3c5b7ab1594ff306dea68"
+        }
+      ],
+      "affected_files": [
+        "frontend/e2e/wizard.spec.ts"
+      ],
+      "acceptance_criteria": [
+        "Assert seed at runtime root",
+        "Assert edited data rate and prescaler on every frozen CAN-FD network",
+        "Keep all nine stages, restore/no START, same run, actual restart and full signal coverage checks"
+      ],
+      "targeted_tests": [
+        "new small wizard"
+      ],
+      "weaken_assertions_to_pass": false,
+      "status": "READY"
+    },
+    {
+      "finding_ids": [
+        "BACKEND_COLD_START_BUDGET"
+      ],
+      "owner": "PROJECT_PRODUCT",
+      "root_cause": "The launcher kills its still-running backend after 20 seconds. The required complete catalog/import initialization alone measured 20.5 seconds under profiling; captured restart exits at 21.66 seconds with no backend exception, before readiness. Recovery and cold imports need a bounded startup allowance distinct from wizard stage progress.",
+      "first_failing_layer": "Launcher cold-start readiness deadline",
+      "reproduction": "Existing I2C browser test restarts disposable candidate; container exits 1 with Backend wurde nicht bereit, no OOM, fixed host port unchanged.",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\performance-first-app-state.json",
+          "sha256": "fa5bb524cdbbbd3adfdc1a29c378051cf2cfc036886e07c16a82e75e25106230"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\performance-backend-startup.log",
+          "sha256": "960a085e28e9d7f69f54af61b17291e0b12a7de78897bf5016b91e6ef823996d"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\backend-startup-profile.log",
+          "sha256": "846ceb58a06761f597f157b3e118fb6752a4af03814424b07e203276a26f7610"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\backend-startup.prof",
+          "sha256": "9fc4009660e74222b0a9ef3a4820c8e5e3dca79c148131e9c84e4fb5498a8ab5"
+        }
+      ],
+      "affected_files": [
+        "scripts/dev/launch-networkis.py",
+        "backend/tests/test_server_startup.py"
+      ],
+      "acceptance_criteria": [
+        "Bound backend initialization by 90 seconds on initial start and automatic restart",
+        "Require matching instance health and retain prompt failure on dead process",
+        "Keep frontend/database checks and all browser/native/wizard watchdog budgets unchanged",
+        "Real restart and full large graph must pass before release"
+      ],
+      "targeted_tests": [
+        "test_server_startup.py",
+        "new small wizard",
+        "Raspberry Pi",
+        "exact confirmed 50/250/250"
+      ],
+      "weaken_assertions_to_pass": false,
+      "status": "READY",
+      "cause": "READ_ERROR_AS_VALID_DATA",
+      "category": "PROJECT_PRODUCT"
+    },
+    {
+      "finding_ids": [
+        "BACKEND_COLD_START_BUDGET"
+      ],
+      "owner": "PROJECT_PRODUCT",
+      "root_cause": "Successful catalog responses are accepted without complete JSON or required domains. API JSON read errors become an empty object; registeredTechnologies then throws. The observed browser trace contains TypeError: e.domains is not iterable.",
+      "first_failing_layer": "FRONTEND_API_RESPONSE_DECODING",
+      "reproduction": "Real large mixed-bus parameter save/return cycle: HTTP 200 technologies response followed by error boundary. Regression will exercise interrupted/invalid response bodies and bounded native catalog retry.",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\runs\\20261007_src_wizard_parameter_return_testfall\\fe23573fede4\\browser-review-budget-retest.json",
+          "sha256": "f00e2fe6caf2dc1432c314e00debbb3d0f04dac4c8f530c1ef1d5fbe1888bb50"
+        }
+      ],
+      "affected_files": [
+        "frontend/src/shared/api/api.ts",
+        "frontend/src/shared/api/lossless-json.ts",
+        "frontend/src/shared/api/catalog-response.ts",
+        "frontend/src/features/simulation/ui/simulation-wizard.tsx"
+      ],
+      "acceptance_criteria": [
+        "Interrupted or malformed HTTP 200 response must reject, never return empty successful data.",
+        "Retry native catalog once and expose explicit retry after failure without resetting project data.",
+        "Complete current release gate and exact image production verification."
+      ],
+      "targeted_tests": [
+        "lossless-json.test.mjs",
+        "catalog-response.test.mjs",
+        "real wizard parameter return regression"
+      ],
+      "weaken_assertions_to_pass": false,
+      "status": "READY",
+      "cause": "READ_ERROR_AS_VALID_DATA",
+      "category": "PROJECT_PRODUCT"
+    },
+    {
+      "finding_ids": [
+        "BACKEND_COLD_START_BUDGET"
+      ],
+      "owner": "PROJECT_PRODUCT",
+      "root_cause": "Restoration fetches a full stale proposal before validation. Real large-case GETs cost 5-9 seconds each; validation starts late and the review remains pending beyond its existing 60-second budget.",
+      "first_failing_layer": "PROPOSAL_RESTORATION_READ_SEQUENCE",
+      "reproduction": "Large repeated parameter save/return on image 06a468de: three selected cases pass, large case remains loading after 60 seconds. Trace records multiple full GETs before the unfinished validation POST.",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\nis-e2e-runtime--browser.json",
+          "sha256": "bf4bce07dcb74e293caa5f229f1a097f3ce6010eaee49cf86168f77d9a653b3e"
+        }
+      ],
+      "affected_files": [
+        "frontend/src/features/agent/lib/proposal-client.ts",
+        "frontend/src/features/agent/lib/proposal-client.test.mjs"
+      ],
+      "acceptance_criteria": [
+        "Read current status first; validate stale proposals directly, without first loading stale full contents.",
+        "Preserve replacement identity, complete content validation, human approval boundary and existing 60-second review readiness budget.",
+        "Complete all required release checks and deliver exact tested image."
+      ],
+      "targeted_tests": [
+        "proposal-client.test.mjs",
+        "existing real repeated-return large wizard case"
+      ],
+      "weaken_assertions_to_pass": false,
+      "status": "READY",
+      "cause": "READ_ERROR_AS_VALID_DATA",
+      "category": "PROJECT_PRODUCT"
+    },
+    {
+      "finding_ids": [
+        "LARGE_REVIEW_REGENERATES_DEFAULT_METADATA"
+      ],
+      "owner": "PROJECT_PRODUCT",
+      "root_cause": "Captured pending review has 4135 changes. Parameter review uses UI parameter_fields to classify saved evidence, regenerating constrained default proposals 2290 times (36.6 profiled seconds) and copying full native profiles 3265 times. Three detached parameter reads remain active while returning to fresh proposal validation; large real review misses its 60-second readiness bound. Native classification needs schema roles, not generated defaults.",
+      "first_failing_layer": "Native saved-parameter review schema classification",
+      "reproduction": "Real isolated five-case browser regression: four PASS, large first saved LIN return still loading after60seconds. Read-only captured-input profiling records22.3s capacity,69.9s findings,5.8s rate plans under profiler.",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\review_parameter_findings-profile.txt",
+          "sha256": "cd81d81b544f63f43dab22447637812ad891cc434a9caaa11a41102ffa83b27a"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\review_simulation_capacity-profile.txt",
+          "sha256": "6f75770b948f67586582d01933b6d21952d93d060f58fad47059a4d3d4d07727"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\before-schema-roles-catalog-browser.json",
+          "sha256": "0f8038edb8d1bb7fd0a4354189cc02c0d6c62fe9d0a25275172030a7acdbf575"
+        }
+      ],
+      "affected_files": [
+        "backend/nis/agent/tools/validation.py",
+        "backend/nis/engineering/capacity/service.py",
+        "backend/nis/communication/registry.py",
+        "backend/nis/communication/technologies/lin/timing.py",
+        "backend/tests/test_technology_registry_metadata.py",
+        "backend/tests/test_simulation_parameter_defaults.py"
+      ],
+      "acceptance_criteria": [
+        "Classify saved values from registered schema roles without regenerating defaults",
+        "Retain labels, native constraints, provenance, all ports/messages, evidence separation and strict errors",
+        "Read only needed LIN planning profile fields and reuse detached review metadata per technology per call",
+        "Existing real large repeated-return test and unchanged watchdogs must pass before delivery"
+      ],
+      "targeted_tests": [
+        "test_simulation_parameter_defaults.py",
+        "test_technology_parameter_review.py",
+        "test_technology_registry_metadata.py",
+        "test_lin_profile.py",
+        "five real browser cases and complete release gate"
+      ],
+      "weaken_assertions_to_pass": false,
+      "status": "READY"
+    },
+    {
+      "finding_ids": [
+        "LARGE_RETURN_FULL_VALIDATION_REPEATED_WORK"
+      ],
+      "owner": "PROJECT_PRODUCT",
+      "category": "PROJECT_PRODUCT",
+      "cause": "REPEATED_NATIVE_REVIEW_WORK",
+      "root_cause": "Actual isolated SQL proposal validation takes 73.3 seconds under profiling. It reads networks/workflow 121/124 times (9.2 seconds), scans 3.59 million duplicate-name candidates (11.4 seconds), and copies the entire profile for 653 messages (10.2 seconds). Native frame costs are repeated for identical scope/payload pairs.",
+      "first_failing_layer": "Backend complete proposal and native parameter review",
+      "reproduction": "Existing full captured 50/250/250 isolated test, unchanged SQL execution observed through cProfile; latest real browser large return still fails its existing 60-second budget.",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\full-validate-1-profile.txt",
+          "sha256": "1a12975ecd1a757801c64ac973086a2e58d50bfdd3e10b15f45954c1ebdbe5b2"
+        }
+      ],
+      "affected_files": [
+        "backend/nis/agent/tools/proposal_service.py",
+        "backend/nis/agent/tools/validation.py",
+        "backend/tests/test_proposal_capacity.py"
+      ],
+      "acceptance_criteria": [
+        "Read existing canonical network identifiers once per validation",
+        "Index exact existing duplicate-name semantics for effective graph, including parent scope and UPDATE/DELETE overlays",
+        "Use detached native capabilities only for stream checks",
+        "Reuse deterministic frames only for identical complete scope and payload; retain every message release and load",
+        "Keep all native validation, hardware provenance and existing browser budgets",
+        "Pass full gate and deploy exact tested image"
+      ],
+      "targeted_tests": [
+        "test_proposal_capacity.py",
+        "test_technology_parameter_review.py",
+        "test_agent_tools.py",
+        "existing large actual browser return"
+      ],
+      "weaken_assertions_to_pass": false,
+      "status": "READY"
+    },
+    {
+      "finding_ids": [
+        "LARGE_RETURN_FULL_VALIDATION_REPEATED_WORK"
+      ],
+      "owner": "PROJECT_PRODUCT",
+      "category": "PROJECT_PRODUCT",
+      "cause": "REPEATED_NATIVE_REVIEW_WORK",
+      "root_cause": "Actual isolated SQL proposal validation takes 73.3 seconds under profiling. It reads networks/workflow 121/124 times (9.2 seconds), scans 3.59 million duplicate-name candidates (11.4 seconds), and copies the entire profile for 653 messages (10.2 seconds). Native frame costs are repeated for identical scope/payload pairs. Ingress copies rich schema metadata although it only needs transport-origin keys or aliases/roles, and removes every known foreign key although few are present (7.98 million pop calls).",
+      "first_failing_layer": "Backend complete proposal and native parameter review",
+      "reproduction": "Existing full captured 50/250/250 isolated test, unchanged SQL execution observed through cProfile; latest real browser large return still fails its existing 60-second budget.",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\full-validate-1-profile.txt",
+          "sha256": "1a12975ecd1a757801c64ac973086a2e58d50bfdd3e10b15f45954c1ebdbe5b2"
+        }
+      ],
+      "affected_files": [
+        "backend/nis/agent/tools/proposal_service.py",
+        "backend/nis/agent/tools/validation.py",
+        "backend/tests/test_proposal_capacity.py",
+        "backend/nis/engineering/capacity/service.py",
+        "backend/nis/communication/registry.py",
+        "backend/tests/test_technology_registry_metadata.py"
+      ],
+      "acceptance_criteria": [
+        "Read existing canonical network identifiers once per validation",
+        "Index exact existing duplicate-name semantics for effective graph, including parent scope and UPDATE/DELETE overlays",
+        "Use detached native capabilities only for stream checks",
+        "Reuse deterministic frames only for identical complete scope and payload; retain every message release and load",
+        "Filter present fields using identical foreign-key set; retain strict unknown native validation",
+        "Read transport-origin key set directly from current registered schema, never cache saved values or return mutable definition",
+        "Keep all native validation, hardware provenance and existing browser budgets",
+        "Pass full gate and deploy exact tested image"
+      ],
+      "targeted_tests": [
+        "test_proposal_capacity.py",
+        "test_technology_parameter_review.py",
+        "test_agent_tools.py",
+        "existing large actual browser return"
+      ],
+      "weaken_assertions_to_pass": false,
+      "status": "READY"
+    },
+    {
+      "finding_ids": [
+        "ROUTING_RETURN_REPEATED_SQL"
+      ],
+      "owner": "PROJECT_PRODUCT",
+      "category": "PROJECT_PRODUCT",
+      "cause": "REPEATED_NATIVE_ROUTING_SQL",
+      "root_cause": "The actual isolated routing validation profile performs 6,511 SQL statements and 12,884 connection/savepoint contexts for 766 routes. Latest regular browser candidate passes all nine model parameter-return cycles but first routing return exceeds unchanged 60-second readiness.",
+      "first_failing_layer": "Complete proposal routing validation",
+      "reproduction": "Current five-case browser: four pass; large passes model detours then fails pending routing refresh. Existing complete SQL test profiling observes routing validation unchanged.",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\full-validate-2-profile.txt",
+          "sha256": "c0718b75262e27c2c58f2bb63153496fcc430a7c9e5f683aebe04f5a8cf6e21e"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\before-routing-catalog-browser.json",
+          "sha256": "0e4efe149e54946128012200998c217582c314b07969a4cb6423898108d27f6b"
+        }
+      ],
+      "affected_files": [
+        "backend/nis/agent/tools/proposal_service.py",
+        "backend/tests/test_routing_prospective_model.py"
+      ],
+      "acceptance_criteria": [
+        "Capture complete selected canonical model once per routing proposal validation",
+        "Use existing strict snapshot RoutingValidator, retaining all route payload/physical/duplicate/timing/reference rules",
+        "Never reuse snapshot across requests or add human approval/model writes",
+        "Preserve PERIODIC_ACQUISITION prospective overlay and exclude-route semantics",
+        "Verify SQL and snapshot outputs are identical; edited/deleted physical links and foreign project snapshots still fail",
+        "Keep every test and readiness deadline and deliver exact fully tested image"
+      ],
+      "targeted_tests": [
+        "test_routing_prospective_model.py",
+        "test_proposal_capacity.py",
+        "test_proposals.py",
+        "test_agent_periodic_acquisition.py",
+        "large actual repeated-return browser"
+      ],
+      "weaken_assertions_to_pass": false,
+      "status": "READY"
+    },
+    {
+      "finding_ids": [
+        "TOPOLOGY_RETURN_NATIVE_REVIEW_COST"
+      ],
+      "owner": "PROJECT_PRODUCT",
+      "category": "PROJECT_PRODUCT",
+      "cause": "REPEATED_NATIVE_OPERATING_POINT_AND_PROFILE_COPY",
+      "root_cause": "Corrected full canonical SQL measurement preserves declared networks and validates topology successfully. Parameter review takes 47.84s and topology validation 49.49s under profiling. Each does 1,304 scenario resolutions; 16.9s is repeated LIN schema/constraint copying. Browser parallel review takes 51.219s and topology return exceeds unchanged 60s readiness after all model/routing detours pass.",
+      "first_failing_layer": "Complete native topology proposal refresh",
+      "reproduction": "Regular e6 candidate: four cases pass; large has nine model and nine routing detours, fails first topology return. Corrected SQL measurement returns VALIDATED; initial diagnostic missing-network findings are input errors, preserved explicitly.",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\before-topology-catalog-browser.json",
+          "sha256": "27070d209108d4c2416a5d4d7814e3cb6acd06631bc278a6cb3f2ebf0db587f1"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\topology-return-request-diagnostic.json",
+          "sha256": "da15216db91bdeabb0892e2e7163d6eec4e9cb3ab71c66b1d2597ea339a64c79"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\topology-native-review-route-profile.txt",
+          "sha256": "a2497d3f30245acc0026de19eaaf80a1fd7c1d3b2d93815ba93609acebfa0401"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\topology-native-return-profile.txt",
+          "sha256": "9b32f3c5a42cd9d2f9f7870482cd13ab75f171c6cf8eeecf6cafce082faa6ecf"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\topology-baseline-image.json",
+          "sha256": "ce114c34ca1796c283b3dd51413611fcb36eb975ea59e8f60a0034672c2d53c0"
+        }
+      ],
+      "affected_files": [
+        "backend/nis/agent/tools/validation.py",
+        "backend/nis/communication/registry.py",
+        "backend/nis/communication/technologies/lin/timing.py",
+        "backend/nis/interfaces/http/engineering.py",
+        "backend/tests/test_proposal_capacity.py",
+        "backend/tests/test_technology_registry_metadata.py"
+      ],
+      "acceptance_criteria": [
+        "Use profile-owned keys and explicit evidence/identity/assumption scopes to share only equal native operating points inside one call",
+        "Preserve clocks, provenance, nested capabilities, network scope and unknown-native facts; no cross-request cache",
+        "Evaluate LIN derivations against the registered constraints directly; return detached values and preserve every fixed field",
+        "Reuse one effective graph for all parameter review calculations; retain all freshness and proposal revision checks",
+        "Compare complete captured topology findings, capacity and plans plus native LIN derivations against actual e6 candidate code",
+        "Keep all release rules/assertions/deadlines and deploy exact image only after complete gate PASS"
+      ],
+      "targeted_tests": [
+        "test_proposal_capacity.py",
+        "test_technology_registry_metadata.py",
+        "native technology parameter/default tests",
+        "test_engineering_mcp.py",
+        "full large browser repeated returns"
+      ],
+      "weaken_assertions_to_pass": false,
+      "status": "READY"
+    },
+    {
+      "finding_ids": [
+        "EXPANDED_CONTINUITY_CASE_BUDGET"
+      ],
+      "owner": "TOOL_CHECKER",
+      "category": "TEST_INTEGRATION",
+      "cause": "ADDED_MANUAL_REPETITIONS_SHARE_FULL_WORKFLOW_CASE",
+      "root_cause": "The original full nine-stage browser has an unchanged contractually required 20-minute case limit. Adding 27 complete save/reload/return loops to it consumes the entire case before remaining workflow execution. Candidate 27 passes individual model/routing/topology readiness; the latest failure is the outer 1,200,000ms test timer in a verification read, not a proposal readiness assertion.",
+      "first_failing_layer": "Browser case workload partition",
+      "reproduction": "Four smaller cases pass; large reaches topology repeated returns and hits whole-test 20-minute timer after all model/routing detours and several topology returns.",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\before-review-suite-catalog-browser.json",
+          "sha256": "15c3a920678f756081a1fca68943530b76b4f647546eec31fa676bebe4007174"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\before-review-suite-catalog-browser.log",
+          "sha256": "0863919010a805c3bad7accef2c197cfbf4bf5035c28fa8cd5b4504505804ba5"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\WIZARD_RELEASE_GATE.md",
+          "sha256": "1aba05bf3a12939bbb0662c95e645eb641bb849d855f40ee45ae5b85790ac987"
+        }
+      ],
+      "affected_files": [
+        "frontend/e2e/wizard.spec.ts"
+      ],
+      "acceptance_criteria": [
+        "Keep the full real nine-stage test, unchanged fixture/1404 signals/encodings/ALL-scope evidence/restart/assertions and 20-minute limit",
+        "Keep one complete three-bus save/reload/return cycle at each proposal phase in that full test",
+        "Add a separate real captured large case for each model/routing/topology pending review, each preserving all original nine repeated returns (three seeds times three buses)",
+        "Explicitly label these three cases as review-only coverage, never nine-stage success",
+        "Total repeated return coverage grows from 27 to 36; each case retains 20 minutes, each return 60 seconds and automatic progress/write deadlines unchanged",
+        "Retain independent negative watchdog regressions proving forbidden timer resets still fail",
+        "No application change or fixture/model writes via hidden repair; reuse the exact candidate image for changed verification inputs"
+      ],
+      "targeted_tests": [
+        "frontend wizard progress watchdog clock regressions",
+        "eight-case browser scope: native defaults, small full nine-stage, two strict native negatives, large full nine-stage, three large review-only continuity cases"
+      ],
+      "weaken_assertions_to_pass": false,
+      "status": "READY"
+    },
+    {
+      "finding_ids": [
+        "FULL_CASE_IDEMPOTENT_SEED_EXPECTATION"
+      ],
+      "owner": "TOOL_CHECKER",
+      "category": "TEST_INTEGRATION",
+      "cause": "IDENTICAL_SEED_AT_EACH_REVIEW",
+      "root_cause": "The partitioned full case reused seed42 at each proposal phase. At the first routing save all scoped values were unchanged, so preserving VALIDATED was correct; the helper deliberately expects OUTDATED after a real edit.",
+      "first_failing_layer": "Full browser review edit setup",
+      "reproduction": "Four smaller cases pass. Large model returns pass; first routing save receives VALIDATED instead of OUTDATED at wizard.spec.ts:295.",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\before-idempotent-seed-catalog-browser.log",
+          "sha256": "e3bc9c20d7cc1ac4715be9346c177dcab724ce167e3145161c3d2689f029fef8"
+        }
+      ],
+      "affected_files": [
+        "frontend/e2e/wizard.spec.ts"
+      ],
+      "acceptance_criteria": [
+        "Use distinct seeds41,43,42 for model,routing,topology phases so every loop actually edits saved parameters",
+        "Preserve the OUTDATED and VALIDATED assertions, complete document equality, run identity, no START/application assertions and all original deadlines",
+        "Keep nine integrated returns and 27 separate review-only returns; final full-flow seed remains42",
+        "No application change; reuse exact tested image and rerun all eight cases"
+      ],
+      "targeted_tests": [
+        "eight-case real isolated browser scope"
+      ],
+      "weaken_assertions_to_pass": false,
+      "status": "READY"
+    },
+    {
+      "finding_ids": [
+        "CONFIRMED_RATE_DROPS_SAVED_SCENARIO",
+        "LIN_PREFLIGHT_SCHEDULE_DIAGNOSIS_PENDING"
+      ],
+      "owner": "IMPLEMENTATION",
+      "category": "IMPLEMENTATION",
+      "cause": "RATE_ONLY_EARLY_RETURN",
+      "root_cause": "Confirmed native rates short-circuit simulation ingress before saved configuration assumptions are merged. Captured Ethernet has FULL/link_up=true in saved assumptions but neither field in resolved output. Native schedule correctly blocks that incomplete input. Separate LIN schedule failures still require diagnosis.",
+      "first_failing_layer": "Capacity simulation parameter ingress",
+      "reproduction": "All nine large model/routing/topology returns pass. Full preflight then reports Ethernet PROFILE_INCOMPLETE and two LIN NO_SCHEDULE findings. Captured resolver drops all assumed Ethernet/CAN-FD fields when _rate_evidenced=true.",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\native-preflight-resolver-before.json",
+          "sha256": "8755d53b7a7a7be590d2210a41e13893e26931c9ab4f33f042e201dbfd2f181a"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\before-native-configuration-catalog-browser.log",
+          "sha256": "e3fe39a0a02a1653d8cf7e205cc1b99fbaaaa46109d98a9f0402bfb7ef57a5c1"
+        }
+      ],
+      "affected_files": [
+        "backend/nis/engineering/capacity/service.py",
+        "backend/tests/test_simulation_parameter_defaults.py"
+      ],
+      "acceptance_criteria": [
+        "Confirmed rates still merge and validate their saved native configuration assumptions",
+        "Explicit device/network/user values retain precedence; forged assumption provenance and invalid parameters still fail",
+        "Mixed confirmed-rate/assumed-configuration calculations and traces cannot claim hardware evidence",
+        "Preserve legacy actual-only behavior when no simulation assumptions exist",
+        "Diagnose LIN schedule failures from restored disposable SQL capture; do not suppress real schedule blockers",
+        "Run targeted native tests, all eight real browser cases, complete release gate and exact production delivery"
+      ],
+      "targeted_tests": [
+        "simulation defaults, capacity, native review/clock/negative suites",
+        "captured isolated SQL preflight diagnostic",
+        "eight real browser cases"
+      ],
+      "weaken_assertions_to_pass": false,
+      "status": "READY"
+    },
+    {
+      "finding_ids": [
+        "CONFIRMED_RATE_DROPS_SAVED_SCENARIO",
+        "LIN_PREFLIGHT_SCHEDULE_DIAGNOSIS_PENDING"
+      ],
+      "owner": "PROJECT_PRODUCT",
+      "category": "IMPLEMENTATION",
+      "cause": "RATE_ONLY_EARLY_RETURN",
+      "root_cause": "Confirmed native rates short-circuit simulation ingress before saved configuration assumptions are merged. Captured Ethernet has FULL/link_up=true in saved assumptions but neither field in resolved output. Native schedule correctly blocks that incomplete input. Separate LIN schedule failures still require diagnosis.",
+      "first_failing_layer": "Capacity simulation parameter ingress",
+      "reproduction": "All nine large model/routing/topology returns pass. Full preflight then reports Ethernet PROFILE_INCOMPLETE and two LIN NO_SCHEDULE findings. Captured resolver drops all assumed Ethernet/CAN-FD fields when _rate_evidenced=true.",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\native-preflight-resolver-before.json",
+          "sha256": "8755d53b7a7a7be590d2210a41e13893e26931c9ab4f33f042e201dbfd2f181a"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\before-native-configuration-catalog-browser.log",
+          "sha256": "e3fe39a0a02a1653d8cf7e205cc1b99fbaaaa46109d98a9f0402bfb7ef57a5c1"
+        }
+      ],
+      "affected_files": [
+        "backend/nis/engineering/capacity/service.py",
+        "backend/tests/test_simulation_parameter_defaults.py"
+      ],
+      "acceptance_criteria": [
+        "Confirmed rates still merge and validate their saved native configuration assumptions",
+        "Explicit device/network/user values retain precedence; forged assumption provenance and invalid parameters still fail",
+        "Mixed confirmed-rate/assumed-configuration calculations and traces cannot claim hardware evidence",
+        "Preserve legacy actual-only behavior when no simulation assumptions exist",
+        "Diagnose LIN schedule failures from restored disposable SQL capture; do not suppress real schedule blockers",
+        "Run targeted native tests, all eight real browser cases, complete release gate and exact production delivery"
+      ],
+      "targeted_tests": [
+        "simulation defaults, capacity, native review/clock/negative suites",
+        "captured isolated SQL preflight diagnostic",
+        "eight real browser cases"
+      ],
+      "weaken_assertions_to_pass": false,
+      "status": "READY"
+    },
+    {
+      "finding_ids": [
+        "CONFIRMED_RATE_DROPS_SAVED_SCENARIO",
+        "LIN_PREFLIGHT_SCHEDULE_DIAGNOSIS_PENDING"
+      ],
+      "owner": "PROJECT_PRODUCT",
+      "category": "IMPLEMENTATION",
+      "cause": "RATE_ONLY_EARLY_RETURN",
+      "root_cause": "Confirmed native rates short-circuit simulation ingress before saved configuration assumptions are merged. Captured Ethernet has FULL/link_up=true in saved assumptions but neither field in resolved output. Native schedule correctly blocks that incomplete input. Separate LIN schedule failures still require diagnosis.",
+      "first_failing_layer": "Capacity simulation parameter ingress",
+      "reproduction": "All nine large model/routing/topology returns pass. Full preflight then reports Ethernet PROFILE_INCOMPLETE and two LIN NO_SCHEDULE findings. Captured resolver drops all assumed Ethernet/CAN-FD fields when _rate_evidenced=true.",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\native-preflight-resolver-before.json",
+          "sha256": "8755d53b7a7a7be590d2210a41e13893e26931c9ab4f33f042e201dbfd2f181a"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\before-native-configuration-catalog-browser.log",
+          "sha256": "e3fe39a0a02a1653d8cf7e205cc1b99fbaaaa46109d98a9f0402bfb7ef57a5c1"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\confirmed-rate-targeted.log",
+          "sha256": "62ca2d0b52b9afec29f78ff41940924d696ca5c053283e083e0967e3b17e6a58"
+        }
+      ],
+      "affected_files": [
+        "backend/nis/engineering/capacity/service.py",
+        "backend/tests/test_simulation_parameter_defaults.py",
+        "backend/tests/test_technology_parameter_review.py"
+      ],
+      "acceptance_criteria": [
+        "Confirmed rates still merge and validate their saved native configuration assumptions",
+        "Explicit device/network/user values retain precedence; forged assumption provenance and invalid parameters still fail",
+        "Unused assumptions overridden by validated confirmed native fields cannot invalidate those facts",
+        "The complete explicit-device regression supplies every scenario configuration value as explicitly reviewed device input and retains all original output assertions; partial confirmed-rate coverage remains separate",
+        "Mixed confirmed-rate/assumed-configuration calculations and traces cannot claim hardware evidence",
+        "Preserve legacy actual-only behavior when no simulation assumptions exist",
+        "Diagnose LIN schedule failures from restored disposable SQL capture; do not suppress real schedule blockers",
+        "Run targeted native tests, all eight real browser cases, complete release gate and exact production delivery"
+      ],
+      "targeted_tests": [
+        "simulation defaults, capacity, native review/clock/negative suites",
+        "captured isolated SQL preflight diagnostic",
+        "eight real browser cases"
+      ],
+      "weaken_assertions_to_pass": false,
+      "status": "READY"
+    },
+    {
+      "finding_ids": [
+        "CONFIRMED_RATE_DROPS_SAVED_SCENARIO",
+        "NATIVE_LAYOUT_INCONSISTENT",
+        "POST_SPLIT_SIZING_STALE"
+      ],
+      "owner": "PROJECT_PRODUCT",
+      "category": "IMPLEMENTATION",
+      "cause": "SCENARIO_CONFIGURATION_AND_GRAPH_CURRENCY",
+      "root_cause": "Captured disposable SQL demonstrates rate-only ingress drops native configuration; conservative CAN-FD timing uses starter padding rather than native message layout; Ethernet assumed dependent PHY/layout values do not follow authoritative rates; physical segment splits leave communication sizing stale.",
+      "first_failing_layer": "Native simulation capacity/preflight",
+      "reproduction": "Nine full large-project returns pass; native preflight blocks two LIN schedules and eight Ethernet profiles. Restored isolated SQL independently reproduces the same findings.",
+      "affected_files": [
+        "backend/nis/engineering/capacity/service.py",
+        "backend/nis/communication/technologies/ethernet/timing.py",
+        "backend/nis/agent/core/engineering_agent.py",
+        "backend/tests/test_technology_parameter_review.py",
+        "backend/tests/test_simulation_parameter_defaults.py",
+        "backend/tests/test_capacity_can_schedule.py",
+        "frontend/e2e/wizard.spec.ts"
+      ],
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\native-preflight-diagnostic.json",
+          "sha256": "111091cd49af4bfba97820869357d83065ea734fa422d77425a492ee5b634c22"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\native-preflight-resolver-before.json",
+          "sha256": "8755d53b7a7a7be590d2210a41e13893e26931c9ab4f33f042e201dbfd2f181a"
+        }
+      ],
+      "acceptance_criteria": [
+        "Native per-message padding is used consistently by nominal and conservative CAN-FD timing; explicitly fixed padding remains fixed",
+        "Only assumed Ethernet dependent values may be derived from native profile constraints; confirmed rates and explicit incompatible PHY values remain authoritative",
+        "Hardware/device and functional evidence are never promoted by assumptions",
+        "Wizard reruns generated communication sizing after graph changes without resetting or replacing user parameters; locked periods remain locked",
+        "Complete explicit-device fixture supplies the required isolated virtual publisher binding",
+        "Browser rate expectations match the unchanged 100-Mbit Ethernet fixture prompt; actual changed-value provenance assertions remain strict",
+        "All targeted native tests, eight browser cases, complete gate and exact delivery remain mandatory"
+      ],
+      "targeted_tests": [
+        "native simulation/default/rate/negative/capacity suites",
+        "captured SQL reproduction",
+        "eight browser cases and complete release gate"
+      ],
+      "weaken_assertions_to_pass": false,
+      "status": "READY"
+    },
+    {
+      "finding_ids": [
+        "CONFIRMED_RATE_DROPS_SAVED_SCENARIO",
+        "NATIVE_LAYOUT_INCONSISTENT",
+        "POST_SPLIT_SIZING_STALE"
+      ],
+      "owner": "PROJECT_PRODUCT",
+      "category": "IMPLEMENTATION",
+      "cause": "SCENARIO_CONFIGURATION_AND_GRAPH_CURRENCY",
+      "root_cause": "Captured disposable SQL demonstrates rate-only ingress drops native configuration; conservative CAN-FD timing uses starter padding rather than native message layout; Ethernet assumed dependent PHY/layout values do not follow authoritative rates; physical segment splits leave communication sizing stale.",
+      "first_failing_layer": "Native simulation capacity/preflight",
+      "reproduction": "Nine full large-project returns pass; native preflight blocks two LIN schedules and eight Ethernet profiles. Restored isolated SQL independently reproduces the same findings.",
+      "affected_files": [
+        "backend/nis/engineering/capacity/service.py",
+        "backend/nis/communication/technologies/ethernet/timing.py",
+        "backend/nis/agent/core/engineering_agent.py",
+        "backend/tests/test_technology_parameter_review.py",
+        "backend/tests/test_simulation_parameter_defaults.py",
+        "backend/tests/test_capacity_can_schedule.py",
+        "backend/tests/test_wizard_generation.py",
+        "frontend/e2e/wizard.spec.ts"
+      ],
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\native-preflight-diagnostic.json",
+          "sha256": "2a1719fc2a870fb2c0eca45fafb71345118443bef76c0ceb3d9dcf1ebf14614b"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\native-preflight-resolver-before.json",
+          "sha256": "8755d53b7a7a7be590d2210a41e13893e26931c9ab4f33f042e201dbfd2f181a"
+        }
+      ],
+      "acceptance_criteria": [
+        "Native per-message padding is used consistently by nominal and conservative CAN-FD timing; explicitly fixed padding remains fixed",
+        "Only assumed Ethernet dependent values may be derived from native profile constraints; confirmed rates and explicit incompatible PHY values remain authoritative",
+        "Hardware/device and functional evidence are never promoted by assumptions",
+        "Wizard reruns generated communication sizing after graph changes without resetting or replacing user parameters; locked periods remain locked",
+        "Complete explicit-device fixture supplies the required isolated virtual publisher binding",
+        "Browser rate expectations match the unchanged 100-Mbit Ethernet fixture prompt; actual changed-value provenance assertions remain strict",
+        "All targeted native tests, eight browser cases, complete gate and exact delivery remain mandatory"
+      ],
+      "targeted_tests": [
+        "native simulation/default/rate/negative/capacity suites",
+        "captured SQL reproduction",
+        "eight browser cases and complete release gate"
+      ],
+      "weaken_assertions_to_pass": false,
+      "status": "READY"
+    },
+    {
+      "finding_ids": [
+        "CAPACITY_CONTINUATION_REENTERS_SPATIAL_GENERATION"
+      ],
+      "owner": "PROJECT_PRODUCT",
+      "category": "IMPLEMENTATION",
+      "cause": "DEFAULT_GENERATION_USED_FOR_ALREADY_COMPLETE_CONFIGURATION",
+      "root_cause": "All nine integrated parameter returns pass, but the capacity continuation calls full default generation including spatial zoning although its canonical topology and saved parameters are complete. The first calculation finishes only after about210s; subsequent capacity planning exceeds the unchanged240s progress boundary.",
+      "first_failing_layer": "Capacity continuation latency",
+      "reproduction": "Captured large browser case fails at frontier4/9 after17.7min; source bcb599d3e966. The same sizing service successfully resolves the restored split graph without spatial generation.",
+      "affected_files": [
+        "backend/nis/agent/core/engineering_agent.py",
+        "backend/nis/agent/tools/wizard_generation.py",
+        "backend/nis/agent/tools/services.py",
+        "backend/tests/test_simulation_parameter_defaults.py",
+        "backend/tests/test_wizard_generation.py"
+      ],
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\before-sizing-only-catalog-browser\\wizard-exact-confirmed-50--c2f3c-gh-real-wizard-review-large\\error-context.md",
+          "sha256": "1dfd5fc4f2abee4354d1c7967e820db245852bc0bef3369681ce5253f931665d"
+        }
+      ],
+      "acceptance_criteria": [
+        "Already complete parameter continuations call only native communication sizing, never regenerate defaults or spatial topology",
+        "Sizing-only tool mode explicitly requires complete saved parameters and topology; incomplete inputs fail without writes",
+        "Preserve user values, provenance, locked periods, model review and all native constraints",
+        "Use the same existing version-checked sizing service and authorized actor",
+        "Keep20-minute fullcase,240-second progress,60-second return and180-second manual-write bounds unchanged",
+        "Rerun targeted tests, all eight cases and complete gate before exact production delivery"
+      ],
+      "targeted_tests": [
+        "saved-current-graph MCP regression",
+        "sizing-only nonmutation and incomplete-input tests",
+        "all eight real browser cases",
+        "complete release gate"
+      ],
+      "weaken_assertions_to_pass": false,
+      "status": "READY"
+    },
+    {
+      "finding_ids": [
+        "MISSING_CATALOG_RESPONSE_MAPPING",
+        "UNDECLARED_LARGE_STRESS_PADDING",
+        "SIZING_ONLY_TEST_POLICY_DISABLED"
+      ],
+      "owner": "SHARED",
+      "category": "IMPLEMENTATION",
+      "cause": "VERIFICATION_CONFIGURATION_AND_MIGRATION_INVENTORY",
+      "root_cause": "The full suite reports21687 passes and2 failures. Two actual new catalog-response files are not mapped. The full captured simulation test formerly obtained artificial64-byte conservative bounds from starter layout; corrected message-aware bounds legitimately require fewer channels. Its fixture must explicitly declare64-byte DLC15/CRC21 transport padding to preserve the >100-channel stress scope. Saved assumptions must be asserted usable without falsely certifying hardware. The new sizing-only mock omitted enabled:true and therefore correctly skipped sizing.",
+      "first_failing_layer": "Migration inventory and native stress fixture",
+      "reproduction": "Full backend log records missing catalog-response files and37<101 proposed channels; new mock gets no sizing call with a disabled default policy.",
+      "affected_files": [
+        "backend/tests/test_wizard_large_routing.py",
+        "backend/tests/test_simulation_parameter_defaults.py",
+        "docs/migrations/structure_mapping.csv"
+      ],
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\wizard-simulation-continuity-native-final\\2c0112238540\\backend-tests.log",
+          "sha256": "3d9b44769dd0bf7c54ea84561a6f5c2f427adfff9651a7b40e98982a41ffee04"
+        }
+      ],
+      "acceptance_criteria": [
+        "Map only the two actual canonical catalog-response files, preserving existing migration entries",
+        "Declare padded CAN-FD transport before generation using reviewed native DLC15/wire64/CRC21; do not rewrite captured graph or logical message DLC/cycles/IDs",
+        "Retain >100 physical channels, unique identities, ALL route counts, all signal/message preservation and strict native rate/schedule checks",
+        "Align this explicitly unqualified simulation fixture with the requested semantics: require hardware qualification false and nominal simulation capacity true for every network; qualified-input positive regressions remain separate and unchanged",
+        "Enable the native sizing policy explicitly in the focused mock",
+        "Retain all wizard deadlines and eight-case/full gate requirements; no previous failed receipt authorizes delivery"
+      ],
+      "targeted_tests": [
+        "structure completion",
+        "full captured routing/capacity stress",
+        "sizing-only native/MCP regressions",
+        "eight browser cases and complete release gate"
+      ],
+      "weaken_assertions_to_pass": false,
+      "status": "READY"
+    },
+    {
+      "finding_ids": [
+        "MISSING_CATALOG_RESPONSE_MAPPING",
+        "UNDECLARED_LARGE_STRESS_PADDING",
+        "SIZING_ONLY_TEST_POLICY_DISABLED"
+      ],
+      "owner": "SHARED",
+      "category": "IMPLEMENTATION",
+      "cause": "VERIFICATION_CONFIGURATION_AND_MIGRATION_INVENTORY",
+      "independent_causes": [
+        "Canonical catalog-response files are missing from the migration inventory",
+        "The stress fixture relied on undeclared starter padding instead of an explicit physical CAN-FD layout",
+        "The focused sizing-only mock omitted the enabled native sizing policy"
+      ],
+      "root_cause": "The full suite reports21687 passes and2 failures. Two actual new catalog-response files are not mapped. The full captured simulation test formerly obtained artificial64-byte conservative bounds from starter layout; corrected message-aware bounds legitimately require fewer channels. Its fixture must explicitly declare64-byte DLC15/CRC21 transport padding to preserve the >100-channel stress scope. Saved assumptions must be asserted usable without falsely certifying hardware. The new sizing-only mock omitted enabled:true and therefore correctly skipped sizing.",
+      "first_failing_layer": "Migration inventory and native stress fixture",
+      "reproduction": "Full backend log records missing catalog-response files and37<101 proposed channels; new mock gets no sizing call with a disabled default policy.",
+      "affected_files": [
+        "backend/tests/test_wizard_large_routing.py",
+        "backend/tests/test_simulation_parameter_defaults.py",
+        "docs/migrations/structure_mapping.csv"
+      ],
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\wizard-simulation-continuity-native-final\\2c0112238540\\backend-tests.log",
+          "sha256": "3d9b44769dd0bf7c54ea84561a6f5c2f427adfff9651a7b40e98982a41ffee04"
+        }
+      ],
+      "acceptance_criteria": [
+        "Map only the two actual canonical catalog-response files, preserving existing migration entries",
+        "Declare padded CAN-FD transport before generation using reviewed native DLC15/wire64/CRC21; do not rewrite captured graph or logical message DLC/cycles/IDs",
+        "Retain >100 physical channels, unique identities, ALL route counts, all signal/message preservation and strict native rate/schedule checks",
+        "Align this explicitly unqualified simulation fixture with the requested semantics: require hardware qualification false and nominal simulation capacity true for every network; qualified-input positive regressions remain separate and unchanged",
+        "Enable the native sizing policy explicitly in the focused mock",
+        "Retain all wizard deadlines and eight-case/full gate requirements; no previous failed receipt authorizes delivery"
+      ],
+      "targeted_tests": [
+        "structure completion",
+        "full captured routing/capacity stress",
+        "sizing-only native/MCP regressions",
+        "eight browser cases and complete release gate"
+      ],
+      "weaken_assertions_to_pass": false,
+      "status": "READY"
+    },
+    {
+      "finding_ids": [
+        "SIMULATION_LOAD_IGNORED_BY_SEGMENT_PLANNER"
+      ],
+      "owner": "PROJECT_PRODUCT",
+      "category": "IMPLEMENTATION",
+      "cause": "QUALIFICATION_AWARE_CONSUMER_GAP",
+      "root_cause": "Native capacity deliberately separates hardware load (null without qualification) from usable simulation_capacity. The segment planner reads only hardware LOAD_KEYS and transmission delay, silently treating a validated CAN-FD simulation load of10/11.5/15 percent as zero; only LIN schedule failures are split, yielding37 channels despite explicitly padded frames.",
+      "first_failing_layer": "Network distribution consumer of native capacity snapshots",
+      "reproduction": "stress-padding-diagnostic.json records the exact current padded native source snapshot and37 LIN-only physical channels; CAN-FD simulation_capacity_verified=true and native760-bit frame are retained but planning load is0.",
+      "affected_files": [
+        "backend/nis/intelligence/engineering/intelligence/network_planning.py",
+        "backend/tests/test_automatic_resource_planning.py"
+      ],
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\stress-padding-diagnostic.json",
+          "sha256": "2834bc8f07cad17109225271d8baddccdea83491520ae7e0c6eb5abafc83a1e9"
+        }
+      ],
+      "acceptance_criteria": [
+        "Use validated native simulation loads and native per-segment delays in detached planning rows; never edit captured capacity data or promote hardware/functional timing acceptance",
+        "Reject invalid/incomplete/nonfinite simulation load instead of treating it as zero",
+        "Preserve source/recipient grouping, hardware hard limits, schedule checks, fixed inventory and guarded physical proposals",
+        "Retain >100-channel captured padded stress, route counts and all encoding/message preservation checks",
+        "Add pure parity/immutability and invalid simulation consumer regressions and require the unchanged complete release gate"
+      ],
+      "targeted_tests": [
+        "automatic resource planning",
+        "captured native distribution replay",
+        "full captured routing stress",
+        "complete release gate"
+      ],
+      "weaken_assertions_to_pass": false,
+      "status": "READY"
+    },
+    {
+      "finding_ids": [
+        "REPEATED_STALE_FULL_PROPOSAL_READS"
+      ],
+      "owner": "PROJECT_PRODUCT",
+      "category": "IMPLEMENTATION",
+      "cause": "DUPLICATE_WIZARD_REVIEW_TRANSFER",
+      "root_cause": "WizardModelReview fetches the entire stale proposal on mount and every5s; its child separately restores the same proposal. The captured topology return transfers stale full bodies for10s and7s before starting validation, while repeated parent full reads contend with validation. Two prior validations complete in28/29s; the third starts18s into the unchanged60s return window and is aborted by the timeout. Pure parameter review takes14s under profiling.",
+      "first_failing_layer": "Parent wizard proposal loading and polling",
+      "reproduction": "Captured real browser trace shows full GETs15:36:55 and15:37:08, then validationPOST15:37:09 pending at15:37:52 timeout.",
+      "affected_files": [
+        "frontend/src/features/agent/ui/agent-chat-core.tsx",
+        "frontend/src/features/agent/lib/proposal-client.ts",
+        "frontend/src/features/agent/lib/proposal-client.test.mjs"
+      ],
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\return-network-diagnostic.json",
+          "sha256": "ab60a78e696de5c6c11227e170728cd1aaab87e2e6128990b09e4ae63eed3c5d"
+        }
+      ],
+      "acceptance_criteria": [
+        "Restore current status before downloading body; OUTDATED goes straight to current validation, never stale body",
+        "Use the existing proposal client for parent loading and compact polling; current full contents and identity remain attached to matching revisions only",
+        "Changed active proposal IDs or revisions must fetch their actual full body; malformed or incomplete validation still rejects",
+        "Preserve wizard run identity, manual approval/application and all60/240/180/1200-second budgets",
+        "Regression verifies repeated matching polls issue only compactGETs and one OUTDATED validationPOST with no approval/application calls"
+      ],
+      "targeted_tests": [
+        "proposal-client nativefrontend tests",
+        "typecheck",
+        "all eight realbrowser cases and fullrelease gate"
+      ],
+      "weaken_assertions_to_pass": false,
+      "status": "READY"
+    },
+    {
+      "finding_ids": [
+        "UNTOUCHED_DURATION_PROMOTED_TO_EXPLICIT_REQUEST"
+      ],
+      "owner": "PROJECT_PRODUCT",
+      "category": "IMPLEMENTATION",
+      "cause": "BULK_FORM_DURATION_ORIGIN",
+      "root_cause": "Every public parameter PATCH invokes mark_user_duration on every submitted duration, and the form submits the entire profile while editing only seed or bus values. The standard1s becomes USER_PARAMETER despite no duration edit. The frozen actual large run requires1.071s for second arrivals; five1000ms LIN routes have one received frame and jitterNOT_EVALUATED, so the strict complete conformance assertion fails.",
+      "first_failing_layer": "Public parameter-write duration intent and whole-form submission",
+      "reproduction": "Current full release image bcd16a961bba finishes allnine workflow stages; final assertion receivesNOT_EVALUATED. Isolated frozen evidence has duration1, EXPLICIT_PARAMETERS, requirementminimum1.071, five unassessed jitter routes, no missing observations or failed routes.",
+      "affected_files": [
+        "backend/nis/engineering/simulation_observation.py",
+        "backend/nis/interfaces/http/engineering.py",
+        "backend/tests/test_simulation_observation.py",
+        "frontend/src/features/workflow/lib/workflow-api.ts",
+        "frontend/src/features/workflow/lib/workflow-api.test.mjs",
+        "frontend/src/features/simulation/ui/simulation-wizard.tsx",
+        "frontend/e2e/technology-parameter-review.spec.ts",
+        "frontend/e2e/wizard.spec.ts"
+      ],
+      "affected_services": [
+        "Parameter form",
+        "Workflow parameter HTTP boundary",
+        "Observation planning"
+      ],
+      "required_fix": "Identify duration fields explicitly edited by bulk clients; restore trusted unchanged saved origin or resolve a new untouched value from its own TechnologyProfile. Changed or explicitly touched durations, including an identical value and legacy direct API requests, remain user-specified. Keep all existing strict observation and conformance checks.",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\observation-failure.json",
+          "sha256": "caac9f61315e0594b3c23a22bb146fbf058914be50eae3fda051531442a8f8a4"
+        }
+      ],
+      "acceptance_criteria": [
+        "Untouched standard duration survives repeated three-protocol saves without becoming fixed user input",
+        "Explicitly edited same-value or changed duration remains exact, including a deliberately short window",
+        "Server never trusts a client-supplied default marker over a saved explicit value; new defaults come from the selected native TechnologyProfile",
+        "An unrelated bulk save retains existing explicit duration and run/project/proposal identity",
+        "The existing planner derives the necessary second-arrival window; no changed routes, requirements, event limits, acceptance rules or test budgets",
+        "Actual complete large browser case remains conformancePASS with all766 routes evaluated; alloriginal strict checks retained"
+      ],
+      "targeted_tests": [
+        "Observation planner and HTTP duration intent regressions through isolatedSQL runner",
+        "Workflow API request-intent tests andtypecheck",
+        "Existing native save/reload E2E andcomplete large wizard case",
+        "Full release gate and exact tested image deployment"
+      ],
+      "weaken_assertions_to_pass": false,
+      "status": "READY",
+      "test_correction": "The newly added unknown-profile negative test incorrectly expected HTTP200. The TechnologyProfile contract requires rejection; correct it to HTTP400, PROFILE_MISSING, no persisted changes. Preserve all established assertions.",
+      "test_corrections": [
+        {
+          "owner": "TEST_DATA",
+          "first_failing_layer": "New mixed-project E2E duration assertion",
+          "root_cause": "The existing fixture has CAN-FD as primary but edits Ethernet in a mixed project. confirmTechnologyParameters intentionally stores secondary protocol values in technology_parameters. It must not invent or overwrite a global primary duration. The new assertion incorrectly required global duration provenance that this fixture never saved. The independent primary CAN-FD same-value duration intent case passed.",
+          "required_fix": "Assert the original global duration and provenance are unchanged from the saved fixture, while Ethernet scoped duration is saved as1; retain all existing native persistence and central-default protection checks.",
+          "evidence": {
+            "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\before-mixed-duration-test\\duration-intent-browser.json",
+            "sha256": "cafcd2fd9ed1fbd3a2bd2cdb56ac0b146b5a4438763e866124c24f43e719272f"
+          },
+          "weaken_existing_assertions": false
+        }
+      ]
+    }
+  ],
+  "plan_revision_history": [
+    {
+      "frontend/src/features/agent/ui/agent-chat-core.tsx": "589f3277b537cb26d47a35efd96fd87494df5c0a648e934d8777648084695cf4",
+      "frontend/src/features/agent/lib/proposal-client.ts": "0267119e788cec6c5e7a93e3704c05a5f8d3941314da19a412ee8108c8ae9822",
+      "frontend/src/features/agent/ui/engineering-agent-event.tsx": "c10d85dd6d10fdf050d8fac0ac45734b0fc14adf6c6e2c97e7e40fceb2524645",
+      "frontend/src/features/simulation/ui/simulation-wizard.tsx": "cda6dffd05d0339b8b1b4cb55b846693a63b2757f5312ef54af24071089199ba",
+      "backend/nis/agent/tools/validation.py": "e61079cf0c4ef5a1514f354740b1e0e2a0327be1d75f4c53a273e619bad68b62",
+      "backend/nis/agent/tools/wizard_generation.py": "c6b9f60ef66dcb8fd6bc65f6f324c880222dded91d763cbe90d700d78ae3ff7f",
+      "backend/nis/workflow/services/service.py": "c922f521c693609663eafbb66b97f3425658481b48ea24c4c4535b56aef128ef",
+      "backend/nis/engineering/capacity/service.py": "c805b301a2f9410863fdd84d0fbdd8f84c6752aa065de53e581f796d62407e67",
+      "backend/nis/engineering/routing/config_builder.py": "595e96f1fcd54cd09142de3129b536c705ceeb6e3c8f033c163fbc6cf99ee8a0",
+      "backend/nis/engineering/simulation.py": "2aceb25bde79550c3da1dae66cd16338d5e49d5546d946e72617cf68dd69cb7d",
+      "frontend/src/features/agent/lib/proposal-client.test.mjs": "76e6e4a0dac25cc97c16179d248efb7e377f8c24d3b7507a3cd342811e54b8e0",
+      "frontend/e2e/wizard.spec.ts": "78fbca295aefdff16e7c8f09dbe7b116468d0f6400da99bc1e51ca7e3487451f",
+      "frontend/e2e/technology-parameter-review.spec.ts": "a6782db9a77d99eac093b14726125dd5cce7b5cc8f7f7b001cab79fad0c10e72",
+      "backend/tests/test_technology_parameter_review.py": "9056fac11405fcfd61b0f1d97d46907607f8db80c92d4d2c062b192df91fa452",
+      "backend/tests/test_simulation_parameter_defaults.py": "a79b846bec3d793b1bd32df3f5c306aaa2754fe5aff8e9a1ea84defede946ab9",
+      "backend/tests/test_workflow.py": "4ad8ebb75a5fdc1cde97d2597c3813b3e79ef410ee9816c12f970ecc951d68b8",
+      "backend/nis/traces/universal_trace.py": "90f6803acc88f11b9702f7f3346b7e945274514bc75f91dee335705ec8b1c818",
+      "backend/tests/test_simulation_observation.py": "4edfb20275d95426de9255dad5e560a2b4f83086553cee64daa85d2476698ffd",
+      "backend/nis/engineering/capacity/dimensioning.py": "d8a3f1af4bcce8d1ed69ee8426f650e562c52937fc2e3aa371ce39b4a3f4e3e8",
+      "backend/tests/test_bus_rate_planning.py": "4a6bcf038edf355a1fdcbb0c1c14ae075df379c7f4eaf8f61a42e4342bbc36ad",
+      "scripts/dev/launch-networkis.py": "e65adb8fc29ff97d68662d02c38aa5073b86a3fad385f87f3851ee122bf9190a",
+      "backend/tests/test_server_startup.py": "563a273a94736a0f9d0a9ad8754d91eb2f6ec54f8e3bfde2382bd86691780af4",
+      "frontend/src/shared/api/api.ts": "e515ca15eb765404365f7331cc70c71870904fabe516eff5ebf8515dbe5c7bcd",
+      "frontend/src/shared/api/lossless-json.ts": "b1a2655e2b6d0430a1151e18f01961f5a54686212d4de2a795b400d66a53311f",
+      "frontend/src/shared/api/lossless-json.test.mjs": "7a15aa35dc18255f4be2e34bd7227f2dc14fe759f491dc7bd5e18f5fd7cac8dc",
+      "frontend/src/shared/api/catalog-response.ts": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "frontend/src/shared/api/catalog-response.test.mjs": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "outcomes": {
+    "wizard_continuity": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\delivery-2f2fe0b1d1cf\\bd97b35d951d\\receipt.json",
+          "sha256": "8c51bbe3b313ba70958f9b520688466072c49e6d26480ffeb0c1ad2bb4a21b3e"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\live-after.json",
+          "sha256": "206dddb3a4b29aeb53424f9c03abbee8b637dccce33c4e560ebbd60351fa3cd0"
+        }
+      ]
+    },
+    "saved_value_precedence": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\targeted.log",
+          "sha256": "5faa97fc8eb91651e66d7074452dda4305df9b2aa692ebe169a924c9246b26fd"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\delivery-2f2fe0b1d1cf\\bd97b35d951d\\receipt.json",
+          "sha256": "8c51bbe3b313ba70958f9b520688466072c49e6d26480ffeb0c1ad2bb4a21b3e"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\live-before.json",
+          "sha256": "fe61dbada7c5c99ddf3c2f7ba9973de213e9c3d7ecdf530829989656fa131ffc"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\live-after.json",
+          "sha256": "206dddb3a4b29aeb53424f9c03abbee8b637dccce33c4e560ebbd60351fa3cd0"
+        }
+      ]
+    },
+    "simulation_readiness_without_device_qualification": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\targeted.log",
+          "sha256": "5faa97fc8eb91651e66d7074452dda4305df9b2aa692ebe169a924c9246b26fd"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\delivery-2f2fe0b1d1cf\\bd97b35d951d\\receipt.json",
+          "sha256": "8c51bbe3b313ba70958f9b520688466072c49e6d26480ffeb0c1ad2bb4a21b3e"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\live-after.json",
+          "sha256": "206dddb3a4b29aeb53424f9c03abbee8b637dccce33c4e560ebbd60351fa3cd0"
+        }
+      ]
+    },
+    "production_delivery": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\delivery-2f2fe0b1d1cf\\bd97b35d951d\\receipt.json",
+          "sha256": "8c51bbe3b313ba70958f9b520688466072c49e6d26480ffeb0c1ad2bb4a21b3e"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\delivery.log",
+          "sha256": "d143e8212b3e2081914067852ea1e8e3603b651e64f94168faae68aa558085fb"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\live-after.json",
+          "sha256": "206dddb3a4b29aeb53424f9c03abbee8b637dccce33c4e560ebbd60351fa3cd0"
+        }
+      ]
+    }
+  },
+  "validations": {
+    "targeted_regression": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\targeted.log",
+          "sha256": "5faa97fc8eb91651e66d7074452dda4305df9b2aa692ebe169a924c9246b26fd"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\frontend-targeted.log",
+          "sha256": "19be42b87ec251c406f0fa2aecae1e964c134c1c11dc45d852246b5c7bc426ad"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\gate-repair-targeted.log",
+          "sha256": "82a44a9588082ca25094e2e67dd34567c1863ca8001ad105f6381202d44e5991"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\performance-targeted.log",
+          "sha256": "9edd36bb8879345a29243922bc8c4d69152c4236718563964fbd80abb7dae1ac"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\rate-cache-targeted.log",
+          "sha256": "1f721bd6db286ec17bd364f229bb845a7e21482d98c34491a812b9c6be68bd80"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\startup-targeted.log",
+          "sha256": "9d1168bcb781ba587888b5d2c75455de4a8d73c088cdf0446775f5f3b0eec4a3"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\performance-browser.json",
+          "sha256": "ce987b3f26eb22b1bcf9c217b8e1e799549c9a105e69d16c6e800027d04fdbf9"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\restore-catalog-targeted.log",
+          "sha256": "be3aac39b5091722f4b4bc861eaedc071118c585fce98e4fdbf6fdd167901860"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\schema-role-targeted.log",
+          "sha256": "f245192875e6d77e750c156507e78530a67337fa563bd9615efbc398377db4f0"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\schema-role-equivalence-current.log",
+          "sha256": "d1804203e0cc49dc928e32493160c52a36a56db911418b69a96651b0c1ccece5"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\full-request-targeted.log",
+          "sha256": "541aa89c7b30a78d938a4b4947830c9be6d79f1d306ec3b92c47d0038406af40"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\full-request-review-equivalence.log",
+          "sha256": "c9999a0efb50ba94de1ab75e5b7b31dee76b370ce2a67bb5e4306abdb7c8462c"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\routing-return-targeted.log",
+          "sha256": "3c9a6a8c65e915f02de793a2f23e5341ce133398a97074911321ec7978cbbe61"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\topology-native-targeted.log",
+          "sha256": "ff43f0be6bf4af66e73081ebf535e075f9919a35da9e531afe6e92d3c1e64c7d"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\topology-native-equivalence.log",
+          "sha256": "d63def1efcf3b2b30372fcb7bea9a4dadab26bbd97e5ddbc8d322de0896b3cee"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\catalog-browser.json",
+          "sha256": "87cb01b54737ea0ffd34eeb7d320fb4f76c9aaf8e57aa12e531b8939f3d589ae"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\native-consistency-regression.log",
+          "sha256": "35c6f15e0630b885d200218ff648a57c746c205d7680283cb3cc9adb075229e3"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\saved-current-graph-regression.log",
+          "sha256": "d53df5b83076b28f90f0c919ec5c94cd6e494c2253b846ab8062f1311ebc7f0b"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\native-preflight-diagnostic.json",
+          "sha256": "88def4b074718e7ebf949dd0aebc7cbd655e9b85658f90c546aee75aa7b533f4"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\sizing-only-first-regression.log",
+          "sha256": "0f06bcf09c4f4b366c2cd84ced9d43fab4f2e66e5087b40489b042a8bfbb3d3d"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\qualification-stress-targeted.log",
+          "sha256": "da5f695986be1ccee38a682cd54d75b0f67717b2835e20e7231d69ed57c26282"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\simulation-load-targeted.log",
+          "sha256": "6b254f824c19cd7cc70090043daaa711b35cd63c646fe83f68523a87f4953478"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\parent-review-transfer-targeted.log",
+          "sha256": "b7cca7b80738cc6e788e73f42ad1d53045e7d3c3397aa0ddec9bfaf7782a7178"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\parent-review-transfer-typecheck.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\duration-intent-backend.log",
+          "sha256": "1e480b4c739c6402b7c4e3fb6470c673722809d100bb16051b4ac3e10babe8b6"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\duration-intent-frontend.log",
+          "sha256": "adecbd621f55229f66e62b5b5187d8ab89a8612fa8728f8a706757fef5dee45f"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\duration-intent-typecheck.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\duration-intent-browser.json",
+          "sha256": "9cb5843cf46cbeb2c97e7ceaf4bb2903d73d003bf228b5cf00d7f9ea5a6db5e0"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\observation-frozen-replay.json",
+          "sha256": "ab2f29ed9f65087058cd10de2873c4b279dcc1fb7b2c3dd478ed72cef744e360"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\workflow-polling-regression.log",
+          "sha256": "6b30ed4ddb77087855e0e208ee8b534d018e536dbe9d34d8387f08d014a07e05"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\workflow-polling-after.log",
+          "sha256": "948ba0187728a0775f5707fd96fc58846758edef3879e26cb124b1f1e0d862ba"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\workflow-polling-before-result.json",
+          "sha256": "d447bdc804bc756f592e39023961d13e107b15010b84837d8ecf7e39444ba3bd"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\workflow-polling-after-result.json",
+          "sha256": "c9e6eef0bfa67b90a7a2530c3c0b0aef1523ca3026a434264854b80183644121"
+        }
+      ]
+    },
+    "full_release_gate": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\delivery-2f2fe0b1d1cf\\bd97b35d951d\\receipt.json",
+          "sha256": "8c51bbe3b313ba70958f9b520688466072c49e6d26480ffeb0c1ad2bb4a21b3e"
+        }
+      ]
+    },
+    "production_verification": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\delivery.log",
+          "sha256": "d143e8212b3e2081914067852ea1e8e3603b651e64f94168faae68aa558085fb"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-simulation-continuity-20261007\\live-after.json",
+          "sha256": "206dddb3a4b29aeb53424f9c03abbee8b637dccce33c4e560ebbd60351fa3cd0"
+        }
+      ]
+    }
+  },
+  "tests": {
+    "targeted_backend": 155,
+    "gate_repair_backend": 50,
+    "performance_targeted_backend": 86,
+    "rate_planning_backend": 40,
+    "server_startup_backend": 42,
+    "performance_browser": {
+      "startTime": "2026-10-07T07:49:57.714Z",
+      "duration": 1113140.3949999998,
+      "expected": 4,
+      "skipped": 0,
+      "unexpected": 0,
+      "flaky": 0
+    },
+    "restore_catalog_frontend": 18,
+    "schema_role_backend": 243,
+    "full_request_backend": 299,
+    "routing_return_backend": 195,
+    "topology_native_backend": 181,
+    "native_consistency_backend": 174,
+    "saved_current_graph_backend": 1,
+    "sizing_only_backend": 174,
+    "qualification_stress_backend": 34,
+    "simulation_load_planning_backend": 48,
+    "parent_review_transfer_frontend": 12,
+    "duration_intent_backend": 72,
+    "duration_intent_frontend": 6,
+    "duration_intent_browser": {
+      "expected": 2,
+      "unexpected": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "startTime": "2026-10-07T20:18:47.144Z",
+      "duration": 24524
+    },
+    "workflow_polling_backend": 152,
+    "workflow_polling_frozen_equivalence": "d3adb4cb8f9fbbb92668c368c41549307c6eeae726ab7edfab2a82944474cc88",
+    "frozen_transport_replay": {
+      "PASS": 766,
+      "FAIL": 0,
+      "NOT_EVALUATED": 0
+    },
+    "topology_native_equivalence": "120 groups, 640 findings, 120 rate plans and 30 LIN layouts identical",
+    "catalog_browser": {
+      "expected": 8,
+      "unexpected": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "startTime": "2026-10-07T20:18:47.144Z",
+      "duration": 2328730
+    },
+    "full_backend": 21726,
+    "frontend": 589,
+    "browser": {
+      "startTime": "2026-10-07T20:18:47.144Z",
+      "duration": 2829498.987,
+      "expected": 96,
+      "skipped": 0,
+      "unexpected": 0,
+      "flaky": 0
+    },
+    "small_http": "PASSED",
+    "large_http": "PASSED"
+  }
+}

@@ -1,0 +1,11 @@
+--- before/backend/engineering/device_classification.py
++++ after/backend/engineering/device_classification.py
+@@ -95,7 +95,7 @@
+         candidates = []
+         for profile in DEFAULT_TECHNOLOGY_REGISTRY.profiles():
+             interface = str(profile.get("hardware_interface") or "").lower()
+-            if interface not in hardware and profile["id"] not in hardware:
++            if not hardware.intersection({interface, profile['id'], *profile.get('hardware_capability_aliases', [])}):
+                 continue
+             if streaming and not profile["capabilities"].get("supports_streams"):
+                 continue

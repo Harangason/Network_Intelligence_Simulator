@@ -1,0 +1,934 @@
+## Additional selected primary text, model definition and Modbus functions
+SunSpec-Device-Information-Model-Specificiation-V1-1-final (https://sunspec.org/wp-content/uploads/2025/01/SunSpec-Device-Information-Model-Specificiation-V1-1-final.pdf)
+citeturn656view0 [wordlim: 200] Crawled: today; Content type: application/pdf; Number of pages: 48; Source: open({"ref_id":"https://sunspec.org/wp-content/uploads/2025/01/SunSpec-Device-Information-Model-Specificiation-V1-1-final.pdf","lineno":357}); Total lines: 1203
+L225@P11: Device Information Model instance A Device Information Model instance is created from a
+L226@P11: Device Information Model definition. The instance
+L227@P11: includes data point values specified for each of the
+L228@P11: defined data points. There can be any number of
+L229@P11: instances of a Device Information Model.
+L230@P11: JSON JavaScript Object Notation is a lightweight format
+L231@P11: used for data exchange. The canonical form of Device
+L232@P11: Information Model definitions is specified using JSON
+L233@P11: encoding. This document specifies JSON encoding
+L234@P11: for Device Information Model instances.
+L235@P11: Modbus Modbus is a communication protocol for transmitting
+L236@P11: information between devices using a serial or TCP/IP
+L237@P11: communication interface. This document specifies
+L238@P11: Modbus encoding for Device Information Model
+L239@P11: instances.
+L240@P11: Model A Device Information Model model element defines a
+L241@P11: logical grouping of points. Each model has a unique
+L242@P11: model ID.
+L243@P11: MUST, MUST NOT, REQUIRED,
+L244@P11: SHALL, SHALL NOT, SHOULD,
+L245@P11: SHOULD NOT, RECOMMENDED,
+L246@P11: MAY, and OPTIONAL
+L247@P11: The keywords "MUST", "MUST NOT", "REQUIRED",
+L248@P11: "SHALL", "SHALL NOT", "SHOULD", "SHOULD
+L249@P11: NOT", "RECOMMENDED", "MAY", and "OPTIONAL"
+L250@P11: in this specification, are to be interpreted as described
+L251@P11: in IETF RFC 2119.
+L252@P11: Point A Device Information Model point element defines a
+L253@P11: device data point and has a value.
+L254@P11: Point group A Device Information Model group element contains a
+L255@P11: group of points and/or other point groups.
+L256@P11: Point group, top-level The top-level point group is the first element of a
+L257@P11: Device Information Model and contains all other
+L258@P11-12: elements.SunSpec Device Information Model Specification 13 sunspec.org
+L259@P12: RESTful web service A RESTful web service is an architectural style that
+L260@P12: uses Representational State Transfer (REST) for web
+L261@P12: applications to access web service resources. REST
+L262@P12: HTTP methods for access resources include GET,
+L263@P12: PUT, POST, and DELETE.
+L264@P12: Symbol A Device Information Model symbol element defines a
+L265@P12: name-value pair. It is used to represent a constant
+L266@P12: value associated with the enumerated value or bit
+L267@P12: position of a point.
+L268@P12: UTF-8 UTF-8 is a method for encoding Unicode characters
+L269@P12: using 8-bit sequences that can include one or more
+L270@P12-13: bytes.SunSpec Device Information Model Specification 14 sunspec.org
+L271@P13: 2 Normative References
+L272@P13: [RFC2119] Bradner, S., "Key words for use in RFCs to Indicate Requirement Levels", BCP 14,
+L273@P13: RFC 2119, DOI 10.17487/RFC2119, March 1997, https://www.rfc-editor.org/info/rfc2119.
+L274@P13: [RFC3629] Yergeau, F., "UTF-8, a transformation format of ISO 10646", RFC 2279, DOI
+L275@P13: 10.17487/RFC2279, January 1998, https://www.rfc-editor.org/info/rfc2279.
+L276@P13: [RFC8259] Bray, T., Ed., "The JavaScript Object Notation (JSON) Data Interchange Format",
+L277@P13: RFC 7159, DOI 10.17487/RFC7159, March 2014, https://www.rfc-editor.org/info/rfc7159.
+L278@P13: Modbus IDA, MODBUS Application Protocol Specification v1.1b3, North Grafton,
+L279@P13: Massachusetts, www.modbus.org/specs.php, April 26, 2012.
+L280@P13: Modbus IDA, MODBUS/TCP Security Protocol Specification v21, North Grafton, Massachusetts,
+L281@P13: www.modbus.org/specs.php, July 24, 2018.
+L282@P13: IEEE 754-2008, IEEE Standard for Floating-Point Arithmetic, August 29, 2008,
+L283@P13-14: https://ieeexplore.ieee.org/servlet/opac?punumber=4610933.SunSpec Device Information Model Specification 15 sunspec.org
+L284@P14: 3 Overview
+L285@P14: This section introduces Device Information Model definition and usage.
+L286@P14: Device Information Model definitions represent collections of device data points. A device
+L287@P14: implementation based on the information models can use the model definitions to standardize
+L288@P14: the interface to device data points. This includes logically grouping the information to
+L289@P14: correspond to the data point grouping requirements of a device.
+L290@P14: 3.1 Device Information Model Structure
+L291@P14: Device Information Models are defined using the following definition elements:
+L292@P14: • model
+L293@P14: • point
+L294@P14: • point grouping
+L295@P14: • symbol
+L296@P14: • comment
+L297@P14: The point definition element represents the Device Information Model data, and the other
+L298@P14: definition elements govern data structuring and usage. The following figure shows the primary
+L299@P14: definition elements’ structural relationship.
+L300@P14-15: Figure 2: Device Information Model ElementsSunSpec Device Information Model Specification 16 sunspec.org
+L301@P15: 3.1.1 Model
+L302@P15: The model definition element includes all the definition elements. It is used as the container for
+L303@P15: the logically related set of device data points, for a particular model.
+L304@P15: 3.1.2 Point
+L305@P15: The point definition element defines a Device Information Model data point. Point elements hold
+L306@P15: data values that correspond to a device property. There are typically multiple point definitions in
+L307@P15: the model definition.
+L308@P15: 3.1.3 Point Group
+L309@P15: The point group definition element provides a way to logically group a set of points. There are
+L310@P15: three reasons to group points:
+L311@P15: • The top-level model organization construct is always a point group. The first element in a
+L312@P15: model definition is the top-level point group and includes all the point and point group
+L313@P15: definitions in the model.
+L314@P15: • A repeating set of points can be grouped, creating multiple instances of the point group
+L315@P15: that can be accessed as an array of point groups.
+L316@P15: • A set of points with synchronous operational requirements can be grouped, indicating
+L317@P15: that the points in the group must be read and written atomically.
+L318@P15: 3.1.4 Symbol
+L319@P15: The symbol definition element assigns identifiers to values associated with a point definition
+L320@P15: element. Symbols define the set of valid values for the point and provide identifiers that can be
+L321@P15: used to represent the value.
+L322@P15: 3.1.5 Comment
+L323@P15: The comment definition element associates a comment string with any of the other definition
+L324@P15: elements. It can be used to document the element definition.
+L325@P15: 3.2 Device Information Model Definition and Instance Relationship
+L326@P15: It is important to understand the relationship between a Device Information Model definition and
+L327@P15: a Device Information Model instance.
+L328@P15: A Device Information Model definition specifies the data points that make up the Device
+L329@P15: Information Model and the usage information associated with each data point. There is one
+L330@P15-16: definition for each Device Information Model.SunSpec Device Information Model Specification 17 sunspec.org
+L331@P16: Figure 3: Device Information Model Definition-Instance Map
+L332@P16: A Device Information Model instance is created from a Device Information Model definition. The
+L333@P16: instance includes data point values specified for each of the defined data points. There can be
+L334@P16: any number of Device Information Model instances.
+L335@P16: The canonical form of Device Information Model definitions is specified in a JSON encoding. For
+L336@P16: convenience, alternative Device Information Model definition representations can be used
+L337@P16: provided they preserve all the Device Information Model definition content. In addition to the
+L338@P16: canonical JSON encoding, this specification standardizes a CSV encoding for Device
+L339@P16: Information Model definitions to support a spreadsheet presentation of the definitions.
+L340@P16: 3.3 Device Information Model Usage
+L341@P16: Devices use the Device Information Model definitions that represent the data points supported
+L342@P16: by the device. Further, a device implementation includes the collection of Device Information
+L343@P16-17: Models that correspond to the full set of device data points.SunSpec Device Information Model Specification 18 sunspec.org
+L344@P17: Figure 4: Device Information Model Instance
+L345@P17: Information can be exchanged with a device by requesting some or all the device data points,
+L346@P17: using a communication interface that implements the standardized Device Information Models.
+L347@P17: Device Information Model definitions are interface-independent. This specification standardizes
+L348@P17-18: Device Information Model usage for both Modbus, and JSON data representations.SunSpec Device Information Model Specification 19 sunspec.org
+L349@P18: 3.3.1 Modbus
+L350@P18: Device Information Models can be mapped into a Modbus address space. A collection of Device
+L351@P18: Information Models can be used to create a Modbus map that corresponds to the data points
+L352@P18: supported by the device.
+L353@P18: 3.3.2 JSON
+L354@P18: Device Information Model contents can be represented as JSON objects. Devices can access
+L355@P18: data points supported by the device through an interface that supports JSON objects, such as a
+L356@P18-19: RESTful web service.SunSpec Device Information Model Specification 20 sunspec.org
+L357@P19: 4 Device Information Model Definition
+L358@P19: Device Information Models are defined using standardized elements. Each Information Model
+L359@P19: Definition includes the definition elements specified in this section.
+L360@P19: 4.1 Definition Elements
+L361@P19: A model definition MAY have the following elements:
+L362@P19: Element Description
+L363@P19: model A logical grouping of data points that are assigned a model ID.
+L364@P19: group A group of points or point groups. A model can have multiple point groups
+L365@P19: and point groups can be nested. A model always has a top-level point
+L366@P19: group that includes all points and point groups in the model. A model can
+L367@P19: only have one top-level point group.
+L368@P19: point A data point that has a value.
+L369@P19: symbol A name-value pair used to represent a constant value associated with an
+L370@P19: enumerated value or bit position in a point.
+L371@P19: comment The text used to annotate the information model definition. Comments are
+L372@P19: associated with any definition element (model, group, point, or symbol) in
+L373@P19: the model definition.
+L374@P19: Table 1: Model Definition Elements
+L375@P19: 4.1.1 Model Element
+L376@P19: The model element includes all the other definition elements associated with the model.
+L377@P19: A model definition MUST have a top-level point group that includes all the points and point
+L378@P19: groups in the model.
+L379@P19: A model definition MUST include the following two points as the first two element definitions
+L380@P19: inside the top-level point group:
+L381@P19: • model ID with an identifier of ID
+L382@P19: • model length with an identifier of L
+L383@P19: The value of the ID point MUST be a SunSpec model ID which is a unique integer between 1
+L384@P19: and 65535, inclusive. SunSpec model IDs are administered by the SunSpec Alliance.
+L385@P19: The value of the model length L point MUST be 0 (zero) in the model definition. The model
+L386@P19: length point may not be used in some encodings. When the model length is used, as in a
+L387@P19: Modbus map, the length point (L) MUST be set to the length of that model instance. Some
+L388@P19: model definitions have elements that may vary in size, which causes the model instance length
+L389@P19: to vary.
+L390@P19: The order of members of a model element is significant and MUST be maintained.
+L391@P19: See Table 2: Element Attributes for the valid mandatory and optional element attributes for a
+L392@P19-20: model element definition.SunSpec Device Information Model Specification 21 sunspec.org
+L393@P20: 4.1.2 Point Group Element
+L394@P20: The point group element includes point elements or other point group elements.
+L395@P20: The point group type MUST either be group or sync.
+L396@P20: The group point group type is used to create a set of points and point groups. If the count for the
+L397@P20: point group is greater than one, the point group repeats the number of times specified by count.
+L398@P20: The count attribute can be defined as a constant in the point group definition or be specified as
+L399@P20: the value of another point in the model definition. If the point group count is specified in another
+L400@P20: point, that point MUST be defined in the top-level point group of the model before the point
+L401@P20: group definition.
+L402@P20: The sync point group type is used to designate points and point groups that MUST be read and
+L403@P20: written atomically. Implementations MUST indicate an error if all the members of a sync group
+L404@P20: are not able to be read or written atomically.
+L405@P20: The order of the point group members is significant and MUST be maintained.
+L406@P20: All points in a point group MUST be defined before any point groups are defined.
+L407@P20: See Table 2: Element Attributes for the valid mandatory and optional element attributes for a
+L408@P20: point group element definition.
+L409@P20: 4.1.3 Point Element
+L410@P20: The point element defines a data point element.
+L411@P20: The size of the data element MUST be specified for points that have a type of string.
+L412@P20: If the count for the point is greater than one, the point repeats the number of times specified by
+L413@P20: the count. The count attribute can be defined as a constant in the point definition or be specified
+L414@P20: as a value of another point in the model definition. If the point count is specified in another point,
+L415@P20: that point MUST be defined in the top-level point group of the model before the point definition.
+L416@P20: See Table 2: Element Attributes for the valid mandatory and optional element attributes for a
+L417@P20: point element definition.
+L418@P20: 4.1.4 Symbol Element
+L419@P20: The symbol element associates an ID with a constant point value in a point definition.
+L420@P20: The symbol element MUST be associated with a point definition. A point definition MAY have
+L421@P20: multiple symbols associated with it. Each symbol ID MUST be unique for that point definition.
+L422@P20: The symbol definitions for a point definition serve as a set of possible enumerated values that
+L423@P20: are valid for the point. If a point has associated symbols defined, all values not in the set of
+L424@P20: symbol definitions MUST be considered invalid by an implementation.
+L425@P20: See Table 2: Element Attributes for the valid mandatory and optional element attributes for a
+L426@P20: symbol element definition.
+L427@P20: 4.1.5 Comment Element
+L428@P20: The comment element is a single string and is associated with any valid definition element other
+L429@P20: than a comment element. A definition element MAY have multiple comments associated with it.
+L430@P20: The comment element permits additional element definition annotation beyond the element
+L431@P20-21: definition attributes shown in Table 2: Element Attributes.SunSpec Device Information Model Specification 22 sunspec.org
+L432@P21: 4.2 Element Attributes
+L433@P21: Definition elements include attributes that qualify or describe the element. Table 2: Element
+L434@P21: Attributes shows the attributes associated with each element definition type. The table also uses
+L435@P21: the following notation to indicate which attributes are associated with each element type:
+L436@P21: • Model
+L437@P21: • Point Group
+L438@P21: • Point
+L439@P21: • Symbol
+L440@P21: Additionally, for each element type, R indicates the attribute is required in an element definition
+L441@P21: and O indicates the attribute is optional.
+L442@P21: Attribute Description M G P S
+L443@P21: ID The element ID. R R R R
+L444@P21: Points An array of point definitions in a point group. R
+L445@P21: Group An array of point elements or other point group elements. R
+L446@P21: Groups An array of point group definitions in a point group. O
+L447@P21: Value If present, a constant value associated with the element. O R
+L448@P21: Type The element type. R R
+L449@P21: Count The occurrence count of the element. O O
+L450@P21: Size The element size. Mandatory when type is string. O
+L451@P21: Scale Factor If present, the scale factor point associated with the
+L452@P21: element. O
+L453@P21: Units If present, the units associated with the element. O
+L454@P21: Access Element access, read or read/write. If not present, defaults
+L455@P21: to read. (R or RW) O
+L456@P21: Mandatory Element is mandatory/optional. If not present, default to
+L457@P21: optional. (M or O) O
+L458@P21: Label Short label associated with the element. R R O O
+L459@P21: Description Description associated with the element. O O O O
+L460@P21: Symbols A name-value pair used to represent a constant value
+L461@P21: associated with an enumerated value or bit position in a
+L462@P21: point.
+L463@P21: O O O O
+L464@P21: Table 2: Element Attributes
+L465@P21: Optional attributes may have a default value and the default value may be different for different
+L466@P21: element types.
+L467@P21: If an attribute does not have an entry in the table for an element type, the attribute MUST NOT
+L468@P21-22: be used in an element definition for that element type.SunSpec Device Information Model Specification 23 sunspec.org
+L469@P22: 4.2.1 ID
+L470@P22: The ID attribute is the element name and MUST be unique in the immediate group in which it is
+L471@P22: defined. An ID MUST consist of only alphanumeric characters and the underscore character.
+L472@P22: The ID attribute for a model element MUST be the numeric SunSpec model id.
+L473@P22: 4.2.2 Points
+L474@P22: The points attribute is a point definition array of points contained in the point group.
+L475@P22: 4.2.3 Groups
+L476@P22: The groups attribute is a point group definitions array of point groups contained in the point
+L477@P22: group.
+L478@P22: 4.2.4 Type
+L479@P22: The type attribute is the element type. Table 3: Point Element Type Attribute Values describes
+L480@P22: the possible type values for point elements and Table 4: Point Group Element Type Attribute
+L481@P22: Values specifies the possible type value for group elements.
+L482@P22: 4.2.5 Value
+L483@P22: The value attribute is the constant value associated with the element. If the element does not
+L484@P22: have a constant value, the value attribute MUST be omitted.
+L485@P22: If a point does not have a valid value, the unimplemented value MUST be used for the value.
+L486@P22: During device operation, the point value MAY change from the unimplemented value to a valid
+L487@P22: value or from a valid value to the unimplemented value at any time.
+L488@P22: If the element contains a constant value, its model definition file encoding SHALL follow the
+L489@P22-23: conventions listed in Table 16: Point Type Mapping to JSON Type.SunSpec Device Information Model Specification 24 sunspec.org
+L490@P23: Type Description
+L491@P23: int16 Signed 16-bit integer
+L492@P23: int32 Signed 32-bit integer
+L493@P23: int64 Signed 64-bit integer
+L494@P23: raw16 16-bit raw value
+L495@P23: uint16 Unsigned 16-bit integer
+L496@P23: uint32 Unsigned 32-bit integer
+L497@P23: uint64 Unsigned 64-bit integer
+L498@P23: acc16 Unsigned 16-bit accumulator
+L499@P23: (deprecated in favor of uint16)
+L500@P23: acc32 Unsigned 32-bit accumulator (deprecated in favor of uint32)
+L501@P23: acc64 Unsigned 64-bit accumulator (deprecated in favor of uint64)
+L502@P23: bitfield16 16-bit bitfield
+L503@P23: bitfield32 32-bit bitfield
+L504@P23: bitfield64 64-bit bitfield
+L505@P23: enum16 16-bit enumeration
+L506@P23: enum32 32-bit enumeration
+L507@P23: float32 32-bit floating-point
+L508@P23: float64 64-bit floating-point
+L509@P23: string String (UTF-8 encoded)
+L510@P23: sunssf Scale factor – Signed power of 10 multiplier (+) or divider (-)
+L511@P23: pad 16-bit pad used for alignment
+L512@P23: ipaddr IP Address as an unsigned 32-bit.
+L513@P23: ipv6addr 16-byte IP V6 address
+L514@P23: eui48 48-bit MAC address
+L515@P23: Table 3: Point Element Type Attribute Values
+L516@P23: Type Description
+L517@P23: group Group
+L518@P23: sync Synchronization group
+L519@P23-24: Table 4: Point Group Element Type Attribute ValuesSunSpec Device Information Model Specification 25 sunspec.org
+L520@P24: 4.2.6 Count
+L521@P24: The count attribute specifies the number of occurrences of the element in the model. The count
+L522@P24: is commonly used to specify the number of occurrences of a point group but it may also be used
+L523@P24: to specify a single repeating point.
+L524@P24: The count MAY be specified as a constant value in the model definition, or by another point in
+L525@P24: the model that contains the count.
+L526@P24: If the count is specified by another point in the model, the specifying point MUST be defined in
+L527@P24: the top-level point group before the element that the count applies to. The value of a point
+L528@P24: containing a count MUST be static and not change over time.
+L529@P24: 4.2.7 Size
+L530@P24: The size attribute specifies the maximum element length in 16-bit words. The size attribute
+L531@P24: MUST be provided for the string point type and MAY be provided for the pad type. The size
+L532@P24: attribute MUST not be provided for any other type.
+L533@P24: 4.2.8 Scale Factor
+L534@P24: As an alternative to floating-point format, values are represented by integer values with a signed
+L535@P24: scale factor applied. A negative scale factor explicitly shifts the decimal point to the left, and a
+L536@P24: positive scale factor shifts the decimal point to the right by the number of places specified in the
+L537@P24: scale factor value.
+L538@P24: The scale factor attribute specifies a scale factor to be used with the point element. The scale
+L539@P24: factor may be another point defined in the model or a constant value. If the scale factor specifies
+L540@P24: another point defined in the model, the referenced point MUST be defined as a scale factor type
+L541@P24: (sunssf).
+L542@P24: If a constant value is specified, the value MUST be a valid scale factor multiplier.
+L543@P24: The value of a scale factor point MUST be static and MUST NOT change over time.
+L544@P24: 4.2.9 Units
+L545@P24: The units attribute is a string that specifies the units associated with the element.
+L546@P24: Units are defined as needed by specific models. Where units are shared across models, care is
+L547@P24: taken to ensure a common definition of those units.
+L548@P24: 4.2.10 Access
+L549@P24: The access attribute specifies if the element is writable or read-only. If specified, the value
+L550@P24: MUST be read-only (R) or read/write (RW). If not specified, the default access is read-only.
+L551@P24: 4.2.11 Mandatory
+L552@P24: The mandatory attribute specifies whether the element is required to be implemented. If
+L553@P24: specified, the value MUST be either mandatory (M) or optional (O). If not specified, the default
+L554@P24: value is optional. Points specified as mandatory MUST always have a valid value. Points
+L555@P24: specified as optional may have the unimplemented value for the corresponding point type.
+L556@P24: 4.2.12 Label
+L557@P24-25: The label attribute specifies a short label associated with the element.SunSpec Device Information Model Specification 26 sunspec.org
+L558@P25: 4.2.13 Description
+L559@P25: The description attribute provides a brief description of the element..
+L560@P25: 4.2.14 Symbols
+L561@P25: A name-value pair used to represent a constant value associated with an enumerated value or
+L562@P25-26: bit position in a point.SunSpec Device Information Model Specification 27 sunspec.org
+L563@P26: 5 Device Information Model Definition Encoding
+L564@P26: The canonical format used to define SunSpec Device Information Models is JSON.
+L565@P26: An alternative CSV encoding is also specified in this document to support a spreadsheet
+L566@P26: presentation of Device Information Model definitions.
+L567@P26: 5.1 JSON Message Encoding
+L568@P26: This section describes the method of representing Device Information Model definitions in
+L569@P26: JSON.
+L570@P26: Model definitions defined in JSON MUST be encoded using UTF-8.
+L571@P26: 5.1.1 Element Types
+L572@P26: Table 5: Definition Element JSON Encoding shows the JSON name and value type used for
+L573@P26: element type definitions.
+L574@P26: Element JSON Name JSON Value
+L575@P26: Model model Object of model elements
+L576@P26: Point Group groups Object of group elements
+L577@P26: Point points Object of point attributes
+L578@P26: Symbol symbols Array of symbol objects
+L579@P26: Comment comments Array of comment strings
+L580@P26: Table 5: Definition Element JSON Encoding
+L581@P26: 5.1.2 Element Attribute Types
+L582@P26: Table 6: JSON-encoded Element Attribute Types shows the JSON name and value type used
+L583@P26-27: for element attribute type definitions.SunSpec Device Information Model Specification 28 sunspec.org
+L584@P27: Attribute JSON Name JSON Values
+L585@P27: ID id
+L586@P27: Value value
+L587@P27: Type type int16, int32, int64, uint16, raw16,
+L588@P27: uint32, uint64, acc16, acc32, acc64,
+L589@P27: bitfield16, bitfield32, bitfield64,
+L590@P27: enum16, enum32, float32, float64,
+L591@P27: string, sunssf, pad, ipaddr, ipv6addr,
+L592@P27: eui48, group, sync
+L593@P27: Count count
+L594@P27: Size size
+L595@P27: Scale Factor sf
+L596@P27: Units units
+L597@P27: Access (R/RW) access R, RW
+L598@P27: Mandatory (M/O) mandatory M, O
+L599@P27: Label label
+L600@P27: Description desc
+L601@P27: Table 6: JSON-encoded Element Attribute Types
+L602@P27: 5.1.3 Model Encoding
+L603@P27: A model definition MUST be represented as an object with a single property named model and
+L604@P27: an object as the value. See Appendix A for model definition examples.
+L605@P27: The object value of model MUST have two properties: id and group. The value of the id
+L606@P27: property MUST be the SunSpec numeric model ID.
+L607@P27: The value of the group property MUST be an object that includes the contents of the rest of
+L608@P27: the model definition. The group property represents the required single top-level point group in
+L609@P27: the model.
+L610@P27: The model object MUST have a label property and MAY have desc, and comments
+L611@P27: properties.
+L612@P27: The following example shows the model element encoding.
+L613@P27: {"model": {
+L614@P27:  "id": <model id>,
+L615@P27:  "group": {
+L616@P27: <rest of model content>
+L617@P27:  }
+L618@P27:  "label": <model label>,
+L619@P27:  "desc": <model description>
+L620@P27-28: }SunSpec Device Information Model Specification 29 sunspec.org
+L621@P28: 5.1.4 Point Group Encoding
+L622@P28: A point group definition MUST be represented as an object with the required and optional
+L623@P28: properties for a point group.
+L624@P28: A point group definition MUST have a property named type that has a group value identifying
+L625@P28: the object as a point group definition.
+L626@P28: A point group definition MAY have a property named comments that is an array holding the
+L627@P28: comment strings associated with the point group.
+L628@P28: The following example shows the point group element encoding.
+L629@P28: {
+L630@P28: "name": <point group name>,
+L631@P28: "type": <point group type>,
+L632@P28: "count": <point group count>,
+L633@P28: "label": <point group label>,
+L634@P28: "desc": <point group description>,
+L635@P28: "points": [<points>],
+L636@P28: "groups": [<point groups>],
+L637@P28: "comments": [<comment strings>]
+L638@P28: }
+L639@P28: 5.1.5 Point Encoding
+L640@P28: A point definition MUST be represented as an object with the required and optional point
+L641@P28: properties for a point.
+L642@P28: A point definition MUST have a property named type that has a value of point identifying the
+L643@P28: object as a point definition.
+L644@P28: A point definition MAY have a property named symbols that is an array holding the symbols
+L645@P28: associated with the point.
+L646@P28: A point definition MAY have a property named comments that is an array holding the comment
+L647@P28: strings associated with the point.
+L648@P28: The following example shows the point element encoding.
+L649@P28: {
+L650@P28: "name": <point name>,
+L651@P28: "value": <point value>,
+L652@P28: "type": <point type>,
+L653@P28: "count": <point count>,
+L654@P28: "size": <point size>,
+L655@P28: "sf": <point scale factor>,
+L656@P28: "units": <point units>,
+L657@P28: "access": <point access>,
+L658@P28: "mandatory": <point mandatory>,
+L659@P28: "label": <point label>,
+L660@P28: "desc": <point description>,
+L661@P28: "symbols": [<symbols>],
+L662@P28: "comments": [<comment strings>]
+L663@P28-29: }SunSpec Device Information Model Specification 30 sunspec.org
+L664@P29: 5.1.6 Symbol Encoding
+L665@P29: A symbol definition MUST be represented as an object with the required and optional properties
+L666@P29: for a symbol.
+
+MODBUS Application Protocol 1 1 b (https://www.modbus.org/file/secure/modbusprotocolspecification.pdf)
+citeturn659view0 [wordlim: 200] Crawled: today; Content type: application/pdf; Number of pages: 50; Source: open({"ref_id":"https://www.modbus.org/file/secure/modbusprotocolspecification.pdf","lineno":599}); Total lines: 2161
+L522@P12: Function code 1 Byte 0x02
+L523@P12: Starting Address 2 Bytes 0x0000 to 0xFFFF
+L524@P12: Quantity of Inputs 2 Bytes 1 to 2000 (0x7D0)
+L525@P12: Response
+L526@P12: Function code 1 Byte 0x02
+L527@P12: Byte count 1 Byte N*
+L528@P12: Input Status N* x 1 Byte
+L529@P12: *N = Quantity of Inputs / 8 if the remainder is different of 0  N = N+1
+L530@P12: Error
+L531@P12: Error code 1 Byte 0x82
+L532@P12: Exception code 1 Byte 01 or 02 or 03 or 04
+L537@P12: Starting Address Hi 00 Byte Count 03
+L538@P12: Starting Address Lo C4 Inputs Status 204-197 AC
+L539@P12: Quantity of Inputs Hi 00 Inputs Status 212-205 DB
+L540@P12: Quantity of Inputs Lo 16 Inputs Status 218-213 35
+L541@P12: The status of discrete inputs 204–197 is shown as the byte value AC hex, or binary 1010
+L542@P12: 1100. Input 204 is the MSB of this byte, and input 197 is the LSB.
+L543@P12: The status of discrete inputs 218–213 is shown as the byte value 35 hex, or binary 0011 0101.
+L544@P12: Input 218 is in the third bit position from the left, and input 213 is the LSB.
+L545@P12-13:  Note: The two remaining bits (toward the high order end) are zero filled. MODBUS Application Protocol Specification V1.1b3 Modbus
+L546@P13: April 26, 2012 http://www.modbus.org 14/50
+L547@P13: MB Server Sends mb_exception_rsp EXIT
+L548@P13: MB Server receives mb_req_pdu
+L549@P13: ExceptionCode = 01
+L550@P13: YES
+L551@P13: NO
+L552@P13: NO
+L553@P13: ExceptionCode = 02
+L554@P13: YES
+L555@P13: NO
+L556@P13: ExceptionCode = 03
+L557@P13: YES
+L558@P13: ENTRY
+L559@P13: ReadDiscreteInputs == OK
+L560@P13: MB Server Sends mb_rsp
+L561@P13: NO
+L562@P13: YES
+L563@P13: 0x0001  Quantity of Inputs  0x07D0
+L564@P13: Function code
+L565@P13: supported
+L566@P13: Starting Address == OK
+L567@P13: AND
+L568@P13: Starting Address + Quantity of Inputs == OK
+L569@P13: ExceptionCode = 04
+L570@P13: Request Processing
+L571@P13-14: Figure 12: Read Discrete Inputs state diagramMODBUS Application Protocol Specification V1.1b3 Modbus
+L572@P14: April 26, 2012 http://www.modbus.org 15/50
+L573@P14: 6.3 03 (0x03) Read Holding Registers
+L574@P14: This function code is used to read the contents of a contiguous block of holding registers in a
+L575@P14: remote device. The Request PDU specifies the starting register address and the number of
+L576@P14: registers. In the PDU Registers are addressed starting at zero. Therefore registers numbered
+L577@P14: 1-16 are addressed as 0-15.
+L578@P14: The register data in the response message are packed as two bytes per register, with the
+L579@P14: binary contents right justified within each byte. For each register, the first byte contains the
+L580@P14: high order bits and the second contains the low order bits.
+L581@P14: Request
+L582@P14: Function code 1 Byte 0x03
+L583@P14: Starting Address 2 Bytes 0x0000 to 0xFFFF
+L584@P14: Quantity of Registers 2 Bytes 1 to 125 (0x7D)
+L585@P14: Response
+L586@P14: Function code 1 Byte 0x03
+L587@P14: Byte count 1 Byte 2 x N*
+L588@P14: Register value N* x 2 Bytes
+L589@P14: *N = Quantity of Registers
+L590@P14: Error
+L591@P14: Error code 1 Byte 0x83
+L592@P14: Exception code 1 Byte 01 or 02 or 03 or 04
+L593@P14: Here is an example of a request to read registers 108 – 110:
+L594@P14: Request Response
+L595@P14: Field Name (Hex) Field Name (Hex)
+L596@P14: Function 03 Function 03
+L597@P14: Starting Address Hi 00 Byte Count 06
+L598@P14: Starting Address Lo 6B Register value Hi (108) 02
+L599@P14: No. of Registers Hi 00 Register value Lo (108) 2B
+L600@P14: No. of Registers Lo 03 Register value Hi (109) 00
+L601@P14: Register value Lo (109) 00
+L602@P14: Register value Hi (110) 00
+L603@P14: Register value Lo (110) 64
+L604@P14: The contents of register 108 are shown as the two byte values of 02 2B hex, or 555 decimal.
+L605@P14: The contents of registers 109–110 are 00 00 and 00 64 hex, or 0 and 100 decimal,
+L606@P14-15: respectively.MODBUS Application Protocol Specification V1.1b3 Modbus
+L607@P15: April 26, 2012 http://www.modbus.org 16/50
+L608@P15: MB Server Sends mb_exception_rsp EXIT
+L609@P15: MB Server receives mb_req_pdu
+L610@P15: ExceptionCode = 01
+L611@P15: YES
+L612@P15: NO
+L613@P15: NO
+L614@P15: ExceptionCode = 02
+L615@P15: YES
+L616@P15: NO
+L617@P15: ExceptionCode = 03
+L618@P15: YES
+L619@P15: ENTRY
+L620@P15: ReadMultipleRegisters == OK
+L621@P15: MB Server Sends mb_rsp
+L622@P15: NO
+L623@P15: YES
+L624@P15: 0x0001  Quantity of Registers  0x007D
+L625@P15: Function code
+L626@P15: supported
+L627@P15: Starting Address == OK
+L628@P15: AND
+L629@P15: Starting Address + Quantity of Registers == OK
+L630@P15: ExceptionCode = 04
+L631@P15: Request Processing
+L632@P15: Figure 13: Read Holding Registers state diagram
+L633@P15: 6.4 04 (0x04) Read Input Registers
+L634@P15: This function code is used to read from 1 to 125 contiguous input registers in a remote device.
+L635@P15: The Request PDU specifies the starting register address and the number of registers. In the
+L636@P15: PDU Registers are addressed starting at zero. Therefore input registers numbered 1-16 are
+L637@P15: addressed as 0-15.
+L638@P15: The register data in the response message are packed as two bytes per register, with the
+L639@P15: binary contents right justified within each byte. For each register, the first byte contains the
+L640@P15: high order bits and the second contains the low order bits.
+L641@P15: Request
+L642@P15: Function code 1 Byte 0x04
+L643@P15: Starting Address 2 Bytes 0x0000 to 0xFFFF
+L644@P15: Quantity of Input Registers 2 Bytes 0x0001 to 0x007D
+L645@P15: Response
+L646@P15: Function code 1 Byte 0x04
+L647@P15: Byte count 1 Byte 2 x N*
+L648@P15: Input Registers N* x 2 Bytes
+L649@P15: *N = Quantity of Input Registers
+L650@P15: Error
+L651@P15: Error code 1 Byte 0x84
+L652@P15: Exception code 1 Byte 01 or 02 or 03 or 04
+L653@P15: Here is an example of a request to read input register 9:
+L654@P15: Request Response
+L655@P15: Field Name (Hex) Field Name (Hex)
+L656@P15: Function 04 Function 04
+L657@P15: Starting Address Hi 00 Byte Count 02
+L658@P15: Starting Address Lo 08 Input Reg. 9 Hi 00
+L659@P15-16: Quantity of Input Reg. Hi 00 Input Reg. 9 Lo 0AMODBUS Application Protocol Specification V1.1b3 Modbus
+L660@P16: April 26, 2012 http://www.modbus.org 17/50
+L661@P16: Quantity of Input Reg. Lo 01
+L662@P16: The contents of input register 9 are shown as the two byte values of 00 0A hex, or 10 decimal.
+L663@P16: MB Server Sends mb_exception_rsp EXIT
+L664@P16: MB Server receives mb_req_pdu
+L665@P16: ExceptionCode = 01
+L666@P16: YES
+L667@P16: NO
+L668@P16: NO
+L669@P16: ExceptionCode = 02
+L670@P16: YES
+L671@P16: NO
+L672@P16: ExceptionCode = 03
+L673@P16: YES
+L674@P16: ENTRY
+L675@P16: ReadInputRegisters == OK
+L676@P16: MB Server Sends mb_rsp
+L677@P16: NO
+L678@P16: YES
+L679@P16: 0x0001  Quantity of Registers  0x007D
+L680@P16: Function code
+L681@P16: supported
+L682@P16: Starting Address == OK
+L683@P16: AND
+L684@P16: Starting Address + Quantity of Registers == OK
+L685@P16: ExceptionCode = 04
+L686@P16: Request Processing
+L687@P16: Figure 14: Read Input Registers state diagram
+L688@P16: 6.5 05 (0x05) Write Single Coil
+L689@P16: This function code is used to write a single output to either ON or OFF in a remote device.
+L690@P16: The requested ON/OFF state is specified by a constant in the request data field. A value of FF
+L691@P16: 00 hex requests the output to be ON. A value of 00 00 requests it to be OFF. All other values
+L692@P16: are illegal and will not affect the output.
+L693@P16: The Request PDU specifies the address of the coil to be forced. Coils are addressed starting
+L694@P16: at zero. Therefore coil numbered 1 is addressed as 0. The requested ON/OFF state is
+L695@P16: specified by a constant in the Coil Value field. A value of 0XFF00 requests the coil to be ON.
+L696@P16: A value of 0X0000 requests the coil to be off. All other values are illegal and will not affect the
+L697@P16: coil.
+L698@P16: The normal response is an echo of the request, returned after the coil state has been written.
+L699@P16: Request
+L700@P16: Function code 1 Byte 0x05
+L701@P16: Output Address 2 Bytes 0x0000 to 0xFFFF
+L702@P16: Output Value 2 Bytes 0x0000 or 0xFF00
+L703@P16: Response
+L704@P16: Function code 1 Byte 0x05
+L705@P16-17: Output Address 2 Bytes 0x0000 to 0xFFFFMODBUS Application Protocol Specification V1.1b3 Modbus
+L706@P17: April 26, 2012 http://www.modbus.org 18/50
+L707@P17: Output Value 2 Bytes 0x0000 or 0xFF00
+L708@P17: Error
+L709@P17: Error code 1 Byte 0x85
+L710@P17: Exception code 1 Byte 01 or 02 or 03 or 04
+L711@P17: Here is an example of a request to write Coil 173 ON:
+L712@P17: Request Response
+L713@P17: Field Name (Hex) Field Name (Hex)
+L714@P17: Function 05 Function 05
+L715@P17: Output Address Hi 00 Output Address Hi 00
+L716@P17: Output Address Lo AC Output Address Lo AC
+L717@P17: Output Value Hi FF Output Value Hi FF
+L718@P17-18: Output Value Lo 00 Output Value Lo 00MODBUS Application Protocol Specification V1.1b3 Modbus
+L719@P18: April 26, 2012 http://www.modbus.org 19/50
+L720@P18: MB Server Sends mb_exception_rsp EXIT
+L721@P18: ExceptionCode = 04
+L722@P18: MB Server receives mb_req_pdu
+L723@P18: ExceptionCode = 01
+L724@P18: YES
+L725@P18: NO
+L726@P18: NO
+L727@P18: ExceptionCode = 02
+L728@P18: YES
+L729@P18: NO
+L730@P18: ExceptionCode = 03
+L731@P18: YES
+L732@P18: ENTRY
+L733@P18: WriteSingleOutput == OK
+L734@P18: MB Server Sends mb_rsp
+L735@P18: NO
+L736@P18: YES
+L737@P18: Output Value == 0x0000
+L738@P18: OR 0xFF00
+L739@P18: Function code
+L740@P18: supported
+L741@P18: Output Address == OK
+L742@P18: Request Processing
+L743@P18: Figure 15: Write Single Output state diagram
+L744@P18: 6.6 06 (0x06) Write Single Register
+L745@P18: This function code is used to write a single holding register in a remote device.
+L746@P18: The Request PDU specifies the address of the register to be written. Registers are addressed
+L747@P18: starting at zero. Therefore register numbered 1 is addressed as 0.
+L748@P18: The normal response is an echo of the request, returned after the register contents have been
+L749@P18: written.
+L750@P18: Request
+L751@P18: Function code 1 Byte 0x06
+L752@P18: Register Address 2 Bytes 0x0000 to 0xFFFF
+L753@P18: Register Value 2 Bytes 0x0000 to 0xFFFF
+L754@P18: Response
+L755@P18: Function code 1 Byte 0x06
+L756@P18: Register Address 2 Bytes 0x0000 to 0xFFFF
+L757@P18: Register Value 2 Bytes 0x0000 to 0xFFFF
+L758@P18: Error
+L759@P18: Error code 1 Byte 0x86
+L760@P18: Exception code 1 Byte 01 or 02 or 03 or 04
+L761@P18: Here is an example of a request to write register 2 to 00 03 hex:
+L762@P18: Request Response
+L763@P18: Field Name (Hex) Field Name (Hex)
+L764@P18: Function 06 Function 06
+L765@P18: Register Address Hi 00 Register Address Hi 00
+--------------------------------------------------------------------------------
+MODBUS Application Protocol 1 1 b (https://www.modbus.org/file/secure/modbusprotocolspecification.pdf)
+citeturn659view1 [wordlim: 200] Crawled: today; Content type: application/pdf; Number of pages: 50; Source: open({"ref_id":"https://www.modbus.org/file/secure/modbusprotocolspecification.pdf","lineno":1300}); Total lines: 2161
+L1215@P28: The next byte transmitted (01 hex) addresses outputs 29-28, with the least significant bit
+L1216@P28: addressing the lowest output (28) in this set. Unused bits in the last data byte should be zero–
+L1217@P28: filled.
+L1218@P28: Request Response
+L1219@P28: Field Name (Hex) Field Name (Hex)
+L1220@P28: Function 0F Function 0F
+L1221@P28: Starting Address Hi 00 Starting Address Hi 00
+L1222@P28: Starting Address Lo 13 Starting Address Lo 13
+L1223@P28: Quantity of Outputs Hi 00 Quantity of Outputs Hi 00
+L1224@P28: Quantity of Outputs Lo 0A Quantity of Outputs Lo 0A
+L1225@P28: Byte Count 02
+L1226@P28: Outputs Value Hi CD
+L1227@P28-29: Outputs Value Lo 01MODBUS Application Protocol Specification V1.1b3 Modbus
+L1228@P29: April 26, 2012 http://www.modbus.org 30/50
+L1229@P29: MB Server Sends mb_exception_rsp EXIT
+L1230@P29: MB Server receives mb_req_pdu
+L1231@P29: ExceptionCode = 01
+L1232@P29: YES
+L1233@P29: NO
+L1234@P29: NO
+L1235@P29: ExceptionCode = 02
+L1236@P29: YES
+L1237@P29: NO
+L1238@P29: ExceptionCode = 03
+L1239@P29: YES
+L1240@P29: ENTRY
+L1241@P29: WriteMultipleOutputs == OK
+L1242@P29: MB Server Sends mb_rsp
+L1243@P29: NO
+L1244@P29: YES
+L1245@P29: 0x0001  Quantity of Outputs  0x07B0
+L1246@P29: AND
+L1247@P29: Byte Count = N*
+L1248@P29: Function code
+L1249@P29: supported
+L1250@P29: Starting Address == OK
+L1251@P29: AND
+L1252@P29: Starting Address + Quantity of Outputs == OK
+L1253@P29: ExceptionCode = 04
+L1254@P29: *N = Quantity of Outputs / 8, if the
+L1255@P29: remainder is different of 0  N = N+1
+L1256@P29: Request Processing
+L1257@P29: Figure 21: Write Multiple Outputs state diagram
+L1258@P29: 6.12 16 (0x10) Write Multiple registers
+L1259@P29: This function code is used to write a block of contiguous registers (1 to 123 registers) in a
+L1260@P29: remote device.
+L1261@P29: The requested written values are specified in the request data field. Data is packed as two
+L1262@P29: bytes per register.
+L1263@P29: The normal response returns the function code, starting address, and quantity of registers
+L1264@P29: written.
+L1265@P29: Request
+L1266@P29: Function code 1 Byte 0x10
+L1267@P29: Starting Address 2 Bytes 0x0000 to 0xFFFF
+L1268@P29: Quantity of Registers 2 Bytes 0x0001 to 0x007B
+L1269@P29: Byte Count 1 Byte 2 x N*
+L1270@P29: Registers Value N* x 2 Bytes value
+L1271@P29: *N = Quantity of Registers
+L1272@P29: Response
+L1273@P29: Function code 1 Byte 0x10
+L1274@P29: Starting Address 2 Bytes 0x0000 to 0xFFFF
+L1275@P29: Quantity of Registers 2 Bytes 1 to 123 (0x7B)
+L1276@P29: Error
+L1277@P29: Error code 1 Byte 0x90
+L1278@P29: Exception code 1 Byte 01 or 02 or 03 or 04
+L1279@P29: Here is an example of a request to write two registers starting at 2 to 00 0A and 01 02 hex:
+L1280@P29: Request Response
+L1281@P29: Field Name (Hex) Field Name (Hex)
+L1282@P29: Function 10 Function 10
+L1283@P29: Starting Address Hi 00 Starting Address Hi 00
+L1284@P29-30: Starting Address Lo 01 Starting Address Lo 01MODBUS Application Protocol Specification V1.1b3 Modbus
+L1285@P30: April 26, 2012 http://www.modbus.org 31/50
+L1286@P30: Quantity of Registers Hi 00 Quantity of Registers Hi 00
+L1287@P30: Quantity of Registers Lo 02 Quantity of Registers Lo 02
+L1288@P30: Byte Count 04
+L1289@P30: Registers Value Hi 00
+L1290@P30: Registers Value Lo 0A
+L1291@P30: Registers Value Hi 01
+L1292@P30: Registers Value Lo 02
+L1293@P30: MB Server Sends mb_exception_rsp EXIT
+L1294@P30: MB Server receives mb_req_pdu
+L1295@P30: ExceptionCode = 01
+L1296@P30: YES
+L1297@P30: NO
+L1298@P30: NO
+L1299@P30: ExceptionCode = 02
+L1300@P30: YES
+L1301@P30: NO
+L1302@P30: ExceptionCode = 03
+L1303@P30: YES
+L1304@P30: ENTRY
+L1305@P30: WriteMultipleRegisters == OK
+L1306@P30: MB Server Sends mb_rsp
+L1307@P30: NO
+L1308@P30: YES
+L1309@P30: 0x0001  Quantity of Registers  0x007B
+L1310@P30: AND
+L1311@P30: Byte Count == Quantity of Registers x 2
+L1312@P30: Function code
+L1313@P30: supported
+L1314@P30: Starting Address == OK
+L1315@P30: AND
+L1316@P30: Starting Address + Quantity of Registers == OK
+L1317@P30: ExceptionCode = 04
+L1318@P30: Request Processing
+L1319@P30: Figure 22: Write Multiple Registers state diagram
+L1320@P30: 6.13 17 (0x11) Report Server ID (Serial Line only)
+L1321@P30: This function code is used to read the description of the type, the current status, and other
+L1322@P30: information specific to a remote device.
+L1323@P30: The format of a normal response is shown in the following example. The data contents are
+L1324@P30: specific to each type of device.
+L1325@P30: Request
+L1326@P30: Function code 1 Byte 0x11
+L1327@P30: Response
+L1328@P30: Function code 1 Byte 0x11
+L1329@P30: Byte Count 1 Byte
+L1330@P30: Server ID device
+L1331@P30: specific
+L1332@P30: Run Indicator Status 1 Byte 0x00 = OFF, 0xFF = ON
+L1333@P30: Additional Data
+L1334@P30: Error
+L1335@P30: Error code 1 Byte 0x91
+L1336@P30: Exception code 1 Byte 01 or 04
+L1337@P30-31: Here is an example of a request to report the ID and status:MODBUS Application Protocol Specification V1.1b3 Modbus
+L1338@P31: April 26, 2012 http://www.modbus.org 32/50
+L1339@P31: Request Response
+L1340@P31: Field Name (Hex) Field Name (Hex)
+L1341@P31: Function 11 Function 11
+L1342@P31: Byte Count Device
+L1343@P31: Specific
+L1344@P31: Server ID Device
+L1345@P31: Specific
+L1346@P31: Run Indicator Status 0x00 or 0xFF
+L1347@P31: Additional Data Device
+L1348@P31: Specific
+L1349@P31: MB Server Sends mb_exception_rsp EXIT
+L1350@P31: ExceptionCode = 04
+L1351@P31: MB Server receives mb_req_pdu
+L1352@P31: ExceptionCode = 01
+L1353@P31: NO
+L1354@P31: YES
+L1355@P31: ENTRY
+L1356@P31: ReportSlaveID == OK
+L1357@P31: MB Server Sends mb_rsp
+L1358@P31: NO
+L1359@P31: YES
+L1360@P31: Function code
+L1361@P31: supported
+L1362@P31: Request Processing
+L1363@P31: Figure 23: Report server ID state diagram
+L1364@P31: 6.14 20 (0x14) Read File Record
+L1365@P31: This function code is used to perform a file record read. All Request Data Lengths are
+L1366@P31: provided in terms of number of bytes and all Record Lengths are provided in terms of
+L1367@P31: registers.
+L1368@P31: A file is an organization of records. Each file contains 10000 records, addressed 0000 to 9999
+L1369@P31: decimal or 0X0000 to 0X270F. For example, record 12 is addressed as 12.
+L1370@P31: The function can read multiple groups of references. The groups can be separating (non -
+L1371@P31: contiguous), but the references within each group must be sequential.
+L1372@P31: Each group is defined in a separate ‘sub-request’ field that contains 7 bytes:
+L1373@P31: The reference type: 1 byte (must be specified as 6)
+L1374@P31: The File number: 2 bytes
+L1375@P31: The starting record number within the file: 2 bytes
+L1376@P31: The length of the record to be read: 2 bytes.
+L1377@P31: The quantity of registers to be read, combined with all other fields in the expected response,
+L1378@P31: must not exceed the allowable length of the MODBUS PDU : 253 bytes.
+L1379@P31: The normal response is a series of ‘sub-responses’, one for each ‘sub-request’. The byte
+L1380@P31: count field is the total combined count of bytes in all ‘sub-responses’. In addition, each ‘subresponse’ contains a field that shows its own byte count.
+L1381@P31: Request
+L1382@P31: Function code 1 Byte 0x14
+L1383@P31: Byte Count 1 Byte 0x07 to 0xF5 bytes
+L1384@P31: Sub-Req. x, Reference Type 1 Byte 06
+L1385@P31-32: Sub-Req. x, File Number 2 Bytes 0x0001 to 0xFFFFMODBUS Application Protocol Specification V1.1b3 Modbus
+L1386@P32: April 26, 2012 http://www.modbus.org 33/50
+L1387@P32: Sub-Req. x, Record Number 2 Bytes 0x0000 to 0x270F
+L1388@P32: Sub-Req. x, Record Length 2 Bytes N
+L1389@P32: Sub-Req. x+1, ...
+L1390@P32: Response
+L1391@P32: Function code 1 Byte 0x14
+L1392@P32: Resp. data Length 1 Byte 0x07 to 0xF5
+L1393@P32: Sub-Req. x, File Resp. length 1 Byte 0x07 to 0xF5
+L1394@P32: Sub-Req. x, Reference Type 1 Byte 6
+L1395@P32: Sub-Req. x, Record Data N x 2 Bytes
+L1396@P32: Sub-Req. x+1, ...
+L1397@P32: Error
+L1398@P32: Error code 1 Byte 0x94
+L1399@P32: Exception code 1 Byte 01 or 02 or 03 or 04 or
+L1400@P32: 08
+L1401@P32: While it is allowed for the File Number to be in the range 1 to 0xFFFF, it should be noted that
+L1402@P32: interoperability with legacy equipment may be compromised if the File Number is greater than
+L1403@P32: 10 (0x0A).
+L1404@P32: Here is an example of a request to read two groups of references from remote device:
+L1405@P32:  Group 1 consists of two registers from file 4, starting at register 1 (address 0001).
+L1406@P32:  Group 2 consists of two registers from file 3, starting at register 9 (address 0009).
+L1407@P32: Request Response
+L1408@P32: Field Name (Hex) Field Name (Hex)
+L1409@P32: Function 14 Function 14
+L1410@P32: Byte Count 0E Resp. Data length 0C
+L1411@P32: Sub-Req. 1, Ref. Type 06 Sub-Req. 1, File resp. length 05
+L1412@P32: Sub-Req. 1, File Number Hi 00 Sub-Req. 1, Ref. Type 06
+L1413@P32: Sub-Req. 1, File Number Lo 04 Sub-Req. 1, Register.Data Hi 0D
+L1414@P32: Sub-Req. 1, Record number Hi 00 Sub-Req. 1, Register.DataLo FE
+L1415@P32: Sub-Req. 1, Record number Lo 01 Sub-Req. 1, Register.Data Hi 00
+L1416@P32: Sub-Req. 1, Record Length Hi 00 Sub-Req. 1, Register.DataLo 20
+L1417@P32: Sub-Req. 1, Record Length Lo 02 Sub-Req. 2, File resp. length 05
+L1418@P32: Sub-Req. 2, Ref. Type 06 Sub-Req. 2, Ref. Type 06
+L1419@P32: Sub-Req. 2, File Number Hi 00 Sub-Req. 2, Register.Data H 33
+L1420@P32: Sub-Req. 2, File Number Lo 03 Sub-Req. 2, Register.DataLo CD
+L1421@P32: Sub-Req. 2, Record number Hi 00 Sub-Req. 2, Register.Data Hi 00
+L1422@P32: Sub-Req. 2, Record number Lo 09 Sub-Req. 2, Register.DataLo 40
+L1423@P32: Sub-Req. 2, Record Length Hi 00
+L1424@P32-33: Sub-Req. 2, Record Length Lo 02MODBUS Application Protocol Specification V1.1b3 Modbus
+L1425@P33: April 26, 2012 http://www.modbus.org 34/50
+L1426@P33: MB Server Sends mb_exception_rsp EXIT
+L1427@P33: MB Server receives mb_req_pdu
+L1428@P33: ExceptionCode = 01
+L1429@P33: YES
+L1430@P33: NO
+L1431@P33: NO
+L1432@P33: ExceptionCode = 02
+L1433@P33: YES
+L1434@P33: NO
+L1435@P33: ExceptionCode = 03
+L1436@P33: YES
+L1437@P33: ENTRY
+L1438@P33: ReadGeneralReference == OK
+L1439@P33: MB Server Sends mb_rsp
+L1440@P33: NO
+L1441@P33: YES
+L1442@P33: 0x07  Byte Count  0xF5
+L1443@P33: Function code
+L1444@P33: supported
+L1445@P33: Reference Type == OK
+L1446@P33: AND
+L1447@P33: File Number == OK
+L1448@P33: AND
+L1449@P33: Record number == OK
+L1450@P33: AND
+L1451@P33: Starting Address + Register length == OK
+L1452@P33: ExceptionCode = 04
+L1453@P33: Request Processing
+L1454@P33: For each Sub-Req
+L1455@P33: Figure 24: Read File Record state diagram
+L1456@P33: 6.15 21 (0x15) Write File Record
+

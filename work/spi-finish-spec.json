@@ -1,0 +1,38 @@
+{
+  "technology": "spi",
+  "source_manifest": "work/spi-primary/manifest.json",
+  "source_read_scopes": {
+    "https://www.nxp.com/docs/en/application-note/AN3020.pdf": "OriginalAN3020Rev0 September2005 printed1-3,7-9,12-14 actualread: selectedi.MXcontrollerpacket/FIFO/two-stageclock/drive/ready variability; examples notuniversaldefaults.",
+    "https://ww1.microchip.com/downloads/en/DeviceDoc/61132B.pdf": "OriginalPIC32MXfamilycompilation DS61132B. ActualselectedDS61106E2008 section23 printed23-2,23-7/8,23-20/21,23-33/35/36 read. Notallfamily chapters; device-specificdatasheets requiredforelectricallimits."
+  },
+  "additional_field_meanings": {
+    "local_timing_evidence.master_node_id": "Actual confirmed canonical clock owner, not assigned ECU.",
+    "local_timing_evidence.chip_select": "Actual selected targetCS binding.",
+    "local_timing_evidence.word_length_bits": "Actual positive integer word length qualified bydevice.",
+    "local_timing_evidence.duplex_mode": "Actual full/halfduplex singleSPI transfer, no dualquad inference.",
+    "local_timing_evidence.cpol": "Actual integer idlelevel0/1.",
+    "local_timing_evidence.cpha": "Actual integer samplingphase0/1.",
+    "local_timing_evidence.cs_setup_bound_us": "Actual total transactionpreclock guard upperbound.",
+    "local_timing_evidence.inter_transfer_gap_us": "Actual summed nonclockwait/hold/gap upperbound, notnominalminimum.",
+    "local_timing_evidence.transfer_bits_bound": "Actual whole transaction clock pulse upperbound includingcommand/address/dummy/packing.",
+    "local_timing_evidence.bitrate_bps": "Actual qualifiedclock for selected controller/target/PCB.",
+    "local_timing_evidence.source": "Actual device/transaction trace or datasheet source.",
+    "local_timing_evidence.confirmed": "Explicit confirmation of whole-device transaction proof, never a nominalclock default.",
+    "bitrate": "Actual device-qualified selected SCK, no universal minimum/50MHz source default. Separate rate_model positive input requirement and actual controller/target/PCB limit.",
+    "payload_bytes": "Actual data bytes separate whole command/address/dummy/packing and simultaneous TX/RX. No65535byte universal SPI limit."
+  },
+  "additional_verified_paths": [
+    "backend/engineering/capacity/calculators.py"
+  ],
+  "scope": [
+    "Everyexported SPIform/local-devicefieldindividuallyreviewed. Actualcontrollerprofile/mode/word/order/duplex/CS/PHY/codec/schedule separate, no50MHz/65535/CAN/Ethernetdefault. No literatureuniversalSPIrateexists; sourceexamples150k/1.5M/6M/10M arenotbaseline.",
+    "AllfourCPOL/CPHA modes, actualhigh/low/rise/fall/setup/hold/CS/inactive/samplewindowschecked. PIC32PBCLK/2(BRG+1),BRG0..511/word8,16,32/SMPtarget0/idlewidthchange/framedCKE0 andi.MX1twostagedividers separatelyselected.",
+    "Full-duplexTX/RX clockshared, singlelanephasecommand/address/dummy/data and wholebusysetup/hold/gap/readybound distinctfunctionalE2E/freshness. SourceREADY600ns example not guaranteed upperbound.",
+    "Existing conservative SPI_CONFIRMED_TRANSFER_BOUND_V1/SERIAL_MASTER_BUSY_WINDOW_V1 executor retained onlyactualconfirmed wholetransactionenvelope; combinedinter_transfer_gap_us must boundall nonclockhold/waits, source/type required. No full controller emulation or generalQSPImodel.",
+    "MalformedCPOL/CPHA/word/clock/transfer fields nowstrictlytyped beforetiming, no int(.5)/boolcoercion; conflictingnativeclock/mode/selection andregisteredquad cannotreuse singleserialevidence."
+  ],
+  "not_certified": [
+    "No universalSPIstandard/electricaldefaults orfullPHY/codec/controllerqualification. Actualselected device datasheets/conditions/layout/wholetrace remainrequired.",
+    "Remainingindividual/globalreviews,cumulativegateandproductiondeliverypending."
+  ]
+}

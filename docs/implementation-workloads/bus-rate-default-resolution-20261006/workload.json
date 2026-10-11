@@ -1,0 +1,479 @@
+{
+  "goal_id": "bus-rate-default-resolution-20261006",
+  "goal_type": "PROTOCOL_RATE_DEFAULTS_AND_SIZING",
+  "repository": "I:\\PycharmProjects\\My_first_Network_Simulator",
+  "project_scope": "All registered NIS bus profiles and project-scoped defaults",
+  "requested_change": "Remove unused containers; resolve and persist native simulation rates; mark comparable-system assumptions; propose sufficient legal rates and industry-appropriate alternatives",
+  "kind": "implementation",
+  "modify_code": true,
+  "allow_repair": true,
+  "required_outcomes": [
+    "container_cleanup",
+    "native_default_resolution",
+    "marked_comparison_proposals",
+    "capacity_rate_and_bus_proposals",
+    "production_delivery"
+  ],
+  "constraints": [
+    "TechnologyProfile SSOT",
+    "Preserve explicit project values",
+    "Simulation assumptions are not hardware proof"
+  ],
+  "forbidden_changes": [
+    "Foreign protocol rate fallback",
+    "Central database writes from user values",
+    "Product database tests",
+    "Release gate bypass",
+    "Historical image or volume pruning"
+  ],
+  "validation_requirements": [
+    "targeted_regression",
+    "full_release_gate",
+    "production_verification"
+  ],
+  "unresolved_decisions": [],
+  "files_inspected": [
+    "backend/nis/communication/catalog.py",
+    "backend/nis/communication/registry.py",
+    "backend/nis/communication/technologies/lin/profile.json",
+    "backend/nis/communication/technologies/can_fd/profile.json",
+    "backend/nis/agent/tools/wizard_generation.py",
+    "backend/nis/engineering/capacity/dimensioning.py",
+    "backend/nis/engineering/capacity/sizing_service.py",
+    "backend/nis/interfaces/http/engineering.py",
+    "backend/nis/workflow/services/service.py",
+    "backend/nis/agent/tools/validation.py",
+    "frontend/src/features/communication/lib/technology-parameters.ts",
+    "frontend/src/features/communication/lib/technology-parameters.test.mjs",
+    "frontend/src/features/simulation/ui/simulation-wizard.tsx",
+    "frontend/src/features/workflow/lib/workflow-api.ts",
+    "backend/tests/test_simulation_parameter_defaults.py",
+    "backend/tests/test_bus_rate_planning.py",
+    "frontend/e2e/technology-parameter-review.spec.ts",
+    "backend/nis/communication/technologies/ethernet/profile.json",
+    "backend/nis/communication/technologies/lin/rules.py",
+    "backend/nis/communication/technologies/modbus_rtu/profile.json",
+    "backend/nis/communication/technologies/can_fd/parameters.py",
+    "backend/nis/communication/technologies/rs422/profile.json",
+    "backend/nis/communication/technologies/rs485/profile.json",
+    "backend/nis/communication/technologies/spi/profile.json",
+    "backend/tests/test_technology_full_parameter_audit.py",
+    "backend/tests/test_technology_profile_semantics.py",
+    "frontend/src/features/communication/lib/technology-projection.json",
+    "frontend/src/features/agent/lib/inventory-vocabulary.json",
+    "docs/migrations/structure_mapping.csv",
+    "frontend/src/features/engineering/ui/engineering-workbench.tsx"
+  ],
+  "files_changed": [
+    "backend/nis/agent/tools/validation.py",
+    "backend/nis/agent/tools/wizard_generation.py",
+    "backend/nis/communication/catalog.py",
+    "backend/nis/communication/registry.py",
+    "backend/nis/communication/technologies/can_fd/parameters.py",
+    "backend/nis/communication/technologies/can_fd/profile.json",
+    "backend/nis/communication/technologies/ethernet/profile.json",
+    "backend/nis/communication/technologies/lin/profile.json",
+    "backend/nis/communication/technologies/lin/rules.py",
+    "backend/nis/communication/technologies/modbus_rtu/profile.json",
+    "backend/nis/communication/technologies/rs422/profile.json",
+    "backend/nis/communication/technologies/rs485/profile.json",
+    "backend/nis/communication/technologies/spi/profile.json",
+    "backend/nis/engineering/capacity/dimensioning.py",
+    "backend/nis/engineering/capacity/sizing_service.py",
+    "backend/nis/interfaces/http/engineering.py",
+    "backend/tests/test_bus_rate_planning.py",
+    "frontend/e2e/technology-parameter-review.spec.ts",
+    "frontend/src/features/communication/lib/technology-parameters.test.mjs",
+    "frontend/src/features/communication/lib/technology-parameters.ts",
+    "frontend/src/features/simulation/ui/simulation-wizard.tsx",
+    "frontend/src/features/workflow/lib/workflow-api.ts",
+    "backend/nis/communication/technologies/5g/profile.json",
+    "backend/nis/communication/technologies/can_aerospace/profile.json",
+    "backend/nis/communication/technologies/ccp/profile.json",
+    "backend/nis/communication/technologies/can_xl/profile.json",
+    "backend/nis/communication/technologies/generic_ethernet/profile.json",
+    "backend/nis/communication/technologies/goose/profile.json",
+    "backend/nis/communication/technologies/iec60870_5_101/profile.json",
+    "backend/nis/communication/technologies/iec61162/profile.json",
+    "backend/nis/communication/technologies/interbus/profile.json",
+    "backend/nis/communication/technologies/j1939/profile.json",
+    "backend/nis/communication/technologies/knx_tp/profile.json",
+    "backend/nis/communication/technologies/lonworks/profile.json",
+    "backend/nis/communication/technologies/lorawan/profile.json",
+    "backend/nis/communication/technologies/lvds/profile.json",
+    "backend/nis/communication/technologies/mipi_csi2/profile.json",
+    "backend/nis/communication/technologies/mipi_dsi/profile.json",
+    "backend/nis/communication/technologies/modbus_ascii/profile.json",
+    "backend/nis/communication/technologies/most/profile.json",
+    "backend/nis/communication/technologies/mvb/profile.json",
+    "backend/nis/communication/technologies/nfc/profile.json",
+    "backend/nis/communication/technologies/nmea0183/profile.json",
+    "backend/nis/communication/technologies/obd2/profile.json",
+    "backend/nis/communication/technologies/one_wire/profile.json",
+    "backend/nis/communication/technologies/sampled_values/profile.json",
+    "backend/nis/communication/technologies/sercos_iii/profile.json",
+    "backend/nis/communication/technologies/spacewire/profile.json",
+    "backend/nis/communication/technologies/tsn/profile.json",
+    "backend/nis/communication/technologies/usb/profile.json",
+    "backend/nis/communication/technologies/wireless_m_bus/profile.json",
+    "frontend/src/shared/api/types.ts",
+    "backend/tests/test_technology_full_parameter_audit.py",
+    "backend/tests/test_technology_profile_semantics.py",
+    "frontend/src/features/communication/lib/technology-projection.json",
+    "frontend/src/features/agent/lib/inventory-vocabulary.json",
+    "docs/migrations/structure_mapping.csv",
+    "frontend/src/features/engineering/ui/engineering-workbench.tsx",
+    "backend/nis/engineering/capacity/service.py",
+    "backend/nis/engineering/routing/validation.py",
+    "backend/tests/test_technology_registry_metadata.py",
+    "backend/tests/test_runtime_storage.py"
+  ],
+  "revision_before": {
+    "backend/nis/agent/tools/validation.py": "7473b79629574e985b43decf18e8fb5c5962d09613994c34e433ab1f9cd249e7",
+    "backend/nis/agent/tools/wizard_generation.py": "6e433d9a009d74000c2de73e704f7af92a7c8d733be91f2641bb6253ae188d32",
+    "backend/nis/communication/catalog.py": "2c3f86109d134c5714d874619ee5b6a6aa4dad299ca391edd698a66366a574ec",
+    "backend/nis/communication/registry.py": "8ea1cc670144d33bce0a9dddf60b584f994099fed3bddab557a4d255b3864d1d",
+    "backend/nis/communication/technologies/can_fd/parameters.py": "95021d7255d303b222d09b250a7e7b2f03d0a2979f8dbe280e2279e274f57e51",
+    "backend/nis/communication/technologies/can_fd/profile.json": "41f239452c67105c487fec3584896ba12cd7a55470b29138ae4a9528c79cd244",
+    "backend/nis/communication/technologies/ethernet/profile.json": "84417217d4da39d7f8276f48aa30b918ecac630490e4ba8a0994f81f01216aa4",
+    "backend/nis/communication/technologies/lin/profile.json": "e213cddc1612a4be395e1bae41621279133071f9a776d247a65d2b63c13c88f4",
+    "backend/nis/communication/technologies/lin/rules.py": "311532ec839328cab5fe4cd90931c430ae7a994d19faa7fa12164485b01a56ff",
+    "backend/nis/communication/technologies/modbus_rtu/profile.json": "a2120ce41d96e07a7e068a31d2bca5075ecbcebb928f0f2538f156dfe37fd46a",
+    "backend/nis/communication/technologies/rs422/profile.json": "65aac4cb9c7098a7fff6671346c386fc23a71a3df67d0a9b72972a55a8f084f4",
+    "backend/nis/communication/technologies/rs485/profile.json": "185d2207c2e58b681a224c48b43c7df6745855fb2cb5b525d1ed00bc8db953ba",
+    "backend/nis/communication/technologies/spi/profile.json": "fd2917b88c515c4dfdbaf318f7e2c98131b8c6ae0b33763c9518a48629982305",
+    "backend/nis/engineering/capacity/dimensioning.py": "9b6b537157139d865aaa9ff6188f822e658541ca0d3c095de23b3862dea4954a",
+    "backend/nis/engineering/capacity/sizing_service.py": "6b7baae8e80ee8e85c6aad4604c1fa957b0ae645c9f224d1cdff7051bf945ea2",
+    "backend/nis/interfaces/http/engineering.py": "c9c3a77ae07b0fef0bd3d4dec8e47b75d48089d241835e9becce58afcce25fe1",
+    "backend/tests/test_bus_rate_planning.py": "8f7bca14f804fc41833f05f8e4ced1dd3a92a634ba788c47c1aed4227d05b8af",
+    "frontend/e2e/technology-parameter-review.spec.ts": "f65483b5982bd85af015f002602f9b8e30de2dfa1810d2edcc0cd16227167750",
+    "frontend/src/features/communication/lib/technology-parameters.test.mjs": "80bbe87817e136cb6dfbe1442411adf1339844782b57a5dceba332fd746c66e8",
+    "frontend/src/features/communication/lib/technology-parameters.ts": "6d36c6070125da13cf237809a24660740614ed21084b6674bd8daead09a4e12f",
+    "frontend/src/features/simulation/ui/simulation-wizard.tsx": "96931a8bb983bb15bb9fd8ba04dbedfbbbd1af905e3895710722c14f7e477a28",
+    "frontend/src/features/workflow/lib/workflow-api.ts": "1b5704599f88b302af878a7e8fb1a41efbb702e0aa868b76963cd3f98584436b",
+    "backend/nis/communication/technologies/5g/profile.json": "edd417283fcdd731fa327eca34700abf35ef5a1d6881aa2ba6efa643d21e0f0b",
+    "backend/nis/communication/technologies/can_aerospace/profile.json": "c5d841e6e14f083b3857b61e00543d710dbcd9834a174cd6abee46c36e559dde",
+    "backend/nis/communication/technologies/ccp/profile.json": "e964487d9781d9f03bbec7b91e2743c1597d36b25b0c93a1ad22e8e233ec1c8f",
+    "backend/nis/communication/technologies/can_xl/profile.json": "52e9257a406ffcedebd3c33195561cf311335033e9f202316ee9dd4f7385ae4a",
+    "backend/nis/communication/technologies/generic_ethernet/profile.json": "9654a7aee1dd4aa862ca3ecf4310a0c66e261442216257a3f65f8f8b72104c5d",
+    "backend/nis/communication/technologies/goose/profile.json": "1c00cac032075134ce40a9dc41969c88cf60f0afa08a4e6cfba81428d9526920",
+    "backend/nis/communication/technologies/iec60870_5_101/profile.json": "c6d10d33041d71e9621cefaba2da780779d83efa90bb91ef519bcd32ef3d8a87",
+    "backend/nis/communication/technologies/iec61162/profile.json": "267ba69acaffccccd587ecc5837d33b114869cba57ce5cca2d8444656b69a049",
+    "backend/nis/communication/technologies/interbus/profile.json": "ba504fd5ac3769f336f2412a49ab0babaa39f2fde3cf5ccdca8f9117ff94f270",
+    "backend/nis/communication/technologies/j1939/profile.json": "fab685b8b6a6cbad41362bfb351a62e00ea6e90d1a917ee556f4a33528ab6f09",
+    "backend/nis/communication/technologies/knx_tp/profile.json": "92668693cd7a21cedb1f043ae88adf1a9879a1aa80f6ec0a863b92275c48559b",
+    "backend/nis/communication/technologies/lonworks/profile.json": "3b3698d821b73ddf263b732c3f61895eb5e25716b68f7ea8ebb39fbb02db64bf",
+    "backend/nis/communication/technologies/lorawan/profile.json": "ea676cea1c46071bb39cbc5b92d37296042faf76f1d995a1a6a89f39d56e54f8",
+    "backend/nis/communication/technologies/lvds/profile.json": "f716cffebefaf59a10b5ef4932b5893195350f73532821a1bbc0b12a36d1a433",
+    "backend/nis/communication/technologies/mipi_csi2/profile.json": "36e3eaeb9701cb0a3e0d58019cfb8905c07f21877e30bb80898a30cdcb52ba46",
+    "backend/nis/communication/technologies/mipi_dsi/profile.json": "2c17d078cde1510bc7ce116faf1fd01dd2bf61bd11e072673539acb87195e41e",
+    "backend/nis/communication/technologies/modbus_ascii/profile.json": "d4d4b2a2f3e819deb19477cc4506ea8774269d8166e1ea3b0a4f2d499cb4acc0",
+    "backend/nis/communication/technologies/most/profile.json": "55c19ce1ce240b4fd2b93ea62cc66fdb48a63338a45d1623b0d7aa00a2790bde",
+    "backend/nis/communication/technologies/mvb/profile.json": "c0b7c29b63a1fd71483cda028ff92b7944f62ad37442cda43348a730666f0a6d",
+    "backend/nis/communication/technologies/nfc/profile.json": "f0564f5d8c7ec4ff3b951f6d70f3b78030a3614722e307b355c1281c995c9ad0",
+    "backend/nis/communication/technologies/nmea0183/profile.json": "6971236119993e588272d90bbe6bb5472cc23ee832e89fe72cb78bdb0b82eb63",
+    "backend/nis/communication/technologies/obd2/profile.json": "955a35f52d3bfd9ad42c239acac3b7b591dfe542cb813cd38ba1dcf1f64f88c2",
+    "backend/nis/communication/technologies/one_wire/profile.json": "0261e860b0981898267df1a643e1ac85bb264dcabfb11dd277e10322c71bfdc1",
+    "backend/nis/communication/technologies/sampled_values/profile.json": "5c0bda5471fab3d861d1de80989624f4a6ee087d58948bcc3b9ea30eca75d8f6",
+    "backend/nis/communication/technologies/sercos_iii/profile.json": "87600f5ca08f674fe9ea9280edde0286b66f336429be2d5e62200183cc1889e8",
+    "backend/nis/communication/technologies/spacewire/profile.json": "350a8714df6f501e5383d76764bb99b1acc04634cc3ed48da6cb86df02363d8b",
+    "backend/nis/communication/technologies/tsn/profile.json": "3dd3783608bdceee83f3b69051dba0aebe849ad3871e004c8d48de29115b74cf",
+    "backend/nis/communication/technologies/usb/profile.json": "a86dfa383f2a96940d68fa899e8ecdb04cfaf4435a3eba37ea960f1b86babc60",
+    "backend/nis/communication/technologies/wireless_m_bus/profile.json": "06a464b0e8ad9ffa55381a6b925d85cc6c302c3820c61fdbb19a013b66507ab6",
+    "frontend/src/shared/api/types.ts": "c9a724d332d31daa2d448262b2b51ec44699c2e0048230325893e5c3bc94616e",
+    "backend/tests/test_technology_full_parameter_audit.py": "3c1f043195f9dbda54eca85e5f3f8f1c99f2592992c6dde9afcfb863dd314478",
+    "backend/tests/test_technology_profile_semantics.py": "f7e0ad0152fd6a20a4db32a1a7d64ec46008d7f295555f40713e0baf4f3cefb0",
+    "frontend/src/features/communication/lib/technology-projection.json": "4c6626e966a1116a7e2a5715e0b4a38fa5226d73d51e6d9a07a1b8296431fb62",
+    "frontend/src/features/agent/lib/inventory-vocabulary.json": "989ce86a3a3ae8876e1c94e29fea4c44e0984cfd6849f3b084dd382e1006ad89",
+    "docs/migrations/structure_mapping.csv": "a85e3ab15aa31e21e9595cf2ef659e16b286edf687fd92eed6c3e406c5ac2690",
+    "frontend/src/features/engineering/ui/engineering-workbench.tsx": "89d08ca28602c456b8fae94ee3e7b1f611add7d065a4942da10b26ee662c38d2",
+    "backend/nis/engineering/capacity/service.py": "48aa99f1f58d158135cfc4e9f36871cbdf61b14507de28c8930a5f09cefc9c04",
+    "backend/nis/engineering/routing/validation.py": "c36d445d207e84dc39bdd70c6577d0a4361c8381724f8f8af72941c1e61d018c",
+    "backend/tests/test_technology_registry_metadata.py": "4ebe739a44fda5c2d7e199efeac12df37b45abb7a7c16c284d3e8f0cb46be128",
+    "backend/tests/test_runtime_storage.py": "9efa55b906756811d73f09b6144309db6528a9a0aa811a40a9060d310ee322ef"
+  },
+  "implementation_plan": [
+    "Resolve profile presets and conditional defaults before schema minima",
+    "Keep native aliases and explicit overrides across all paths",
+    "Reuse native frame estimators and registry alternatives for rate planning",
+    "Save assumptions to project files with provenance",
+    "Deploy exact full-gate PASS image",
+    "Replace remaining meaningless rate minima with explicit owned-protocol comparison scenarios; preserve inactive zero reservations",
+    "Replace remaining meaningless rate minima with explicit owned-protocol comparison scenarios; preserve inactive zero reservations",
+    "Replace remaining meaningless rate minima with explicit owned-protocol comparison scenarios; preserve inactive zero reservations",
+    "Replace remaining meaningless rate minima with explicit owned-protocol comparison scenarios; preserve inactive zero reservations",
+    "Replace remaining meaningless rate minima with explicit owned-protocol comparison scenarios; preserve inactive zero reservations",
+    "Reconcile generated projection and migration inventory; assert requested LIN baseline and exact profile-owned applicability projection in existing audits",
+    "Await actual project-default POST completion in E2E; replace three obsolete CAN-FD 500k data-phase starter expectations with requested 2M; preserve explicit-user-value and hardware-proof checks",
+    "Remove manual port creation CAN-FD constants; bind create/edit rates to native schema identities and profile-owned rate fields; store newly entered rates as project-scoped simulation assumptions without invented actual hardware values"
+  ],
+  "completion_status": "COMPLETED",
+  "delivery": {
+    "decision": "YES",
+    "authorization": "User AGENTS.md standing verified production delivery rule",
+    "target": "Canonical NetworkIS stack ports13500/15050",
+    "tested_version": "sha256:0b64dbcd013554f82c2aa49c51a6bc2538043a3c1a8cd57911016a4bdd4f2048",
+    "running_version": "sha256:0b64dbcd013554f82c2aa49c51a6bc2538043a3c1a8cd57911016a4bdd4f2048",
+    "checks": {
+      "release": {
+        "status": "PASSED",
+        "evidence": [
+          {
+            "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\delivery-runtime-fixed-20261006\\fb2c54490c3a\\receipt.json",
+            "sha256": "ba3c03dcf079b081d7f4dcb891c2c2711c3f2edd8e640ca150ec863bfa40b825"
+          }
+        ]
+      },
+      "deployment": {
+        "status": "PASSED",
+        "evidence": [
+          {
+            "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\bus-rate-default-resolution-20261006\\delivery-final.log",
+            "sha256": "741814146e5dc068a668e149b85bbed73d9b2bb6014e4c6e08f08545343cef3b"
+          },
+          {
+            "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\bus-rate-default-resolution-20261006\\production-verification.json",
+            "sha256": "5a5585a18b35493b893e9b4c84a66d36b53589530a19e2c6c05215c27f0dda63"
+          }
+        ]
+      },
+      "health": {
+        "status": "PASSED",
+        "evidence": [
+          {
+            "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\bus-rate-default-resolution-20261006\\production-verification.json",
+            "sha256": "5a5585a18b35493b893e9b4c84a66d36b53589530a19e2c6c05215c27f0dda63"
+          }
+        ]
+      },
+      "functional": {
+        "status": "PASSED",
+        "evidence": [
+          {
+            "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\bus-rate-default-resolution-20261006\\production-ui.json",
+            "sha256": "1236d22a345b1ee7f82649b7d05e861542cee4ac2613cc4fb6c7adf01f3c88cd"
+          },
+          {
+            "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\bus-rate-default-resolution-20261006\\production-review.json",
+            "sha256": "e91f3e92212c8c332f8b2cff4a0fd29a40ab45d1522fc78017dcbe926b66e7d7"
+          }
+        ]
+      }
+    }
+  },
+  "outcomes": {
+    "container_cleanup": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\bus-rate-default-resolution-20261006\\docker-before.json",
+          "sha256": "bb1536122160be7c6dbac47b9eb3d363528b208b03f28aa215fdacb03669570c"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\bus-rate-default-resolution-20261006\\docker-final.txt",
+          "sha256": "12c9884f74c958dafa9e47901629ac2dd943f4811595b1c19faa445d145758c2"
+        }
+      ]
+    },
+    "native_default_resolution": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\bus-rate-default-resolution-20261006\\registered-rate-audit.json",
+          "sha256": "82b43e8173afbe9c2176c85fefd0a9a3e687f013cc4dbf0d5be462e6aebef8c2"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\bus-rate-default-resolution-20261006\\production-ui.json",
+          "sha256": "1236d22a345b1ee7f82649b7d05e861542cee4ac2613cc4fb6c7adf01f3c88cd"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\bus-rate-default-resolution-20261006\\targeted-backend-final.log",
+          "sha256": "7e7778a93d9ece5708720fce8cb2cff68f571e5ac693c58a923f532a5e8978ac"
+        }
+      ]
+    },
+    "marked_comparison_proposals": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\bus-rate-default-resolution-20261006\\registered-rate-audit.json",
+          "sha256": "82b43e8173afbe9c2176c85fefd0a9a3e687f013cc4dbf0d5be462e6aebef8c2"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\bus-rate-default-resolution-20261006\\production-ui.json",
+          "sha256": "1236d22a345b1ee7f82649b7d05e861542cee4ac2613cc4fb6c7adf01f3c88cd"
+        }
+      ]
+    },
+    "capacity_rate_and_bus_proposals": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\bus-rate-default-resolution-20261006\\targeted-backend-final.log",
+          "sha256": "7e7778a93d9ece5708720fce8cb2cff68f571e5ac693c58a923f532a5e8978ac"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\bus-rate-default-resolution-20261006\\production-review.json",
+          "sha256": "e91f3e92212c8c332f8b2cff4a0fd29a40ab45d1522fc78017dcbe926b66e7d7"
+        }
+      ]
+    },
+    "production_delivery": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\delivery-runtime-fixed-20261006\\fb2c54490c3a\\receipt.json",
+          "sha256": "ba3c03dcf079b081d7f4dcb891c2c2711c3f2edd8e640ca150ec863bfa40b825"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\bus-rate-default-resolution-20261006\\delivery-final.log",
+          "sha256": "741814146e5dc068a668e149b85bbed73d9b2bb6014e4c6e08f08545343cef3b"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\bus-rate-default-resolution-20261006\\production-verification.json",
+          "sha256": "5a5585a18b35493b893e9b4c84a66d36b53589530a19e2c6c05215c27f0dda63"
+        }
+      ]
+    }
+  },
+  "validations": {
+    "targeted_regression": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\bus-rate-default-resolution-20261006\\targeted-backend-final.log",
+          "sha256": "7e7778a93d9ece5708720fce8cb2cff68f571e5ac693c58a923f532a5e8978ac"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\bus-rate-default-resolution-20261006\\targeted-frontend.log",
+          "sha256": "6dcbbc3bb0648e196d00eaba49027275a6ac9eca3302b8aafc0c050aba311a42"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\bus-rate-default-resolution-20261006\\typecheck.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\bus-rate-default-resolution-20261006\\targeted-registry-performance.log",
+          "sha256": "12080d8e3fce5b102f4b41225db28f59f4196298f9b3799700f16b6e5aee120c"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\bus-rate-default-resolution-20261006\\targeted-runtime-lock.log",
+          "sha256": "98b65c4fbca9a2b3b615fb0e78b964f9605608576a2f47e3d49a8e0a2fb7676e"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\bus-rate-default-resolution-20261006\\runtime-lock-fixed-replay.json",
+          "sha256": "59bb60f17e966ea6ccdbcf70f1889e9c19b924b175793528602c5754c73564ab"
+        }
+      ]
+    },
+    "full_release_gate": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\delivery-runtime-fixed-20261006\\fb2c54490c3a\\receipt.json",
+          "sha256": "ba3c03dcf079b081d7f4dcb891c2c2711c3f2edd8e640ca150ec863bfa40b825"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\delivery-runtime-fixed-20261006\\fb2c54490c3a\\backend-tests.log",
+          "sha256": "e28da5becdef4af88bd07ea7ee924c7e3c9349c2acc333113c27def62a16bc02"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\delivery-runtime-fixed-20261006\\fb2c54490c3a\\browser-e2e.log",
+          "sha256": "65cc5bb1eb39bac1233e687575b5506af9891020bb1ad4aee7520856da228a5c"
+        }
+      ]
+    },
+    "production_verification": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\bus-rate-default-resolution-20261006\\production-verification.json",
+          "sha256": "5a5585a18b35493b893e9b4c84a66d36b53589530a19e2c6c05215c27f0dda63"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\bus-rate-default-resolution-20261006\\production-ui.json",
+          "sha256": "1236d22a345b1ee7f82649b7d05e861542cee4ac2613cc4fb6c7adf01f3c88cd"
+        }
+      ]
+    }
+  },
+  "initial_revision": {
+    "backend/nis/communication/catalog.py": "1ef917d73dd1ae47bcae55f10e3036f49653c075b182b58bfa90dc37fe829cad",
+    "backend/nis/communication/registry.py": "24fc5998ea0e6f57724e5680e8b81d4f6a4e7822517e49a51b3f29ad9e7c8b1e",
+    "backend/nis/communication/technologies/lin/profile.json": "6d73193173e11b6512bf73d5127b846b7a69f081e0f7fdb9c9ba5e807a785bd0",
+    "backend/nis/communication/technologies/can_fd/profile.json": "a0c6d86dea8fb5bac4ff119138f087a8124645b45b4f7e791c6c1718c3874a29",
+    "backend/nis/agent/tools/wizard_generation.py": "f166b2d10f0e11255fe597af7026944d11d8df23159187708e7694b8ca2e7c58",
+    "backend/nis/engineering/capacity/dimensioning.py": "b60ec7dc83d925ae11f15857810f41c95990819fad4625eb38687691da1d3485",
+    "backend/nis/engineering/capacity/sizing_service.py": "dfd8e06742e9d89c9ee7ac1600222e187e5ac788f6ebc8cd5aba5d457a930fc1",
+    "backend/nis/interfaces/http/engineering.py": "454570e50642926cf846bebdf16a1dfe8d84e1a21cb1792828ad968f02a71f52",
+    "backend/nis/workflow/services/service.py": "1257e6e864158b44775ccdc887043a5a1af5cc2d3b17d6118e71d0cc1058d97a",
+    "backend/nis/agent/tools/validation.py": "24e554d6b3e976fa80d3e0d33865b99c93e778bcbab701672cb0216c4447d64a",
+    "frontend/src/features/communication/lib/technology-parameters.ts": "e2f5a0df5729571e3e5407f04d06f16adc576530699ad463edf70ff982de1b38",
+    "frontend/src/features/communication/lib/technology-parameters.test.mjs": "1673d3f377588cd8681ba176de2e24a53e771cb678139663cb0e16314ade8244",
+    "frontend/src/features/simulation/ui/simulation-wizard.tsx": "cc984f76905ac6898b27c9e0a2e6bd13f1af2fd38b86b1425eda0c02b744e1b0",
+    "frontend/src/features/workflow/lib/workflow-api.ts": "3f4c6c266447c2bb149ad4954e0fac1158344d8bbace600a8870ca595f95dd94",
+    "backend/tests/test_simulation_parameter_defaults.py": "129835e72a58a4f4c9bf723ae291c19cec9eb1406c30a74a2c8fb0591bdbebd9",
+    "backend/tests/test_bus_rate_planning.py": null,
+    "frontend/e2e/technology-parameter-review.spec.ts": "715a94260c90c979433f1ec9c5f2b6bdaebc12760d170e2984ae07d2c8627cc4",
+    "backend/nis/communication/technologies/ethernet/profile.json": "84417217d4da39d7f8276f48aa30b918ecac630490e4ba8a0994f81f01216aa4",
+    "backend/nis/communication/technologies/lin/rules.py": "df4c9767cbe1363a26b610febdcfb7898f3da14c8fe04e3012270a95983cb9a2"
+  },
+  "remaining_findings": [],
+  "repair": {
+    "finding_ids": [
+      "runtime-crash-virtualenv-launcher"
+    ],
+    "root_cause": "The Windows virtualenv executable is a launcher with a child interpreter. Waiting for the killed launcher does not synchronously await release of the child-held file lock; replay reproduces ACTIVE despite aged files. The crash test must directly launch and kill the base interpreter (stdlib-only child).",
+    "owner": "TEST_DATA",
+    "first_failing_layer": "backend/tests/test_runtime_storage.py crash subprocess setup",
+    "reproduction": "diagnose-runtime-lock.py fails at iteration 8; process tree records separate launcher and interpreter; expired timestamps remain unchanged and cleanup reports ACTIVE.",
+    "evidence": [
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\bus-rate-default-resolution-20261006\\runtime-lock-reproduction.json",
+        "sha256": "0c187711ac917dcc0e06365ff74032d7c4fdfcf600c6ba192c96a81c36f2ee01"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\delivery-performance-20261006\\3777c07eff88\\backend-tests.log",
+        "sha256": "cf00c2e0941079dbb673e9b3bddc6f516ac07e9d3cfc235088c3a4464f08ccb7"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\bus-rate-default-resolution-20261006\\targeted-runtime-lock.log",
+        "sha256": "98b65c4fbca9a2b3b615fb0e78b964f9605608576a2f47e3d49a8e0a2fb7676e"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\bus-rate-default-resolution-20261006\\runtime-lock-fixed-replay.json",
+        "sha256": "59bb60f17e966ea6ccdbcf70f1889e9c19b924b175793528602c5754c73564ab"
+      }
+    ],
+    "weaken_assertions_to_pass": false,
+    "affected_files": [
+      "backend/tests/test_runtime_storage.py"
+    ],
+    "required_fix": "Crash the actual lock-holder, retain all active protection/expiry/deletion assertions.",
+    "acceptance_criteria": [
+      "Live child remains protected",
+      "Killed lock holder is joined before cleanup",
+      "Expired crashed tree is removed",
+      "Recent, foreign and linked trees remain protected"
+    ],
+    "status": "VERIFIED"
+  },
+  "before": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\bus-rate-default-resolution-20261006\\before-manifest.json",
+      "sha256": "6c0d86e8a98069cb13ff60feab37d1f84e12545beb961520530734ccc8900a9e"
+    }
+  ],
+  "after": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\bus-rate-default-resolution-20261006\\after-manifest.json",
+      "sha256": "928d14d101589989c01deb4987b8d3fcdd21a00822d1114a1f8918e9f5e858e6"
+    }
+  ],
+  "diff": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\bus-rate-default-resolution-20261006\\task.diff",
+      "sha256": "5aa83f2f5570c32d0993b801de361973be9b822008b89926195f33d61e0b4514"
+    }
+  ]
+}

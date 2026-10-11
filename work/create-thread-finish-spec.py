@@ -1,0 +1,25 @@
+import json,sys
+from pathlib import Path
+sys.path.insert(0,str(Path.cwd()))
+from backend.communication.technologies import thread as R
+spec=dict(technology='thread',source_manifest='work/thread-primary/manifest.json',source_read_scopes={
+ R.OV:'Original16-page October5 2015 overview, actual printed1/2/6/10-16 read. 250kbps/IPv6/6LoWPAN/MACsecurity/parentsleep; marketing typical<100ms not used as guaranteed default.',
+ R.ROLE:'Original current primer, actual forwarding roles/type/partitions/device-limit sections read, lastupdate28September2026. Current MeshExtender/ECD labels; no claim to complete proprietary Threadedition.',
+ R.IP:'Original primer addressing sections read: scopes/RLOC/ML-EID/application vs topology/anycast/multicast; no fixed addresses or missing graphical RouterID bitwidth inferred.',
+ R.DATA:'Original API selected otDatasetIsValid and dataset size macros/read/update metadata: requiredactive/pendingTLVs, UTF8/control/ULA/PAN/extPAN validators. Pendingdelay not guessed from update API1000ms.',
+ R.FRAG:'Original RFC4944 sections3-5.3 read: IPv6MTU1280, PHYframe127 distinctMAC/security overhead; fragment4/5 headers, 11bitsize/uncompressedoffset8/tagwrap16, overlap/disassociation/timeoutdiscard and≤60s timeout.',
+ R.COMP:'Original RFC6282 selected sections3.1 and4.3 read: 2/3baseIPHC not completeheader,4bitcontext, uncompressedfragment offsets, fourUDPport encodings and explicitlyauthorizedadditionalintegrity checksumelision/restoration.',
+ R.LINK:'Original LinkAPI selected channelrange/support, poll getter/setternotes, retries and CSL160us macro read. poll0clear/≥10ms/max2^26−1 applies documentedOpenThreadAPI, childtimeoutindependent.',
+ R.RADIO:'Original RadioTypes selected constants/enums/clock/frame/channel capability metadata read; actual250000bit/s/62500symbols/s/16us/2symbols/octet/127PSDU and invalidRSSI/power127. Radio source not fullRFqualification.',
+ R.SEC:'Original complete SecurityPolicy publicattributes read: actualflags/rotationhours/routingversion APIvalue; no universalkey/rotation defaults.',
+ R.ROUTER:'Original selected Router/Leader publicAPI summary/GetChildCapacity/IDrange/leaderweight/promotion/demotion/contextreuse sources read. APIwidths not fullThreadwirecodec or actualSDKdefaults.',
+ R.STAMP:'Original short otTimestamp publicattributes seconds/ticks/authoritative read; API uinttypes not assumed fullwireencoding.'},additional_field_meanings={'bitrate':'Actual selected PHYbitrate; reviewed2.4GHz OQPSK250000 conditional sourceproposal only. Inputmin1 is numeric positivity, not a standard radio mode minimum or operational capacity.', 'payload_bytes':'Actual applicationencoded bytes, no127byte cap on application message. Actual PSDU127 andIPv6linkMTU1280/6LoWPAN uncompressedfragment lengths are separate.'},scope=[
+ 'Every exportedThreadfield individually reviewed and sourceshasharchived. Industryneutral ownThreadstack, no inheritedCANretry/gateway orEthernetclock/MTU/defaultapplicationcap.',
+ 'Public Thread/OpenThread documentedbaseline explicitly distinguished from independently registered actualedition; no entireThread1.4.1 licensed spec certified. Actualdevice/revision/dataset/security/RF/path/upperlayer sources mandatory; key/PSKc referenced not stored.',
+ 'Own250kbps2.4GHz OQPSK conditionalproposal, symbol/unit/PPDU serialization and wholeMAC/control/security counts. Channel selectedbit present within mask. Actual PHY/regulatory/interference/CSMA/retries/poll/wholehop evidence separate nominal clock.',
+ 'CurrentMeshExtender/ECD/child/leader roles and capacity, actualchildtable/routerrange; parent for sleepychild, zero externalpoll clearsoverride without implyingzerolatency, CSL160us units plusactualversion/platformsource.',
+ 'Active/pendingdataset presence/UTF8bytecount/control/no broadcastPAN/nonzeroextPAN/strictfdULA64 network; IP_NETWORK coreformat with strict hostbits/version/prefix/subnet checks has direct regressions. ActualtimestampAPItype distinct missingfullwirecodecqualification.',
+ 'IPv6MTU1280 vsradio127; uncompressed datagramsize/8byte offsets/tagwrap/4or5bytefrag/alignment/wholebuffer/timeout/overlapdiscard; IPHCbase2or3 notalwayscompleteheader; actualportencodingbounds andchecksumauthorization/integrity/restoration.',
+ 'Whole source+transport+consumer timing andindependentdeadline/freshness includeactualpoll/hop bounds. LocalThreadno mandatoryborderrouter, externalcommunication requiresownbinding. Defaults cannotconfirm actualidentity/credentials/topology/clock/state/capacity.'
+ ],not_certified=['Public documented parameterbaseline review, not complete licensedThreadedition, hardware RF/MAC/MeshCoP/CSL/codec/PKIcertification, everyimplementationconfigoption or actual network schedule. No executable mesh-capacity model; runtime MODEL_MISSING. Boolean evidence flags do not establish device/wire conformance by themselves.','Remainingindividual/globalreviews,cumulativegateandproductiondeliverypending.'])
+Path('work/thread-finish-spec.json').write_text(json.dumps(spec,indent=2)+'\n')

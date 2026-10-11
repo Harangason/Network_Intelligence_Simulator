@@ -1,0 +1,54 @@
+--- before/backend/nis/agent/tools/proposal_service.py
++++ after/backend/nis/agent/tools/proposal_service.py
+@@ -36,6 +36,11 @@
+ MAX_PROPOSAL_CHANGES = 10_000
+ 
+ 
++def _source_versions():
++    versions = WorkflowStatusService(current_project_id()).get(summary=True)['versions']
++    return {key: versions[key] for key in ('engineering_model', 'routing', 'network_editor', 'parameters')}
++
++
+ def order_change_dependencies(changes: list[dict]) -> list[dict]:
+     """Use the same nested references for review ordering and sequential apply."""
+     from graphlib import TopologicalSorter, CycleError
+@@ -128,6 +133,16 @@
+             result['validation_result'] = {**result.get('validation_result', {}), 'valid': False,
+                 'findings': [*result.get('validation_result', {}).get('findings', []),
+                              {'severity': 'ERROR', 'code': 'DRAFT_REVISION_CHANGED', 'message': str(error)}]}
++        contract = row.get('engineering_contract') or {}
++        source_versions = contract.get('base_source_versions')
++        outdated = (_source_versions() != source_versions
++                    if source_versions is not None else model_revision() != contract.get('base_model_revision')) if result['status'] in {'VALIDATED', 'APPROVED'} else False
++        if outdated:
++            result['status'] = 'OUTDATED'
++            result['validation_result'] = {**result.get('validation_result', {}), 'valid': False,
++                'findings': [*result.get('validation_result', {}).get('findings', []),
++                    {'severity': 'REVIEW', 'code': 'MODEL_REVISION_CHANGED',
++                     'message': 'Projektwerte wurden seit der Vorschlagsprüfung gespeichert oder geändert. Bitte den Vorschlag erneut prüfen und anschließend freigeben.'}]}
+     return result
+ 
+ 
+@@ -377,7 +392,9 @@
+     assert_proposal_source(row)
+     contract = deepcopy(row.get("engineering_contract") or {})
+     envelope(row)
+-    if contract["status"] in {"APPLIED", "REJECTED", "APPROVED"}:
++    if contract["status"] in {"APPLIED", "REJECTED"}:
++        return envelope(row)
++    if contract['status'] == 'APPROVED' and model_revision() == contract.get('base_model_revision'):
+         return envelope(row)
+     contract["validation_result"] = _validate_changes(contract["changes"], proposal_type=row['proposal_type'])
+     inventory_findings = _validate_topology_inventory(row, contract['changes'])
+@@ -385,7 +402,11 @@
+         contract['validation_result']['findings'].extend(inventory_findings)
+         contract['validation_result'].update(valid=False, valid_count=0)
+     contract["status"] = "VALIDATED" if contract["validation_result"]["valid"] else "PROPOSED"
++    contract.pop('approved_by', None)
+     contract["base_model_revision"] = model_revision()
++    # Cheap polling detects source changes; approval/apply still compare the
++    # complete canonical model hash before committing any object.
++    contract['base_source_versions'] = _source_versions()
+     contract["revision"] = str(uuid4())
+     return _write(proposal_id, contract, legacy_status="READY_FOR_REVIEW" if contract["status"] == "VALIDATED" else "DRAFT")
+ 

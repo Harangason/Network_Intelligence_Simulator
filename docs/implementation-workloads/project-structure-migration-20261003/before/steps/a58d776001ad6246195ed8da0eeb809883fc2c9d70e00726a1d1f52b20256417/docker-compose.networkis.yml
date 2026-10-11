@@ -1,0 +1,83 @@
+services:
+  networkis-db:
+    image: postgres:16-alpine
+    container_name: NetworkIS-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: eip_blocker
+      POSTGRES_USER: eip_user
+      POSTGRES_PASSWORD: localDockerOnly7a1c9e4f2b8d6a3c5e0f
+    volumes:
+      - networkis-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U eip_user -d eip_blocker"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  networkis:
+    image: ${NETWORKIS_RELEASE_IMAGE:-my_first_network_simulator-networkis:latest}
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: NetworkIS
+    restart: unless-stopped
+    env_file:
+      - .env.local
+    depends_on:
+      networkis-db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+psycopg://eip_user:localDockerOnly7a1c9e4f2b8d6a3c5e0f@networkis-db:5432/eip_blocker
+      FLASK_HOST: 0.0.0.0
+      FLASK_PORT: 15050
+      FRONTEND_PORT: 13500
+      NETWORKIS_ALLOW_NON_CANONICAL_ROOT: "1"
+      SIMULATOR_SAVED_ROOT: /trace-output
+      NETWORKIS_TRACE_HOST_PATH: I:/PycharmProjects/My_first_Network_Simulator/SAVED
+      NETWORKIS_TRACE_MOUNT_PATH: /trace-output
+      SIMULATOR_BACKEND_API_URL: http://127.0.0.1:15050/api
+      NEXT_TELEMETRY_DISABLED: "1"
+      AI_PROVIDER: ${AI_PROVIDER:-hybrid-demand}
+      LOCAL_AI_BASE_URL: ${LOCAL_AI_BASE_URL:-http://host.docker.internal:11434/v1}
+      LOCAL_AI_MODEL: ${LOCAL_AI_MODEL:-qwen3.8:27b}
+      LOCAL_AI_FAST_MODEL: ${LOCAL_AI_FAST_MODEL:-llama3.1:8b}
+      LOCAL_AI_API_KEY: ${LOCAL_AI_API_KEY:-ollama}
+      NETWORKIS_HOST_METRICS_URL: ${NETWORKIS_HOST_METRICS_URL:-http://host.docker.internal:13502/metrics}
+      OLLAMA_CONTEXT_LENGTH: ${OLLAMA_CONTEXT_LENGTH:-8192}
+      OLLAMA_KEEP_ALIVE: ${OLLAMA_KEEP_ALIVE:-10m}
+      OLLAMA_FAST_KEEP_ALIVE: ${OLLAMA_FAST_KEEP_ALIVE:-30m}
+      NUMERIC_ACCELERATOR: ${NUMERIC_ACCELERATOR:-auto}
+      NUMERIC_ACCELERATOR_MIN_ITEMS: ${NUMERIC_ACCELERATOR_MIN_ITEMS:-256}
+      ENGINEERING_PROJECT_LOCK_TIMEOUT: ${ENGINEERING_PROJECT_LOCK_TIMEOUT:-60}
+      WAITRESS_THREADS: ${WAITRESS_THREADS:-16}
+      SIMULATION_EXECUTOR: ${SIMULATION_EXECUTOR:-thread}
+      SIMULATION_WORKERS: ${SIMULATION_WORKERS:-12}
+      WORKFLOW_EVENT_LIMIT: ${WORKFLOW_EVENT_LIMIT:-100000}
+      NETWORKIS_SERVICE_RESTARTS: ${NETWORKIS_SERVICE_RESTARTS:-5}
+      CLOUD_ESCALATION: ${CLOUD_ESCALATION:-on_failure}
+      NVIDIA_API_KEY: ${NVIDIA_API_KEY:-}
+      NVIDIA_AI_MODEL: ${NVIDIA_AI_MODEL:-nvidia/nemotron-3-nano-30b-a3b}
+    ports:
+      - "13500:13500"
+      - "15050:15050"
+    volumes:
+      # Windows drive shares can fail with EIO while services remain alive.
+      # Existing data must be copied and verified before the first cutover.
+      - networkis-runtime-data:/app/backend/runtime
+      - type: bind
+        source: ./SAVED
+        target: /trace-output
+        bind:
+          create_host_path: false
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:15050/api/ready', timeout=5).read()"]
+      interval: 30s
+      timeout: 8s
+      retries: 3
+      start_period: 60s
+
+volumes:
+  networkis-db-data:
+  networkis-runtime-data:
+    name: networkis-runtime-data

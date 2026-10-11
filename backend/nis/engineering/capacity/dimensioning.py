@@ -40,12 +40,13 @@ def bus_rate_plan(technology, messages, parameters, *, industry=None, target_loa
     from backend.nis.engineering.capacity.calculators import estimate_simulation_frame, utilization_percent
     registry = DEFAULT_TECHNOLOGY_REGISTRY
     technology = registry.normalize_id(technology)
-    definition = registry.profile(technology)
+    definition = registry.profile(technology, fields=(
+        'simulation_defaults', 'rate_model', 'parameter_aliases', 'parameter_constraints'))
     preset = definition.get('simulation_defaults') or {}
     fields = registry.parameter_fields(technology)
     model = definition.get('rate_model') or {}
     native_rates = model.get('fields') or preset.get('rate_fields') or [
-        registry.profile(technology).get('parameter_aliases', {}).get('bitrate', field['key'])
+        definition.get('parameter_aliases', {}).get('bitrate', field['key'])
         for field in fields if field.get('required') and field.get('scope') == 'network' and field.get('unit') == 'bit/s']
     # Required protocol context and recorded starter choices are editable assumptions.
     base = {field['key']: field['simulation_default'] for field in fields if field.get('required')}

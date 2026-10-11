@@ -1,0 +1,220 @@
+"""Proposed-model routing uses real rules and never falls back to persisted rows."""
+from copy import deepcopy
+from uuid import uuid4
+
+import pytest
+
+from backend.nis.engineering.routing import validation as validation
+from backend.nis.engineering.routing.validation import RoutingValidator
+from backend.tests.test_agent_recipient_repair_runtime import sql_seed, scoped
+
+
+@pytest.fixture
+def candidate():
+    from backend.nis.engineering.communication.communication_repair import load_plan
+    from backend.nis.engineering.communication.communication_contract_repair import scan_signal_recipients
+    from backend.nis.infrastructure.persistence.repository import ENTITY_SPECS
+    from backend.nis.agent.tools.model import json_safe
+    authority, _ = sql_seed()
+    def capture():
+        planner, state = load_plan()
+        route = scan_signal_recipients(planner, RoutingValidator().validate)['changes'][0]['data']
+        snapshot = {'project_id': authority.project_id, 'topology': state['topology'], 'parameters': state['parameters'],
+                    'tables': {ENTITY_SPECS[kind].table: rows for kind, rows in planner.objects.items()}}
+        snapshot['tables']['engineering_routing_entries'] = planner.routes
+        return json_safe({'snapshot': snapshot, 'route': route, 'baseline': RoutingValidator().validate(route)})
+    return scoped(authority, capture)
+
+
+def forbid_database():
+    raise AssertionError('A complete proposed model must not read or write a database.')
+
+
+def test_real_sql_route_and_snapshot_use_identical_validation(candidate, monkeypatch):
+    monkeypatch.setattr(validation, 'get_connection', forbid_database)
+    snap = candidate['snapshot']; before = deepcopy(snap)
+    validator = RoutingValidator(snap['project_id'], model_snapshot=snap)
+    observed = validator.validate(candidate['route'])
+    assert observed['valid'] is True
+    assert {k: v for k, v in observed.items() if k != 'validation_timestamp'} == {
+        k: v for k, v in candidate['baseline'].items() if k != 'validation_timestamp'}
+    assert snap == before
+
+
+def test_canonical_proposal_preview_matches_sql_and_never_reuses_snapshot_after_edit(candidate, monkeypatch):
+    from backend.nis.agent.tools import proposal_service
+    from backend.nis.engineering.projects.project_context import activate_project, reset_project
+    from backend.nis.workflow.services.service import WorkflowStatusService
+    project = candidate['snapshot']['project_id']
+    token = activate_project(project)
+    try:
+        preview = proposal_service._canonical_routing_preview()
+        with monkeypatch.context() as patch:
+            patch.setattr(validation, 'get_connection', forbid_database)
+            result = preview.validate(candidate['route'])
+        assert {k: v for k, v in result.items() if k != 'validation_timestamp'} == {
+            k: v for k, v in candidate['baseline'].items() if k != 'validation_timestamp'}
+        WorkflowStatusService(project).save_topology({**candidate['snapshot']['topology'], 'edges': []})
+        refreshed = proposal_service._canonical_routing_preview().validate(candidate['route'])
+        assert not refreshed['valid']
+        assert 'PHYSICAL_PATH_REMOVED' in {finding['code'] for finding in refreshed['errors']}
+        # The already captured review remains detached; a later review refreshes.
+        assert preview.validate(candidate['route'])['valid']
+    finally:
+        reset_project(token)
+
+
+def test_routing_proposal_captures_once_and_checks_every_route(candidate, monkeypatch):
+    from backend.nis.agent.tools import proposal_service
+    from backend.nis.agent.tools import validation as proposal_validation
+    from backend.nis.engineering.projects.project_context import activate_project, reset_project
+    token = activate_project(candidate['snapshot']['project_id'])
+    original = proposal_service._canonical_routing_preview
+    captures = []
+    def capture():
+        preview = original()
+        captures.append(preview)
+        return preview
+    monkeypatch.setattr(proposal_service, '_canonical_routing_preview', capture)
+    monkeypatch.setattr(proposal_validation, 'validate_effective_model', lambda changes: [])
+    try:
+        invalid = deepcopy(candidate['route'])
+        invalid['destinations'][0]['node_id'] = str(uuid4())
+        result = proposal_service._validate_changes([
+            {'object_type': 'RoutingEntry', 'action': 'CREATE', 'local_ref': 'valid', 'data': candidate['route']},
+            {'object_type': 'RoutingEntry', 'action': 'CREATE', 'local_ref': 'invalid', 'data': invalid},
+            {'object_type': 'RoutingEntry', 'action': 'CREATE', 'local_ref': 'valid-again', 'data': deepcopy(candidate['route'])},
+        ], proposal_type='WIZARD_ROUTING')
+        assert len(captures) == 1
+        assert not result['valid'] and result['valid_count'] == 2
+        assert {finding['index'] for finding in result['findings']} == {1}
+        assert 'DESTINATION_NOT_FOUND' in {finding['code'] for finding in result['findings']}
+    finally:
+        reset_project(token)
+
+
+def test_new_unpersisted_identifiers_are_validated_in_proposed_graph(candidate, monkeypatch):
+    monkeypatch.setattr(validation, 'get_connection', forbid_database)
+    # Replace every object identity with a new UUID. These rows do not exist in SQL.
+    mapping = {str(row['id']): str(uuid4()) for rows in candidate['snapshot']['tables'].values() for row in rows}
+    def remap(value):
+        if isinstance(value, dict): return {k: remap(v) for k, v in value.items()}
+        if isinstance(value, list): return [remap(v) for v in value]
+        return mapping.get(value, value) if isinstance(value, str) else value
+    snap, route = remap(candidate['snapshot']), remap(candidate['route'])
+    result = RoutingValidator(snap['project_id'], model_snapshot=snap).validate(route)
+    assert result['valid'], result
+
+
+@pytest.mark.parametrize('change,code', [
+    ('missing-source', 'SOURCE_NOT_FOUND'), ('missing-destination', 'DESTINATION_NOT_FOUND'),
+    ('missing-interface', 'SOURCE_INTERFACE_NOT_FOUND'), ('missing-wire', 'PHYSICAL_PATH_REMOVED'),
+    ('signal-too-long', 'SIGNAL_EXCEEDS_MESSAGE'), ('loop', 'ROUTING_LOOP'),
+    ('duplicate-route', 'DUPLICATE_ROUTE'),
+])
+def test_invalid_proposed_graph_cannot_be_rescued_by_valid_database(candidate, monkeypatch, change, code):
+    monkeypatch.setattr(validation, 'get_connection', forbid_database)
+    snap, route = candidate['snapshot'], candidate['route']; tables = snap['tables']
+    if change == 'missing-source':
+        tables['engineering_hardware_nodes'] = [r for r in tables['engineering_hardware_nodes'] if str(r['id']) != route['source']['node_id']]
+    elif change == 'missing-destination':
+        tables['engineering_hardware_nodes'] = [r for r in tables['engineering_hardware_nodes'] if str(r['id']) != route['destinations'][0]['node_id']]
+    elif change == 'missing-interface':
+        tables['engineering_interfaces'] = [r for r in tables['engineering_interfaces'] if str(r['id']) != route['source']['interface_id']]
+    elif change == 'missing-wire': snap['topology']['edges'] = []
+    elif change == 'signal-too-long':
+        next(r for r in tables['engineering_signals'] if str(r['id']) == route['payload']['signal_ids'][0])['length_bits'] = 10000
+    elif change == 'loop': route['route']['hops'].append(route['route']['hops'][0])
+    elif change == 'duplicate-route':
+        tables['engineering_routing_entries'].append({**deepcopy(route), 'id': str(uuid4()), 'route_code': 'DUPLICATE', 'status': 'APPROVED'})
+    result = RoutingValidator(snap['project_id'], model_snapshot=snap).validate(route)
+    assert result['valid'] is False
+    assert code in {f['code'] for f in result['errors']}, result
+
+
+@pytest.mark.parametrize('change', ['foreign-project', 'foreign-row', 'missing-table', 'duplicate-id', 'invalid-row', 'missing-topology', 'mixed-planner'])
+def test_incomplete_or_foreign_snapshot_is_rejected(candidate, monkeypatch, change):
+    monkeypatch.setattr(validation, 'get_connection', forbid_database)
+    snap = candidate['snapshot']; project = snap['project_id']; options = {}
+    if change == 'foreign-project': snap['project_id'] = 'foreign'
+    elif change == 'foreign-row': snap['tables']['engineering_hardware_nodes'][0]['project_id'] = 'foreign'
+    elif change == 'missing-table': del snap['tables']['engineering_signals']
+    elif change == 'duplicate-id': snap['tables']['engineering_hardware_nodes'].append(deepcopy(snap['tables']['engineering_hardware_nodes'][0]))
+    elif change == 'invalid-row': snap['tables']['engineering_messages'] = [None]
+    elif change == 'missing-topology': del snap['topology']
+    elif change == 'mixed-planner': options['physical_planner'] = object()
+    with pytest.raises(ValueError): RoutingValidator(project, model_snapshot=snap, **options)
+
+
+def test_caller_cannot_change_validated_snapshot_after_construction(candidate, monkeypatch):
+    monkeypatch.setattr(validation, 'get_connection', forbid_database)
+    snap = candidate['snapshot']; validator = RoutingValidator(snap['project_id'], model_snapshot=snap)
+    snap['tables']['engineering_hardware_nodes'].clear(); snap['topology']['edges'].clear()
+    assert validator.validate(candidate['route'])['valid'] is True
+
+
+def test_table_reuses_native_physical_evidence_and_refreshes_after_wire_edit(candidate, monkeypatch):
+    from backend.nis.engineering.communication import communication_repair
+    from backend.nis.engineering.projects.project_context import activate_project, reset_project
+    from backend.nis.workflow.services.service import WorkflowStatusService
+    project = candidate['snapshot']['project_id']
+    token = activate_project(project)
+    original = communication_repair.load_plan
+    captures = []
+    def capture():
+        value = original()
+        captures.append(value)
+        return value
+    monkeypatch.setattr(communication_repair, 'load_plan', capture)
+    try:
+        validator = RoutingValidator(project)
+        first = validator.validate_table([candidate['route'], deepcopy(candidate['route'])])
+        assert first['valid'] and len(captures) == 1
+        expected = {k: v for k, v in candidate['baseline'].items() if k != 'validation_timestamp'}
+        for result in first['results']:
+            assert {k: v for k, v in result.items() if k != 'validation_timestamp'} == expected
+        assert validator.physical_planner is None
+        WorkflowStatusService(project).save_topology({**candidate['snapshot']['topology'], 'edges': []})
+        second = validator.validate_table([candidate['route']])
+        assert len(captures) == 2 and not second['valid']
+        assert 'PHYSICAL_PATH_REMOVED' in {issue['code'] for issue in second['results'][0]['errors']}
+        assert validator.physical_planner is None
+    finally:
+        reset_project(token)
+
+
+def test_routing_batch_rejects_foreign_active_project_before_loading(candidate, monkeypatch):
+    from backend.nis.engineering.communication import communication_repair
+    from backend.nis.engineering.projects.project_context import activate_project, reset_project
+    token = activate_project('foreign-' + candidate['snapshot']['project_id'])
+    monkeypatch.setattr(communication_repair, 'load_plan', forbid_database)
+    try:
+        with pytest.raises(ValueError, match='active project'):
+            RoutingValidator.for_current_batch(candidate['snapshot']['project_id'])
+    finally:
+        reset_project(token)
+
+
+def test_current_batch_checks_references_without_route_sql_and_refreshes_after_edit(candidate, monkeypatch):
+    from backend.nis.engineering.projects.project_context import activate_project, reset_project
+    from backend.nis.workflow.services.service import WorkflowStatusService
+    project = candidate['snapshot']['project_id']
+    token = activate_project(project)
+    try:
+        batch = RoutingValidator.for_current_batch(project)
+        with monkeypatch.context() as patch:
+            patch.setattr(validation, 'get_connection', forbid_database)
+            actual = batch.validate(candidate['route'])
+            assert {k: v for k, v in actual.items() if k != 'validation_timestamp'} == {
+                k: v for k, v in candidate['baseline'].items() if k != 'validation_timestamp'}
+            broken = deepcopy(candidate['route'])
+            broken['source']['node_id'] = str(uuid4())
+            assert 'SOURCE_NOT_FOUND' in {item['code'] for item in batch.validate(broken)['errors']}
+        WorkflowStatusService(project).save_topology({**candidate['snapshot']['topology'], 'edges': []})
+        refreshed = RoutingValidator.for_current_batch(project)
+        with monkeypatch.context() as patch:
+            patch.setattr(validation, 'get_connection', forbid_database)
+            assert 'PHYSICAL_PATH_REMOVED' in {item['code'] for item in refreshed.validate(candidate['route'])['errors']}
+            assert batch.validate(candidate['route'])['valid']
+    finally:
+        reset_project(token)

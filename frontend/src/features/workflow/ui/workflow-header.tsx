@@ -49,6 +49,7 @@ const TRACE_ANALYSIS_STEPS = [
   { id: "trace", label: "Trace", status: "SYNC" },
   { id: "findings", label: "Findings / Gaps", status: "CONTEXT" },
   { id: "root-cause", label: "Root Cause", status: "EXPLAIN" },
+  { id: "charts", label: "Diagramme", status: "EXPLORE" },
 ] as const;
 
 export function notifyWorkflowChanged() {
@@ -87,7 +88,7 @@ function TraceAnalysisHeader({ initialProjectId = "" }: { initialProjectId?: str
       <div className="workflow-heading">
         <div>
           <span className="eyebrow">Trace workflow</span>
-          <strong>Load → Filter → Inspect Messages → Follow Sequence → Inspect Signals → Synchronize Trace → Detect Findings</strong>
+          <strong>Load → Filter → Inspect Messages → Follow Sequence → Inspect Signals → Synchronize Trace → Detect Findings → Explore Charts</strong>
         </div>
         <div className="workflow-heading-status">
           <span className="workflow-project mono">Analysis projection only</span>

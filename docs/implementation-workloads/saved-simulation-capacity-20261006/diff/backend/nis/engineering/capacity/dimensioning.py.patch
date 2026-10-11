@@ -1,0 +1,37 @@
+--- before/backend/nis/engineering/capacity/dimensioning.py
++++ after/backend/nis/engineering/capacity/dimensioning.py
+@@ -37,7 +37,7 @@
+     considered only as explicit proposals from the selected industry template.
+     """
+     from backend.nis.communication.catalog import PARAMETER_UI_ALIASES
+-    from backend.nis.engineering.capacity.calculators import estimate_frame, utilization_percent
++    from backend.nis.engineering.capacity.calculators import estimate_simulation_frame, utilization_percent
+     registry = DEFAULT_TECHNOLOGY_REGISTRY
+     technology = registry.normalize_id(technology)
+     definition = registry.profile(technology)
+@@ -58,10 +58,8 @@
+         base.update({field['key']: parameters[field['key']] for field in fields if field['key'] in parameters
+                      and ((parameters.get('parameter_provenance') or {}).get(field['key']) or {}).get('source') in {'USER_CONFIRMED', 'EXPLICIT_USER_SPECIFICATION'}})
+     releases = [profile(transmission_contract(message), message.get('cycle_ms')) for message in messages]
+-    timing = registry.timing_implementation(technology)
+     # A specialization may compare nominal scenario demand while keeping its
+     # actual-device estimator strict. Never supply invented source identifiers.
+-    planning_estimator = getattr(timing, 'estimate_planning_frame', estimate_frame)
+     result = {'technology': technology, 'unit': 'bit/s', 'source': 'TechnologyProfile:' + technology,
+               'hardware_evidence': False, 'functional_timing_accepted': False, 'alternatives': [],
+               'target_load_percent': target_load_percent, 'candidates': [], 'selected_values': {}}
+@@ -121,10 +119,13 @@
+         if 'bitrate_bps' in native:
+             scenario['bitrate'] = native['bitrate_bps']
+         scenario['_rate_evidenced'] = True  # Local calculation input, never persisted as evidence.
++        scenario['_simulation_parameters_usable'] = True
++        scenario['_simulation_assumption_fields'] = [key for key in base if key not in explicit
++            and next((field.get('value_role') for field in fields if field['key'] == key), None) == 'CONFIGURATION']
+         loads = []
+         try:
+             for message, release in zip(messages, releases):
+-                frame = planning_estimator(technology, int(message.get('dlc') or 0), scenario)
++                frame = estimate_simulation_frame(technology, int(message.get('dlc') or 0), scenario)
+                 if frame.is_generic_estimate or not frame.transmission_time_available:
+                     loads = []; break
+                 loads.append(utilization_percent(frame.transmission_time_s, release['period_ms']))

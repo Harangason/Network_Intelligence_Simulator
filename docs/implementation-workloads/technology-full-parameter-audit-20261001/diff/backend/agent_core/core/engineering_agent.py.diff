@@ -1,0 +1,23 @@
+--- before/backend/agent_core/core/engineering_agent.py
++++ after/backend/agent_core/core/engineering_agent.py
+@@ -675,11 +675,17 @@
+             )
+             if not parameters_complete:
+                 status = 'INCOMPLETE'
+-                text = 'Die technologieabhängigen Parameter konnten nicht vollständig gespeichert werden. ' + '; '.join(
+-                    str(f.get('message', '')) for f in result.findings)
++                findings = result.data.get('parameter_findings', []) if result.success else []
++                missing = result.data.get('missing_parameters', []) if result.success else []
++                text = ('Die Technologieparameter-Vorschläge sind gespeichert. Vor der weiteren Prüfung fehlen bestätigte Angaben: '
++                        + ', '.join(missing) + '. Öffne die Technologieparameter, ergänze die Nachweise und setze den Auftrag fort.'
++                        if result.success else
++                        'Die technologieabhängigen Parameter konnten nicht gespeichert werden. ' + '; '.join(
++                            str(f.get('message', '')) for f in result.findings))
+                 event('RESULT', status=status, text=text)
+                 return {'run_id': run_id, 'status': status, 'text': text, 'events': events,
+-                        'context': context.model_dump(), 'trace': traces, 'proposals': []}
++                        'context': context.model_dump(), 'trace': traces, 'proposals': [],
++                        'blocking_findings': findings}
+             technology_count = len(result.data.get('technology_ids') or [])
+             field_count = len(result.data.get('parameters') or {})
+             event('PROGRESS', status='VALIDATING',

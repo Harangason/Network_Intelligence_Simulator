@@ -1,0 +1,212 @@
+"""RTU source-specific framing/CRC/gap boundaries; isolated SQL protects confirmations."""
+from copy import deepcopy
+import pytest
+from backend.communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY as registry
+from backend.communication.technologies import modbus_rtu as MR
+from backend.communication.technologies.core.physical import validate_physical_realization
+
+def actual():
+    x={'mr_'+k:'synthetic-actual-'+k for k in MR.REQUIRED}
+    x.update(bitrate=19200,mr_profile='V1_02',mr_implementation_class='REGULAR',mr_mode='RTU',
+       mr_role='MASTER',mr_phy='RS485_2W',mr_parity='EVEN',mr_start_bits=1,mr_data_bits=8,mr_stop_bits=1,mr_character_bits=11)
+    return x
+
+def status(x):return registry.validate_parameters('modbus_rtu',x)['status']
+
+def test_rtu_standard_baseline_is_qualified_and_foreign_parameters_are_rejected():
+    fields={f['key']:f for f in registry.parameter_fields('modbus_rtu')}
+    assert not set(MR.REMOVED)&set(fields)
+    assert registry.parameter_defaults_review('modbus_rtu')['values']=={'bitrate_bps':19200}
+    assert fields['bitrate']['conditional_defaults'][0]['value']==9600
+    for key in ('mr_slave_address','mr_response_timeout_ms','mr_turnaround_ms','mr_destination_address'):
+        assert 'conditional_defaults'not in fields[key]
+    assert 'default'not in fields['payload_bytes']
+    assert status(actual())=='VALID'
+    for patch in ({'retry_limit':3},{'queue_size':1024},{'qos_priority':3},{'duplex':'FULL'},
+      {'local_timing_evidence':{'source':'I2C'}},{'ma_lrc':0},{'mr_mode':'ASCII'},{'mr_hex_chars':10}):
+        assert status({**actual(),**patch})=='INVALID'
+    assert registry.profile('modbus_rtu')['capacity_evidence']['status']=='MODEL_MISSING'
+
+@pytest.mark.parametrize('field',registry.parameter_fields('modbus_rtu'),ids=lambda f:f['key'])
+def test_rtu_every_declared_type_and_bounds(field):
+    wrong='not-number'if field['type']=='number'else 1
+    assert status({**actual(),field['key']:wrong})=='INVALID'
+    for edge,offset in [('min',-1),('max',1)]:
+        if field.get(edge)is not None:assert status({**actual(),field['key']:field[edge]+offset})=='INVALID'
+
+@pytest.mark.parametrize('parity,stops',[('EVEN',1),('ODD',1),('NONE',2)])
+def test_rtu_eight_data_eleven_wire_bits_and_implementation_classes(parity,stops):
+    x={**actual(),'mr_parity':parity,'mr_stop_bits':stops}
+    assert status(x)=='VALID'
+    for patch in ({'mr_stop_bits':3-stops},{'mr_data_bits':7},{'mr_character_bits':10}):assert status({**x,**patch})=='INVALID'
+    x.update(mr_implementation_class='BASIC',mr_parity='EVEN',mr_stop_bits=1,mr_supports_19200=False,bitrate=9600)
+    assert status(x)=='VALID';assert status({**x,'bitrate':19200})=='INVALID'
+    assert status({**x,'mr_parity':'NONE','mr_stop_bits':2})=='INVALID'
+    assert status({**x,'mr_phy':'RS485_4W'})=='INVALID'
+    assert status({**x,'mr_implementation_class':'REGULAR'})=='INVALID'
+    assert status({**actual(),'bitrate':230400})=='VALID'
+
+@pytest.mark.parametrize('pdu,frame',[(1,4),(5,8),(253,256)])
+def test_rtu_binary_pdu_address_crc_and_wire_lengths_are_separate(pdu,frame):
+    x={**actual(),'mr_pdu_bytes':pdu,'mr_data_bytes':pdu-1,'payload_bytes':pdu-1,
+       'mr_body_bytes':pdu+1,'mr_frame_bytes':frame,'mr_serial_bits':frame*11,
+       'mr_character_time_us':11000000/19200,'mr_serialization_us':frame*11000000/19200}
+    assert status(x)=='VALID'
+    for patch in ({'mr_frame_bytes':frame+1},{'mr_serial_bits':frame*10},{'mr_body_bytes':pdu},
+      {'payload_bytes':pdu},{'mr_pdu_bytes':254},{'mr_serialization_us':x['mr_serialization_us']+1}):
+        assert status({**x,**patch})=='INVALID'
+
+@pytest.mark.parametrize('baud,policy,t15,t35',[(9600,'CHARACTER',16500000/9600,38500000/9600),
+ (19200,'CHARACTER',16500000/19200,38500000/19200),(19201,'FIXED_RECOMMENDED',750,1750),
+ (115200,'FIXED_RECOMMENDED',750,1750)])
+def test_rtu_timer_policy_boundary_is_inclusive_19200(baud,policy,t15,t35):
+    x={**actual(),'bitrate':baud,'mr_gap_policy':policy,'mr_interchar_timeout_us':t15,'mr_interframe_min_us':t35,
+       'mr_interchar_gap_bound_us':t15,'mr_interframe_gap_us':t35}
+    assert status(x)=='VALID'
+    for patch in ({'mr_interchar_gap_bound_us':t15+.001},{'mr_interframe_gap_us':t35-.001},
+      {'mr_interchar_timeout_us':t15+1},{'mr_interframe_min_us':t35+1}):assert status({**x,**patch})=='INVALID'
+    if baud<=19200:assert status({**x,'mr_gap_policy':'FIXED_RECOMMENDED'})=='INVALID'
+    else:
+        alternative={**x,'mr_gap_policy':'CHARACTER','mr_interchar_timeout_us':16500000/baud,
+         'mr_interframe_min_us':38500000/baud,'mr_interchar_gap_bound_us':0,'mr_interframe_gap_us':38500000/baud}
+        assert status(alternative)=='UNVERIFIED'
+        alternative['mr_gap_deviation_source']='synthetic-qualified-driver';assert status(alternative)=='VALID'
+
+@pytest.mark.parametrize('body,quantity,crc',[('01030000000A',10,0xCDC5),('010300000002',2,0x0BC4)])
+def test_rtu_crc_uses_binary_octets_not_ascii_hex_and_low_octet_first(body,quantity,crc):
+    x={**actual(),'mr_phase':'REQUEST','mr_function_kind':'PUBLIC','mr_request_function':3,'mr_function':3,
+       'mr_quantity':quantity,'mr_destination_address':1,'mr_binary_body_hex':body,'mr_body_bytes':6,
+       'mr_pdu_bytes':5,'mr_crc_value':crc,'mr_crc_low':crc%256,'mr_crc_high':crc//256,
+       'mr_crc_initial':65535,'mr_crc_polynomial':40961,'mr_crc_bits':16}
+    assert status(x)=='VALID'
+    for patch in ({'mr_crc_value':crc^1},{'mr_crc_low':crc//256},{'mr_crc_high':crc%256},
+      {'mr_body_bytes':12},{'mr_destination_address':2},{'mr_function':4},{'mr_crc_polynomial':32773},
+      {'mr_binary_body_hex':body[:-1]}):assert status({**x,**patch})=='INVALID'
+    x.pop('mr_binary_body_hex');assert status(x)=='UNVERIFIED'
+
+def test_rtu_diagnostic_ascii_delimiter_is_not_an_rtu_command():
+    x={**actual(),'mr_function_kind':'PUBLIC','mr_request_function':8,'mr_diagnostic':3}
+    assert status(x)=='INVALID'
+    x['mr_diagnostic']=2;assert status(x)=='VALID'
+
+@pytest.mark.parametrize('phy,wires,pairs,topology,terminations,duplex',[
+ ('RS485_2W',['D0','D1','COMMON'],1,'BUS',2,'HALF'),
+ ('RS485_4W',['TXD0','TXD1','RXD0','RXD1','COMMON'],2,'BUS',4,'FULL'),
+ ('RS232',['TXD','RXD','COMMON'],0,'POINT_TO_POINT',0,'FULL')])
+def test_rtu_physical_path_does_not_inherit_two_wire_rs485(phy,wires,pairs,topology,terminations,duplex):
+    x=dict(technology_id='modbus_rtu',mr_phy=phy,conductors=wires,pair_count=pairs,
+           topology=topology,termination_count=terminations,duplex=duplex+'_DUPLEX')
+    assert validate_physical_realization(x)['status']=='VALID'
+    assert validate_physical_realization({**x,'pair_count':pairs+1})['status']=='INVALID'
+    assert validate_physical_realization({**x,'duplex':('FULL'if duplex=='HALF'else'HALF')+'_DUPLEX'})['status']=='INVALID'
+    unknown=dict(technology_id='modbus_rtu',topology='BUS')
+    assert validate_physical_realization(unknown)['status']=='REVIEW_REQUIRED'
+
+def test_rtu_confirmed_sql_values_survive_rejected_foreign_gap_change():
+    from backend.engineering.workflow.service import WorkflowStatusService
+    from backend.engineering.project_context import current_project_id
+    x={**actual(),'bitrate':9600,'mr_parity':'NONE','mr_stop_bits':2,'mr_gap_policy':'CHARACTER',
+       'mr_interchar_timeout_us':16500000/9600,'mr_interframe_min_us':38500000/9600,'mr_exchange':'UNICAST',
+       'mr_destination_address':17}
+    group={'values':x,'provenance':{k:{'source':'USER_CONFIRMED','status':'CONFIRMED','value':v}for k,v in x.items()}}
+    parameters={'technology':'modbus_rtu','technology_parameters':{'modbus_rtu':group}}
+    service=WorkflowStatusService(current_project_id());service.save_parameters(parameters)
+    assert service.get()['parameters']==parameters
+    bad=deepcopy(parameters);bad['technology_parameters']['modbus_rtu']['values']['mr_gap_policy']='FIXED_RECOMMENDED'
+    bad['technology_parameters']['modbus_rtu']['provenance']['mr_gap_policy']['value']='FIXED_RECOMMENDED'
+    with pytest.raises(ValueError,match='DEPENDENCY_MISMATCH'):service.save_parameters(bad)
+    assert service.get()['parameters']==parameters
+
+
+# Same application/physical rules, separately exercised through the RTU profile.
+def test_rtu_shared_observed_baud_requires_strict_one_percent_and_receiver_two_percent():
+    x={**actual(),'mr_tx_baud_bps':19200,'mr_rx_tolerance_percent':2}
+    assert status(x)=='VALID'
+    for rate in (19008,19392,19392.0001,19007.9999):assert status({**x,'mr_tx_baud_bps':rate})=='INVALID'
+    for rate in (19008.0001,19391.9999):assert status({**x,'mr_tx_baud_bps':rate})=='VALID'
+    assert status({**x,'mr_rx_tolerance_percent':1.99})=='INVALID'
+    assert status({**actual(),'bitrate':230400})=='VALID'
+
+
+def test_rtu_shared_master_has_no_slave_address_and_broadcast_does_not_expect_reply():
+    x={**actual(),'mr_exchange':'BROADCAST','mr_destination_address':0,'mr_reply_expected':False,
+      'mr_phase':'REQUEST','mr_function_kind':'PUBLIC','mr_request_function':16,'mr_function':16}
+    assert status(x)=='VALID'
+    for patch in ({'mr_destination_address':1},{'mr_request_function':3},{'mr_reply_expected':True},
+      {'mr_phase':'RESPONSE'},{'mr_slave_address':1},{'mr_active_masters':2},{'mr_outstanding':2}):
+        assert status({**x,**patch})=='INVALID'
+    x=actual();x.update(mr_role='SLAVE');assert status(x)=='UNVERIFIED'
+    x['mr_slave_address']=247;assert status(x)=='VALID'
+    assert status({**x,'mr_slave_address':248})=='INVALID'
+
+
+@pytest.mark.parametrize('fc,maximum,bytecount',[(1,2000,250),(2,2000,250),(3,125,250),(4,125,250),
+ (15,1968,246),(16,123,246)])
+def test_rtu_shared_quantity_and_binary_pdu_depend_selected_public_function(fc,maximum,bytecount):
+    phase='RESPONSE'if fc<=4 else'REQUEST'
+    pdu=bytecount+(2 if fc<=4 else 6)
+    x={**actual(),'mr_phase':phase,'mr_function_kind':'PUBLIC','mr_request_function':fc,'mr_function':fc,
+      'mr_quantity':maximum,'mr_start_address':65536-maximum,'mr_byte_count':bytecount,'mr_pdu_bytes':pdu}
+    assert status(x)=='VALID'
+    for patch in ({'mr_quantity':maximum+1},{'mr_start_address':65537-maximum},{'mr_byte_count':bytecount+1},
+      {'mr_pdu_bytes':pdu+1}):assert status({**x,**patch})=='INVALID'
+    if fc<=2:
+        x.update(mr_quantity=9,mr_byte_count=2,mr_pdu_bytes=4,mr_start_address=0)
+        assert status(x)=='VALID'
+
+
+@pytest.mark.parametrize('fc',[1,2,3,4,15,16])
+def test_rtu_shared_encoded_pdu_cannot_confirm_missing_function_specific_quantity(fc):
+    x={**actual(),'mr_phase':'REQUEST','mr_function_kind':'PUBLIC','mr_request_function':fc,'mr_function':fc,
+      'mr_pdu_bytes':5 if fc<=4 else 8,'mr_byte_count':2}
+    assert status(x)=='UNVERIFIED'
+    x.pop('mr_byte_count');assert status(x)=='UNVERIFIED'
+
+
+def test_rtu_shared_exception_function_and_user_defined_namespaces_are_not_industry_templates():
+    x={**actual(),'mr_phase':'EXCEPTION','mr_function_kind':'PUBLIC','mr_request_function':3,
+      'mr_function':131,'mr_exception_code':2,'mr_pdu_bytes':2}
+    assert status(x)=='VALID'
+    for patch in ({'mr_function':3},{'mr_exception_code':7},{'mr_pdu_bytes':3}):assert status({**x,**patch})=='INVALID'
+    x.update(mr_phase='REQUEST',mr_function_kind='USER_DEFINED',mr_request_function=65,mr_function=65,mr_pdu_bytes=2)
+    assert status(x)=='UNVERIFIED'
+    x['mr_function_source']='synthetic-vendor-FC65';assert status(x)=='VALID'
+    assert status({**x,'mr_request_function':73})=='INVALID'
+
+
+def test_rtu_shared_single_coil_literal_and_readwrite_quantities_use_own_function():
+    x={**actual(),'mr_phase':'REQUEST','mr_function_kind':'PUBLIC','mr_request_function':5,'mr_function':5,
+      'mr_pdu_bytes':5,'mr_coil_value':65280}
+    assert status(x)=='VALID';assert status({**x,'mr_coil_value':1})=='INVALID'
+    x.update(mr_request_function=23,mr_function=23,mr_read_quantity=125,mr_write_quantity=121,
+      mr_write_byte_count=242,mr_pdu_bytes=252,mr_start_address=65411,mr_write_start_address=65415)
+    x.pop('mr_coil_value')
+    assert status(x)=='VALID'
+    for patch in ({'mr_write_quantity':123},{'mr_write_byte_count':240},{'mr_pdu_bytes':253},
+      {'mr_write_start_address':65416}):assert status({**x,**patch})=='INVALID'
+
+
+@pytest.mark.parametrize('field,value,wrong_fc',[('mr_coil_value',65280,6),('mr_register_value',65535,5),
+ ('mr_read_quantity',125,16),('mr_write_quantity',121,3),('mr_write_byte_count',242,15),
+ ('mr_write_start_address',0,3),('mr_quantity',125,23),('mr_diagnostic',3,43),('mr_mei_type',14,8)])
+def test_rtu_shared_function_specific_fields_cannot_be_reused_by_another_public_function(field,value,wrong_fc):
+    x={**actual(),'mr_function_kind':'PUBLIC','mr_request_function':wrong_fc,field:value}
+    assert status(x)=='INVALID'
+
+
+def test_rtu_shared_physical_qualification_rs485_fourwire_is_not_rs422_or_rs232():
+    x={**actual(),'mr_phy':'RS485_4W','mr_common':True,'mr_shielded':True,'mr_terminations_per_pair':2,
+      'mr_devices':28,'mr_device_limit':28,'mr_polarization':True,'mr_polarization_locations':1,
+      'mr_bias_ohm':650,'mr_bias_v':5,'mr_termination':'SERIES_RC','mr_termination_cap_v':10}
+    assert status(x)=='VALID'
+    for patch in ({'mr_bias_ohm':651},{'mr_bias_ohm':449},{'mr_terminations_per_pair':1},
+      {'mr_polarization_locations':0},{'mr_common':False},{'mr_bias_v':24},{'mr_termination_cap_v':9},
+      {'mr_devices':29}):assert status({**x,**patch})=='INVALID'
+    x['mr_device_limit']=29;assert status(x)=='UNVERIFIED'
+    x['mr_device_limit_source']='synthetic-manufacturer-fractional-unit-load';assert status(x)=='VALID'
+    x={**actual(),'mr_phy':'RS232','mr_termination':'NONE','mr_terminations_per_pair':0,'mr_devices':2,'mr_rs232_cap_pf':2500}
+    assert status(x)=='VALID'
+    for patch in ({'mr_devices':3},{'mr_terminations_per_pair':2},{'mr_rs232_cap_pf':2501},
+      {'mr_bias_ohm':650},{'mr_termination_ohm':150},{'mr_common':False}):assert status({**x,**patch})=='INVALID'
+    assert status({**actual(),'mr_rs232_cap_pf':2500})=='INVALID'
+

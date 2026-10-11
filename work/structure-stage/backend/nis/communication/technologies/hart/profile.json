@@ -1,0 +1,2775 @@
+{
+  "id": "hart",
+  "label": "HART (wired)",
+  "domain": "generic_networking",
+  "layer": "INDUSTRY_PROFILE",
+  "transport_unit": "TELEGRAM",
+  "payload_element_types": [
+    "FIELD",
+    "STATUS",
+    "QUALITY"
+  ],
+  "hardware_interface": "explicit_hart_modem_loop",
+  "hardware_capability_aliases": [
+    "hart_interface"
+  ],
+  "default_stack": [
+    "hart"
+  ],
+  "stack_variants": [
+    [
+      "hart"
+    ]
+  ],
+  "default_bitrate": null,
+  "rate_model": {
+    "type": "SINGLE_BITRATE",
+    "fields": [
+      "bitrate_bps"
+    ],
+    "allowed_bps": [
+      1200,
+      9600
+    ]
+  },
+  "local_timing_schema": [],
+  "parameter_schema": {
+    "bitrate_bps": {
+      "label": "Bitrate",
+      "category": "physical",
+      "scope": "network",
+      "type": "number",
+      "description": "Technology-profiled network rate.",
+      "required": true,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1200,
+      "unit": "bit/s",
+      "min": 1,
+      "default_review": {
+        "technology": "hart",
+        "rate_profile": "hart",
+        "values": {
+          "bitrate_bps": 1200
+        },
+        "basis": "WIRED_FSK_BASELINE",
+        "status": "REVIEW_REQUIRED",
+        "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+        "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+      },
+      "allowed_bps": [
+        1200,
+        9600
+      ],
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED",
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    },
+    "payload_bytes": {
+      "label": "Payload",
+      "category": "physical",
+      "scope": "message",
+      "type": "number",
+      "description": "Actual encoded HART data excl response status; count/whole frame differ, no8-byte default.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "max": 255,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read",
+      "integer": true
+    },
+    "cycle_ms": {
+      "label": "Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "Standardperiode fuer zyklische Nachrichten.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "minimum_cycle_time_ms": {
+      "label": "Minimum Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "deadline_ms": {
+      "label": "Deadline",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "timeout_ms": {
+      "label": "Timeout",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_latency_ms": {
+      "label": "Maximum Latency",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "jitter_ms": {
+      "label": "Jitter Budget",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "freshness_ms": {
+      "label": "Data Freshness",
+      "category": "timing",
+      "scope": "signal",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "source_processing_delay_ms": {
+      "label": "Source Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_processing_delay_ms": {
+      "label": "Target Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "propagation_delay_ms": {
+      "label": "Propagation",
+      "category": "timing",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.01,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_bus_load_percent": {
+      "label": "Ziel-Buslast",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "Zielwert fuer die aus Routing, Payload, Zyklus und Bitrate berechnete Buslast.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "peak_factor": {
+      "label": "Peak Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.15,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_factor": {
+      "label": "Burst Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.5,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_window_ms": {
+      "label": "Burst Window",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "warning_threshold": {
+      "label": "Load Warning",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "critical_threshold": {
+      "label": "Load Critical",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 75,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "overload_threshold": {
+      "label": "Load Overload",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 90,
+      "unit": "%",
+      "min": 1,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "traffic_class": {
+      "label": "Traffic Class",
+      "category": "qos",
+      "scope": "route",
+      "type": "select",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": "BEST_EFFORT",
+      "options": [
+        "BEST_EFFORT",
+        "CONTROL",
+        "REALTIME",
+        "SAFETY_CRITICAL"
+      ],
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "packet_loss_probability": {
+      "label": "Packet Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "frame_loss_probability": {
+      "label": "Frame Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "bit_error_rate": {
+      "label": "Bit Error Rate",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "corruption_probability": {
+      "label": "Corruption",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duplicate_probability": {
+      "label": "Duplication",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "reordering_probability": {
+      "label": "Reordering",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "required_reliability": {
+      "label": "Required Reliability",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.999,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_offset_ms": {
+      "label": "Clock Offset",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_drift_ppm": {
+      "label": "Clock Drift",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 20,
+      "unit": "ppm",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_precision_ms": {
+      "label": "Sync Precision",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_interval_ms": {
+      "label": "Sync Interval",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1000,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_sync_error_ms": {
+      "label": "Maximum Sync Error",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_delay_ms": {
+      "label": "Gateway Processing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.2,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_queue_delay_ms": {
+      "label": "Gateway Queueing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "protocol_conversion_delay_ms": {
+      "label": "Protocol Conversion",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duration_s": {
+      "label": "Simulation Duration",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 1,
+      "unit": "s",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "seed": {
+      "label": "Random Seed",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 42,
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "max_events": {
+      "label": "Maximum Events",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 100000,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "dropout_probability": {
+      "label": "Failure Injection Dropout",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "hart_profile": {
+      "label": "profile",
+      "category": "communication",
+      "scope": "route",
+      "type": "select",
+      "description": "Actual selected implementation/revision scope. Public FSK rules do not certify C8PSK, WirelessHART or HART-IP.",
+      "required": true,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "PUBLIC_FSK_2023",
+        "FCG_FSK_2016",
+        "DEVICE_SPECIFIC"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    },
+    "hart_phy": {
+      "label": "phy",
+      "category": "communication",
+      "scope": "route",
+      "type": "select",
+      "description": "Actual wired modulation. FSK standard baseline1200bit/s; C8PSK9600bit/s is a different mode requiring actual matched modem. HART-IP/WirelessHART need separate transport paths.",
+      "required": true,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "FSK",
+        "C8PSK"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read",
+      "conditional_defaults": [
+        {
+          "when": {
+            "hart_profile": "PUBLIC_FSK_2023"
+          },
+          "value": "FSK"
+        }
+      ]
+    },
+    "hart_revision": {
+      "label": "revision",
+      "category": "communication",
+      "scope": "route",
+      "type": "select",
+      "description": "Actual peer universal-command revision, unknown. Polling range and command capability must match it; not automatically latest7.",
+      "required": true,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "REV5_OR_EARLIER",
+        "REV6",
+        "REV7",
+        "DEVICE_SPECIFIC"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    },
+    "hart_role": {
+      "label": "role",
+      "category": "communication",
+      "scope": "route",
+      "type": "select",
+      "description": "Actual sending endpoint role, unknown. Requests originate at host; response/burst at field device.",
+      "required": true,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "HOST",
+        "FIELD_DEVICE"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    },
+    "hart_host_role": {
+      "label": "host role",
+      "category": "communication",
+      "scope": "route",
+      "type": "select",
+      "description": "Actual interacting host identity, unknown. Primary/secondary arbitration and quiet times differ; not universal primary master.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "PRIMARY",
+        "SECONDARY"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    },
+    "hart_binding_source": {
+      "label": "binding source",
+      "category": "communication",
+      "scope": "route",
+      "type": "text",
+      "description": "Required actual registered modem/port/current-loop binding and both endpoint capabilities, unknown.",
+      "required": true,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    },
+    "hart_device_source": {
+      "label": "device source",
+      "category": "communication",
+      "scope": "route",
+      "type": "text",
+      "description": "Required actual device description/revision/commands/preamble and response behavior, unknown.",
+      "required": true,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    },
+    "hart_physical_source": {
+      "label": "physical source",
+      "category": "communication",
+      "scope": "route",
+      "type": "text",
+      "description": "Required actual impedance/cable/power/coupling/modem/IS/filtering evidence, unknown; nominal FSK rate does not prove installation.",
+      "required": true,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    },
+    "hart_schedule_source": {
+      "label": "schedule source",
+      "category": "communication",
+      "scope": "route",
+      "type": "text",
+      "description": "Required actual host arbitration, command turnaround, retry/burst and complete transaction schedule evidence, unknown.",
+      "required": true,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    },
+    "hart_mode": {
+      "label": "mode",
+      "category": "communication",
+      "scope": "route",
+      "type": "select",
+      "description": "Actual request/response or device-supported enabled burst mode, unknown. Generic multicast is not wired HART burst.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "REQUEST_RESPONSE",
+        "BURST"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    },
+    "hart_frame_kind": {
+      "label": "frame kind",
+      "category": "communication",
+      "scope": "route",
+      "type": "select",
+      "description": "Actual frame direction/category; status and delimiter differ between request and field response/burst.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "REQUEST",
+        "RESPONSE",
+        "BURST"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    },
+    "hart_address_format": {
+      "label": "address format",
+      "category": "communication",
+      "scope": "route",
+      "type": "select",
+      "description": "Actual encoded short1-byte or long5-byte address; long unique identity is distinct from polling number.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "SHORT",
+        "LONG"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    },
+    "hart_address_bytes": {
+      "label": "address bytes",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual address field octets: short1, long5. No arbitrary2/3/4-byte encoding.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 1,
+      "max": 5,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    },
+    "hart_poll_address": {
+      "label": "poll address",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual device polling number, unknown: rev5-or-earlier0..15, rev6+0..63. Point-to-point0 is a proposal, not a real device assignment.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "max": 63,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    },
+    "hart_topology": {
+      "label": "topology",
+      "category": "communication",
+      "scope": "route",
+      "type": "select",
+      "description": "Actual current-loop topology, unknown. Multidrop analog fixed-current behavior requires actual revision/device configuration.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "POINT_TO_POINT",
+        "MULTIDROP"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    },
+    "hart_expanded_device_type": {
+      "label": "expanded device type",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual14-bit expanded device type in qualified long-address layout, unknown; not an automatically generated device identifier.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "max": 16383,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read",
+      "schema_when": {
+        "hart_profile": [
+          "PUBLIC_FSK_2023",
+          "FCG_FSK_2016"
+        ],
+        "hart_phy": [
+          "FSK"
+        ],
+        "hart_revision": [
+          "REV6",
+          "REV7"
+        ]
+      }
+    },
+    "hart_device_id": {
+      "label": "device id",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual24-bit device ID in qualified long-address layout, unknown; host and burst flags are separate.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "max": 16777215,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read",
+      "schema_when": {
+        "hart_profile": [
+          "PUBLIC_FSK_2023",
+          "FCG_FSK_2016"
+        ],
+        "hart_phy": [
+          "FSK"
+        ]
+      }
+    },
+    "hart_preamble_bytes": {
+      "label": "preamble bytes",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual transmitted0xFF preamble octets in public FSK profile. Peer-specific required length and detection loss matter;5 is not a safe default for every unknown peer.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 5,
+      "max": 20,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read",
+      "schema_when": {
+        "hart_profile": [
+          "PUBLIC_FSK_2023",
+          "FCG_FSK_2016"
+        ],
+        "hart_phy": [
+          "FSK"
+        ]
+      }
+    },
+    "hart_peer_preamble_bytes": {
+      "label": "peer preamble bytes",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual required preamble length learned from matching field device, unknown. Configured transmit preamble must be at least this.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 5,
+      "max": 20,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read",
+      "schema_when": {
+        "hart_profile": [
+          "PUBLIC_FSK_2023",
+          "FCG_FSK_2016"
+        ],
+        "hart_phy": [
+          "FSK"
+        ]
+      }
+    },
+    "hart_delimiter": {
+      "label": "delimiter",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual delimiter octet; qualified FSK encodes address length, expansion count and frame category. C8PSK delimiter rules not inferred from asynchronous FSK.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "max": 255,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    },
+    "hart_expansion_bytes": {
+      "label": "expansion bytes",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual encoded expansion bytes matching delimiter. Normal0 proposal belongs to qualified public FSK layout; future extensions need revision evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "max": 3,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read",
+      "conditional_defaults": [
+        {
+          "when": {
+            "hart_profile": "PUBLIC_FSK_2023"
+          },
+          "value": 0
+        }
+      ]
+    },
+    "hart_command": {
+      "label": "command",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual wire command octet, unknown. Command31 carries extended16-bit command in data; command support and response semantics remain device-specific.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "max": 255,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    },
+    "hart_extended_command": {
+      "label": "extended command",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual16-bit extended command when wire command31, unknown; its two bytes must be included in transmitted data length, not extra hidden overhead.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "max": 65535,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    },
+    "hart_command_source": {
+      "label": "command source",
+      "category": "communication",
+      "scope": "route",
+      "type": "text",
+      "description": "Actual supported command, request/response data layout, units and encoding source, unknown. Generic data length does not prove functional command compatibility.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    },
+    "hart_status_bytes": {
+      "label": "status bytes",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual status length: request0, field response/burst2 in qualified FSK layout.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "max": 2,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    },
+    "hart_data_bytes": {
+      "label": "data bytes",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual encoded data octets excluding response status, including extended-command bytes when present. Request/response layouts differ; no8-byte default.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "max": 255,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    },
+    "hart_byte_count": {
+      "label": "byte count",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual byte-count field = data plus status octets, excluding checksum. Response data at most253 when status2; not a universal complete255-byte frame limit.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "max": 255,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    },
+    "hart_checksum_bytes": {
+      "label": "checksum bytes",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "One transmitted XOR checksum octet in qualified public FSK layout; checksum covers delimiter through data, excluding preamble. Numeric length is not executed integrity evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 1,
+      "max": 1,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read",
+      "schema_when": {
+        "hart_profile": [
+          "PUBLIC_FSK_2023",
+          "FCG_FSK_2016"
+        ],
+        "hart_phy": [
+          "FSK"
+        ]
+      },
+      "conditional_defaults": [
+        {
+          "when": {
+            "hart_profile": "PUBLIC_FSK_2023"
+          },
+          "value": 1
+        }
+      ]
+    },
+    "hart_checksum_source": {
+      "label": "checksum source",
+      "category": "communication",
+      "scope": "route",
+      "type": "text",
+      "description": "Actual XOR calculation and observed parity/byte stream evidence, unknown; no auto-confirmed checksum or authentication.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    },
+    "hart_wire_octets": {
+      "label": "wire octets",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual whole frame incl preamble/delimiter/address/expansion/command/count/status/data/checksum. Separate from data and byte count.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    },
+    "hart_char_bits": {
+      "label": "char bits",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "FSK asynchronous character:1start+8dataLSB-first+odd parity+1stop=11bits. These bounds apply only to selected qualified FSK profile; not generic8N1.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "bit",
+      "min": 11,
+      "max": 11,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read",
+      "schema_when": {
+        "hart_profile": [
+          "PUBLIC_FSK_2023",
+          "FCG_FSK_2016"
+        ],
+        "hart_phy": [
+          "FSK"
+        ]
+      },
+      "conditional_defaults": [
+        {
+          "when": {
+            "hart_profile": "PUBLIC_FSK_2023"
+          },
+          "value": 11
+        }
+      ]
+    },
+    "hart_wire_bits": {
+      "label": "wire bits",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual serialization bits including all qualified FSK characters, not payload×8. C8PSK encoded stream needs actual physical evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "bit",
+      "min": 0,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    },
+    "hart_serialization_ms": {
+      "label": "serialization ms",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual frame serialization time from complete encoded bits and selected physical rate, excluding turnaround/gaps/arbitration; not whole transaction latency.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "ms",
+      "min": 0,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    },
+    "hart_gap_us": {
+      "label": "gap us",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual worst inter-character gap; qualified FCG FSK rule requires less than one11-bit character time. No universal gap0 default.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "us",
+      "min": 0,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    },
+    "hart_slave_timeout_chars": {
+      "label": "slave timeout chars",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "Qualified FieldComm2016 FSK slave timeout28character times; timeout is not actual device processing latency or application deadline.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "character",
+      "min": 28,
+      "max": 28,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "source": "https://support.fieldcommgroup.org/support/solutions/articles/8000040648-how-is-character-time-calculated-",
+      "source_revision": "FieldComm character-time support article2016-11-11",
+      "schema_when": {
+        "hart_profile": [
+          "FCG_FSK_2016"
+        ],
+        "hart_phy": [
+          "FSK"
+        ]
+      },
+      "conditional_defaults": [
+        {
+          "when": {
+            "hart_profile": "FCG_FSK_2016",
+            "hart_phy": "FSK"
+          },
+          "value": 28
+        }
+      ]
+    },
+    "hart_hold_chars": {
+      "label": "hold chars",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "Qualified FieldComm2016 FSK HOLD2character times, separate from frame serialization and actual modem turnaround.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "character",
+      "min": 2,
+      "max": 2,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "source": "https://support.fieldcommgroup.org/support/solutions/articles/8000040648-how-is-character-time-calculated-",
+      "source_revision": "FieldComm character-time support article2016-11-11",
+      "schema_when": {
+        "hart_profile": [
+          "FCG_FSK_2016"
+        ],
+        "hart_phy": [
+          "FSK"
+        ]
+      },
+      "conditional_defaults": [
+        {
+          "when": {
+            "hart_profile": "FCG_FSK_2016",
+            "hart_phy": "FSK"
+          },
+          "value": 2
+        }
+      ]
+    },
+    "hart_link_grant_chars": {
+      "label": "link grant chars",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "Qualified FieldComm2016 FSK link grant RT2=8character times.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "character",
+      "min": 8,
+      "max": 8,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "source": "https://support.fieldcommgroup.org/support/solutions/articles/8000040648-how-is-character-time-calculated-",
+      "source_revision": "FieldComm character-time support article2016-11-11",
+      "schema_when": {
+        "hart_profile": [
+          "FCG_FSK_2016"
+        ],
+        "hart_phy": [
+          "FSK"
+        ]
+      },
+      "conditional_defaults": [
+        {
+          "when": {
+            "hart_profile": "FCG_FSK_2016",
+            "hart_phy": "FSK"
+          },
+          "value": 8
+        }
+      ]
+    },
+    "hart_quiet_chars": {
+      "label": "quiet chars",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "Qualified FieldComm2016 FSK RT1 primary33/secondary41character times. Master identity must be explicit.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "character",
+      "min": 0,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "source": "https://support.fieldcommgroup.org/support/solutions/articles/8000040648-how-is-character-time-calculated-",
+      "source_revision": "FieldComm character-time support article2016-11-11",
+      "schema_when": {
+        "hart_profile": [
+          "FCG_FSK_2016"
+        ],
+        "hart_phy": [
+          "FSK"
+        ]
+      },
+      "conditional_defaults": [
+        {
+          "when": {
+            "hart_profile": "FCG_FSK_2016",
+            "hart_phy": "FSK",
+            "hart_host_role": "PRIMARY"
+          },
+          "value": 33
+        },
+        {
+          "when": {
+            "hart_profile": "FCG_FSK_2016",
+            "hart_phy": "FSK",
+            "hart_host_role": "SECONDARY"
+          },
+          "value": 41
+        }
+      ]
+    },
+    "hart_response_start_ms": {
+      "label": "response start ms",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual request-end to response-start upper bound incl device and modem, unknown; qualified FCG timeout relation applies. Does not include response duration.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "ms",
+      "min": 0,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    },
+    "hart_retry_limit": {
+      "label": "retry limit",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual host/device retry budget, unknown; no inherited CAN0 or Siemens client-specific universal value.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "attempts",
+      "min": 0,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    },
+    "hart_retry_bound_ms": {
+      "label": "retry bound ms",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual total additional retry/arbitration recovery bound, unknown. Per-message or transport-independent timeout cannot substitute.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "ms",
+      "min": 0,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    },
+    "hart_burst_supported": {
+      "label": "burst supported",
+      "category": "communication",
+      "scope": "route",
+      "type": "boolean",
+      "description": "Actual endpoint burst capability confirmed by device source, unknown; enabling mode must not fabricate support.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    },
+    "hart_burst_period_ms": {
+      "label": "burst period ms",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual device/revision configured burst schedule, unknown. Tutorial3-4updates/s is illustrative, not a universal standard period.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "ms",
+      "min": 0,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    },
+    "hart_loop_load_ohms": {
+      "label": "loop load ohms",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual loop receiver resistor/communication load for qualified TI FSK example230..600Ohm, typically250. Bounds are not universal total loop impedance; device-specific topology requires actual source.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Ohm",
+      "min": 230,
+      "max": 600,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read",
+      "schema_when": {
+        "hart_profile": [
+          "PUBLIC_FSK_2023",
+          "FCG_FSK_2016"
+        ],
+        "hart_phy": [
+          "FSK"
+        ]
+      }
+    },
+    "hart_loop_supply_v": {
+      "label": "loop supply v",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual loop supply and device compliance budget, unknown; not a universal24V supply.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "V",
+      "min": 0,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    },
+    "hart_loop_current_ma": {
+      "label": "loop current ma",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual operating analog loop current, unknown;4..20mA measurement range and multidrop fixed current are not arbitrary digital defaults.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "mA",
+      "min": 0,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    },
+    "hart_signal_pp_ma": {
+      "label": "signal pp ma",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual FSK signal amplitude at matched load, unknown.1mApp is nominal tutorial value, not measured endpoint evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "mA",
+      "min": 0,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    },
+    "hart_cable_cap_pf": {
+      "label": "cable cap pf",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual cable/receiver capacitance and length/loading bound, unknown; not I2C400pF or an inferred universal cable length.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "pF",
+      "min": 0,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    },
+    "hart_is_required": {
+      "label": "is required",
+      "category": "communication",
+      "scope": "route",
+      "type": "boolean",
+      "description": "Actual hazardous-area/intrinsic-safety requirement, unknown; HART name does not imply certified safe installation.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    },
+    "hart_is_source": {
+      "label": "is source",
+      "category": "communication",
+      "scope": "route",
+      "type": "text",
+      "description": "Actual matched barriers/entities/cable/loop intrinsically-safe certification evidence, unknown; separate from message checksum.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    }
+  },
+  "mechanisms": {
+    "access": [
+      "ACTUAL_HALF_DUPLEX_DUAL_HOST_AND_BURST_ARBITRATION"
+    ],
+    "integrity": [
+      "QUALIFIED_FSK_ODD_PARITY_AND_XOR_CHECKSUM_NOT_AUTHENTICATION"
+    ],
+    "scope": [
+      "WIRED_FSK_OR_EXPLICIT_C8PSK_NOT_WIRELESSHART_HARTIP"
+    ]
+  },
+  "parameter_constraints": [
+    {
+      "when": {
+        "hart_phy": "FSK"
+      },
+      "parameter": "bitrate_bps",
+      "allowed": [
+        1200
+      ],
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    },
+    {
+      "when": {
+        "hart_phy": "C8PSK"
+      },
+      "parameter": "bitrate_bps",
+      "allowed": [
+        9600
+      ],
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    },
+    {
+      "when": {
+        "hart_profile": "PUBLIC_FSK_2023"
+      },
+      "parameter": "hart_phy",
+      "allowed": [
+        "FSK"
+      ],
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    },
+    {
+      "when": {
+        "hart_profile": "PUBLIC_FSK_2023",
+        "hart_address_format": "SHORT"
+      },
+      "parameter": "hart_address_bytes",
+      "allowed": [
+        1
+      ],
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    },
+    {
+      "when": {
+        "hart_profile": "PUBLIC_FSK_2023",
+        "hart_address_format": "LONG"
+      },
+      "parameter": "hart_address_bytes",
+      "allowed": [
+        5
+      ],
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    },
+    {
+      "when": {
+        "hart_profile": "PUBLIC_FSK_2023"
+      },
+      "parameter": "hart_address_bytes",
+      "allowed": [
+        1,
+        5
+      ],
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    },
+    {
+      "when": {
+        "hart_profile": "PUBLIC_FSK_2023"
+      },
+      "parameter": "hart_preamble_bytes",
+      "minimum_parameter": "hart_peer_preamble_bytes",
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    },
+    {
+      "when": {
+        "hart_profile": "PUBLIC_FSK_2023"
+      },
+      "parameter": "hart_byte_count",
+      "equal_sum": [
+        {
+          "parameter": "hart_data_bytes"
+        },
+        {
+          "parameter": "hart_status_bytes"
+        }
+      ],
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    },
+    {
+      "when": {
+        "hart_profile": "PUBLIC_FSK_2023"
+      },
+      "parameter": "hart_wire_octets",
+      "equal_sum": [
+        {
+          "parameter": "hart_preamble_bytes"
+        },
+        {
+          "parameter": "hart_address_bytes"
+        },
+        {
+          "parameter": "hart_expansion_bytes"
+        },
+        {
+          "parameter": "hart_byte_count"
+        },
+        {
+          "parameter": "hart_checksum_bytes"
+        }
+      ],
+      "equal_sum_offset": 3,
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    },
+    {
+      "when": {
+        "hart_profile": "PUBLIC_FSK_2023"
+      },
+      "parameter": "hart_wire_bits",
+      "equal_expression": {
+        "product": [
+          "hart_wire_octets",
+          "hart_char_bits"
+        ]
+      },
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    },
+    {
+      "when": {
+        "hart_profile": "PUBLIC_FSK_2023"
+      },
+      "parameter": "hart_serialization_ms",
+      "equal_ratio": {
+        "numerator_parameter": "hart_wire_bits",
+        "denominator_sum": [
+          "bitrate_bps"
+        ],
+        "factor": 1000
+      },
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    },
+    {
+      "when": {
+        "hart_profile": "PUBLIC_FSK_2023",
+        "hart_frame_kind": "REQUEST"
+      },
+      "parameter": "hart_status_bytes",
+      "allowed": [
+        0
+      ],
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    },
+    {
+      "when": {
+        "hart_profile": "PUBLIC_FSK_2023",
+        "hart_frame_kind": "REQUEST",
+        "hart_address_format": "SHORT"
+      },
+      "parameter": "hart_delimiter",
+      "equal_expression": {
+        "sum": [
+          2,
+          {
+            "product": [
+              32,
+              "hart_expansion_bytes"
+            ]
+          }
+        ]
+      },
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    },
+    {
+      "when": {
+        "hart_profile": "PUBLIC_FSK_2023",
+        "hart_frame_kind": "REQUEST",
+        "hart_address_format": "LONG"
+      },
+      "parameter": "hart_delimiter",
+      "equal_expression": {
+        "sum": [
+          130,
+          {
+            "product": [
+              32,
+              "hart_expansion_bytes"
+            ]
+          }
+        ]
+      },
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    },
+    {
+      "when": {
+        "hart_profile": "PUBLIC_FSK_2023",
+        "hart_frame_kind": "RESPONSE"
+      },
+      "parameter": "hart_status_bytes",
+      "allowed": [
+        2
+      ],
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    },
+    {
+      "when": {
+        "hart_profile": "PUBLIC_FSK_2023",
+        "hart_frame_kind": "RESPONSE",
+        "hart_address_format": "SHORT"
+      },
+      "parameter": "hart_delimiter",
+      "equal_expression": {
+        "sum": [
+          6,
+          {
+            "product": [
+              32,
+              "hart_expansion_bytes"
+            ]
+          }
+        ]
+      },
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    },
+    {
+      "when": {
+        "hart_profile": "PUBLIC_FSK_2023",
+        "hart_frame_kind": "RESPONSE",
+        "hart_address_format": "LONG"
+      },
+      "parameter": "hart_delimiter",
+      "equal_expression": {
+        "sum": [
+          134,
+          {
+            "product": [
+              32,
+              "hart_expansion_bytes"
+            ]
+          }
+        ]
+      },
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    },
+    {
+      "when": {
+        "hart_profile": "PUBLIC_FSK_2023",
+        "hart_frame_kind": "BURST"
+      },
+      "parameter": "hart_status_bytes",
+      "allowed": [
+        2
+      ],
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    },
+    {
+      "when": {
+        "hart_profile": "PUBLIC_FSK_2023",
+        "hart_frame_kind": "BURST",
+        "hart_address_format": "SHORT"
+      },
+      "parameter": "hart_delimiter",
+      "equal_expression": {
+        "sum": [
+          1,
+          {
+            "product": [
+              32,
+              "hart_expansion_bytes"
+            ]
+          }
+        ]
+      },
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    },
+    {
+      "when": {
+        "hart_profile": "PUBLIC_FSK_2023",
+        "hart_frame_kind": "BURST",
+        "hart_address_format": "LONG"
+      },
+      "parameter": "hart_delimiter",
+      "equal_expression": {
+        "sum": [
+          129,
+          {
+            "product": [
+              32,
+              "hart_expansion_bytes"
+            ]
+          }
+        ]
+      },
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    },
+    {
+      "when": {
+        "hart_profile": "PUBLIC_FSK_2023",
+        "hart_revision": "REV5_OR_EARLIER"
+      },
+      "parameter": "hart_poll_address",
+      "maximum": 15,
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    },
+    {
+      "when": {
+        "hart_profile": "PUBLIC_FSK_2023",
+        "hart_revision": "REV6"
+      },
+      "parameter": "hart_poll_address",
+      "maximum": 63,
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    },
+    {
+      "when": {
+        "hart_profile": "PUBLIC_FSK_2023",
+        "hart_revision": "REV7"
+      },
+      "parameter": "hart_poll_address",
+      "maximum": 63,
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    },
+    {
+      "when": {
+        "hart_profile": "FCG_FSK_2016"
+      },
+      "parameter": "hart_phy",
+      "allowed": [
+        "FSK"
+      ],
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    },
+    {
+      "when": {
+        "hart_profile": "FCG_FSK_2016",
+        "hart_address_format": "SHORT"
+      },
+      "parameter": "hart_address_bytes",
+      "allowed": [
+        1
+      ],
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    },
+    {
+      "when": {
+        "hart_profile": "FCG_FSK_2016",
+        "hart_address_format": "LONG"
+      },
+      "parameter": "hart_address_bytes",
+      "allowed": [
+        5
+      ],
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    },
+    {
+      "when": {
+        "hart_profile": "FCG_FSK_2016"
+      },
+      "parameter": "hart_address_bytes",
+      "allowed": [
+        1,
+        5
+      ],
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    },
+    {
+      "when": {
+        "hart_profile": "FCG_FSK_2016"
+      },
+      "parameter": "hart_preamble_bytes",
+      "minimum_parameter": "hart_peer_preamble_bytes",
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    },
+    {
+      "when": {
+        "hart_profile": "FCG_FSK_2016"
+      },
+      "parameter": "hart_byte_count",
+      "equal_sum": [
+        {
+          "parameter": "hart_data_bytes"
+        },
+        {
+          "parameter": "hart_status_bytes"
+        }
+      ],
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    },
+    {
+      "when": {
+        "hart_profile": "FCG_FSK_2016"
+      },
+      "parameter": "hart_wire_octets",
+      "equal_sum": [
+        {
+          "parameter": "hart_preamble_bytes"
+        },
+        {
+          "parameter": "hart_address_bytes"
+        },
+        {
+          "parameter": "hart_expansion_bytes"
+        },
+        {
+          "parameter": "hart_byte_count"
+        },
+        {
+          "parameter": "hart_checksum_bytes"
+        }
+      ],
+      "equal_sum_offset": 3,
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    },
+    {
+      "when": {
+        "hart_profile": "FCG_FSK_2016"
+      },
+      "parameter": "hart_wire_bits",
+      "equal_expression": {
+        "product": [
+          "hart_wire_octets",
+          "hart_char_bits"
+        ]
+      },
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    },
+    {
+      "when": {
+        "hart_profile": "FCG_FSK_2016"
+      },
+      "parameter": "hart_serialization_ms",
+      "equal_ratio": {
+        "numerator_parameter": "hart_wire_bits",
+        "denominator_sum": [
+          "bitrate_bps"
+        ],
+        "factor": 1000
+      },
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    },
+    {
+      "when": {
+        "hart_profile": "FCG_FSK_2016",
+        "hart_frame_kind": "REQUEST"
+      },
+      "parameter": "hart_status_bytes",
+      "allowed": [
+        0
+      ],
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    },
+    {
+      "when": {
+        "hart_profile": "FCG_FSK_2016",
+        "hart_frame_kind": "REQUEST",
+        "hart_address_format": "SHORT"
+      },
+      "parameter": "hart_delimiter",
+      "equal_expression": {
+        "sum": [
+          2,
+          {
+            "product": [
+              32,
+              "hart_expansion_bytes"
+            ]
+          }
+        ]
+      },
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    },
+    {
+      "when": {
+        "hart_profile": "FCG_FSK_2016",
+        "hart_frame_kind": "REQUEST",
+        "hart_address_format": "LONG"
+      },
+      "parameter": "hart_delimiter",
+      "equal_expression": {
+        "sum": [
+          130,
+          {
+            "product": [
+              32,
+              "hart_expansion_bytes"
+            ]
+          }
+        ]
+      },
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    },
+    {
+      "when": {
+        "hart_profile": "FCG_FSK_2016",
+        "hart_frame_kind": "RESPONSE"
+      },
+      "parameter": "hart_status_bytes",
+      "allowed": [
+        2
+      ],
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    },
+    {
+      "when": {
+        "hart_profile": "FCG_FSK_2016",
+        "hart_frame_kind": "RESPONSE",
+        "hart_address_format": "SHORT"
+      },
+      "parameter": "hart_delimiter",
+      "equal_expression": {
+        "sum": [
+          6,
+          {
+            "product": [
+              32,
+              "hart_expansion_bytes"
+            ]
+          }
+        ]
+      },
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    },
+    {
+      "when": {
+        "hart_profile": "FCG_FSK_2016",
+        "hart_frame_kind": "RESPONSE",
+        "hart_address_format": "LONG"
+      },
+      "parameter": "hart_delimiter",
+      "equal_expression": {
+        "sum": [
+          134,
+          {
+            "product": [
+              32,
+              "hart_expansion_bytes"
+            ]
+          }
+        ]
+      },
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    },
+    {
+      "when": {
+        "hart_profile": "FCG_FSK_2016",
+        "hart_frame_kind": "BURST"
+      },
+      "parameter": "hart_status_bytes",
+      "allowed": [
+        2
+      ],
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    },
+    {
+      "when": {
+        "hart_profile": "FCG_FSK_2016",
+        "hart_frame_kind": "BURST",
+        "hart_address_format": "SHORT"
+      },
+      "parameter": "hart_delimiter",
+      "equal_expression": {
+        "sum": [
+          1,
+          {
+            "product": [
+              32,
+              "hart_expansion_bytes"
+            ]
+          }
+        ]
+      },
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    },
+    {
+      "when": {
+        "hart_profile": "FCG_FSK_2016",
+        "hart_frame_kind": "BURST",
+        "hart_address_format": "LONG"
+      },
+      "parameter": "hart_delimiter",
+      "equal_expression": {
+        "sum": [
+          129,
+          {
+            "product": [
+              32,
+              "hart_expansion_bytes"
+            ]
+          }
+        ]
+      },
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    },
+    {
+      "when": {
+        "hart_profile": "FCG_FSK_2016",
+        "hart_revision": "REV5_OR_EARLIER"
+      },
+      "parameter": "hart_poll_address",
+      "maximum": 15,
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    },
+    {
+      "when": {
+        "hart_profile": "FCG_FSK_2016",
+        "hart_revision": "REV6"
+      },
+      "parameter": "hart_poll_address",
+      "maximum": 63,
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    },
+    {
+      "when": {
+        "hart_profile": "FCG_FSK_2016",
+        "hart_revision": "REV7"
+      },
+      "parameter": "hart_poll_address",
+      "maximum": 63,
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    },
+    {
+      "when": {
+        "hart_role": "HOST"
+      },
+      "parameter": "hart_frame_kind",
+      "allowed": [
+        "REQUEST"
+      ],
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    },
+    {
+      "when": {
+        "hart_role": "FIELD_DEVICE"
+      },
+      "parameter": "hart_frame_kind",
+      "allowed": [
+        "RESPONSE",
+        "BURST"
+      ],
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    },
+    {
+      "when": {
+        "hart_mode": "REQUEST_RESPONSE"
+      },
+      "parameter": "hart_frame_kind",
+      "allowed": [
+        "REQUEST",
+        "RESPONSE"
+      ],
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    },
+    {
+      "when": {
+        "hart_mode": "BURST"
+      },
+      "parameter": "hart_burst_supported",
+      "allowed": [
+        true
+      ],
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    },
+    {
+      "when": {
+        "hart_mode": "BURST"
+      },
+      "parameter": "hart_burst_supported",
+      "required": true,
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    },
+    {
+      "when": {},
+      "parameter": "hart_burst_period_ms",
+      "exclusive_minimum": 0,
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    },
+    {
+      "when": {},
+      "parameter": "hart_extended_command",
+      "when_present": [
+        "hart_extended_command"
+      ],
+      "required": true,
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    },
+    {
+      "when": {},
+      "parameter": "hart_command",
+      "when_present": [
+        "hart_extended_command"
+      ],
+      "allowed": [
+        31
+      ],
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    },
+    {
+      "when": {},
+      "parameter": "hart_data_bytes",
+      "when_present": [
+        "hart_extended_command"
+      ],
+      "minimum": 2,
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    },
+    {
+      "when": {},
+      "parameter": "payload_bytes",
+      "equal_parameter": "hart_data_bytes",
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    },
+    {
+      "when": {
+        "hart_profile": "FCG_FSK_2016",
+        "hart_phy": "FSK",
+        "hart_host_role": "PRIMARY"
+      },
+      "parameter": "hart_quiet_chars",
+      "allowed": [
+        33
+      ],
+      "source": "https://support.fieldcommgroup.org/support/solutions/articles/8000040648-how-is-character-time-calculated-",
+      "source_revision": "FieldComm character-time support article2016-11-11"
+    },
+    {
+      "when": {
+        "hart_profile": "FCG_FSK_2016",
+        "hart_phy": "FSK",
+        "hart_host_role": "SECONDARY"
+      },
+      "parameter": "hart_quiet_chars",
+      "allowed": [
+        41
+      ],
+      "source": "https://support.fieldcommgroup.org/support/solutions/articles/8000040648-how-is-character-time-calculated-",
+      "source_revision": "FieldComm character-time support article2016-11-11"
+    },
+    {
+      "when": {
+        "hart_profile": "FCG_FSK_2016",
+        "hart_phy": "FSK",
+        "hart_role": "HOST"
+      },
+      "parameter": "hart_host_role",
+      "required": true,
+      "source": "https://support.fieldcommgroup.org/support/solutions/articles/8000040648-how-is-character-time-calculated-",
+      "source_revision": "FieldComm character-time support article2016-11-11"
+    },
+    {
+      "when": {
+        "hart_profile": "FCG_FSK_2016",
+        "hart_phy": "FSK"
+      },
+      "parameter": "hart_gap_us",
+      "maximum_ratio": {
+        "numerator_parameter": "hart_char_bits",
+        "denominator_sum": [
+          "bitrate_bps"
+        ],
+        "factor": 1000000
+      },
+      "exclusive_maximum_ratio": true,
+      "source": "https://support.fieldcommgroup.org/support/solutions/articles/8000040648-how-is-character-time-calculated-",
+      "source_revision": "FieldComm character-time support article2016-11-11"
+    },
+    {
+      "when": {
+        "hart_profile": "FCG_FSK_2016",
+        "hart_phy": "FSK"
+      },
+      "parameter": "hart_response_start_ms",
+      "maximum_expression": {
+        "product": [
+          "hart_slave_timeout_chars",
+          11,
+          0.8333333333333334
+        ]
+      },
+      "source": "https://support.fieldcommgroup.org/support/solutions/articles/8000040648-how-is-character-time-calculated-",
+      "source_revision": "FieldComm character-time support article2016-11-11"
+    },
+    {
+      "when": {},
+      "parameter": "hart_loop_supply_v",
+      "exclusive_minimum": 0,
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    },
+    {
+      "when": {},
+      "parameter": "hart_signal_pp_ma",
+      "exclusive_minimum": 0,
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    },
+    {
+      "when": {
+        "hart_is_required": true
+      },
+      "parameter": "hart_is_source",
+      "required": true,
+      "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+      "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read"
+    }
+  ],
+  "physical_layer_profile_id": null,
+  "medium_access_model": null,
+  "native_parameter_prefixes": [
+    "hart_"
+  ],
+  "parameter_aliases": {},
+  "parameter_alias_limits": {},
+  "parameter_evidence_scope": null,
+  "rate_source_profile_id": null,
+  "arbitration_model_id": null,
+  "max_payload_bytes": 255,
+  "capabilities": {
+    "supports_signals": true,
+    "supports_data_objects": false,
+    "supports_streams": false,
+    "supports_multicast": false,
+    "supports_publish_subscribe": false,
+    "supports_request_response": true,
+    "supports_cyclic": true,
+    "supports_event": true,
+    "supports_redundancy": false,
+    "supports_time_sync": false,
+    "supports_safety_profile": false,
+    "supports_segmentation": false,
+    "supports_fragmentation": false,
+    "supports_qos": false
+  },
+  "deterministic": false,
+  "overhead_bytes": 8,
+  "implementation_status": "PARTIAL",
+  "connection_type": "COMMUNICATION_TECHNOLOGY",
+  "parameter_proposals": {
+    "kind": "STANDARD_BASELINE",
+    "default_bps": 1200,
+    "default_basis": "WIRED_FSK_BASELINE",
+    "status": "REVIEW_REQUIRED",
+    "source": "https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf",
+    "source_revision": "TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read",
+    "note": "Wired FSK baseline1200bit/s proposal. C8PSK requires explicit actual mode9600 and own codec/PHY evidence. No automatic HART-IP/WirelessHART transport or device identity."
+  },
+  "capacity_evidence": {
+    "status": "MODEL_MISSING",
+    "frame_model": null,
+    "schedule_model": null,
+    "requires_confirmed_device_parameters": true
+  },
+  "components": {
+    "binding": "hart.binding",
+    "generator": "hart.generator",
+    "validator": "hart.validator",
+    "timing_model": null,
+    "load_model": null,
+    "encoder": "hart.encoder",
+    "decoder": "hart.decoder"
+  },
+  "known_limitations": "Technology-specific conformance details require a vendor/profile extension."
+}

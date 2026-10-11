@@ -1,0 +1,3063 @@
+{
+  "id": "ethercat",
+  "label": "EtherCAT",
+  "domain": "industrial_automation",
+  "layer": "INDUSTRY_PROFILE",
+  "transport_unit": "DATAGRAM",
+  "payload_element_types": [
+    "FIELD",
+    "REGISTER",
+    "STATUS"
+  ],
+  "hardware_interface": "ethercat_port",
+  "hardware_capability_aliases": [
+    "ethercat_port"
+  ],
+  "default_stack": [
+    "ethernet",
+    "ethercat"
+  ],
+  "stack_variants": [
+    [
+      "ethernet",
+      "ethercat"
+    ]
+  ],
+  "default_bitrate": 100000000,
+  "rate_model": {
+    "type": "FIXED_LINK_RATE",
+    "fields": [
+      "bitrate_bps"
+    ],
+    "fixed_bps": 100000000
+  },
+  "local_timing_schema": [],
+  "parameter_schema": {
+    "bitrate_bps": {
+      "label": "Link Speed",
+      "category": "physical",
+      "scope": "network",
+      "type": "number",
+      "description": "Technology-profiled network rate.",
+      "required": true,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100000000,
+      "unit": "bit/s",
+      "min": 1,
+      "default_review": {
+        "technology": "ethercat",
+        "rate_profile": "ethercat",
+        "values": {
+          "bitrate_bps": 100000000
+        },
+        "basis": "FIXED_PROFILE_RATE",
+        "status": "REVIEW_REQUIRED",
+        "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+        "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+      },
+      "allowed_bps": [
+        100000000
+      ],
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED",
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    "payload_bytes": {
+      "label": "Payload",
+      "category": "physical",
+      "scope": "message",
+      "type": "number",
+      "description": "Actual selected EtherCAT datagram data; frame aggregate and header overhead are separate. Native<=1486, reviewedUDP/IPv4<=1458.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "max": 1486,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13",
+      "integer": true
+    },
+    "cycle_ms": {
+      "label": "Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "Standardperiode fuer zyklische Nachrichten.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "minimum_cycle_time_ms": {
+      "label": "Minimum Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "deadline_ms": {
+      "label": "Deadline",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "timeout_ms": {
+      "label": "Timeout",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_latency_ms": {
+      "label": "Maximum Latency",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "jitter_ms": {
+      "label": "Jitter Budget",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "freshness_ms": {
+      "label": "Data Freshness",
+      "category": "timing",
+      "scope": "signal",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "source_processing_delay_ms": {
+      "label": "Source Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_processing_delay_ms": {
+      "label": "Target Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "propagation_delay_ms": {
+      "label": "Propagation",
+      "category": "timing",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.01,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_bus_load_percent": {
+      "label": "Ziel-Buslast",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "Zielwert fuer die aus Routing, Payload, Zyklus und Bitrate berechnete Buslast.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "peak_factor": {
+      "label": "Peak Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.15,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_factor": {
+      "label": "Burst Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.5,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_window_ms": {
+      "label": "Burst Window",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "warning_threshold": {
+      "label": "Load Warning",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "critical_threshold": {
+      "label": "Load Critical",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 75,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "overload_threshold": {
+      "label": "Load Overload",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 90,
+      "unit": "%",
+      "min": 1,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "queue_size": {
+      "label": "Queue Size",
+      "category": "qos",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 256,
+      "unit": "Frames",
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1",
+      "integer": true
+    },
+    "queue_policy": {
+      "label": "Queue Policy",
+      "category": "qos",
+      "scope": "network",
+      "type": "select",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": "FIFO",
+      "options": [
+        "FIFO",
+        "CUSTOM"
+      ],
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "traffic_class": {
+      "label": "Traffic Class",
+      "category": "qos",
+      "scope": "route",
+      "type": "select",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": "BEST_EFFORT",
+      "options": [
+        "BEST_EFFORT",
+        "CONTROL",
+        "REALTIME",
+        "SAFETY_CRITICAL"
+      ],
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "packet_loss_probability": {
+      "label": "Packet Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "frame_loss_probability": {
+      "label": "Frame Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "bit_error_rate": {
+      "label": "Bit Error Rate",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "corruption_probability": {
+      "label": "Corruption",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duplicate_probability": {
+      "label": "Duplication",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "reordering_probability": {
+      "label": "Reordering",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "required_reliability": {
+      "label": "Required Reliability",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.999,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_offset_ms": {
+      "label": "Clock Offset",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_drift_ppm": {
+      "label": "Clock Drift",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 20,
+      "unit": "ppm",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_precision_ms": {
+      "label": "Sync Precision",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_interval_ms": {
+      "label": "Sync Interval",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1000,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_sync_error_ms": {
+      "label": "Maximum Sync Error",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_delay_ms": {
+      "label": "Gateway Processing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.2,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_queue_delay_ms": {
+      "label": "Gateway Queueing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "protocol_conversion_delay_ms": {
+      "label": "Protocol Conversion",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duration_s": {
+      "label": "Simulation Duration",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 1,
+      "unit": "s",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "seed": {
+      "label": "Random Seed",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 42,
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "max_events": {
+      "label": "Maximum Events",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 100000,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "dropout_probability": {
+      "label": "Failure Injection Dropout",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "mtu_bytes": {
+      "label": "MTU",
+      "category": "physical",
+      "scope": "network",
+      "type": "number",
+      "description": "Classic MAC-client limit1500B, not TwinCAT MTU1514B includingMACheader/noFCS or datagram1486B.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 1500,
+      "max": 1500,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED",
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13",
+      "integer": true,
+      "default": 1500
+    },
+    "duplex": {
+      "label": "Duplex",
+      "category": "physical",
+      "scope": "network",
+      "type": "select",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "FULL"
+      ],
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED",
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13",
+      "default": "FULL"
+    },
+    "vlan_id": {
+      "label": "VLAN ID",
+      "category": "qos",
+      "scope": "network",
+      "type": "number",
+      "description": "Actual optionalIEEE802.1Q VLAN ID. ESC accepts tag but doesnot evaluate VLANcontents; no inventedVLAN0 or switched-office reachability.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 1,
+      "max": 4094,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13",
+      "integer": true
+    },
+    "distributed_clock_cycle_ms": {
+      "label": "Distributed Clock Cycle",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "ActualSYNC0cycle in ms; zero is valid single-shot. No universal1ms cycle, PTPprecision or installedDC capability.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    "ecat_transport": {
+      "label": "Selected classic EtherCAT encapsulation",
+      "category": "physical",
+      "scope": "route",
+      "type": "select",
+      "description": "Classic EtherCAT ESC declaration. Actual ESI/port/map/state/DC/watchdog evidence is separate; EtherCATG/G10 and full E2E capacity are not inferred.",
+      "required": true,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": "NATIVE_ETHERNET",
+      "options": [
+        "NATIVE_ETHERNET",
+        "UDP_IPV4"
+      ],
+      "integer": false,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED",
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    "ecat_phy": {
+      "label": "Actual classic EtherCAT physical link",
+      "category": "physical",
+      "scope": "route",
+      "type": "select",
+      "description": "Classic EtherCAT ESC declaration. Actual ESI/port/map/state/DC/watchdog evidence is separate; EtherCATG/G10 and full E2E capacity are not inferred.",
+      "required": true,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "100BASE_TX",
+        "100BASE_FX",
+        "EBUS",
+        "ETHERCAT_P"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    "ecat_esi_source": {
+      "label": "Actual ESI/SII/ESC variant and configuration source",
+      "category": "physical",
+      "scope": "route",
+      "type": "text",
+      "description": "Classic EtherCAT ESC declaration. Actual ESI/port/map/state/DC/watchdog evidence is separate; EtherCATG/G10 and full E2E capacity are not inferred.",
+      "required": true,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    "ecat_topology_source": {
+      "label": "Actual MainDevice/ordered ports/loop/cable topology",
+      "category": "physical",
+      "scope": "route",
+      "type": "text",
+      "description": "Classic EtherCAT ESC declaration. Actual ESI/port/map/state/DC/watchdog evidence is separate; EtherCATG/G10 and full E2E capacity are not inferred.",
+      "required": true,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    "ecat_main_device": {
+      "label": "Actual sole active MainDevice in segment",
+      "category": "physical",
+      "scope": "route",
+      "type": "text",
+      "description": "Classic EtherCAT ESC declaration. Actual ESI/port/map/state/DC/watchdog evidence is separate; EtherCATG/G10 and full E2E capacity are not inferred.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    "ecat_frame_type": {
+      "label": "EtherCAT header protocol type",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Classic EtherCAT ESC declaration. Actual ESI/port/map/state/DC/watchdog evidence is separate; EtherCATG/G10 and full E2E capacity are not inferred.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1,
+      "min": 1,
+      "max": 1,
+      "integer": true,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED",
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    "ecat_header_reserved": {
+      "label": "EtherCAT header reserved bit",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Classic EtherCAT ESC declaration. Actual ESI/port/map/state/DC/watchdog evidence is separate; EtherCATG/G10 and full E2E capacity are not inferred.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 0,
+      "integer": true,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED",
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    "ecat_header_length": {
+      "label": "Actual header datagram area length",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Classic EtherCAT ESC declaration. Actual ESI/port/map/state/DC/watchdog evidence is separate; EtherCATG/G10 and full E2E capacity are not inferred.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 12,
+      "max": 1498,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    "ecat_datagram_count": {
+      "label": "Actual datagrams in this frame",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Classic EtherCAT ESC declaration. Actual ESI/port/map/state/DC/watchdog evidence is separate; EtherCATG/G10 and full E2E capacity are not inferred.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 1,
+      "max": 124,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    "ecat_device_datagram_limit": {
+      "label": "Actual MainDevice/ESC datagram limit",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Classic EtherCAT ESC declaration. Actual ESI/port/map/state/DC/watchdog evidence is separate; EtherCATG/G10 and full E2E capacity are not inferred.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 1,
+      "max": 124,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    "ecat_sum_data_bytes": {
+      "label": "Actual sum of all datagram data",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Classic EtherCAT ESC declaration. Actual ESI/port/map/state/DC/watchdog evidence is separate; EtherCATG/G10 and full E2E capacity are not inferred.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "max": 1486,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    "ecat_datagram_bytes": {
+      "label": "Actual complete datagram area",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Classic EtherCAT ESC declaration. Actual ESI/port/map/state/DC/watchdog evidence is separate; EtherCATG/G10 and full E2E capacity are not inferred.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 12,
+      "max": 1498,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    "ecat_padding_bytes": {
+      "label": "Actual MAC padding",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Classic EtherCAT ESC declaration. Actual ESI/port/map/state/DC/watchdog evidence is separate; EtherCATG/G10 and full E2E capacity are not inferred.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "max": 32,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    "ecat_vlan_tags": {
+      "label": "Actual classic VLAN tag count",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Classic EtherCAT ESC declaration. Actual ESI/port/map/state/DC/watchdog evidence is separate; EtherCATG/G10 and full E2E capacity are not inferred.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "max": 1,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    "ecat_mac_frame_bytes": {
+      "label": "Actual MAC frame includingFCS excludingpreamble/IFG",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Classic EtherCAT ESC declaration. Actual ESI/port/map/state/DC/watchdog evidence is separate; EtherCATG/G10 and full E2E capacity are not inferred.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 64,
+      "max": 1522,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    "ecat_wire_slot_bytes": {
+      "label": "Ethernet wire occupation includingpreamble/IFG",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Classic EtherCAT ESC declaration. Actual ESI/port/map/state/DC/watchdog evidence is separate; EtherCATG/G10 and full E2E capacity are not inferred.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 84,
+      "max": 1542,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    "ecat_udp_port": {
+      "label": "Selected IPv4 UDP destination port",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Classic EtherCAT ESC declaration. Actual ESI/port/map/state/DC/watchdog evidence is separate; EtherCATG/G10 and full E2E capacity are not inferred.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 1,
+      "max": 65535,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13",
+      "conditional_defaults": [
+        {
+          "when": {
+            "ecat_transport": "UDP_IPV4"
+          },
+          "value": 34980
+        }
+      ]
+    },
+    "ecat_ipv4_header_bytes": {
+      "label": "Selected classicIPv4 header length",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Classic EtherCAT ESC declaration. Actual ESI/port/map/state/DC/watchdog evidence is separate; EtherCATG/G10 and full E2E capacity are not inferred.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 20,
+      "max": 20,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    "ecat_command": {
+      "label": "Actual datagram command",
+      "category": "physical",
+      "scope": "route",
+      "type": "select",
+      "description": "Classic EtherCAT ESC declaration. Actual ESI/port/map/state/DC/watchdog evidence is separate; EtherCATG/G10 and full E2E capacity are not inferred.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "NOP",
+        "APRD",
+        "APWR",
+        "APRW",
+        "FPRD",
+        "FPWR",
+        "FPRW",
+        "BRD",
+        "BWR",
+        "BRW",
+        "LRD",
+        "LWR",
+        "LRW",
+        "ARMW",
+        "FRMW"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    "ecat_index": {
+      "label": "Actual datagram index",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Classic EtherCAT ESC declaration. Actual ESI/port/map/state/DC/watchdog evidence is separate; EtherCATG/G10 and full E2E capacity are not inferred.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "max": 255,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    "ecat_datagram_length": {
+      "label": "Actual selected datagram length field",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Classic EtherCAT ESC declaration. Actual ESI/port/map/state/DC/watchdog evidence is separate; EtherCATG/G10 and full E2E capacity are not inferred.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "max": 1486,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    "ecat_datagram_reserved": {
+      "label": "Datagram reserved bits",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Classic EtherCAT ESC declaration. Actual ESI/port/map/state/DC/watchdog evidence is separate; EtherCATG/G10 and full E2E capacity are not inferred.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 0,
+      "integer": true,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED",
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    "ecat_circulating": {
+      "label": "Actual circulating-frame bit",
+      "category": "physical",
+      "scope": "route",
+      "type": "boolean",
+      "description": "Classic EtherCAT ESC declaration. Actual ESI/port/map/state/DC/watchdog evidence is separate; EtherCATG/G10 and full E2E capacity are not inferred.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    "ecat_more": {
+      "label": "Actual more-datagrams bit",
+      "category": "physical",
+      "scope": "route",
+      "type": "boolean",
+      "description": "Classic EtherCAT ESC declaration. Actual ESI/port/map/state/DC/watchdog evidence is separate; EtherCATG/G10 and full E2E capacity are not inferred.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    "ecat_irq": {
+      "label": "Actual combined event-request bits",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Classic EtherCAT ESC declaration. Actual ESI/port/map/state/DC/watchdog evidence is separate; EtherCATG/G10 and full E2E capacity are not inferred.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "max": 65535,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    "ecat_addressing": {
+      "label": "Actual command addressing mode",
+      "category": "physical",
+      "scope": "route",
+      "type": "select",
+      "description": "Classic EtherCAT ESC declaration. Actual ESI/port/map/state/DC/watchdog evidence is separate; EtherCATG/G10 and full E2E capacity are not inferred.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "AUTO_INCREMENT",
+        "CONFIGURED",
+        "BROADCAST",
+        "LOGICAL"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    "ecat_station_address": {
+      "label": "Actual position/configured16-bit address field",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Classic EtherCAT ESC declaration. Actual ESI/port/map/state/DC/watchdog evidence is separate; EtherCATG/G10 and full E2E capacity are not inferred.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "max": 65535,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    "ecat_register_offset": {
+      "label": "Actual local register/memory offset",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Classic EtherCAT ESC declaration. Actual ESI/port/map/state/DC/watchdog evidence is separate; EtherCATG/G10 and full E2E capacity are not inferred.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "max": 65535,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    "ecat_logical_address": {
+      "label": "Actual logical process-image address",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Classic EtherCAT ESC declaration. Actual ESI/port/map/state/DC/watchdog evidence is separate; EtherCATG/G10 and full E2E capacity are not inferred.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "max": 4294967295,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    "ecat_mapping_source": {
+      "label": "Actual station/FMMU/SyncManager/PDO mapping",
+      "category": "physical",
+      "scope": "route",
+      "type": "text",
+      "description": "Classic EtherCAT ESC declaration. Actual ESI/port/map/state/DC/watchdog evidence is separate; EtherCATG/G10 and full E2E capacity are not inferred.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    "ecat_expected_wkc": {
+      "label": "Actual expected working counter",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Classic EtherCAT ESC declaration. Actual ESI/port/map/state/DC/watchdog evidence is separate; EtherCATG/G10 and full E2E capacity are not inferred.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "max": 65535,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    "ecat_received_wkc": {
+      "label": "Actual observed working counter",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Classic EtherCAT ESC declaration. Actual ESI/port/map/state/DC/watchdog evidence is separate; EtherCATG/G10 and full E2E capacity are not inferred.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "max": 65535,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    "ecat_response_accepted": {
+      "label": "Actual response accepted for application",
+      "category": "physical",
+      "scope": "route",
+      "type": "boolean",
+      "description": "Classic EtherCAT ESC declaration. Actual ESI/port/map/state/DC/watchdog evidence is separate; EtherCATG/G10 and full E2E capacity are not inferred.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    "ecat_sync_mode": {
+      "label": "Actual application synchronization",
+      "category": "physical",
+      "scope": "route",
+      "type": "select",
+      "description": "Classic EtherCAT ESC declaration. Actual ESI/port/map/state/DC/watchdog evidence is separate; EtherCATG/G10 and full E2E capacity are not inferred.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "FREE_RUN",
+        "SM_EVENT",
+        "DC"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    "ecat_dc_supported": {
+      "label": "Actual DistributedClocks capability",
+      "category": "physical",
+      "scope": "route",
+      "type": "boolean",
+      "description": "Classic EtherCAT ESC declaration. Actual ESI/port/map/state/DC/watchdog evidence is separate; EtherCATG/G10 and full E2E capacity are not inferred.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    "ecat_dc_width": {
+      "label": "Actual DC width",
+      "category": "physical",
+      "scope": "route",
+      "type": "select",
+      "description": "Classic EtherCAT ESC declaration. Actual ESI/port/map/state/DC/watchdog evidence is separate; EtherCATG/G10 and full E2E capacity are not inferred.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "32",
+        "64"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    "ecat_dc_reference": {
+      "label": "Actual selected reference clock",
+      "category": "physical",
+      "scope": "route",
+      "type": "text",
+      "description": "Classic EtherCAT ESC declaration. Actual ESI/port/map/state/DC/watchdog evidence is separate; EtherCATG/G10 and full E2E capacity are not inferred.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    "ecat_dc_source": {
+      "label": "Actual DC support/calibration/synchronization evidence",
+      "category": "physical",
+      "scope": "route",
+      "type": "text",
+      "description": "Classic EtherCAT ESC declaration. Actual ESI/port/map/state/DC/watchdog evidence is separate; EtherCATG/G10 and full E2E capacity are not inferred.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    "ecat_sync_generation": {
+      "label": "Actual DC signal generation mode",
+      "category": "physical",
+      "scope": "route",
+      "type": "select",
+      "description": "Classic EtherCAT ESC declaration. Actual ESI/port/map/state/DC/watchdog evidence is separate; EtherCATG/G10 and full E2E capacity are not inferred.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "CYCLIC_PULSE",
+        "SINGLE_SHOT",
+        "CYCLIC_ACK",
+        "SINGLE_SHOT_ACK"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    "ecat_sync0_cycle_ns": {
+      "label": "Actual SYNC0 cycle register",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "Classic EtherCAT ESC declaration. Actual ESI/port/map/state/DC/watchdog evidence is separate; EtherCATG/G10 and full E2E capacity are not inferred.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "ns",
+      "min": 0,
+      "max": 4294967295,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    "ecat_sync1_delay_ns": {
+      "label": "Actual SYNC1 delay from SYNC0",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "Classic EtherCAT ESC declaration. Actual ESI/port/map/state/DC/watchdog evidence is separate; EtherCATG/G10 and full E2E capacity are not inferred.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "ns",
+      "min": 0,
+      "max": 4294967295,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    "ecat_sync_pulse_ns": {
+      "label": "Actual SYNC pulse width",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "Classic EtherCAT ESC declaration. Actual ESI/port/map/state/DC/watchdog evidence is separate; EtherCATG/G10 and full E2E capacity are not inferred.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "ns",
+      "min": 0,
+      "max": 655350,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://download.beckhoff.com/download/Document/io/ethercat-development-products/ethercat_esc_datasheet_sec2_registers_3i0.pdf",
+      "source_revision": "BeckhoffSectionII3.0 table11116-bit register counts10ns; SII/power-on value unknown",
+      "multiple_of": 10
+    },
+    "ecat_sync_pulse_register": {
+      "label": "Actual16-bit pulse width in10ns units",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Classic EtherCAT ESC declaration. Actual ESI/port/map/state/DC/watchdog evidence is separate; EtherCATG/G10 and full E2E capacity are not inferred.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "max": 65535,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    "ecat_watchdog_divider": {
+      "label": "Actual shared watchdog divider",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Classic EtherCAT ESC declaration. Actual ESI/port/map/state/DC/watchdog evidence is separate; EtherCATG/G10 and full E2E capacity are not inferred.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "max": 65535,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "source": "https://download.beckhoff.com/download/Document/io/ethercat-development-products/ethercat_esc_datasheet_sec2_registers_3i0.pdf",
+      "source_revision": "BeckhoffESCregistersSectionII3.0 tables57..59 resetvalues; actualSII/ESI/runtimeconfiguration separate",
+      "conditional_defaults": [
+        {
+          "when": {
+            "ecat_register_profile": "BECKHOFF_3_0"
+          },
+          "value": 2498
+        }
+      ]
+    },
+    "ecat_register_profile": {
+      "label": "Actual matching ESC register profile",
+      "category": "physical",
+      "scope": "route",
+      "type": "select",
+      "description": "Classic EtherCAT ESC declaration. Actual ESI/port/map/state/DC/watchdog evidence is separate; EtherCATG/G10 and full E2E capacity are not inferred.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "BECKHOFF_3_0",
+        "DEVICE_SPECIFIC"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    "ecat_pd_watchdog_ticks": {
+      "label": "Actual process-data watchdog time register",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Classic EtherCAT ESC declaration. Actual ESI/port/map/state/DC/watchdog evidence is separate; EtherCATG/G10 and full E2E capacity are not inferred.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "max": 65535,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "source": "https://download.beckhoff.com/download/Document/io/ethercat-development-products/ethercat_esc_datasheet_sec2_registers_3i0.pdf",
+      "source_revision": "BeckhoffESCregistersSectionII3.0 tables57..59 resetvalues; actualSII/ESI/runtimeconfiguration separate",
+      "conditional_defaults": [
+        {
+          "when": {
+            "ecat_register_profile": "BECKHOFF_3_0"
+          },
+          "value": 1000
+        }
+      ]
+    },
+    "ecat_pdi_watchdog_ticks": {
+      "label": "Actual PDI watchdog time register",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Classic EtherCAT ESC declaration. Actual ESI/port/map/state/DC/watchdog evidence is separate; EtherCATG/G10 and full E2E capacity are not inferred.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "max": 65535,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "source": "https://download.beckhoff.com/download/Document/io/ethercat-development-products/ethercat_esc_datasheet_sec2_registers_3i0.pdf",
+      "source_revision": "BeckhoffESCregistersSectionII3.0 tables57..59 resetvalues; actualSII/ESI/runtimeconfiguration separate",
+      "conditional_defaults": [
+        {
+          "when": {
+            "ecat_register_profile": "BECKHOFF_3_0"
+          },
+          "value": 1000
+        }
+      ]
+    },
+    "ecat_pd_watchdog_min_ns": {
+      "label": "Process-data watchdog approximate earliest timeout",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "Classic EtherCAT ESC declaration. Actual ESI/port/map/state/DC/watchdog evidence is separate; EtherCATG/G10 and full E2E capacity are not inferred.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "ns",
+      "min": 0,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    "ecat_pd_watchdog_max_ns": {
+      "label": "Process-data watchdog approximate latest timeout",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "Classic EtherCAT ESC declaration. Actual ESI/port/map/state/DC/watchdog evidence is separate; EtherCATG/G10 and full E2E capacity are not inferred.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "ns",
+      "min": 0,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    "ecat_watchdog_source": {
+      "label": "Actual PD/PDI watchdog configuration and safe reaction",
+      "category": "physical",
+      "scope": "route",
+      "type": "text",
+      "description": "Classic EtherCAT ESC declaration. Actual ESI/port/map/state/DC/watchdog evidence is separate; EtherCATG/G10 and full E2E capacity are not inferred.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    "ecat_state": {
+      "label": "Actual SubDevice application-layer state",
+      "category": "physical",
+      "scope": "route",
+      "type": "select",
+      "description": "Classic EtherCAT ESC declaration. Actual ESI/port/map/state/DC/watchdog evidence is separate; EtherCATG/G10 and full E2E capacity are not inferred.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "INIT",
+        "PREOP",
+        "SAFEOP",
+        "OP",
+        "BOOTSTRAP"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    "ecat_outputs_active": {
+      "label": "Actual functional process outputs active",
+      "category": "physical",
+      "scope": "route",
+      "type": "boolean",
+      "description": "Classic EtherCAT ESC declaration. Actual ESI/port/map/state/DC/watchdog evidence is separate; EtherCATG/G10 and full E2E capacity are not inferred.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    "ecat_al_status_code": {
+      "label": "Actual application-layer error/status code",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Classic EtherCAT ESC declaration. Actual ESI/port/map/state/DC/watchdog evidence is separate; EtherCATG/G10 and full E2E capacity are not inferred.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "max": 65535,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    "ecat_state_source": {
+      "label": "Actual acknowledged state/output/error observations",
+      "category": "physical",
+      "scope": "route",
+      "type": "text",
+      "description": "Classic EtherCAT ESC declaration. Actual ESI/port/map/state/DC/watchdog evidence is separate; EtherCATG/G10 and full E2E capacity are not inferred.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    "ecat_mailbox_protocol": {
+      "label": "Actual configured mailbox protocol",
+      "category": "physical",
+      "scope": "route",
+      "type": "select",
+      "description": "Classic EtherCAT ESC declaration. Actual ESI/port/map/state/DC/watchdog evidence is separate; EtherCATG/G10 and full E2E capacity are not inferred.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "COE",
+        "FOE",
+        "EOE",
+        "SOE",
+        "AOE",
+        "VOE",
+        "DEVICE_SPECIFIC"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    "ecat_mailbox_bytes": {
+      "label": "Actual configured mailbox buffer",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Classic EtherCAT ESC declaration. Actual ESI/port/map/state/DC/watchdog evidence is separate; EtherCATG/G10 and full E2E capacity are not inferred.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 6,
+      "max": 65535,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    "ecat_mailbox_data_bytes": {
+      "label": "Actual mailbox payload after6-byte header",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Classic EtherCAT ESC declaration. Actual ESI/port/map/state/DC/watchdog evidence is separate; EtherCATG/G10 and full E2E capacity are not inferred.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "max": 65529,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    "ecat_mailbox_source": {
+      "label": "Actual supported mailbox/buffer/timeout profile",
+      "category": "physical",
+      "scope": "route",
+      "type": "text",
+      "description": "Classic EtherCAT ESC declaration. Actual ESI/port/map/state/DC/watchdog evidence is separate; EtherCATG/G10 and full E2E capacity are not inferred.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    "ecat_link_detection": {
+      "label": "Actual port link-loss detection mode",
+      "category": "physical",
+      "scope": "route",
+      "type": "select",
+      "description": "Classic EtherCAT ESC declaration. Actual ESI/port/map/state/DC/watchdog evidence is separate; EtherCATG/G10 and full E2E capacity are not inferred.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "STANDARD",
+        "ENHANCED"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    "ecat_link_loss_bound_us": {
+      "label": "Actual PHY link-loss reaction bound",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "Classic EtherCAT ESC declaration. Actual ESI/port/map/state/DC/watchdog evidence is separate; EtherCATG/G10 and full E2E capacity are not inferred.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "us",
+      "min": 0,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    "ecat_link_source": {
+      "label": "Actual PHY/cable/port/forwarding/reset bounds",
+      "category": "physical",
+      "scope": "route",
+      "type": "text",
+      "description": "Classic EtherCAT ESC declaration. Actual ESI/port/map/state/DC/watchdog evidence is separate; EtherCATG/G10 and full E2E capacity are not inferred.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    }
+  },
+  "mechanisms": {
+    "integrity": [
+      "ETHERNET_FCS",
+      "WORKING_COUNTER"
+    ],
+    "addressing": [
+      "AUTO_INCREMENT_ADDRESS",
+      "CONFIGURED_STATION_ADDRESS"
+    ],
+    "diagnostics": [
+      "AL_STATUS",
+      "COE"
+    ],
+    "supervision": [
+      "WORKING_COUNTER"
+    ]
+  },
+  "parameter_constraints": [
+    {
+      "when": {},
+      "parameter": "duplex",
+      "allowed": [
+        "FULL"
+      ],
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    {
+      "when": {},
+      "parameter": "ecat_frame_type",
+      "allowed": [
+        1
+      ],
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    {
+      "when": {},
+      "parameter": "ecat_header_reserved",
+      "allowed": [
+        0
+      ],
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    {
+      "when": {},
+      "parameter": "ecat_datagram_reserved",
+      "allowed": [
+        0
+      ],
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    {
+      "when": {},
+      "parameter": "ecat_datagram_length",
+      "equal_parameter": "payload_bytes",
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    {
+      "when": {},
+      "parameter": "ecat_datagram_bytes",
+      "equal_expression": {
+        "sum": [
+          "ecat_sum_data_bytes",
+          {
+            "product": [
+              12,
+              "ecat_datagram_count"
+            ]
+          }
+        ]
+      },
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    {
+      "when": {},
+      "parameter": "ecat_header_length",
+      "equal_parameter": "ecat_datagram_bytes",
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    {
+      "when": {
+        "ecat_transport": "NATIVE_ETHERNET",
+        "ecat_vlan_tags": 0
+      },
+      "when_half_open_ranges": {
+        "ecat_datagram_bytes": [
+          12,
+          44
+        ]
+      },
+      "parameter": "ecat_padding_bytes",
+      "equal_expression": {
+        "subtract": [
+          44,
+          "ecat_datagram_bytes"
+        ]
+      },
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    {
+      "when": {
+        "ecat_transport": "NATIVE_ETHERNET",
+        "ecat_vlan_tags": 1
+      },
+      "when_half_open_ranges": {
+        "ecat_datagram_bytes": [
+          12,
+          40
+        ]
+      },
+      "parameter": "ecat_padding_bytes",
+      "equal_expression": {
+        "subtract": [
+          40,
+          "ecat_datagram_bytes"
+        ]
+      },
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    {
+      "when": {
+        "ecat_transport": "UDP_IPV4",
+        "ecat_vlan_tags": 0
+      },
+      "when_half_open_ranges": {
+        "ecat_datagram_bytes": [
+          12,
+          16
+        ]
+      },
+      "parameter": "ecat_padding_bytes",
+      "equal_expression": {
+        "subtract": [
+          16,
+          "ecat_datagram_bytes"
+        ]
+      },
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    {
+      "when": {
+        "ecat_transport": "UDP_IPV4",
+        "ecat_vlan_tags": 1
+      },
+      "when_half_open_ranges": {
+        "ecat_datagram_bytes": [
+          12,
+          12
+        ]
+      },
+      "parameter": "ecat_padding_bytes",
+      "equal_expression": {
+        "subtract": [
+          12,
+          "ecat_datagram_bytes"
+        ]
+      },
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    {
+      "when": {
+        "ecat_transport": "NATIVE_ETHERNET",
+        "ecat_vlan_tags": 0
+      },
+      "when_half_open_ranges": {
+        "ecat_datagram_bytes": [
+          44,
+          null
+        ]
+      },
+      "parameter": "ecat_padding_bytes",
+      "allowed": [
+        0
+      ],
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    {
+      "when": {
+        "ecat_transport": "NATIVE_ETHERNET",
+        "ecat_vlan_tags": 1
+      },
+      "when_half_open_ranges": {
+        "ecat_datagram_bytes": [
+          40,
+          null
+        ]
+      },
+      "parameter": "ecat_padding_bytes",
+      "allowed": [
+        0
+      ],
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    {
+      "when": {
+        "ecat_transport": "UDP_IPV4",
+        "ecat_vlan_tags": 0
+      },
+      "when_half_open_ranges": {
+        "ecat_datagram_bytes": [
+          16,
+          null
+        ]
+      },
+      "parameter": "ecat_padding_bytes",
+      "allowed": [
+        0
+      ],
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    {
+      "when": {
+        "ecat_transport": "UDP_IPV4",
+        "ecat_vlan_tags": 1
+      },
+      "when_half_open_ranges": {
+        "ecat_datagram_bytes": [
+          12,
+          null
+        ]
+      },
+      "parameter": "ecat_padding_bytes",
+      "allowed": [
+        0
+      ],
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    {
+      "when": {},
+      "parameter": "ecat_datagram_count",
+      "maximum_parameter": "ecat_device_datagram_limit",
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    {
+      "when": {},
+      "parameter": "ecat_sum_data_bytes",
+      "minimum_parameter": "payload_bytes",
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    {
+      "when": {
+        "ecat_datagram_count": 1
+      },
+      "parameter": "ecat_sum_data_bytes",
+      "equal_parameter": "payload_bytes",
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    {
+      "when": {
+        "ecat_transport": "NATIVE_ETHERNET"
+      },
+      "parameter": "ecat_datagram_bytes",
+      "maximum": 1498,
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    {
+      "when": {
+        "ecat_transport": "UDP_IPV4"
+      },
+      "parameter": "ecat_datagram_bytes",
+      "maximum": 1470,
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    {
+      "when": {
+        "ecat_transport": "UDP_IPV4"
+      },
+      "parameter": "payload_bytes",
+      "maximum": 1458,
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    {
+      "when": {
+        "ecat_transport": "UDP_IPV4"
+      },
+      "parameter": "ecat_udp_port",
+      "allowed": [
+        34980
+      ],
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    {
+      "when": {
+        "ecat_transport": "UDP_IPV4"
+      },
+      "parameter": "ecat_ipv4_header_bytes",
+      "allowed": [
+        20
+      ],
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    {
+      "when": {
+        "ecat_transport": "NATIVE_ETHERNET"
+      },
+      "parameter": "ecat_udp_port",
+      "allowed": [],
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    {
+      "when": {
+        "ecat_transport": "NATIVE_ETHERNET"
+      },
+      "parameter": "ecat_ipv4_header_bytes",
+      "allowed": [],
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    {
+      "when": {
+        "ecat_transport": "NATIVE_ETHERNET"
+      },
+      "parameter": "ecat_mac_frame_bytes",
+      "equal_expression": {
+        "sum": [
+          20,
+          "ecat_datagram_bytes",
+          "ecat_padding_bytes",
+          {
+            "product": [
+              4,
+              "ecat_vlan_tags"
+            ]
+          }
+        ]
+      },
+      "maximum_expression": {
+        "sum": [
+          1518,
+          {
+            "product": [
+              4,
+              "ecat_vlan_tags"
+            ]
+          }
+        ]
+      },
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    {
+      "when": {
+        "ecat_transport": "UDP_IPV4"
+      },
+      "parameter": "ecat_mac_frame_bytes",
+      "equal_expression": {
+        "sum": [
+          48,
+          "ecat_datagram_bytes",
+          "ecat_padding_bytes",
+          {
+            "product": [
+              4,
+              "ecat_vlan_tags"
+            ]
+          }
+        ]
+      },
+      "maximum_expression": {
+        "sum": [
+          1518,
+          {
+            "product": [
+              4,
+              "ecat_vlan_tags"
+            ]
+          }
+        ]
+      },
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    {
+      "when": {},
+      "parameter": "ecat_wire_slot_bytes",
+      "equal_expression": {
+        "sum": [
+          "ecat_mac_frame_bytes",
+          20
+        ]
+      },
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    {
+      "when": {
+        "ecat_phy": "EBUS"
+      },
+      "parameter": "ecat_wire_slot_bytes",
+      "allowed": [],
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    {
+      "when": {
+        "ecat_response_accepted": true
+      },
+      "parameter": "ecat_received_wkc",
+      "equal_parameter": "ecat_expected_wkc",
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    {
+      "when": {},
+      "parameter": "ecat_mailbox_data_bytes",
+      "maximum_parameter": "ecat_mailbox_bytes",
+      "maximum_offset": -6,
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    {
+      "when": {
+        "ecat_link_detection": "STANDARD",
+        "ecat_phy": "100BASE_TX"
+      },
+      "parameter": "ecat_link_loss_bound_us",
+      "exclusive_maximum": 15,
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    {
+      "when": {
+        "ecat_link_detection": "STANDARD",
+        "ecat_phy": "100BASE_FX"
+      },
+      "parameter": "ecat_link_loss_bound_us",
+      "exclusive_maximum": 15,
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    {
+      "when": {
+        "ecat_link_detection": "STANDARD",
+        "ecat_phy": "ETHERCAT_P"
+      },
+      "parameter": "ecat_link_loss_bound_us",
+      "exclusive_maximum": 15,
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    {
+      "when": {
+        "ecat_datagram_count": 1
+      },
+      "parameter": "ecat_more",
+      "allowed": [
+        false
+      ],
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    {
+      "when": {
+        "ecat_sync_mode": "FREE_RUN"
+      },
+      "parameter": "distributed_clock_cycle_ms",
+      "allowed": [],
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    {
+      "when": {
+        "ecat_sync_mode": "SM_EVENT"
+      },
+      "parameter": "distributed_clock_cycle_ms",
+      "allowed": [],
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    {
+      "when": {
+        "ecat_dc_supported": false
+      },
+      "parameter": "distributed_clock_cycle_ms",
+      "allowed": [],
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    {
+      "when": {
+        "ecat_dc_supported": false
+      },
+      "parameter": "ecat_dc_reference",
+      "allowed": [],
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    {
+      "when": {
+        "ecat_dc_supported": false
+      },
+      "parameter": "ecat_dc_width",
+      "allowed": [],
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    {
+      "when": {
+        "ecat_dc_supported": false
+      },
+      "parameter": "ecat_sync0_cycle_ns",
+      "allowed": [],
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    {
+      "when": {
+        "ecat_dc_supported": false
+      },
+      "parameter": "ecat_sync1_delay_ns",
+      "allowed": [],
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    {
+      "when": {
+        "ecat_dc_supported": false
+      },
+      "parameter": "ecat_sync_pulse_ns",
+      "allowed": [],
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    {
+      "when": {
+        "ecat_sync_mode": "DC"
+      },
+      "parameter": "ecat_dc_supported",
+      "allowed": [
+        true
+      ],
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    {
+      "when": {
+        "ecat_sync_generation": "SINGLE_SHOT"
+      },
+      "parameter": "ecat_sync0_cycle_ns",
+      "allowed": [
+        0
+      ],
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    {
+      "when": {
+        "ecat_sync_generation": "SINGLE_SHOT"
+      },
+      "parameter": "ecat_sync_pulse_ns",
+      "minimum": 1,
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    {
+      "when": {
+        "ecat_sync_generation": "CYCLIC_PULSE"
+      },
+      "parameter": "ecat_sync0_cycle_ns",
+      "minimum": 1,
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    {
+      "when": {
+        "ecat_sync_generation": "CYCLIC_PULSE"
+      },
+      "parameter": "ecat_sync_pulse_ns",
+      "minimum": 1,
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    {
+      "when": {
+        "ecat_sync_generation": "CYCLIC_ACK"
+      },
+      "parameter": "ecat_sync_pulse_ns",
+      "allowed": [
+        0
+      ],
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    {
+      "when": {
+        "ecat_sync_generation": "SINGLE_SHOT_ACK"
+      },
+      "parameter": "ecat_sync_pulse_ns",
+      "allowed": [
+        0
+      ],
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    {
+      "when": {
+        "ecat_sync_generation": "SINGLE_SHOT_ACK"
+      },
+      "parameter": "ecat_sync0_cycle_ns",
+      "allowed": [
+        0
+      ],
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    {
+      "when": {
+        "ecat_sync_generation": "CYCLIC_ACK"
+      },
+      "parameter": "ecat_sync0_cycle_ns",
+      "minimum": 1,
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    {
+      "when": {},
+      "parameter": "ecat_sync_pulse_ns",
+      "equal_expression": {
+        "product": [
+          "ecat_sync_pulse_register",
+          10
+        ]
+      },
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    {
+      "when": {
+        "ecat_sync_mode": "DC"
+      },
+      "parameter": "distributed_clock_cycle_ms",
+      "equal_expression": {
+        "product": [
+          "ecat_sync0_cycle_ns",
+          1e-06
+        ]
+      },
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    {
+      "when": {},
+      "when_positive": [
+        "ecat_pd_watchdog_ticks"
+      ],
+      "parameter": "ecat_pd_watchdog_min_ns",
+      "equal_expression": {
+        "product": [
+          {
+            "sum": [
+              "ecat_watchdog_divider",
+              2
+            ]
+          },
+          40,
+          "ecat_pd_watchdog_ticks"
+        ]
+      },
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    {
+      "when": {},
+      "when_positive": [
+        "ecat_pd_watchdog_ticks"
+      ],
+      "parameter": "ecat_pd_watchdog_max_ns",
+      "equal_expression": {
+        "product": [
+          {
+            "sum": [
+              "ecat_watchdog_divider",
+              2
+            ]
+          },
+          40,
+          {
+            "sum": [
+              "ecat_pd_watchdog_ticks",
+              1
+            ]
+          }
+        ]
+      },
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    {
+      "when": {
+        "ecat_pd_watchdog_ticks": 0
+      },
+      "parameter": "ecat_pd_watchdog_min_ns",
+      "allowed": [],
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    {
+      "when": {
+        "ecat_pd_watchdog_ticks": 0
+      },
+      "parameter": "ecat_pd_watchdog_max_ns",
+      "allowed": [],
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    {
+      "when": {
+        "ecat_state": "INIT"
+      },
+      "parameter": "ecat_outputs_active",
+      "allowed": [
+        false
+      ],
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    {
+      "when": {
+        "ecat_state": "PREOP"
+      },
+      "parameter": "ecat_outputs_active",
+      "allowed": [
+        false
+      ],
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    {
+      "when": {
+        "ecat_state": "SAFEOP"
+      },
+      "parameter": "ecat_outputs_active",
+      "allowed": [
+        false
+      ],
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    {
+      "when": {
+        "ecat_state": "BOOTSTRAP"
+      },
+      "parameter": "ecat_outputs_active",
+      "allowed": [
+        false
+      ],
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    {
+      "when": {
+        "ecat_command": "APRD"
+      },
+      "parameter": "ecat_addressing",
+      "allowed": [
+        "AUTO_INCREMENT"
+      ],
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    {
+      "when": {
+        "ecat_command": "APWR"
+      },
+      "parameter": "ecat_addressing",
+      "allowed": [
+        "AUTO_INCREMENT"
+      ],
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    {
+      "when": {
+        "ecat_command": "APRW"
+      },
+      "parameter": "ecat_addressing",
+      "allowed": [
+        "AUTO_INCREMENT"
+      ],
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    {
+      "when": {
+        "ecat_command": "ARMW"
+      },
+      "parameter": "ecat_addressing",
+      "allowed": [
+        "AUTO_INCREMENT"
+      ],
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    {
+      "when": {
+        "ecat_command": "FPRD"
+      },
+      "parameter": "ecat_addressing",
+      "allowed": [
+        "CONFIGURED"
+      ],
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    {
+      "when": {
+        "ecat_command": "FPWR"
+      },
+      "parameter": "ecat_addressing",
+      "allowed": [
+        "CONFIGURED"
+      ],
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    {
+      "when": {
+        "ecat_command": "FPRW"
+      },
+      "parameter": "ecat_addressing",
+      "allowed": [
+        "CONFIGURED"
+      ],
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    {
+      "when": {
+        "ecat_command": "FRMW"
+      },
+      "parameter": "ecat_addressing",
+      "allowed": [
+        "CONFIGURED"
+      ],
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    {
+      "when": {
+        "ecat_command": "BRD"
+      },
+      "parameter": "ecat_addressing",
+      "allowed": [
+        "BROADCAST"
+      ],
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    {
+      "when": {
+        "ecat_command": "BWR"
+      },
+      "parameter": "ecat_addressing",
+      "allowed": [
+        "BROADCAST"
+      ],
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    {
+      "when": {
+        "ecat_command": "BRW"
+      },
+      "parameter": "ecat_addressing",
+      "allowed": [
+        "BROADCAST"
+      ],
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    {
+      "when": {
+        "ecat_command": "LRD"
+      },
+      "parameter": "ecat_addressing",
+      "allowed": [
+        "LOGICAL"
+      ],
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    {
+      "when": {
+        "ecat_command": "LWR"
+      },
+      "parameter": "ecat_addressing",
+      "allowed": [
+        "LOGICAL"
+      ],
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    {
+      "when": {
+        "ecat_command": "LRW"
+      },
+      "parameter": "ecat_addressing",
+      "allowed": [
+        "LOGICAL"
+      ],
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    {
+      "when": {
+        "ecat_addressing": "LOGICAL"
+      },
+      "parameter": "ecat_station_address",
+      "allowed": [],
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    {
+      "when": {
+        "ecat_addressing": "LOGICAL"
+      },
+      "parameter": "ecat_register_offset",
+      "allowed": [],
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    {
+      "when": {
+        "ecat_addressing": "AUTO_INCREMENT"
+      },
+      "parameter": "ecat_logical_address",
+      "allowed": [],
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    {
+      "when": {
+        "ecat_addressing": "CONFIGURED"
+      },
+      "parameter": "ecat_logical_address",
+      "allowed": [],
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    },
+    {
+      "when": {
+        "ecat_addressing": "BROADCAST"
+      },
+      "parameter": "ecat_logical_address",
+      "allowed": [],
+      "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+      "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13"
+    }
+  ],
+  "physical_layer_profile_id": "ETHERCAT_CLASSIC_PHY_EXPLICIT",
+  "medium_access_model": "FULL_DUPLEX_SWITCHED",
+  "native_parameter_prefixes": [],
+  "parameter_aliases": {},
+  "parameter_alias_limits": {},
+  "parameter_evidence_scope": null,
+  "rate_source_profile_id": null,
+  "arbitration_model_id": null,
+  "max_payload_bytes": 1486,
+  "capabilities": {
+    "supports_signals": true,
+    "supports_data_objects": true,
+    "supports_streams": false,
+    "supports_multicast": false,
+    "supports_publish_subscribe": true,
+    "supports_request_response": false,
+    "supports_cyclic": true,
+    "supports_event": true,
+    "supports_redundancy": false,
+    "supports_time_sync": true,
+    "supports_safety_profile": true,
+    "supports_segmentation": false,
+    "supports_fragmentation": false,
+    "supports_qos": true
+  },
+  "deterministic": true,
+  "overhead_bytes": 8,
+  "implementation_status": "IMPLEMENTED",
+  "connection_type": "COMMUNICATION_TECHNOLOGY",
+  "parameter_proposals": {
+    "kind": "FIXED_NOMINAL_RATE",
+    "default_bps": 100000000,
+    "status": "REVIEW_REQUIRED",
+    "source": "https://download.beckhoff.com/download/document/io/ethercat-development-products/ethercat_esc_datasheet_sec1_technology_v2.5.pdf",
+    "source_revision": "BeckhoffESCSectionI Technology2.5 2025-07-28 chapters2/5/8/9/10/13",
+    "note": "Registered classic EtherCAT100Mbit/s full-duplex, not EtherCATG/G10. Datagram data, multiple-datagram frame and UDP encapsulation have distinct limits; ESI/physical/DC/watchdog/state evidence stays unknown."
+  },
+  "capacity_evidence": {
+    "status": "MODEL_MISSING",
+    "frame_model": null,
+    "schedule_model": null,
+    "requires_confirmed_device_parameters": true
+  },
+  "components": {
+    "binding": "ethercat.binding",
+    "generator": "ethercat.generator",
+    "validator": "ethercat.validator",
+    "timing_model": null,
+    "load_model": null,
+    "encoder": "ethercat.encoder",
+    "decoder": "ethercat.decoder"
+  },
+  "known_limitations": "Technology-specific conformance details require a vendor/profile extension."
+}

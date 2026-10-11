@@ -9,7 +9,7 @@ import type { SourceDirectory, SourceRow, SourceSort } from '@/features/sources/
 import styles from '../../../app/sources/sources.module.css';
 
 const columns: Array<{key: SourceSort; label: string}> = [
-  {key: 'abbreviation', label: 'Kürzel · Bustyp'}, {key: 'technology', label: 'Name Bustyp'},
+  {key: 'abbreviation', label: 'Kürzel · Bereich'}, {key: 'technology', label: 'Technologie / Normbereich'},
   {key: 'name', label: 'Quellenname'}, {key: 'url', label: 'Link'},
   {key: 'accessed_at', label: 'Datum des Abrufs'}, {key: 'rights', label: 'Veröffentlichung / Lizenz'},
   {key: 'license', label: 'Technikfreigabe'},
@@ -81,18 +81,18 @@ function SourcesContent() {
   }
   return <MarketingShell><section className={styles.directory} aria-labelledby="source-title">
     <header className={styles.header}><div><p className="section-label">Wissen & Herkunft</p>
-      <h1 id="source-title">Quellenverzeichnis</h1><p>Standards, Dokumentation und Implementierungsquellen – den jeweiligen Bustypen zugeordnet.</p></div>
+      <h1 id="source-title">Quellenverzeichnis</h1><p>Standards, Dokumentation und Implementierungsquellen – Technologien und Normbereichen zugeordnet.</p></div>
       <ProjectAwareLink href="/studio?mode=parameters" className={styles.back}>Zu den Technologien ↗</ProjectAwareLink></header>
     <div className={styles.summary}><span><strong>{directory?.source_count ?? '—'}</strong> eindeutige Quellen</span>
       <span><strong>{directory?.technology_count ?? '—'}</strong> Verbindungstypen</span>
       <span>Lizenzprüfung: <strong>{displaySourceDate(directory?.rights_reviewed_at ?? null)}</strong></span></div>
     <p className={styles.note}>Hier werden Quellenangaben und Links veröffentlicht, keine Originaldokumente. Dokumentrechte, Implementierungsrechte und Zertifizierung sind getrennt. „Ungeklärt“ bedeutet keine erteilte Erlaubnis; ein öffentlicher Download allein genügt nicht.</p>
-    <div className={styles.toolbar}><label htmlFor="source-search">Fuzzy-Suche<input id="source-search" type="search" placeholder="Bustyp, Quelle oder Herausgeber …" value={query}
+    <div className={styles.toolbar}><label htmlFor="source-search">Fuzzy-Suche<input id="source-search" type="search" placeholder="Technologie, Norm, Quelle oder Herausgeber …" value={query}
       onChange={event => {setQuery(event.target.value); setPage(0);}} /></label>
-      <span role="status">{groups.length} Bustypen · {matchingSources} Quellen</span><button type="button" onClick={() => {setQuery(''); setSort('abbreviation'); setDescending(false); setPage(0);}}>Zurücksetzen</button></div>
+      <span role="status">{groups.length} Bereiche · {matchingSources} Quellen</span><button type="button" onClick={() => {setQuery(''); setSort('abbreviation'); setDescending(false); setPage(0);}}>Zurücksetzen</button></div>
     {error && <div role="alert" className={styles.error}>{error} <button onClick={() => void load()}>Erneut laden</button></div>}
     {!directory && !error && <p role="status">Quellen werden geladen …</p>}
-    {directory && <><div className={styles.tableWrap}><table className={styles.table}><caption className={styles.caption}>Ein Eintrag pro Bustyp; zugehörige Quellen aufklappen. Standardreihenfolge alphabetisch nach Bustyp. Spaltenköpfe sortieren Bustypen und deren Quellen.</caption>
+    {directory && <><div className={styles.tableWrap}><table className={styles.table}><caption className={styles.caption}>Ein Eintrag pro Technologie oder Normbereich; zugehörige Quellen aufklappen. Standardreihenfolge alphabetisch nach Bereich. Spaltenköpfe sortieren Bereiche und deren Quellen.</caption>
       <thead><tr>{columns.map(column => <th key={column.key} scope="col" aria-sort={sort === column.key ? descending ? 'descending' : 'ascending' : 'none'}>
         <button type="button" onClick={() => chooseSort(column.key)}>{column.label} <span aria-hidden="true">{sort === column.key ? descending ? '↓' : '↑' : '↕'}</span></button></th>)}</tr></thead>
       <tbody>{visible.map(group => <tr key={group.technology.id} data-technology={group.technology.id}>
@@ -101,7 +101,7 @@ function SourcesContent() {
         <td colSpan={4}><details className={styles.sourceGroup}>
           <summary aria-label={`Quellen für ${group.technology.abbreviation} anzeigen`}>
             <strong>{group.sources.length} {group.sources.length === 1 ? 'Quelle' : 'Quellen'} anzeigen</strong>
-            {group.sources.length !== group.totalSourceCount && <small>von {group.totalSourceCount} Quellen für diesen Bustyp</small>}
+            {group.sources.length !== group.totalSourceCount && <small>von {group.totalSourceCount} Quellen für diesen Bereich</small>}
             <small>Veröffentlichungs- und Lizenzhinweise bei den einzelnen Quellen</small>
           </summary>
           <table className={styles.sourceList} aria-label={`Quellen für ${group.technology.abbreviation}`}>
@@ -118,11 +118,11 @@ function SourcesContent() {
         <td>{directory.licenses[group.technology.id]?.clearance_required
           ? <button className={styles.licenseStatus} onClick={() => {setMessage(''); setLicenseTechnology(group.technology.id);}}>
             {directory.licenses[group.technology.id].blocked ? '⚠ Gesperrt' : '✓ Freigegeben'} · {group.technology.abbreviation}</button>
-          : <span className={styles.neutral}>Keine belegte NIS-Lizenzsperre</span>}</td>
+          : <span className={styles.neutral}>{group.kind === "assurance" ? "Normreferenz · keine Sicherheitsfreigabe" : "Keine belegte NIS-Lizenzsperre"}</span>}</td>
       </tr>)}</tbody></table></div>
       {!groups.length && <p className={styles.empty}>Keine passenden Quellen. Versuche ein kürzeres Kürzel oder einen anderen Suchbegriff.</p>}
       <div className={styles.pagination}><button disabled={page === 0} onClick={() => setPage(page - 1)}>Zurück</button>
-        <span>Seite {page + 1} von {Math.max(1, Math.ceil(groups.length / 50))} · 50 Bustypen pro Seite</span>
+        <span>Seite {page + 1} von {Math.max(1, Math.ceil(groups.length / 50))} · 50 Bereiche pro Seite</span>
         <button disabled={(page + 1) * 50 >= groups.length} onClick={() => setPage(page + 1)}>Weiter</button></div>
       <section className={styles.licenses} aria-labelledby="license-title"><h2 id="license-title">Projektbezogene Technikfreigaben</h2>
         <p>Auswählen und Konfigurieren bleibt möglich. Eine gesperrte Technik kann erst nach geprüfter Freigabe ausgeführt werden. Dokumentweitergabe und Produktzertifizierung werden dadurch nicht freigegeben.</p>

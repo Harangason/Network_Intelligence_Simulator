@@ -66,6 +66,7 @@ class CommunicationSizingService:
             signals = all_pages(list_objects, "Signal")
             routes = all_pages(list_routes)
             now = datetime.now(timezone.utc).isoformat()
+            changed_messages, changed_signals = 0, 0
             for message in messages:
                 change = changes.get(str(message["id"]))
                 if not change:
@@ -78,6 +79,12 @@ class CommunicationSizingService:
                     "source": "automatic_dimensioning", "calculation_version": VERSION,
                     "source_token": plan["source_token"], "requires_functional_review": True}
                 contract["transmission"]["timing_evaluation"] = change.get("evaluation", "FEASIBLE_UNDER_ASSUMPTIONS")
+                # A fresh plan token proves this adoption, not a new physical
+                # transmission. Preserve the last write's provenance when all
+                # transmission semantics already match the reviewed result.
+                if ({key: value for key, value in contract["transmission"].items() if key != "source_token"}
+                        == {key: value for key, value in previous.items() if key != "source_token"}):
+                    contract["transmission"] = previous
                 # Keep existing explicit deadlines; only synchronize period copies.
                 for key in ("cycle_time", "cycle_time_ms"):
                     if key in configuration:
@@ -85,8 +92,11 @@ class CommunicationSizingService:
                 transport = configuration.get("transport_unit")
                 if isinstance(transport, dict):
                     transport.setdefault("timing", {})["cycle_ms"] = change["after_ms"]
+                if configuration == message.get("configuration") and message.get("cycle_ms") == change["after_ms"]:
+                    continue
                 update_object("Message", str(message["id"]), {"configuration": configuration, "cycle_ms": change["after_ms"],
                     "expected_version": message["version"], "actor": actor})
+                changed_messages += 1
             for signal in signals:
                 change = changes.get(str(signal.get("message_id")))
                 if not change:
@@ -96,9 +106,12 @@ class CommunicationSizingService:
                 if "cycle_time" in communication:
                     communication["cycle_time"] = change["after_ms"]
                 communication["timing_source"] = "canonical_message_transmission"
+                if communication == signal.get("communication"):
+                    continue
                 update_object("Signal", str(signal["id"]), {"communication": communication,
                     "expected_version": signal["version"], "actor": actor})
-            changed_routes = []
+                changed_signals += 1
+            changed_routes, reviewed_routes = [], []
             for route in routes:
                 if route.get("status") in {"REJECTED", "SUPERSEDED", "DEPRECATED", "OUTDATED"}:
                     continue
@@ -113,27 +126,40 @@ class CommunicationSizingService:
                 if "cycle_time" in timing:
                     timing["cycle_time"] = timing["cycle_time_ms"]
                 timing.setdefault("provenance", {})["cycle_time_ms"] = {"source": "communication-sizing", "version": VERSION}
-                updated = update_route(str(route["id"]), {"timing": timing, "expected_revision": route["revision"], "actor": actor})
-                changed_routes.append(updated)
+                if timing == route.get("timing"):
+                    reviewed_routes.append(route)
+                else:
+                    updated = update_route(str(route["id"]), {"timing": timing, "expected_revision": route["revision"], "actor": actor})
+                    changed_routes.append(updated)
+                    reviewed_routes.append(updated)
             parameters = {**(state.get("parameters") or {}), "communication_sizing": plan["policy"]}
             parameters["communication_schedule"] = {"version": VERSION, "source_token": plan["source_token"],
                 "networks": [{"network_id": item["network_id"], **item["schedule"]} for item in plan["networks"]
                              if item["status"] == "FEASIBLE_UNDER_ASSUMPTIONS"]}
+            previous_schedule = (state.get("parameters") or {}).get("communication_schedule") or {}
+            if ({key: value for key, value in parameters["communication_schedule"].items() if key != "source_token"}
+                    == {key: value for key, value in previous_schedule.items() if key != "source_token"}):
+                parameters["communication_schedule"] = previous_schedule
             self.workflow.save_parameters(parameters, actor=actor)
-            if changes:
+            model_changed = bool(changed_messages or changed_signals or changed_routes)
+            if model_changed:
                 db.flush_model_changes(actor=actor, reason="Nachrichten, Signale und Routen gemeinsam dimensioniert.")
                 self.workflow.mark_changed("routing", "Dimensionierte Zyklen müssen auf dem aktuellen Modell geprüft werden.", actor=actor)
-            valid, invalid = [], []
+            valid, invalid, to_approve = [], [], []
             validator = RoutingValidator.for_current_batch(self.project_id)
-            for route in changed_routes:
+            for route in reviewed_routes:
                 validation = validator.validate(route, exclude_route_id=str(route["id"]))
-                save_validation(str(route["id"]), validation, actor=actor)
+                comparable = lambda value: {key: item for key, item in value.items() if key != "validation_timestamp"}
+                if route.get("approval_state") != "APPROVED" or comparable(validation) != comparable(route.get("validation") or {}):
+                    save_validation(str(route["id"]), validation, actor=actor)
+                    if validation.get("valid"):
+                        to_approve.append(str(route["id"]))
                 (valid if validation.get("valid") else invalid).append(str(route["id"]))
-            if approve_valid and valid:
-                approve_routes(valid, actor=actor)
+            if approve_valid and to_approve:
+                approve_routes(to_approve, actor=actor)
             # A period edit invalidates downstream stages. Recheck the unchanged
             # physical topology before confirming its current model reference.
-            if changes and not invalid:
+            if model_changed and not invalid:
                 self.workflow.save_topology(self.workflow.get()["topology"], actor=actor)
                 self.workflow.save_parameters(parameters, actor=actor)
             receipt_id = sha256((plan["source_token"] + now).encode()).hexdigest()[:20]
@@ -146,7 +172,8 @@ class CommunicationSizingService:
                 "communication_sizing_receipt": {"id": receipt_id, "source_versions": plan["source_versions"],
                     "changes": plan["changes"], "status": plan["status"], "created_at": now,
                     "valid_route_ids": valid, "invalid_route_ids": invalid, "approved": bool(approve_valid)}})
-            result = {"applied": True, "plan": plan, "receipt_id": receipt_id, "changed_messages": len(changes),
+            result = {"applied": True, "plan": plan, "receipt_id": receipt_id, "changed_messages": changed_messages,
+                      "changed_signals": changed_signals,
                       "changed_routes": len(changed_routes), "valid_routes": len(valid), "invalid_routes": invalid,
                       "approved": bool(approve_valid)}
             if own:

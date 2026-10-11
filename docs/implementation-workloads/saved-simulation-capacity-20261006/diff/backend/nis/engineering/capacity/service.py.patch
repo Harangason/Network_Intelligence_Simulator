@@ -1,0 +1,221 @@
+--- before/backend/nis/engineering/capacity/service.py
++++ after/backend/nis/engineering/capacity/service.py
+@@ -262,6 +262,84 @@
+     return resolved
+ 
+ 
++def simulation_parameters_for_protocol(protocol, parameters, configuration=None, network_id=None, confirmed_parameters=None):
++    """Resolve persisted scenario inputs through the same native ingress as evidence.
++
++    Assumptions never acquire actual rate authority. Explicit technology groups,
++    network and device configuration retain the existing precedence and checks.
++    """
++    from backend.nis.communication.catalog import PARAMETER_UI_ALIASES
++    registry = DEFAULT_TECHNOLOGY_REGISTRY
++    technology = registry.normalize_id(protocol)
++    actual = parameters_for_protocol(protocol, parameters, configuration, network_id, confirmed_parameters)
++    if actual.get('_rate_evidenced'):
++        return {**actual, '_simulation_parameters_usable': True, '_simulation_parameter_findings': [],
++                '_simulation_assumption_fields': [], '_simulation_hardware_evidence': True}
++    fields = {field['key']: field for field in registry.parameter_fields(technology)}
++    definition = registry.profile(technology, fields=('parameter_aliases', 'parameter_schema'))
++    allowed_fields = registry.parameter_keys(technology)
++    network = next((row for row in parameters.get('networks') or [] if str(row.get('id')) == str(network_id)), {})
++    group = {'values': {}, 'provenance': {}}
++    for scope in (parameters, network.get('configuration') or {}, network,
++                  (configuration or {}).get('capabilities') or {}, configuration or {}):
++        incoming = next((value for key, value in (scope.get('simulation_parameter_assumptions') or {}).items()
++                         if registry.normalize_id(key) == technology), {})
++        group['values'].update(incoming.get('values') or {})
++        group['provenance'].update(incoming.get('provenance') or {})
++    values, invalid = {}, []
++    for key, value in (group.get('values') or {}).items():
++        field = fields.get(PARAMETER_UI_ALIASES.get(key, key))
++        if not field or field.get('value_role') != 'CONFIGURATION':
++            continue
++        proof = (group.get('provenance') or {}).get(key) or {}
++        if (proof.get('source') == 'NIS_SIMULATION_ASSUMPTION' and proof.get('status') == 'ASSUMED'
++                and proof.get('hardware_evidence') is False and proof.get('value') == value
++                and registry.normalize_id(proof.get('technology')) == technology):
++            values[key] = value
++        else:
++            invalid.append({'code': 'SIMULATION_PARAMETER_PROVENANCE_MISMATCH', 'parameter': key,
++                            'message': f'{key}: gespeicherte Simulationsannahme hat keine passende Herkunft.', 'severity': 'ERROR'})
++    # Start with already filtered facts, not the unrelated primary bus's fields.
++    scenario = {**actual, **values, 'technology': technology}
++    for alias, native in definition.get('parameter_aliases', {}).items():
++        if native in values:
++            scenario.pop(alias, None)
++    resolved = parameters_for_protocol(protocol, scenario, configuration, network_id, confirmed_parameters)
++    for alias, native in definition.get('parameter_aliases', {}).items():
++        if native in resolved and alias not in resolved:
++            resolved[alias] = resolved[native]
++    phase = getattr(registry.capacity_parameter_implementation(technology), 'phase_key', lambda key: None)('bitrate')
++    if phase and phase in resolved and 'bitrate' not in resolved:
++        resolved['bitrate'] = resolved[phase]
++    explicit_values = (((confirmed_parameters or {}).get('technology_parameters') or {}).get(technology) or {}).get('values', {})
++    physical = next((row for row in parameters.get('networks') or [] if str(row.get('id')) == str(network_id)), {})
++    assumed_fields = sorted(key for key, value in values.items() if resolved.get(key) == value
++                            and key not in explicit_values and key not in (configuration or {}) and key not in physical)
++    resolved['_simulation_assumption_fields'] = assumed_fields
++    prepare = getattr(registry.timing_implementation(technology), 'prepare_simulation_parameters', None)
++    if prepare:
++        # Only dependent, assumed layout fields may be derived by their owner.
++        resolved = prepare(resolved)
++    schema = definition.get('parameter_schema') or {}
++    owner = registry.capacity_parameter_implementation(technology)
++    checked_values = {key: value for key, value in resolved.items()
++                      if key in allowed_fields
++                      and key not in getattr(owner, 'EXCLUDED_VALIDATION_FIELDS', ())}
++    checked = registry.validate_parameters(technology, checked_values)
++    reference_keys = {key for key, spec in schema.items()
++                      if fields.get(PARAMETER_UI_ALIASES.get(key, key), {}).get('value_role') in {'EVIDENCE', 'REFERENCE'}}
++    operational = [finding for finding in checked['findings']
++                   if not (finding['code'] == 'TECHNOLOGY_PARAMETER_MISSING'
++                           and (finding.get('parameter') or finding['message'].split()[0]) in reference_keys)]
++    resolved.update(_rate_evidenced=bool(actual.get('_rate_evidenced')),
++                    _rate_findings=actual.get('_rate_findings', []),
++                    _simulation_parameters_usable=not invalid and not operational and checked['status'] != 'UNKNOWN',
++                    _simulation_parameter_findings=[*invalid, *operational],
++                    _simulation_assumption_fields=assumed_fields,
++                    _simulation_hardware_evidence=bool(actual.get('_rate_evidenced')))
++    return resolved
++
++
+ def _payload_bytes(route: dict[str, Any], messages: dict[str, dict[str, Any]], default: int) -> int:
+     payload = route.get("payload") or {}
+     direct = next((payload[key] for key in ("payload_bytes", "length_bytes", "dlc") if payload.get(key) is not None), None)
+@@ -428,6 +506,23 @@
+             **(state.get("parameters") or {}),
+             **(overrides or {}),
+         }
++        resolved_scopes, resolved_frames = {}, {}
++
++        def estimate_scope(protocol, payload_bytes, configuration, network_id):
++            from backend.nis.engineering.capacity.calculators import estimate_simulation_frame
++            key = (DEFAULT_TECHNOLOGY_REGISTRY.revision,
++                   DEFAULT_TECHNOLOGY_REGISTRY.normalize_id(protocol), str(network_id),
++                   json.dumps(configuration, sort_keys=True, default=str))
++            if key not in resolved_scopes:
++                resolved_scopes[key] = simulation_parameters_for_protocol(
++                    protocol, parameters, configuration, network_id, confirmed_parameters)
++            frame_key = (key, payload_bytes)
++            if frame_key not in resolved_frames:
++                resolved_frames[frame_key] = estimate_simulation_frame(protocol, payload_bytes, resolved_scopes[key])
++            # Local to this captured calculation: a later save/override or
++            # registry revision always resolves its inputs again. Different
++            # device configurations and payload layouts never share an entry.
++            return dict(resolved_scopes[key]), resolved_frames[frame_key]
+         thresholds = {
+             "warning": _number(parameters.get("warning_threshold"), 60.0),
+             "critical": _number(parameters.get("critical_threshold"), 75.0),
+@@ -547,9 +642,7 @@
+                 interface = interfaces.get(str(endpoint.get("interface_id") or ""), {})
+                 physical_interface = hardware_interfaces.get(str(endpoint.get("hardware_interface_id") or endpoint.get("port_id") or ""), {})
+                 configuration = {**(interface.get("configuration") or {}), **(physical_interface.get("capabilities") or {})}
+-                segment_parameters = parameters_for_protocol(segment_protocol, parameters, configuration,
+-                                                            segment["network_id"], confirmed_parameters)
+-                frame = estimate_frame(segment_protocol, payload_bytes, segment_parameters)
++                segment_parameters, frame = estimate_scope(segment_protocol, payload_bytes, configuration, segment["network_id"])
+                 segment_average = utilization_percent(frame.transmission_time_s, cycle_ms) * (1.0 + retry_rate)
+                 scheduling = DEFAULT_TECHNOLOGY_REGISTRY.scheduling_implementation(segment_protocol)
+                 path_factor = getattr(scheduling, 'serialized_path_factor', lambda frame: 1)(frame)
+@@ -648,7 +741,10 @@
+                 "protocol": estimate.protocol,
+                 "capacity_applicable": estimate.protocol.upper() not in DIRECT_SIGNAL_PROTOCOLS,
+                 "capacity_verified": capacity_verified,
+-                "bitrate": (_number(route_parameters.get("bitrate"), 0) or None) if route_parameters.get("_rate_evidenced") else None,
++                "simulation_capacity_verified": all(item['parameters'].get('_simulation_parameters_usable') and item['frame'].transmission_time_available and not item['frame'].is_generic_estimate for item in estimates),
++                "hardware_evidence": capacity_verified,
++                "capacity_basis": 'CONFIRMED_PARAMETERS' if capacity_verified else 'SIMULATION_ASSUMPTION',
++                "bitrate": (_number(route_parameters.get("bitrate"), 0) or None) if route_parameters.get("_simulation_parameters_usable") else None,
+                 "payload_bytes": payload_bytes,
+                 "cycle_ms": cycle_ms,
+                 "frame_bits": estimate.frame_bits,
+@@ -695,7 +791,9 @@
+                     "protocol": segment_frame.protocol,
+                     "capacity_applicable": segment_frame.protocol.upper() not in DIRECT_SIGNAL_PROTOCOLS,
+                     "capacity_verified": bool(segment_data["parameters"].get("_rate_evidenced")) and segment_frame.transmission_time_available and not segment_frame.is_generic_estimate and segment_frame.protocol.upper() in SUPPORTED_CAPACITY_PROTOCOLS,
+-                    "bitrate": (_number(segment_data["parameters"].get("bitrate"), 0) or None) if segment_data["parameters"].get("_rate_evidenced") else None,
++                    "simulation_capacity_verified": bool(segment_data['parameters'].get('_simulation_parameters_usable')) and segment_frame.transmission_time_available and not segment_frame.is_generic_estimate,
++                    "hardware_evidence": bool(segment_data['parameters'].get('_rate_evidenced')),
++                    "bitrate": (_number(segment_data["parameters"].get("bitrate"), 0) or None) if segment_data["parameters"].get("_simulation_parameters_usable") else None,
+                     **{key:segment_data['parameters'].get(key) for key in
+                        ('duplex','eth_link_up','eth_pause_rx','eth_pause_tx','eth_eee_enabled') if key in segment_data['parameters']},
+                     "local_timing_evidence": {key: value for key, value in (segment_data["parameters"].get("local_timing_evidence") or {}).items()},
+@@ -743,6 +841,7 @@
+             direct_signal = str(items[0]["protocol"]).upper() in DIRECT_SIGNAL_PROTOCOLS
+             capacity_verified = not direct_signal and all(item["capacity_verified"] for item in items)
+             schedule = bus_schedule(items, policy_for(parameters))
++            simulation_schedule = dict(schedule)
+             if not capacity_verified and schedule["status"] in {"FEASIBLE_UNDER_ASSUMPTIONS", "CONSTRAINT_VIOLATION", "OVERLOAD"}:
+                 schedule = {**schedule, "status": "UNVERIFIED", "responses": {},
+                             "reasons": ["Kapazitätsmodell oder bestätigte Bus-/Linkrate fehlt; berechnete Zeitgrenzen sind nicht freigabefähig."]}
+@@ -771,6 +870,10 @@
+                     "target_margin_percent": round(target_bus_load - governing_load, 4),
+                     "target_status": "NOT_APPLICABLE" if not capacity_verified else "PASS" if governing_load <= target_bus_load else "EXCEEDED",
+                     "status": "UNVERIFIED" if not capacity_verified else "OVERLOAD" if average >= 100 else ("CRITICAL" if classify_load(governing_load, thresholds) == "OVERLOAD" else classify_load(governing_load, thresholds)),
++                    "simulation_capacity_verified": all(item.get('simulation_capacity_verified') for item in items),
++                    "simulation_communication_schedule": simulation_schedule,
++                    "hardware_evidence": capacity_verified,
++                    "capacity_basis": 'CONFIRMED_PARAMETERS' if capacity_verified else 'SIMULATION_ASSUMPTION',
+                     "worst_end_to_end_latency_ms": round(statistics["worst_end_to_end_latency_ms"], 6),
+                     "top_contributors": [
+                         {"route_id": item["route_id"], "name": item["name"], "load_percent": item["average_load_percent"]}
+@@ -923,6 +1026,11 @@
+                     "object_type": "Network", "object_id": network["network_id"],
+                     "message": f"{network['network_name']}: bestätigte Link- oder Busrate fehlt; Kapazitätszahlen sind nicht freigabefähig.",
+                     "recommendation": "Bitrate im Projekt oder am konkreten Netzwerk-/Hardwareprofil bestätigen und Capacity erneut berechnen."})
++            elif not network['capacity_verified'] and network.get('simulation_capacity_verified'):
++                findings.append({'severity': 'REVIEW', 'code': 'CAPACITY_DEVICE_EVIDENCE_MISSING',
++                    'object_type': 'Network', 'object_id': network['network_id'],
++                    'message': f"{network['network_name']}: Last aus gespeicherten Simulationsparametern berechnet. Geräte-/Implementierungsnachweis fehlt.",
++                    'recommendation': 'Geräte-, PHY- und Schedule-Nachweis getrennt prüfen; gespeicherte Simulationsrate ist vorhanden.'})
+             sizing_policy = policy_for(parameters)
+             findings.extend(lin_reserve_findings(network, sizing_policy, schedule))
+             if schedule.get("status") not in {"FEASIBLE_UNDER_ASSUMPTIONS", "EMPTY"}:
+@@ -1072,10 +1180,8 @@
+             protocol = str(physical_row.get("protocol") or physical.get("technology") or interface.get("interface_type") or default_protocol)
+             payload_bytes = max(0, int(_number(message.get("dlc"), default_payload)))
+             cycle_ms = effective_period(message, physical_row.get("cycle_ms") or _number(message.get("cycle_ms"), default_cycle))
+-            message_parameters = parameters_for_protocol(protocol, parameters, configuration,
+-                                                          configuration.get("network_id") or configuration.get("network"),
+-                                                          confirmed_parameters)
+-            estimate = estimate_frame(protocol, payload_bytes, message_parameters)
++            message_parameters, estimate = estimate_scope(protocol, payload_bytes, configuration,
++                                                          configuration.get("network_id") or configuration.get("network"))
+             load = utilization_percent(estimate.transmission_time_s, cycle_ms) * (1.0 + retry_rate)
+             requirements = message.get("configuration") or {}
+             message_metrics.append(
+@@ -1085,6 +1191,8 @@
+                     "network_id": configuration.get("network_id") or configuration.get("network") or protocol,
+                     "protocol": estimate.protocol,
+                     "capacity_verified": bool(message_parameters.get("_rate_evidenced")) and estimate.transmission_time_available and not estimate.is_generic_estimate and estimate.protocol.upper() in SUPPORTED_CAPACITY_PROTOCOLS,
++                    "simulation_capacity_verified": bool(message_parameters.get('_simulation_parameters_usable')) and estimate.transmission_time_available and not estimate.is_generic_estimate,
++                    "hardware_evidence": bool(message_parameters.get('_rate_evidenced')),
+                     "payload_bytes": payload_bytes,
+                     "cycle_ms": cycle_ms,
+                     "average_load_percent": round(load, 4),
+@@ -1232,7 +1340,7 @@
+                 "peak_factor": peak_factor,
+                 "burst_factor": burst_factor,
+                 "network_count": len(network_metrics),
+-                "capacity_verified": all(item["capacity_verified"] or not item["capacity_applicable"] for item in network_metrics),
++                "capacity_verified": direct_only or bool(network_metrics) and all(item["capacity_verified"] or not item["capacity_applicable"] for item in network_metrics),
+                 "route_count": len({item["route_id"] for item in logical_route_metrics}),
+                 "timing_verified": all(item["timing_verified"] for item in network_metrics),
+                 "route_segment_count": len(route_metrics),
+@@ -1330,6 +1438,13 @@
+             "available_capacity_percent", "capacity_reserve_percent", "capacity_margin_percent",
+             "target_margin_percent", "transmission_latency_ms", "segment_transmission_latency_ms")
+         for row in [*logical_route_metrics, *route_metrics, *physical_transmissions, *network_metrics, *message_metrics]:
++            if row.get('simulation_capacity_verified'):
++                row['simulation_capacity'] = {
++                    'status': 'CALCULATED_UNDER_ASSUMPTIONS', 'hardware_evidence': False,
++                    'functional_timing_accepted': False, 'bitrate': row.get('bitrate'),
++                    **{field: row[field] for field in capacity_fields if field in row},
++                    'communication_schedule': row.get('simulation_communication_schedule'),
++                }
+             if row.get("capacity_verified") is False:
+                 for field in capacity_fields:
+                     if field in row:

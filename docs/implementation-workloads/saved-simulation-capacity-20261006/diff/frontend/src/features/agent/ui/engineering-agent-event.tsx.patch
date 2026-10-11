@@ -1,0 +1,20 @@
+--- before/frontend/src/features/agent/ui/engineering-agent-event.tsx
++++ after/frontend/src/features/agent/ui/engineering-agent-event.tsx
+@@ -140,14 +140,15 @@
+       <h4>{proposal.validation_result.findings!.length} Prüfbefunde</h4>
+       {proposal.status === "APPLIED" && <p role="status">Befunde der Vorschlagsprüfung vor der Übernahme. Die Parameteransicht prüft den aktuellen Modellstand erneut.</p>}
+       {proposalFindingGroups(proposal).map(group => <article key={group.key}>
+-        <strong>{group.code === 'CAPACITY_UNVERIFIED' ? `${group.technology} · ${group.network} · ${group.findings.length} Anschlüsse ohne Kapazitätsnachweis` : group.findings[0].object_name}</strong>
++        <strong>{['CAPACITY_UNVERIFIED','CAPACITY_DEVICE_EVIDENCE_MISSING'].includes(group.code) ? `${group.technology} · ${group.network} · ${group.findings.length} Anschlüsse ${group.code === 'CAPACITY_DEVICE_EVIDENCE_MISSING' ? 'mit offenem Gerätenachweis' : 'ohne Kapazitätsnachweis'}` : group.findings[0].object_name}</strong>
+         <p>{group.findings[0].message}</p>
+         {group.code === 'CAPACITY_UNVERIFIED' && (['i2c', 'spi'].includes(group.technology.toLowerCase())
+           ? <><p>Busfrequenz und Gerätenachweis werden getrennt geprüft. Nach Übernahme des Modells die betroffenen Anschlüsse unter „Gerätespezifische Zeitdaten“ bearbeiten. Master, Adresse/Chip-Select, Transferumfang und Zeitgrenzen benötigen Geräteunterlagen; sie werden nicht aus Standardwerten erfunden.</p>
+             <a className="button secondary tiny" href={`/studio/engineering?resource=hardware-interfaces&project=${encodeURIComponent(projectId)}`}>Geräteanschlüsse und Zeitdaten prüfen</a></>
+           : <><p>Kapazitätsprüfung erfolgt mit dem Modell dieser Technologie nach Bestätigung und Übernahme der Parameter. Modellfreigabe bestätigt keine Kapazität.</p>
+             <a className="button secondary tiny" href={parameterReviewHref(projectId, group.technology, proposal.proposal_id)}>Technologieparameter bearbeiten und bestätigen</a></>)}
+-        {group.code === 'CAPACITY_UNVERIFIED' ? <LazyDetails title={`Alle betroffenen Objekte und Befunde (${group.findings.length})`}>{() => <FindingGroupDetails findings={group.findings} />}</LazyDetails>
++        {group.code === 'CAPACITY_DEVICE_EVIDENCE_MISSING' && <a className="button secondary tiny" href={parameterReviewHref(projectId, group.technology, proposal.proposal_id)}>Gespeicherte Simulationsauslegung und Nachweise prüfen</a>}
++        {['CAPACITY_UNVERIFIED','CAPACITY_DEVICE_EVIDENCE_MISSING'].includes(group.code) ? <LazyDetails title={`Alle betroffenen Objekte und Befunde (${group.findings.length})`}>{() => <FindingGroupDetails findings={group.findings} />}</LazyDetails>
+           : group.findings.map((finding, index) => <div key={index}>
+             <p role={finding.severity === 'WARNING' ? 'status' : 'alert'}>{finding.message}</p>
+             <ContextLinks refs={[finding.source, ...(finding.destinations ?? [])].filter(endpoint => endpoint && typeof endpoint.node_id === 'string').map(endpoint => ({ object_type: 'HardwareNode', id: String(endpoint!.node_id), name: 'Betroffenes Gerät öffnen' }))} projectId={projectId} />

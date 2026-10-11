@@ -1,0 +1,338 @@
+--- before/frontend/src/features/workflow/stage_08_results_analysis/results-workbench.tsx
++++ after/frontend/src/features/workflow/stage_08_results_analysis/results-workbench.tsx
+@@ -1,10 +1,10 @@
+ "use client";
+ 
+ import Link from "next/link";
+-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
++import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+ import { getSimulation, listSimulations } from "@/shared/api/api";
+ import { mergeSimulationResult, mergeSimulationSnapshots, selectSimulationSnapshot } from "@/features/simulation/lib/simulation-result";
+-import type { RuntimeMetrics, SimulationJob } from "@/shared/api/types";
++import type { ModelSimulationTrace, RuntimeMetrics, RuntimeNetworkMetric, RuntimeRouteMetric, SimulationJob } from "@/shared/api/types";
+ import {
+   getWorkflowSimulationSnapshot,
+   getWorkflowSnapshots,
+@@ -14,6 +14,8 @@
+ } from "@/features/workflow/lib/workflow-api";
+ import { useWorkflowRefresh } from "@/features/workflow/lib/use-workflow-refresh";
+ import { readActiveProjectId, withProjectParam } from "@/features/settings/lib/user-settings";
++import { simulationPage } from "@/features/simulation/lib/simulation-pagination";
++import { SimulationPageControls } from "@/features/simulation/ui/simulation-page-controls";
+ 
+ export function ResultsWorkbench({ initialProjectId = "", initialSnapshotId }: { initialProjectId?: string; initialSnapshotId?: string }) {
+   const [snapshots, setSnapshots] = useState<SimulationSnapshot[]>([]);
+@@ -139,7 +141,7 @@
+             <div className="metric-strip"><div className="metric"><span>Snapshot</span><strong>{selected.id.slice(0, 8)}</strong></div><div className="metric"><span>Ausführung</span><strong>{job?.status ?? selected.status}</strong></div><div className="metric"><span>Prognose Peak</span><strong>{predicted?.capacity_verified ? `${Number(predicted.max_peak_load_percent).toFixed(2)} %` : "Nicht nachgewiesen"}</strong></div><div className="metric"><span>Runtime Peak</span><strong>{runtime?.available ? `${runtimePeak.toFixed(2)} %` : "—"}</strong></div><div className="metric"><span>Trace Events</span><strong>{traceEvents?.toLocaleString("de-DE") ?? "—"}</strong></div></div>
+             {compareRuntime?.available && <div className="impact-strip"><ResultMetric label="Δ Runtime Peak" value={`${(runtimePeak - comparePeak).toFixed(2)} %`} /><ResultMetric label="Δ Events" value={String((runtime?.summary?.event_count ?? 0) - (compareRuntime.summary?.event_count ?? 0))} /><ResultMetric label="Δ Drops" value={String((runtime?.summary?.dropped_frames ?? 0) - (compareRuntime.summary?.dropped_frames ?? 0))} /><ResultMetric label="Δ Timeouts" value={String((runtime?.summary?.timeouts ?? 0) - (compareRuntime.summary?.timeouts ?? 0))} /></div>}
+             <div className="comparison-grid"><section><p className="eyebrow">Calculated</p><h3>Engineering-Prognose</h3><dl className="overview-list"><div><dt>Peak Load</dt><dd>{predicted?.capacity_verified ? `${Number(predicted.max_peak_load_percent).toFixed(2)} %` : "Nicht nachgewiesen"}</dd></div><div><dt>Worst E2E</dt><dd>{predicted?.timing_verified ? `${Number(predicted.worst_end_to_end_latency_ms).toFixed(3)} ms` : "Nicht nachgewiesen"}</dd></div><div><dt>Reserve</dt><dd>{predicted?.capacity_verified ? `${Number(predicted.minimum_capacity_reserve_percent).toFixed(2)} %` : "Nicht nachgewiesen"}</dd></div><div><dt>Netze</dt><dd>{predicted ? String(predicted.network_count) : "—"}</dd></div></dl></section><section><p className="eyebrow">Observed</p><h3>Simulation</h3><dl className="overview-list"><div><dt>Peak / Burst</dt><dd>{runtime?.available ? `${runtimePeak.toFixed(2)} / ${runtimeBurst.toFixed(2)} %` : "—"}</dd></div><div><dt>Worst E2E</dt><dd>{runtime?.available ? `${runtimeLatency.toFixed(3)} ms` : "—"}</dd></div><div><dt>Drops / Korruption</dt><dd>{runtime?.available ? `${runtime.summary?.dropped_frames ?? 0} / ${runtime.summary?.corrupted_frames ?? 0}` : "—"}</dd></div><div><dt>Timeouts / Jitter</dt><dd>{runtime?.available ? `${runtime.summary?.timeouts ?? 0} / ${runtime.summary?.jitter_violations ?? 0}` : "—"}</dd></div></dl></section></div>
+-            {runtime?.available ? <RuntimeAnalysis key={selected.id} projectId={projectIdForLinks} runtime={runtime} /> : <div className="workflow-blocker warning"><strong>Keine Runtime-Metriken</strong><span>{runtime?.reason ?? "Dieser historische Lauf wurde noch ohne Runtime-Analyse erzeugt."}</span></div>}
++            {runtime?.available ? <RuntimeAnalysis key={selected.id} projectId={projectIdForLinks} runtime={runtime} trace={observed?.model_simulation} snapshot={selected} /> : <div className="workflow-blocker warning"><strong>Keine Runtime-Metriken</strong><span>{runtime?.reason ?? "Dieser historische Lauf wurde noch ohne Runtime-Analyse erzeugt."}</span></div>}
+             <div className="source-version-table"><strong>Quellversionen</strong>{Object.entries(selected.source_versions ?? {}).map(([key, value]) => <span key={key}>{key.replaceAll("_", " ")} <b>v{value}</b></span>)}</div>
+           </> : <div className="analysis-empty"><strong>Kein Lauf ausgewählt</strong><p>Ergebnisse werden nicht gelöscht; veraltete Läufe bleiben als historische Evidenz sichtbar.</p></div>}
+         </div>
+@@ -173,7 +175,7 @@
+   </th>)}</tr>;
+ }
+ 
+-function RuntimeAnalysis({ projectId, runtime }: { projectId?: string; runtime: RuntimeMetrics }) {
++function RuntimeAnalysis({ projectId, runtime, trace, snapshot }: { projectId?: string; runtime: RuntimeMetrics; trace?: ModelSimulationTrace; snapshot: SimulationSnapshot }) {
+   const [networkFilters, setNetworkFilters] = useState<string[]>([]);
+   const [routeFilters, setRouteFilters] = useState<string[]>([]);
+   const networkRows = useMemo(() => (runtime.networks ?? []).map(item => ({ item, cells: [
+@@ -194,6 +196,8 @@
+   }), [runtime.routes]);
+   const shownNetworks = useMemo(() => networkRows.filter(row => matchesRuntimeColumns(row.cells, networkFilters)), [networkRows, networkFilters]);
+   const shownRoutes = useMemo(() => routeRows.filter(row => matchesRuntimeColumns(row.cells, routeFilters)), [routeRows, routeFilters]);
++  const chartNetworks = useMemo(() => shownNetworks.map(row => row.item), [shownNetworks]);
++  const chartRoutes = useMemo(() => shownRoutes.map(row => row.item), [shownRoutes]);
+   const changeNetworkFilter = (index: number, value: string) => setNetworkFilters(current => NETWORK_COLUMNS.map((_, column) => column === index ? value : current[column] ?? ""));
+   const changeRouteFilter = (index: number, value: string) => setRouteFilters(current => ROUTE_COLUMNS.map((_, column) => column === index ? value : current[column] ?? ""));
+   return (
+@@ -207,6 +211,10 @@
+         <ResultMetric label="Peak Window" value={`${runtime.peak_window_ms ?? 0} ms`} />
+         <ResultMetric label="Burst Window" value={`${runtime.burst_window_ms ?? 0} ms`} />
+       </div>
++      <RuntimeCharts networks={chartNetworks} routes={chartRoutes} trace={trace} snapshot={snapshot} projectId={projectId}
++        peakWindowMs={runtime.peak_window_ms} filtersActive={[...networkFilters, ...routeFilters].some(filter => filter.trim())}
++        onNetwork={id => setNetworkFilters([id])} onStatus={status => setRouteFilters(ROUTE_COLUMNS.map((_, index) => index === 6 ? status : ""))}
++        onReset={() => { setNetworkFilters([]); setRouteFilters([]); }} />
+       <section className="runtime-section">
+         <div className="panel-heading"><div><p className="eyebrow">Runtime networks</p><h3>Load & Queueing</h3></div><code>{runtime.calculation_model}</code></div>
+         <div className="runtime-table-tools"><span role="status">{shownNetworks.length} / {networkRows.length} Netze</span><button className="button secondary tiny" type="button" disabled={!networkFilters.some(filter => filter.trim())} onClick={() => setNetworkFilters([])}>Netzfilter zurücksetzen</button></div>
+@@ -238,3 +246,212 @@
+     </div>
+   );
+ }
++
++type EcuRouteGroup = { id: string; name: string; routes: RuntimeRouteMetric[]; counts: Array<number | null> };
++const ECU_FAULT_COLUMNS = ["Fehlerhafte Routen", "Timeouts", "Jitter", "Latenz", "Datenalter"];
++const ROUTE_STATUS_SERIES = [
++  { key: "PASS", label: "Bestanden", color: "var(--accent)" },
++  { key: "FAIL", label: "Nicht bestanden", color: "var(--danger)" },
++  { key: "NOT_EVALUATED", label: "Nicht vollständig geprüft", color: "var(--warning)" },
++];
++
++function chartRecord(value: unknown): Record<string, unknown> {
++  return value !== null && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
++}
++
++function validCount(value: unknown): number | null {
++  return typeof value === "number" && Number.isInteger(value) && value >= 0 ? value : null;
++}
++
++function routeFaultCounts(route: RuntimeRouteMetric): Array<number | null> {
++  return [route.status === "FAIL" ? 1 : route.status === "PASS" || route.status === "NOT_EVALUATED" ? 0 : null,
++    validCount(route.timeouts), validCount(route.jitter_violations), validCount(route.latency_violations), validCount(route.freshness_violations)];
++}
++
++function ecuRouteGroups(configuration: SimulationSnapshot["configuration"], routes: RuntimeRouteMetric[]) {
++  const parameters = chartRecord(configuration?.parameters);
++  const model = chartRecord(configuration?.engineering_model ?? parameters.engineering_model);
++  const rawHardware = configuration?.hardware ?? parameters.hardware;
++  const hardware = chartRecord(rawHardware);
++  const nodes = Array.isArray(model.nodes) && model.nodes.length ? model.nodes
++    : Array.isArray(rawHardware) ? rawHardware : hardware.devices ?? hardware.nodes;
++  const devices = new Map<string, { name: string; isEcu: boolean }>();
++  for (const raw of Array.isArray(nodes) ? nodes : []) {
++    const node = chartRecord(raw);
++    if (typeof node.id !== "string" || !node.id) continue;
++    const kind = node.device_type ?? node.type;
++    devices.set(node.id, { name: typeof node.name === "string" && node.name ? node.name : node.id,
++      isEcu: typeof kind === "string" && kind.trim().toUpperCase() === "ECU" });
++  }
++  const groups = new Map<string, EcuRouteGroup>();
++  const seen = new Set<string>();
++  let unassignedFailures = 0;
++  for (const route of routes) {
++    if (seen.has(route.route_id)) continue;
++    seen.add(route.route_id);
++    const endpoints = new Set([route.sender_id, ...(route.receiver_ids ?? [])].filter((id): id is string => !!id));
++    const ecus = [...endpoints].filter(id => devices.get(id)?.isEcu);
++    if (route.status === "FAIL" && !ecus.length) unassignedFailures++;
++    for (const id of ecus) {
++      const row = groups.get(id) ?? { id, name: devices.get(id)!.name, routes: [], counts: [0, 0, 0, 0, 0] };
++      row.routes.push(route);
++      const counts = routeFaultCounts(route);
++      row.counts = row.counts.map((value, index) => value === null || counts[index] === null ? null : value + counts[index]!);
++      groups.set(id, row);
++    }
++  }
++  const all = [...groups.values()];
++  // An incomplete aggregate must not hide a known violation on one of its routes.
++  const hotspots = all.filter(row => row.routes.some(route => routeFaultCounts(route).some(value => value !== null && value > 0)))
++    .sort((a, b) => (b.counts[0] ?? 0) - (a.counts[0] ?? 0)
++      || b.counts.reduce<number>((sum, value) => sum + (value ?? 0), 0) - a.counts.reduce<number>((sum, value) => sum + (value ?? 0), 0)
++      || a.name.localeCompare(b.name));
++  return { hotspots, mappedEcus: all.length, incompleteEcus: all.filter(row => row.counts.some(value => value === null)).length,
++    frozenEcus: [...devices.values()].filter(item => item.isEcu).length, unassignedFailures };
++}
++
++function RuntimeCharts({ networks, routes, trace, snapshot, projectId, peakWindowMs, filtersActive, onNetwork, onStatus, onReset }: {
++  networks: RuntimeNetworkMetric[]; routes: RuntimeRouteMetric[]; trace?: ModelSimulationTrace; snapshot: SimulationSnapshot;
++  projectId?: string; peakWindowMs?: number; filtersActive: boolean; onNetwork: (id: string) => void;
++  onStatus: (status: string) => void; onReset: () => void;
++}) {
++  const [allNetworks, setAllNetworks] = useState(false);
++  const [allEcus, setAllEcus] = useState(false);
++  const [trendNetwork, setTrendNetwork] = useState("");
++  const [selectedEcu, setSelectedEcu] = useState("");
++  const ranked = useMemo(() => networks.filter(item => Number.isFinite(item.peak_load_percent) && item.peak_load_percent >= 0)
++    .toSorted((a, b) => b.peak_load_percent - a.peak_load_percent || a.network_id.localeCompare(b.network_id)), [networks]);
++  const bars = allNetworks ? ranked : ranked.slice(0, 8);
++  const barMaximum = ranked.reduce((maximum, item) => Math.max(maximum, item.peak_load_percent), 100);
++  const statuses = useMemo(() => ROUTE_STATUS_SERIES.map(series => ({ ...series, count: routes.filter(route => route.status === series.key).length })), [routes]);
++  const statusTotal = statuses.reduce((sum, series) => sum + series.count, 0);
++  const traceNetworks = useMemo(() => new Set((trace?.bus_load ?? []).map(point => point.network_id)), [trace?.bus_load]);
++  const trendChoices = useMemo(() => networks.filter(item => traceNetworks.has(item.network_id))
++    .toSorted((a, b) => (a.network_name || a.network_id).localeCompare(b.network_name || b.network_id)), [networks, traceNetworks]);
++  const selectedNetworkId = trendChoices.some(item => item.network_id === trendNetwork) ? trendNetwork : trendChoices[0]?.network_id ?? "";
++  const trendPoints = useMemo(() => (trace?.bus_load ?? []).filter(point => point.network_id === selectedNetworkId
++    && Number.isFinite(point.time_s) && point.time_s >= 0 && Number.isFinite(point.load_percent) && point.load_percent >= 0)
++    .toSorted((a, b) => a.time_s - b.time_s), [trace?.bus_load, selectedNetworkId]);
++  const ecuEvidence = useMemo(() => ecuRouteGroups(snapshot.configuration, routes), [snapshot.configuration, routes]);
++  const ecuRows = allEcus ? ecuEvidence.hotspots : ecuEvidence.hotspots.slice(0, 8);
++  const selectedEcuRow = ecuEvidence.hotspots.find(row => row.id === selectedEcu);
++  const maxima = ECU_FAULT_COLUMNS.map((_, index) => ecuEvidence.hotspots.reduce((maximum, row) => Math.max(maximum, row.counts[index] ?? 0), 1));
++  let offset = 0;
++  return <section className="runtime-charts" aria-label="Diagramme des ausgewählten Simulationslaufs">
++    <div className="runtime-charts-heading"><div><p className="eyebrow">Diagramme</p><h3>Last, Bewertung und Fehlerhäufung</h3>
++      <p>Snapshot {snapshot.id.slice(0, 8)} · {snapshot.is_outdated ? "Historischer Lauf" : "Ausgewählter Lauf"}. Busdiagramme folgen den Netzfiltern; Routenbewertung und ECU-Häufung den Routenfiltern.</p></div>
++      {filtersActive && <button type="button" className="button secondary tiny" onClick={onReset}>Tabellenfilter zurücksetzen</button>}
++    </div>
++    <div className="runtime-chart-grid">
++      <section className="runtime-chart-card" aria-label="Balkendiagramm der Buslast">
++        <header><p className="eyebrow">Balken</p><h4>Peak-Buslast je Netz</h4><p>Simulationswerte in %. Peak-Fenster: {peakWindowMs == null ? "nicht dokumentiert" : `${peakWindowMs} ms`}.</p></header>
++        {ranked.length ? <>
++          <div className="runtime-load-bars">{bars.map(item => <button key={item.network_id} type="button" className="runtime-load-bar" onClick={() => onNetwork(item.network_id)}
++            aria-label={`${item.network_name || item.network_id}: Peak ${item.peak_load_percent.toFixed(2)} Prozent; Netz filtern`}
++            title={`${item.network_name || item.network_id}\n${item.network_id}\nØ ${item.average_load_percent.toFixed(2)} % · Peak ${item.peak_load_percent.toFixed(2)} % · Burst ${item.burst_load_percent.toFixed(2)} %`}>
++            <span className="runtime-load-bar-label">{item.network_name || item.network_id}</span>
++            <span className="runtime-load-bar-track" aria-hidden="true"><i style={{ width: `${item.peak_load_percent / barMaximum * 100}%` }} /></span>
++            <strong>{item.peak_load_percent.toFixed(2)} %</strong>
++          </button>)}</div>
++          <div className="runtime-chart-scale"><span>Skala ab 0 %</span><span>Maximum {barMaximum.toFixed(2)} %</span></div>
++          {ranked.length > 8 && <button className="button secondary tiny" type="button" onClick={() => setAllNetworks(value => !value)}>{allNetworks ? "Top 8 anzeigen" : `Alle ${ranked.length} Netze anzeigen`}</button>}
++          <p className="runtime-chart-note">{bars.length} von {ranked.length} Netzen mit belegtem Peak. Balken auswählen, um die Netztabelle zu filtern.</p>
++        </> : <p className="runtime-chart-empty">Keine belegten Peak-Werte für die gefilterten Netze.</p>}
++        {ranked.length < networks.length && <p className="runtime-chart-note">Für {networks.length - ranked.length} Netze fehlt ein gültiger Peak-Wert.</p>}
++      </section>
++      <section className="runtime-chart-card" aria-label="Kreisdiagramm der Routenbewertungen">
++        <header><p className="eyebrow">Kreis</p><h4>Routenbewertung</h4><p>Anteile der {statusTotal} Routen mit gespeichertem Bewertungsstatus im aktuellen Filter.</p></header>
++        {statusTotal ? <div className="runtime-status-chart">
++          <svg viewBox="0 0 140 140" role="img" aria-label={statuses.map(series => `${series.label}: ${series.count}`).join("; ")}>
++            <title>Routenbewertung des ausgewählten Laufs</title>
++            {statuses.map(series => {
++              const length = series.count / statusTotal * 2 * Math.PI * 48;
++              const start = offset;
++              offset += length;
++              return <circle key={series.key} cx="70" cy="70" r="48" fill="none" stroke={series.color} strokeWidth="18"
++                strokeDasharray={`${length} ${2 * Math.PI * 48}`} strokeDashoffset={-start} transform="rotate(-90 70 70)"><title>{series.label}: {series.count} ({(series.count / statusTotal * 100).toFixed(1)} %)</title></circle>;
++            })}
++            <text x="70" y="68" textAnchor="middle" className="runtime-chart-total">{statusTotal}</text><text x="70" y="85" textAnchor="middle" className="runtime-chart-unit">Routen</text>
++          </svg>
++          <div className="runtime-chart-legend">{statuses.map(series => <button key={series.key} type="button" onClick={() => onStatus(series.key)} aria-label={`${series.label}: ${series.count} Routen; Tabelle filtern`}>
++            <i aria-hidden="true" style={{ background: series.color }} /><span>{series.label}</span><strong>{series.count} · {(series.count / statusTotal * 100).toFixed(1)} %</strong>
++          </button>)}</div>
++        </div> : <p className="runtime-chart-empty">Keine Routenbewertung für diesen Filter vorhanden.</p>}
++        {statusTotal < routes.length && <p className="runtime-chart-note">Bei {routes.length - statusTotal} Routen fehlt ein bekannter Bewertungsstatus.</p>}
++        <p className="runtime-chart-note">Nicht vollständig geprüfte Routen bleiben separat sichtbar. Legende auswählen, um die Routentabelle zu filtern.</p>
++      </section>
++      <section className="runtime-chart-card" aria-label="Trenddiagramm der Buslast">
++        <header><p className="eyebrow">Trend</p><h4>Buslast im Laufverlauf</h4><p>Zeit seit Laufbeginn; ausschließlich gespeicherte Simulationspunkte.</p></header>
++        {!!trendChoices.length && <label className="runtime-chart-network">Netz auswählen<select value={selectedNetworkId} onChange={event => setTrendNetwork(event.target.value)}>{trendChoices.map(item => <option key={item.network_id} value={item.network_id}>{item.network_name || item.network_id}</option>)}</select></label>}
++        <RuntimeLoadTrend key={selectedNetworkId} points={trendPoints} />
++      </section>
++      <section className="runtime-chart-card" aria-label="Fehlerhäufung bei ECUs">
++        <header><p className="eyebrow">ECU-Häufung</p><h4>Fehler auf beteiligten ECU-Routen</h4><p>Zuordnung über Hardware-IDs und ECU-Typen im eingefrorenen Modell dieses Laufs.</p></header>
++        {ecuRows.length ? <>
++          <div className="runtime-chart-table-scroll" tabIndex={0} aria-label="ECU-Fehlerübersicht, horizontal scrollbar"><table className="runtime-hotspot-table"><thead><tr><th scope="col">ECU</th>{ECU_FAULT_COLUMNS.map(column => <th key={column} scope="col">{column}</th>)}</tr></thead><tbody>
++            {ecuRows.map(row => <tr key={row.id}><th scope="row"><button type="button" onClick={() => setSelectedEcu(current => current === row.id ? "" : row.id)} aria-pressed={selectedEcu === row.id} title={`${row.name} · ${row.id}`}>{row.name}</button></th>
++              {row.counts.map((value, index) => <td key={ECU_FAULT_COLUMNS[index]} style={{ "--runtime-heat": `${value && value > 0 ? 8 + value / maxima[index] * 20 : 0}%` } as CSSProperties}
++                title={value === null ? "Kennzahl für diese ECU-Routen nicht vollständig vorhanden" : `${ECU_FAULT_COLUMNS[index]}: ${value}`}>{value === null ? "—" : value}</td>)}
++            </tr>)}
++          </tbody></table></div>
++          {ecuEvidence.hotspots.length > 8 && <button type="button" className="button secondary tiny" onClick={() => setAllEcus(value => !value)}>{allEcus ? "Top 8 anzeigen" : `Alle ${ecuEvidence.hotspots.length} betroffenen ECUs anzeigen`}</button>}
++          <p className="runtime-chart-note">{ecuRows.length} von {ecuEvidence.hotspots.length} betroffenen ECUs. Farbe zeigt die Häufung je Spalte; — bedeutet fehlende Kennzahl. ECU auswählen, um ihre Routen zu sehen.</p>
++        </> : <p className="runtime-chart-empty">{!ecuEvidence.frozenEcus ? "Keine ECU-Typen im eingefrorenen Modell dokumentiert." : !ecuEvidence.mappedEcus ? "Keine belegte ECU-Zuordnung zu den gefilterten Routen vorhanden." : `Auf den Routen der ${ecuEvidence.mappedEcus} zugeordneten ECUs sind keine Fehler ausgewiesen.`}</p>}
++        {!!ecuEvidence.incompleteEcus && <p className="runtime-chart-note">Bei {ecuEvidence.incompleteEcus} zugeordneten ECUs sind Fehlerkennzahlen nicht vollständig vorhanden. Fehlende Werte belegen keine Fehlerfreiheit; bekannte Einzelwerte stehen in den Routendetails.</p>}
++        {!!ecuEvidence.unassignedFailures && <p className="runtime-chart-note">{ecuEvidence.unassignedFailures} fehlerhafte Routen besitzen keine belegte ECU-Zuordnung und werden keiner ECU zugerechnet.</p>}
++        {selectedEcuRow && <div className="runtime-hotspot-details"><strong>{selectedEcuRow.name} · {selectedEcuRow.routes.length} beteiligte Routen</strong><ul>{selectedEcuRow.routes.map(route => <li key={route.route_id}>
++          <span>{route.route_name}<small>{route.route_id} · {runtimeRouteStatus(route.status)}</small><small>{routeFaultCounts(route).slice(1).map((value, index) => `${ECU_FAULT_COLUMNS[index + 1]}: ${value === null ? "—" : value}`).join(" · ")}</small></span>
++          {route.canonical_route_id && <Link className="button secondary tiny" href={withProjectParam(`/studio/routing?route=${encodeURIComponent(route.canonical_route_id)}`, projectId)}>Route öffnen</Link>}
++        </li>)}</ul></div>}
++        <p className="runtime-chart-note">Jede Route zählt pro beteiligter ECU einmal. Eine Route kann mehrere ECUs betreffen. Dies zeigt Beteiligung, keine bewiesene Fehlerursache.</p>
++      </section>
++    </div>
++  </section>;
++}
++
++function RuntimeLoadTrend({ points }: { points: ModelSimulationTrace["bus_load"] }) {
++  const [page, setPage] = useState(0);
++  const valuesPage = simulationPage(points, page, 100);
++  const drawn = useMemo(() => {
++    if (points.length <= 800) return points;
++    // Retain real extrema and endpoints; never invent or average a plotted value.
++    const selected = new Set([0, points.length - 1]);
++    const size = Math.ceil(points.length / 399);
++    for (let start = 0; start < points.length; start += size) {
++      let low = start, high = start;
++      for (let index = start + 1; index < Math.min(start + size, points.length); index++) {
++        if (points[index].load_percent < points[low].load_percent) low = index;
++        if (points[index].load_percent > points[high].load_percent) high = index;
++      }
++      selected.add(low); selected.add(high);
++    }
++    return [...selected].toSorted((a, b) => a - b).map(index => points[index]);
++  }, [points]);
++  if (!points.length) return <p className="runtime-chart-empty">Keine gespeicherte Buslast-Zeitreihe für dieses Netz im aktuellen Filter.</p>;
++  const width = 560, height = 240, left = 52, top = 18, right = 18, bottom = 44;
++  const maximumTime = points.reduce((maximum, point) => Math.max(maximum, point.time_s), 0.001);
++  const maximumLoad = points.reduce((maximum, point) => Math.max(maximum, point.load_percent), 100);
++  const x = (time: number) => left + time / maximumTime * (width - left - right);
++  const y = (load: number) => top + (1 - load / maximumLoad) * (height - top - bottom);
++  const windows = [...new Set(points.map(point => point.window_ms).filter(value => Number.isFinite(value)))];
++  return <>
++    <div className="runtime-trend-scroll" tabIndex={0} aria-label="Buslastverlauf, horizontal scrollbar">
++      <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label={`Buslastverlauf mit ${points.length} gespeicherten Punkten; Zeit in Sekunden, Buslast in Prozent`}>
++        <title>Buslast über der Zeit</title>
++        {[0, maximumLoad / 2, maximumLoad].map(value => <g key={value}><line x1={left} x2={width - right} y1={y(value)} y2={y(value)} className="runtime-trend-grid" /><text x={left - 8} y={y(value) + 4} textAnchor="end">{value.toFixed(1)}</text></g>)}
++        <line x1={left} x2={left} y1={top} y2={height - bottom} className="runtime-trend-axis" />
++        <line x1={left} x2={width - right} y1={height - bottom} y2={height - bottom} className="runtime-trend-axis" />
++        {[0, maximumTime / 2, maximumTime].map(value => <text key={value} x={x(value)} y={height - bottom + 20} textAnchor="middle">{value.toFixed(3)} s</text>)}
++        <text x={left} y="12">Buslast (%)</text>
++        {drawn.length > 1 && <polyline points={drawn.map(point => `${x(point.time_s)},${y(point.load_percent)}`).join(" ")} className="runtime-trend-line" />}
++        {drawn.map((point, index) => <circle key={`${point.time_s}-${index}`} cx={x(point.time_s)} cy={y(point.load_percent)} r="3" className="runtime-trend-point"><title>{point.time_s.toFixed(3)} s · {point.load_percent.toFixed(2)} % · Fenster {Number.isFinite(point.window_ms) ? `${point.window_ms} ms` : "nicht dokumentiert"}</title></circle>)}
++      </svg>
++    </div>
++    <p className="runtime-chart-note">{points.length} gespeicherte Stützpunkte. {windows.length ? `Auswertefenster: ${windows.join(" / ")} ms.` : "Auswertefenster nicht dokumentiert."}{points.length === 1 ? " Ein einzelner Punkt belegt keinen Trend." : ""}</p>
++    {drawn.length < points.length && <p className="runtime-chart-note">Die Kurve zeigt {drawn.length} echte Stützpunkte als Min/Max-Auszug. Alle {points.length} gespeicherten Werte bleiben in der Tabelle erreichbar.</p>}
++    <details className="runtime-trend-values"><summary>Werte als Tabelle</summary>
++      <SimulationPageControls label="Buslastwerte" {...valuesPage} onPage={setPage} />
++      <div className="runtime-chart-table-scroll"><table><thead><tr><th scope="col">Zeit (s)</th><th scope="col">Buslast (%)</th><th scope="col">Fenster (ms)</th></tr></thead><tbody>{valuesPage.items.map((point, index) => <tr key={`${point.time_s}-${index}`}><td>{point.time_s.toFixed(3)}</td><td>{point.load_percent.toFixed(2)}</td><td>{Number.isFinite(point.window_ms) ? point.window_ms : "—"}</td></tr>)}</tbody></table></div>
++    </details>
++  </>;
++}
+--- before/frontend/src/app/globals.css
++++ after/frontend/src/app/globals.css
+@@ -13106,6 +13106,60 @@
+ .runtime-section { margin-top: 16px; padding: 14px; border: 1px solid var(--border); background: var(--surface); }
+ .runtime-section h3 { margin: 0; font-size: 15px; }
+ .runtime-section code { color: var(--subtle); font-size: 9px; }
++.runtime-charts { min-width: 0; margin-top: 18px; }
++.runtime-charts-heading { display: flex; justify-content: space-between; align-items: start; flex-wrap: wrap; gap: 12px; margin-bottom: 14px; }
++.runtime-charts-heading h3 { margin: 4px 0 7px; font-size: 17px; }
++.runtime-charts-heading p:last-child { max-width: 100ch; margin: 0; color: var(--muted); font-size: 11px; line-height: 1.6; }
++.runtime-chart-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 14px; align-items: start; }
++.runtime-chart-card { display: grid; align-content: start; gap: 12px; min-width: 0; padding: 16px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
++.runtime-chart-card h4 { margin: 4px 0 7px; font-size: 15px; }
++.runtime-chart-card header > p:last-child, .runtime-chart-note { margin: 0; color: var(--muted); font-size: 10px; line-height: 1.6; overflow-wrap: anywhere; }
++.runtime-chart-card > .button { justify-self: start; }
++.runtime-chart-empty { margin: 0; padding: 24px 12px; border: 1px dashed var(--border); border-radius: 6px; color: var(--muted); font-size: 12px; line-height: 1.6; text-align: center; }
++.runtime-load-bars { display: grid; gap: 6px; max-height: 340px; overflow-y: auto; }
++.runtime-load-bar { display: grid; grid-template-columns: minmax(90px, 1fr) minmax(80px, 1.2fr) auto; align-items: center; gap: 10px; width: 100%; min-width: 0; min-height: 32px; padding: 4px; border: 0; border-radius: 3px; color: var(--text); background: transparent; text-align: left; cursor: pointer; }
++.runtime-load-bar:hover { background: var(--surface-hover); }
++.runtime-load-bar:focus-visible, .runtime-chart-legend button:focus-visible, .runtime-hotspot-table button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
++.runtime-load-bar-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 10px; }
++.runtime-load-bar-track { display: block; height: 10px; overflow: hidden; background: var(--surface-deep); }
++.runtime-load-bar-track i { display: block; height: 100%; background: var(--accent); }
++.runtime-load-bar strong { font: 10px var(--font-geist-mono), monospace; white-space: nowrap; }
++.runtime-chart-scale { display: flex; justify-content: space-between; gap: 10px; color: var(--muted); font-size: 9px; }
++.runtime-status-chart { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 16px; }
++.runtime-status-chart > svg { width: 180px; height: 180px; flex: 0 0 auto; }
++.runtime-chart-total { fill: var(--text); font: 600 20px var(--font-geist-mono), monospace; }
++.runtime-chart-unit { fill: var(--muted); font-size: 10px; }
++.runtime-chart-legend { display: grid; gap: 7px; min-width: 0; flex: 1 1 170px; }
++.runtime-chart-legend button { display: grid; grid-template-columns: 9px minmax(0, 1fr); align-items: start; gap: 5px 9px; width: 100%; padding: 7px; border: 1px solid var(--border); border-radius: 5px; color: var(--text); background: transparent; text-align: left; cursor: pointer; }
++.runtime-chart-legend i { width: 9px; height: 9px; margin-top: 3px; }
++.runtime-chart-legend span { font-size: 11px; line-height: 1.4; }
++.runtime-chart-legend strong { grid-column: 2; font: 10px var(--font-geist-mono), monospace; }
++.runtime-chart-network { display: grid; gap: 6px; min-width: 0; color: var(--muted); font-size: 10px; }
++.runtime-chart-network select { min-width: 0; width: 100%; min-height: 34px; padding: 6px 8px; border: 1px solid var(--border); border-radius: 5px; color: var(--text); background: var(--background); }
++.runtime-trend-scroll { overflow-x: auto; min-width: 0; }
++.runtime-trend-scroll svg { display: block; width: 100%; min-width: 440px; }
++.runtime-trend-scroll text { fill: var(--muted); font: 11px var(--font-geist-mono), monospace; }
++.runtime-trend-grid { stroke: var(--border); stroke-dasharray: 3 4; }
++.runtime-trend-axis { stroke: var(--muted); stroke-width: 1; }
++.runtime-trend-line { fill: none; stroke: var(--accent); stroke-width: 2; }
++.runtime-trend-point { fill: var(--accent); stroke: var(--surface); stroke-width: 1; }
++.runtime-chart-table-scroll { min-width: 0; max-height: 340px; overflow: auto; }
++.runtime-chart-table-scroll table { width: 100%; border-collapse: collapse; font-size: 10px; }
++.runtime-chart-table-scroll th, .runtime-chart-table-scroll td { padding: 9px 8px; border-bottom: 1px solid var(--border); text-align: right; }
++.runtime-chart-table-scroll th { color: var(--muted); font-weight: 500; }
++.runtime-chart-table-scroll thead { position: sticky; top: 0; background: var(--surface); }
++.runtime-hotspot-table { min-width: 540px; }
++.runtime-hotspot-table th:first-child { width: 150px; text-align: left; }
++.runtime-hotspot-table td { color: var(--text); background: color-mix(in srgb, var(--danger) var(--runtime-heat, 0%), var(--surface)); font-family: var(--font-geist-mono), monospace; }
++.runtime-hotspot-table button { padding: 0; border: 0; color: var(--text); background: transparent; font-size: 10px; font-weight: 600; text-align: left; cursor: pointer; overflow-wrap: anywhere; }
++.runtime-hotspot-table button[aria-pressed="true"] { color: var(--accent); text-decoration: underline; }
++.runtime-hotspot-details { padding: 12px; border: 1px solid var(--border); border-radius: 5px; background: var(--surface-deep); font-size: 11px; }
++.runtime-hotspot-details ul { display: grid; gap: 8px; max-height: 200px; margin: 10px 0 0; padding: 0; overflow-y: auto; list-style: none; }
++.runtime-hotspot-details li { display: flex; align-items: start; justify-content: space-between; flex-wrap: wrap; gap: 7px; padding-bottom: 7px; border-bottom: 1px solid var(--border); }
++.runtime-hotspot-details li > span { min-width: 0; overflow-wrap: anywhere; }
++.runtime-hotspot-details small { display: block; margin-top: 4px; color: var(--muted); font-size: 9px; }
++.runtime-trend-values { min-width: 0; color: var(--text); font-size: 11px; }
++.runtime-trend-values summary { cursor: pointer; margin-bottom: 8px; }
+ .runtime-table-tools { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; color: var(--muted); font-size: 10px; }
+ .runtime-column-filters input { display: block; width: 100%; min-width: 0; min-height: 28px; padding: 5px 7px; border: 1px solid var(--border); border-radius: 4px; background: var(--background); color: var(--text); font: inherit; text-transform: none; }
+ .runtime-column-filters input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }

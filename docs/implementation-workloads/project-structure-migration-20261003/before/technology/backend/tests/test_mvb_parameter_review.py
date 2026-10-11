@@ -1,0 +1,169 @@
+"""MVB native frames, selected medium, administrator scan and cable qualifiers."""
+from copy import deepcopy
+import pytest
+from backend.communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY as registry
+from backend.communication.technologies import mvb as MV
+
+def actual(code=0):
+    x={'mv_'+k:'synthetic-actual-'+k for k in MV.REQUIRED}
+    bits=[16,32,64,128,256][code];blocks=(bits+63)//64;slave=9+bits+8*blocks
+    x.update(bitrate_bps=1500000,mv_implementation='ABB_PC_NODE_1995',mv_transfer='PROCESS_DATA',mv_port_role='SOURCE',
+        mv_phy='EMD',mv_topology='BUS',mv_encoding='MVB_MANCHESTER',mv_active_masters=1,mv_redundant=False,
+        mv_function_code=code,mv_address_scope='LOGICAL_PORT',mv_address_field=0x123,mv_dataset_bits=bits,
+        mv_source_ref='synthetic-source-A',mv_source_count=1,mv_sink_count=2,mv_fixed_dataset=True,
+        mv_variables_nonoverlap=True,mv_word_bit_order_qualified=True,mv_delimiter_bits=9,mv_master_info_bits=16,
+        mv_master_check_bits=8,mv_master_frame_bits=33,mv_check_blocks=blocks,mv_check_bits_per_block=8,
+        mv_slave_frame_bits=slave,mv_master_serial_us=22,mv_slave_serial_us=slave/1.5,
+        mv_end_guard_us=1,mv_next_master_gap_us=1.6,mv_reply_at_slave_us=4,mv_reply_at_master_us=4.36,
+        mv_telegram_bound_us=22+slave/1.5+4.36+1+1.6,payload_bytes=bits//8,
+        mv_master_word_hex=f'{code*4096+0x123:04x}')
+    return x
+
+def status(x):return registry.validate_parameters('mvb',x)['status']
+
+def test_mvb_native_fixed_rate_and_no_can_ethernet_queue_retry_or_payload_default():
+    fields=registry.parameter_fields('mvb');keys=[v['key']for v in fields]
+    assert len(keys)==len(set(keys));assert not set(MV.REMOVED)&set(keys)
+    assert registry.parameter_defaults_review('mvb')['values']=={'bitrate_bps':1500000}
+    assert registry.profile('mvb')['domain']=='generic_networking'
+    assert registry.profile('mvb')['capacity_evidence']['status']=='MODEL_MISSING'
+    assert status(actual())=='VALID'
+    for patch in ({'bitrate_bps':1000000},{'bitrate_bps':3000000},{'mtu_bytes':1500},{'vlan_id':0},
+        {'queue_size':256},{'retry_limit':3},{'mq_qos':1},{'local_timing_evidence':{'technology':'CAN'}}):
+        assert status({**actual(),**patch})=='INVALID'
+    for key in ('mv_address_field','mv_segment_m','mv_clock_tolerance_ppm','mv_reply_at_master_us','mv_sink_count','payload_bytes'):
+        field=next(v for v in fields if v['key']==key);assert 'default'not in field;assert not field.get('conditional_defaults')
+
+@pytest.mark.parametrize('field',registry.parameter_fields('mvb'),ids=lambda f:f['key'])
+def test_mvb_every_declared_type_and_own_bounds(field):
+    wrong='not-number'if field['type']=='number'else 1
+    assert status({**actual(),field['key']:wrong})=='INVALID'
+    for edge,offset in [('min',-1),('max',1)]:
+        if field.get(edge)is not None:assert status({**actual(),field['key']:field[edge]+offset})=='INVALID'
+
+@pytest.mark.parametrize('code,bits,blocks,frame',[(0,16,1,33),(1,32,1,49),(2,64,1,81),(3,128,2,153),(4,256,4,297)])
+def test_mvb_five_process_sizes_fcode_checks_framebits_and_one_broadcast_not_per_sink(code,bits,blocks,frame):
+    x=actual(code);assert x['mv_dataset_bits']==bits;assert x['mv_check_blocks']==blocks;assert x['mv_slave_frame_bits']==frame
+    assert status(x)=='VALID';assert status({**x,'mv_sink_count':100})=='VALID'
+    for patch in ({'mv_function_code':5},{'mv_dataset_bits':bits+1},{'mv_check_blocks':0},
+        {'mv_slave_frame_bits':frame+1},{'mv_master_frame_bits':16},{'mv_delimiter_bits':8},
+        {'mv_master_check_bits':16},{'mv_master_serial_us':11},{'mv_source_count':2},
+        {'mv_fixed_dataset':False},{'mv_variables_nonoverlap':False},{'mv_word_bit_order_qualified':False}):
+        assert status({**x,**patch})=='INVALID'
+    assert status({**x,'payload_bytes':bits//8+1})=='INVALID'
+    assert status({**x,'mv_master_word_hex':'5123'})=='INVALID'
+    assert status({**x,'mv_master_word_hex':f'{code*4096+0x124:04x}'})=='INVALID'
+    assert status({**x,'mv_address_field':0,'mv_master_word_hex':f'{code*4096:04x}'})=='VALID'
+    assert status({**x,'mv_address_field':4095,'mv_master_word_hex':f'{code*4096+4095:04x}'})=='VALID'
+
+def test_mvb_telegram_turnaround_guard_and_worst_redundant_line_are_not_payload_serialization():
+    x=actual(4);x.update(mv_redundant=True,mv_line_a_reply_us=4,mv_line_b_reply_us=42.7,mv_reply_at_master_us=42.7,
+        mv_telegram_bound_us=22+198+42.7+1+1.6);assert status(x)=='VALID'
+    for patch in ({'mv_reply_at_master_us':23.35},{'mv_telegram_bound_us':198},
+        {'mv_reply_at_master_us':42.8},{'mv_reply_at_slave_us':4.1},{'mv_reply_at_slave_us':1.3},
+        {'mv_active_masters':2},{'mv_slave_serial_us':396}):assert status({**x,**patch})=='INVALID'
+
+@pytest.mark.parametrize('phy,limit',[('ESD',20),('EMD',200),('OGF',2000)])
+def test_mvb_historical_medium_distance_qualifiers(phy,limit):
+    x={**actual(),'mv_phy':phy,'mv_segment_m':limit}
+    if phy=='OGF':x['mv_topology']='STAR'
+    assert status(x)=='VALID';assert status({**x,'mv_segment_m':limit+1})=='INVALID'
+
+def test_mvb_imc_current_monitor_has_immutable_wired_phy_and_own_length_node_limit():
+    x={**actual(),'mv_implementation':'IMC_LOGGING_4_15','mv_port_role':'MONITOR',
+        'mv_phy':'ESD_PLUS','mv_wired_phy':'ESD_PLUS','mv_segment_m':200,'mv_segment_nodes':32}
+    assert status(x)=='VALID'
+    for patch in ({'mv_wired_phy':'EMD'},{'mv_port_role':'SOURCE'},{'mv_transfer':'MESSAGE_DATA'},
+        {'mv_phy':'OGF'},{'mv_segment_m':201},{'mv_segment_nodes':33},{'mv_topology':'STAR'}):
+        assert status({**x,**patch})=='INVALID'
+    x.pop('mv_wired_phy');assert status(x)=='UNVERIFIED'
+
+def test_mvb_registered_variants_need_actual_qualification_and_do_not_inherit_historical_slave_timing():
+    x={**actual(),'mv_implementation':'REGISTERED','mv_reply_at_slave_us':6,'mv_reply_at_master_us':7,
+       'mv_telegram_bound_us':22+22+7+1+1.6}
+    assert status(x)=='UNVERIFIED';x['mv_registered_source']='synthetic-qualified-modern-controller';assert status(x)=='VALID'
+
+def test_mvb_message_port_application_header_and_event_poll_parameter_scope_are_separate():
+    x=actual(4);x.pop('mv_master_word_hex');x.update(mv_transfer='MESSAGE_DATA',mv_function_code=12,
+        mv_address_scope='DEVICE_ADDRESS',mv_message_header_bytes=6,payload_bytes=26)
+    assert status(x)=='VALID';assert status({**x,'payload_bytes':27})=='INVALID'
+    assert status({**x,'mv_address_scope':'LOGICAL_PORT'})=='INVALID'
+    x=actual();x.pop('mv_master_word_hex');x.update(mv_transfer='SUPERVISORY_EVENT',mv_function_code=9,
+        mv_address_scope='EVENT_PARAMETERS',mv_source_count=10)
+    assert status(x)=='VALID';assert status({**x,'mv_address_scope':'DEVICE_ADDRESS'})=='INVALID'
+    assert status({**x,'mv_function_code':10})=='INVALID'
+
+@pytest.mark.parametrize('base,multiple,exponent',[(1,1,0),(1,2,4),(1,8,7),(0.833,2,2)])
+def test_mvb_qualified_admin_scan_basic_cycle_individual_power_of_two_and_phase_budget(base,multiple,exponent):
+    period=base*multiple;poll=period*2**exponent
+    # Use decimal multiplication to preserve an exact declared decimal period.
+    from decimal import Decimal
+    period=float(Decimal(str(base))*multiple);poll=float(Decimal(str(period))*2**exponent)
+    x={**actual(),'mv_base_cycle_ms':base,'mv_basic_multiple':multiple,'mv_basic_period_ms':period,
+       'mv_poll_exponent':exponent,'mv_poll_period_ms':poll,'mv_macro_period_ms':poll,
+       'mv_master_frame_interval_ms':1.3,'mv_periodic_us':float(Decimal(str(period))*1000-350),
+       'mv_supervisory_us':100,'mv_event_us':200,'mv_guard_us':50}
+    assert status(x)=='VALID'
+    for patch in ({'mv_poll_period_ms':poll+0.001},{'mv_basic_multiple':3},{'mv_periodic_us':x['mv_periodic_us']+1},
+       {'mv_macro_period_ms':2048},{'mv_master_frame_interval_ms':1.4}):assert status({**x,**patch})=='INVALID'
+    x.update(mv_start_permitted=True,mv_remaining_us=100,mv_longest_telegram_us=120)
+    assert status(x)=='INVALID';x['mv_remaining_us']=120;assert status(x)=='VALID'
+
+def test_mvb_application_variable_bounds_freshness_and_actual_clock_tolerance():
+    x={**actual(2),'mv_variable_offset_bits':48,'mv_variable_bits':16,'mv_update_age_ms':10,
+       'mv_freshness_limit_ms':10,'mv_freshness_source':'synthetic-application-acceptance',
+       'mv_clock_tolerance_ppm':100,'mv_measured_rate_bps':1500150}
+    assert status(x)=='VALID'
+    for patch in ({'mv_variable_offset_bits':49},{'mv_update_age_ms':11},{'mv_measured_rate_bps':1500151}):
+        assert status({**x,**patch})=='INVALID'
+    x.pop('mv_clock_tolerance_ppm');assert status(x)=='UNVERIFIED'
+
+def cable():
+    return {**actual(),'mv_cable_profile':'LAPP_2173001_V06','mv_cable_source':'synthetic-actual-installed-LAPPpart',
+        'mv_cable_installation':'FIXED','mv_cable_impedance_ohm':120,'mv_cable_frequency_mhz':1.5,
+        'mv_cable_r_ohm_km':40.1,'mv_cable_insulation_ohm_km':5000000000,'mv_cable_cap_nf_km':46,
+        'mv_cable_coupling_pf_km':1500,'mv_cable_crosstalk_db_km':45,'mv_cable_transfer_mohm_m':20,
+        'mv_cable_lab_temperature_c':20,'mv_cable_cap_frequency_mhz':1.5,'mv_cable_xtalk_frequency_mhz':3,'mv_cable_transfer_frequency_mhz':20,
+        'mv_cable_loss_point':'F1_5_MHZ','mv_cable_attenuation_db_km':15,'mv_operating_voltage_v':125,
+        'mv_cable_outer_mm':7.6,'mv_bending_radius_mm':22.8,'mv_temperature_c':90}
+
+@pytest.mark.parametrize('key,bad',[('mv_cable_impedance_ohm',107),('mv_cable_impedance_ohm',133),
+    ('mv_cable_r_ohm_km',40.2),('mv_cable_insulation_ohm_km',4999999999),('mv_cable_cap_nf_km',47),
+    ('mv_cable_coupling_pf_km',1501),('mv_cable_crosstalk_db_km',44),('mv_cable_transfer_mohm_m',21),
+    ('mv_operating_voltage_v',126),('mv_cable_attenuation_db_km',16),('mv_bending_radius_mm',22.7),
+    ('mv_temperature_c',-41),('mv_temperature_c',91),('mv_phy','OGF'),('mv_cable_lab_temperature_c',90),
+    ('mv_cable_cap_frequency_mhz',3),('mv_cable_xtalk_frequency_mhz',20),('mv_cable_transfer_frequency_mhz',1.5)])
+def test_mvb_selected_cable_actual_electrical_thermal_and_bending_limits(key,bad):
+    x=cable();assert status(x)=='VALID';assert status({**x,key:bad})=='INVALID'
+
+def test_mvb_cable_frequency_installation_and_registered_other_media_dont_reuse_part_limits():
+    x=cable();x.update(mv_cable_loss_point='F3_MHZ',mv_cable_frequency_mhz=3,mv_cable_attenuation_db_km=20)
+    assert status(x)=='VALID';assert status({**x,'mv_cable_frequency_mhz':1.5})=='INVALID'
+    assert status({**x,'mv_cable_attenuation_db_km':20.1})=='INVALID'
+    x=cable();x.update(mv_cable_installation='OCCASIONAL_FLEX',mv_bending_radius_mm=76,
+        mv_cable_characterization_source='synthetic-actual-flex-temperature-qualification')
+    assert status(x)=='VALID';assert status({**x,'mv_bending_radius_mm':23})=='INVALID'
+    x=cable();x.update(mv_cable_profile='REGISTERED',mv_cable_impedance_ohm=150,
+        mv_cable_characterization_source='synthetic-other-cable');assert status(x)=='VALID'
+
+def test_mvb_source_backed_proposals_are_qualified_and_do_not_create_real_addresses_or_capacity():
+    fields={v['key']:v for v in registry.parameter_fields('mvb')}
+    assert fields['bitrate']['default']==1500000;assert fields['bitrate']['source']==MV.IMC
+    assert fields['mv_base_cycle_ms']['conditional_defaults'][0]['value']==1
+    assert fields['mv_cable_outer_mm']['conditional_defaults'][0]['when']=={'mv_cable_profile':'LAPP_2173001_V06'}
+    for key in MV.REQUIRED:
+        x=actual();x.pop('mv_'+key);assert status(x)!='VALID'
+    assert registry.profile('mvb')['capacity_evidence']['status']=='MODEL_MISSING'
+
+def test_mvb_confirmed_port4095_dataset32bytes_custom_end_guard_and_cable_limits_survive_foreign_defaults():
+    from backend.engineering.workflow.service import WorkflowStatusService
+    from backend.engineering.project_context import current_project_id
+    x={**actual(4),'mv_address_field':4095,'mv_master_word_hex':'4fff','mv_end_guard_us':5,
+        'mv_telegram_bound_us':22+198+4.36+5+1.6}
+    group={'values':x,'provenance':{k:{'source':'USER_CONFIRMED','status':'CONFIRMED','value':v}for k,v in x.items()}}
+    parameters={'technology':'mvb','technology_parameters':{'mvb':group}}
+    service=WorkflowStatusService(current_project_id());service.save_parameters(parameters)
+    assert service.get()['parameters']==parameters
+    bad=deepcopy(parameters);bad['technology_parameters']['mvb']['values']['bitrate_bps']=1000000
+    with pytest.raises(ValueError):service.save_parameters(bad)
+    assert service.get()['parameters']==parameters

@@ -1,0 +1,110 @@
+--- before/frontend/e2e/technology-parameter-review.spec.ts
++++ after/frontend/e2e/technology-parameter-review.spec.ts
+@@ -62,7 +62,7 @@
+       {id:'can-default',technology:'CAN_FD'},{id:'eth-default',technology:'ETHERNET'}]}}});
+   expect(setup.ok()).toBe(true);
+   await page.goto(`/studio?mode=parameters&project=${project}&technology=lin`);
+-  await expect(page.locator('input[name="lin_bitrate_bps"]')).toHaveValue('19200');
++  await expect(page.locator('input[name="lin_bitrate_bps"]')).toHaveValue('19,2 kbit/s');
+   await expect(page.getByRole('region',{name:'Aktuelle Parameterbefunde'})).toBeVisible();
+   const defaultSave = page.waitForResponse(response => response.url().endsWith('/api/engineering/workflow/parameters/defaults')
+     && response.request().method() === 'POST');
+@@ -82,13 +82,24 @@
+   const stored=await page.request.get('/api/engineering/workflow/parameters/user-defined-values',{headers});
+   expect(stored.ok()).toBe(true);
+   await page.goto(`/studio?mode=parameters&project=${project}&technology=can_fd`);
+-  await expect(page.locator('input[name="arbitration_bitrate"]')).toHaveValue('500000');
+-  await expect(page.locator('input[name="data_bitrate"]')).toHaveValue('2000000');
++  await expect(page.locator('input[name="arbitration_bitrate"]')).toHaveValue('500 kbit/s');
++  await expect(page.locator('input[name="data_bitrate"]')).toHaveValue('2 Mbit/s');
+   await expect(page.locator('input[name="can_fd_brs"]')).toBeChecked();
+   await page.reload();
+-  await expect(page.locator('input[name="data_bitrate"]')).toHaveValue('2000000');
++  await expect(page.locator('input[name="data_bitrate"]')).toHaveValue('2 Mbit/s');
+   await page.goto(`/studio?mode=parameters&project=${project}&technology=ethernet`);
+-  await expect(page.locator('input[name="bitrate"]')).toHaveValue('1000000000');
++  await expect(page.locator('input[name="bitrate"]')).toHaveValue('1 Gbit/s');
++  await page.locator('input[name="bitrate"]').fill('0,1 Gbit/s');
++  const saveRate = page.waitForResponse(r => r.url().endsWith('/api/engineering/workflow/parameters') && r.request().method() === 'PATCH');
++  await page.getByRole('button',{name:'Parameter speichern →',exact:true}).click();
++  expect((await saveRate).ok()).toBe(true);
++  await expect(page.getByText('Technologie- und Timing-Parameter gespeichert.')).toBeVisible();
++  const edited=await (await page.request.get('/api/engineering/workflow/parameters',{headers})).json();
++  expect(edited.parameters.simulation_parameter_assumptions.ethernet.values.bitrate).toBe(100000000);
++  expect(edited.parameters.simulation_parameter_assumptions.lin.values.lin_bitrate_bps).toBe(19200);
++  expect(edited.parameters.simulation_parameter_assumptions.can_fd.values.data_bitrate).toBe(2000000);
++  await page.reload();
++  await expect(page.locator('input[name="bitrate"]')).toHaveValue('100 Mbit/s');
+ });
+ 
+ // Real isolated persistence and parameter-view regressions; not nine-stage completion proof.
+@@ -126,9 +137,9 @@
+   await expect(selectedBus.locator('option')).toHaveCount(catalog.technology_count);
+   // The lowest registered I2C mode is shown as an unconfirmed proposal.
+   const clock = page.locator('input[name="bitrate"]');
+-  await expect(clock).toHaveValue('100000');
++  await expect(clock).toHaveValue('100 kbit/s');
+   await expect(page.getByText('UNVERIFIED · Profilvorschlag').first()).toBeVisible();
+-  await expect(page.getByText(/Referenz-Obergrenzen, keine bestätigte Busfrequenz: Standard ≤ 100\.000 bit\/s/)).toBeVisible();
++  await expect(page.getByText(/Referenz-Obergrenzen, keine bestätigte Busfrequenz: Standard ≤ 100 kbit\/s/)).toBeVisible();
+   expect(await clock.evaluate((input: HTMLInputElement) => input.checkValidity())).toBe(true);
+   await clock.fill('0');
+   expect(await clock.evaluate((input: HTMLInputElement) => input.checkValidity())).toBe(false);
+@@ -162,7 +173,7 @@
+   await expect(page.locator('#domain')).toHaveValue('custom');
+   await expect(page.locator('#technology')).toHaveValue('i2c');
+   await expect(page.locator('select[name="i2c_mode"]')).toHaveValue('FAST');
+-  await expect(clock).toHaveValue('400000');
++  await expect(clock).toHaveValue('400 kbit/s');
+ });
+ 
+ test('CAN-FD scenario defaults survive real save and reload without hardware confirmation @technology-review', async ({page}) => {
+@@ -174,8 +185,8 @@
+   await page.goto(`/studio?mode=parameters&project=${project}`);
+   await page.getByLabel('Bus / Protokoll auswählen').selectOption('can_fd');
+   await page.getByLabel('Anwendungsbereich auswählen').selectOption('automotive');
+-  await expect(page.locator('[name="arbitration_bitrate"]')).toHaveValue('500000');
+-  await expect(page.locator('[name="data_bitrate"]')).toHaveValue('2000000');
++  await expect(page.locator('[name="arbitration_bitrate"]')).toHaveValue('500 kbit/s');
++  await expect(page.locator('[name="data_bitrate"]')).toHaveValue('2 Mbit/s');
+   await expect(page.locator('[name="payload_bytes"]')).toHaveValue('8');
+   const clock = page.locator('[name="can_clock_hz"]');
+   await expect(clock).toHaveValue('40000000');
+@@ -267,14 +278,14 @@
+   await page.locator('#parameter-field-lin_bitrate_bps .parameter-default-details > summary').click();
+   await page.locator('div[title]').filter({has:page.locator('#lin_bitrate_bps')})
+     .getByRole('button',{name:'Bedingten Standardwert übernehmen',exact:true}).click();
+-  await expect(page.locator('input[name="lin_bitrate_bps"]')).toHaveValue('19200');
++  await expect(page.locator('input[name="lin_bitrate_bps"]')).toHaveValue('19,2 kbit/s');
+   await expect(page.locator('input[name="data_bitrate"]')).toHaveCount(0);
+   const invalid = await page.request.patch('/api/engineering/workflow/parameters', {headers,
+     data:{parameters:{...parameters,technology_parameters:{lin:{values:{lin_edition:'LIN_2_2A_2010',lin_physical_profile:'LIN_2_2A_SINGLE_WIRE',lin_bitrate_bps:2000000},
+       provenance:Object.fromEntries(Object.entries({lin_edition:'LIN_2_2A_2010',lin_physical_profile:'LIN_2_2A_SINGLE_WIRE',lin_bitrate_bps:2000000})
+         .map(([key,value])=>[key,{source:'USER_CONFIRMED',status:'CONFIRMED',value}]))}}}}});
+   expect(invalid.status()).toBe(400);
+-  await page.locator('input[name="lin_bitrate_bps"]').fill('9600');
++  await page.locator('input[name="lin_bitrate_bps"]').fill('9,6 kbit/s');
+   const response = page.waitForResponse(r => r.url().includes('/api/engineering/workflow/parameters') && r.request().method() === 'PATCH');
+   await page.getByRole('button', {name:'Parameter speichern →',exact:true}).click();
+   expect((await response).ok()).toBe(true);
+@@ -287,9 +298,9 @@
+   await page.reload();
+   await expect(page.locator('#technology')).toHaveValue('can_fd');
+   await page.locator('#technology').selectOption('lin');
+-  await expect(page.locator('input[name="lin_bitrate_bps"]')).toHaveValue('9600');
++  await expect(page.locator('input[name="lin_bitrate_bps"]')).toHaveValue('9,6 kbit/s');
+   await page.locator('#technology').selectOption('can_fd');
+-  await expect(page.locator('input[name="data_bitrate"]')).toHaveValue('2000000');
++  await expect(page.locator('input[name="data_bitrate"]')).toHaveValue('2 Mbit/s');
+ });
+ 
+ test('stale parameter revision rejects the real write and preserves confirmed rates @technology-review', async ({ page }) => {
+@@ -335,7 +346,7 @@
+       else await expect(page.locator(`#parameter-field-${key}`)).toContainText('Nicht zutreffend für die gewählte Protokollkonfiguration.');
+     }
+     if (id === 'nmea2000') {
+-      await expect(page.locator('input[name="bitrate"]')).toHaveValue('250000');
++      await expect(page.locator('input[name="bitrate"]')).toHaveValue('250 kbit/s');
+       await expect(page.locator('input[name="mtu_bytes"]')).toHaveCount(0);
+     }
+   }

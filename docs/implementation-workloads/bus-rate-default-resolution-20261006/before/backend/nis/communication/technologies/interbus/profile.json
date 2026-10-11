@@ -1,0 +1,3505 @@
+{
+  "id": "interbus",
+  "label": "INTERBUS",
+  "domain": "generic_networking",
+  "layer": "INDUSTRY_PROFILE",
+  "transport_unit": "PROCESS_DATA",
+  "payload_element_types": [
+    "FIELD",
+    "STATUS"
+  ],
+  "hardware_interface": "interbus_interface",
+  "hardware_capability_aliases": [
+    "interbus_interface"
+  ],
+  "default_stack": [
+    "interbus"
+  ],
+  "stack_variants": [
+    [
+      "interbus"
+    ]
+  ],
+  "default_bitrate": null,
+  "rate_model": {
+    "type": "INTERBUS_INDEPENDENT_RING_CLOCKS",
+    "fields": []
+  },
+  "local_timing_schema": [],
+  "parameter_schema": {
+    "payload_bytes": {
+      "label": "Payload",
+      "category": "physical",
+      "scope": "message",
+      "type": "number",
+      "description": "Actual process-data or PCP application bytes; per-direction image, rounded registers and PCP service limits are independent.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "integer": true
+    },
+    "cycle_ms": {
+      "label": "Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "Standardperiode fuer zyklische Nachrichten.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "minimum_cycle_time_ms": {
+      "label": "Minimum Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "deadline_ms": {
+      "label": "Deadline",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "timeout_ms": {
+      "label": "Timeout",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_latency_ms": {
+      "label": "Maximum Latency",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "jitter_ms": {
+      "label": "Jitter Budget",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "freshness_ms": {
+      "label": "Data Freshness",
+      "category": "timing",
+      "scope": "signal",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "source_processing_delay_ms": {
+      "label": "Source Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_processing_delay_ms": {
+      "label": "Target Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "propagation_delay_ms": {
+      "label": "Propagation",
+      "category": "timing",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.01,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_bus_load_percent": {
+      "label": "Ziel-Buslast",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "Zielwert fuer die aus Routing, Payload, Zyklus und Bitrate berechnete Buslast.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "peak_factor": {
+      "label": "Peak Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.15,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_factor": {
+      "label": "Burst Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.5,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_window_ms": {
+      "label": "Burst Window",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "warning_threshold": {
+      "label": "Load Warning",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "critical_threshold": {
+      "label": "Load Critical",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 75,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "overload_threshold": {
+      "label": "Load Overload",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 90,
+      "unit": "%",
+      "min": 1,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "traffic_class": {
+      "label": "Traffic Class",
+      "category": "qos",
+      "scope": "route",
+      "type": "select",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": "BEST_EFFORT",
+      "options": [
+        "BEST_EFFORT",
+        "CONTROL",
+        "REALTIME",
+        "SAFETY_CRITICAL"
+      ],
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "packet_loss_probability": {
+      "label": "Packet Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "frame_loss_probability": {
+      "label": "Frame Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "bit_error_rate": {
+      "label": "Bit Error Rate",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "corruption_probability": {
+      "label": "Corruption",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duplicate_probability": {
+      "label": "Duplication",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "reordering_probability": {
+      "label": "Reordering",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "required_reliability": {
+      "label": "Required Reliability",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.999,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_offset_ms": {
+      "label": "Clock Offset",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_drift_ppm": {
+      "label": "Clock Drift",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 20,
+      "unit": "ppm",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_precision_ms": {
+      "label": "Sync Precision",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_interval_ms": {
+      "label": "Sync Interval",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1000,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_sync_error_ms": {
+      "label": "Maximum Sync Error",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_delay_ms": {
+      "label": "Gateway Processing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.2,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_queue_delay_ms": {
+      "label": "Gateway Queueing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "protocol_conversion_delay_ms": {
+      "label": "Protocol Conversion",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duration_s": {
+      "label": "Simulation Duration",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 1,
+      "unit": "s",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "seed": {
+      "label": "Random Seed",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 42,
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "max_events": {
+      "label": "Maximum Events",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 100000,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "dropout_probability": {
+      "label": "Failure Injection Dropout",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "ib_device_profile": {
+      "type": "select",
+      "description": "Actual equipment and manual revision; generic equipment cannot inherit BC4000 PLC defaults.",
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "options": [
+        "ACTUAL_DEVICE",
+        "BC4000_2_2",
+        "AXC_F_IL_ADAPT_202609",
+        "PCI_SC_RI_I_T_6190_03"
+      ],
+      "label": "device profile",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ib_configuration_phase": {
+      "type": "select",
+      "description": "Actual values versus source-qualified factory proposals; no automatically confirmed hardware.",
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "options": [
+        "CONFIGURED_DEVICE",
+        "FACTORY_PROFILE"
+      ],
+      "label": "configuration phase",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ib_role": {
+      "type": "select",
+      "description": "Actual ring master, slave or system coupler; internal PLC does not imply fieldbus master.",
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "options": [
+        "MASTER",
+        "SLAVE",
+        "MASTER_SLAVE"
+      ],
+      "label": "role",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ib_segment_kind": {
+      "type": "select",
+      "description": "Actual local or remote ring; installation remote needs independently registered PHY evidence.",
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "options": [
+        "LOCAL",
+        "REMOTE",
+        "INSTALLATION_REMOTE"
+      ],
+      "label": "segment kind",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ib_cycle_kind": {
+      "type": "select",
+      "description": "Actual initialization/identification or process-data cycle; PCP traffic needs its own channel budget.",
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "options": [
+        "ID",
+        "PROCESS_DATA",
+        "PCP"
+      ],
+      "label": "cycle kind",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ib_bitrate_bps": {
+      "type": "number",
+      "description": "Actual selected segment clock;500k is reviewed baseline,2M requires every applicable participant to support it.",
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "unit": "bit/s",
+      "options": [
+        500000,
+        2000000
+      ],
+      "min": 1,
+      "label": "bitrate bps",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {},
+          "value": 500000,
+          "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+          "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded"
+        }
+      ]
+    },
+    "ib_medium": {
+      "type": "select",
+      "description": "Actual paired copper or optical PHY; local Inline and remote cable are independent.",
+      "source": "https://www.phoenixcontact.com/en-us/products/extension-module-axc-f-il-adapt-1020304?type=pdf",
+      "source_revision": "Phoenix Contact 1020304 AXC F IL ADAPT official product PDF generated2026-09-02, pp1-4",
+      "options": [
+        "COPPER",
+        "POLYMER",
+        "HCS",
+        "GLASS"
+      ],
+      "label": "medium",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ib_device_source": {
+      "type": "text",
+      "description": "Actual firmware/identity/limits and configured register evidence.",
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "label": "device source",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ib_master_source": {
+      "type": "text",
+      "description": "Actual selected master/firmware and separate ring capacity proof.",
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "label": "master source",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ib_physical_source": {
+      "type": "text",
+      "description": "Actual connectors, cable/segment/length/power and homogeneous selected clock.",
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "label": "physical source",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ib_encoding_source": {
+      "type": "text",
+      "description": "Actual ordered ID/data-register/process-image/PCP layout.",
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "label": "encoding source",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ib_schedule_source": {
+      "type": "text",
+      "description": "Actual master cycle and application release/read/write schedule.",
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "label": "schedule source",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ib_acceptance_source": {
+      "type": "text",
+      "description": "Actual full controller-to-device timing/quality/freshness acceptance.",
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "label": "acceptance source",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ib_ring_binding": {
+      "type": "text",
+      "description": "Actual canonical ring/interface binding, not an automatically assigned CAN ID.",
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "label": "ring binding",
+      "category": "communication",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ib_node_identity": {
+      "type": "text",
+      "description": "Actual unique physical station identity/order and approved configuration.",
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "label": "node identity",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ib_pcp_source": {
+      "type": "text",
+      "description": "Actual device/firmware PCP service/channel/state/budget evidence.",
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "label": "pcp source",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ib_power_source": {
+      "type": "text",
+      "description": "Actual consumption/derating/terminal allocation evidence.",
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "label": "power source",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ib_coupled_ring_binding": {
+      "type": "text",
+      "description": "Actual other independent ring of the system coupler.",
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "label": "coupled ring binding",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ib_station_order": {
+      "type": "number",
+      "description": "Actual discovered ring order; not manufacturer ID or project-assigned CAN address.",
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "min": 0,
+      "label": "station order",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ib_input_bytes": {
+      "type": "number",
+      "description": "Actual station fieldbus input process image, not local PLC storage.",
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "unit": "Byte",
+      "min": 0,
+      "label": "input bytes",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "ib_device_profile": "BC4000_2_2",
+            "ib_configuration_phase": "FACTORY_PROFILE"
+          },
+          "value": 16,
+          "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+          "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded"
+        }
+      ]
+    },
+    "ib_output_bytes": {
+      "type": "number",
+      "description": "Actual station fieldbus output process image.",
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "unit": "Byte",
+      "min": 0,
+      "label": "output bytes",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "ib_device_profile": "BC4000_2_2",
+            "ib_configuration_phase": "FACTORY_PROFILE"
+          },
+          "value": 16,
+          "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+          "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded"
+        }
+      ]
+    },
+    "ib_effective_words": {
+      "type": "number",
+      "description": "Actual non-rounded periphery register words; not sum of independent IN+OUT images.",
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "min": 0,
+      "label": "effective words",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ib_id_words": {
+      "type": "number",
+      "description": "Actual encoded register width, with device-specific rounding.",
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "min": 0,
+      "label": "id words",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "ib_device_profile": "BC4000_2_2",
+            "ib_configuration_phase": "FACTORY_PROFILE"
+          },
+          "value": 8,
+          "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+          "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded"
+        }
+      ]
+    },
+    "ib_id_code": {
+      "type": "number",
+      "description": "Actual ID-cycle module class; not manufacturer identity.",
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "min": 0,
+      "max": 255,
+      "label": "id code",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "ib_device_profile": "BC4000_2_2",
+            "ib_configuration_phase": "FACTORY_PROFILE"
+          },
+          "value": 51,
+          "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+          "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded"
+        }
+      ]
+    },
+    "ib_total_nodes": {
+      "type": "number",
+      "description": "Actual nodes on the selected master ring.",
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "min": 0,
+      "label": "total nodes",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ib_local_nodes": {
+      "type": "number",
+      "description": "Actual local station count; actual power budget may reduce maximum.",
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "min": 0,
+      "label": "local nodes",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ib_remote_branches": {
+      "type": "number",
+      "description": "Actual remote branches; local-only master forbids these.",
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "min": 0,
+      "label": "remote branches",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ib_pcp_nodes": {
+      "type": "number",
+      "description": "Actual participants using the parameter channel, not whole ring device count.",
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "min": 0,
+      "label": "pcp nodes",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ib_master_input_bits": {
+      "type": "number",
+      "description": "Actual selected master input allocation.",
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "min": 0,
+      "label": "master input bits",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ib_master_output_bits": {
+      "type": "number",
+      "description": "Actual selected master output allocation.",
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "min": 0,
+      "label": "master output bits",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ib_master_io_bits": {
+      "type": "number",
+      "description": "Actual combined input+output allocation, distinct from register length.",
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "min": 0,
+      "label": "master io bits",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ib_master_register_bytes": {
+      "type": "number",
+      "description": "Actual master register allocation, not a PCP message-size ceiling.",
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "unit": "Byte",
+      "min": 0,
+      "label": "master register bytes",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ib_local_plc_input_bytes": {
+      "type": "number",
+      "description": "Actual local PLC input storage, not fieldbus bytes.",
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "unit": "Byte",
+      "min": 0,
+      "label": "local plc input bytes",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ib_local_plc_output_bytes": {
+      "type": "number",
+      "description": "Actual local PLC output storage, not fieldbus bytes.",
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "unit": "Byte",
+      "min": 0,
+      "label": "local plc output bytes",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ib_local_terminals": {
+      "type": "number",
+      "description": "Actual BC K-bus allocation, not global ring nodes.",
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "min": 0,
+      "max": 64,
+      "label": "local terminals",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ib_pcp_service_bytes": {
+      "type": "number",
+      "description": "Actual complete device-accepted PCP service size, unknown until actual service/peer evidence.",
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "unit": "Byte",
+      "min": 0,
+      "label": "pcp service bytes",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ib_peer_pcp_service_limit": {
+      "type": "number",
+      "description": "Actual PCP peer service size, not universal246-byte process image.",
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "unit": "Byte",
+      "min": 0,
+      "label": "peer pcp service limit",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ib_cycle_effective_bytes": {
+      "type": "number",
+      "description": "Actual full ring effective bytes for qualified timing formula, not words.",
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "unit": "Byte",
+      "min": 0,
+      "label": "cycle effective bytes",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ib_cycle_couplers": {
+      "type": "number",
+      "description": "Actual couplers for qualified timing formula.",
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "min": 0,
+      "label": "cycle couplers",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ib_hop_length_m": {
+      "type": "number",
+      "description": "Actual measured hop_length_m with applicable segment/medium/device limits.",
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "unit": "m",
+      "min": 0,
+      "label": "hop length m",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ib_ring_length_m": {
+      "type": "number",
+      "description": "Actual measured ring_length_m with applicable segment/medium/device limits.",
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "unit": "m",
+      "min": 0,
+      "label": "ring length m",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ib_timing_model": {
+      "type": "select",
+      "description": "Actual measured/verified model versus BC manual500k ring estimate; estimate alone is not complete capacity or E2E proof.",
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "options": [
+        "ACTUAL_VERIFIED",
+        "BC4000_500K_MANUAL"
+      ],
+      "label": "timing model",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ib_model_cycle_ms": {
+      "type": "number",
+      "description": "Actual or qualified-model model_cycle_ms; ring and full functional latency remain separate.",
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "unit": "ms",
+      "min": 0,
+      "label": "model cycle ms",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ib_ring_reaction_ms": {
+      "type": "number",
+      "description": "Actual or qualified-model ring_reaction_ms; ring and full functional latency remain separate.",
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "unit": "ms",
+      "min": 0,
+      "label": "ring reaction ms",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ib_error_recovery_ms": {
+      "type": "number",
+      "description": "Actual or qualified-model error_recovery_ms; ring and full functional latency remain separate.",
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "unit": "ms",
+      "min": 0,
+      "label": "error recovery ms",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ib_controller_master_ms": {
+      "type": "number",
+      "description": "Actual or qualified-model controller_master_ms; ring and full functional latency remain separate.",
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "unit": "ms",
+      "min": 0,
+      "label": "controller master ms",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ib_coupler_output_ms": {
+      "type": "number",
+      "description": "Actual or qualified-model coupler_output_ms; ring and full functional latency remain separate.",
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "unit": "ms",
+      "min": 0,
+      "label": "coupler output ms",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ib_application_bound_ms": {
+      "type": "number",
+      "description": "Actual or qualified-model application_bound_ms; ring and full functional latency remain separate.",
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "unit": "ms",
+      "min": 0,
+      "label": "application bound ms",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ib_bc_input_offset": {
+      "type": "number",
+      "description": "Actual BC4000 register bc_input_offset; other BC8x00/BC9000 table columns do not apply.",
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "unit": "Byte",
+      "min": 0,
+      "label": "bc input offset",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "ib_device_profile": "BC4000_2_2",
+            "ib_configuration_phase": "FACTORY_PROFILE"
+          },
+          "value": 128,
+          "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+          "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded"
+        }
+      ]
+    },
+    "ib_bc_output_offset": {
+      "type": "number",
+      "description": "Actual BC4000 register bc_output_offset; other BC8x00/BC9000 table columns do not apply.",
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "unit": "Byte",
+      "min": 0,
+      "label": "bc output offset",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "ib_device_profile": "BC4000_2_2",
+            "ib_configuration_phase": "FACTORY_PROFILE"
+          },
+          "value": 128,
+          "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+          "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded"
+        }
+      ]
+    },
+    "ib_bc_digital_input_offset": {
+      "type": "number",
+      "description": "Actual BC4000 register bc_digital_input_offset; other BC8x00/BC9000 table columns do not apply.",
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "unit": "Byte",
+      "min": 0,
+      "label": "bc digital input offset",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "ib_device_profile": "BC4000_2_2",
+            "ib_configuration_phase": "FACTORY_PROFILE"
+          },
+          "value": 0,
+          "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+          "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded"
+        }
+      ]
+    },
+    "ib_bc_digital_output_offset": {
+      "type": "number",
+      "description": "Actual BC4000 register bc_digital_output_offset; other BC8x00/BC9000 table columns do not apply.",
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "unit": "Byte",
+      "min": 0,
+      "label": "bc digital output offset",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "ib_device_profile": "BC4000_2_2",
+            "ib_configuration_phase": "FACTORY_PROFILE"
+          },
+          "value": 0,
+          "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+          "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded"
+        }
+      ]
+    },
+    "ib_bc_plc_cycle_ms": {
+      "type": "number",
+      "description": "Actual BC4000 register bc_plc_cycle_ms; other BC8x00/BC9000 table columns do not apply.",
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "unit": "ms",
+      "min": 0,
+      "label": "bc plc cycle ms",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "ib_device_profile": "BC4000_2_2",
+            "ib_configuration_phase": "FACTORY_PROFILE"
+          },
+          "value": 5,
+          "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+          "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded"
+        }
+      ]
+    },
+    "ib_bc_background_ms": {
+      "type": "number",
+      "description": "Actual BC4000 register bc_background_ms; other BC8x00/BC9000 table columns do not apply.",
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "unit": "ms",
+      "min": 0,
+      "label": "bc background ms",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "ib_device_profile": "BC4000_2_2",
+            "ib_configuration_phase": "FACTORY_PROFILE"
+          },
+          "value": 2,
+          "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+          "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded"
+        }
+      ]
+    },
+    "ib_bc_remanent_bytes": {
+      "type": "number",
+      "description": "Actual BC4000 register bc_remanent_bytes; other BC8x00/BC9000 table columns do not apply.",
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "unit": "Byte",
+      "min": 0,
+      "max": 512,
+      "label": "bc remanent bytes",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "ib_device_profile": "BC4000_2_2",
+            "ib_configuration_phase": "FACTORY_PROFILE"
+          },
+          "value": 64,
+          "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+          "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded"
+        }
+      ]
+    },
+    "ib_bc_persistent_bytes": {
+      "type": "number",
+      "description": "Actual BC4000 register bc_persistent_bytes; other BC8x00/BC9000 table columns do not apply.",
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "unit": "Byte",
+      "min": 0,
+      "max": 512,
+      "label": "bc persistent bytes",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "ib_device_profile": "BC4000_2_2",
+            "ib_configuration_phase": "FACTORY_PROFILE"
+          },
+          "value": 0,
+          "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+          "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded"
+        }
+      ]
+    },
+    "ib_bc_autorefresh_cycles": {
+      "type": "number",
+      "description": "Actual BC4000 register bc_autorefresh_cycles; other BC8x00/BC9000 table columns do not apply.",
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "min": 0,
+      "max": 255,
+      "label": "bc autorefresh cycles",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "ib_device_profile": "BC4000_2_2",
+            "ib_configuration_phase": "FACTORY_PROFILE"
+          },
+          "value": 0,
+          "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+          "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded"
+        }
+      ]
+    },
+    "ib_bc_autorefresh_retries": {
+      "type": "number",
+      "description": "Actual BC4000 register bc_autorefresh_retries; other BC8x00/BC9000 table columns do not apply.",
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "min": 0,
+      "max": 255,
+      "label": "bc autorefresh retries",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ib_bc_remanent_enabled": {
+      "type": "boolean",
+      "description": "Actual BC4000 register bc_remanent_enabled.",
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "label": "bc remanent enabled",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "ib_device_profile": "BC4000_2_2",
+            "ib_configuration_phase": "FACTORY_PROFILE"
+          },
+          "value": true,
+          "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+          "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded"
+        }
+      ]
+    },
+    "ib_bc_terminal_check": {
+      "type": "boolean",
+      "description": "Actual BC4000 register bc_terminal_check.",
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "label": "bc terminal check",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "ib_device_profile": "BC4000_2_2",
+            "ib_configuration_phase": "FACTORY_PROFILE"
+          },
+          "value": true,
+          "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+          "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded"
+        }
+      ]
+    },
+    "ib_bc_kbus_update": {
+      "type": "select",
+      "description": "Actual BC4000 K-bus update relative to local PLC, not INTERBUS arbitration.",
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "options": [
+        "BEFORE_AND_AFTER",
+        "BEFORE",
+        "AFTER"
+      ],
+      "label": "bc kbus update",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "ib_device_profile": "BC4000_2_2",
+            "ib_configuration_phase": "FACTORY_PROFILE"
+          },
+          "value": "BEFORE_AND_AFTER",
+          "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+          "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded"
+        }
+      ]
+    },
+    "ib_bc_first_terminal_mapping": {
+      "type": "select",
+      "description": "Actual first BC terminal mapping; no invented configured project terminal.",
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "options": [
+        "COMPLEX_FIELD_BUS",
+        "COMPACT_FIELD_BUS",
+        "LOCAL_PROCESS_IMAGE"
+      ],
+      "label": "bc first terminal mapping",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "ib_device_profile": "BC4000_2_2",
+            "ib_configuration_phase": "FACTORY_PROFILE"
+          },
+          "value": "LOCAL_PROCESS_IMAGE",
+          "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+          "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded"
+        }
+      ]
+    },
+    "ib_bc_other_terminal_mapping": {
+      "type": "select",
+      "description": "Actual mapping policy for subsequent BC terminals; actual individual overrides require evidence.",
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "options": [
+        "COMPLEX_FIELD_BUS",
+        "COMPACT_FIELD_BUS",
+        "LOCAL_PROCESS_IMAGE"
+      ],
+      "label": "bc other terminal mapping",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "ib_device_profile": "BC4000_2_2",
+            "ib_configuration_phase": "FACTORY_PROFILE"
+          },
+          "value": "COMPLEX_FIELD_BUS",
+          "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+          "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded"
+        }
+      ]
+    },
+    "ib_pci_slave_configuration": {
+      "type": "select",
+      "description": "Actual PCI SC slave DIP10 configuration source; OFF ignores baud/ID DIP positions.",
+      "source": "https://datasheet.octopart.com/2725260-Phoenix-Contact-datasheet-13325117.pdf",
+      "source_revision": "Phoenix Contact IBS PCI SC QS UM E 6190_en_03 manufacturer manual, distributor-hosted original, chapters3.2/3.3",
+      "options": [
+        "STORED_OR_UPSTREAM",
+        "DIP_SWITCHES"
+      ],
+      "label": "pci slave configuration",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "ib_device_profile": "PCI_SC_RI_I_T_6190_03",
+            "ib_configuration_phase": "FACTORY_PROFILE"
+          },
+          "value": "STORED_OR_UPSTREAM",
+          "source": "https://datasheet.octopart.com/2725260-Phoenix-Contact-datasheet-13325117.pdf",
+          "source_revision": "Phoenix Contact IBS PCI SC QS UM E 6190_en_03 manufacturer manual, distributor-hosted original, chapters3.2/3.3"
+        }
+      ]
+    },
+    "ib_pci_slave_bitrate_bps": {
+      "type": "number",
+      "description": "Actual independent upper-ring slave clock, not forced equal to lower-ring master.",
+      "source": "https://datasheet.octopart.com/2725260-Phoenix-Contact-datasheet-13325117.pdf",
+      "source_revision": "Phoenix Contact IBS PCI SC QS UM E 6190_en_03 manufacturer manual, distributor-hosted original, chapters3.2/3.3",
+      "unit": "bit/s",
+      "options": [
+        500000,
+        2000000
+      ],
+      "min": 1,
+      "label": "pci slave bitrate bps",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "ib_device_profile": "PCI_SC_RI_I_T_6190_03",
+            "ib_configuration_phase": "FACTORY_PROFILE"
+          },
+          "value": 500000,
+          "source": "https://datasheet.octopart.com/2725260-Phoenix-Contact-datasheet-13325117.pdf",
+          "source_revision": "Phoenix Contact IBS PCI SC QS UM E 6190_en_03 manufacturer manual, distributor-hosted original, chapters3.2/3.3"
+        }
+      ]
+    },
+    "ib_pci_slave_id_code": {
+      "type": "number",
+      "description": "Actual PCI SC slave ID code, not BC4000 ID51.",
+      "source": "https://datasheet.octopart.com/2725260-Phoenix-Contact-datasheet-13325117.pdf",
+      "source_revision": "Phoenix Contact IBS PCI SC QS UM E 6190_en_03 manufacturer manual, distributor-hosted original, chapters3.2/3.3",
+      "min": 0,
+      "max": 255,
+      "label": "pci slave id code",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "ib_device_profile": "PCI_SC_RI_I_T_6190_03",
+            "ib_configuration_phase": "FACTORY_PROFILE"
+          },
+          "value": 3,
+          "source": "https://datasheet.octopart.com/2725260-Phoenix-Contact-datasheet-13325117.pdf",
+          "source_revision": "Phoenix Contact IBS PCI SC QS UM E 6190_en_03 manufacturer manual, distributor-hosted original, chapters3.2/3.3"
+        }
+      ]
+    },
+    "ib_pci_slave_words": {
+      "type": "number",
+      "description": "Actual PCI SC slave process words; discrete DIP lengths0..14 or16, combined process and PCP width at most16.",
+      "source": "https://datasheet.octopart.com/2725260-Phoenix-Contact-datasheet-13325117.pdf",
+      "source_revision": "Phoenix Contact IBS PCI SC QS UM E 6190_en_03 manufacturer manual, distributor-hosted original, chapters3.2/3.3",
+      "min": 0,
+      "max": 16,
+      "label": "pci slave words",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "ib_device_profile": "PCI_SC_RI_I_T_6190_03",
+            "ib_configuration_phase": "FACTORY_PROFILE"
+          },
+          "value": 16,
+          "source": "https://datasheet.octopart.com/2725260-Phoenix-Contact-datasheet-13325117.pdf",
+          "source_revision": "Phoenix Contact IBS PCI SC QS UM E 6190_en_03 manufacturer manual, distributor-hosted original, chapters3.2/3.3"
+        }
+      ]
+    },
+    "ib_pci_pcp_words": {
+      "type": "number",
+      "description": "Actual PCI SC slave parameter-channel words;0,1,2 or4 with matching ID code.",
+      "source": "https://datasheet.octopart.com/2725260-Phoenix-Contact-datasheet-13325117.pdf",
+      "source_revision": "Phoenix Contact IBS PCI SC QS UM E 6190_en_03 manufacturer manual, distributor-hosted original, chapters3.2/3.3",
+      "min": 0,
+      "max": 4,
+      "label": "pci pcp words",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "ib_device_profile": "PCI_SC_RI_I_T_6190_03",
+            "ib_configuration_phase": "FACTORY_PROFILE"
+          },
+          "value": 0,
+          "source": "https://datasheet.octopart.com/2725260-Phoenix-Contact-datasheet-13325117.pdf",
+          "source_revision": "Phoenix Contact IBS PCI SC QS UM E 6190_en_03 manufacturer manual, distributor-hosted original, chapters3.2/3.3"
+        }
+      ]
+    },
+    "ib_pci_power_loss_error": {
+      "type": "boolean",
+      "description": "Actual PCI SC slave power-loss behavior.",
+      "source": "https://datasheet.octopart.com/2725260-Phoenix-Contact-datasheet-13325117.pdf",
+      "source_revision": "Phoenix Contact IBS PCI SC QS UM E 6190_en_03 manufacturer manual, distributor-hosted original, chapters3.2/3.3",
+      "label": "pci power loss error",
+      "category": "communication",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "ib_device_profile": "PCI_SC_RI_I_T_6190_03",
+            "ib_configuration_phase": "FACTORY_PROFILE"
+          },
+          "value": true,
+          "source": "https://datasheet.octopart.com/2725260-Phoenix-Contact-datasheet-13325117.pdf",
+          "source_revision": "Phoenix Contact IBS PCI SC QS UM E 6190_en_03 manufacturer manual, distributor-hosted original, chapters3.2/3.3"
+        }
+      ]
+    }
+  },
+  "mechanisms": {
+    "framing": [
+      "ID_CYCLE_OR_PROCESS_DATA_SHIFT_REGISTER_OR_PCP"
+    ],
+    "arbitration": [
+      "MASTER_DRIVEN_ORDERED_RING"
+    ],
+    "addressing": [
+      "DISCOVERED_STATION_ORDER_NOT_MANUFACTURER_ID"
+    ],
+    "physical": [
+      "ACTIVE_RING_RETURN_PATH_MEDIUM_AND_ROLE_SPECIFIC"
+    ],
+    "acceptance": [
+      "RING_CYCLE_SEPARATE_FROM_LOCAL_PLC_AND_FUNCTIONAL_E2E"
+    ]
+  },
+  "parameter_constraints": [
+    {
+      "parameter": "ib_bitrate_bps",
+      "when": {},
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "allowed": [
+        500000,
+        2000000
+      ]
+    },
+    {
+      "parameter": "ib_pcp_source",
+      "when": {
+        "ib_cycle_kind": "PCP"
+      },
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "required": true
+    },
+    {
+      "parameter": "ib_pcp_service_bytes",
+      "when": {
+        "ib_cycle_kind": "PCP"
+      },
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "maximum_parameter": "ib_peer_pcp_service_limit"
+    },
+    {
+      "parameter": "ib_master_io_bits",
+      "when": {},
+      "source": "https://www.phoenixcontact.com/en-us/products/extension-module-axc-f-il-adapt-1020304?type=pdf",
+      "source_revision": "Phoenix Contact 1020304 AXC F IL ADAPT official product PDF generated2026-09-02, pp1-4",
+      "equal_expression": {
+        "sum": [
+          "ib_master_input_bits",
+          "ib_master_output_bits"
+        ]
+      }
+    },
+    {
+      "parameter": "ib_pcp_nodes",
+      "when": {},
+      "source": "https://www.phoenixcontact.com/en-us/products/extension-module-axc-f-il-adapt-1020304?type=pdf",
+      "source_revision": "Phoenix Contact 1020304 AXC F IL ADAPT official product PDF generated2026-09-02, pp1-4",
+      "maximum_parameter": "ib_total_nodes"
+    },
+    {
+      "parameter": "ib_role",
+      "when": {
+        "ib_device_profile": "BC4000_2_2"
+      },
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "allowed": [
+        "SLAVE"
+      ]
+    },
+    {
+      "parameter": "ib_segment_kind",
+      "when": {
+        "ib_device_profile": "BC4000_2_2"
+      },
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "allowed": [
+        "REMOTE"
+      ]
+    },
+    {
+      "parameter": "ib_medium",
+      "when": {
+        "ib_device_profile": "BC4000_2_2"
+      },
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "allowed": [
+        "COPPER"
+      ]
+    },
+    {
+      "parameter": "ib_bitrate_bps",
+      "when": {
+        "ib_device_profile": "BC4000_2_2"
+      },
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "allowed": [
+        500000
+      ]
+    },
+    {
+      "parameter": "ib_id_code",
+      "when": {
+        "ib_device_profile": "BC4000_2_2"
+      },
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "allowed": [
+        1,
+        2,
+        3,
+        49,
+        50,
+        51
+      ]
+    },
+    {
+      "parameter": "ib_input_bytes",
+      "when": {
+        "ib_device_profile": "BC4000_2_2"
+      },
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "maximum": 64
+    },
+    {
+      "parameter": "ib_output_bytes",
+      "when": {
+        "ib_device_profile": "BC4000_2_2"
+      },
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "maximum": 64
+    },
+    {
+      "parameter": "ib_local_plc_input_bytes",
+      "when": {
+        "ib_device_profile": "BC4000_2_2"
+      },
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "maximum": 512
+    },
+    {
+      "parameter": "ib_local_plc_output_bytes",
+      "when": {
+        "ib_device_profile": "BC4000_2_2"
+      },
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "maximum": 512
+    },
+    {
+      "parameter": "ib_effective_words",
+      "when": {
+        "ib_device_profile": "BC4000_2_2"
+      },
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "minimum": 1,
+      "maximum": 32
+    },
+    {
+      "parameter": "ib_id_words",
+      "when": {
+        "ib_device_profile": "BC4000_2_2",
+        "ib_effective_words": 1
+      },
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "allowed": [
+        1
+      ]
+    },
+    {
+      "parameter": "ib_id_words",
+      "when": {
+        "ib_device_profile": "BC4000_2_2",
+        "ib_effective_words": 2
+      },
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "allowed": [
+        2
+      ]
+    },
+    {
+      "parameter": "ib_id_words",
+      "when": {
+        "ib_device_profile": "BC4000_2_2",
+        "ib_effective_words": 3
+      },
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "allowed": [
+        3
+      ]
+    },
+    {
+      "parameter": "ib_id_words",
+      "when": {
+        "ib_device_profile": "BC4000_2_2",
+        "ib_effective_words": 4
+      },
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "allowed": [
+        4
+      ]
+    },
+    {
+      "parameter": "ib_id_words",
+      "when": {
+        "ib_device_profile": "BC4000_2_2",
+        "ib_effective_words": 5
+      },
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "allowed": [
+        5
+      ]
+    },
+    {
+      "parameter": "ib_id_words",
+      "when": {
+        "ib_device_profile": "BC4000_2_2",
+        "ib_effective_words": 6
+      },
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "allowed": [
+        6
+      ]
+    },
+    {
+      "parameter": "ib_id_words",
+      "when": {
+        "ib_device_profile": "BC4000_2_2",
+        "ib_effective_words": 7
+      },
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "allowed": [
+        7
+      ]
+    },
+    {
+      "parameter": "ib_id_words",
+      "when": {
+        "ib_device_profile": "BC4000_2_2",
+        "ib_effective_words": 8
+      },
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "allowed": [
+        8
+      ]
+    },
+    {
+      "parameter": "ib_id_words",
+      "when": {
+        "ib_device_profile": "BC4000_2_2",
+        "ib_effective_words": 9
+      },
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "allowed": [
+        9
+      ]
+    },
+    {
+      "parameter": "ib_id_words",
+      "when": {
+        "ib_device_profile": "BC4000_2_2",
+        "ib_effective_words": 10
+      },
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "allowed": [
+        10
+      ]
+    },
+    {
+      "parameter": "ib_id_words",
+      "when": {
+        "ib_device_profile": "BC4000_2_2",
+        "ib_effective_words": 11
+      },
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "allowed": [
+        12
+      ]
+    },
+    {
+      "parameter": "ib_id_words",
+      "when": {
+        "ib_device_profile": "BC4000_2_2",
+        "ib_effective_words": 12
+      },
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "allowed": [
+        12
+      ]
+    },
+    {
+      "parameter": "ib_id_words",
+      "when": {
+        "ib_device_profile": "BC4000_2_2",
+        "ib_effective_words": 13
+      },
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "allowed": [
+        14
+      ]
+    },
+    {
+      "parameter": "ib_id_words",
+      "when": {
+        "ib_device_profile": "BC4000_2_2",
+        "ib_effective_words": 14
+      },
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "allowed": [
+        14
+      ]
+    },
+    {
+      "parameter": "ib_id_words",
+      "when": {
+        "ib_device_profile": "BC4000_2_2",
+        "ib_effective_words": 15
+      },
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "allowed": [
+        16
+      ]
+    },
+    {
+      "parameter": "ib_id_words",
+      "when": {
+        "ib_device_profile": "BC4000_2_2",
+        "ib_effective_words": 16
+      },
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "allowed": [
+        16
+      ]
+    },
+    {
+      "parameter": "ib_id_words",
+      "when": {
+        "ib_device_profile": "BC4000_2_2",
+        "ib_effective_words": 17
+      },
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "allowed": [
+        24
+      ]
+    },
+    {
+      "parameter": "ib_id_words",
+      "when": {
+        "ib_device_profile": "BC4000_2_2",
+        "ib_effective_words": 18
+      },
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "allowed": [
+        24
+      ]
+    },
+    {
+      "parameter": "ib_id_words",
+      "when": {
+        "ib_device_profile": "BC4000_2_2",
+        "ib_effective_words": 19
+      },
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "allowed": [
+        24
+      ]
+    },
+    {
+      "parameter": "ib_id_words",
+      "when": {
+        "ib_device_profile": "BC4000_2_2",
+        "ib_effective_words": 20
+      },
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "allowed": [
+        24
+      ]
+    },
+    {
+      "parameter": "ib_id_words",
+      "when": {
+        "ib_device_profile": "BC4000_2_2",
+        "ib_effective_words": 21
+      },
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "allowed": [
+        24
+      ]
+    },
+    {
+      "parameter": "ib_id_words",
+      "when": {
+        "ib_device_profile": "BC4000_2_2",
+        "ib_effective_words": 22
+      },
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "allowed": [
+        24
+      ]
+    },
+    {
+      "parameter": "ib_id_words",
+      "when": {
+        "ib_device_profile": "BC4000_2_2",
+        "ib_effective_words": 23
+      },
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "allowed": [
+        24
+      ]
+    },
+    {
+      "parameter": "ib_id_words",
+      "when": {
+        "ib_device_profile": "BC4000_2_2",
+        "ib_effective_words": 24
+      },
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "allowed": [
+        24
+      ]
+    },
+    {
+      "parameter": "ib_id_words",
+      "when": {
+        "ib_device_profile": "BC4000_2_2",
+        "ib_effective_words": 25
+      },
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "allowed": [
+        32
+      ]
+    },
+    {
+      "parameter": "ib_id_words",
+      "when": {
+        "ib_device_profile": "BC4000_2_2",
+        "ib_effective_words": 26
+      },
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "allowed": [
+        32
+      ]
+    },
+    {
+      "parameter": "ib_id_words",
+      "when": {
+        "ib_device_profile": "BC4000_2_2",
+        "ib_effective_words": 27
+      },
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "allowed": [
+        32
+      ]
+    },
+    {
+      "parameter": "ib_id_words",
+      "when": {
+        "ib_device_profile": "BC4000_2_2",
+        "ib_effective_words": 28
+      },
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "allowed": [
+        32
+      ]
+    },
+    {
+      "parameter": "ib_id_words",
+      "when": {
+        "ib_device_profile": "BC4000_2_2",
+        "ib_effective_words": 29
+      },
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "allowed": [
+        32
+      ]
+    },
+    {
+      "parameter": "ib_id_words",
+      "when": {
+        "ib_device_profile": "BC4000_2_2",
+        "ib_effective_words": 30
+      },
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "allowed": [
+        32
+      ]
+    },
+    {
+      "parameter": "ib_id_words",
+      "when": {
+        "ib_device_profile": "BC4000_2_2",
+        "ib_effective_words": 31
+      },
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "allowed": [
+        32
+      ]
+    },
+    {
+      "parameter": "ib_id_words",
+      "when": {
+        "ib_device_profile": "BC4000_2_2",
+        "ib_effective_words": 32
+      },
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "allowed": [
+        32
+      ]
+    },
+    {
+      "parameter": "ib_bc_persistent_bytes",
+      "when": {
+        "ib_device_profile": "BC4000_2_2"
+      },
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "maximum_expression": {
+        "subtract": [
+          "ib_bc_remanent_bytes",
+          1
+        ]
+      }
+    },
+    {
+      "parameter": "ib_bc_input_offset",
+      "when": {
+        "ib_device_profile": "BC4000_2_2"
+      },
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "maximum_expression": {
+        "subtract": [
+          512,
+          "ib_input_bytes"
+        ]
+      }
+    },
+    {
+      "parameter": "ib_bc_output_offset",
+      "when": {
+        "ib_device_profile": "BC4000_2_2"
+      },
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "maximum_expression": {
+        "subtract": [
+          512,
+          "ib_output_bytes"
+        ]
+      }
+    },
+    {
+      "parameter": "ib_hop_length_m",
+      "when": {
+        "ib_device_profile": "BC4000_2_2",
+        "ib_segment_kind": "REMOTE"
+      },
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "maximum": 400
+    },
+    {
+      "parameter": "ib_ring_length_m",
+      "when": {
+        "ib_device_profile": "BC4000_2_2"
+      },
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "maximum": 12800
+    },
+    {
+      "parameter": "ib_coupled_ring_binding",
+      "when": {},
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "when_not": {
+        "ib_device_profile": "PCI_SC_RI_I_T_6190_03"
+      },
+      "allowed": []
+    },
+    {
+      "parameter": "ib_local_plc_input_bytes",
+      "when": {},
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "when_not": {
+        "ib_device_profile": "BC4000_2_2"
+      },
+      "allowed": []
+    },
+    {
+      "parameter": "ib_local_plc_output_bytes",
+      "when": {},
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "when_not": {
+        "ib_device_profile": "BC4000_2_2"
+      },
+      "allowed": []
+    },
+    {
+      "parameter": "ib_local_terminals",
+      "when": {},
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "when_not": {
+        "ib_device_profile": "BC4000_2_2"
+      },
+      "allowed": []
+    },
+    {
+      "parameter": "ib_bc_input_offset",
+      "when": {},
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "when_not": {
+        "ib_device_profile": "BC4000_2_2"
+      },
+      "allowed": []
+    },
+    {
+      "parameter": "ib_bc_output_offset",
+      "when": {},
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "when_not": {
+        "ib_device_profile": "BC4000_2_2"
+      },
+      "allowed": []
+    },
+    {
+      "parameter": "ib_bc_digital_input_offset",
+      "when": {},
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "when_not": {
+        "ib_device_profile": "BC4000_2_2"
+      },
+      "allowed": []
+    },
+    {
+      "parameter": "ib_bc_digital_output_offset",
+      "when": {},
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "when_not": {
+        "ib_device_profile": "BC4000_2_2"
+      },
+      "allowed": []
+    },
+    {
+      "parameter": "ib_bc_plc_cycle_ms",
+      "when": {},
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "when_not": {
+        "ib_device_profile": "BC4000_2_2"
+      },
+      "allowed": []
+    },
+    {
+      "parameter": "ib_bc_background_ms",
+      "when": {},
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "when_not": {
+        "ib_device_profile": "BC4000_2_2"
+      },
+      "allowed": []
+    },
+    {
+      "parameter": "ib_bc_remanent_bytes",
+      "when": {},
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "when_not": {
+        "ib_device_profile": "BC4000_2_2"
+      },
+      "allowed": []
+    },
+    {
+      "parameter": "ib_bc_persistent_bytes",
+      "when": {},
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "when_not": {
+        "ib_device_profile": "BC4000_2_2"
+      },
+      "allowed": []
+    },
+    {
+      "parameter": "ib_bc_autorefresh_cycles",
+      "when": {},
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "when_not": {
+        "ib_device_profile": "BC4000_2_2"
+      },
+      "allowed": []
+    },
+    {
+      "parameter": "ib_bc_autorefresh_retries",
+      "when": {},
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "when_not": {
+        "ib_device_profile": "BC4000_2_2"
+      },
+      "allowed": []
+    },
+    {
+      "parameter": "ib_bc_remanent_enabled",
+      "when": {},
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "when_not": {
+        "ib_device_profile": "BC4000_2_2"
+      },
+      "allowed": []
+    },
+    {
+      "parameter": "ib_bc_terminal_check",
+      "when": {},
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "when_not": {
+        "ib_device_profile": "BC4000_2_2"
+      },
+      "allowed": []
+    },
+    {
+      "parameter": "ib_bc_kbus_update",
+      "when": {},
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "when_not": {
+        "ib_device_profile": "BC4000_2_2"
+      },
+      "allowed": []
+    },
+    {
+      "parameter": "ib_bc_first_terminal_mapping",
+      "when": {},
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "when_not": {
+        "ib_device_profile": "BC4000_2_2"
+      },
+      "allowed": []
+    },
+    {
+      "parameter": "ib_bc_other_terminal_mapping",
+      "when": {},
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "when_not": {
+        "ib_device_profile": "BC4000_2_2"
+      },
+      "allowed": []
+    },
+    {
+      "parameter": "ib_pci_slave_configuration",
+      "when": {},
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "when_not": {
+        "ib_device_profile": "PCI_SC_RI_I_T_6190_03"
+      },
+      "allowed": []
+    },
+    {
+      "parameter": "ib_pci_slave_bitrate_bps",
+      "when": {},
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "when_not": {
+        "ib_device_profile": "PCI_SC_RI_I_T_6190_03"
+      },
+      "allowed": []
+    },
+    {
+      "parameter": "ib_pci_slave_id_code",
+      "when": {},
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "when_not": {
+        "ib_device_profile": "PCI_SC_RI_I_T_6190_03"
+      },
+      "allowed": []
+    },
+    {
+      "parameter": "ib_pci_slave_words",
+      "when": {},
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "when_not": {
+        "ib_device_profile": "PCI_SC_RI_I_T_6190_03"
+      },
+      "allowed": []
+    },
+    {
+      "parameter": "ib_pci_pcp_words",
+      "when": {},
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "when_not": {
+        "ib_device_profile": "PCI_SC_RI_I_T_6190_03"
+      },
+      "allowed": []
+    },
+    {
+      "parameter": "ib_pci_power_loss_error",
+      "when": {},
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "when_not": {
+        "ib_device_profile": "PCI_SC_RI_I_T_6190_03"
+      },
+      "allowed": []
+    },
+    {
+      "parameter": "ib_role",
+      "when": {
+        "ib_device_profile": "AXC_F_IL_ADAPT_202609"
+      },
+      "source": "https://www.phoenixcontact.com/en-us/products/extension-module-axc-f-il-adapt-1020304?type=pdf",
+      "source_revision": "Phoenix Contact 1020304 AXC F IL ADAPT official product PDF generated2026-09-02, pp1-4",
+      "allowed": [
+        "MASTER"
+      ]
+    },
+    {
+      "parameter": "ib_segment_kind",
+      "when": {
+        "ib_device_profile": "AXC_F_IL_ADAPT_202609"
+      },
+      "source": "https://www.phoenixcontact.com/en-us/products/extension-module-axc-f-il-adapt-1020304?type=pdf",
+      "source_revision": "Phoenix Contact 1020304 AXC F IL ADAPT official product PDF generated2026-09-02, pp1-4",
+      "allowed": [
+        "LOCAL"
+      ]
+    },
+    {
+      "parameter": "ib_medium",
+      "when": {
+        "ib_device_profile": "AXC_F_IL_ADAPT_202609"
+      },
+      "source": "https://www.phoenixcontact.com/en-us/products/extension-module-axc-f-il-adapt-1020304?type=pdf",
+      "source_revision": "Phoenix Contact 1020304 AXC F IL ADAPT official product PDF generated2026-09-02, pp1-4",
+      "allowed": [
+        "COPPER"
+      ]
+    },
+    {
+      "parameter": "ib_remote_branches",
+      "when": {
+        "ib_device_profile": "AXC_F_IL_ADAPT_202609"
+      },
+      "source": "https://www.phoenixcontact.com/en-us/products/extension-module-axc-f-il-adapt-1020304?type=pdf",
+      "source_revision": "Phoenix Contact 1020304 AXC F IL ADAPT official product PDF generated2026-09-02, pp1-4",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "ib_local_nodes",
+      "when": {
+        "ib_device_profile": "AXC_F_IL_ADAPT_202609"
+      },
+      "source": "https://www.phoenixcontact.com/en-us/products/extension-module-axc-f-il-adapt-1020304?type=pdf",
+      "source_revision": "Phoenix Contact 1020304 AXC F IL ADAPT official product PDF generated2026-09-02, pp1-4",
+      "maximum": 63
+    },
+    {
+      "parameter": "ib_total_nodes",
+      "when": {
+        "ib_device_profile": "AXC_F_IL_ADAPT_202609"
+      },
+      "source": "https://www.phoenixcontact.com/en-us/products/extension-module-axc-f-il-adapt-1020304?type=pdf",
+      "source_revision": "Phoenix Contact 1020304 AXC F IL ADAPT official product PDF generated2026-09-02, pp1-4",
+      "maximum": 63
+    },
+    {
+      "parameter": "ib_pcp_nodes",
+      "when": {
+        "ib_device_profile": "AXC_F_IL_ADAPT_202609"
+      },
+      "source": "https://www.phoenixcontact.com/en-us/products/extension-module-axc-f-il-adapt-1020304?type=pdf",
+      "source_revision": "Phoenix Contact 1020304 AXC F IL ADAPT official product PDF generated2026-09-02, pp1-4",
+      "maximum": 24
+    },
+    {
+      "parameter": "ib_master_input_bits",
+      "when": {
+        "ib_device_profile": "AXC_F_IL_ADAPT_202609"
+      },
+      "source": "https://www.phoenixcontact.com/en-us/products/extension-module-axc-f-il-adapt-1020304?type=pdf",
+      "source_revision": "Phoenix Contact 1020304 AXC F IL ADAPT official product PDF generated2026-09-02, pp1-4",
+      "maximum": 2048
+    },
+    {
+      "parameter": "ib_master_output_bits",
+      "when": {
+        "ib_device_profile": "AXC_F_IL_ADAPT_202609"
+      },
+      "source": "https://www.phoenixcontact.com/en-us/products/extension-module-axc-f-il-adapt-1020304?type=pdf",
+      "source_revision": "Phoenix Contact 1020304 AXC F IL ADAPT official product PDF generated2026-09-02, pp1-4",
+      "maximum": 2048
+    },
+    {
+      "parameter": "ib_master_io_bits",
+      "when": {
+        "ib_device_profile": "AXC_F_IL_ADAPT_202609"
+      },
+      "source": "https://www.phoenixcontact.com/en-us/products/extension-module-axc-f-il-adapt-1020304?type=pdf",
+      "source_revision": "Phoenix Contact 1020304 AXC F IL ADAPT official product PDF generated2026-09-02, pp1-4",
+      "maximum": 4096
+    },
+    {
+      "parameter": "ib_master_register_bytes",
+      "when": {
+        "ib_device_profile": "AXC_F_IL_ADAPT_202609"
+      },
+      "source": "https://www.phoenixcontact.com/en-us/products/extension-module-axc-f-il-adapt-1020304?type=pdf",
+      "source_revision": "Phoenix Contact 1020304 AXC F IL ADAPT official product PDF generated2026-09-02, pp1-4",
+      "maximum": 512
+    },
+    {
+      "parameter": "ib_power_source",
+      "when": {
+        "ib_device_profile": "AXC_F_IL_ADAPT_202609"
+      },
+      "source": "https://www.phoenixcontact.com/en-us/products/extension-module-axc-f-il-adapt-1020304?type=pdf",
+      "source_revision": "Phoenix Contact 1020304 AXC F IL ADAPT official product PDF generated2026-09-02, pp1-4",
+      "when_present": [
+        "ib_local_nodes"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "ib_role",
+      "when": {
+        "ib_device_profile": "PCI_SC_RI_I_T_6190_03"
+      },
+      "source": "https://datasheet.octopart.com/2725260-Phoenix-Contact-datasheet-13325117.pdf",
+      "source_revision": "Phoenix Contact IBS PCI SC QS UM E 6190_en_03 manufacturer manual, distributor-hosted original, chapters3.2/3.3",
+      "allowed": [
+        "MASTER_SLAVE"
+      ]
+    },
+    {
+      "parameter": "ib_coupled_ring_binding",
+      "when": {
+        "ib_device_profile": "PCI_SC_RI_I_T_6190_03"
+      },
+      "source": "https://datasheet.octopart.com/2725260-Phoenix-Contact-datasheet-13325117.pdf",
+      "source_revision": "Phoenix Contact IBS PCI SC QS UM E 6190_en_03 manufacturer manual, distributor-hosted original, chapters3.2/3.3",
+      "required": true
+    },
+    {
+      "parameter": "ib_pci_slave_bitrate_bps",
+      "when": {
+        "ib_device_profile": "PCI_SC_RI_I_T_6190_03"
+      },
+      "source": "https://datasheet.octopart.com/2725260-Phoenix-Contact-datasheet-13325117.pdf",
+      "source_revision": "Phoenix Contact IBS PCI SC QS UM E 6190_en_03 manufacturer manual, distributor-hosted original, chapters3.2/3.3",
+      "allowed": [
+        500000,
+        2000000
+      ]
+    },
+    {
+      "parameter": "ib_pci_slave_words",
+      "when": {
+        "ib_device_profile": "PCI_SC_RI_I_T_6190_03"
+      },
+      "source": "https://datasheet.octopart.com/2725260-Phoenix-Contact-datasheet-13325117.pdf",
+      "source_revision": "Phoenix Contact IBS PCI SC QS UM E 6190_en_03 manufacturer manual, distributor-hosted original, chapters3.2/3.3",
+      "allowed": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        16
+      ],
+      "maximum_expression": {
+        "subtract": [
+          16,
+          "ib_pci_pcp_words"
+        ]
+      }
+    },
+    {
+      "parameter": "ib_pci_pcp_words",
+      "when": {
+        "ib_device_profile": "PCI_SC_RI_I_T_6190_03"
+      },
+      "source": "https://datasheet.octopart.com/2725260-Phoenix-Contact-datasheet-13325117.pdf",
+      "source_revision": "Phoenix Contact IBS PCI SC QS UM E 6190_en_03 manufacturer manual, distributor-hosted original, chapters3.2/3.3",
+      "allowed": [
+        0,
+        1,
+        2,
+        4
+      ]
+    },
+    {
+      "parameter": "ib_pci_slave_id_code",
+      "when": {
+        "ib_device_profile": "PCI_SC_RI_I_T_6190_03",
+        "ib_pci_pcp_words": 0
+      },
+      "source": "https://datasheet.octopart.com/2725260-Phoenix-Contact-datasheet-13325117.pdf",
+      "source_revision": "Phoenix Contact IBS PCI SC QS UM E 6190_en_03 manufacturer manual, distributor-hosted original, chapters3.2/3.3",
+      "allowed": [
+        3
+      ]
+    },
+    {
+      "parameter": "ib_pci_slave_id_code",
+      "when": {
+        "ib_device_profile": "PCI_SC_RI_I_T_6190_03",
+        "ib_pci_pcp_words": 1
+      },
+      "source": "https://datasheet.octopart.com/2725260-Phoenix-Contact-datasheet-13325117.pdf",
+      "source_revision": "Phoenix Contact IBS PCI SC QS UM E 6190_en_03 manufacturer manual, distributor-hosted original, chapters3.2/3.3",
+      "allowed": [
+        235
+      ]
+    },
+    {
+      "parameter": "ib_pci_slave_id_code",
+      "when": {
+        "ib_device_profile": "PCI_SC_RI_I_T_6190_03",
+        "ib_pci_pcp_words": 2
+      },
+      "source": "https://datasheet.octopart.com/2725260-Phoenix-Contact-datasheet-13325117.pdf",
+      "source_revision": "Phoenix Contact IBS PCI SC QS UM E 6190_en_03 manufacturer manual, distributor-hosted original, chapters3.2/3.3",
+      "allowed": [
+        232
+      ]
+    },
+    {
+      "parameter": "ib_pci_slave_id_code",
+      "when": {
+        "ib_device_profile": "PCI_SC_RI_I_T_6190_03",
+        "ib_pci_pcp_words": 4
+      },
+      "source": "https://datasheet.octopart.com/2725260-Phoenix-Contact-datasheet-13325117.pdf",
+      "source_revision": "Phoenix Contact IBS PCI SC QS UM E 6190_en_03 manufacturer manual, distributor-hosted original, chapters3.2/3.3",
+      "allowed": [
+        233
+      ]
+    },
+    {
+      "parameter": "ib_bitrate_bps",
+      "when": {
+        "ib_timing_model": "BC4000_500K_MANUAL"
+      },
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "allowed": [
+        500000
+      ]
+    },
+    {
+      "parameter": "ib_model_cycle_ms",
+      "when": {
+        "ib_timing_model": "BC4000_500K_MANUAL"
+      },
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "equal_expression": {
+        "sum": [
+          0.2,
+          {
+            "product": [
+              0.002,
+              {
+                "sum": [
+                  {
+                    "product": [
+                      13,
+                      {
+                        "sum": [
+                          6,
+                          "ib_cycle_effective_bytes"
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "product": [
+                      1.5,
+                      "ib_cycle_couplers"
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "parameter": "ib_ring_reaction_ms",
+      "when": {
+        "ib_timing_model": "BC4000_500K_MANUAL"
+      },
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "equal_expression": {
+        "product": [
+          2,
+          "ib_model_cycle_ms"
+        ]
+      }
+    },
+    {
+      "parameter": "ib_error_recovery_ms",
+      "when": {
+        "ib_timing_model": "BC4000_500K_MANUAL"
+      },
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "equal_expression": {
+        "product": [
+          5,
+          "ib_model_cycle_ms"
+        ]
+      }
+    },
+    {
+      "parameter": "ib_model_cycle_ms",
+      "when": {
+        "ib_timing_model": "BC4000_500K_MANUAL"
+      },
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "required": true
+    },
+    {
+      "parameter": "ib_cycle_effective_bytes",
+      "when": {
+        "ib_timing_model": "BC4000_500K_MANUAL"
+      },
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "required": true
+    },
+    {
+      "parameter": "ib_cycle_couplers",
+      "when": {
+        "ib_timing_model": "BC4000_500K_MANUAL"
+      },
+      "source": "https://download.beckhoff.com/download/document/io/bus-terminals/bc4000en.pdf",
+      "source_revision": "Beckhoff BC4000 v2.2.0 2022-03-16 chapters2,5,6,7; other BC register rows excluded",
+      "required": true
+    }
+  ],
+  "physical_layer_profile_id": null,
+  "medium_access_model": null,
+  "native_parameter_prefixes": [
+    "ib_"
+  ],
+  "parameter_aliases": {},
+  "parameter_alias_limits": {},
+  "parameter_evidence_scope": null,
+  "rate_source_profile_id": null,
+  "arbitration_model_id": null,
+  "max_payload_bytes": null,
+  "capabilities": {
+    "supports_signals": true,
+    "supports_data_objects": false,
+    "supports_streams": false,
+    "supports_multicast": false,
+    "supports_publish_subscribe": true,
+    "supports_request_response": false,
+    "supports_cyclic": true,
+    "supports_event": true,
+    "supports_redundancy": false,
+    "supports_time_sync": false,
+    "supports_safety_profile": false,
+    "supports_segmentation": false,
+    "supports_fragmentation": false,
+    "supports_qos": false
+  },
+  "deterministic": false,
+  "overhead_bytes": 8,
+  "implementation_status": "LEGACY",
+  "connection_type": "COMMUNICATION_TECHNOLOGY",
+  "parameter_proposals": {
+    "kind": "DEVICE_DEPENDENT",
+    "status": "REVIEW_REQUIRED",
+    "required_fields": [],
+    "note": "No universal rate is available; inspect the selected hardware/profile."
+  },
+  "capacity_evidence": {
+    "status": "MODEL_MISSING",
+    "frame_model": null,
+    "schedule_model": null,
+    "requires_confirmed_device_parameters": true
+  },
+  "components": {
+    "binding": "interbus.binding",
+    "generator": "interbus.generator",
+    "validator": "interbus.validator",
+    "timing_model": null,
+    "load_model": null,
+    "encoder": "interbus.encoder",
+    "decoder": "interbus.decoder"
+  },
+  "known_limitations": "Technology-specific conformance details require a vendor/profile extension."
+}

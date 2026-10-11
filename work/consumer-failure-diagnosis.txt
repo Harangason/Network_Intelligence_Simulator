@@ -1,0 +1,64 @@
+{"database": "nis_test_cd21ced6cc25", "container": "nis-test-db-cd21ced6cc25", "isolated": true}
+FFFFFF                                                                   [100%]
+================================== FAILURES ===================================
+______ test_http_chat_review_and_apply_expose_recalculation_to_frontend _______
+backend\tests\test_agent_configuration_runtime.py:95: in test_http_chat_review_and_apply_expose_recalculation_to_frontend
+    scoped(authority, lambda: WorkflowStatusService(authority.project_id).save_parameters({
+backend\tests\test_agent_configuration_runtime.py:25: in scoped
+    assert result.success, result.findings
+E   AssertionError: [{'severity': 'ERROR', 'message': 'TECHNOLOGY_RATE_MODEL_MISMATCH: bitrate_bps is not valid for lin or its registered ...ires an explicit value for lin; TECHNOLOGY_PARAMETER_MISSING: lin_schedule_source requires an explicit value for lin'}]
+E   assert False
+E    +  where False = ToolResult(success=False, status=<ToolStatus.INVALID_INPUT: 'INVALID_INPUT'>, data=None, findings=[{'severity': 'ERROR...fected_objects=[], next_actions=['Eingaben oder Dienststatus pr�fen'], trace_id='20cd8daa-86a4-4e26-8eb8-16caef134031').success
+___________________________ test_health_and_catalog ___________________________
+backend\tests\test_api.py:27: in test_health_and_catalog
+    assert categories == {
+E   AssertionError: assert {'capacity', ...ability', ...} == {'capacity', ...ulation', ...}
+E     
+E     Extra items in the left set:
+E     'communication'
+E     Use -v to get more diff
+______ test_class_profile_does_not_choose_a_technology_without_hardware _______
+backend\tests\test_device_classification.py:96: in test_class_profile_does_not_choose_a_technology_without_hardware
+    assert {row["technology_id"] for row in choices} >= {"i2c", "spi"}
+E   AssertionError: assert set() >= {'i2c', 'spi'}
+E     
+E     Extra items in the right set:
+E     'i2c'
+E     'spi'
+_________________ test_profile_variants_are_defensive_copies __________________
+backend\tests\test_explicit_technology_stack.py:65: in test_profile_variants_are_defensive_copies
+    assert registry.profile('someip')['stack_variants'][0] == ['ethernet', 'ip', 'udp', 'someip']
+E   AssertionError: assert ['ip', 'udp', 'someip'] == ['ethernet', ...dp', 'someip']
+E     
+E     At index 0 diff: 'ip' != 'ethernet'
+E     Right contains one more item: 'someip'
+E     Use -v to get more diff
+_ test_trace_matches_seeded_reference_captured_before_dispatcher_change[independent_can_arbitration] _
+backend\tests\test_can_dispatcher.py:22: in test_trace_matches_seeded_reference_captured_before_dispatcher_change
+    assert actual == case["expected"]
+E   AssertionError: assert [{'event_id':...n', ...}, ...] == [{'event_id':...d', ...}, ...]
+E     
+E     At index 0 diff: {'event_id': 'blocking:0', 'route_id': 'blocking', 'sequence': 0, 'technology': 'can_fd', 'network': 'can-a', 'scheduled_time_s': 0.0, 'origin_scheduled_time_s': 0.0, 'time_s': 0.0004, 'tx_start_s': 0.0, 'tx_end_s': 0.0004, 'queue_delay_ms': 0.0, 'end_to_end_latency_ms': 0.4, 'transmission_latency_ms': 0.4, 'status': 'transmitted', 'payload_hex': 'D2 55 F3 BA 36 E0 50 8A', 'signals': [], 'faults': [], 'physical_transmission_id': '8103b517fb98aa783816dce6', 'duplicate_injected': False} != {'event_id': 'blocking:0', 'route_id': 'blocking', 'sequence': 0, ...
+E     
+E     ...Full output truncated (2 lines hidden), use '-vv' to show
+_____________ test_ethernet_bounds_contention_on_same_egress_port _____________
+backend\tests\test_ethernet_fifo_schedule.py:37: in test_ethernet_bounds_contention_on_same_egress_port
+    assert result["status"] == "FEASIBLE_UNDER_ASSUMPTIONS"
+E   AssertionError: assert 'PROFILE_INCOMPLETE' == 'FEASIBLE_UNDER_ASSUMPTIONS'
+E     
+E     - FEASIBLE_UNDER_ASSUMPTIONS
+E     + PROFILE_INCOMPLETE
+============================== warnings summary ===============================
+backend\engineering\goal_execution\models.py:150
+  I:\PycharmProjects\My_first_Network_Simulator\backend\engineering\goal_execution\models.py:150: UserWarning: Field name "validate" in "EngineeringModelDelta" shadows an attribute in parent "Contract"
+    class EngineeringModelDelta(Contract):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED backend\tests\test_agent_configuration_runtime.py::test_http_chat_review_and_apply_expose_recalculation_to_frontend
+FAILED backend\tests\test_api.py::test_health_and_catalog - AssertionError: a...
+FAILED backend\tests\test_device_classification.py::test_class_profile_does_not_choose_a_technology_without_hardware
+FAILED backend\tests\test_explicit_technology_stack.py::test_profile_variants_are_defensive_copies
+FAILED backend\tests\test_can_dispatcher.py::test_trace_matches_seeded_reference_captured_before_dispatcher_change[independent_can_arbitration]
+FAILED backend\tests\test_ethernet_fifo_schedule.py::test_ethernet_bounds_contention_on_same_egress_port
+6 failed, 1 warning in 11.88s

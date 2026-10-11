@@ -1,0 +1,25 @@
+--- before/backend/tests/test_technology_full_parameter_audit.py
++++ after/backend/tests/test_technology_full_parameter_audit.py
+@@ -7408,13 +7408,21 @@
+                         field['decimal_' + target] = str(value)
+                         field.pop(target, None)
+         actual = SimulationService._parameter_schema(profile['id'], profile)
++        from backend.nis.communication.catalog import parameter_value_role
++        for field in expected:
++            field['value_role'] = parameter_value_role(field['native_key'], field)
+         scenario_keys = {'simulation_default', 'simulation_default_provenance'}
+         assert [{key: value for key, value in field.items() if key not in scenario_keys}
+                 for field in actual] == expected
+         for field in actual:
+             proposal = field['simulation_default_provenance']
+             assert proposal['technology'] == profile['id']
+-            assert proposal['source'] == 'NIS_SIMULATION_ASSUMPTION' and proposal['status'] == 'ASSUMED'
++            assert proposal['source'] == 'NIS_SIMULATION_ASSUMPTION'
++            if proposal['value'] is None:
++                assert field['value_role'] in {'EVIDENCE', 'REFERENCE'}
++                assert proposal['status'] == 'UNKNOWN' and proposal['basis'] == 'EXPLICIT_REFERENCE_REQUIRED'
++            else:
++                assert proposal['status'] == 'ASSUMED'
+             assert proposal['hardware_evidence'] is False and proposal['value'] == field['simulation_default']
+         assert all(field.get('parameter_origin') and field.get('source') for field in expected)
+ 

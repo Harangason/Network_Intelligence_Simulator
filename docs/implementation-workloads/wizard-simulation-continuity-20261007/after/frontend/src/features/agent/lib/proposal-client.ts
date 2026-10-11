@@ -1,0 +1,167 @@
+import type { EngineeringProposal } from "./engineering-agent";
+
+type ProposalStatus = Partial<EngineeringProposal> & Pick<EngineeringProposal, "proposal_id" | "revision" | "status">;
+
+export function hasCompleteProposal(value: Partial<EngineeringProposal>): value is EngineeringProposal {
+  return value.content_state !== "REFERENCE" && Array.isArray(value.changes)
+    && (value.change_count === undefined || value.change_count === value.changes.length)
+    && value.changes.every(change => change && typeof change === "object" && typeof change.action === "string" && typeof change.object_type === "string")
+    && Array.isArray(value.assumptions) && value.assumptions.every(item => typeof item === "string")
+    && Array.isArray(value.canonical_ids) && value.canonical_ids.every(item => item && typeof item === "object" && typeof item.id === "string")
+    && Boolean(value.validation_result && typeof value.validation_result === "object") && typeof value.rationale === "string";
+}
+
+export const PROPOSAL_PAGE_SIZE = 50;
+export function proposalChangePage(proposal: EngineeringProposal, page: number) {
+  const pages = Math.max(1, Math.ceil(proposal.changes.length / PROPOSAL_PAGE_SIZE));
+  const current = Math.max(0, Math.min(Math.floor(page), pages - 1));
+  const offset = current * PROPOSAL_PAGE_SIZE;
+  return { page: current, pages, offset, changes: proposal.changes.slice(offset, offset + PROPOSAL_PAGE_SIZE) };
+}
+
+async function readResult(response: Response): Promise<ProposalStatus> {
+  const result = await response.json();
+  if (!response.ok || !result.success || !result.data?.proposal_id) {
+    throw new Error(result.error ?? result.findings?.[0]?.message ?? "Vorschlag konnte nicht gelesen werden.");
+  }
+  return result.data;
+}
+
+function currentWithStatus(current: ProposalStatus, status: ProposalStatus): EngineeringProposal | undefined {
+  if (!hasCompleteProposal(current) || current.proposal_id !== status.proposal_id || current.revision !== status.revision) return;
+  const count = status.canonical_count ?? status.canonical_ids?.length ?? current.canonical_ids.length;
+  const ids = status.canonical_ids?.length === count ? status.canonical_ids : current.canonical_ids;
+  if (ids.length !== count) return;
+  return { ...current, ...status, changes: current.changes, assumptions: current.assumptions,
+    rationale: current.rationale, validation_result: current.validation_result, content_state: 'FULL',
+    change_count: current.changes.length, canonical_ids: ids, canonical_count: count };
+}
+
+async function fullProposal(status: ProposalStatus, options: RequestInit): Promise<EngineeringProposal> {
+  const full = await readResult(await fetch(`/api/engineering/agent/proposals/${encodeURIComponent(status.proposal_id)}`, options));
+  if (full.proposal_id !== status.proposal_id || !hasCompleteProposal(full)) {
+    throw new Error('Die neue Vorschlagsfassung ist noch nicht vollständig geladen.');
+  }
+  return { ...full, content_state: 'FULL', change_count: full.changes.length, canonical_count: full.canonical_ids.length };
+}
+
+/** Never attach a replacement's approval status to the old proposal's content. */
+export async function refreshProposal(
+  current: EngineeringProposal, projectId: string, signal?: AbortSignal, requireFull = false,
+): Promise<EngineeringProposal> {
+  const options = { headers: { "X-Project-ID": projectId }, cache: "no-store" as const, signal };
+  const base = "/api/engineering/agent/proposals/";
+  const status = await readResult(await fetch(`${base}${encodeURIComponent(current.proposal_id)}?view=status`, options));
+  const complete = !requireFull && currentWithStatus(current, status);
+  return complete || fullProposal(status, options);
+}
+
+/** Resume review against saved project values; validation never approves or applies. */
+export async function restoreWizardProposal(
+  current: ProposalStatus, projectId: string, signal?: AbortSignal,
+): Promise<EngineeringProposal> {
+  const options = { headers: {'X-Project-ID': projectId}, cache: 'no-store' as const, signal };
+  const fresh = await readResult(await fetch(
+    `/api/engineering/agent/proposals/${encodeURIComponent(current.proposal_id)}?view=status`, options,
+  ));
+  return restoreKnownWizardStatus(current, fresh, projectId, signal);
+}
+
+/** Parent loading and polling share the status-first restoration path. */
+export async function loadWizardProposal(
+  proposalId: string, projectId: string, current?: EngineeringProposal, signal?: AbortSignal,
+): Promise<EngineeringProposal> {
+  if (current?.proposal_id === proposalId) return restoreWizardProposal(current, projectId, signal);
+  const options = { headers: {'X-Project-ID': projectId}, cache: 'no-store' as const, signal };
+  const fresh = await readResult(await fetch(
+    `/api/engineering/agent/proposals/${encodeURIComponent(proposalId)}?view=status`, options,
+  ));
+  if (fresh.proposal_id !== proposalId) throw new Error('Der gespeicherte Vorschlag gehört nicht zu diesem Auftrag.');
+  return restoreKnownWizardStatus(fresh, fresh, projectId, signal);
+}
+
+async function restoreKnownWizardStatus(
+  current: ProposalStatus, fresh: ProposalStatus, projectId: string, signal?: AbortSignal,
+): Promise<EngineeringProposal> {
+  const options = { headers: {'X-Project-ID': projectId}, cache: 'no-store' as const, signal };
+  // Validation returns the fresh full proposal. Loading the stale full body
+  // first doubles a large transfer without contributing to that validation.
+  if (fresh.status !== 'OUTDATED') return currentWithStatus(current, fresh) || fullProposal(fresh, options);
+  const validated = await readResult(await fetch(
+    `/api/engineering/agent/proposals/${encodeURIComponent(fresh.proposal_id)}/validate`,
+    { method: 'POST', headers: { 'X-Project-ID': projectId }, signal },
+  ));
+  if (validated.proposal_id !== fresh.proposal_id || !hasCompleteProposal(validated)) {
+    throw new Error('Die aktualisierte Vorschlagsprüfung ist noch nicht vollständig geladen.');
+  }
+  return { ...validated, content_state: 'FULL', change_count: validated.changes.length,
+    canonical_count: validated.canonical_ids.length };
+}
+
+/** A lost response does not imply a lost commit. Read back, never repeat the POST. */
+export async function applyReviewedProposal(
+  proposal: EngineeringProposal, projectId: string, csrfToken: string,
+): Promise<EngineeringProposal> {
+  try {
+    const result = await readResult(await fetch(
+      `/api/engineering/agent/proposals/${encodeURIComponent(proposal.proposal_id)}/apply?view=status`,
+      { method: "POST", headers: { "Content-Type": "application/json", "X-Project-ID": projectId,
+        "X-Review-CSRF": csrfToken, "X-Human-Review": "confirmed" },
+        body: JSON.stringify({ revision: proposal.revision }) },
+    ));
+    if (result.status !== 'APPLIED') throw new Error('Der Vorschlag wurde nicht übernommen. Projektwerte wurden geändert; bitte erneut prüfen und die aktuelle Fassung freigeben.');
+    return { ...proposal, ...result, canonical_count: result.canonical_ids?.length ?? proposal.canonical_count };
+  } catch (cause) {
+    try {
+      const persisted = await refreshProposal(proposal, projectId);
+      if (persisted.proposal_id === proposal.proposal_id && persisted.status === "APPLIED") return persisted;
+    } catch { /* Preserve the uncertain write outcome; do not invent success. */ }
+    const detail = cause instanceof Error && !/fetch|network|load failed/i.test(cause.message)
+      ? ` ${cause.message}` : "";
+    throw new Error(`Übernahme nicht bestätigt. Der gespeicherte Stand wird beim nächsten Abruf erneut geprüft; bitte nicht blind wiederholen.${detail}`);
+  }
+}
+
+/** One explicit wizard review performs both governed transitions atomically. */
+export async function approveAndApplyWizardProposal(
+  proposal: EngineeringProposal, projectId: string, csrfToken: string,
+): Promise<EngineeringProposal> {
+  try {
+    const result = await readResult(await fetch(
+      `/api/engineering/agent/proposals/${encodeURIComponent(proposal.proposal_id)}/approve-apply?view=status`,
+      { method: "POST", headers: { "Content-Type": "application/json", "X-Project-ID": projectId,
+        "X-Review-CSRF": csrfToken, "X-Human-Review": "confirmed" },
+        body: JSON.stringify({ revision: proposal.revision }) },
+    ));
+    if (result.status !== 'APPLIED') throw new Error('Der Vorschlag wurde nicht übernommen. Projektwerte wurden geändert; bitte erneut prüfen und die aktuelle Fassung freigeben.');
+    return { ...proposal, ...result, canonical_count: result.canonical_ids?.length ?? proposal.canonical_count };
+  } catch (cause) {
+    try {
+      const persisted = await refreshProposal(proposal, projectId);
+      if (persisted.proposal_id === proposal.proposal_id && persisted.status === "APPLIED") return persisted;
+    } catch { /* Preserve the uncertain write outcome; do not invent success. */ }
+    const detail = cause instanceof Error && !/fetch|network|load failed/i.test(cause.message)
+      ? ` ${cause.message}` : "";
+    throw new Error(`Freigabe und Übernahme nicht bestätigt. Der gespeicherte Stand wird beim nächsten Abruf erneut geprüft; bitte nicht blind wiederholen.${detail}`);
+  }
+}
+
+/** Resolve old anonymous proposal findings against their actual local objects. */
+export function proposalFindingGroups(proposal: EngineeringProposal) {
+  const findings = proposal.validation_result.findings ?? [];
+  const groups = new Map<string, { key: string; technology: string; network: string; code: string; findings: typeof findings }>();
+  for (const finding of findings) {
+    const change = typeof finding.index === 'number' ? proposal.changes[finding.index] : proposal.changes.find(item =>
+      item.object_id === finding.object_id || (item.local_ref && `$${item.local_ref}` === finding.object_id));
+    const data = change?.data ?? {};
+    const technology = finding.technology || String(data.technology ?? 'offen');
+    const network = finding.network_name || finding.network_id || String(data.network_ref ?? 'Projekt');
+    const resolved = { ...finding, network_name: network, object_name: finding.object_name || String(data.name ?? change?.object_name ?? finding.object_id ?? 'Projekt') };
+    const code = finding.code ?? 'REVIEW';
+    const key = ['CAPACITY_UNVERIFIED','CAPACITY_DEVICE_EVIDENCE_MISSING'].includes(code) ? JSON.stringify([code, technology, finding.missing_fields ?? []]) : JSON.stringify([code, resolved.object_name]);
+    const group = groups.get(key) ?? { key, technology, network, code, findings: [] };
+    if (group.network !== network) group.network = "mehrere Netze";
+    group.findings.push(resolved); groups.set(key, group);
+  }
+  return [...groups.values()].sort((a, b) => Number(b.code === 'CAPACITY_UNVERIFIED') - Number(a.code === 'CAPACITY_UNVERIFIED'));
+}

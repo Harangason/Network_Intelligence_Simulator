@@ -193,3 +193,28 @@ def test_routing_batch_rejects_foreign_active_project_before_loading(candidate, 
             RoutingValidator.for_current_batch(candidate['snapshot']['project_id'])
     finally:
         reset_project(token)
+
+
+def test_current_batch_checks_references_without_route_sql_and_refreshes_after_edit(candidate, monkeypatch):
+    from backend.nis.engineering.projects.project_context import activate_project, reset_project
+    from backend.nis.workflow.services.service import WorkflowStatusService
+    project = candidate['snapshot']['project_id']
+    token = activate_project(project)
+    try:
+        batch = RoutingValidator.for_current_batch(project)
+        with monkeypatch.context() as patch:
+            patch.setattr(validation, 'get_connection', forbid_database)
+            actual = batch.validate(candidate['route'])
+            assert {k: v for k, v in actual.items() if k != 'validation_timestamp'} == {
+                k: v for k, v in candidate['baseline'].items() if k != 'validation_timestamp'}
+            broken = deepcopy(candidate['route'])
+            broken['source']['node_id'] = str(uuid4())
+            assert 'SOURCE_NOT_FOUND' in {item['code'] for item in batch.validate(broken)['errors']}
+        WorkflowStatusService(project).save_topology({**candidate['snapshot']['topology'], 'edges': []})
+        refreshed = RoutingValidator.for_current_batch(project)
+        with monkeypatch.context() as patch:
+            patch.setattr(validation, 'get_connection', forbid_database)
+            assert 'PHYSICAL_PATH_REMOVED' in {item['code'] for item in refreshed.validate(candidate['route'])['errors']}
+            assert batch.validate(candidate['route'])['valid']
+    finally:
+        reset_project(token)

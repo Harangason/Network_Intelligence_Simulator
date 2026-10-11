@@ -1,0 +1,77 @@
+VERSION ""
+
+
+NS_ : 
+	NS_DESC_
+	CM_
+	BA_DEF_
+	BA_
+	VAL_
+	CAT_DEF_
+	CAT_
+	FILTER
+	BA_DEF_DEF_
+	EV_DATA_
+	ENVVAR_DATA_
+	SGTYPE_
+	SGTYPE_VAL_
+	BA_DEF_SGTYPE_
+	BA_SGTYPE_
+	SIG_TYPE_REF_
+	VAL_TABLE_
+	SIG_GROUP_
+	SIG_VALTYPE_
+	SIGTYPE_VALTYPE_
+	BO_TX_BU_
+	BA_DEF_REL_
+	BA_REL_
+	BA_DEF_DEF_REL_
+	BU_SG_REL_
+	BU_EV_REL_
+	BU_BO_REL_
+	SG_MUL_VAL_
+
+BS_:
+
+BU_: ClutchPosition GearSelectorPosition Getriebesteuerung TransmissionInputSpeed TransmissionOilTemperature TransmissionOutputSpeed
+
+
+BO_ 499 Gear_Selector_Position: 1 GearSelectorPosition
+ SG_ Gangwahlstellung : 0|4@1+ (1,0) [0.0|15.0] "code"  Getriebesteuerung
+
+BO_ 620 Transmission_Output_Speed: 2 TransmissionOutputSpeed
+ SG_ Getriebeausgangsdrehzahl : 0|14@1+ (1,0) [0.0|12000.0] "rpm"  Getriebesteuerung
+
+BO_ 619 Transmission_Oil_Temperature: 2 TransmissionOilTemperature
+ SG_ Getriebeoeltemperatur : 0|12@1- (0.1,0.0) [-40.0|180.0] "degC"  Getriebesteuerung
+
+BO_ 618 Transmission_Input_Speed: 2 TransmissionInputSpeed
+ SG_ Getriebeeingangsdrehzahl : 0|14@1+ (1,0) [0.0|12000.0] "rpm"  Getriebesteuerung
+
+BO_ 430 Clutch_Position: 2 ClutchPosition
+ SG_ Kupplungsstellung : 0|10@1+ (0.1,0.0) [0.0|100.0] "%"  Getriebesteuerung
+
+
+
+
+CM_ BO_ 499 "CanonicalMessage=1fe2df38-fb4b-429d-91ab-7aee5b032a98; Network=Antriebsstrang_01-IO-getriebesteuerung-can-fd-S01; Technology=can_fd";
+CM_ SG_ 499 Gangwahlstellung "CanonicalSignal=19d9d963-324a-4f02-9ba4-419d5f75cb8b";
+CM_ BO_ 620 "CanonicalMessage=1ebd0332-a720-4d55-930a-ab69d6c488eb; Network=Antriebsstrang_01-IO-getriebesteuerung-can-fd-S01; Technology=can_fd";
+CM_ SG_ 620 Getriebeausgangsdrehzahl "CanonicalSignal=5b128566-126b-4bb5-ad2f-4222490889f0";
+CM_ BO_ 619 "CanonicalMessage=2f6bd3ea-943a-4a94-9013-46f070a032a8; Network=Antriebsstrang_01-IO-getriebesteuerung-can-fd-S01; Technology=can_fd";
+CM_ SG_ 619 Getriebeoeltemperatur "CanonicalSignal=9e5da8c8-67d9-46bd-8398-50803d494962";
+CM_ BO_ 618 "CanonicalMessage=5b8104eb-c1e0-421b-ab9b-ff5d197fee1c; Network=Antriebsstrang_01-IO-getriebesteuerung-can-fd-S01; Technology=can_fd";
+CM_ SG_ 618 Getriebeeingangsdrehzahl "CanonicalSignal=0c58d466-9305-4aaa-9e09-aeb1527aaf54";
+CM_ BO_ 430 "CanonicalMessage=720db475-6272-48fc-9dda-24c82449363a; Network=Antriebsstrang_01-IO-getriebesteuerung-can-fd-S01; Technology=can_fd";
+CM_ SG_ 430 Kupplungsstellung "CanonicalSignal=d4831d63-7ebe-4937-8a44-1bf86b452bc2";
+BA_DEF_ BO_  "VFrameFormat" ENUM  "StandardCAN","ExtendedCAN","StandardCAN_FD","ExtendedCAN_FD";
+BA_DEF_DEF_  "VFrameFormat" "0";
+BA_ "VFrameFormat" BO_ 499 2;
+BA_ "VFrameFormat" BO_ 620 2;
+BA_ "VFrameFormat" BO_ 619 2;
+BA_ "VFrameFormat" BO_ 618 2;
+BA_ "VFrameFormat" BO_ 430 2;
+
+
+
+

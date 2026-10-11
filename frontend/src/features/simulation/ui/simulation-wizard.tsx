@@ -1126,7 +1126,11 @@ export function SimulationWizard({
       {formError && <p role="alert">{formError}</p>}
     </div>;
   }
-  if (!domain || !technology) {
+  if (mode === "network" && !workflowLoaded) {
+    if (formError) return <div className="panel error-card" role="alert"><h2>Netzwerkansicht konnte nicht geladen werden</h2><p>{formError}</p></div>;
+    return <div className="panel loading-panel" role="status">Gespeicherte Netzwerkansicht wird geladen …</div>;
+  }
+  if (mode === "parameters" && (!domain || !technology)) {
     return <div className="panel error-card" role="alert">
       <h2>Branche und Technologie auswählen</h2>
       <p>Für dieses Projekt ist noch keine vollständige Parameterauswahl bestätigt. Wähle den Anwendungsbereich und ein registriertes Technologieprofil.</p>
@@ -1152,7 +1156,7 @@ export function SimulationWizard({
 
   return (
     <>
-      {mode === 'parameters' && <section className="panel parameter-findings-panel" id="parameter-findings" aria-label="Aktuelle Parameterbefunde">
+      {mode === 'parameters' && technology && <section className="panel parameter-findings-panel" id="parameter-findings" aria-label="Aktuelle Parameterbefunde">
         <h3>Aktuelle Parameterprüfung</h3>
         <p>Prüfung der gespeicherten Netz- und Geräteanschlüsse. Änderungen im Formular werden nach dem Speichern erneut geprüft.</p>
         {searchParams.get('proposal') && <p>{parameterReview?.source === 'PENDING_PROPOSAL'
@@ -1425,7 +1429,7 @@ export function SimulationWizard({
               Der Ausgabeordner wird aus Sicherheitsgründen vom Backend festgelegt.
             </small>
           </div>
-        ) : (
+        ) : domain && technology ? (
           <>
             <nav aria-label="Parameter-Abschnitte" className="parameter-section-nav">
               {parameterNavItems.map(([id, label]) => (
@@ -1536,7 +1540,7 @@ export function SimulationWizard({
             </div>
 
           </>
-        )}
+        ) : null}
 
         {mode === "network" && formError && <div className="notice error">{formError}</div>}
         {mode === "network" && savedMessage && <div className="notice success">{savedMessage}</div>}

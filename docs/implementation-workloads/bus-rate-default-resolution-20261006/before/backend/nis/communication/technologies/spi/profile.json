@@ -1,0 +1,4535 @@
+{
+  "id": "spi",
+  "label": "SPI / separately qualified QSPI",
+  "domain": "generic_networking",
+  "layer": "DATA_LINK",
+  "transport_unit": "STREAM_CHUNK",
+  "payload_element_types": [
+    "REGISTER",
+    "RAW_DATA"
+  ],
+  "hardware_interface": "actual_spi_voltage_pins_and_layout",
+  "hardware_capability_aliases": [
+    "spi_controller"
+  ],
+  "default_stack": [
+    "spi"
+  ],
+  "stack_variants": [
+    [
+      "spi"
+    ]
+  ],
+  "default_bitrate": null,
+  "rate_model": {
+    "type": "DEVICE_DEPENDENT_CLOCK",
+    "fields": [
+      "bitrate_bps"
+    ],
+    "minimum_bps": 1
+  },
+  "local_timing_schema": [
+    {
+      "key": "master_node_id",
+      "label": "master node id",
+      "type": "text",
+      "numeric": false,
+      "boolean": false,
+      "optional": false,
+      "minimum": null,
+      "maximum": null,
+      "unit": null,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "scope": "device",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "description": "Actual confirmed canonical clock owner, not assigned ECU."
+    },
+    {
+      "key": "chip_select",
+      "label": "chip select",
+      "type": "text",
+      "numeric": false,
+      "boolean": false,
+      "optional": false,
+      "minimum": null,
+      "maximum": null,
+      "unit": null,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "scope": "device",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "description": "Actual selected targetCS binding."
+    },
+    {
+      "key": "word_length_bits",
+      "label": "word length bits",
+      "type": "number",
+      "numeric": true,
+      "boolean": false,
+      "optional": false,
+      "minimum": 1,
+      "maximum": null,
+      "unit": "bit",
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "scope": "device",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "description": "Actual positive integer word length qualified bydevice."
+    },
+    {
+      "key": "duplex_mode",
+      "label": "duplex mode",
+      "type": "select",
+      "numeric": false,
+      "boolean": false,
+      "optional": false,
+      "minimum": null,
+      "maximum": null,
+      "unit": null,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "scope": "device",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "description": "Actual full/halfduplex singleSPI transfer, no dualquad inference.",
+      "options": [
+        "FULL_DUPLEX",
+        "HALF_DUPLEX"
+      ]
+    },
+    {
+      "key": "cpol",
+      "label": "cpol",
+      "type": "number",
+      "numeric": true,
+      "boolean": false,
+      "optional": false,
+      "minimum": 0,
+      "maximum": 1,
+      "unit": null,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "scope": "device",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "description": "Actual integer idlelevel0/1."
+    },
+    {
+      "key": "cpha",
+      "label": "cpha",
+      "type": "number",
+      "numeric": true,
+      "boolean": false,
+      "optional": false,
+      "minimum": 0,
+      "maximum": 1,
+      "unit": null,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "scope": "device",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "description": "Actual integer samplingphase0/1."
+    },
+    {
+      "key": "cs_setup_bound_us",
+      "label": "cs setup bound us",
+      "type": "number",
+      "numeric": true,
+      "boolean": false,
+      "optional": false,
+      "minimum": 0,
+      "maximum": null,
+      "unit": "us",
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "scope": "device",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "description": "Actual total transactionpreclock guard upperbound."
+    },
+    {
+      "key": "inter_transfer_gap_us",
+      "label": "inter transfer gap us",
+      "type": "number",
+      "numeric": true,
+      "boolean": false,
+      "optional": false,
+      "minimum": 0,
+      "maximum": null,
+      "unit": "us",
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "scope": "device",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "description": "Actual summed nonclockwait/hold/gap upperbound, notnominalminimum."
+    },
+    {
+      "key": "transfer_bits_bound",
+      "label": "transfer bits bound",
+      "type": "number",
+      "numeric": true,
+      "boolean": false,
+      "optional": false,
+      "minimum": 0,
+      "maximum": null,
+      "unit": "bit",
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "scope": "device",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "description": "Actual whole transaction clock pulse upperbound includingcommand/address/dummy/packing."
+    },
+    {
+      "key": "bitrate_bps",
+      "label": "bitrate bps",
+      "type": "number",
+      "numeric": true,
+      "boolean": false,
+      "optional": false,
+      "minimum": 1,
+      "maximum": null,
+      "unit": "bit/s",
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "scope": "device",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "description": "Actual qualifiedclock for selected controller/target/PCB."
+    },
+    {
+      "key": "source",
+      "label": "source",
+      "type": "text",
+      "numeric": false,
+      "boolean": false,
+      "optional": false,
+      "minimum": null,
+      "maximum": null,
+      "unit": null,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "scope": "device",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "description": "Actual device/transaction trace or datasheet source."
+    },
+    {
+      "key": "confirmed",
+      "label": "confirmed",
+      "type": "boolean",
+      "numeric": false,
+      "boolean": true,
+      "optional": false,
+      "minimum": null,
+      "maximum": null,
+      "unit": null,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "scope": "device",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "description": "Explicit confirmation of whole-device transaction proof, never a nominalclock default."
+    }
+  ],
+  "parameter_schema": {
+    "bitrate_bps": {
+      "label": "SPI Device Clock",
+      "category": "physical",
+      "scope": "network",
+      "type": "number",
+      "description": "Actual selected SPI device clock or data bytes, separate whole transaction command/address/dummy/CS/ready envelope; no universal50MHz/65535-byte default.",
+      "required": true,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "unit": "bit/s",
+      "min": 1,
+      "default_review": {
+        "technology": "spi",
+        "rate_profile": "spi",
+        "values": {},
+        "basis": "DEVICE_DEPENDENT",
+        "status": "REVIEW_REQUIRED",
+        "source": "TechnologyProfile:spi",
+        "source_revision": null
+      },
+      "allowed_bps": [],
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults."
+    },
+    "payload_bytes": {
+      "label": "Payload",
+      "category": "physical",
+      "scope": "message",
+      "type": "number",
+      "description": "Actual selected SPI device clock or data bytes, separate whole transaction command/address/dummy/CS/ready envelope; no universal50MHz/65535-byte default.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "integer": true
+    },
+    "cycle_ms": {
+      "label": "Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "Standardperiode fuer zyklische Nachrichten.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "minimum_cycle_time_ms": {
+      "label": "Minimum Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "deadline_ms": {
+      "label": "Deadline",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "timeout_ms": {
+      "label": "Timeout",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_latency_ms": {
+      "label": "Maximum Latency",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "jitter_ms": {
+      "label": "Jitter Budget",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "freshness_ms": {
+      "label": "Data Freshness",
+      "category": "timing",
+      "scope": "signal",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "source_processing_delay_ms": {
+      "label": "Source Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_processing_delay_ms": {
+      "label": "Target Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "propagation_delay_ms": {
+      "label": "Propagation",
+      "category": "timing",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.01,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_bus_load_percent": {
+      "label": "Ziel-Buslast",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "Zielwert fuer die aus Routing, Payload, Zyklus und Bitrate berechnete Buslast.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "peak_factor": {
+      "label": "Peak Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.15,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_factor": {
+      "label": "Burst Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.5,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_window_ms": {
+      "label": "Burst Window",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "warning_threshold": {
+      "label": "Load Warning",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "critical_threshold": {
+      "label": "Load Critical",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 75,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "overload_threshold": {
+      "label": "Load Overload",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 90,
+      "unit": "%",
+      "min": 1,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "queue_size": {
+      "label": "Queue Size",
+      "category": "qos",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 256,
+      "unit": "Frames",
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "queue_policy": {
+      "label": "Queue Policy",
+      "category": "qos",
+      "scope": "network",
+      "type": "select",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": "FIFO",
+      "options": [
+        "FIFO",
+        "PRIORITY",
+        "STRICT_PRIORITY",
+        "WEIGHTED_PRIORITY",
+        "WRR",
+        "ROUND_ROBIN",
+        "TIME_TRIGGERED",
+        "TAS",
+        "CBS",
+        "CUSTOM"
+      ],
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "qos_priority": {
+      "label": "Default Priority",
+      "category": "qos",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 3,
+      "min": 0,
+      "max": 7,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "traffic_class": {
+      "label": "Traffic Class",
+      "category": "qos",
+      "scope": "route",
+      "type": "select",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": "BEST_EFFORT",
+      "options": [
+        "BEST_EFFORT",
+        "CONTROL",
+        "REALTIME",
+        "SAFETY_CRITICAL"
+      ],
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "packet_loss_probability": {
+      "label": "Packet Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "frame_loss_probability": {
+      "label": "Frame Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "bit_error_rate": {
+      "label": "Bit Error Rate",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "corruption_probability": {
+      "label": "Corruption",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duplicate_probability": {
+      "label": "Duplication",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "reordering_probability": {
+      "label": "Reordering",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "required_reliability": {
+      "label": "Required Reliability",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.999,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_offset_ms": {
+      "label": "Clock Offset",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_drift_ppm": {
+      "label": "Clock Drift",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 20,
+      "unit": "ppm",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_precision_ms": {
+      "label": "Sync Precision",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_interval_ms": {
+      "label": "Sync Interval",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1000,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_sync_error_ms": {
+      "label": "Maximum Sync Error",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_delay_ms": {
+      "label": "Gateway Processing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.2,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_queue_delay_ms": {
+      "label": "Gateway Queueing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "protocol_conversion_delay_ms": {
+      "label": "Protocol Conversion",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duration_s": {
+      "label": "Simulation Duration",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 1,
+      "unit": "s",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "seed": {
+      "label": "Random Seed",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 42,
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "max_events": {
+      "label": "Maximum Events",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 100000,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "dropout_probability": {
+      "label": "Failure Injection Dropout",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "spi_controller_profile": {
+      "type": "select",
+      "description": "Actual controller implementation, no universal byte count or50MHz capability.",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "options": [
+        "REGISTERED_DEVICE",
+        "PIC32MX_DS61106E",
+        "IMX1_AN3020"
+      ],
+      "label": "spi controller profile",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "required_when": {
+        "spi_controller_profile": [
+          "REGISTERED_DEVICE",
+          "PIC32MX_DS61106E",
+          "IMX1_AN3020"
+        ]
+      }
+    },
+    "spi_bus_variant": {
+      "type": "select",
+      "description": "Actual single-data SPI versus separately qualified dual/quad memory phases.",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "options": [
+        "SPI_SINGLE",
+        "REGISTERED_DUAL_QUAD"
+      ],
+      "label": "spi bus variant",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "required_when": {
+        "spi_controller_profile": [
+          "REGISTERED_DEVICE",
+          "PIC32MX_DS61106E",
+          "IMX1_AN3020"
+        ]
+      }
+    },
+    "spi_role": {
+      "type": "select",
+      "description": "Actual clock-owning controller versus selected target.",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "options": [
+        "CONTROLLER",
+        "TARGET"
+      ],
+      "label": "spi role",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "required_when": {
+        "spi_controller_profile": [
+          "REGISTERED_DEVICE",
+          "PIC32MX_DS61106E",
+          "IMX1_AN3020"
+        ]
+      }
+    },
+    "spi_duplex": {
+      "type": "select",
+      "description": "Actual simultaneous TX/RX versus shared half-duplex data line.",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "options": [
+        "FULL_DUPLEX",
+        "HALF_DUPLEX"
+      ],
+      "label": "spi duplex",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "spi_bit_order": {
+      "type": "select",
+      "description": "Actual matched data bit order, PIC32MX shifts most significant bit first.",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "options": [
+        "MSB_FIRST",
+        "LSB_FIRST"
+      ],
+      "label": "spi bit order",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "spi_sample_edge": {
+      "type": "select",
+      "description": "Actual data sampling rising/falling edge matched across endpoints.",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "options": [
+        "RISING",
+        "FALLING"
+      ],
+      "label": "spi sample edge",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "spi_change_edge": {
+      "type": "select",
+      "description": "Actual data change edge distinct from sampling edge.",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "options": [
+        "RISING",
+        "FALLING"
+      ],
+      "label": "spi change edge",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "spi_cs_polarity": {
+      "type": "select",
+      "description": "Actual chip-select active polarity, no universal reset/active-low evidence.",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "options": [
+        "ACTIVE_LOW",
+        "ACTIVE_HIGH"
+      ],
+      "label": "spi cs polarity",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "spi_select_kind": {
+      "type": "select",
+      "description": "Actual selection per transaction, daisy-chain or externally bound framed sync.",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "options": [
+        "CHIP_SELECT",
+        "DAISY_CHAIN",
+        "FRAMED"
+      ],
+      "label": "spi select kind",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "spi_outcome": {
+      "type": "select",
+      "description": "Actual independent decoding and consuming application result.",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "options": [
+        "ACCEPTED",
+        "OVERFLOW",
+        "UNDERRUN",
+        "MODE_MISMATCH",
+        "MISSING",
+        "STALE",
+        "UNKNOWN"
+      ],
+      "label": "spi outcome",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "spi_mode": {
+      "type": "number",
+      "description": "Actual mode=2*CPOL+CPHA, not guessed defaultmode0.",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "min": 0,
+      "max": 3,
+      "integer": true,
+      "label": "spi mode",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "spi_cpol": {
+      "type": "number",
+      "description": "Actual idle clock level0/1, separate phase.",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "min": 0,
+      "max": 1,
+      "integer": true,
+      "label": "spi cpol",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "spi_cpha": {
+      "type": "number",
+      "description": "Actual first/second edge sample phase0/1.",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "min": 0,
+      "max": 1,
+      "integer": true,
+      "label": "spi cpha",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "spi_word_bits": {
+      "type": "number",
+      "description": "Actual controller and target word length, PIC32MX8/16/32 but other parts differ.",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "min": 1,
+      "unit": "bit",
+      "integer": true,
+      "label": "spi word bits",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "spi_words": {
+      "type": "number",
+      "description": "Actual transfer word count; dummy/address/command phases included separately.",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "min": 0,
+      "integer": true,
+      "label": "spi words",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "spi_transfer_clock_bits": {
+      "type": "number",
+      "description": "Actual whole transaction clock pulses across all phases, not TXbytes+RXbytes for simultaneous full duplex.",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "min": 0,
+      "unit": "bit",
+      "integer": true,
+      "label": "spi transfer clock bits",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "spi_command_bits": {
+      "type": "number",
+      "description": "Actual command phase bits, independent device framing.",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "min": 0,
+      "unit": "bit",
+      "integer": true,
+      "label": "spi command bits",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "spi_address_bits": {
+      "type": "number",
+      "description": "Actual address phase bits, not an I2C slave address.",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "min": 0,
+      "unit": "bit",
+      "integer": true,
+      "label": "spi address bits",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "spi_dummy_bits": {
+      "type": "number",
+      "description": "Actual dummy/wait phase clock bits.",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "min": 0,
+      "unit": "bit",
+      "integer": true,
+      "label": "spi dummy bits",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "spi_data_bits": {
+      "type": "number",
+      "description": "Actual data-phase clock bits including selected word packing.",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "min": 0,
+      "unit": "bit",
+      "integer": true,
+      "label": "spi data bits",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "spi_tx_bits": {
+      "type": "number",
+      "description": "Actual simultaneously clocked transmit data bits, not sum withreceive for full duplex.",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "min": 0,
+      "unit": "bit",
+      "integer": true,
+      "label": "spi tx bits",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "spi_rx_bits": {
+      "type": "number",
+      "description": "Actual receive data bits clocked by same SCK in full duplex.",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "min": 0,
+      "unit": "bit",
+      "integer": true,
+      "label": "spi rx bits",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "spi_controller_max_bps": {
+      "type": "number",
+      "description": "Actual qualified SCK controller maximum under clock/pad/voltage/temp conditions.",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "min": 1,
+      "unit": "bit/s",
+      "integer": false,
+      "label": "spi controller max bps",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "spi_target_max_bps": {
+      "type": "number",
+      "description": "Actual selected target SCK maximum under actual mode/voltage/temp/load.",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "min": 1,
+      "unit": "bit/s",
+      "integer": false,
+      "label": "spi target max bps",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "spi_physical_max_bps": {
+      "type": "number",
+      "description": "Actual PCB/pad/trace/loading/edge-qualified maximum.",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "min": 1,
+      "unit": "bit/s",
+      "integer": false,
+      "label": "spi physical max bps",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "spi_period_ns": {
+      "type": "number",
+      "description": "Actual selected SCK period1e9/bitrate_bps.",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "min": 0,
+      "unit": "ns",
+      "integer": false,
+      "label": "spi period ns",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "spi_high_ns": {
+      "type": "number",
+      "description": "Actual stable clock HIGH duration, device-qualified minimum.",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "min": 0,
+      "unit": "ns",
+      "integer": false,
+      "label": "spi high ns",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "spi_low_ns": {
+      "type": "number",
+      "description": "Actual stable clock LOW duration, device-qualified minimum.",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "min": 0,
+      "unit": "ns",
+      "integer": false,
+      "label": "spi low ns",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "spi_rise_ns": {
+      "type": "number",
+      "description": "Actual SCK transition rise time included in full period.",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "min": 0,
+      "unit": "ns",
+      "integer": false,
+      "label": "spi rise ns",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "spi_fall_ns": {
+      "type": "number",
+      "description": "Actual SCK transition fall time included in full period.",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "min": 0,
+      "unit": "ns",
+      "integer": false,
+      "label": "spi fall ns",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "spi_minimum_high_ns": {
+      "type": "number",
+      "description": "Actual target/controller qualified minimum HIGH.",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "min": 0,
+      "unit": "ns",
+      "integer": false,
+      "label": "spi minimum high ns",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "spi_minimum_low_ns": {
+      "type": "number",
+      "description": "Actual target/controller qualified minimum LOW.",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "min": 0,
+      "unit": "ns",
+      "integer": false,
+      "label": "spi minimum low ns",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "spi_data_setup_ns": {
+      "type": "number",
+      "description": "Actual received data stable before sampling edge.",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "min": 0,
+      "unit": "ns",
+      "integer": false,
+      "label": "spi data setup ns",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "spi_minimum_setup_ns": {
+      "type": "number",
+      "description": "Actual receiver setup requirement including skew/load/temp.",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "min": 0,
+      "unit": "ns",
+      "integer": false,
+      "label": "spi minimum setup ns",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "spi_data_hold_ns": {
+      "type": "number",
+      "description": "Actual data stable after sampling edge.",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "min": 0,
+      "unit": "ns",
+      "integer": false,
+      "label": "spi data hold ns",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "spi_minimum_hold_ns": {
+      "type": "number",
+      "description": "Actual receiver hold requirement.",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "min": 0,
+      "unit": "ns",
+      "integer": false,
+      "label": "spi minimum hold ns",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "spi_cs_setup_ns": {
+      "type": "number",
+      "description": "Actual chip-select setup before first relevant clock.",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "min": 0,
+      "unit": "ns",
+      "integer": false,
+      "label": "spi cs setup ns",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "spi_minimum_cs_setup_ns": {
+      "type": "number",
+      "description": "Actual target chip-select setup requirement.",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "min": 0,
+      "unit": "ns",
+      "integer": false,
+      "label": "spi minimum cs setup ns",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "spi_cs_hold_ns": {
+      "type": "number",
+      "description": "Actual chip-select hold after last relevant clock.",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "min": 0,
+      "unit": "ns",
+      "integer": false,
+      "label": "spi cs hold ns",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "spi_minimum_cs_hold_ns": {
+      "type": "number",
+      "description": "Actual target chip-select hold requirement.",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "min": 0,
+      "unit": "ns",
+      "integer": false,
+      "label": "spi minimum cs hold ns",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "spi_cs_inactive_ns": {
+      "type": "number",
+      "description": "Actual deselected interval between transactions.",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "min": 0,
+      "unit": "ns",
+      "integer": false,
+      "label": "spi cs inactive ns",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "spi_minimum_cs_inactive_ns": {
+      "type": "number",
+      "description": "Actual target minimum deselected/recovery interval.",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "min": 0,
+      "unit": "ns",
+      "integer": false,
+      "label": "spi minimum cs inactive ns",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "spi_output_valid_ns": {
+      "type": "number",
+      "description": "Actual remote output valid worst-case after launch edge.",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "min": 0,
+      "unit": "ns",
+      "integer": false,
+      "label": "spi output valid ns",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "spi_path_delay_ns": {
+      "type": "number",
+      "description": "Actual combined clock/data propagation delay for selected sampling direction.",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "min": 0,
+      "unit": "ns",
+      "integer": false,
+      "label": "spi path delay ns",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "spi_sample_window_ns": {
+      "type": "number",
+      "description": "Actual launch-to-sample window for selected phase/controller, not alwayshalfperiod.",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "min": 0,
+      "unit": "ns",
+      "integer": false,
+      "label": "spi sample window ns",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "spi_jitter_ns": {
+      "type": "number",
+      "description": "Actual worst sampling/launch edge uncertainty.",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "min": 0,
+      "unit": "ns",
+      "integer": false,
+      "label": "spi jitter ns",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "spi_serialized_us": {
+      "type": "number",
+      "description": "Actual clock serialization totalbits/actualclock only.",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "min": 0,
+      "unit": "us",
+      "integer": false,
+      "label": "spi serialized us",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "spi_setup_bound_us": {
+      "type": "number",
+      "description": "Actual whole transaction preclock setup upper bound.",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "min": 0,
+      "unit": "us",
+      "integer": false,
+      "label": "spi setup bound us",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "spi_hold_bound_us": {
+      "type": "number",
+      "description": "Actual postclock hold upper bound.",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "min": 0,
+      "unit": "us",
+      "integer": false,
+      "label": "spi hold bound us",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "spi_gap_bound_us": {
+      "type": "number",
+      "description": "Actual total intra-transaction/gap/ready wait bound, not just nominalonegap.",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "min": 0,
+      "unit": "us",
+      "integer": false,
+      "label": "spi gap bound us",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "spi_transaction_bound_us": {
+      "type": "number",
+      "description": "Actual clock plus setup/hold/allgaps upper envelope, separate application scheduling.",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "min": 0,
+      "unit": "us",
+      "integer": false,
+      "label": "spi transaction bound us",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "spi_ready_wait_us": {
+      "type": "number",
+      "description": "Actual asynchronous device-ready wait bound; source600ns example is not bound.",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "min": 0,
+      "unit": "us",
+      "integer": false,
+      "label": "spi ready wait us",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "spi_peripheral_clock_bps": {
+      "type": "number",
+      "description": "Actual selected PIC32PBCLK, not CPU clock by default.",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/61132B.pdf",
+      "source_revision": "Microchip original PIC32MX family reference compilation; selected DS61106E2008 section23 printed23-2,23-7/8,23-20/21,23-33/35/36 read. Device-data-sheet electrical limits still required.",
+      "min": 1,
+      "unit": "bit/s",
+      "integer": false,
+      "label": "spi peripheral clock bps",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "spi_brg": {
+      "type": "number",
+      "description": "Actual9bit PIC32 baud divider register0..511, not raw divider.",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/61132B.pdf",
+      "source_revision": "Microchip original PIC32MX family reference compilation; selected DS61106E2008 section23 printed23-2,23-7/8,23-20/21,23-33/35/36 read. Device-data-sheet electrical limits still required.",
+      "min": 0,
+      "max": 511,
+      "integer": true,
+      "label": "spi brg",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "spi_pic32_ckp": {
+      "type": "number",
+      "description": "Actual PIC32CKP clock idle setting matches CPOL.",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/61132B.pdf",
+      "source_revision": "Microchip original PIC32MX family reference compilation; selected DS61106E2008 section23 printed23-2,23-7/8,23-20/21,23-33/35/36 read. Device-data-sheet electrical limits still required.",
+      "min": 0,
+      "max": 1,
+      "integer": true,
+      "label": "spi pic32 ckp",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "spi_pic32_cke": {
+      "type": "number",
+      "description": "Actual PIC32 output-edge select; normalmode CKE=1-CPHA, framedmust0.",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/61132B.pdf",
+      "source_revision": "Microchip original PIC32MX family reference compilation; selected DS61106E2008 section23 printed23-2,23-7/8,23-20/21,23-33/35/36 read. Device-data-sheet electrical limits still required.",
+      "min": 0,
+      "max": 1,
+      "integer": true,
+      "label": "spi pic32 cke",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "spi_pic32_smp": {
+      "type": "number",
+      "description": "Actual PIC32 input sample middle/end setting, targetalways0.",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/61132B.pdf",
+      "source_revision": "Microchip original PIC32MX family reference compilation; selected DS61106E2008 section23 printed23-2,23-7/8,23-20/21,23-33/35/36 read. Device-data-sheet electrical limits still required.",
+      "min": 0,
+      "max": 1,
+      "integer": true,
+      "label": "spi pic32 smp",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "spi_imx_pclk_div": {
+      "type": "number",
+      "description": "Actual i.MX1 programmable clock divider1..16.",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "min": 1,
+      "max": 16,
+      "integer": true,
+      "label": "spi imx pclk div",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "spi_imx_spi_div": {
+      "type": "number",
+      "description": "Actual i.MX1 programmable SCK divide4,8,..512.",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "min": 4,
+      "max": 512,
+      "integer": true,
+      "label": "spi imx spi div",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "spi_imx_pll_bps": {
+      "type": "number",
+      "description": "Actual source i.MX1PLL, source96MHzexample notglobaldefault.",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "min": 1,
+      "max": 96000000,
+      "unit": "bit/s",
+      "integer": false,
+      "label": "spi imx pll bps",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "spi_selected_targets": {
+      "type": "number",
+      "description": "Actual enabled outputs in ordinary single-CS transaction, no CANarbitration.",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "min": 0,
+      "integer": true,
+      "label": "spi selected targets",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "spi_source_bound_ms": {
+      "type": "number",
+      "description": "Actual source/task/acquisition/serializer bound.",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "label": "spi source bound ms",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "spi_busy_bound_ms": {
+      "type": "number",
+      "description": "Actual controller queue/transaction/retry/scheduling bound.",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "label": "spi busy bound ms",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "spi_consumer_bound_ms": {
+      "type": "number",
+      "description": "Actual decode/application consumption bound.",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "label": "spi consumer bound ms",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "spi_e2e_bound_ms": {
+      "type": "number",
+      "description": "Actual complete source/busy/consumer sum.",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "label": "spi e2e bound ms",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "spi_e2e_limit_ms": {
+      "type": "number",
+      "description": "Actual independent functional deadline.",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "label": "spi e2e limit ms",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "spi_age_ms": {
+      "type": "number",
+      "description": "Actual correlated consuming sample age.",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "label": "spi age ms",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "spi_freshness_ms": {
+      "type": "number",
+      "description": "Actual independent allowed age.",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "label": "spi freshness ms",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "spi_ready_enabled": {
+      "type": "boolean",
+      "description": "Actual device READY/handshake enabled and allocated.",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "label": "spi ready enabled",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "spi_framed": {
+      "type": "boolean",
+      "description": "Actual controller framed sync mode versus ordinarychipselect.",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "label": "spi framed",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "spi_changing_width": {
+      "type": "boolean",
+      "description": "Actual word width change requested.",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "label": "spi changing width",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "spi_idle": {
+      "type": "boolean",
+      "description": "Actual module idle when changing word width.",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "label": "spi idle",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "spi_peer_mode_verified": {
+      "type": "boolean",
+      "description": "Actual matching mode/word/order/duplex across controller and target.",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "label": "spi peer mode verified",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "spi_physical_verified": {
+      "type": "boolean",
+      "description": "Actual electrical/edge/pin/selected-target physical qualification.",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "label": "spi physical verified",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "spi_tri_state_verified": {
+      "type": "boolean",
+      "description": "Actual unselected target output isolation prevents shared MISO contention.",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "label": "spi tri state verified",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "spi_codec_verified": {
+      "type": "boolean",
+      "description": "Actual command/address/dummy/register/CRC/application data encoding verified.",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "label": "spi codec verified",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "spi_data_accepted": {
+      "type": "boolean",
+      "description": "Actual independent application acceptance.",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "label": "spi data accepted",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "spi_controller_id": {
+      "type": "text",
+      "description": "Actual canonical controller identity.",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "label": "spi controller id",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "spi_target_id": {
+      "type": "text",
+      "description": "Actual canonical selected target identity.",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "label": "spi target id",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "spi_chip_select": {
+      "type": "text",
+      "description": "Actual canonical target selection or explicit framed binding.",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "label": "spi chip select",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "spi_device_source": {
+      "type": "text",
+      "description": "Actual controller/target datasheet revisions and firmware configuration.",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "label": "spi device source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "required_when": {
+        "spi_controller_profile": [
+          "REGISTERED_DEVICE",
+          "PIC32MX_DS61106E",
+          "IMX1_AN3020"
+        ]
+      }
+    },
+    "spi_binding_source": {
+      "type": "text",
+      "description": "Actual pins/word/duplex/select/canonical endpoint binding.",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "label": "spi binding source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "required_when": {
+        "spi_controller_profile": [
+          "REGISTERED_DEVICE",
+          "PIC32MX_DS61106E",
+          "IMX1_AN3020"
+        ]
+      }
+    },
+    "spi_physical_source": {
+      "type": "text",
+      "description": "Actual voltage/current/drive/load/layout/edge timing evidence.",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "label": "spi physical source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "required_when": {
+        "spi_controller_profile": [
+          "REGISTERED_DEVICE",
+          "PIC32MX_DS61106E",
+          "IMX1_AN3020"
+        ]
+      }
+    },
+    "spi_codec_source": {
+      "type": "text",
+      "description": "Actual per-device command/address/dummy/CRC/data serializer.",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "label": "spi codec source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "required_when": {
+        "spi_controller_profile": [
+          "REGISTERED_DEVICE",
+          "PIC32MX_DS61106E",
+          "IMX1_AN3020"
+        ]
+      }
+    },
+    "spi_schedule_source": {
+      "type": "text",
+      "description": "Actual transfer/queue/retry/ready/CS/interrupt/DMA whole busy bound.",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "label": "spi schedule source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "required_when": {
+        "spi_controller_profile": [
+          "REGISTERED_DEVICE",
+          "PIC32MX_DS61106E",
+          "IMX1_AN3020"
+        ]
+      }
+    },
+    "spi_acceptance_source": {
+      "type": "text",
+      "description": "Actual functional timing/data-age requirements.",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "label": "spi acceptance source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "required_when": {
+        "spi_controller_profile": [
+          "REGISTERED_DEVICE",
+          "PIC32MX_DS61106E",
+          "IMX1_AN3020"
+        ]
+      }
+    },
+    "spi_observation_source": {
+      "type": "text",
+      "description": "Actual correlated clock/select/data/task/consumer observation.",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "label": "spi observation source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    }
+  },
+  "mechanisms": {
+    "selection": [
+      "CHIP_SELECT_OR_REGISTERED_FRAME"
+    ],
+    "clocking": [
+      "MATCHED_CPOL_CPHA",
+      "DEVICE_QUALIFIED_CLOCK"
+    ],
+    "realization": [
+      "FULL_DUPLEX_SHARED_CLOCK",
+      "NO_UNIVERSAL_SPI_CLOCK_OR_WORD_SIZE"
+    ],
+    "qualification": [
+      "DEVICE_CONFIRMED_WHOLE_BUSY_BOUND",
+      "FUNCTIONAL_ACCEPTANCE_SEPARATE"
+    ]
+  },
+  "parameter_constraints": [
+    {
+      "parameter": "spi_controller_profile",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_controller_profile"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_controller_profile",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_bus_variant"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_controller_profile",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_role"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_controller_profile",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_duplex"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_controller_profile",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_bit_order"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_controller_profile",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_sample_edge"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_controller_profile",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_change_edge"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_controller_profile",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_cs_polarity"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_controller_profile",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_select_kind"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_controller_profile",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_outcome"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_controller_profile",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_mode"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_controller_profile",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_cpol"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_controller_profile",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_cpha"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_controller_profile",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_word_bits"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_controller_profile",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_words"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_controller_profile",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_transfer_clock_bits"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_controller_profile",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_command_bits"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_controller_profile",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_address_bits"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_controller_profile",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_dummy_bits"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_controller_profile",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_data_bits"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_controller_profile",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_tx_bits"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_controller_profile",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_rx_bits"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_controller_profile",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_controller_max_bps"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_controller_profile",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_target_max_bps"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_controller_profile",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_physical_max_bps"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_controller_profile",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_period_ns"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_controller_profile",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_high_ns"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_controller_profile",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_low_ns"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_controller_profile",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_rise_ns"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_controller_profile",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_fall_ns"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_controller_profile",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_minimum_high_ns"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_controller_profile",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_minimum_low_ns"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_controller_profile",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_data_setup_ns"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_controller_profile",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_minimum_setup_ns"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_controller_profile",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_data_hold_ns"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_controller_profile",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_minimum_hold_ns"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_controller_profile",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_cs_setup_ns"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_controller_profile",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_minimum_cs_setup_ns"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_controller_profile",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_cs_hold_ns"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_controller_profile",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_minimum_cs_hold_ns"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_controller_profile",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_cs_inactive_ns"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_controller_profile",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_minimum_cs_inactive_ns"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_controller_profile",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_output_valid_ns"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_controller_profile",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_path_delay_ns"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_controller_profile",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_sample_window_ns"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_controller_profile",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_jitter_ns"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_controller_profile",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_serialized_us"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_controller_profile",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_setup_bound_us"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_controller_profile",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_hold_bound_us"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_controller_profile",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_gap_bound_us"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_controller_profile",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_transaction_bound_us"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_controller_profile",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_ready_wait_us"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_controller_profile",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_peripheral_clock_bps"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_controller_profile",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_brg"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_controller_profile",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_pic32_ckp"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_controller_profile",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_pic32_cke"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_controller_profile",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_pic32_smp"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_controller_profile",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_imx_pclk_div"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_controller_profile",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_imx_spi_div"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_controller_profile",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_imx_pll_bps"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_controller_profile",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_selected_targets"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_controller_profile",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_source_bound_ms"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_controller_profile",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_busy_bound_ms"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_controller_profile",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_consumer_bound_ms"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_controller_profile",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_e2e_bound_ms"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_controller_profile",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_e2e_limit_ms"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_controller_profile",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_age_ms"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_controller_profile",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_freshness_ms"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_controller_profile",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_ready_enabled"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_controller_profile",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_framed"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_controller_profile",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_changing_width"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_controller_profile",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_idle"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_controller_profile",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_peer_mode_verified"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_controller_profile",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_physical_verified"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_controller_profile",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_tri_state_verified"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_controller_profile",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_codec_verified"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_controller_profile",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_data_accepted"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_controller_profile",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_controller_id"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_controller_profile",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_target_id"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_controller_profile",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_chip_select"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_controller_profile",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_device_source"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_controller_profile",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_binding_source"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_controller_profile",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_physical_source"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_controller_profile",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_codec_source"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_controller_profile",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_schedule_source"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_controller_profile",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_acceptance_source"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_controller_profile",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_observation_source"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_controller_profile",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_controller_profile"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_bus_variant",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_controller_profile"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_role",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_controller_profile"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_device_source",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_controller_profile"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_binding_source",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_controller_profile"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_physical_source",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_controller_profile"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_codec_source",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_controller_profile"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_schedule_source",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_controller_profile"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_acceptance_source",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_controller_profile"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_mode",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "equal_expression": {
+        "sum": [
+          {
+            "product": [
+              2,
+              "spi_cpol"
+            ]
+          },
+          "spi_cpha"
+        ]
+      }
+    },
+    {
+      "parameter": "spi_cpol",
+      "when": {
+        "spi_mode": 0
+      },
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "spi_cpha",
+      "when": {
+        "spi_mode": 0
+      },
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "spi_sample_edge",
+      "when": {
+        "spi_mode": 0
+      },
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "allowed": [
+        "RISING"
+      ]
+    },
+    {
+      "parameter": "spi_change_edge",
+      "when": {
+        "spi_mode": 0
+      },
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "allowed": [
+        "FALLING"
+      ]
+    },
+    {
+      "parameter": "spi_cpol",
+      "when": {
+        "spi_mode": 1
+      },
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "spi_cpha",
+      "when": {
+        "spi_mode": 1
+      },
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "allowed": [
+        1
+      ]
+    },
+    {
+      "parameter": "spi_sample_edge",
+      "when": {
+        "spi_mode": 1
+      },
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "allowed": [
+        "FALLING"
+      ]
+    },
+    {
+      "parameter": "spi_change_edge",
+      "when": {
+        "spi_mode": 1
+      },
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "allowed": [
+        "RISING"
+      ]
+    },
+    {
+      "parameter": "spi_cpol",
+      "when": {
+        "spi_mode": 2
+      },
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "allowed": [
+        1
+      ]
+    },
+    {
+      "parameter": "spi_cpha",
+      "when": {
+        "spi_mode": 2
+      },
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "spi_sample_edge",
+      "when": {
+        "spi_mode": 2
+      },
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "allowed": [
+        "FALLING"
+      ]
+    },
+    {
+      "parameter": "spi_change_edge",
+      "when": {
+        "spi_mode": 2
+      },
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "allowed": [
+        "RISING"
+      ]
+    },
+    {
+      "parameter": "spi_cpol",
+      "when": {
+        "spi_mode": 3
+      },
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "allowed": [
+        1
+      ]
+    },
+    {
+      "parameter": "spi_cpha",
+      "when": {
+        "spi_mode": 3
+      },
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "allowed": [
+        1
+      ]
+    },
+    {
+      "parameter": "spi_sample_edge",
+      "when": {
+        "spi_mode": 3
+      },
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "allowed": [
+        "RISING"
+      ]
+    },
+    {
+      "parameter": "spi_change_edge",
+      "when": {
+        "spi_mode": 3
+      },
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "allowed": [
+        "FALLING"
+      ]
+    },
+    {
+      "parameter": "bitrate_bps",
+      "maximum_parameter": "spi_controller_max_bps",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf"
+    },
+    {
+      "parameter": "bitrate_bps",
+      "maximum_parameter": "spi_target_max_bps",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf"
+    },
+    {
+      "parameter": "bitrate_bps",
+      "maximum_parameter": "spi_physical_max_bps",
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf"
+    },
+    {
+      "parameter": "spi_period_ns",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "equal_ratio": {
+        "numerator_offset": 1,
+        "denominator_parameter": "bitrate_bps",
+        "factor": 1000000000.0
+      }
+    },
+    {
+      "parameter": "spi_period_ns",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "minimum_expression": {
+        "sum": [
+          "spi_high_ns",
+          "spi_low_ns",
+          "spi_rise_ns",
+          "spi_fall_ns"
+        ]
+      }
+    },
+    {
+      "parameter": "spi_high_ns",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "minimum_expression": "spi_minimum_high_ns"
+    },
+    {
+      "parameter": "spi_low_ns",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "minimum_expression": "spi_minimum_low_ns"
+    },
+    {
+      "parameter": "spi_data_setup_ns",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "minimum_expression": "spi_minimum_setup_ns"
+    },
+    {
+      "parameter": "spi_data_hold_ns",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "minimum_expression": "spi_minimum_hold_ns"
+    },
+    {
+      "parameter": "spi_cs_setup_ns",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "minimum_expression": "spi_minimum_cs_setup_ns"
+    },
+    {
+      "parameter": "spi_cs_hold_ns",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "minimum_expression": "spi_minimum_cs_hold_ns"
+    },
+    {
+      "parameter": "spi_cs_inactive_ns",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "minimum_expression": "spi_minimum_cs_inactive_ns"
+    },
+    {
+      "parameter": "spi_sample_window_ns",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "minimum_expression": {
+        "sum": [
+          "spi_output_valid_ns",
+          "spi_path_delay_ns",
+          "spi_minimum_setup_ns",
+          "spi_jitter_ns"
+        ]
+      }
+    },
+    {
+      "parameter": "spi_data_bits",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "equal_expression": {
+        "product": [
+          "spi_word_bits",
+          "spi_words"
+        ]
+      }
+    },
+    {
+      "parameter": "spi_transfer_clock_bits",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "equal_expression": {
+        "sum": [
+          "spi_command_bits",
+          "spi_address_bits",
+          "spi_dummy_bits",
+          "spi_data_bits"
+        ]
+      }
+    },
+    {
+      "parameter": "spi_tx_bits",
+      "when": {
+        "spi_duplex": "FULL_DUPLEX"
+      },
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "maximum_parameter": "spi_data_bits"
+    },
+    {
+      "parameter": "spi_rx_bits",
+      "when": {
+        "spi_duplex": "FULL_DUPLEX"
+      },
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "maximum_parameter": "spi_data_bits"
+    },
+    {
+      "parameter": "spi_data_bits",
+      "when": {
+        "spi_duplex": "HALF_DUPLEX"
+      },
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "minimum_expression": {
+        "sum": [
+          "spi_tx_bits",
+          "spi_rx_bits"
+        ]
+      }
+    },
+    {
+      "parameter": "spi_serialized_us",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "equal_ratio": {
+        "numerator_parameter": "spi_transfer_clock_bits",
+        "denominator_parameter": "bitrate_bps",
+        "factor": 1000000.0
+      }
+    },
+    {
+      "parameter": "spi_transaction_bound_us",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "minimum_expression": {
+        "sum": [
+          "spi_serialized_us",
+          "spi_setup_bound_us",
+          "spi_hold_bound_us",
+          "spi_gap_bound_us"
+        ]
+      }
+    },
+    {
+      "parameter": "spi_serialized_us",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_transaction_bound_us"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_setup_bound_us",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_transaction_bound_us"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_hold_bound_us",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_transaction_bound_us"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_gap_bound_us",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_transaction_bound_us"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_ready_wait_us",
+      "when": {
+        "spi_ready_enabled": true
+      },
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "required": true
+    },
+    {
+      "parameter": "spi_gap_bound_us",
+      "when": {
+        "spi_ready_enabled": true
+      },
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "minimum_expression": "spi_ready_wait_us"
+    },
+    {
+      "parameter": "spi_word_bits",
+      "when": {
+        "spi_controller_profile": "PIC32MX_DS61106E"
+      },
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "allowed": [
+        8,
+        16,
+        32
+      ]
+    },
+    {
+      "parameter": "spi_bit_order",
+      "when": {
+        "spi_controller_profile": "PIC32MX_DS61106E"
+      },
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "allowed": [
+        "MSB_FIRST"
+      ]
+    },
+    {
+      "parameter": "spi_pic32_ckp",
+      "when": {
+        "spi_controller_profile": "PIC32MX_DS61106E"
+      },
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "equal_parameter": "spi_cpol"
+    },
+    {
+      "parameter": "spi_pic32_cke",
+      "when": {
+        "spi_controller_profile": "PIC32MX_DS61106E",
+        "spi_framed": false
+      },
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "equal_expression": {
+        "subtract": [
+          1,
+          "spi_cpha"
+        ]
+      }
+    },
+    {
+      "parameter": "spi_pic32_cke",
+      "when": {
+        "spi_controller_profile": "PIC32MX_DS61106E",
+        "spi_framed": true
+      },
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "spi_pic32_smp",
+      "when": {
+        "spi_controller_profile": "PIC32MX_DS61106E",
+        "spi_role": "TARGET"
+      },
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "spi_idle",
+      "when": {
+        "spi_controller_profile": "PIC32MX_DS61106E",
+        "spi_changing_width": true
+      },
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "required": true,
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "bitrate_bps",
+      "when": {
+        "spi_controller_profile": "PIC32MX_DS61106E",
+        "spi_role": "CONTROLLER"
+      },
+      "equal_ratio": {
+        "numerator_parameter": "spi_peripheral_clock_bps",
+        "denominator_sum": [
+          "spi_brg"
+        ],
+        "denominator_offset": 1,
+        "factor": 0.5
+      },
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/61132B.pdf"
+    },
+    {
+      "parameter": "spi_imx_spi_div",
+      "when": {
+        "spi_controller_profile": "IMX1_AN3020"
+      },
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "allowed": [
+        4,
+        8,
+        16,
+        32,
+        64,
+        128,
+        256,
+        512
+      ]
+    },
+    {
+      "parameter": "bitrate_bps",
+      "when": {
+        "spi_controller_profile": "IMX1_AN3020",
+        "spi_role": "CONTROLLER"
+      },
+      "equal_ratio": {
+        "numerator_parameter": "spi_imx_pll_bps",
+        "denominator_offset": 1,
+        "denominator_product": [
+          "spi_imx_pclk_div",
+          "spi_imx_spi_div"
+        ]
+      },
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf"
+    },
+    {
+      "parameter": "spi_selected_targets",
+      "when": {
+        "spi_select_kind": "CHIP_SELECT"
+      },
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "allowed": [
+        1
+      ]
+    },
+    {
+      "parameter": "spi_e2e_bound_ms",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "equal_expression": {
+        "sum": [
+          "spi_source_bound_ms",
+          "spi_busy_bound_ms",
+          "spi_consumer_bound_ms"
+        ]
+      }
+    },
+    {
+      "parameter": "spi_source_bound_ms",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_e2e_bound_ms"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_busy_bound_ms",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_e2e_bound_ms"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_consumer_bound_ms",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "when_present": [
+        "spi_e2e_bound_ms"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "spi_e2e_bound_ms",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "maximum_parameter": "spi_e2e_limit_ms"
+    },
+    {
+      "parameter": "spi_age_ms",
+      "when": {},
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "maximum_parameter": "spi_freshness_ms"
+    },
+    {
+      "parameter": "spi_peer_mode_verified",
+      "when": {
+        "spi_data_accepted": true
+      },
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "required": true,
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "spi_physical_verified",
+      "when": {
+        "spi_data_accepted": true
+      },
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "required": true,
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "spi_tri_state_verified",
+      "when": {
+        "spi_data_accepted": true
+      },
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "required": true,
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "spi_codec_verified",
+      "when": {
+        "spi_data_accepted": true
+      },
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "required": true,
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "spi_outcome",
+      "when": {
+        "spi_data_accepted": true
+      },
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "required": true,
+      "allowed": [
+        "ACCEPTED"
+      ]
+    },
+    {
+      "parameter": "spi_controller_id",
+      "when": {
+        "spi_data_accepted": true
+      },
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "required": true
+    },
+    {
+      "parameter": "spi_target_id",
+      "when": {
+        "spi_data_accepted": true
+      },
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "required": true
+    },
+    {
+      "parameter": "spi_chip_select",
+      "when": {
+        "spi_data_accepted": true
+      },
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "required": true
+    },
+    {
+      "parameter": "spi_mode",
+      "when": {
+        "spi_data_accepted": true
+      },
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "required": true
+    },
+    {
+      "parameter": "spi_cpol",
+      "when": {
+        "spi_data_accepted": true
+      },
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "required": true
+    },
+    {
+      "parameter": "spi_cpha",
+      "when": {
+        "spi_data_accepted": true
+      },
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "required": true
+    },
+    {
+      "parameter": "spi_word_bits",
+      "when": {
+        "spi_data_accepted": true
+      },
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "required": true
+    },
+    {
+      "parameter": "spi_bit_order",
+      "when": {
+        "spi_data_accepted": true
+      },
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "required": true
+    },
+    {
+      "parameter": "spi_duplex",
+      "when": {
+        "spi_data_accepted": true
+      },
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "required": true
+    },
+    {
+      "parameter": "spi_cs_polarity",
+      "when": {
+        "spi_data_accepted": true
+      },
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "required": true
+    },
+    {
+      "parameter": "spi_select_kind",
+      "when": {
+        "spi_data_accepted": true
+      },
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "required": true
+    },
+    {
+      "parameter": "spi_controller_max_bps",
+      "when": {
+        "spi_data_accepted": true
+      },
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "required": true
+    },
+    {
+      "parameter": "spi_target_max_bps",
+      "when": {
+        "spi_data_accepted": true
+      },
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "required": true
+    },
+    {
+      "parameter": "spi_physical_max_bps",
+      "when": {
+        "spi_data_accepted": true
+      },
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "required": true
+    },
+    {
+      "parameter": "spi_observation_source",
+      "when": {
+        "spi_data_accepted": true
+      },
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "required": true
+    },
+    {
+      "parameter": "spi_transaction_bound_us",
+      "when": {
+        "spi_data_accepted": true
+      },
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "required": true
+    },
+    {
+      "parameter": "spi_e2e_bound_ms",
+      "when": {
+        "spi_data_accepted": true
+      },
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "required": true
+    },
+    {
+      "parameter": "spi_e2e_limit_ms",
+      "when": {
+        "spi_data_accepted": true
+      },
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "required": true
+    },
+    {
+      "parameter": "spi_age_ms",
+      "when": {
+        "spi_data_accepted": true
+      },
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "required": true
+    },
+    {
+      "parameter": "spi_freshness_ms",
+      "when": {
+        "spi_data_accepted": true
+      },
+      "source": "https://www.nxp.com/docs/en/application-note/AN3020.pdf",
+      "source_revision": "Freescale AN3020 Rev0 September2005, printed1-3,7-8,12-14 device packet/FIFO/clock/drive/ready examples, not universal SPI defaults.",
+      "required": true
+    }
+  ],
+  "physical_layer_profile_id": "SPI_SYNCHRONOUS",
+  "medium_access_model": "MASTER_SLAVE",
+  "native_parameter_prefixes": [
+    "spi_"
+  ],
+  "parameter_aliases": {},
+  "parameter_alias_limits": {},
+  "parameter_evidence_scope": null,
+  "rate_source_profile_id": null,
+  "arbitration_model_id": null,
+  "max_payload_bytes": null,
+  "capabilities": {
+    "supports_signals": true,
+    "supports_data_objects": false,
+    "supports_streams": true,
+    "supports_multicast": false,
+    "supports_publish_subscribe": false,
+    "supports_request_response": false,
+    "supports_cyclic": true,
+    "supports_event": true,
+    "supports_redundancy": false,
+    "supports_time_sync": false,
+    "supports_safety_profile": false,
+    "supports_segmentation": false,
+    "supports_fragmentation": false,
+    "supports_qos": false
+  },
+  "deterministic": false,
+  "overhead_bytes": 8,
+  "implementation_status": "PARTIAL",
+  "connection_type": "COMMUNICATION_TECHNOLOGY",
+  "parameter_proposals": {
+    "kind": "DEVICE_DEPENDENT",
+    "status": "REVIEW_REQUIRED",
+    "required_fields": [
+      "bitrate_bps"
+    ],
+    "note": "No universal rate is available; inspect the selected hardware/profile."
+  },
+  "capacity_evidence": {
+    "status": "MODEL_AVAILABLE",
+    "frame_model": "SPI_CONFIRMED_TRANSFER_BOUND_V1",
+    "schedule_model": "SERIAL_MASTER_BUSY_WINDOW_V1",
+    "requires_confirmed_device_parameters": true
+  },
+  "components": {
+    "binding": "spi.binding",
+    "generator": "spi.generator",
+    "validator": "spi.validator",
+    "timing_model": "spi.timing",
+    "load_model": "spi.load",
+    "encoder": "spi.encoder",
+    "decoder": "spi.decoder"
+  },
+  "known_limitations": "Technology-specific conformance details require a vendor/profile extension."
+}

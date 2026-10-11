@@ -1,0 +1,97 @@
+--- before/frontend/src/features/simulation/ui/simulation-wizard.tsx
++++ after/frontend/src/features/simulation/ui/simulation-wizard.tsx
+@@ -2,7 +2,7 @@
+ 
+ import { parseLosslessJson } from "../../../shared/api/lossless-json.ts";
+ 
+-import { commonTechnologyParameters, booleanParameterValue, numericParameterValue, conditionalParameterDefault, confirmTechnologyParameters, technologyParameterApplicable, technologyParameterUnverified as parameterIsUnverified, technologyParameterValues, parameterValueStatus, findingsForParameter, technologyKey, type DeclaredNetwork } from "@/features/communication/lib/technology-parameters";
++import { formatBitrate, parseBitrate, commonTechnologyParameters, booleanParameterValue, numericParameterValue, conditionalParameterDefault, confirmTechnologyParameters, technologyParameterApplicable, technologyParameterUnverified as parameterIsUnverified, technologyParameterValues, parameterValueStatus, findingsForParameter, technologyKey, type DeclaredNetwork } from "@/features/communication/lib/technology-parameters";
+ 
+ import Link from "next/link";
+ import { requestEngineeringAgentWizard } from '@/features/agent/lib/agent-task-events';
+@@ -1162,7 +1162,7 @@
+             <details><summary>Busgeschwindigkeit und berechnete Last anzeigen</summary>
+               {simulationChecks.map((item,index) => <article key={`${item.network_id}:${item.port_id ?? index}`}>
+                 <strong>{item.network_name}{item.port_id ? ` · Anschluss ${item.port_id}` : ''}</strong>
+-                <p>{Object.entries(item.rates).map(([key,value]) => `${technology.parameter_schema?.find(field => field.key === key)?.label ?? key}: ${value == null ? 'offen' : Number(value).toLocaleString('de-DE') + ' bit/s'}`).join(' · ')}{item.load_percent != null ? ` · ${item.load_percent.toFixed(2)} % nominale Last · Ziel ${item.target_load_percent} %` : ''}</p>
++                <p>{Object.entries(item.rates).map(([key,value]) => `${technology.parameter_schema?.find(field => field.key === key)?.label ?? key}: ${value == null ? 'offen' : formatBitrate(Number(value))}`).join(' · ')}{item.load_percent != null ? ` · ${item.load_percent.toFixed(2)} % nominale Last · Ziel ${item.target_load_percent} %` : ''}</p>
+                 <small>SIMULATIONSANNAHME · {item.reason}</small>
+               </article>)}
+             </details>
+@@ -1176,7 +1176,7 @@
+           <details><summary>Busgeschwindigkeit und Kapazitätsvorschläge</summary>
+             {(parameterReview.bus_rate_plans ?? []).filter(plan => technologyKey(plan.technology) === technologyKey(technologyId)).map((plan, index) => <article key={`${plan.network_id}:${plan.port_id ?? index}`}>
+               <strong>{plan.network_name} · {plan.status === 'CAPACITY_CANDIDATE' ? 'Passende Simulationsrate' : 'Weitere Auslegung erforderlich'}</strong>
+-              <p>{Object.entries(plan.selected_values).filter(([key]) => networkRateKeys.includes(key)).map(([key,value]) => `${technology.parameter_schema?.find(field => field.key === key)?.label ?? key}: ${Number(value).toLocaleString('de-DE')} bit/s`).join(' · ')}{plan.load_percent !== undefined ? ` · ${plan.load_percent.toFixed(1)} % modellierte Last` : ''}</p>
++              <p>{Object.entries(plan.selected_values).filter(([key]) => networkRateKeys.includes(key)).map(([key,value]) => `${technology.parameter_schema?.find(field => field.key === key)?.label ?? key}: ${formatBitrate(Number(value))}`).join(' · ')}{plan.load_percent !== undefined ? ` · ${plan.load_percent.toFixed(1)} % modellierte Last` : ''}</p>
+               <small>SIMULATIONSANNAHME · {plan.reason}</small>
+               {plan.alternatives.map(item => <p key={item.technology}>Branchenvorschlag: {item.technology.toUpperCase()} · {item.load_percent.toFixed(1)} % Last · neue Hardware/Anschlüsse und physische Auslegung prüfen.</p>)}
+             </article>)}
+@@ -1573,7 +1573,7 @@
+   const referenceLabels: Record<string,string> = {registered_source:'Profilquelle',device_source:'Geräteunterlagen',binding_source:'Anschlusszuordnung',physical_source:'Nachweis der Leitung und Physik',ldf_source:'LIN-Beschreibungsdatei (LDF)',ncf_source:'Knotenbeschreibung (NCF)',encoding_source:'Signal- und Nachrichtenkodierung',schedule_source:'Sendeplan',capacity_source:'Kapazitätsnachweis',acceptance_source:'Abnahmekriterien',commander_node_id:'Steuernder Teilnehmer',publisher_node_id:'Sendender Teilnehmer',revision:'Profilrevision'};
+   const referenceLabel = field.value_role && field.value_role !== 'CONFIGURATION' ? Object.entries(referenceLabels).find(([suffix]) => field.key === suffix || field.key.endsWith('_' + suffix))?.[1] : undefined;
+   const commonLabels: Record<string, string> = {lin_bitrate_bps: 'LIN-Busgeschwindigkeit', bitrate: 'Busgeschwindigkeit', arbitration_bitrate: 'Arbitrationsgeschwindigkeit', data_bitrate: 'Datengeschwindigkeit', payload_bytes: 'Nutzdaten je Nachricht', cycle_ms: 'Sendezyklus', deadline_ms: 'Zeitgrenze', duration_s: 'Simulationsdauer', seed: 'Zufallsstartwert'};
+-  const label = `${referenceLabel ?? commonLabels[field.key] ?? field.label}${field.unit ? ` (${field.unit})` : ""}`;
++  const label = `${referenceLabel ?? commonLabels[field.key] ?? field.label}${field.unit && field.unit !== 'bit/s' ? ` (${field.unit})` : ""}`;
+   if (!applicable) return <div><span>{label}</span><p>Nicht zutreffend für die gewählte Protokollkonfiguration.</p></div>;
+   const missing = value === undefined || value === null || value === "";
+   const suggestion = field.parameter_origin === 'NIS_SCENARIO' ? 'NIS-Szenariovorschlag' : 'Profilvorschlag';
+@@ -1592,7 +1592,7 @@
+           const entered = raw.get(key);
+           const control = form.elements.namedItem(key);
+           values[key] = typeof expected === 'boolean' ? control instanceof HTMLInputElement && control.type === 'checkbox' ? control.checked : booleanParameterValue({}, entered)
+-            : typeof expected === 'number' ? entered === null || entered === '' ? undefined : Number(entered) : entered;
++            : typeof expected === 'number' ? entered === null || entered === '' ? undefined : parseBitrate(String(entered)) : entered;
+         }
+       }
+       const suggested = conditionalParameterDefault(field, values);
+@@ -1600,7 +1600,8 @@
+       if (suggested === undefined) {
+         setProposalError('Zuerst die zugehörige Einstellung auswählen.');
+       } else if (input instanceof HTMLInputElement || input instanceof HTMLSelectElement) {
+-        input.value = String(suggested);
++        input.value = field.unit === 'bit/s' && typeof suggested === 'number' ? formatBitrate(suggested) : String(suggested);
++        if (input instanceof HTMLInputElement) input.setCustomValidity('');
+         input.dispatchEvent(new Event('change', {bubbles: true}));
+         setProposalError('');
+       }
+@@ -1665,7 +1666,23 @@
+   return (
+     <div title={field.description}>
+       {gap}
+-      <NumberField
++      {field.unit === 'bit/s' ? <div className="field">
++        <label htmlFor={field.key}>{label}</label>
++        <input id={field.key} name={field.key} type="text" required={field.required}
++          defaultValue={missing ? '' : formatBitrate(Number(value))}
++          aria-describedby={`${field.key}-unit-hint`}
++          onChange={event => {
++            try { numericParameterValue(field, event.currentTarget.value); event.currentTarget.setCustomValidity(''); }
++            catch { event.currentTarget.setCustomValidity('Bitte eine gültige Geschwindigkeit mit bit/s, kbit/s, Mbit/s oder Gbit/s eingeben.'); }
++          }}
++          onBlur={event => {
++            try {
++              const parsed = numericParameterValue(field, event.currentTarget.value);
++              if (typeof parsed === 'number') event.currentTarget.value = formatBitrate(parsed);
++            } catch { /* Preserve invalid input so the user can correct it. */ }
++          }} />
++        <small id={`${field.key}-unit-hint`}>bit/s · kbit/s · Mbit/s · Gbit/s</small>
++      </div> : <NumberField
+         label={label}
+         name={field.key}
+         min={field.min === undefined ? undefined : String(field.min)}
+@@ -1673,12 +1690,12 @@
+         step={field.integer ? "1" : "any"}
+         required={field.required}
+         value={missing ? "" : String(value)}
+-      />
++      />}
+       {conditionalProposal}
+       {proposal?.options?.length ? (
+         <p className="muted">
+           Referenz-Obergrenzen, keine bestätigte Busfrequenz: {proposal.options.map(option =>
+-            `${option.mode} ≤ ${option.maximum.toLocaleString("de-DE")} ${proposal.unit ?? "bit/s"}`).join(" · ")}.
++            `${option.mode} ≤ ${(proposal.unit ?? 'bit/s') === 'bit/s' ? formatBitrate(option.maximum) : option.maximum.toLocaleString('de-DE') + ' ' + proposal.unit}`).join(" · ")}.
+           Controller, angeschlossene Geräte und Leitung müssen die gewählte Frequenz unterstützen.
+           {proposal.source?.startsWith("https://") && <>
+             {" "}<a href={proposal.source} rel="noreferrer" target="_blank">Spezifikation</a>

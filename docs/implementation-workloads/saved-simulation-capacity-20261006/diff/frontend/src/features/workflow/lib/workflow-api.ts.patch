@@ -1,0 +1,24 @@
+--- before/frontend/src/features/workflow/lib/workflow-api.ts
++++ after/frontend/src/features/workflow/lib/workflow-api.ts
+@@ -129,7 +129,11 @@
+   category_checks: Record<PreflightCategory, AnalysisFinding[]>;
+ };
+ 
++export type SimulationCapacityResult = {status:string;hardware_evidence:false;functional_timing_accepted:false;
++  bitrate?:number|null;average_load_percent?:number;peak_load_percent?:number;burst_load_percent?:number;
++  capacity_reserve_percent?:number;communication_schedule?:{status:string}|null};
+ export type CapacityNetwork = {
++  simulation_capacity?:SimulationCapacityResult;
+   communication_schedule?: {status: string; reasons?: string[]; hardware_review_proposal?: HardwareReviewProposal};
+   evaluation?: {
+     payload: { status: string; signal_count: number; errors: number; open: number };
+@@ -861,6 +865,9 @@
+   candidates:Array<{values:Record<string,unknown>;load_percent:number;fits:boolean}>;
+   alternatives:Array<{technology:string;values:Record<string,unknown>;load_percent:number;industry:string;hardware_change_required:true}>};
+ export type ParameterReview = WorkflowResourceRevision & {source:'CURRENT_CANONICAL_MODEL' | 'PENDING_PROPOSAL';bus_rate_plans?:BusRatePlan[];
++  simulation_capacity?:Array<{network_id:string;network_name:string;technology:string;port_id?:string|null;status:string;
++    rates:Record<string,number|null>;load_percent:number|null;target_load_percent:number;message_count:number;reason:string;
++    hardware_evidence:false;functional_timing_accepted:false;parameter_fields:string[]}>;
+   proposal?: {proposal_id:string;revision:string;status:string} | null;
+   findings: import('@/features/communication/lib/technology-parameters').ParameterFinding[]};
+ export const getParameterReview = (projectId = readActiveProjectId(), proposalId?:string | null) => request<ParameterReview>(

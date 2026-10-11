@@ -1,0 +1,617 @@
+--- before/frontend/src/features/intelligence/ui/safety-assurance-panel.tsx
++++ after/frontend/src/features/intelligence/ui/safety-assurance-panel.tsx
+@@ -1,23 +1,134 @@
+ 'use client';
+ 
+-import {useCallback, useEffect, useRef, useState} from 'react';
++import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+ import {readActiveProjectId} from '@/features/settings/lib/user-settings';
+ import {useWorkflowRefresh} from '@/features/workflow/lib/use-workflow-refresh';
+ import {notifyWorkflowChanged} from '@/features/workflow/ui/workflow-header';
++import styles from './safety-assurance-panel.module.css';
+ 
+-type Requirement = {id: string; name: string; version: number; function_id: string; configuration: Record<string, unknown>};
++type FaultCase = {id: string; type: string; ftti_ms: number | ''; detection_ms: number | ''; safe_state: string; receiver_id: string};
++type Configuration = {
++  profile: {standard: string; edition: string; domain: string; applicability: string; reason: string; clause_refs?: string[]; work_product_refs?: string[]};
++  hazard_ref: string; safety_goal_ref: string; route_ids: string[];
++  integrity?: {model: string; level: string; decision_ref: string};
++  criteria: {deadline_ms?: number; freshness_ms?: number; required_protections?: string[]; fault_cases?: FaultCase[]};
++  eip?: {project_id: string; requirement_ref: string; source_revisions: Record<string, number>};
++};
++type Requirement = {id: string; name: string; version: number; function_id: string; configuration: Configuration};
++type Membership = {cluster_id?: string; cluster_name?: string; system_owner_id?: string; systemOwnerId?: string};
++type Hardware = {id: string; name: string; identity: Membership; grouping?: Membership};
++type Route = {id: string; name?: string; source?: {node_id?: string}; destinations?: Array<{node_id?: string}>};
+ type AssessmentRow = {id: string; name: string; revision: number; technical_status: string; gaps: string[]; checks: Array<{id: string; kind: string; status: string; sample_count: number; deadline_ms?: number; freshness_ms?: number; observed_max_latency_ms?: number; observed_max_data_age_ms?: number; ftti_ms?: number; observations?: Array<{detection_ms: number; reaction_ms: number; observed_state: string; status: string}>}>; evidence_event_ids: string[]};
+-type SafetyData = {project_id: string; requirements: Requirement[]; functions: Array<{id: string; name: string}>; routes: Array<{id: string; name?: string}>;
++type SafetyData = {project_id: string; requirements: Requirement[]; functions: Array<{id: string; name: string; hardware_node_id?: string}>; routes: Route[]; hardware: Hardware[];
+   profiles: Array<{standard: string; url: string}>; bundle: {sha256: string; payload: {snapshot_id: string; freshness: string; execution_status: string;
+     assessment: {technical_status: string; requirements: AssessmentRow[]; limitations: string[]}}}};
+ 
+-const template = {profile: {standard: 'ISO 26262', edition: '2018', domain: 'road_vehicle', applicability: 'UNRESOLVED', reason: 'Fachliche Anwendbarkeit festlegen', clause_refs: [], work_product_refs: []},
++const template: Configuration = {profile: {standard: 'ISO 26262', edition: '2018', domain: 'road_vehicle', applicability: 'UNRESOLVED', reason: 'Fachliche Anwendbarkeit festlegen', clause_refs: [], work_product_refs: []},
+   hazard_ref: '', safety_goal_ref: '', route_ids: [], criteria: {required_protections: [], fault_cases: []}};
++const protectionLabels: Record<string, string> = {CRC: 'CRC-Prüfung', SEQUENCE_COUNTER: 'Sequenzzähler', ALIVE_COUNTER: 'Alive-Counter', DATA_ID: 'Datenkennung', TIMEOUT_MONITOR: 'Timeout-Überwachung', FRESHNESS: 'Datenalter', SOURCE_AUTHENTICATION: 'Senderauthentifizierung'};
++const faultLabels: Record<string, string> = {LOSS: 'Verlust', REPETITION: 'Wiederholung', CORRUPTION: 'Verfälschung', WRONG_SEQUENCE: 'Falsche Reihenfolge', TIMEOUT: 'Timeout', DELAY: 'Verzögerung', STALE_DATA: 'Veraltete Daten', LINK_DOWN: 'Verbindungsabbruch', QUEUE_OVERFLOW: 'Queue-Überlauf', WRONG_SENDER: 'Falscher Sender'};
++const applicabilityLabels: Record<string, string> = {APPLICABLE: 'Anwendbar', NOT_APPLICABLE: 'Nicht anwendbar', UNRESOLVED: 'Noch zu klären'};
++const lines = (value: string) => value.split('\n').map(item => item.trim()).filter(Boolean);
++
++function RequirementFields({configuration, onChange, data, owner}: {configuration: Configuration; onChange: (next: Configuration) => void; data: SafetyData; owner: string}) {
++  const [query, setQuery] = useState('');
++  const [revisions, setRevisions] = useState(() => Object.entries(configuration.eip?.source_revisions ?? {}).map(([reference, revision]) => ({reference, revision})));
++  const revisionInputs = useRef<Array<HTMLInputElement | null>>([]);
++  useEffect(() => {
++    revisions.forEach((item, index) => revisionInputs.current[index]?.setCustomValidity(
++      revisions.filter(row => row.reference.trim() === item.reference.trim()).length > 1 ? 'Quellenreferenzen müssen eindeutig sein.' : ''));
++  }, [revisions]);
++  const hardware = useMemo(() => new Map((data.hardware ?? []).map(item => [item.id, item])), [data.hardware]);
++  const functionHardware = data.functions.find(item => item.id === owner)?.hardware_node_id;
++  const endpoints = (route: Route) => [route.source?.node_id, ...(route.destinations ?? []).map(item => item.node_id)].filter((id): id is string => Boolean(id));
++  const groups = new Map<string, {label: string; frames: Map<string, {label: string; routes: Route[]}>}>();
++  const normalizedQuery = query.toLocaleLowerCase();
++  for (const route of data.routes) {
++    const selected = configuration.route_ids.includes(route.id);
++    if (functionHardware && !endpoints(route).includes(functionHardware) && !selected) continue;
++    const sender = hardware.get(route.source?.node_id ?? '');
++    const receiverNames = (route.destinations ?? []).map(item => hardware.get(item.node_id ?? '')?.name ?? 'Empfänger nicht zugeordnet');
++    const identity = sender?.grouping ?? sender?.identity;
++    const clusterKey = identity?.cluster_id ?? 'unassigned';
++    const clusterLabel = identity?.cluster_name ?? (identity?.cluster_id ? 'Benanntes Cluster' : 'Cluster nicht zugeordnet');
++    const frameKey = identity?.system_owner_id ?? identity?.systemOwnerId ?? 'unassigned';
++    const frameLabel = hardware.get(frameKey)?.name ?? 'Systemrahmen nicht zugeordnet';
++    if (normalizedQuery && ![route.name, sender?.name, ...receiverNames, clusterLabel, frameLabel].join(' ').toLocaleLowerCase().includes(normalizedQuery)) continue;
++    if (!groups.has(clusterKey)) groups.set(clusterKey, {label: clusterLabel, frames: new Map()});
++    const frames = groups.get(clusterKey)!.frames;
++    if (!frames.has(frameKey)) frames.set(frameKey, {label: frameLabel, routes: []});
++    frames.get(frameKey)!.routes.push(route);
++  }
++  const scopedHardware = Array.from(new Set(data.routes.filter(item => configuration.route_ids.includes(item.id)).flatMap(endpoints)));
++  const profile = configuration.profile, criteria = configuration.criteria;
++  const changeProfile = (next: Partial<Configuration['profile']>) => onChange({...configuration, profile: {...profile, ...next}});
++  const changeCriteria = (next: Partial<Configuration['criteria']>) => onChange({...configuration, criteria: {...criteria, ...next}});
++  const updateFault = (index: number, next: Partial<FaultCase>) => changeCriteria({fault_cases: (criteria.fault_cases ?? []).map((item, row) => row === index ? {...item, ...next} : item)});
++  function updateRevisions(next: typeof revisions) {
++    setRevisions(next);
++    if (configuration.eip) onChange({...configuration, eip: {...configuration.eip, source_revisions: Object.fromEntries(next.map(item => [item.reference, item.revision]))}});
++  }
++  return <>
++    <fieldset className={styles.section}><legend>Norm und Anwendbarkeit</legend><div className={styles.fields}>
++      <label>Norm<select value={profile.standard} onChange={event => changeProfile({standard: event.target.value, edition: ''})}>{data.profiles.map(item => <option key={item.standard}>{item.standard}</option>)}{!data.profiles.some(item => item.standard === profile.standard) && <option>{profile.standard}</option>}</select></label>
++      <label>Ausgabe / Änderungsserie<input required maxLength={500} value={profile.edition} onChange={event => changeProfile({edition: event.target.value})} /></label>
++      <label>Anwendungsbereich<input required maxLength={500} value={profile.domain} onChange={event => changeProfile({domain: event.target.value})} /></label>
++      <label>Anwendbarkeit<select value={profile.applicability} onChange={event => changeProfile({applicability: event.target.value})}>{Object.entries(applicabilityLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
++      <label className={styles.wide}>Begründung<textarea required maxLength={500} rows={2} value={profile.reason} onChange={event => changeProfile({reason: event.target.value})} /></label>
++      <label>Normabschnitte · eine Referenz je Zeile<textarea rows={3} value={(profile.clause_refs ?? []).join('\n')} onChange={event => changeProfile({clause_refs: event.target.value.split('\n')})} /></label>
++      <label>Arbeitsergebnisse · eine Referenz je Zeile<textarea rows={3} value={(profile.work_product_refs ?? []).join('\n')} onChange={event => changeProfile({work_product_refs: event.target.value.split('\n')})} /></label>
++    </div></fieldset>
++    <fieldset className={styles.section}><legend>Gefährdung und Sicherheitsziel</legend><div className={styles.fields}>
++      <label>Gefährdungsreferenz<input required maxLength={500} value={configuration.hazard_ref} onChange={event => onChange({...configuration, hazard_ref: event.target.value})} /></label>
++      <label>Sicherheitszielreferenz<input required maxLength={500} value={configuration.safety_goal_ref} onChange={event => onChange({...configuration, safety_goal_ref: event.target.value})} /></label>
++    </div><label className={styles.check}><input type="checkbox" checked={Boolean(configuration.integrity)} onChange={event => onChange({...configuration, integrity: event.target.checked ? {model: '', level: '', decision_ref: ''} : undefined})} />Fachlich bestätigte Integritätsentscheidung hinterlegen</label>
++      {configuration.integrity && <div className={styles.fields}>{(['model', 'level', 'decision_ref'] as const).map((field, index) => <label key={field}>{['Bewertungsmodell (z. B. ASIL)', 'Bestätigte Einstufung', 'Entscheidungsreferenz'][index]}<input required maxLength={500} value={configuration.integrity![field]} onChange={event => onChange({...configuration, integrity: {...configuration.integrity!, [field]: event.target.value}})} /></label>)}</div>}
++    </fieldset>
++    <fieldset className={styles.section}><legend>Kommunikationsrouten</legend><p>Nach Sendercluster und Systemrahmen gruppiert. {configuration.route_ids.length} von maximal 32 Routen ausgewählt.</p>
++      <label>Routen suchen<input type="search" placeholder="Cluster, Systemrahmen, Sender oder Empfänger …" value={query} onChange={event => setQuery(event.target.value)} /></label>
++      <div className={styles.routes}>{Array.from(groups).sort((a, b) => a[1].label.localeCompare(b[1].label, 'de')).map(([key, group]) => <details key={key} open={Boolean(query) || group.frames.size === 1}>
++        <summary>{group.label}<span>{Array.from(group.frames.values()).reduce((sum, frame) => sum + frame.routes.length, 0)} Routen</span></summary>
++        {Array.from(group.frames).sort((a, b) => a[1].label.localeCompare(b[1].label, 'de')).map(([frameKey, frame]) => <div className={styles.frame} key={frameKey}><h4>{frame.label}</h4>{frame.routes.sort((a, b) => (a.name ?? '').localeCompare(b.name ?? '', 'de')).map(route => {
++          const selected = configuration.route_ids.includes(route.id), sender = hardware.get(route.source?.node_id ?? '');
++          const targets = (route.destinations ?? []).map(item => hardware.get(item.node_id ?? ''));
++          return <label className={styles.route} key={route.id}><input type="checkbox" checked={selected} disabled={!selected && configuration.route_ids.length >= 32} onChange={event => onChange({...configuration, route_ids: event.target.checked ? [...configuration.route_ids, route.id] : configuration.route_ids.filter(id => id !== route.id)})} />
++            <span><strong>{sender?.name ?? 'Sender nicht zugeordnet'} → {targets.map(item => item?.name ?? 'Empfänger nicht zugeordnet').join(', ')}</strong>
++              <small>{route.name || 'Kommunikationsroute'}{targets.some(item => (item?.grouping ?? item?.identity)?.cluster_id !== (sender?.grouping ?? sender?.identity)?.cluster_id) && <> · Zielcluster: {Array.from(new Set(targets.map(item => (item?.grouping ?? item?.identity)?.cluster_name ?? 'Nicht zugeordnet'))).join(', ')}</>}</small></span></label>;
++        })}</div>)}
++      </details>)}</div>
++      {!groups.size && <p>Keine passenden Routen. Wähle zuerst die verantwortliche Funktion oder ändere die Suche.</p>}
++      {configuration.route_ids.filter(id => !data.routes.some(route => route.id === id)).map(id => <p key={id} role="alert">Eine gespeicherte Route ist nicht mehr verfügbar. <button type="button" className="button secondary tiny" onClick={() => onChange({...configuration, route_ids: configuration.route_ids.filter(item => item !== id)})}>Referenz entfernen</button></p>)}
++    </fieldset>
++    <fieldset className={styles.section}><legend>Prüfgrenzen und Schutzmechanismen</legend><p>Nur ausdrücklich bestätigte Grenzen eintragen. Leere Felder bleiben offen.</p><div className={styles.fields}>
++      {(['deadline_ms', 'freshness_ms'] as const).map((field, index) => <label key={field}>{['E2E-Frist (ms)', 'Maximales Datenalter (ms)'][index]}<input type="number" min={0} step="any" value={criteria[field] ?? ''} onChange={event => changeCriteria({[field]: event.target.value === '' ? undefined : Number(event.target.value)})} /></label>)}
++    </div><div className={styles.checks}>{Object.entries(protectionLabels).map(([value, label]) => <label className={styles.check} key={value}><input type="checkbox" checked={(criteria.required_protections ?? []).includes(value)} onChange={event => changeCriteria({required_protections: event.target.checked ? [...(criteria.required_protections ?? []), value] : (criteria.required_protections ?? []).filter(item => item !== value)})} />{label}</label>)}</div>
++    </fieldset>
++    <fieldset className={styles.section}><legend>Fehlerfälle und sichere Reaktion</legend>{(criteria.fault_cases ?? []).map((fault, index) => <div className={styles.fault} key={index}><div className={styles.fields}>
++      <label>Fallreferenz<input required maxLength={200} value={fault.id} onChange={event => updateFault(index, {id: event.target.value})} /></label>
++      <label>Fehlerart<select value={fault.type} onChange={event => updateFault(index, {type: event.target.value})}>{Object.entries(faultLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
++      <label>FTTI (ms)<input required type="number" min={0} step="any" value={fault.ftti_ms} onChange={event => updateFault(index, {ftti_ms: event.target.value === '' ? '' : Number(event.target.value)})} /></label>
++      <label>Erkennungsfrist (ms)<input required type="number" min={0} step="any" value={fault.detection_ms} onChange={event => updateFault(index, {detection_ms: event.target.value === '' ? '' : Number(event.target.value)})} /></label>
++      <label>Beobachteter Empfänger<select required value={fault.receiver_id} onChange={event => updateFault(index, {receiver_id: event.target.value})}><option value="">Bitte auswählen</option>{scopedHardware.map(id => <option key={id} value={id}>{hardware.get(id)?.name ?? 'Nicht zugeordnet'}</option>)}{fault.receiver_id && !scopedHardware.includes(fault.receiver_id) && <option value={fault.receiver_id}>{hardware.get(fault.receiver_id)?.name ?? 'Gespeicherter Empfänger'} · außerhalb der Routenauswahl</option>}</select></label>
++      <label>Sicherer Zustand<input required maxLength={500} value={fault.safe_state} onChange={event => updateFault(index, {safe_state: event.target.value})} /></label>
++    </div><button className="button secondary tiny" type="button" onClick={() => changeCriteria({fault_cases: criteria.fault_cases!.filter((_, row) => row !== index)})}>Fehlerfall entfernen</button></div>)}
++      <button className="button secondary" type="button" disabled={(criteria.fault_cases ?? []).length >= 32} onClick={() => changeCriteria({fault_cases: [...(criteria.fault_cases ?? []), {id: '', type: 'LOSS', ftti_ms: '', detection_ms: '', safe_state: '', receiver_id: ''}]})}>Fehlerfall hinzufügen</button>
++    </fieldset>
++    <fieldset className={styles.section}><legend>EIP-Quellenbezug</legend><label className={styles.check}><input type="checkbox" checked={Boolean(configuration.eip)} onChange={event => {setRevisions([]); onChange({...configuration, eip: event.target.checked ? {project_id: '', requirement_ref: '', source_revisions: {}} : undefined});}} />Originale EIP-Quellenrevisionen hinterlegen</label>
++      {configuration.eip && <><div className={styles.fields}><label>EIP-Projekt<input required maxLength={200} value={configuration.eip.project_id} onChange={event => onChange({...configuration, eip: {...configuration.eip!, project_id: event.target.value}})} /></label><label>Anforderungsreferenz<input required maxLength={200} value={configuration.eip.requirement_ref} onChange={event => onChange({...configuration, eip: {...configuration.eip!, requirement_ref: event.target.value}})} /></label></div>
++        {revisions.map((item, index) => <div className={styles.revision} key={index}><label>Quellenreferenz<input ref={node => {revisionInputs.current[index] = node;}} required maxLength={200} value={item.reference} onChange={event => updateRevisions(revisions.map((row, position) => position === index ? {...row, reference: event.target.value} : row))} /></label><label>Originale Revision<input required type="number" min={1} step={1} value={item.revision} onChange={event => updateRevisions(revisions.map((row, position) => position === index ? {...row, revision: Number(event.target.value)} : row))} /></label><button className="button secondary tiny" type="button" onClick={() => updateRevisions(revisions.filter((_, position) => position !== index))}>Entfernen</button></div>)}
++        {new Set(revisions.map(item => item.reference)).size !== revisions.length && <p role="alert">Quellenreferenzen müssen eindeutig sein.</p>}
++        <button className="button secondary" type="button" disabled={revisions.length >= 20} onClick={() => updateRevisions([...revisions, {reference: '', revision: 1}])}>Quelle hinzufügen</button>
++      </>}
++    </fieldset>
++  </>;
++}
+ 
+ export function SafetyAssurancePanel() {
+   const [data, setData] = useState<SafetyData | null>(null), [error, setError] = useState(''), [busy, setBusy] = useState(false);
+   const [editing, setEditing] = useState<Requirement | null>(null), [name, setName] = useState(''), [owner, setOwner] = useState('');
+-  const [text, setText] = useState(JSON.stringify(template, null, 2)), [open, setOpen] = useState(false);
++  const [configuration, setConfiguration] = useState<Configuration>(template), [open, setOpen] = useState(false);
++  const [editorSession, setEditorSession] = useState(0);
++  const editProject = useRef('');
+   const generation = useRef(0);
+   const loadedProject = useRef<string | null>(null);
+   const load = useCallback(async () => {
+@@ -34,33 +145,38 @@
+   useWorkflowRefresh(load);
+   function edit(row: Requirement | null) {
+     setEditing(row); setName(row?.name ?? ''); setOwner(row?.function_id ?? '');
+-    setText(JSON.stringify(row?.configuration ?? template, null, 2)); setOpen(true);
++    editProject.current = readActiveProjectId();
++    setEditorSession(value => value + 1);
++    setConfiguration(structuredClone(row?.configuration ?? template)); setOpen(true);
+   }
+   async function save() {
+     const project = readActiveProjectId(); setBusy(true); setError('');
+     try {
+-      const configuration = JSON.parse(text);
++      if (project !== editProject.current || project !== loadedProject.current) throw new Error('Das Projekt hat gewechselt. Bitte die Anforderung neu öffnen.');
++      const savedConfiguration = {...configuration, profile: {...configuration.profile,
++        clause_refs: lines((configuration.profile.clause_refs ?? []).join('\n')),
++        work_product_refs: lines((configuration.profile.work_product_refs ?? []).join('\n'))}};
+       const response = await fetch(`/api/engineering/safety-requirements${editing ? '/' + encodeURIComponent(editing.id) : ''}`, {
+         method: editing ? 'PATCH' : 'POST', headers: {'Content-Type': 'application/json', 'X-Project-ID': project},
+-        body: JSON.stringify({name, function_id: owner, configuration, ...(editing ? {expected_version: editing.version} : {})})});
++        body: JSON.stringify({name, function_id: owner, configuration: savedConfiguration, ...(editing ? {expected_version: editing.version} : {})})});
+       const result = await response.json();
+       if (!response.ok) throw new Error(result.error || 'Anforderung konnte nicht gespeichert werden.');
+       if (project === readActiveProjectId()) {setOpen(false); await load(); notifyWorkflowChanged();}
+     } catch (cause) {setError(cause instanceof Error ? cause.message : 'Ungültige Anforderung.');} finally {setBusy(false);}
+   }
+   const payload = data?.bundle.payload;
+-  return <section className="panel safety-assurance-panel" aria-labelledby="safety-assurance-title">
++  return <section className={`panel safety-assurance-panel ${styles.panel}`} aria-labelledby="safety-assurance-title">
+     <header className="intelligence-toolbar"><div><p className="eyebrow">Safety & Regulatory Assurance</p><h2 id="safety-assurance-title">Sicherheitsanforderungen und Prüfbelege</h2></div>
+-      <div className="analysis-actions"><button className="button secondary" type="button" disabled={busy} onClick={() => edit(null)}>Anforderung erfassen</button>
++      <div className="analysis-actions"><button className="button secondary" type="button" disabled={busy || !data} onClick={() => edit(null)}>Anforderung erfassen</button>
+         {data && <a className="button secondary" href={`/api/engineering/intelligence/safety?project=${encodeURIComponent(data.project_id)}&download=1`} download>Belege für EIP exportieren</a>}</div></header>
+     <p>ISO 26262, UN R155 und UN R156 erhalten eigene Anwendbarkeit, Ausgabe und Nachweiskette. Technische Ergebnisse erteilen keine Norm-, ASIL- oder Typgenehmigungsfreigabe.</p>
+     {error && <p role="alert">{error} <button type="button" onClick={() => void load()}>Neu laden</button></p>}
+-    <dl className="intelligence-counts"><div><dt>Technische Prüfung</dt><dd>{payload?.freshness === 'CURRENT' ? payload.assessment.technical_status : 'NOT_EVALUATED'}</dd></div>
++    <dl className={`intelligence-counts ${styles.counts}`}><div><dt>Technische Prüfung</dt><dd>{payload?.freshness === 'CURRENT' ? payload.assessment.technical_status : 'NOT_EVALUATED'}</dd></div>
+       <div><dt>Belegstand</dt><dd>{payload?.freshness ?? 'Nicht geladen'}</dd></div><div><dt>Normative Vollständigkeit</dt><dd>NOT_EVALUATED</dd></div><div><dt>Fachliche Freigabe</dt><dd>Unabhängiges Review in EIP erforderlich</dd></div></dl>
+     {data && !data.requirements.length && <p>Keine Sicherheitsanforderungen erfasst. Fristen, ASIL und FTTI werden nicht automatisch zugewiesen.</p>}
+-    <div className="table-scroll"><table><thead><tr><th>Anforderung</th><th>Funktion</th><th>Norm / Ausgabe</th><th>Anwendbarkeit</th><th>Revision</th><th>Aktion</th></tr></thead>
++    {Boolean(data?.requirements.length) && <div className="table-scroll"><table><thead><tr><th>Anforderung</th><th>Funktion</th><th>Norm / Ausgabe</th><th>Anwendbarkeit</th><th>Revision</th><th>Aktion</th></tr></thead>
+       <tbody>{data?.requirements.map(row => {const profile = row.configuration.profile as {standard: string; edition: string; applicability: string}; return <tr key={row.id}>
+-        <td>{row.name}</td><td>{data.functions.find(item => item.id === row.function_id)?.name ?? 'Verknüpfung fehlt'}</td><td>{profile.standard} · {profile.edition}</td><td>{profile.applicability}</td><td>{row.version}</td><td><button type="button" className="button secondary tiny" onClick={() => edit(row)}>Bearbeiten</button></td></tr>;})}</tbody></table></div>
++        <td>{row.name}</td><td>{data.functions.find(item => item.id === row.function_id)?.name ?? 'Verknüpfung fehlt'}</td><td>{profile.standard} · {profile.edition}</td><td>{applicabilityLabels[profile.applicability] ?? profile.applicability}</td><td>{row.version}</td><td><button type="button" className="button secondary tiny" disabled={busy} onClick={() => edit(row)}>Bearbeiten</button></td></tr>;})}</tbody></table></div>}
+     {payload?.assessment.requirements.map(row => <details key={row.id}><summary>{row.name} · eingefrorene Revision {row.revision} · {row.technical_status}{payload.freshness !== 'CURRENT' ? ' · historisch' : ''}</summary>
+       <table><thead><tr><th>Prüfung</th><th>Art</th><th>Ergebnis</th><th>Stichproben</th><th>Messwerte / Grenzen</th></tr></thead><tbody>{row.checks.map(check => <tr key={check.kind + check.id}><td>{check.id}</td><td>{check.kind}</td><td>{check.status}</td><td>{check.sample_count}</td><td>{check.kind === 'COMMUNICATION'
+         ? <>E2E: {check.observed_max_latency_ms ?? '—'} / {check.deadline_ms ?? '—'} ms · Alter: {check.observed_max_data_age_ms ?? '—'} / {check.freshness_ms ?? '—'} ms</>
+@@ -68,13 +184,12 @@
+       <ul>{row.gaps.map(gap => <li key={gap}>{gap}</li>)}</ul><details><summary>Originale Ereignisbelege</summary><p>{row.evidence_event_ids.join(', ') || 'Keine korrelierten Belege'}</p></details></details>)}
+     <details><summary>Normquellen und Bewertungsumfang</summary><ul>{data?.profiles.map(profile => <li key={profile.standard}><a href={profile.url} target="_blank" rel="noopener noreferrer">{profile.standard}</a></li>)}</ul>
+       <p>Das Quellenverzeichnis führt die Normreferenzen mit getrennten Rechtehinweisen. Ausgabe und Änderungsserie müssen für jedes Projekt fachlich bestätigt werden.</p></details>
+-    {open && <details open><summary>Anforderung {editing ? 'bearbeiten' : 'erfassen'}</summary><form onSubmit={event => {event.preventDefault(); void save();}}>
+-      <fieldset disabled={busy}><label>Name<input value={name} onChange={event => setName(event.target.value)} required maxLength={300} /></label>
++    {open && data && <details open className={styles.editor}><summary>Anforderung {editing ? 'bearbeiten' : 'erfassen'}</summary><form onSubmit={event => {event.preventDefault(); void save();}}>
++      <fieldset disabled={busy} className={styles.editorBody}><div className={styles.fields}><label>Name<input value={name} onChange={event => setName(event.target.value)} required maxLength={300} /></label>
+         <label>Funktion<select required value={owner} onChange={event => setOwner(event.target.value)}><option value="">Bitte auswählen</option>{data?.functions.map(row => <option key={row.id} value={row.id}>{row.name}</option>)}</select></label>
+-        <p>Die Konfiguration verbindet Gefährdung, Sicherheitsziel, Normprofil, Routen und explizite Prüfgrenzen. EIP-Quellenrevisionen können unter „eip“ hinterlegt werden. Fehlende Nachweise bleiben offen.</p>
+-        <label>Versionierte Konfiguration<textarea rows={18} value={text} onChange={event => setText(event.target.value)} required spellCheck={false} style={{width: '100%', fontFamily: 'monospace'}} /></label>
+-        <details><summary>Verfügbare Routenreferenzen</summary><ul>{data?.routes.map(row => <li key={row.id}>{row.name ?? row.id} <code>{row.id}</code></li>)}</ul></details>
+-        <button className="button primary" type="submit">{busy ? 'Speichern …' : 'Anforderung speichern'}</button> <button className="button secondary" type="button" onClick={() => setOpen(false)}>Schließen</button></fieldset>
++        </div><p>Verknüpfe Gefährdung, Sicherheitsziel, Routen und ausdrücklich bestätigte Prüfgrenzen. Fehlende Nachweise bleiben offen.</p>
++        <RequirementFields key={editorSession} configuration={configuration} onChange={setConfiguration} data={data} owner={owner} />
++        <div className={styles.actions}><button className="button primary" type="submit">{busy ? 'Speichern …' : 'Anforderung speichern'}</button><button className="button secondary" type="button" onClick={() => setOpen(false)}>Schließen</button></div></fieldset>
+     </form></details>}
+   </section>;
+ }
+--- before/frontend/src/features/intelligence/ui/safety-assurance-panel.module.css
++++ after/frontend/src/features/intelligence/ui/safety-assurance-panel.module.css
+@@ -0,0 +1,39 @@
++.panel { min-width: 0; padding: clamp(20px, 2.5vw, 32px); margin-bottom: 24px; overflow-wrap: anywhere; }
++.panel > header { gap: 20px; flex-wrap: wrap; align-items: flex-start; }
++.panel > p { line-height: 1.55; }
++.panel .counts { grid-template-columns: repeat(4, minmax(0, 1fr)); margin: 20px 0; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
++.panel .counts dt { white-space: normal; overflow: visible; line-height: 1.4; }
++.panel .counts dd { overflow-wrap: anywhere; font-size: 13px; line-height: 1.5; }
++.panel > details { margin-top: 16px; }
++.panel summary { cursor: pointer; font-weight: 600; line-height: 1.5; padding: 10px 0; }
++.panel table { width: 100%; border-collapse: collapse; font-size: 12px; }
++.panel th, .panel td { padding: 12px 10px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
++.panel th { color: var(--muted); font-size: 10px; font-weight: 600; }
++.editor { border-top: 1px solid var(--border); padding-top: 12px; }
++.editorBody { border: 0; padding: 10px 0 0; margin: 0; min-width: 0; }
++.fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
++.editor label { display: grid; gap: 7px; min-width: 0; font-size: 12px; color: var(--muted); }
++.editor input:not([type=checkbox]), .editor select, .editor textarea { width: 100%; min-width: 0; box-sizing: border-box; padding: 10px 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--text); font: inherit; font-size: 13px; line-height: 1.4; }
++.editor textarea { resize: vertical; }
++.editor input:focus-visible, .editor select:focus-visible, .editor textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
++.editor .section { min-width: 0; border: 1px solid var(--border); border-radius: 8px; margin: 24px 0; padding: 18px; }
++.section legend { padding: 0 8px; font-size: 13px; font-weight: 600; color: var(--text); }
++.section p { font-size: 12px; line-height: 1.5; margin: 0 0 14px; color: var(--muted); }
++.wide { grid-column: 1 / -1; }
++.checks { display: flex; flex-wrap: wrap; gap: 12px 24px; margin-top: 16px; }
++.editor .check { display: flex; align-items: center; gap: 8px; color: var(--text); margin: 12px 0; }
++.check input, .route input { accent-color: var(--accent); flex: none; width: 16px; height: 16px; }
++.routes { max-height: 420px; overflow: auto; margin-top: 16px; overscroll-behavior: contain; }
++.routes > details { border: 1px solid var(--border); border-radius: 6px; margin-bottom: 10px; }
++.routes summary { padding: 12px; background: color-mix(in srgb, var(--accent) 4%, var(--surface)); }
++.routes summary span { float: right; margin-left: 12px; font-size: 11px; color: var(--muted); }
++.frame { padding: 8px 12px; }
++.frame h4 { margin: 8px 0; color: var(--accent); font-size: 12px; }
++.editor .route { display: flex; align-items: flex-start; gap: 10px; padding: 10px 0; border-top: 1px solid var(--border); color: var(--text); }
++.route span { min-width: 0; display: grid; gap: 4px; overflow-wrap: anywhere; }
++.route small { color: var(--muted); line-height: 1.5; }
++.fault { border-bottom: 1px solid var(--border); margin-bottom: 18px; padding-bottom: 18px; }
++.fault > button { margin-top: 12px; }
++.revision { display: grid; grid-template-columns: minmax(0, 2fr) minmax(80px, 1fr) auto; gap: 12px; align-items: end; margin: 16px 0; }
++.actions { display: flex; gap: 10px; flex-wrap: wrap; }
++@media (max-width: 800px) { .panel .counts { grid-template-columns: repeat(2, minmax(0, 1fr)); } .fields, .revision { grid-template-columns: minmax(0, 1fr); } .routes summary span { float: none; display: block; margin-left: 0; } }
+--- before/backend/nis/interfaces/http/engineering.py
++++ after/backend/nis/interfaces/http/engineering.py
+@@ -172,9 +172,12 @@
+ def safety_assurance_route():
+     from backend.nis.engineering.safety_assurance import export_snapshot, STANDARD_SOURCES
+     from backend.nis.engineering.pagination import all_pages
++    from backend.nis.engineering.network.network_scene import confirmed_groups
++    from copy import deepcopy
+     requirements = all_pages(list_objects, "SafetyRequirement")
+     workflow = WorkflowStatusService(_project_id())
+-    snapshots = workflow.get().get("simulation_snapshots") or []
++    state = workflow.get()
++    snapshots = state.get("simulation_snapshots") or []
+     selected_id = request.args.get("snapshot") or (str(snapshots[0]["id"]) if snapshots else None)
+     snapshot = workflow.get_simulation_snapshot(selected_id) if selected_id else None
+     if selected_id and not snapshot:
+@@ -184,8 +187,37 @@
+         response = jsonify(bundle)
+         response.headers["Content-Disposition"] = 'attachment; filename="nis-safety-evidence.json"'
+         return response
++    hardware = all_pages(list_objects, "HardwareNode")
++    by_id = {str(item["id"]): item for item in hardware}
++    topology = deepcopy(state.get("topology") or {"nodes": [], "edges": []})
++    nodes = {str(node["id"]): node for node in topology.get("nodes", [])}
++    for node in nodes.values():
++        identity = by_id.get(str(node.get("engineeringId") or node["id"]), {}).get("identity") or {}
++        if identity.get("cluster_id"):
++            node.update(clusterId=identity["cluster_id"], clusterName=identity.get("cluster_name"))
++        if identity.get("system_owner_id") or identity.get("systemOwnerId"):
++            node.update(systemOwnerId=identity.get("system_owner_id") or identity["systemOwnerId"])
++        if identity.get("system_owner_source") == "network-editor":
++            node.update(systemOwnerSource="network-editor")
++    # Reuse the network editor's canonical grouping, including wizard-confirmed
++    # clusters. This read-only projection never persists a new membership.
++    clusters, owners = confirmed_groups(topology, ((state.get("context") or {}).get("wizard_request") or {}).get("prompt", ""))
++    cluster_by_anchor = {str(anchor): cluster for cluster in clusters for anchor in cluster["anchors"]}
++    grouping = {}
++    for node_id, node in nodes.items():
++        anchor = node_id
++        while anchor in owners:
++            anchor = str(owners[anchor])
++        cluster = cluster_by_anchor.get(anchor)
++        if cluster:
++            owner = nodes[anchor]
++            grouping[str(node.get("engineeringId") or node_id)] = {
++                "cluster_id": cluster["id"], "cluster_name": cluster["label"],
++                "system_owner_id": str(owner.get("engineeringId") or anchor)}
+     return jsonify({"project_id": _project_id(), "requirements": requirements,
+         "functions": all_pages(list_objects, "Function"), "routes": all_pages(list_routes),
++        "hardware": [{"id": item["id"], "name": item["name"], "identity": item.get("identity") or {},
++                      "grouping": grouping.get(str(item["id"]))} for item in hardware],
+         "profiles": [{"standard": standard, "url": url} for standard, url in STANDARD_SOURCES.items()],
+         "bundle": bundle})
+ 
+--- before/frontend/src/features/simulation/ui/model-simulation-runner.tsx
++++ after/frontend/src/features/simulation/ui/model-simulation-runner.tsx
+@@ -83,8 +83,10 @@
+   const [duration, setDuration] = useState(2);
+   const [speed, setSpeed] = useState(1);
+   const [seed, setSeed] = useState(42);
+-  const [formats, setFormats] = useState(defaultSimulationFormats);
++  // No speculative JSON/CSV selection while the project's native profiles load.
++  const [formats, setFormats] = useState<string[]>([]);
+   const [formatsEdited, setFormatsEdited] = useState(false);
++  const [formatProject, setFormatProject] = useState("");
+   const [formatPickerOpen, setFormatPickerOpen] = useState(false);
+   const [faults, setFaults] = useState<ScenarioFault[]>([]);
+   const [faultScope, setFaultScope] = useState<keyof typeof FAULT_TYPES>("SIGNAL");
+@@ -227,24 +229,34 @@
+     [catalog?.formats, formats, selectedTechnology?.native_formats],
+   );
+   useEffect(() => {
+-    if (!catalog || !workflow || formatsEdited) return;
++    if (!catalog || !workflow) return;
++    const changedProject = formatProject !== workflow.project_id;
++    if (changedProject) {
++      setFormatProject(workflow.project_id);
++      setFormatsEdited(false);
++      setFormatPickerOpen(false);
++    }
++    if (formatsEdited && !changedProject) return;
+     const networks = Array.isArray(workflow.parameters.networks) ? workflow.parameters.networks : [];
+     const technologies = networks.length
+       ? networks.map((network: { technology?: string }) => String(network.technology ?? "").toLowerCase())
+       : [String(workflow.parameters.technology ?? "").toLowerCase()];
+     const profiles = catalog.domains.flatMap((domain) => domain.technologies)
+       .filter((profile) => technologies.includes(profile.id.toLowerCase()));
+-    setFormats(projectSimulationFormats(profiles));
+-  }, [catalog, workflow?.project_id, workflow?.parameters.networks, workflow?.parameters.technology, formatsEdited]);
++    // Unresolved technologies must not silently fall back to universal formats.
++    setFormats(technologies.every((technology) => profiles.some((profile) => profile.id.toLowerCase() === technology))
++      ? projectSimulationFormats(profiles) : []);
++  }, [catalog, workflow?.project_id, workflow?.parameters.networks, workflow?.parameters.technology, formatsEdited, formatProject]);
+   const formatGroups = useMemo(() => groupSimulationFormats(availableFormats), [availableFormats]);
+   const selectedFormatLabels = useMemo(
+     () => formats.map((format) => describeSimulationFormat(format).label),
+     [formats],
+   );
++  const formatsResolved = Boolean(catalog && workflow && formatProject === workflow.project_id);
+   const simulationScope = simulationScopeFrom(workflow?.parameters.simulation_scope);
+   const scopeValid = simulationScopeValid(simulationScope);
+   const startAllowed = canStartSimulation({ validation: workflow?.statuses.validation,
+-    projectId: workflow?.project_id, restoredProjectId, job, busy, formatCount: formats.length, scopeValid });
++    projectId: workflow?.project_id, restoredProjectId, job, busy, formatCount: formatsResolved ? formats.length : 0, scopeValid });
+ 
+   function buildScenario(name?: string) {
+     const scenarioMode = mode === "GOLDEN" ? "NORMAL" : mode;
+@@ -346,7 +358,7 @@
+   }
+ 
+   async function saveScenarioAs() {
+-    if (!workflow || !valid || formats.length === 0 || !scopeValid) return;
++    if (!workflow || !valid || !formatsResolved || formats.length === 0 || !scopeValid) return;
+     const defaultName = `${mode === "GOLDEN" ? "Golden / Ideal" : mode === "NORMAL" ? "Normalbetrieb" : mode === "STRESS" ? "Stresstest" : "Fehlerszenario"} ${new Date().toLocaleString("de-DE")}`;
+     const name = window.prompt("Szenario speichern unter", defaultName)?.trim();
+     if (!name) return;
+@@ -487,13 +499,16 @@
+             aria-expanded={formatPickerOpen}
+             aria-haspopup="dialog"
+             className="trace-format-trigger"
++            disabled={!formatsResolved}
+             onClick={() => setFormatPickerOpen((current) => !current)}
+             type="button"
+           >
+-            <strong>{formats.length}</strong>
+-            <small>{selectedFormatLabels.slice(0, 3).join(", ")}{formats.length > 3 ? ` +${formats.length - 3}` : ""}</small>
++            <strong>{formatsResolved ? formats.length : "…"}</strong>
++            <small>{!formatsResolved ? "Projektformate werden geladen …" : formats.length
++              ? selectedFormatLabels.slice(0, 3).join(", ") + (formats.length > 3 ? ` +${formats.length - 3}` : "")
++              : "Formate auswählen"}</small>
+           </button>
+-          {formatPickerOpen && (
++          {formatPickerOpen && formatsResolved && (
+             <div className="trace-format-popover" role="dialog" aria-label="Trace-Formate auswählen">
+               {formatGroups.map((group) => (
+                 <section key={group.id}>
+@@ -521,7 +536,7 @@
+           )}
+         </div>
+         <div className="simulation-transport-controls">
+-          <button className="button secondary" disabled={!valid || busy || formats.length === 0 || !scopeValid || !workflow} onClick={() => void saveScenarioAs()} type="button">Speichern unter</button>
++          <button className="button secondary" disabled={!valid || busy || !formatsResolved || formats.length === 0 || !scopeValid || !workflow} onClick={() => void saveScenarioAs()} type="button">Speichern unter</button>
+           <button className="button primary" disabled={!startAllowed} title={job && !running ? "Neuen Lauf mit der aktuellen Preflight-Freigabe starten. Der gespeicherte Lauf bleibt erhalten." : undefined} type="submit">Start</button>
+           <button className="button secondary" disabled={!job?.result?.model_simulation} onClick={() => setPlaying((current) => !current)} type="button">{playing ? "Pause" : "Weiter"}</button>
+           <button className="button secondary" disabled={!running} onClick={() => void stop()} type="button">Stop</button>
+--- before/frontend/src/features/simulation/lib/simulation-formats.ts
++++ after/frontend/src/features/simulation/lib/simulation-formats.ts
+@@ -21,7 +21,7 @@
+   { id: "blf", group: "can", label: "BLF", description: "Vector-nahes CAN/CAN-FD Binärtrace" },
+   { id: "asc", group: "can", label: "ASC", description: "CAN ASCII Trace" },
+   { id: "trc", group: "can", label: "TRC", description: "PCAN Trace" },
+-  { id: "dbc", group: "can", label: "DBC", description: "CAN Signal- und Nachrichten-Datenbank" },
++  { id: "dbc", group: "can", label: "DBC", description: "Eine gemeinsame Datenbank für alle CAN/CAN-FD-Nachrichten und Signale des Laufs" },
+   { id: "arxml", group: "can", label: "ARXML", description: "AUTOSAR Austauschformat" },
+   { id: "fibex", group: "can", label: "FIBEX", description: "Netzwerk- und Signalbeschreibung" },
+   { id: "mdf", group: "can", label: "MDF", description: "Messdatenformat 3.x" },
+--- before/backend/nis/communication/technologies/can/formats/can_format_writers.py
++++ after/backend/nis/communication/technologies/can/formats/can_format_writers.py
+@@ -18,7 +18,8 @@
+ def write_project_can_artifacts(out_dir: Path, config: dict, routes: list[dict], events: list[dict], formats: list[str]):
+     """Export the frozen canonical model and actual scheduled CAN transmissions.
+ 
+-    Each physical bus has its own DBC; a BLF channel map retains network identity.
++    One project DBC contains all CAN/CAN-FD definitions in the frozen run scope;
++    the BLF channel map retains physical network identity and original wire IDs.
+     This adapter never invokes the standalone example traffic generator.
+     """
+     selected = set(formats) & {"blf", "dbc"}
+@@ -32,6 +33,7 @@
+     from cantools.database.can.formats.dbc.dbc_attribute import DbcAttribute
+     from cantools.database.can.formats.dbc.dbc_attribute_definition import DbcAttributeDefinition
+     from collections import OrderedDict
++    from copy import deepcopy
+     from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY as registry
+     from backend.nis.simulation.model_based_simulation import integer_signal_signed
+ 
+@@ -134,7 +136,7 @@
+                     choices={int(value): label for label, value in choices.items()} if choices else None),
+                 minimum=signal.get("min_value"), maximum=signal.get("max_value"), unit=signal.get("unit"),
+                 receivers=receivers, comment=f"CanonicalSignal={signal['id']}"))
+-        definition = Message(frame_id, name(raw['name'], identity, network), length, encoded,
++        definition = Message(frame_id, name(raw['name'], identity, "messages"), length, encoded,
+             is_extended_frame=extended, is_fd=is_fd, senders=[source], strict=True,
+             dbc_specifics=DbcSpecifics(attributes=OrderedDict([
+                 ('VFrameFormat', DbcAttribute((2 if is_fd else 0) + int(extended), frame_format))])),
+@@ -143,7 +145,8 @@
+ 
+     # Validate every database before creating any artifact. No invalid layouts,
+     # duplicate IDs or truncated encodings can masquerade as an export success.
+-    databases = {}
++    project_definitions = {}
++    definition_networks = {}
+     for network, items in definitions.items():
+         nodes = sorted({node for item in items.values() for node in item.senders}
+                        | {node for item in items.values() for signal in item.signals for node in signal.receivers})
+@@ -151,7 +154,38 @@
+             dbc_specifics=DbcSpecifics(attribute_definitions=OrderedDict([('VFrameFormat', frame_format)])))
+         text = database.as_dbc_string()
+         cantools.database.load_string(text, database_format="dbc", strict=True)
+-        databases[network] = text
++        if 'dbc' not in selected:
++            continue
++        for identity, definition in items.items():
++            wire_key = (definition.frame_id, definition.is_extended_frame)
++            if wire_key in project_definitions:
++                previous_identity, previous = project_definitions[wire_key]
++                if (previous_identity != identity or previous.is_fd != definition.is_fd
++                        or previous.senders != definition.senders):
++                    raise ValueError(
++                        f"CAN_EXPORT_PROJECT_ID_COLLISION: {definition.frame_id:#x} identifies different "
++                        f"definitions on {', '.join(definition_networks[wire_key])} and {network}. "
++                        "A single unambiguous DBC requires unique canonical CAN identifiers; "
++                        "wire identifiers are never renumbered by export.")
++                for previous_signal, signal in zip(previous.signals, definition.signals):
++                    previous_signal.receivers = sorted(set(previous_signal.receivers + signal.receivers))
++                definition_networks[wire_key].append(network)
++            else:
++                project_definitions[wire_key] = (identity, deepcopy(definition))
++                definition_networks[wire_key] = [network]
++    project_messages = []
++    for wire_key, (identity, definition) in project_definitions.items():
++        definition.comment = (f"CanonicalMessage={identity}; Networks={','.join(definition_networks[wire_key])}; "
++                              f"Technology={'can_fd' if definition.is_fd else 'can'}")
++        project_messages.append(definition)
++    project_dbc = None
++    if 'dbc' in selected:
++        nodes = sorted({node for item in project_messages for node in item.senders}
++                       | {node for item in project_messages for signal in item.signals for node in signal.receivers})
++        project_database = Database(messages=project_messages, nodes=[Node(node) for node in nodes], strict=True,
++            dbc_specifics=DbcSpecifics(attribute_definitions=OrderedDict([('VFrameFormat', frame_format)])))
++        project_dbc = project_database.as_dbc_string()
++        cantools.database.load_string(project_dbc, database_format="dbc", strict=True)
+     frames = []
+     mapping = []
+     for event in events:
+@@ -176,11 +210,9 @@
+     out_dir.mkdir(parents=True, exist_ok=True)
+     paths = []
+     if 'dbc' in selected:
+-        for network, text in databases.items():
+-            filename = re.sub(r'[^A-Za-z0-9_-]', '_', network)[:80] + '_' + hashlib.sha256(network.encode()).hexdigest()[:8]
+-            path = out_dir / f'{filename}.dbc'
+-            path.write_text(text, encoding='utf-8', newline='')
+-            paths.append(path)
++        path = out_dir / 'can_network.dbc'
++        path.write_text(project_dbc, encoding='utf-8', newline='')
++        paths.append(path)
+     if 'blf' in selected:
+         path = out_dir / 'can_trace.blf'
+         with can.BLFWriter(str(path)) as writer:
+@@ -191,7 +223,11 @@
+     sidecar.write_text(json.dumps({'channels':channels, 'events':mapping}, ensure_ascii=False), encoding='utf-8')
+     paths.append(sidecar)
+     return paths, {'generator':'canonical-can-export-v1', 'frames':len(frames), 'networks':networks,
+-        'messages':sum(len(items) for items in definitions.values()), 'map':str(sidecar)}
++        'messages':len(project_messages) if 'dbc' in selected else sum(len(items) for items in definitions.values()),
++        'signals':sum(len(item.signals) for item in project_messages) if 'dbc' in selected else
++                  sum(len(item.signals) for items in definitions.values() for item in items.values()),
++        'database':'can_network.dbc' if 'dbc' in selected else None,
++        'database_layout':'project-single-dbc-v1' if 'dbc' in selected else None, 'map':str(sidecar)}
+ 
+ 
+ def hex_payload(data: bytes, sep: str = " ") -> str:
+--- before/backend/tests/test_project_can_exports.py
++++ after/backend/tests/test_project_can_exports.py
+@@ -116,19 +116,52 @@
+     assert cfg==before
+ 
+ 
+-def test_reused_frame_ids_on_separate_buses_keep_independent_dbc_and_blf_channels(tmp_path):
++def two_bus_config(tmp_path, *, frame_id='0x322'):
+     cfg=config(tmp_path)
+     cfg['networks'].append({**cfg['networks'][0], 'id':'second-can'})
+     for node in cfg['hardware']['devices']:
+         node['ports'].append({'id':node['id']+'-other-port','interfaces':[
+             {'id':node['id']+'-other-if','technology':'can_fd','network':'second-can'}]})
+     cfg['communications'].append({**cfg['communications'][0], 'id':'other-route','sender_interface':'a-other-if',
+-        'receiver_interfaces':['b-other-if'], 'network_id':'second-can','message_ids':['other-message'], 'signal_ids':['other-state']})
+-    cfg['engineering_model']['messages'].append({**cfg['engineering_model']['messages'][0], 'id':'other-message','name':'OtherState'})
++        'receiver_interfaces':['b-other-if'], 'network_id':'second-can','message_ids':['other-message'], 'signal_ids':['other-state'],
++        'arbitration_id':int(frame_id,16)})
++    cfg['engineering_model']['messages'].append({**cfg['engineering_model']['messages'][0], 'id':'other-message','name':'OtherState','message_id_hex':frame_id})
+     cfg['engineering_model']['signals'].append({**cfg['engineering_model']['signals'][0], 'id':'other-state','message_id':'other-message'})
++    return cfg
++
++
++def test_all_bus_definitions_share_one_dbc_with_original_wire_ids_and_signals(tmp_path):
++    cfg=two_bus_config(tmp_path); before=deepcopy(cfg)
+     run_simulation(cfg)
+-    databases=[cantools.database.load_file(str(path),strict=True) for path in (tmp_path/'native').glob('*.dbc')]
+-    assert len(databases)==2
+-    assert {db.messages[0].name for db in databases}=={'VehicleState','OtherState'}
+-    assert all(db.messages[0].frame_id==0x321 for db in databases)
+-    assert {frame.channel for frame in can.BLFReader(str(tmp_path/'native/can_trace.blf'))}=={0,1}
++    paths=list((tmp_path/'native').glob('*.dbc'))
++    assert [path.name for path in paths]==['can_network.dbc']
++    database=cantools.database.load_file(str(paths[0]),strict=True)
++    assert {message.name:message.frame_id for message in database.messages}=={'VehicleState':0x321,'OtherState':0x322}
++    assert sum(len(message.signals) for message in database.messages)==3
++    frames=list(can.BLFReader(str(tmp_path/'native/can_trace.blf')))
++    assert {frame.channel for frame in frames}=={0,1}
++    for frame in frames:
++        decoded=database.decode_message(frame.arbitration_id,frame.data,decode_choices=False)
++        assert decoded['State']==200
++        if frame.arbitration_id==0x321:
++            assert decoded['Temperature']==pytest.approx(-45)
++    assert cfg==before
++
++
++def test_single_dbc_rejects_ambiguous_cross_bus_ids_without_renumbering(tmp_path):
++    cfg=two_bus_config(tmp_path,frame_id='0x321'); before=deepcopy(cfg)
++    routes,events=generate_universal_events(cfg,normalize_hardware_config(cfg),start_utc=1700000000)
++    with pytest.raises(ValueError,match='CAN_EXPORT_PROJECT_ID_COLLISION'):
++        write_project_can_artifacts(tmp_path/'invalid',cfg,routes,events,['blf','dbc'])
++    assert not (tmp_path/'invalid').exists()
++    assert cfg==before
++
++
++def test_blf_only_preserves_reused_wire_ids_on_separate_channels(tmp_path):
++    cfg=two_bus_config(tmp_path,frame_id='0x321')
++    cfg['formats']=['blf']
++    run_simulation(cfg)
++    assert not list((tmp_path/'native').glob('*.dbc'))
++    frames=list(can.BLFReader(str(tmp_path/'native/can_trace.blf')))
++    assert {frame.channel for frame in frames}=={0,1}
++    assert {frame.arbitration_id for frame in frames}=={0x321}
+--- before/frontend/e2e/safety-assurance.spec.ts
++++ after/frontend/e2e/safety-assurance.spec.ts
+@@ -16,16 +16,26 @@
+   await panel.getByRole('button', {name: 'Anforderung erfassen', exact: true}).click();
+   await panel.getByLabel('Name', {exact: true}).fill('Explizite Safety-Anforderung');
+   await panel.getByRole('combobox', {name: 'Funktion', exact: true}).selectOption(owner.id);
+-  await panel.getByLabel('Versionierte Konfiguration').fill(JSON.stringify({
+-    profile: {standard: 'ISO 26262', edition: '2018', domain: 'road_vehicle', applicability: 'UNRESOLVED', reason: 'Fachliches Review erforderlich'},
+-    hazard_ref: 'H-1', safety_goal_ref: 'SG-1', route_ids: [route.id], criteria: {deadline_ms: 20, required_protections: [], fault_cases: []}
+-  }));
++  await expect(panel.getByLabel('Versionierte Konfiguration')).toHaveCount(0);
++  await panel.getByRole('combobox', {name: 'Norm', exact: true}).selectOption('ISO 26262');
++  await panel.getByLabel('Ausgabe / Änderungsserie', {exact: true}).fill('2018');
++  await panel.getByLabel('Anwendungsbereich', {exact: true}).fill('road_vehicle');
++  await panel.getByRole('combobox', {name: 'Anwendbarkeit', exact: true}).selectOption('UNRESOLVED');
++  await panel.getByRole('textbox', {name: 'Begründung', exact: true}).fill('Fachliches Review erforderlich');
++  await panel.getByLabel('Gefährdungsreferenz', {exact: true}).fill('H-1');
++  await panel.getByLabel('Sicherheitszielreferenz', {exact: true}).fill('SG-1');
++  await panel.getByRole('checkbox', {name: /Lenkung → Lenkung/}).check();
++  await panel.getByLabel('E2E-Frist (ms)', {exact: true}).fill('20');
+   await panel.getByRole('button', {name: 'Anforderung speichern', exact: true}).click();
+   await expect(panel.getByRole('cell', {name: 'Explizite Safety-Anforderung', exact: true})).toBeVisible();
+   await page.reload(); await expect(panel.getByRole('cell', {name: 'Explizite Safety-Anforderung', exact: true})).toBeVisible();
+   const records = await (await page.request.get('/api/engineering/safety-requirements', {headers})).json();
+   expect(records.items[0].approval_state).toBe('pending');
+   expect(records.items[0].version).toBe(1);
++  expect(records.items[0].configuration).toMatchObject({
++    profile: {standard: 'ISO 26262', edition: '2018', domain: 'road_vehicle', applicability: 'UNRESOLVED', reason: 'Fachliches Review erforderlich'},
++    hazard_ref: 'H-1', safety_goal_ref: 'SG-1', route_ids: [route.id], criteria: {deadline_ms: 20, required_protections: [], fault_cases: []}
++  });
+   const report = await (await page.request.get('/api/engineering/intelligence/safety?download=1', {headers})).json();
+   expect(report.payload.release_approved).toBe(false);
+   expect(report.payload.assessment.technical_status).toBe('NOT_EVALUATED');
+@@ -35,6 +45,7 @@
+   await expect(panel.getByRole('cell', {name: 'Geprüfter Änderungsentwurf', exact: true})).toBeVisible();
+   const updated = await (await page.request.get('/api/engineering/safety-requirements', {headers})).json();
+   expect(updated.items[0].version).toBe(2);
++  expect(updated.items[0].configuration).toEqual(records.items[0].configuration);
+ });
+ 
+ test('norm references appear in the NIS source directory without bus or release claims @safety-assurance', async ({page}) => {

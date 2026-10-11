@@ -5,11 +5,19 @@ import {
   groupSimulationFormats,
   mergeSimulationFormats,
   simulationFormatExtension,
+  projectSimulationFormats,
 } from "./simulation-formats.ts";
 
 test("format catalog exposes universal and native simulator formats in stable order", () => {
   const formats = mergeSimulationFormats(["pcapng", "universal-jsonl"], ["asc", "blf"], defaultSimulationFormats);
   assert.deepEqual(formats, ["universal-jsonl", "universal-csv", "blf", "asc", "pcapng"]);
+});
+
+test("project defaults select BLF/DBC for CAN and PCAP for Ethernet from registered profiles", () => {
+  assert.deepEqual(projectSimulationFormats([{ native_formats: ["blf", "dbc"] }]), ["blf", "dbc"]);
+  assert.deepEqual(projectSimulationFormats([{ native_formats: ["pcap", "pcapng"] }]), ["pcap"]);
+  assert.deepEqual(projectSimulationFormats([{ native_formats: ["blf", "dbc"] }, { native_formats: ["pcap"] }]), ["blf", "dbc", "pcap"]);
+  assert.deepEqual(projectSimulationFormats([{ native_formats: ["ldf"] }]), defaultSimulationFormats);
 });
 
 test("output format groups keep CAN and Ethernet choices visible", () => {

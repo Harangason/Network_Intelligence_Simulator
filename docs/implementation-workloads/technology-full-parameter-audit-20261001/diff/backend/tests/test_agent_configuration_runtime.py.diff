@@ -1,0 +1,40 @@
+--- before/backend/tests/test_agent_configuration_runtime.py
++++ after/backend/tests/test_agent_configuration_runtime.py
+@@ -1,5 +1,6 @@
+ """A free chat rate change must persist and recalculate the same project."""
+ from __future__ import annotations
++from backend.tests.native_transport_fixtures import lin_design, ethernet_mac
+ 
+ import asyncio
+ import json
+@@ -32,12 +33,12 @@
+ ])
+ def test_reviewed_lin_rate_change_recalculates_capacity_timing_and_preflight(prompt):
+     authority = ToolAuthority('lin-rate-' + uuid4().hex)
+-    parameters = {'industry': 'custom', 'technology': 'LIN', 'bitrate': 9600,
+-                  'cycle_ms': 100, 'payload_bytes': 1, 'queue_size': 10,
++    parameters = {'industry': 'custom', 'technology': 'LIN', **lin_design(9600), 'bitrate': 9600,
++                  'cycle_ms': 100, 'payload_bytes': 1,
+                   'formats': ['LIN'], 'warning_threshold': 60,
+                   'critical_threshold': 75, 'overload_threshold': 90,
+                   'networks': [{'id': 'lin-main', 'name': 'LIN_Main',
+-                                'technology': 'LIN', 'bitrate': 9600}]}
++                                'technology': 'LIN', **lin_design(9600), 'bitrate': 9600}]}
+     scoped(authority, lambda: WorkflowStatusService(authority.project_id).save_parameters(parameters))
+     saved = []
+ 
+@@ -93,11 +94,11 @@
+     monkeypatch.setattr(api_module, 'LocalEngineeringReasoner', OfflineReasoner)
+     authority = ToolAuthority('http-lin-rate-' + uuid4().hex)
+     scoped(authority, lambda: WorkflowStatusService(authority.project_id).save_parameters({
+-        'industry': 'custom', 'technology': 'LIN', 'bitrate': 9600,
+-        'cycle_ms': 100, 'payload_bytes': 1, 'queue_size': 10,
++        'industry': 'custom', 'technology': 'LIN', **lin_design(9600), 'bitrate': 9600,
++        'cycle_ms': 100, 'payload_bytes': 1,
+         'formats': ['LIN'], 'warning_threshold': 60,
+         'critical_threshold': 75, 'overload_threshold': 90,
+-        'networks': [{'id': 'lin-main', 'name': 'LIN_Main', 'technology': 'LIN', 'bitrate': 9600}]}))
++        'networks': [{'id': 'lin-main', 'name': 'LIN_Main', 'technology': 'LIN', **lin_design(9600), 'bitrate': 9600}]}))
+     client = create_app(testing=True).test_client()
+     headers = {'X-Project-ID': authority.project_id}
+     response = client.post('/api/engineering/agent/chat', headers=headers,

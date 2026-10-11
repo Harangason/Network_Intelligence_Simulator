@@ -1,12 +1,15 @@
 "use client";
 
-import { useId, useMemo, useState, type CSSProperties, type KeyboardEvent } from "react";
+import { useId, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
 import type { SequenceDiagramModel, SequenceEvent } from "@/features/simulation/lib/e2e-sequence";
+import { simulationPage } from "../lib/simulation-pagination";
+import { SimulationPageControls } from "./simulation-page-controls";
 
 type DetailLevel = "FUNCTIONAL" | "COMMUNICATION" | "TECHNICAL";
 
 const TIME_COLUMN = 112;
 const PARTICIPANT_COLUMN = 184;
+const LABEL_GUTTER = 16;
 const CHART_TOP = 22;
 const ROW_HEIGHT = 68;
 const MAC_ADDRESS = /^(?:[\da-f]{2}:){5}[\da-f]{2}$/i;
@@ -25,11 +28,12 @@ function isFailure(event: SequenceEvent): boolean {
   return /drop|reject|fail|error|corrupt|timeout|loss/i.test(event.status) || event.receiverStatus === "REJECTED";
 }
 
-export function E2ESequenceDiagram({ model, selectedId, onSelect, onClearSelection }: {
+export function E2ESequenceDiagram({ model, selectedId, onSelect, onClearSelection, timeBasisForEvent }: {
   model: SequenceDiagramModel;
   selectedId?: string | null;
   onSelect?: (event: SequenceEvent) => void;
   onClearSelection?: () => void;
+  timeBasisForEvent?: (event: SequenceEvent) => string | null;
 }) {
   const markerId = useId().replace(/:/g, "");
   const [level, setLevel] = useState<DetailLevel>("COMMUNICATION");
@@ -38,6 +42,8 @@ export function E2ESequenceDiagram({ model, selectedId, onSelect, onClearSelecti
   const [query, setQuery] = useState("");
   const [measuring, setMeasuring] = useState(false);
   const [measureIds, setMeasureIds] = useState<string[]>([]);
+  const [page, setPage] = useState(0);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const participants = useMemo(() => {
     const ordered = new Set<string>();
     for (const event of model.events) {
@@ -54,7 +60,9 @@ export function E2ESequenceDiagram({ model, selectedId, onSelect, onClearSelecti
     return model.events.filter(event => [event.source, event.destination, event.route, event.technology, event.status, event.transactionId ?? ""]
       .some(value => value.toLocaleLowerCase().includes(normalized)));
   }, [model.events, query]);
-  const shown = filtered.slice(0, 200);
+  const displayed = simulationPage(filtered, page, 200);
+  const shown = displayed.items;
+  const changePage = (next: number) => { setPage(next); setHoveredId(null); scrollRef.current?.scrollTo({ top: 0 }); };
   const width = TIME_COLUMN + Math.max(participants.length, 1) * PARTICIPANT_COLUMN + 96;
   const height = CHART_TOP + shown.length * ROW_HEIGHT + 16;
   const xFor = (participant: string) => TIME_COLUMN + Math.max(0, participants.indexOf(participant)) * PARTICIPANT_COLUMN + PARTICIPANT_COLUMN / 2;
@@ -62,13 +70,15 @@ export function E2ESequenceDiagram({ model, selectedId, onSelect, onClearSelecti
   const selected = model.events.find(event => event.id === currentSelectedId) ?? null;
   const activeId = hoveredId ?? selected?.id ?? null;
   const measured = measureIds.map(id => model.events.find(event => event.id === id)).filter((event): event is SequenceEvent => !!event);
-  const measureDelta = measured.length === 2 && measured.every(event => event.timeS !== null)
-    ? Math.abs((measured[1].timeS as number) - (measured[0].timeS as number)) * 1000
+  const measureBases = measured.map(event => timeBasisForEvent ? timeBasisForEvent(event) : model.source === 'SIMULATED' ? 'simulation_relative' : null);
+  const comparable = measured.length === 2 && Boolean(measureBases[0]) && measureBases[0] === measureBases[1];
+  const measureDelta = comparable && measured.every(event => event.timeS !== null)
+    ? ((measured[1].timeS as number) - (measured[0].timeS as number)) * 1000
     : null;
 
   function selectEvent(event: SequenceEvent) {
     if (measuring) {
-      setMeasureIds(current => current.length === 1 ? [...current, event.id] : [event.id]);
+      setMeasureIds(current => current.length === 1 && current[0] !== event.id ? [...current, event.id] : [event.id]);
     } else {
       if (onSelect) onSelect(event);
       else setLocalSelectedId(current => current === event.id ? null : event.id);
@@ -91,7 +101,7 @@ export function E2ESequenceDiagram({ model, selectedId, onSelect, onClearSelecti
     <header className="e2e-sequence-header">
       <div><span className="eyebrow">{model.source === "SIMULATED" ? "SIMULIERT" : "BEOBACHTET"}</span><h3>End-to-End-Sequenz</h3></div>
       <div className="e2e-sequence-toolbar">
-        <label className="e2e-sequence-search"><span className="sr-only">Sequenzereignisse suchen</span><input value={query} onChange={event => setQuery(event.target.value)} placeholder="Teilnehmer, Route oder Technologie" /></label>
+        <label className="e2e-sequence-search"><span className="sr-only">Sequenzereignisse suchen</span><input value={query} onChange={event => { setQuery(event.target.value); changePage(0); }} placeholder="Teilnehmer, Route oder Technologie" /></label>
         <button className="e2e-sequence-tool-button" type="button" aria-pressed={measuring} onClick={toggleMeasure}>Zeit messen</button>
         <div className="e2e-sequence-levels" role="group" aria-label="Detailstufe">
           {(["FUNCTIONAL", "COMMUNICATION", "TECHNICAL"] as const).map(item =>
@@ -100,7 +110,15 @@ export function E2ESequenceDiagram({ model, selectedId, onSelect, onClearSelecti
       </div>
     </header>
     <p className="e2e-sequence-context">{filtered.length} Ereignisse · {model.transactions.length} Transaktionen · {participants.length} Teilnehmer · {model.uncorrelatedCount} ohne Transaktions-ID · {model.transactions.filter(item => item.receiverStatus === "ACCEPTED").length} mit belegter Empfängerakzeptanz. {measuring ? measured.length < 2 ? "Start- und Endereignis auswählen." : measureDelta === null ? "Zeitmessung nicht möglich: Zeitstempel fehlen." : `Zeitabstand: ${measureDelta.toFixed(3)} ms` : "Zeit relativ zum ersten bekannten Ereignis."}</p>
-    <div className="e2e-sequence-scroll">
+    {measuring && <section className="e2e-sequence-measurement" aria-label="Zeitmessung" aria-live="polite">
+      <header><strong>Zeitmessung</strong><button className="button secondary tiny" type="button" onClick={() => setMeasureIds([])}>Messung zurücksetzen</button></header>
+      <p>{measured.length === 0 ? '1. Startereignis im Diagramm anklicken oder mit Enter auswählen.' : measured.length === 1 ? '2. Endereignis auswählen. Die Auswahl darf auf einer anderen Seite liegen.' : 'Zeitdifferenz zwischen den ausgewählten Originalereignissen.'}</p>
+      <dl>{['Start', 'Ende'].map((label, index) => <div key={label}><dt>{label}</dt><dd>{measured[index] ? `${measured[index].source} → ${measured[index].destination} · ${measured[index].timeS?.toFixed(9) ?? 'Zeit unbekannt'} s` : 'Noch nicht ausgewählt'}</dd></div>)}</dl>
+      <output>{measured.length < 2 ? 'Ergebnis ausstehend' : measureDelta === null ? 'Nicht messbar: Zeitstempel oder gemeinsame Zeitbasis fehlen.' : `Δt = ${measureDelta.toFixed(6)} ms (${(measureDelta * 1000).toFixed(3)} µs) · ${measureBases[0]}`}</output>
+      {measureDelta !== null && <small>Zeitabstand Ende − Start; keine automatische Aussage über E2E-Latenz oder eine Ursache.</small>}
+    </section>}
+    <SimulationPageControls label="Ereignisse" {...displayed} onPage={changePage} />
+    <div className="e2e-sequence-scroll" ref={scrollRef}>
       <div className="e2e-sequence-chart" style={{ width, "--participant-count": participants.length } as CSSProperties}>
         <div className="e2e-sequence-lanes" style={{ gridTemplateColumns: `${TIME_COLUMN}px repeat(${Math.max(participants.length, 1)}, ${PARTICIPANT_COLUMN}px)` }}>
           <strong className="e2e-sequence-lane-time">Zeit</strong>
@@ -132,7 +150,7 @@ export function E2ESequenceDiagram({ model, selectedId, onSelect, onClearSelecti
           })}
           {shown.map((event, index) => {
             const y = CHART_TOP + index * ROW_HEIGHT + ROW_HEIGHT / 2;
-            const previous = index > 0 ? shown[index - 1].timeS : event.timeS;
+            const previous = displayed.start + index > 0 ? filtered[displayed.start + index - 1].timeS : event.timeS;
             const sourceX = xFor(event.source);
             const destinationX = xFor(event.destination);
             const self = sourceX === destinationX;
@@ -142,11 +160,15 @@ export function E2ESequenceDiagram({ model, selectedId, onSelect, onClearSelecti
             const technical = level === "TECHNICAL"
               ? `Hop ${event.segmentIndex === null ? "?" : event.segmentIndex + 1}/${event.segmentCount ?? "?"} · Queue ${event.queueDelayMs?.toFixed(3) ?? "?"} ms · ${event.payloadBytes ?? "?"} B`
               : event.transactionId ? `Transaktion ${event.transactionId}` : "Nicht korreliert";
-            const labelX = self ? sourceX + 68 : (sourceX + destinationX) / 2;
+            // Keep labels inside one lifeline gap, including routes across many participants.
+            const gapCount = Math.round(Math.abs(destinationX - sourceX) / PARTICIPANT_COLUMN);
+            const gapLeft = self ? sourceX : Math.min(sourceX, destinationX) + Math.floor((gapCount - 1) / 2) * PARTICIPANT_COLUMN;
+            const labelLeft = gapLeft + (self ? 34 + LABEL_GUTTER : LABEL_GUTTER);
+            const labelWidth = PARTICIPANT_COLUMN - LABEL_GUTTER * 2 - (self ? 34 : 0);
+            const detail = level === "TECHNICAL" ? `${technical} · ${event.status}` : event.status;
             const path = self
               ? `M ${sourceX + 5} ${y + 7} V ${y - 8} H ${sourceX + 34} V ${y + 7}`
               : `M ${sourceX} ${y} H ${destinationX}`;
-            const span = Math.max(54, Math.abs(destinationX - sourceX));
             return <g key={event.id} className={`e2e-sequence-event${activeId === event.id ? " active" : ""}${selected?.id === event.id ? " selected" : ""}${failed ? " failed" : ""}${receiver ? " receiver" : ""}`} role="button" tabIndex={0} aria-label={`${formatRelativeTime(event.timeS, origin)}; ${event.source} an ${event.destination}; ${event.route}; ${event.status}`} onMouseEnter={() => setHoveredId(event.id)} onMouseLeave={() => setHoveredId(null)} onFocus={() => setHoveredId(event.id)} onBlur={() => setHoveredId(null)} onClick={() => selectEvent(event)} onKeyDown={keyboardEvent => onEventKeyDown(keyboardEvent, event)}>
               <rect x="0" y={CHART_TOP + index * ROW_HEIGHT} width={width} height={ROW_HEIGHT} className="e2e-sequence-row-background" />
               <line x1="0" x2={width} y1={CHART_TOP + (index + 1) * ROW_HEIGHT} y2={CHART_TOP + (index + 1) * ROW_HEIGHT} className="e2e-sequence-row-rule" />
@@ -156,16 +178,18 @@ export function E2ESequenceDiagram({ model, selectedId, onSelect, onClearSelecti
               <rect x={destinationX - 5} y={y - 9} width="10" height="18" rx="1" className="e2e-sequence-event-activation-svg" aria-hidden="true" />
               <circle cx={sourceX} cy={y} r="3" className="e2e-sequence-message-origin" aria-hidden="true" />
               <path d={path} className="e2e-sequence-message-line" markerEnd={`url(#${markerId}-arrow)`} />
-              <rect x={labelX - span / 2} y={y - 20} width={span} height="17" className="e2e-sequence-message-label-bg" />
-              <text x={labelX} y={y - 8} textAnchor="middle" className="e2e-sequence-message-label-text">{label.length > 64 ? `${label.slice(0, 63)}…` : label}<title>{label}</title></text>
-              {level !== "FUNCTIONAL" && <text x={labelX} y={y + 16} textAnchor="middle" className="e2e-sequence-message-detail-text">{level === "TECHNICAL" ? `${technical} · ${event.status}` : event.status}</text>}
+              <foreignObject x={labelLeft} y={y - 28} width={labelWidth} height="16">
+                <div className="e2e-sequence-message-label-text" title={label}>{label}</div>
+              </foreignObject>
+              {level !== "FUNCTIONAL" && <foreignObject x={labelLeft} y={y + 12} width={labelWidth} height="14">
+                <div className="e2e-sequence-message-detail-text" title={detail}>{detail}</div>
+              </foreignObject>}
             </g>;
           })}
           {!shown.length && <text x={width / 2} y={40} textAnchor="middle" className="e2e-sequence-empty">Keine Ereignisse für diesen Filter.</text>}
         </svg>
       </div>
     </div>
-    {filtered.length > shown.length && <p className="e2e-sequence-context">{shown.length} von {filtered.length} Ereignissen dargestellt. Filter oder gemeinsames Trace-Zeitfenster eingrenzen, um weitere Ereignisse anzuzeigen.</p>}
     {selected && <aside className="e2e-sequence-selection" aria-label="Ausgewähltes Ereignis">
       <div><strong>{selected.route}</strong><span>{selected.source} → {selected.destination} · {selected.technology} · {selected.status}</span></div>
       <div>{selected.transactionId && <span>Transaktion {selected.transactionId}</span>}{selected.segmentIndex !== null && <span>Hop {selected.segmentIndex + 1}/{selected.segmentCount ?? "?"}</span>}{selected.transportLatencyMs !== null && <span>Transport {selected.transportLatencyMs.toFixed(3)} ms</span>}{selected.queueDelayMs !== null && <span>Queue {selected.queueDelayMs.toFixed(3)} ms</span>}{selected.payloadBytes !== null && <span>{selected.payloadBytes} Byte</span>}{selected.receiverStatus && <span>Empfänger {selected.receiverStatus}</span>}{selected.e2eLatencyMs !== null && <span>E2E {selected.e2eLatencyMs.toFixed(3)} ms</span>}{selected.dataAgeAtAcceptMs !== null && <span>Datenalter {selected.dataAgeAtAcceptMs.toFixed(3)} ms</span>}</div>

@@ -6,6 +6,17 @@ const row = (id, abbreviation, name, date = null) => ({id, name, publisher: 'Pub
   accessed_at: date, revisions: [], rights: {label: 'Ungeklärt'}, technologies: [{id, abbreviation, name: abbreviation}]});
 const rows = [row('ethernet', 'ETHERNET', 'Ethernet specification', '2026-10-01'), row('can', 'CAN', 'CAN documentation'), row('i2c', 'I2C', 'I2C specification', '2026-09-29')];
 
+test('normative references remain searchable grouped sources without becoming bus technologies', () => {
+  const reference = {...row('iso-26262', '', 'ISO 26262-1:2018 Functional safety'), technologies: [],
+    categories: [{id: 'safety-regulations', abbreviation: 'SAFETY / REGULATORY', name: 'Funktionale Sicherheit und Regularien'}]};
+  const groups = sourceGroups([...rows, reference], '26262');
+  assert.equal(groups.length, 1);
+  assert.equal(groups[0].kind, 'assurance');
+  assert.equal(groups[0].sources[0].technologies.length, 0);
+  assert.equal(groups[0].technology.id, 'safety-regulations');
+  assert.equal(sourceGroups([...rows, reference], 'can')[0].kind, 'technology');
+});
+
 test('default bus order and reversible column sort retain input and stable ties', () => {
   assert.deepEqual(sourceRows(rows, '').map(r => r.id), ['can', 'ethernet', 'i2c']);
   assert.deepEqual(sourceRows(rows, '', 'abbreviation', true).map(r => r.id), ['i2c', 'ethernet', 'can']);

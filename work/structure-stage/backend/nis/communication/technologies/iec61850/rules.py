@@ -1,0 +1,192 @@
+"""Service-specific ACSI declarations; no universal IEC61850 Ethernet defaults."""
+BASE='https://raw.githubusercontent.com/mz-automation/libiec61850/v1.6/'
+CONFIG=BASE+'src/iec61850/server/impl/ied_server_config.c'
+STACK=BASE+'config/stack_config.h'
+CLIENT=BASE+'src/iec61850/client/ied_connection.c'
+MMS=BASE+'src/mms/iso_mms/client/mms_client_connection.c'
+COMMON=BASE+'src/iec61850/inc/iec61850_common.h'
+MODEL=BASE+'src/iec61850/inc/iec61850_model.h'
+REPORT=BASE+'src/iec61850/server/mms_mapping/reporting.c'
+CONTROL=BASE+'src/iec61850/server/mms_mapping/control.c'
+CTLCLIENT=BASE+'src/iec61850/client/client_control.c'
+README=BASE+'README.md'
+ACSI='https://webstore.iec.ch/en/publication/6015'
+ACSI_AMD='https://webstore.iec.ch/en/publication/33197'
+P8_1='https://webstore.iec.ch/en/publication/66585'
+P8_2='https://webstore.iec.ch/en/publication/34345'
+P9_2='https://webstore.iec.ch/en/publication/6023'
+P90_5='https://webstore.iec.ch/en/publication/6026'
+SCL='https://webstore.iec.ch/en/iec_catalog/product/preview/?id=L3B1Yi9wZGYvcHJldmlldy9pbmZvX2llYzYxODUwLTZ7ZWQyLjJ9ZW4ucGRm'
+API='https://support.mz-automation.de/doc/libiec61850/c/latest/group__IEC61850__SERVER__CONFIG.html'
+SOURCES={CONFIG:'libiec61850 pinned v1.6 server constructor; implementation defaults, not actual equipment guarantees',
+ STACK:'libiec61850 v1.6 unchanged stack_config.h compile proposals; target builds can override',
+ CLIENT:'libiec61850 v1.6 IED client timeouts and service calls',MMS:'libiec61850 v1.6 MMS client PDU/ports/TLS/request timer',
+ COMMON:'libiec61850 v1.6 FC/control/report API definitions, not raw wire bit positions',
+ MODEL:'libiec61850 v1.6 model field types',REPORT:'libiec61850 v1.6 reporting/options/buffering/segmentation',
+ CONTROL:'libiec61850 v1.6 control model and absent-attribute SBO timeout',CTLCLIENT:'libiec61850 v1.6 control sequence/origin/procedures',
+ README:'libiec61850 v1.6 features; routable variants BETA, no XMPP implementation',
+ ACSI:'IEC61850-7-2:2010 edition2 publisher public scope, full normative tables not obtained',
+ ACSI_AMD:'IEC61850-7-2:2010 AMD1:2020 publisher metadata, actual amendment capabilities required',
+ P8_1:'IEC61850-8-1:2011 AMD1:2020 edition2.1 public mapping scope, gigabit/redundancy support, no fixed100M',
+ P8_2:'IEC61850-8-2:2018 public XML/XMPP mapping scope',P9_2:'IEC61850-9-2:2011 and2020 amendment public direct-link SV scope',
+ P90_5:'IEC_TR61850-90-5:2012 public routable GOOSE/SV scope, not raw L2',
+ SCL:'IEC61850-6:2009 AMD1:2018 AMD2:2024 edition2.2 official15-page preview, SCL variants/mixed-version requirements',
+ API:'Primary C API1.6.0 2024-08-13: runtime maxMmsConnections strictly below positive compile limit'}
+MMS_SERVICES=['MMS_READ_WRITE','MMS_REPORT','MMS_CONTROL','MMS_FILE','MMS_LOG','MMS_SETTING_GROUP']
+SERVICES=MMS_SERVICES+['GOOSE','SV','RGOOSE','RSV','XMPP']
+MAPPINGS={'MMS_8_1':MMS_SERVICES,'GOOSE_8_1':['GOOSE'],'SV_9_2':['SV'],'RGOOSE_90_5':['RGOOSE'],'RSV_90_5':['RSV'],'XMPP_8_2':['XMPP']}
+DECLARATIONS=[]
+
+
+def d(key,kind,meaning,source=ACSI,unit=None,options=None,minimum=None,maximum=None,services=None,**extra):
+    DECLARATIONS.append(dict(key='iec61850_'+key,type=kind,description=meaning,source=source,source_revision=SOURCES[source],
+        unit=unit,options=options,min=minimum,max=maximum,services=services,**extra))
+
+
+d('service','select','Actual service instance; concurrent services need separately bound instances, no default selected by industry.',options=SERVICES)
+d('mapping','select','Actual SCSM MMS/TCP, direct-link GOOSE/SV, routable90-5 or XML/XMPP8-2.',options=list(MAPPINGS),source=P8_1)
+d('edition','select','Actual ACSI edition/amendments, distinct from SCL edition and transport revision.',options=['ED1','ED2','ED2_1'],source=ACSI_AMD)
+d('implementation','select','Actual firmware versus pinned library; constructor settings do not certify a device.',options=['ACTUAL_DEVICE','LIBIEC61850_1_6'],source=README)
+d('profile_kind','select','Actual configured values versus explicitly chosen qualified factory proposals; confirmation remains separate.',options=['CONFIGURED_DEVICE','FACTORY_PROFILE'],source=CONFIG)
+d('role','select','Actual client/server or publisher/subscriber role.',options=['CLIENT','SERVER','PUBLISHER','SUBSCRIBER'])
+for key,meaning,source in [('device_source','Actual PICS/PIXIT/firmware/service/security/limit evidence.',README),
+ ('edition_source','Actual mutually supported normative edition/amendments.',ACSI_AMD),
+ ('scl_source','Actual approved SCL hash/version/services/datasets/ports/rights.',SCL),
+ ('binding_source','Actual canonical service/port/subnetwork and registered lower path.',P8_1),
+ ('physical_source','Actual lower link/rate/MTU/clock/PHY/route/redundancy evidence.',P8_1),
+ ('encoding_source','Actual object/type/quality/time/BER/XML and complete wire layout.',ACSI),
+ ('schedule_source','Actual service-specific traffic/report/event/sample/file/control schedule.',ACSI),
+ ('acceptance_source','Actual functional transfer/performance/quality/freshness/safety acceptance.',ACSI),
+ ('security_source','Actual IEC62351/security profile/trust/authorization/keys/overhead.',README),
+ ('model_source','Actual logical-device/node/CDC/FC/namespace interoperability.',MODEL)]:d(key,'text',meaning,source=source)
+for key,meaning in [('scl_edition','Actual part6 edition; SCL2.2 does not force every ACSI device to edition2.1.'),
+ ('scl_namespace','Actual SCL namespace/version/revision and mixed-version conversion rights.'),
+ ('ied_name','Actual unique IED identity.'),('access_point','Actual configured access-point/subnetwork.'),
+ ('logical_device','Actual logical-device identity, not sample LD0.'),('logical_node','Actual prefix/LN class/instance.'),
+ ('object_reference','Actual resolved object reference.'),('namespace_revision','Actual model revision/private extensions.')]:d(key,'text',meaning,source=SCL)
+d('scl_variant','select','Actual configuration interchange variant, not proof of complete SCL conformance.',options=['ICD','SSD','SCD','CID','IID','SED'],source=SCL)
+d('functional_constraint','select','Actual FC; API wildcard/none are not assigned object constraints.',options=['ST','MX','SP','SV','CF','DC','SG','SE','SR','OR','BL','EX','CO','US','MS','RP','BR','LG','GO'],source=COMMON)
+d('message_bytes','number','Actual full encoded service message, distinct from payload/PDU/MTU.',minimum=0,unit='Byte')
+d('peer_message_limit','number','Actual selected-mapping accepted encoded size; no universal1500/65000/65535.',minimum=1,unit='Byte')
+d('redundancy','select','Actual topology/device/failover proof, no unconditional PRP/HSR.',options=['NONE','PRP','HSR','ACTUAL_OTHER'],source=P8_1)
+d('time_source','text','Actual timestamp/time-quality/leap/synchronization/freshness evidence.')
+d('clock_accuracy_us','number','Actual verified time error, not sync-method name.',minimum=0,unit='us')
+d('transfer_bound_ms','number','Actual function/performance-class E2E bound, no universal3ms.',minimum=0,unit='ms')
+d('transport','select','Actual MMS ISO-on-TCP versus secure binding; distinct from direct/routed publisher paths.',options=['ISO_TCP','TLS_ISO_TCP'],services=MMS_SERVICES,source=MMS)
+d('tcp_port','number','Actual MMS service port;102/plain and3782/TLS qualified proposals, not physical clock.',minimum=1,maximum=65535,services=MMS_SERVICES,source=MMS)
+d('tls_source','text','Actual TLS version/trust/credentials/authorization/layout.',services=MMS_SERVICES,source=README)
+d('peer_endpoint','text','Actual peer address/association/selectors, not sample identity.',services=MMS_SERVICES,source=MMS)
+for key,meaning,source in [('connect_timeout_ms','Actual association establishment timeout, not control completion.',CLIENT),
+ ('request_timeout_ms','Actual MMS response timeout, distinct from server file upload or functional termination.',MMS)]:
+    d(key,'number',meaning,minimum=0,maximum=4294967295,unit='ms',services=MMS_SERVICES,source=source)
+for key,meaning,minimum,maximum in [('mms_pdu_bytes','Actual BER MMS PDU, not TCP/session/Ethernet wire bytes.',0,None),
+ ('mms_local_detail','Actual local MMS acceptance limit;65000 only unchanged compile proposal.',1,2147483647),
+ ('mms_peer_detail','Actual peer negotiated limit, never copied from local constructor.',1,None)]:
+    d(key,'number',meaning,minimum=minimum,maximum=maximum,unit='Byte',services=MMS_SERVICES,source=MMS)
+for key in ('outstanding_calling','outstanding_called'):d(key,'number','Actual '+key+' service window; directions differ, not generic queue.',minimum=1,services=MMS_SERVICES,source=STACK)
+d('lib_unmodified_build','boolean','Actual pinned compile configuration verified unchanged; implementation selector does not prove it.',services=MMS_SERVICES,source=STACK)
+d('build_source','text','Actual build/ABI/macros and compiled-service support.',services=MMS_SERVICES,source=STACK)
+d('lib_tcp_compile_limit','number','Actual CONFIG_MAXIMUM_TCP_CLIENT_CONNECTIONS: -1 unlimited or positive;100 qualified unchanged compile proposal.',minimum=-1,services=MMS_SERVICES,source=STACK)
+for key,meaning in [('max_connections','Actual MMS runtime associations, strictly below positive compile limit for pinned API.'),
+ ('max_dynamic_dataset_entries','Actual maximum dynamic dataset members, not byte limit.'),('max_association_datasets','Actual association-specific dataset count limit.'),
+ ('max_domain_datasets','Actual domain-specific dataset count limit.'),('buffer_brcb_bytes','Actual per-BRCB buffer, not generic queue.'),
+ ('buffer_urcb_bytes','Actual pinned implementation per-URCB buffer, not persistent delivery evidence.')]:
+    d(key,'number',meaning,minimum=0,unit='Byte'if key.startswith('buffer_')else None,services=MMS_SERVICES,source=CONFIG)
+for key,meaning in [('file_service_enabled','Actual file service availability/authorization.'),('dynamic_datasets_enabled','Actual dynamic-dataset capability/rights.'),
+ ('log_service_enabled','Actual log capability/retention.'),('edit_sg_enabled','Actual editable setting groups.'),
+ ('sgcb_resvtms_visible','Actual SGCB ResvTms visibility.'),('brcb_resvtms_visible','Actual BRCB ResvTms visibility.'),
+ ('rcb_owner_visible','Actual RCB Owner visibility.'),('sync_integrity_times','Actual integrity reports aligned to UTC epoch.')]:d(key,'boolean',meaning,services=MMS_SERVICES,source=CONFIG)
+d('report_settings_writable','number','Actual pinned-API Dyn mask bits1/2/4/8/16/32, distinct from report OptFlds.',minimum=0,maximum=63,services=MMS_SERVICES,source=CONFIG)
+for key,meaning in [('rcb_reference','Actual RCB identity/RP or BR FC.'),('rpt_id','Actual report ID; reference fallback is not assigned identity.'),
+ ('dataset_reference','Actual ordered FCDA names/types/quality/time/membership.'),('report_source','Actual RCB options/retention/reservation/segmentation/sequence proof.')]:d(key,'text',meaning,services=['MMS_REPORT'],source=REPORT)
+d('report_kind','select','Actual buffered or unbuffered RCB.',options=['BRCB','URCB'],services=['MMS_REPORT'],source=REPORT)
+for key,maximum,unit,meaning in [('conf_rev',4294967295,None,'Actual configuration revision; no fabricated0/1.'),
+ ('buf_tm_ms',4294967295,'ms','Actual first-event to preparation buffer delay;0 is not a universal default.'),
+ ('intg_pd_ms',4294967295,'ms','Actual integrity period;0 disables periodic integrity, not all event reporting.'),
+ ('dataset_members',None,None,'Actual ordered dataset member count, not byte limit.'),
+ ('report_segments',None,None,'Actual report segments at negotiated PDU limit, not Ethernet fragments.')]:d(key,'number',meaning,minimum=0,maximum=maximum,unit=unit,services=['MMS_REPORT'],source=MODEL)
+d('lib_report_trg_mask','number','Actual pinned API TrgOps1data/2quality/4update/8integrity/16GI; transient128 is not an RCB trigger.',minimum=0,maximum=31,services=['MMS_REPORT'],source=COMMON)
+d('lib_report_opt_mask','number','Actual pinned API options0..255; different from raw MMS wire bit ordering.',minimum=0,maximum=255,services=['MMS_REPORT'],source=COMMON)
+d('report_enabled','boolean','Actual RCB enable/reservation state, no guessed true.',services=['MMS_REPORT'],source=REPORT)
+d('control_model','select','Actual status/direct/SBO normal/enhanced procedure; enhanced termination is separate from TLS security.',options=['STATUS_ONLY','DIRECT_NORMAL','SBO_NORMAL','DIRECT_ENHANCED','SBO_ENHANCED'],services=['MMS_CONTROL'],source=COMMON)
+d('control_source','text','Actual value/type/check/test/time/selection/termination/safety procedure.',services=['MMS_CONTROL'],source=CONTROL)
+d('command','select','Actual control stage, selections only for matching SBO models.',options=['STATUS_READ','SELECT','SELECT_WITH_VALUE','OPERATE','CANCEL'],services=['MMS_CONTROL'],source=COMMON)
+d('sbo_timeout_attribute_present','boolean','Actual model contains sboTimeout;15000 fallback only unchanged library when absent.',services=['MMS_CONTROL'],source=CONTROL)
+d('sbo_timeout_ms','number','Actual selection timeout;0 can disable library timeout, not functional acceptance.',minimum=0,maximum=4294967295,unit='ms',services=['MMS_CONTROL'],source=CONTROL)
+d('ctl_num','number','Actual uint8 sequence when model provides it; not CAN identifier or invented0.',minimum=0,maximum=255,services=['MMS_CONTROL'],source=CTLCLIENT)
+d('origin_category','number','Actual orCat1..8;0 unsupported, not actual operator default.',minimum=1,maximum=8,services=['MMS_CONTROL'],source=COMMON)
+d('origin_identity','text','Actual origin octets/authenticated role, not invented operator.',services=['MMS_CONTROL'],source=CTLCLIENT)
+for key,meaning in [('test','Actual command test flag, never silently assumed.'),('interlock_check','Actual interlocking request/check.'),
+ ('synchro_check','Actual synchrocheck request/check.'),('termination_required','Actual enhanced CommandTermination expectation, not TCP ACK.')]:d(key,'boolean',meaning,services=['MMS_CONTROL'],source=COMMON)
+SERVICE_SOURCES={'MMS_FILE':('file',ACSI),'MMS_LOG':('log',ACSI),'MMS_SETTING_GROUP':('setting_group',ACSI),
+ 'GOOSE':('goose',P8_1),'SV':('sv',P9_2),'RGOOSE':('rgoose',P90_5),'RSV':('rsv',P90_5),'XMPP':('xmpp',P8_2)}
+for service,(key,source)in SERVICE_SOURCES.items():
+    d(key+'_source','text','Actual '+service+' service capabilities, registered path, encoding/layout/addressing/recovery/security and schedule. Other service defaults do not apply.',services=[service],source=source)
+REMOVED={key:'Removed inherited '+key+': actual selected IEC61850 service/mapping/lower profile required, no universal CAN/Ethernet settings.'for key in
+ ('bitrate','queue_size','queue_policy','qos_priority','reserved_bandwidth_percent','sync_method','mtu_bytes','vlan_id','duplex',
+ 'retransmission_enabled','retransmission_rate','retry_limit','retransmission_delay_ms','gateway_maximum_throughput',
+ 'gateway_input_buffer','gateway_output_buffer','gateway_maximum_routes','gateway_maximum_messages_s')}
+REQUIRED=['service','mapping','edition','implementation','profile_kind','role','device_source','edition_source','scl_source','binding_source',
+          'physical_source','encoding_source','schedule_source','acceptance_source','model_source']
+FACTORY_SERVER={'max_connections':5,'max_dynamic_dataset_entries':100,'max_association_datasets':10,'max_domain_datasets':10,
+ 'buffer_brcb_bytes':65536,'buffer_urcb_bytes':65536,'file_service_enabled':True,'dynamic_datasets_enabled':True,'log_service_enabled':True,
+ 'edit_sg_enabled':True,'sgcb_resvtms_visible':True,'brcb_resvtms_visible':True,'rcb_owner_visible':False,'sync_integrity_times':False,'report_settings_writable':63}
+
+
+def semantics():
+    rules=[]
+    def r(key,when=None,source=ACSI,**kw):rules.append(dict(parameter='iec61850_'+key,when={'iec61850_'+k:v for k,v in(when or{}).items()},source=source,source_revision=SOURCES[source],**kw))
+    for mapping,services in MAPPINGS.items():r('service',{'mapping':mapping},allowed=services,source=P8_1)
+    for spec in DECLARATIONS:
+        if spec['services']:
+            for service in set(SERVICES)-set(spec['services']):r(spec['key'].removeprefix('iec61850_'),{'service':service},allowed=[],source=spec['source'])
+    for service in SERVICES:r('role',{'service':service},allowed=['CLIENT','SERVER']if service in MMS_SERVICES+['XMPP']else['PUBLISHER','SUBSCRIBER'])
+    for service in MMS_SERVICES:
+        for key in('transport','peer_endpoint'):r(key,{'service':service},required=True,source=MMS)
+    for service,(key,source)in{**SERVICE_SOURCES,'MMS_REPORT':('report',REPORT),'MMS_CONTROL':('control',CONTROL)}.items():r(key+'_source',{'service':service},required=True,source=source)
+    r('tls_source',{'transport':'TLS_ISO_TCP'},required=True,source=README)
+    r('message_bytes',maximum_parameter='iec61850_peer_message_limit')
+    for key in('mms_local_detail','mms_peer_detail'):r('mms_pdu_bytes',maximum_parameter='iec61850_'+key,source=MMS)
+    r('lib_tcp_compile_limit',{'implementation':'LIBIEC61850_1_6'},forbidden=[0],source=STACK)
+    r('max_connections',{'implementation':'LIBIEC61850_1_6'},when_positive=['iec61850_lib_tcp_compile_limit'],maximum_expression={'subtract':['iec61850_lib_tcp_compile_limit',1]},source=API)
+    for key in('lib_unmodified_build','lib_tcp_compile_limit','lib_report_trg_mask','lib_report_opt_mask'):r(key,{'implementation':'ACTUAL_DEVICE'},allowed=[],source=STACK)
+    r('service',{'implementation':'LIBIEC61850_1_6'},forbidden=['XMPP'],source=README)
+    # Build evidence is required only for services with a declared build schema;
+    # routed/publisher configuration is proved by its own service evidence.
+    for service in MMS_SERVICES:
+        r('build_source',{'implementation':'LIBIEC61850_1_6','service':service},required=True,source=STACK)
+        r('lib_unmodified_build',{'implementation':'LIBIEC61850_1_6','profile_kind':'FACTORY_PROFILE','service':service},required=True,source=STACK)
+    r('edition',{'implementation':'LIBIEC61850_1_6','lib_unmodified_build':True},forbidden=['ED1'],source=STACK)
+    r('mms_local_detail',{'implementation':'LIBIEC61850_1_6','lib_unmodified_build':True},minimum=128,maximum=65000,source=STACK)
+    for kind,fc in[('BRCB','BR'),('URCB','RP')]:r('functional_constraint',{'service':'MMS_REPORT','report_kind':kind},allowed=[fc],source=COMMON)
+    r('control_model',{'service':'MMS_CONTROL'},required=True,source=COMMON)
+    r('command',{'control_model':'STATUS_ONLY'},allowed=['STATUS_READ'],source=COMMON)
+    for model in('DIRECT_NORMAL','DIRECT_ENHANCED'):r('command',{'control_model':model},allowed=['OPERATE','CANCEL','STATUS_READ'],source=COMMON)
+    r('command',{'control_model':'SBO_NORMAL'},forbidden=['SELECT_WITH_VALUE'],source=COMMON)
+    r('command',{'control_model':'SBO_ENHANCED'},forbidden=['SELECT'],source=COMMON)
+    for model in('DIRECT_ENHANCED','SBO_ENHANCED'):r('termination_required',{'control_model':model},allowed=[True],source=COMMON)
+    return{'rate_model':{'type':'IEC61850_SELECTED_SERVICE_BINDING','fields':[]},'required_parameters':['iec61850_'+k for k in REQUIRED],
+      'native_parameter_prefixes':['iec61850_'],'parameter_constraints':rules,'mechanisms':{'framing':['ACSI_SELECTED_SCSM_BER_L2_ROUTED_XML'],
+      'addressing':['ACTUAL_SCL_OBJECT_AND_TRANSPORT'],'arbitration':['REGISTERED_LOWER_PROFILE'],'integrity':['SERVICE_QUALITY_TIME_SECURITY'],
+      'acceptance':['FUNCTIONAL_TIMING_CONTROL_SAFETY_SEPARATE_FROM_ACK']}}
+
+
+def fields():
+    result=[];required=set(semantics()['required_parameters'])
+    for spec in DECLARATIONS:
+        item={k:v for k,v in spec.items()if v is not None and k!='services'};key=item['key'].removeprefix('iec61850_')
+        item.update(label=key.replace('_',' '),category='communication',scope='network',required=item['key']in required,editable=True,
+          integer=spec['type']=='number'and key not in('clock_accuracy_us','transfer_bound_ms'),parameter_origin='DEVICE_CONFIGURATION',
+          default_status='UNKNOWN',validation_relevant=True,simulation_relevant=False)
+        if spec['services']:item['schema_when']={'iec61850_service':spec['services']}
+        proposals=[];factory={'iec61850_implementation':'LIBIEC61850_1_6','iec61850_profile_kind':'FACTORY_PROFILE','iec61850_lib_unmodified_build':True}
+        if key in FACTORY_SERVER:proposals.append({'when':{**factory,'iec61850_role':'SERVER'},'value':FACTORY_SERVER[key],'source':CONFIG})
+        if key in('connect_timeout_ms','request_timeout_ms'):proposals.append({'when':{**factory,'iec61850_role':'CLIENT'},'value':10000 if key=='connect_timeout_ms'else 5000,'source':CLIENT if key=='connect_timeout_ms'else MMS})
+        if key in('lib_tcp_compile_limit','mms_local_detail','outstanding_calling','outstanding_called'):proposals.append({'when':factory,'value':{'lib_tcp_compile_limit':100,'mms_local_detail':65000,'outstanding_calling':5,'outstanding_called':5}[key],'source':STACK})
+        if key=='edition':proposals.append({'when':{**factory,'iec61850_role':'SERVER'},'value':'ED2','source':CONFIG})
+        if key=='tcp_port':proposals.extend({'when':{'iec61850_transport':transport},'value':port,'source':MMS}for transport,port in[('ISO_TCP',102),('TLS_ISO_TCP',3782)])
+        if key=='sbo_timeout_ms':
+            for model in('SBO_NORMAL','SBO_ENHANCED'):proposals.append({'when':{**factory,'iec61850_role':'SERVER','iec61850_control_model':model,'iec61850_sbo_timeout_attribute_present':False},'value':15000,'source':CONTROL})
+        if proposals:item.update(conditional_defaults=proposals,default_status='PROPOSED_CONDITIONAL')
+        result.append(item)
+    return result

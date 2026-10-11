@@ -1,0 +1,204 @@
+"""IEC61162 parts have distinct transports, revisions and device constraints."""
+P1='https://webstore.iec.ch/en/publication/72729'
+P2='https://webstore.iec.ch/en/publication/72730'
+P3='https://webstore.iec.ch/en/publication/4716'
+P450='https://webstore.iec.ch/en/publication/93756'
+P450_2018='https://webstore.iec.ch/en/publication/28704'
+P460='https://webstore.iec.ch/en/iec_catalog/product/preview/?id=L3B1Yi9wZGYvcHJldmlldy9pbmZvX2llYzYxMTYyLTQ2MHtlZDMuMC5DTVZ9ZW4ucGRm'
+FURUNO='https://www.furunousa.com/-/media/sites/furuno/document_library/documents/manuals/public_manuals/fa150_operators_manual_j_9252012.pdf'
+FURUNO_LENGTH='https://www.furunousa.com/-/media/sites/furuno/document_library/documents/manuals/public_manuals/vr3000_vr3000s_installation_manual_l1__2-23-11.pdf'
+FAR='https://www.furunousa.com/-/media/sites/furuno/document_library/documents/brochures/brochures/far2xx8mk2_series_brochure.pdf'
+VR='https://www.furunousa.com/-/media/sites/furuno/document_library/documents/manuals/public_manuals/vr7000_vr7000s_operators_manual.pdf'
+CAN_CIA='https://www.can-cia.org/fileadmin/cia/documents/publications/cnlm/june_2024/cnlm_24-1_p9_nmea_2000_conformance_testing_and_product_certification_dr_chris_quigley_warwick_control_technologies.pdf'
+SOURCES={P1:'IEC61162-1:2024 edition6 public publisher scope; full paid specification not obtained',
+ P2:'IEC61162-2:2024 edition2 public publisher scope; full paid specification not obtained',
+ P3:'IEC61162-3:2008+AMD1:2010+AMD2:2014 edition1.2 public publisher scope',
+ P450:'IEC61162-450:2024 edition3 publisher scope/change overview, not complete normative codec tables',
+ P450_2018:'IEC61162-450:2018 edition2 publisher scope/change list: PGN encapsulation, optional TCP binary transfer, authentication tag',
+ P460:'IEC61162-460:2024 edition3 official preview scope/references: add-on to450:2024, no new application protocol',
+ FURUNO:'FA150 operator manualJ2012-09-25 indexed primary appendixAP8, IEC61162-1 edition4/61162-2 serial8N1 and device electrical limits; full PDF access returned403',
+ FURUNO_LENGTH:'VR3000 installation manualL1 2011-02-23 indexed primary section2.7 p40:79 inner chars plus start and CRLF=82; full PDF access returned403',
+ FAR:'FAR2xx8MK2 manufacturer brochure primary specifications accessed2026-10-01:100BASE_TX/IPv4, device multicast groups/ports and TGTD proposal',
+ VR:'VR7000/7000S primary indexed specifications accessed2026-10-01: group/port ranges, UdPbC/RrUdP, IGMP1 and device MISC proposal; full PDF access returned403',
+ CAN_CIA:'CAN Newsletter2/2024 pp9-11 primary conformance-testing report by ChrisQuigley/Warwick Control Technologies; not full NMEA specification'}
+PARTS=['P1','P2','P3','P450','P460']
+EDITIONS={'P1':['P1_2010','P1_2010_COR2013','P1_2016','P1_2024'],'P2':['P2_1998','P2_2024'],
+ 'P3':['P3_2008','P3_2008_AMD2010','P3_2008_AMD2010_AMD2014'],
+ 'P450':['P450_2011','P450_2011_AMD2016','P450_2018','P450_2024'],
+ 'P460':['P460_2015','P460_2018','P460_2018_AMD2020','P460_2024']}
+DECLARATIONS=[]
+
+
+def d(key,kind,meaning,source=P1,unit=None,options=None,minimum=None,maximum=None,parts=None,**extra):
+    DECLARATIONS.append(dict(key='iec61162_'+key,type=kind,description=meaning,source=source,source_revision=SOURCES[source],
+        unit=unit,options=options,min=minimum,max=maximum,parts=parts,**extra))
+
+
+d('part','select','Actual61162 part: one-way serial1/2, NMEA2000/CAN3, Ethernet450 or450+460 safety/security. No default part chosen by industry.',options=PARTS)
+d('edition','select','Actual specification edition/amendments; old serial/electrical or multicast tables do not silently certify2024 revisions.',options=[e for values in EDITIONS.values()for e in values])
+d('device_profile','select','Actual device/firmware qualified profile versus generic device requiring its own verified interoperability.',options=['ACTUAL_DEVICE','FURUNO_FA150_2012','FURUNO_FAR2XX8_MK2','FURUNO_VR7000'])
+d('role','select','Actual port/network role. Serial port has one talker or listener direction; CAN nodes and IP participants differ.',options=['TALKER','LISTENER','CAN_NODE','NETWORK_DEVICE'])
+d('transport','select','Actual selected part transport; TCP binary option is separate from UDP multicast and CAN PGNs.',options=['ONE_WAY_SERIAL','NMEA2000_CAN','UDP_IPV4_MULTICAST','TCP_IP_BINARY'])
+d('content','select','Actual ASCII sentence, binary PGN, or general binary transfer; a PGN inside450 remains encapsulated IP traffic.',options=['SENTENCE','PGN','BINARY_BLOCK'])
+for key,meaning in [('device_source','Actual manufacturer/firmware capabilities, listener/talker/PGN services and accepted settings.'),
+ ('edition_source','Actual applicable edition/amendments and normative interoperability tables.'),
+ ('binding_source','Actual canonical port/segment and registered lower transport/physical path, independently from industry.'),
+ ('physical_source','Actual signaling/wiring/isolation/load/supply/termination/clock/PHY evidence.'),
+ ('schedule_source','Actual source/update/latency/arbitration/fragmentation/recovery/replication and acceptance schedule.'),
+ ('encoding_source','Actual sentence/PGN/binary/tag/quality/encoding layout, not generic payload8 or65535.'),
+ ('address_source','Actual unique talker/SFI/CAN NAME/address/IP/group assignments.'),
+ ('serial_conformance_source','Actual selected-edition serial timing/electrical/sentence conformance; a legacy device table does not prove2024.'),
+ ('nmea_source','Actual applicable NMEA package, PGN services/address claim/fast-packet/physical certification and SOLAS additions.'),
+ ('network_source','Actual UDP/IP/IGMP/switch/filter/rate/MTU/tag/binary-transfer requirements for selected edition.'),
+ ('security_source','Actual450/460 authentication/trust/isolation/monitoring/redundancy/security evidence.')]:
+    d(key,'text',meaning)
+d('baud_bps','number','Actual serial clock;4800/38400 literature proposals are part-qualified, not a family-wide rate or Ethernet throughput.',minimum=1,unit='bit/s',parts=['P1','P2'],source=FURUNO)
+d('data_bits','number','Actual8-bit serial character with D7=0 for documented legacy8N1 profile; actual newer-edition encoding evidence required.',minimum=5,maximum=8,parts=['P1','P2'],source=FURUNO)
+d('parity','select','Actual serial parity. Documented FA150 IEC profile uses no parity.',options=['NONE','EVEN','ODD'],parts=['P1','P2'],source=FURUNO)
+d('stop_bits','number','Actual1/2 stop bits; documented FA150 profile uses1.',minimum=1,maximum=2,parts=['P1','P2'],source=FURUNO)
+d('character_bits','number','Actual serial start/data/parity/stop bits per byte; documented8N1 uses10, not8.',minimum=7,maximum=12,parts=['P1','P2'],source=FURUNO)
+d('talker_count','number','Actual talkers per one-way serial segment, exactly one; listeners never arbitrate as CAN nodes.',minimum=1,maximum=1,parts=['P1','P2'],source=P1)
+d('listener_count','number','Actual attached listeners; electrical loading/installation determines accepted number.',minimum=0,parts=['P1','P2'],source=P1)
+for key,unit,minimum in [('input_impedance_ohms','Ohm',1),('threshold_v','V',0),('max_pin_voltage_v','V',0),
+ ('load_resistance_ohms','Ohm',1),('driver_voltage_min_v','V',0),('short_current_min_ma','mA',0),('short_current_max_ma','mA',0),
+ ('cable_m','m',0),('clock_error_ppm','ppm',0)]:
+    d(key,'number','Actual device/installation '+key+'; specified tolerance/bound is not a fabricated operating default.',minimum=minimum,unit=unit,parts=['P1','P2'],source=FURUNO)
+d('isolated','boolean','Actual listener isolation present and tested; no assumed optocoupler from device name.',parts=['P1','P2'],source=FURUNO)
+d('sentence_inner_chars','number','Actual ASCII characters between start delimiter and CRLF; documented untagged limit79, not whole-wire79.',minimum=0,maximum=79,parts=['P1','P2'],source=FURUNO_LENGTH)
+d('sentence_wire_bytes','number','Actual untagged sentence wire octets:1 start+inner characters+2 CRLF, maximum82.',minimum=3,maximum=82,parts=['P1','P2'],source=FURUNO_LENGTH)
+d('can_bitrate_bps','number','Actual NMEA2000 classic-CAN clock250kbit/s for part3; not CANFD data phase nor Ethernet.',minimum=1,unit='bit/s',parts=['P3'],source=CAN_CIA)
+d('can_binding','text','Actual independently registered NMEA2000/CAN ports/segment; physical/arbitration/PGN evidence belongs to that path.',parts=['P3'],source=P3)
+d('can_fd','boolean','Actual part3 baseline uses classic CAN, not CANFD.',parts=['P3'],source=CAN_CIA)
+d('physical_nodes','number','Actual NMEA2000 physical device count;50 limit differs from logical addresses.',minimum=1,maximum=50,parts=['P3'],source=CAN_CIA)
+d('pgn_identity','text','Actual PGN and its supported specification/device definition; addressing/services separate from Ethernet group.',parts=['P3','P450','P460'],source=P3)
+d('pgn_transport','select','Actual single classic-CAN frame, Fast Packet, or explicitly verified multipacket service.',options=['SINGLE_CAN','FAST_PACKET','ACTUAL_MULTIPACKET'],parts=['P3'],source=CAN_CIA)
+d('pgn_payload_bytes','number','Actual PGN encoded payload. Fast Packet223 bound differs from single CAN frame8 and actual other transport.',minimum=0,parts=['P3'],source=CAN_CIA,unit='Byte')
+d('fast_packet_frames','number','Actual Fast Packet frame count with its own sequence/length overhead. Source summary says31 frames for223 bytes; exact first-frame/counter layout needs applicable NMEA specification before imposing a frame-count bound.',minimum=1,parts=['P3'],source=CAN_CIA)
+d('ethernet_binding','text','Actual independently registered Ethernet/IP transport path;61162 has no universal Ethernet rate.',parts=['P450','P460'],source=P450)
+d('ethernet_bitrate_bps','number','Actual bound link bitrate;100BASE_TX named-device proposal does not become a family-wide clock.',minimum=1,unit='bit/s',parts=['P450','P460'],source=FAR)
+d('sfi','text','Actual unique system function identifier and collision checks; no invented SFI or talker identity.',parts=['P450','P460'],source=P450)
+d('multicast_address','text','Actual group address for chosen edition/device/content; PGN/CAN address is separate.',parts=['P450','P460'],source=FAR)
+d('destination_port','number','Actual UDP group or binary TCP destination; manufacturer ranges differ by profile and message class.',minimum=1,maximum=65535,parts=['P450','P460'],source=FAR)
+d('group_index','number','Actual group code/index per matching device/edition mapping; cannot turn binary or syslog group into a sentence.',minimum=1,maximum=254,parts=['P450','P460'],source=FAR)
+d('group_name','text','Actual transmission-group semantic identity. TGTD/MISC are different device defaults, not universal group assignment.',parts=['P450','P460'],source=FAR)
+d('datagram_header','select','Actual documented UDP sentence UdPbC or retransmittable binary RrUdP envelope; prefix wire layout must be evidenced.',options=['UdPbC','RrUdP'],parts=['P450','P460'],source=VR)
+for key,meaning in [('envelope_bytes','Actual complete encoded IEC61162 envelope bytes;5 printable header letters do not prove full wire header size.'),
+ ('tag_block_bytes','Actual complete tag-block bytes including separators/checksum; not a universal zero.'),
+ ('sentence_bytes','Actual encapsulated encoded sentence octets, including relevant delimiters/terminators.'),
+ ('binary_block_bytes','Actual binary application block, separate from fragments/datagrams/TCP stream.'),
+ ('datagram_bytes','Actual total UDP payload with selected sentence/binary/PGN envelope/tags.'),
+ ('peer_datagram_limit','Actual peer accepted UDP payload, not generic MTU1500 or65535.'),
+ ('fragment_count','Actual encoded fragment count and reassembly deadline, never inferred from application bytes alone.')]:
+    d(key,'number',meaning,minimum=0,unit='Byte'if key!='fragment_count'else None,parts=['P450','P460'],source=P450)
+d('igmp_version','select','Actual host membership protocol version; VR7000 documents1, that does not prove460 switch conformance.',options=['V1','V2','V3'],parts=['P450','P460'],source=VR)
+d('igmp_snooping','boolean','Actual switch multicast filtering where required by selected edition, separately from host IGMP version.',parts=['P450','P460'],source=P450_2018)
+d('authentication_tag','boolean','Actual2018+ authentication-tag use/security agreement; no silent security guarantee.',parts=['P450','P460'],source=P450_2018)
+d('base_450_edition','select','Actual underlying450 edition for460 add-on;460:2024 references450:2024.',options=EDITIONS['P450'],parts=['P460'],source=P460)
+for key,meaning in [('secure_zone_isolated','Actual secure/non-secure boundary isolation through approved460 forwarder.'),
+ ('redundancy','Actual approved redundant460 network topology and failover evidence.'),
+ ('sfi_collision_detection','Actual monitoring detects SFI collisions for applicable edition.'),
+ ('network_monitoring','Actual monitoring/alerts present and verified for applicable460 system.')]:
+    d(key,'boolean',meaning,parts=['P460'],source=P460)
+
+REMOVED={key:'Removed inherited '+key+': IEC61162 needs an explicitly selected part/edition and independent serial/CAN/IP path; no family-wide CAN/Ethernet defaults.'
+ for key in ('bitrate','queue_size','queue_policy','qos_priority','reserved_bandwidth_percent','sync_method','mtu_bytes','vlan_id','duplex',
+             'retransmission_enabled','retransmission_rate','retry_limit','retransmission_delay_ms',
+             'gateway_maximum_throughput','gateway_input_buffer','gateway_output_buffer','gateway_maximum_routes','gateway_maximum_messages_s')}
+REQUIRED=['part','edition','device_profile','role','transport','content','device_source','edition_source','binding_source','physical_source','schedule_source','encoding_source']
+
+
+def semantics():
+    rules=[]
+    def r(key,when=None,source=P1,**kw):
+        rules.append(dict(parameter='iec61162_'+key,when={'iec61162_'+k:v for k,v in (when or {}).items()},source=source,source_revision=SOURCES[source],**kw))
+    for part,editions in EDITIONS.items():r('edition',{'part':part},allowed=editions)
+    for spec in DECLARATIONS:
+        if spec['parts']:
+            for part in set(PARTS)-set(spec['parts']):r(spec['key'].removeprefix('iec61162_'),{'part':part},allowed=[],source=spec['source'])
+    for part in ('P1','P2'):
+        r('role',{'part':part},allowed=['TALKER','LISTENER'])
+        r('transport',{'part':part},allowed=['ONE_WAY_SERIAL'])
+        r('content',{'part':part},allowed=['SENTENCE'])
+        for key in ('baud_bps','serial_conformance_source'):r(key,{'part':part},required=True)
+    r('role',{'part':'P3'},allowed=['CAN_NODE'],source=P3)
+    r('transport',{'part':'P3'},allowed=['NMEA2000_CAN'],source=P3)
+    r('content',{'part':'P3'},allowed=['PGN'],source=P3)
+    for key in ('can_bitrate_bps','can_binding','nmea_source'):r(key,{'part':'P3'},required=True,source=P3)
+    r('can_bitrate_bps',{'part':'P3'},allowed=[250000],source=CAN_CIA)
+    r('can_fd',{'part':'P3'},allowed=[False],source=CAN_CIA)
+    r('pgn_payload_bytes',{'pgn_transport':'SINGLE_CAN'},maximum=8,source=CAN_CIA)
+    r('pgn_payload_bytes',{'pgn_transport':'FAST_PACKET'},maximum=223,source=CAN_CIA)
+    for part in ('P450','P460'):
+        r('role',{'part':part},allowed=['NETWORK_DEVICE'],source=P450)
+        r('transport',{'part':part},allowed=['UDP_IPV4_MULTICAST','TCP_IP_BINARY'],source=P450)
+        for key in ('ethernet_binding','network_source'):r(key,{'part':part},required=True,source=P450)
+    r('content',{'transport':'TCP_IP_BINARY'},allowed=['BINARY_BLOCK'],source=P450_2018)
+    for edition in ('P450_2011','P450_2011_AMD2016'):
+        r('content',{'edition':edition},allowed=['SENTENCE','BINARY_BLOCK'],source=P450_2018)
+        r('transport',{'edition':edition},allowed=['UDP_IPV4_MULTICAST'],source=P450_2018)
+        r('authentication_tag',{'edition':edition},allowed=[False],source=P450_2018)
+    r('base_450_edition',{'part':'P460'},required=True,source=P460)
+    r('base_450_edition',{'edition':'P460_2024'},allowed=['P450_2024'],source=P460)
+    r('security_source',{'part':'P460'},required=True,source=P460)
+    r('sentence_wire_bytes',equal_expression={'sum':[3,'iec61162_sentence_inner_chars']},source=FURUNO_LENGTH)
+    r('character_bits',{'parity':'NONE'},equal_expression={'sum':[1,'iec61162_data_bits','iec61162_stop_bits']},source=FURUNO)
+    for parity in ('EVEN','ODD'):r('character_bits',{'parity':parity},equal_expression={'sum':[2,'iec61162_data_bits','iec61162_stop_bits']},source=FURUNO)
+    for key,value in [('data_bits',8),('parity','NONE'),('stop_bits',1),('character_bits',10)]:
+        r(key,{'device_profile':'FURUNO_FA150_2012'},allowed=[value],source=FURUNO)
+    r('part',{'device_profile':'FURUNO_FA150_2012'},allowed=['P1','P2'],source=FURUNO)
+    r('edition',{'device_profile':'FURUNO_FA150_2012','part':'P1'},allowed=['P1_2010'],source=FURUNO)
+    r('edition',{'device_profile':'FURUNO_FA150_2012','part':'P2'},allowed=['P2_1998'],source=FURUNO)
+    for part,value in [('P1',4800),('P2',38400)]:r('baud_bps',{'device_profile':'FURUNO_FA150_2012','part':part},allowed=[value],source=FURUNO)
+    r('short_current_min_ma',maximum_parameter='iec61162_short_current_max_ma',source=FURUNO)
+    for device in ('FURUNO_FAR2XX8_MK2','FURUNO_VR7000'):
+        r('part',{'device_profile':device},allowed=['P450'],source=FAR if device=='FURUNO_FAR2XX8_MK2'else VR)
+    r('ethernet_bitrate_bps',{'device_profile':'FURUNO_FAR2XX8_MK2'},allowed=[100000000],source=FAR)
+    r('datagram_bytes',maximum_parameter='iec61162_peer_datagram_limit',source=P450)
+    r('datagram_bytes',{'content':'SENTENCE','transport':'UDP_IPV4_MULTICAST'},
+      equal_expression={'sum':['iec61162_envelope_bytes','iec61162_tag_block_bytes','iec61162_sentence_bytes']},source=P450)
+    r('datagram_header',{'content':'SENTENCE','transport':'UDP_IPV4_MULTICAST'},allowed=['UdPbC'],source=VR)
+    r('datagram_header',{'content':'BINARY_BLOCK','transport':'UDP_IPV4_MULTICAST','device_profile':'FURUNO_VR7000'},allowed=['RrUdP'],source=VR)
+    for device,groups,pattern in [('FURUNO_FAR2XX8_MK2',list(range(1,19))+[56],r'239\.192\.0\.(?:[1-9]|1[0-8]|56)'),
+        ('FURUNO_VR7000',list(range(1,21))+list(range(56,65)),r'239\.192\.0\.(?:[1-9]|1[0-9]|20|5[6-9]|6[0-4])')]:
+        when={'device_profile':device,'content':'SENTENCE','transport':'UDP_IPV4_MULTICAST'}
+        r('group_index',when,allowed=groups,source=FAR if device=='FURUNO_FAR2XX8_MK2'else VR)
+        r('multicast_address',when,pattern=pattern,source=FAR if device=='FURUNO_FAR2XX8_MK2'else VR)
+        r('destination_port',when,equal_expression={'sum':[60000,'iec61162_group_index']},source=FAR if device=='FURUNO_FAR2XX8_MK2'else VR)
+        for group in groups:
+            r('multicast_address',{**when,'group_index':group},allowed=[f'239.192.0.{group}'],
+              source=FAR if device=='FURUNO_FAR2XX8_MK2'else VR)
+    for edition in EDITIONS['P450'][:2]:
+        r('base_450_edition',{'part':'P460','content':'PGN'},forbidden=[edition],source=P450_2018)
+        r('base_450_edition',{'part':'P460','transport':'TCP_IP_BINARY'},forbidden=[edition],source=P450_2018)
+    for key in ('datagram_header','datagram_bytes','multicast_address','group_index'):
+        r(key,{'transport':'TCP_IP_BINARY'},allowed=[],source=P450_2018)
+    return {'rate_model':{'type':'IEC61162_PART_BOUND_TRANSPORT','fields':[]},'required_parameters':['iec61162_'+k for k in REQUIRED],
+        'native_parameter_prefixes':['iec61162_'],'parameter_constraints':rules,
+        'mechanisms':{'framing':['PART1_2_SERIAL_SENTENCE','PART3_NMEA2000_PGN','PART450_IP_ENCAPSULATION'],
+            'addressing':['ACTUAL_TALKER_CAN_NAME_SFI_IP_GROUP'], 'arbitration':['PART_SPECIFIC_SERIAL_CAN_IP'],
+            'integrity':['SENTENCE_CHECKSUM_CAN_CRC_IP_TAG_SECURITY_SEPARATE'],
+            'acceptance':['EDITION_DEVICE_FUNCTIONAL_SAFETY_EVIDENCE_REQUIRED']}}
+
+
+def fields():
+    result=[];required=set(semantics()['required_parameters'])
+    for spec in DECLARATIONS:
+        item={k:v for k,v in spec.items()if v is not None and k!='parts'};key=item['key'].removeprefix('iec61162_')
+        item.update(label=key.replace('_',' '),category='communication',scope='network',required=item['key']in required,
+            editable=True,integer=spec['type']=='number'and spec['unit']not in ('V','Ohm','mA','m','ppm'),
+            parameter_origin='DEVICE_CONFIGURATION',default_status='UNKNOWN',validation_relevant=True,simulation_relevant=False)
+        if spec['parts']:item['schema_when']={'iec61162_part':spec['parts']}
+        if key=='multicast_address':item['format']='IP_ADDRESS'
+        proposals=[]
+        if key=='baud_bps':proposals.extend({'when':{'iec61162_part':part},'value':value,'source':FURUNO}for part,value in [('P1',4800),('P2',38400)])
+        if key=='can_bitrate_bps':proposals.append({'when':{'iec61162_part':'P3'},'value':250000,'source':CAN_CIA})
+        if key in ('data_bits','parity','stop_bits','character_bits'):
+            proposals.append({'when':{'iec61162_device_profile':'FURUNO_FA150_2012'},'value':{'data_bits':8,'parity':'NONE','stop_bits':1,'character_bits':10}[key],'source':FURUNO})
+        if key=='ethernet_bitrate_bps':proposals.append({'when':{'iec61162_device_profile':'FURUNO_FAR2XX8_MK2'},'value':100000000,'source':FAR})
+        if key=='group_name':
+            proposals.extend({'when':{'iec61162_device_profile':device,'iec61162_content':'SENTENCE'},'value':value,'source':source}for device,value,source in [('FURUNO_FAR2XX8_MK2','TGTD',FAR),('FURUNO_VR7000','MISC',VR)])
+        if key=='igmp_version':proposals.append({'when':{'iec61162_device_profile':'FURUNO_VR7000'},'value':'V1','source':VR})
+        if key=='datagram_header':proposals.append({'when':{'iec61162_device_profile':'FURUNO_VR7000','iec61162_content':'SENTENCE','iec61162_transport':'UDP_IPV4_MULTICAST'},'value':'UdPbC','source':VR})
+        if proposals:item.update(conditional_defaults=proposals,default_status='PROPOSED_CONDITIONAL')
+        result.append(item)
+    return result

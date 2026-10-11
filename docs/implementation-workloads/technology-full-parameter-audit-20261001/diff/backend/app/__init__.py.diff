@@ -1,0 +1,13 @@
+--- before/backend/app/__init__.py
++++ after/backend/app/__init__.py
+@@ -24,6 +24,10 @@
+     app.register_blueprint(agent_api, url_prefix=f"{api_prefix}/engineering/agent")
+ 
+     if not testing:
++        from .job_service import JOBS
++        # Readiness must include the complete catalog; a first browser request
++        # must not spend its proxy deadline compiling every profile.
++        JOBS.simulations.catalog_json()
+         from ..engineering.goal_execution.background import start as start_goal_followups
+         start_goal_followups()
+         try:

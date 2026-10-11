@@ -1,0 +1,53 @@
+--- before/frontend/src/features/simulation/ui/e2e-sequence-diagram.tsx
++++ after/frontend/src/features/simulation/ui/e2e-sequence-diagram.tsx
+@@ -9,6 +9,7 @@
+ 
+ const TIME_COLUMN = 112;
+ const PARTICIPANT_COLUMN = 184;
++const LABEL_GUTTER = 16;
+ const CHART_TOP = 22;
+ const ROW_HEIGHT = 68;
+ const MAC_ADDRESS = /^(?:[\da-f]{2}:){5}[\da-f]{2}$/i;
+@@ -149,7 +150,12 @@
+             const technical = level === "TECHNICAL"
+               ? `Hop ${event.segmentIndex === null ? "?" : event.segmentIndex + 1}/${event.segmentCount ?? "?"} · Queue ${event.queueDelayMs?.toFixed(3) ?? "?"} ms · ${event.payloadBytes ?? "?"} B`
+               : event.transactionId ? `Transaktion ${event.transactionId}` : "Nicht korreliert";
+-            const labelX = self ? sourceX + 68 : (sourceX + destinationX) / 2;
++            // Keep labels inside one lifeline gap, including routes across many participants.
++            const gapCount = Math.round(Math.abs(destinationX - sourceX) / PARTICIPANT_COLUMN);
++            const gapLeft = self ? sourceX : Math.min(sourceX, destinationX) + Math.floor((gapCount - 1) / 2) * PARTICIPANT_COLUMN;
++            const labelLeft = gapLeft + (self ? 34 + LABEL_GUTTER : LABEL_GUTTER);
++            const labelWidth = PARTICIPANT_COLUMN - LABEL_GUTTER * 2 - (self ? 34 : 0);
++            const detail = level === "TECHNICAL" ? `${technical} · ${event.status}` : event.status;
+             const path = self
+               ? `M ${sourceX + 5} ${y + 7} V ${y - 8} H ${sourceX + 34} V ${y + 7}`
+               : `M ${sourceX} ${y} H ${destinationX}`;
+@@ -162,8 +168,12 @@
+               <rect x={destinationX - 5} y={y - 9} width="10" height="18" rx="1" className="e2e-sequence-event-activation-svg" aria-hidden="true" />
+               <circle cx={sourceX} cy={y} r="3" className="e2e-sequence-message-origin" aria-hidden="true" />
+               <path d={path} className="e2e-sequence-message-line" markerEnd={`url(#${markerId}-arrow)`} />
+-              <text x={labelX} y={y - 8} textAnchor="middle" className="e2e-sequence-message-label-text">{label.length > 64 ? `${label.slice(0, 63)}…` : label}<title>{label}</title></text>
+-              {level !== "FUNCTIONAL" && <text x={labelX} y={y + 16} textAnchor="middle" className="e2e-sequence-message-detail-text">{level === "TECHNICAL" ? `${technical} · ${event.status}` : event.status}</text>}
++              <foreignObject x={labelLeft} y={y - 28} width={labelWidth} height="16">
++                <div className="e2e-sequence-message-label-text" title={label}>{label}</div>
++              </foreignObject>
++              {level !== "FUNCTIONAL" && <foreignObject x={labelLeft} y={y + 12} width={labelWidth} height="14">
++                <div className="e2e-sequence-message-detail-text" title={detail}>{detail}</div>
++              </foreignObject>}
+             </g>;
+           })}
+           {!shown.length && <text x={width / 2} y={40} textAnchor="middle" className="e2e-sequence-empty">Keine Ereignisse für diesen Filter.</text>}
+--- before/frontend/src/app/globals.css
++++ after/frontend/src/app/globals.css
+@@ -13642,8 +13642,9 @@
+ .e2e-sequence-arrow-head { fill: var(--accent); }
+ .e2e-sequence-event.failed .e2e-sequence-message-line { stroke: var(--danger, #c73535); }
+ .e2e-sequence-event.failed .e2e-sequence-arrow-head { fill: var(--danger, #c73535); }
+-.e2e-sequence-message-label-text { fill: var(--text); font-size: 10px; font-weight: 600; paint-order: stroke; stroke: color-mix(in srgb, var(--surface) 80%, transparent); stroke-width: 2; stroke-linejoin: round; }
+-.e2e-sequence-message-detail-text { fill: var(--muted); font-size: 9px; }
++.e2e-sequence-message-label-text, .e2e-sequence-message-detail-text { display: block; width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center; background: transparent; }
++.e2e-sequence-message-label-text { color: var(--text); font-size: 10px; font-weight: 600; line-height: 16px; }
++.e2e-sequence-message-detail-text { color: var(--muted); font-size: 9px; line-height: 14px; }
+ .e2e-sequence-measure-dot { fill: var(--accent); stroke: var(--surface); stroke-width: 2; }
+ .e2e-sequence-empty { fill: var(--muted); font-size: 12px; }
+ .e2e-sequence-selection { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; border-top: 1px solid var(--border); padding: 12px 16px; background: var(--surface-deep); font-size: 11px; }

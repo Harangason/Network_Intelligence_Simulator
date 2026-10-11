@@ -195,6 +195,7 @@ def _run_simulation(config: dict[str, Any], *, validate_only: bool = False) -> d
     model_trace: dict[str, Any] = {}
     model_trace_reference: dict[str, Any] = {}
     native_ethernet: dict[str, Any] = {}
+    native_can: dict[str, Any] = {}
 
     if not validate_only and validation["valid"]:
         trace_start = datetime.now(timezone.utc).timestamp()
@@ -253,7 +254,13 @@ def _run_simulation(config: dict[str, Any], *, validate_only: bool = False) -> d
         written.extend(packet_paths)
         if native_ethernet.get("unsupported_events"):
             warnings.append("PCAP enthält ausschließlich unterstützte IP-Ereignisse; andere Technologien bleiben im Universal Trace. Keine Ersatz-/Demo-Pakete.")
-        native_config = _native_configuration(config, profile, out_dir, formats)
+        legacy_formats = formats
+        if config.get("engineering_model"):
+            from backend.nis.communication.technologies.can.formats.can_format_writers import write_project_can_artifacts
+            can_paths, native_can = write_project_can_artifacts(out_dir / "native", config, routes, events, formats)
+            written.extend(can_paths)
+            legacy_formats = [item for item in formats if item not in {"blf", "dbc"}]
+        native_config = _native_configuration(config, profile, out_dir, legacy_formats)
         if native_config is not None:
             try:
                 from backend.nis.simulation.communication_generator import run_simulation as run_native_simulation
@@ -283,6 +290,7 @@ def _run_simulation(config: dict[str, Any], *, validate_only: bool = False) -> d
         "trace": trace_summary(routes, events),
         "model_simulation": model_trace_reference,
         "native_ethernet": native_ethernet,
+        "native_can": native_can,
     }
     manifest_path = out_dir / "generation_manifest.json"
     manifest_path.write_text(json.dumps(manifest, indent=2, ensure_ascii=False, default=str), encoding="utf-8")
@@ -299,6 +307,7 @@ def _run_simulation(config: dict[str, Any], *, validate_only: bool = False) -> d
         "trace": trace_summary(routes, events),
         "model_simulation": model_trace,
         "native_ethernet": native_ethernet,
+        "native_can": native_can,
     }
     result_path = out_dir / "simulation_result.json"
     result["artifacts"].append(str(result_path))

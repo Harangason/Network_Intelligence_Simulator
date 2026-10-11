@@ -89,7 +89,7 @@ class RoutingGenerationService:
         with get_connection() as connection:
             return connection.execute(
                 "SELECT * FROM engineering_hardware_interfaces WHERE hardware_node_id = %s "
-                "AND project_id = %s ORDER BY channel_index, created_at",
+                "AND project_id = %s AND lifecycle_state NOT IN ('deprecated', 'superseded') ORDER BY channel_index, created_at",
                 (node_id, current_project_id()),
             ).fetchall()
 

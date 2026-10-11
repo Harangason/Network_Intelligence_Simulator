@@ -1,0 +1,41 @@
+--- before/backend/engineering/routing/config_builder.py
++++ after/backend/engineering/routing/config_builder.py
+@@ -76,6 +76,7 @@
+               parameters: dict[str, Any] | None = None) -> dict[str, Any]:
+         from .transport_segments import PhysicalRouteResolver
+         from ..capacity.service import parameters_for_protocol
++        from backend.communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY
+ 
+         parameters = parameters or {}
+         approved = [route for route in routes if route.get("approval_state") == "APPROVED"
+@@ -118,7 +119,12 @@
+ 
+         def network_info(endpoint, fallback=None):
+             protocol = str(endpoint.get("protocol") or (fallback or {}).get("protocol") or "CUSTOM").upper()
+-            technology = PROTOCOL_TO_TECHNOLOGY.get(protocol, "generic")
++            try:
++                technology = DEFAULT_TECHNOLOGY_REGISTRY.profile(protocol)['id']
++            except KeyError:
++                if protocol != 'CUSTOM':
++                    raise EngineeringValidationError(f'Unbekannte Netzwerktechnologie {protocol}; vor der Simulation klären.')
++                technology = 'generic'
+             network_id = str(endpoint.get("network_id") or (fallback or {}).get("network_id") or f"network-{technology}")
+             return network_id, protocol, technology
+ 
+@@ -179,10 +185,16 @@
+                 target_interface, _ = bind_endpoint(target, net, technology)
+                 resolved = parameters_for_protocol(protocol, parameters, configuration, net,
+                                                    confirmed_parameters=parameters)
++                owned = DEFAULT_TECHNOLOGY_REGISTRY.parameter_keys(technology) if technology != 'generic' else set()
+                 network = networks.setdefault(net, {"id": net, "name": source.get("network_name") or net,
+                     "technology": technology, "protocol": protocol,
++                    **{key: value for key, value in resolved.items()
++                       if key in owned},
+                     "bitrate": resolved.get("bitrate"),
+                     "_rate_evidenced": resolved.get("_rate_evidenced", False),
++                    **({"_rate_findings": resolved["_rate_findings"]} if "_rate_findings" in resolved else {}),
++                    **({"parameter_provenance": resolved["parameter_provenance"]}
++                       if "parameter_provenance" in resolved else {}),
+                     **({"local_timing_evidence": resolved["local_timing_evidence"]}
+                        if "local_timing_evidence" in resolved else {}),
+                     **{key: resolved[key] for key in ("arbitration_bitrate", "data_bitrate") if key in resolved},

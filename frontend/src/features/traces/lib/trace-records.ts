@@ -1,4 +1,27 @@
 export type TraceSignal = { id: string; name: string; value: number | string | boolean | null; unit: string; quality: string };
+
+/** Resolve names only against explicit trace fields or the trace's verified frozen snapshot. */
+export function traceMessagePresentation(event: TraceEvent, configuration?: Record<string, unknown>): TraceEvent {
+  const raw = event.original;
+  const named = raw.message_names ?? raw.message_name
+    ?? (typeof raw.message === 'string' && !/^[\da-f]{8}-(?:[\da-f]{4}-){3}[\da-f]{12}$/i.test(raw.message) ? raw.message : undefined);
+  if (typeof named === 'string' && named.trim() || Array.isArray(named) && named.some(name => typeof name === 'string' && name.trim())) {
+    return { ...event, message: Array.isArray(named) ? named.filter(name => typeof name === 'string' && name.trim()).join(', ') : String(named) };
+  }
+  const object = (value: unknown): Record<string, unknown> => value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {};
+  const model = object(configuration?.engineering_model ?? object(configuration?.parameters).engineering_model);
+  const messages = Array.isArray(model.messages) ? model.messages : [];
+  const names = new Map(messages.map(item => object(item)).filter(item => typeof item.id === 'string' && typeof item.name === 'string' && item.name.trim()).map(item => [String(item.id), String(item.name)]));
+  const rawIds = raw.message_ids ?? raw.message_id;
+  const ids = Array.isArray(rawIds) ? rawIds.map(String) : typeof rawIds === 'string' ? rawIds.split(',').map(id => id.trim()) : [];
+  if (!ids.length) return event;
+  return { ...event, message: ids.map(id => names.get(id) ?? (/^[\da-f]{8}-(?:[\da-f]{4}-){3}[\da-f]{12}$/i.test(id) ? 'Nachricht ohne Klartextnamen' : id)).join(', ') };
+}
+
+/** Every decoded channel in the loaded window remains selectable. */
+export function traceSignalInventory(events: TraceEvent[]): TraceSignal[] {
+  return [...new Map(events.flatMap(event => event.signals.map(signal => [signal.id, signal] as const))).values()];
+}
 export type TraceEvent = {
   id: string; timestamp: number; source: string; destination: string; technology: string;
   payload: string; message: string; signal: string; value: number | null; status: string;
@@ -8,6 +31,22 @@ export type TraceEvent = {
   timeKnown: boolean;
 };
 export const MAX_IMPORT_BYTES = 500 * 1024 * 1024;
+
+/** Presentation of explicit source findings, never inferred from missing decoders. */
+export function traceEventFindings(event: TraceEvent): string[] {
+  let faults = event.original.faults;
+  if (typeof faults === 'string' && faults.trim().startsWith('[')) {
+    try { faults = JSON.parse(faults); } catch { /* Keep non-JSON finding text verbatim. */ }
+  }
+  const labels = Array.isArray(faults) ? faults.filter((value): value is string => typeof value === 'string' && !!value.trim()).map(value => value.trim()) : [];
+  if (event.finding.trim() && (event.original.finding || event.original.warning || !labels.length)) labels.push(event.finding.trim());
+  if (['dropped', 'corrupted', 'error', 'failed', 'timeout', 'rejected'].includes(event.status.trim().toLowerCase())) labels.push(`Status: ${event.status}`);
+  if (event.original.receiver_status === 'REJECTED' || event.original.receiver_action === 'REJECT' || event.original.event_type === 'RECEIVER_REJECTION') labels.push('Empfänger: REJECTED');
+  for (const field of ['requirement_status', 'deadline_status', 'freshness_status']) {
+    if (event.original[field] === 'FAIL') labels.push(`${field}: FAIL`);
+  }
+  return [...new Set(labels)];
+}
 
 function recordObject(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('Ein Trace-Ereignis muss ein JSON-Objekt sein.');
@@ -40,7 +79,7 @@ export function eventFromRecord(value: unknown, index: number): TraceEvent {
   const addresses = Array.isArray(record.destination_logical_addresses) ? record.destination_logical_addresses.filter(Boolean) : [];
   const destination = String(record.destination_names ?? record.receiver_hardware ?? record.destination ?? record.receiver ?? record.to ?? record.target ?? '-')
     + (addresses.length ? ` (${addresses.join(', ')})` : '');
-  const message = String(record.message_ids ?? record.message_id ?? record.message ?? record.route_id ?? record.frame_id ?? record.id ?? `event-${index + 1}`);
+  const message = String(record.message_names ?? record.message_name ?? record.message ?? record.message_ids ?? record.message_id ?? record.route_id ?? record.frame_id ?? record.id ?? `event-${index + 1}`);
   const rawValue = first?.value ?? record.value ?? record.signal_value;
   const numberValue = rawValue === null || rawValue === undefined || rawValue === '' ? NaN : Number(rawValue);
   const refs = [

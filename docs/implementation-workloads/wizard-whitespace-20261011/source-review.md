@@ -1,0 +1,7 @@
+# Source review — wizard whitespace repair
+
+The controlled project-description value no longer trims the input. The onChange handler stores the exact editable string and appends the existing reviewed-choice lines without trimming it. Metadata removal consumes its joining newline only and uses horizontal whitespace before the reserved labels, so it cannot consume the user's preceding blank lines. Leading/trailing spaces, repeated spaces, CRLF and blank lines are therefore retained while editing. Existing validation of empty descriptions and confirmed request construction remain intact. Current project-scoped draft storage and parseProjectIntake return the original nonempty string without normalization.
+
+The existing browser regression specification now includes individual Space/Enter keystrokes, subsequent words, leading/trailing whitespace, repeated spaces and draft reload. The existing reviewed-I2C case also specifies typing spaces while keeping hidden reviewed metadata. These specifications have not been executed.
+
+No tests, lint, typecheck, browser verification, build, application restart or release gate performed by user instruction. Runtime behavior on the physical iPhone remains unverified. Production still runs the previous source; delivery is pending the already-raised conflict between no tests and the mandatory complete current-source PASS. The prior safety UI/export changes are preserved unchanged and remain pending delivery as well.

@@ -1,0 +1,14 @@
+--- before/backend/communication/technologies/core/registry.py
++++ after/backend/communication/technologies/core/registry.py
+@@ -82,6 +82,11 @@
+         return self._aliases.get(token, BUILTIN_INGRESS_ALIASES.get(token, token))
+ 
+     def register_profile(self, technology_id: str, profile: dict[str, Any]) -> None:
++        from ..licensing import licensing_policy
++        from ..sources import additional_profile_references
++        identity = self.normalize_id(technology_id)
++        profile = {**profile, 'licensing_policy': licensing_policy(identity),
++                   'source_references': [*profile.get('source_references', []), *additional_profile_references(identity)]}
+         validate_parameter_rule_syntax(profile)
+         key = self.normalize_id(technology_id)
+         if key in self._profiles:

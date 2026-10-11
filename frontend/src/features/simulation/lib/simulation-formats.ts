@@ -21,7 +21,7 @@ export const simulationFormatDefinitions: SimulationFormatDefinition[] = [
   { id: "blf", group: "can", label: "BLF", description: "Vector-nahes CAN/CAN-FD Binärtrace" },
   { id: "asc", group: "can", label: "ASC", description: "CAN ASCII Trace" },
   { id: "trc", group: "can", label: "TRC", description: "PCAN Trace" },
-  { id: "dbc", group: "can", label: "DBC", description: "CAN Signal- und Nachrichten-Datenbank" },
+  { id: "dbc", group: "can", label: "DBC", description: "Eine gemeinsame Datenbank für alle CAN/CAN-FD-Nachrichten und Signale des Laufs" },
   { id: "arxml", group: "can", label: "ARXML", description: "AUTOSAR Austauschformat" },
   { id: "fibex", group: "can", label: "FIBEX", description: "Netzwerk- und Signalbeschreibung" },
   { id: "mdf", group: "can", label: "MDF", description: "Messdatenformat 3.x" },
@@ -31,6 +31,13 @@ export const simulationFormatDefinitions: SimulationFormatDefinition[] = [
 ];
 
 export const defaultSimulationFormats = ["universal-jsonl", "universal-csv"];
+
+/** Native exports follow the registered profiles of all physical project buses. */
+export function projectSimulationFormats(profiles: Array<{ native_formats?: readonly string[] }>) {
+  const native = new Set(profiles.flatMap((profile) => profile.native_formats ?? []));
+  const preferred = ["blf", "dbc", "pcap"].filter((format) => native.has(format));
+  return preferred.length ? preferred : defaultSimulationFormats;
+}
 
 export const simulationFormatGroupLabels: Record<SimulationFormatGroupId, string> = {
   universal: "Universell",

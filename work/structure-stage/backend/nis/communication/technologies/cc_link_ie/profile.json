@@ -1,0 +1,3285 @@
+{
+  "id": "cc_link_ie",
+  "label": "CC-Link IE",
+  "domain": "generic_networking",
+  "layer": "INDUSTRY_PROFILE",
+  "transport_unit": "PROCESS_DATA",
+  "payload_element_types": [
+    "FIELD",
+    "STATUS"
+  ],
+  "hardware_interface": "ethernet_or_optical_interface",
+  "hardware_capability_aliases": [
+    "ethernet_port"
+  ],
+  "default_stack": [
+    "cc_link_ie"
+  ],
+  "stack_variants": [
+    [
+      "cc_link_ie"
+    ],
+    [
+      "ethernet",
+      "cc_link_ie"
+    ]
+  ],
+  "default_bitrate": null,
+  "rate_model": {
+    "type": "ETHERNET_LINK_RATE",
+    "fields": [
+      "bitrate_bps"
+    ],
+    "allowed_bps": [
+      100000000,
+      1000000000
+    ]
+  },
+  "local_timing_schema": [],
+  "parameter_schema": {
+    "bitrate_bps": {
+      "label": "Link Speed",
+      "category": "physical",
+      "scope": "network",
+      "type": "number",
+      "description": "Actual selected variant link rate. Basic100M mandatory/1G optional; Controller/Field1G; TSN100M/1G. Unknown variant has no universal rate proposal.",
+      "required": true,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "unit": "bit/s",
+      "min": 1,
+      "default_review": {
+        "technology": "cc_link_ie",
+        "rate_profile": "cc_link_ie",
+        "values": {},
+        "basis": "DEVICE_DEPENDENT",
+        "status": "REVIEW_REQUIRED",
+        "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+        "source_revision": "CLPA separateController/Field/FieldBasic/TSN tables accessed2026-10-01"
+      },
+      "allowed_bps": [
+        100000000,
+        1000000000
+      ],
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "UNKNOWN",
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA separateController/Field/FieldBasic/TSN tables accessed2026-10-01",
+      "conditional_defaults": [
+        {
+          "when": {
+            "ccie_variant": "CONTROLLER"
+          },
+          "value": 1000000000
+        },
+        {
+          "when": {
+            "ccie_variant": "FIELD"
+          },
+          "value": 1000000000
+        },
+        {
+          "when": {
+            "ccie_variant": "FIELD_BASIC"
+          },
+          "value": 100000000
+        },
+        {
+          "when": {
+            "ccie_variant": "TSN"
+          },
+          "value": 100000000
+        }
+      ]
+    },
+    "payload_bytes": {
+      "label": "Payload",
+      "category": "physical",
+      "scope": "message",
+      "type": "number",
+      "description": "Actual logical communication bytes. Variant cyclic areas/transient message limits are separate from Ethernet MTU and frame fragmentation.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA separateController/Field/FieldBasic/TSN tables accessed2026-10-01",
+      "integer": true
+    },
+    "cycle_ms": {
+      "label": "Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "Standardperiode fuer zyklische Nachrichten.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "minimum_cycle_time_ms": {
+      "label": "Minimum Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "deadline_ms": {
+      "label": "Deadline",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "timeout_ms": {
+      "label": "Timeout",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_latency_ms": {
+      "label": "Maximum Latency",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "jitter_ms": {
+      "label": "Jitter Budget",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "freshness_ms": {
+      "label": "Data Freshness",
+      "category": "timing",
+      "scope": "signal",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "source_processing_delay_ms": {
+      "label": "Source Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_processing_delay_ms": {
+      "label": "Target Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "propagation_delay_ms": {
+      "label": "Propagation",
+      "category": "timing",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.01,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_bus_load_percent": {
+      "label": "Ziel-Buslast",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "Zielwert fuer die aus Routing, Payload, Zyklus und Bitrate berechnete Buslast.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "peak_factor": {
+      "label": "Peak Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.15,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_factor": {
+      "label": "Burst Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.5,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_window_ms": {
+      "label": "Burst Window",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "warning_threshold": {
+      "label": "Load Warning",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "critical_threshold": {
+      "label": "Load Critical",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 75,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "overload_threshold": {
+      "label": "Load Overload",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 90,
+      "unit": "%",
+      "min": 1,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "queue_size": {
+      "label": "Queue Size",
+      "category": "qos",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 256,
+      "unit": "Frames",
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1",
+      "integer": true
+    },
+    "queue_policy": {
+      "label": "Queue Policy",
+      "category": "qos",
+      "scope": "network",
+      "type": "select",
+      "description": "Explicit abstract host queue. Native token/polling/TSN gating require actual variant and schedule evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": "FIFO",
+      "options": [
+        "FIFO",
+        "PRIORITY",
+        "CUSTOM"
+      ],
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "traffic_class": {
+      "label": "Traffic Class",
+      "category": "qos",
+      "scope": "route",
+      "type": "select",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": "BEST_EFFORT",
+      "options": [
+        "BEST_EFFORT",
+        "CONTROL",
+        "REALTIME",
+        "SAFETY_CRITICAL"
+      ],
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "packet_loss_probability": {
+      "label": "Packet Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "frame_loss_probability": {
+      "label": "Frame Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "bit_error_rate": {
+      "label": "Bit Error Rate",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "corruption_probability": {
+      "label": "Corruption",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duplicate_probability": {
+      "label": "Duplication",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "reordering_probability": {
+      "label": "Reordering",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "required_reliability": {
+      "label": "Required Reliability",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.999,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_offset_ms": {
+      "label": "Clock Offset",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_drift_ppm": {
+      "label": "Clock Drift",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 20,
+      "unit": "ppm",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_precision_ms": {
+      "label": "Sync Precision",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_interval_ms": {
+      "label": "Sync Interval",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1000,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_sync_error_ms": {
+      "label": "Maximum Sync Error",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_delay_ms": {
+      "label": "Gateway Processing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.2,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_queue_delay_ms": {
+      "label": "Gateway Queueing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "protocol_conversion_delay_ms": {
+      "label": "Protocol Conversion",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duration_s": {
+      "label": "Simulation Duration",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 1,
+      "unit": "s",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "seed": {
+      "label": "Random Seed",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 42,
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1",
+      "integer": true
+    },
+    "max_events": {
+      "label": "Maximum Events",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 100000,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1",
+      "integer": true
+    },
+    "dropout_probability": {
+      "label": "Failure Injection Dropout",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "ccie_variant": {
+      "label": "Actual CC-Link IE variant",
+      "category": "communication",
+      "scope": "network",
+      "type": "select",
+      "description": "Variant-specific CC-Link IE configuration. Actual node areas, device support, PHY, addresses and schedules need confirmation. No token/Basic/TSN capability is inferred from industry.",
+      "required": true,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "CONTROLLER",
+        "FIELD",
+        "FIELD_BASIC",
+        "TSN"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA separateController/Field/FieldBasic/TSN tables accessed2026-10-01"
+    },
+    "ccie_access": {
+      "label": "Actual variant medium access",
+      "category": "communication",
+      "scope": "network",
+      "type": "select",
+      "description": "Variant-specific CC-Link IE configuration. Actual node areas, device support, PHY, addresses and schedules need confirmation. No token/Basic/TSN capability is inferred from industry.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "TOKEN_PASSING",
+        "UDP_MANAGER_POLLING",
+        "TIME_SHARING",
+        "TIME_MANAGED_POLLING"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA separateController/Field/FieldBasic/TSN tables accessed2026-10-01",
+      "conditional_defaults": [
+        {
+          "when": {
+            "ccie_variant": "CONTROLLER"
+          },
+          "value": "TOKEN_PASSING"
+        },
+        {
+          "when": {
+            "ccie_variant": "FIELD"
+          },
+          "value": "TOKEN_PASSING"
+        },
+        {
+          "when": {
+            "ccie_variant": "FIELD_BASIC"
+          },
+          "value": "UDP_MANAGER_POLLING"
+        }
+      ]
+    },
+    "ccie_phy": {
+      "label": "Actual per-link PHY/media",
+      "category": "physical",
+      "scope": "network",
+      "type": "select",
+      "description": "Variant-specific CC-Link IE configuration. Actual node areas, device support, PHY, addresses and schedules need confirmation. No token/Basic/TSN capability is inferred from industry.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "100BASE_TX",
+        "1000BASE_T",
+        "1000BASE_SX",
+        "SI_POF",
+        "SI_HPCF"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA separateController/Field/FieldBasic/TSN tables accessed2026-10-01"
+    },
+    "ccie_topology": {
+      "label": "Actual network topology",
+      "category": "physical",
+      "scope": "network",
+      "type": "select",
+      "description": "Variant-specific CC-Link IE configuration. Actual node areas, device support, PHY, addresses and schedules need confirmation. No token/Basic/TSN capability is inferred from industry.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "LINE",
+        "STAR",
+        "LINE_STAR",
+        "RING"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA separateController/Field/FieldBasic/TSN tables accessed2026-10-01"
+    },
+    "ccie_link_length_m": {
+      "label": "Actual longest station-to-station link",
+      "category": "physical",
+      "scope": "network",
+      "type": "number",
+      "description": "Variant-specific CC-Link IE configuration. Actual node areas, device support, PHY, addresses and schedules need confirmation. No token/Basic/TSN capability is inferred from industry.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "m",
+      "min": 0,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA separateController/Field/FieldBasic/TSN tables accessed2026-10-01"
+    },
+    "ccie_nodes": {
+      "label": "Actual total manager/device nodes",
+      "category": "communication",
+      "scope": "network",
+      "type": "number",
+      "description": "Variant-specific CC-Link IE configuration. Actual node areas, device support, PHY, addresses and schedules need confirmation. No token/Basic/TSN capability is inferred from industry.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 1,
+      "max": 65535,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA separateController/Field/FieldBasic/TSN tables accessed2026-10-01"
+    },
+    "ccie_device_count": {
+      "label": "Actual remote device modules",
+      "category": "communication",
+      "scope": "network",
+      "type": "number",
+      "description": "Variant-specific CC-Link IE configuration. Actual node areas, device support, PHY, addresses and schedules need confirmation. No token/Basic/TSN capability is inferred from industry.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA separateController/Field/FieldBasic/TSN tables accessed2026-10-01"
+    },
+    "ccie_device_slots": {
+      "label": "Actual total device occupation slots",
+      "category": "communication",
+      "scope": "network",
+      "type": "number",
+      "description": "Variant-specific CC-Link IE configuration. Actual node areas, device support, PHY, addresses and schedules need confirmation. No token/Basic/TSN capability is inferred from industry.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA separateController/Field/FieldBasic/TSN tables accessed2026-10-01"
+    },
+    "ccie_station_number": {
+      "label": "Actual device start station",
+      "category": "communication",
+      "scope": "network",
+      "type": "number",
+      "description": "Variant-specific CC-Link IE configuration. Actual node areas, device support, PHY, addresses and schedules need confirmation. No token/Basic/TSN capability is inferred from industry.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 1,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA separateController/Field/FieldBasic/TSN tables accessed2026-10-01"
+    },
+    "ccie_occupied_stations": {
+      "label": "Actual Basic device occupation slots",
+      "category": "communication",
+      "scope": "network",
+      "type": "number",
+      "description": "Variant-specific CC-Link IE configuration. Actual node areas, device support, PHY, addresses and schedules need confirmation. No token/Basic/TSN capability is inferred from industry.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 1,
+      "max": 4,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA separateController/Field/FieldBasic/TSN tables accessed2026-10-01"
+    },
+    "ccie_station_rx_bits": {
+      "label": "Actual station remote inputs",
+      "category": "communication",
+      "scope": "network",
+      "type": "number",
+      "description": "Variant-specific CC-Link IE configuration. Actual node areas, device support, PHY, addresses and schedules need confirmation. No token/Basic/TSN capability is inferred from industry.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "bit",
+      "min": 0,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA separateController/Field/FieldBasic/TSN tables accessed2026-10-01"
+    },
+    "ccie_station_ry_bits": {
+      "label": "Actual station remote outputs",
+      "category": "communication",
+      "scope": "network",
+      "type": "number",
+      "description": "Variant-specific CC-Link IE configuration. Actual node areas, device support, PHY, addresses and schedules need confirmation. No token/Basic/TSN capability is inferred from industry.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "bit",
+      "min": 0,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA separateController/Field/FieldBasic/TSN tables accessed2026-10-01"
+    },
+    "ccie_station_rwr_words": {
+      "label": "Actual station input registers",
+      "category": "communication",
+      "scope": "network",
+      "type": "number",
+      "description": "Variant-specific CC-Link IE configuration. Actual node areas, device support, PHY, addresses and schedules need confirmation. No token/Basic/TSN capability is inferred from industry.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "16bit words",
+      "min": 0,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA separateController/Field/FieldBasic/TSN tables accessed2026-10-01"
+    },
+    "ccie_station_rww_words": {
+      "label": "Actual station output registers",
+      "category": "communication",
+      "scope": "network",
+      "type": "number",
+      "description": "Variant-specific CC-Link IE configuration. Actual node areas, device support, PHY, addresses and schedules need confirmation. No token/Basic/TSN capability is inferred from industry.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "16bit words",
+      "min": 0,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA separateController/Field/FieldBasic/TSN tables accessed2026-10-01"
+    },
+    "ccie_network_rx_bits": {
+      "label": "Actual network remote input area",
+      "category": "communication",
+      "scope": "network",
+      "type": "number",
+      "description": "Variant-specific CC-Link IE configuration. Actual node areas, device support, PHY, addresses and schedules need confirmation. No token/Basic/TSN capability is inferred from industry.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "bit",
+      "min": 0,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA separateController/Field/FieldBasic/TSN tables accessed2026-10-01"
+    },
+    "ccie_network_ry_bits": {
+      "label": "Actual network remote output area",
+      "category": "communication",
+      "scope": "network",
+      "type": "number",
+      "description": "Variant-specific CC-Link IE configuration. Actual node areas, device support, PHY, addresses and schedules need confirmation. No token/Basic/TSN capability is inferred from industry.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "bit",
+      "min": 0,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA separateController/Field/FieldBasic/TSN tables accessed2026-10-01"
+    },
+    "ccie_network_rwr_words": {
+      "label": "Actual network input registers",
+      "category": "communication",
+      "scope": "network",
+      "type": "number",
+      "description": "Variant-specific CC-Link IE configuration. Actual node areas, device support, PHY, addresses and schedules need confirmation. No token/Basic/TSN capability is inferred from industry.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "16bit words",
+      "min": 0,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA separateController/Field/FieldBasic/TSN tables accessed2026-10-01"
+    },
+    "ccie_network_rww_words": {
+      "label": "Actual network output registers",
+      "category": "communication",
+      "scope": "network",
+      "type": "number",
+      "description": "Variant-specific CC-Link IE configuration. Actual node areas, device support, PHY, addresses and schedules need confirmation. No token/Basic/TSN capability is inferred from industry.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "16bit words",
+      "min": 0,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA separateController/Field/FieldBasic/TSN tables accessed2026-10-01"
+    },
+    "ccie_station_cyclic_bytes": {
+      "label": "Actual station total cyclic area",
+      "category": "communication",
+      "scope": "network",
+      "type": "number",
+      "description": "Variant-specific CC-Link IE configuration. Actual node areas, device support, PHY, addresses and schedules need confirmation. No token/Basic/TSN capability is inferred from industry.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA separateController/Field/FieldBasic/TSN tables accessed2026-10-01"
+    },
+    "ccie_transient_bytes": {
+      "label": "Actual complete transient message data",
+      "category": "communication",
+      "scope": "network",
+      "type": "number",
+      "description": "Variant-specific CC-Link IE configuration. Actual node areas, device support, PHY, addresses and schedules need confirmation. No token/Basic/TSN capability is inferred from industry.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA separateController/Field/FieldBasic/TSN tables accessed2026-10-01"
+    },
+    "ccie_transient_limit_bytes": {
+      "label": "Actual supported transient data limit",
+      "category": "communication",
+      "scope": "network",
+      "type": "number",
+      "description": "Variant-specific CC-Link IE configuration. Actual node areas, device support, PHY, addresses and schedules need confirmation. No token/Basic/TSN capability is inferred from industry.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA separateController/Field/FieldBasic/TSN tables accessed2026-10-01",
+      "conditional_defaults": [
+        {
+          "when": {
+            "ccie_variant": "CONTROLLER"
+          },
+          "value": 960
+        },
+        {
+          "when": {
+            "ccie_variant": "FIELD"
+          },
+          "value": 2048
+        },
+        {
+          "when": {
+            "ccie_variant": "FIELD_BASIC"
+          },
+          "value": 2048
+        }
+      ]
+    },
+    "ccie_duplex": {
+      "label": "Actual link duplex",
+      "category": "communication",
+      "scope": "network",
+      "type": "select",
+      "description": "Variant-specific CC-Link IE configuration. Actual node areas, device support, PHY, addresses and schedules need confirmation. No token/Basic/TSN capability is inferred from industry.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "FULL"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA separateController/Field/FieldBasic/TSN tables accessed2026-10-01",
+      "conditional_defaults": [
+        {
+          "when": {
+            "ccie_variant": "CONTROLLER"
+          },
+          "value": "FULL"
+        },
+        {
+          "when": {
+            "ccie_variant": "FIELD"
+          },
+          "value": "FULL"
+        },
+        {
+          "when": {
+            "ccie_variant": "FIELD_BASIC"
+          },
+          "value": "FULL"
+        },
+        {
+          "when": {
+            "ccie_variant": "TSN"
+          },
+          "value": "FULL"
+        }
+      ]
+    },
+    "ccie_controller_mode": {
+      "label": "Actual Controller area mode",
+      "category": "communication",
+      "scope": "network",
+      "type": "select",
+      "description": "Variant-specific CC-Link IE configuration. Actual node areas, device support, PHY, addresses and schedules need confirmation. No token/Basic/TSN capability is inferred from industry.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "NORMAL",
+        "EXTENDED"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA separateController/Field/FieldBasic/TSN tables accessed2026-10-01"
+    },
+    "ccie_controller_network_extended": {
+      "label": "Actual MELSEC extended network area support",
+      "category": "communication",
+      "scope": "network",
+      "type": "boolean",
+      "description": "Variant-specific CC-Link IE configuration. Actual node areas, device support, PHY, addresses and schedules need confirmation. No token/Basic/TSN capability is inferred from industry.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA separateController/Field/FieldBasic/TSN tables accessed2026-10-01"
+    },
+    "ccie_controller_networks": {
+      "label": "Actual Controller connected networks",
+      "category": "communication",
+      "scope": "network",
+      "type": "number",
+      "description": "Variant-specific CC-Link IE configuration. Actual node areas, device support, PHY, addresses and schedules need confirmation. No token/Basic/TSN capability is inferred from industry.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 1,
+      "max": 239,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA separateController/Field/FieldBasic/TSN tables accessed2026-10-01"
+    },
+    "ccie_controller_groups": {
+      "label": "Actual Controller groups",
+      "category": "communication",
+      "scope": "network",
+      "type": "number",
+      "description": "Variant-specific CC-Link IE configuration. Actual node areas, device support, PHY, addresses and schedules need confirmation. No token/Basic/TSN capability is inferred from industry.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 1,
+      "max": 32,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA separateController/Field/FieldBasic/TSN tables accessed2026-10-01"
+    },
+    "ccie_controller_lb_bits": {
+      "label": "Actual Controller station link bits",
+      "category": "communication",
+      "scope": "network",
+      "type": "number",
+      "description": "Variant-specific CC-Link IE configuration. Actual node areas, device support, PHY, addresses and schedules need confirmation. No token/Basic/TSN capability is inferred from industry.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "bit",
+      "min": 0,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA separateController/Field/FieldBasic/TSN tables accessed2026-10-01"
+    },
+    "ccie_controller_lw_words": {
+      "label": "Actual Controller station link words",
+      "category": "communication",
+      "scope": "network",
+      "type": "number",
+      "description": "Variant-specific CC-Link IE configuration. Actual node areas, device support, PHY, addresses and schedules need confirmation. No token/Basic/TSN capability is inferred from industry.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "16bit words",
+      "min": 0,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA separateController/Field/FieldBasic/TSN tables accessed2026-10-01"
+    },
+    "ccie_controller_lx_bits": {
+      "label": "Actual Controller station input points",
+      "category": "communication",
+      "scope": "network",
+      "type": "number",
+      "description": "Variant-specific CC-Link IE configuration. Actual node areas, device support, PHY, addresses and schedules need confirmation. No token/Basic/TSN capability is inferred from industry.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "bit",
+      "min": 0,
+      "max": 8192,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA separateController/Field/FieldBasic/TSN tables accessed2026-10-01"
+    },
+    "ccie_controller_ly_bits": {
+      "label": "Actual Controller station output points",
+      "category": "communication",
+      "scope": "network",
+      "type": "number",
+      "description": "Variant-specific CC-Link IE configuration. Actual node areas, device support, PHY, addresses and schedules need confirmation. No token/Basic/TSN capability is inferred from industry.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "bit",
+      "min": 0,
+      "max": 8192,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA separateController/Field/FieldBasic/TSN tables accessed2026-10-01"
+    },
+    "ccie_controller_network_lb_bits": {
+      "label": "Actual Controller network link bits",
+      "category": "communication",
+      "scope": "network",
+      "type": "number",
+      "description": "Variant-specific CC-Link IE configuration. Actual node areas, device support, PHY, addresses and schedules need confirmation. No token/Basic/TSN capability is inferred from industry.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "bit",
+      "min": 0,
+      "max": 65536,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA separateController/Field/FieldBasic/TSN tables accessed2026-10-01"
+    },
+    "ccie_controller_network_lw_words": {
+      "label": "Actual Controller network link words",
+      "category": "communication",
+      "scope": "network",
+      "type": "number",
+      "description": "Variant-specific CC-Link IE configuration. Actual node areas, device support, PHY, addresses and schedules need confirmation. No token/Basic/TSN capability is inferred from industry.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "16bit words",
+      "min": 0,
+      "max": 262144,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA separateController/Field/FieldBasic/TSN tables accessed2026-10-01"
+    },
+    "ccie_basic_optional_1g_supported": {
+      "label": "Actual Basic optional1G support",
+      "category": "communication",
+      "scope": "network",
+      "type": "boolean",
+      "description": "Variant-specific CC-Link IE configuration. Actual node areas, device support, PHY, addresses and schedules need confirmation. No token/Basic/TSN capability is inferred from industry.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA separateController/Field/FieldBasic/TSN tables accessed2026-10-01"
+    },
+    "ccie_basic_cyclic_udp_port": {
+      "label": "Basic cyclic UDP destination port",
+      "category": "communication",
+      "scope": "network",
+      "type": "number",
+      "description": "Variant-specific CC-Link IE configuration. Actual node areas, device support, PHY, addresses and schedules need confirmation. No token/Basic/TSN capability is inferred from industry.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 61450,
+      "max": 61450,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA separateController/Field/FieldBasic/TSN tables accessed2026-10-01",
+      "conditional_defaults": [
+        {
+          "when": {
+            "ccie_variant": "FIELD_BASIC"
+          },
+          "value": 61450
+        }
+      ]
+    },
+    "ccie_basic_discovery_udp_port": {
+      "label": "Basic device discovery UDP port",
+      "category": "communication",
+      "scope": "network",
+      "type": "number",
+      "description": "Variant-specific CC-Link IE configuration. Actual node areas, device support, PHY, addresses and schedules need confirmation. No token/Basic/TSN capability is inferred from industry.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 61451,
+      "max": 61451,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA separateController/Field/FieldBasic/TSN tables accessed2026-10-01",
+      "conditional_defaults": [
+        {
+          "when": {
+            "ccie_variant": "FIELD_BASIC"
+          },
+          "value": 61451
+        }
+      ]
+    },
+    "ccie_basic_group": {
+      "label": "Actual Basic group",
+      "category": "communication",
+      "scope": "network",
+      "type": "number",
+      "description": "Variant-specific CC-Link IE configuration. Actual node areas, device support, PHY, addresses and schedules need confirmation. No token/Basic/TSN capability is inferred from industry.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 1,
+      "max": 4,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA separateController/Field/FieldBasic/TSN tables accessed2026-10-01"
+    },
+    "ccie_basic_controller": {
+      "label": "Actual Basic manager implementation",
+      "category": "communication",
+      "scope": "network",
+      "type": "select",
+      "description": "Variant-specific CC-Link IE configuration. Actual node areas, device support, PHY, addresses and schedules need confirmation. No token/Basic/TSN capability is inferred from industry.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "DEVICE_SPECIFIC",
+        "MELSEC_IQ_R",
+        "MELSEC_IQ_L",
+        "MELSEC_IQ_F",
+        "MELSEC_Q",
+        "MELSEC_L"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA separateController/Field/FieldBasic/TSN tables accessed2026-10-01"
+    },
+    "ccie_basic_tool_revision": {
+      "label": "Actual Basic configuration tool baseline",
+      "category": "communication",
+      "scope": "network",
+      "type": "select",
+      "description": "Variant-specific CC-Link IE configuration. Actual node areas, device support, PHY, addresses and schedules need confirmation. No token/Basic/TSN capability is inferred from industry.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "GX_WORKS_CURRENT",
+        "GX_WORKS_LEGACY"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA separateController/Field/FieldBasic/TSN tables accessed2026-10-01"
+    },
+    "ccie_basic_timeout_ms": {
+      "label": "Actual Basic disconnection timeout",
+      "category": "communication",
+      "scope": "network",
+      "type": "number",
+      "description": "Variant-specific CC-Link IE configuration. Actual node areas, device support, PHY, addresses and schedules need confirmation. No token/Basic/TSN capability is inferred from industry.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "ms",
+      "min": 10,
+      "max": 65535,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.mitsubishielectric.com/dl/fa/document/manual/plc/sh081684eng/sh081684engj.pdf",
+      "source_revision": "SH081684ENG-J October2024 section8.1",
+      "conditional_defaults": [
+        {
+          "when": {
+            "ccie_variant": "FIELD_BASIC",
+            "ccie_basic_controller": "MELSEC_IQ_R",
+            "ccie_basic_tool_revision": "GX_WORKS_CURRENT"
+          },
+          "value": 100
+        },
+        {
+          "when": {
+            "ccie_variant": "FIELD_BASIC",
+            "ccie_basic_controller": "MELSEC_IQ_R",
+            "ccie_basic_tool_revision": "GX_WORKS_LEGACY"
+          },
+          "value": 500
+        },
+        {
+          "when": {
+            "ccie_variant": "FIELD_BASIC",
+            "ccie_basic_controller": "MELSEC_IQ_L",
+            "ccie_basic_tool_revision": "GX_WORKS_CURRENT"
+          },
+          "value": 100
+        },
+        {
+          "when": {
+            "ccie_variant": "FIELD_BASIC",
+            "ccie_basic_controller": "MELSEC_IQ_L",
+            "ccie_basic_tool_revision": "GX_WORKS_LEGACY"
+          },
+          "value": 500
+        },
+        {
+          "when": {
+            "ccie_variant": "FIELD_BASIC",
+            "ccie_basic_controller": "MELSEC_IQ_F",
+            "ccie_basic_tool_revision": "GX_WORKS_CURRENT"
+          },
+          "value": 100
+        },
+        {
+          "when": {
+            "ccie_variant": "FIELD_BASIC",
+            "ccie_basic_controller": "MELSEC_IQ_F",
+            "ccie_basic_tool_revision": "GX_WORKS_LEGACY"
+          },
+          "value": 500
+        },
+        {
+          "when": {
+            "ccie_variant": "FIELD_BASIC",
+            "ccie_basic_controller": "MELSEC_Q",
+            "ccie_basic_tool_revision": "GX_WORKS_CURRENT"
+          },
+          "value": 100
+        },
+        {
+          "when": {
+            "ccie_variant": "FIELD_BASIC",
+            "ccie_basic_controller": "MELSEC_Q",
+            "ccie_basic_tool_revision": "GX_WORKS_LEGACY"
+          },
+          "value": 500
+        },
+        {
+          "when": {
+            "ccie_variant": "FIELD_BASIC",
+            "ccie_basic_controller": "MELSEC_L",
+            "ccie_basic_tool_revision": "GX_WORKS_CURRENT"
+          },
+          "value": 100
+        },
+        {
+          "when": {
+            "ccie_variant": "FIELD_BASIC",
+            "ccie_basic_controller": "MELSEC_L",
+            "ccie_basic_tool_revision": "GX_WORKS_LEGACY"
+          },
+          "value": 500
+        }
+      ]
+    },
+    "ccie_basic_disconnect_count": {
+      "label": "Actual Basic consecutive disconnection count",
+      "category": "communication",
+      "scope": "network",
+      "type": "number",
+      "description": "Variant-specific CC-Link IE configuration. Actual node areas, device support, PHY, addresses and schedules need confirmation. No token/Basic/TSN capability is inferred from industry.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 1,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.mitsubishielectric.com/dl/fa/document/manual/plc/sh081684eng/sh081684engj.pdf",
+      "source_revision": "SH081684ENG-J October2024 section8.1",
+      "conditional_defaults": [
+        {
+          "when": {
+            "ccie_variant": "FIELD_BASIC",
+            "ccie_basic_controller": "MELSEC_IQ_R",
+            "ccie_basic_tool_revision": "GX_WORKS_CURRENT"
+          },
+          "value": 3
+        },
+        {
+          "when": {
+            "ccie_variant": "FIELD_BASIC",
+            "ccie_basic_controller": "MELSEC_IQ_R",
+            "ccie_basic_tool_revision": "GX_WORKS_LEGACY"
+          },
+          "value": 3
+        },
+        {
+          "when": {
+            "ccie_variant": "FIELD_BASIC",
+            "ccie_basic_controller": "MELSEC_IQ_L",
+            "ccie_basic_tool_revision": "GX_WORKS_CURRENT"
+          },
+          "value": 3
+        },
+        {
+          "when": {
+            "ccie_variant": "FIELD_BASIC",
+            "ccie_basic_controller": "MELSEC_IQ_L",
+            "ccie_basic_tool_revision": "GX_WORKS_LEGACY"
+          },
+          "value": 3
+        },
+        {
+          "when": {
+            "ccie_variant": "FIELD_BASIC",
+            "ccie_basic_controller": "MELSEC_IQ_F",
+            "ccie_basic_tool_revision": "GX_WORKS_CURRENT"
+          },
+          "value": 3
+        },
+        {
+          "when": {
+            "ccie_variant": "FIELD_BASIC",
+            "ccie_basic_controller": "MELSEC_IQ_F",
+            "ccie_basic_tool_revision": "GX_WORKS_LEGACY"
+          },
+          "value": 3
+        },
+        {
+          "when": {
+            "ccie_variant": "FIELD_BASIC",
+            "ccie_basic_controller": "MELSEC_Q",
+            "ccie_basic_tool_revision": "GX_WORKS_CURRENT"
+          },
+          "value": 3
+        },
+        {
+          "when": {
+            "ccie_variant": "FIELD_BASIC",
+            "ccie_basic_controller": "MELSEC_Q",
+            "ccie_basic_tool_revision": "GX_WORKS_LEGACY"
+          },
+          "value": 3
+        },
+        {
+          "when": {
+            "ccie_variant": "FIELD_BASIC",
+            "ccie_basic_controller": "MELSEC_L",
+            "ccie_basic_tool_revision": "GX_WORKS_CURRENT"
+          },
+          "value": 3
+        },
+        {
+          "when": {
+            "ccie_variant": "FIELD_BASIC",
+            "ccie_basic_controller": "MELSEC_L",
+            "ccie_basic_tool_revision": "GX_WORKS_LEGACY"
+          },
+          "value": 3
+        }
+      ]
+    },
+    "ccie_tsn_class": {
+      "label": "Actual device/switch TSN class",
+      "category": "communication",
+      "scope": "network",
+      "type": "select",
+      "description": "Variant-specific CC-Link IE configuration. Actual node areas, device support, PHY, addresses and schedules need confirmation. No token/Basic/TSN capability is inferred from industry.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "A",
+        "B"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA separateController/Field/FieldBasic/TSN tables accessed2026-10-01"
+    },
+    "ccie_tsn_version": {
+      "label": "Actual TSN protocol version",
+      "category": "communication",
+      "scope": "network",
+      "type": "select",
+      "description": "Variant-specific CC-Link IE configuration. Actual node areas, device support, PHY, addresses and schedules need confirmation. No token/Basic/TSN capability is inferred from industry.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "1.0",
+        "2.0"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA separateController/Field/FieldBasic/TSN tables accessed2026-10-01"
+    },
+    "ccie_tsn_sync": {
+      "label": "Actual TSN clock method",
+      "category": "communication",
+      "scope": "network",
+      "type": "select",
+      "description": "Variant-specific CC-Link IE configuration. Actual node areas, device support, PHY, addresses and schedules need confirmation. No token/Basic/TSN capability is inferred from industry.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "IEEE_802_1AS",
+        "IEEE_1588"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA separateController/Field/FieldBasic/TSN tables accessed2026-10-01"
+    },
+    "ccie_tsn_cycle_us": {
+      "label": "Actual configured TSN cycle",
+      "category": "communication",
+      "scope": "network",
+      "type": "number",
+      "description": "Variant-specific CC-Link IE configuration. Actual node areas, device support, PHY, addresses and schedules need confirmation. No token/Basic/TSN capability is inferred from industry.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "us",
+      "min": 0.001,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA separateController/Field/FieldBasic/TSN tables accessed2026-10-01"
+    },
+    "ccie_tsn_gate_period_us": {
+      "label": "Actual gate control period",
+      "category": "communication",
+      "scope": "network",
+      "type": "number",
+      "description": "Variant-specific CC-Link IE configuration. Actual node areas, device support, PHY, addresses and schedules need confirmation. No token/Basic/TSN capability is inferred from industry.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "us",
+      "min": 0.001,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA separateController/Field/FieldBasic/TSN tables accessed2026-10-01"
+    },
+    "ccie_tsn_guard_us": {
+      "label": "Actual gate guard interval",
+      "category": "communication",
+      "scope": "network",
+      "type": "number",
+      "description": "Variant-specific CC-Link IE configuration. Actual node areas, device support, PHY, addresses and schedules need confirmation. No token/Basic/TSN capability is inferred from industry.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "us",
+      "min": 0,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA separateController/Field/FieldBasic/TSN tables accessed2026-10-01"
+    },
+    "ccie_master_request_bound_ms": {
+      "label": "Actual manager request processing bound",
+      "category": "communication",
+      "scope": "network",
+      "type": "number",
+      "description": "Variant-specific CC-Link IE configuration. Actual node areas, device support, PHY, addresses and schedules need confirmation. No token/Basic/TSN capability is inferred from industry.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "ms",
+      "min": 0,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA separateController/Field/FieldBasic/TSN tables accessed2026-10-01"
+    },
+    "ccie_device_response_bound_ms": {
+      "label": "Actual slowest device response bound",
+      "category": "communication",
+      "scope": "network",
+      "type": "number",
+      "description": "Variant-specific CC-Link IE configuration. Actual node areas, device support, PHY, addresses and schedules need confirmation. No token/Basic/TSN capability is inferred from industry.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "ms",
+      "min": 0,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA separateController/Field/FieldBasic/TSN tables accessed2026-10-01"
+    },
+    "ccie_cpu_scan_bound_ms": {
+      "label": "Actual CPU/end-processing scan bound",
+      "category": "communication",
+      "scope": "network",
+      "type": "number",
+      "description": "Variant-specific CC-Link IE configuration. Actual node areas, device support, PHY, addresses and schedules need confirmation. No token/Basic/TSN capability is inferred from industry.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "ms",
+      "min": 0,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA separateController/Field/FieldBasic/TSN tables accessed2026-10-01"
+    },
+    "ccie_link_scan_bound_ms": {
+      "label": "Actual complete link scan bound",
+      "category": "communication",
+      "scope": "network",
+      "type": "number",
+      "description": "Variant-specific CC-Link IE configuration. Actual node areas, device support, PHY, addresses and schedules need confirmation. No token/Basic/TSN capability is inferred from industry.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "ms",
+      "min": 0,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA separateController/Field/FieldBasic/TSN tables accessed2026-10-01"
+    }
+  },
+  "mechanisms": {
+    "integrity": [
+      "ETHERNET_FCS"
+    ],
+    "addressing": [
+      "EXPLICIT_CCLINK_IE_VARIANT_ADDRESSING"
+    ],
+    "arbitration": [
+      "VARIANT_SPECIFIC_TOKEN_POLLING_OR_TIME_SHARING"
+    ]
+  },
+  "parameter_constraints": [
+    {
+      "when": {
+        "ccie_variant": "CONTROLLER"
+      },
+      "parameter": "bitrate_bps",
+      "allowed": [
+        1000000000
+      ],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "FIELD"
+      },
+      "parameter": "bitrate_bps",
+      "allowed": [
+        1000000000
+      ],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "FIELD_BASIC"
+      },
+      "parameter": "ccie_access",
+      "allowed": [
+        "UDP_MANAGER_POLLING"
+      ],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "CONTROLLER"
+      },
+      "parameter": "ccie_access",
+      "allowed": [
+        "TOKEN_PASSING"
+      ],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "FIELD"
+      },
+      "parameter": "ccie_access",
+      "allowed": [
+        "TOKEN_PASSING"
+      ],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "TSN"
+      },
+      "parameter": "ccie_access",
+      "allowed": [
+        "TIME_SHARING",
+        "TIME_MANAGED_POLLING"
+      ],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "CONTROLLER"
+      },
+      "parameter": "ccie_nodes",
+      "maximum": 120,
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "FIELD"
+      },
+      "parameter": "ccie_nodes",
+      "maximum": 254,
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "FIELD_BASIC"
+      },
+      "parameter": "ccie_device_slots",
+      "maximum": 64,
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "TSN"
+      },
+      "parameter": "ccie_nodes",
+      "maximum": 64770,
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {},
+      "parameter": "ccie_transient_bytes",
+      "maximum_parameter": "ccie_transient_limit_bytes",
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "TSN"
+      },
+      "parameter": "ccie_station_cyclic_bytes",
+      "maximum": 4294967296,
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "FIELD_BASIC"
+      },
+      "parameter": "ccie_topology",
+      "allowed": [
+        "LINE",
+        "STAR",
+        "LINE_STAR"
+      ],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "CONTROLLER",
+        "ccie_phy": "1000BASE_SX"
+      },
+      "parameter": "ccie_topology",
+      "allowed": [
+        "RING"
+      ],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_phy": "100BASE_TX"
+      },
+      "parameter": "bitrate_bps",
+      "allowed": [
+        100000000
+      ],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_phy": "1000BASE_T"
+      },
+      "parameter": "bitrate_bps",
+      "allowed": [
+        1000000000
+      ],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_phy": "1000BASE_SX"
+      },
+      "parameter": "bitrate_bps",
+      "allowed": [
+        1000000000
+      ],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_phy": "100BASE_TX"
+      },
+      "parameter": "ccie_link_length_m",
+      "maximum": 100,
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_phy": "1000BASE_T"
+      },
+      "parameter": "ccie_link_length_m",
+      "maximum": 100,
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_phy": "1000BASE_SX"
+      },
+      "parameter": "ccie_link_length_m",
+      "maximum": 550,
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_phy": "SI_POF"
+      },
+      "parameter": "ccie_link_length_m",
+      "maximum": 20,
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_phy": "SI_HPCF"
+      },
+      "parameter": "ccie_link_length_m",
+      "maximum": 100,
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "FIELD"
+      },
+      "parameter": "ccie_phy",
+      "allowed": [
+        "1000BASE_T"
+      ],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "CONTROLLER"
+      },
+      "parameter": "ccie_phy",
+      "allowed": [
+        "1000BASE_T",
+        "1000BASE_SX"
+      ],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "FIELD_BASIC"
+      },
+      "parameter": "ccie_phy",
+      "allowed": [
+        "100BASE_TX",
+        "1000BASE_T"
+      ],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "FIELD_BASIC"
+      },
+      "parameter": "ccie_station_rx_bits",
+      "maximum_parameter": "ccie_occupied_stations",
+      "maximum_factor": 64,
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "FIELD_BASIC"
+      },
+      "parameter": "ccie_station_ry_bits",
+      "maximum_parameter": "ccie_occupied_stations",
+      "maximum_factor": 64,
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "FIELD_BASIC"
+      },
+      "parameter": "ccie_station_rwr_words",
+      "maximum_parameter": "ccie_occupied_stations",
+      "maximum_factor": 32,
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "FIELD_BASIC"
+      },
+      "parameter": "ccie_station_rww_words",
+      "maximum_parameter": "ccie_occupied_stations",
+      "maximum_factor": 32,
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {},
+      "parameter": "ccie_device_slots",
+      "minimum_parameter": "ccie_device_count",
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "FIELD_BASIC"
+      },
+      "parameter": "ccie_station_number",
+      "maximum_parameter": "ccie_occupied_stations",
+      "maximum_factor": -1,
+      "maximum_offset": 65,
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_basic_controller": "MELSEC_IQ_F"
+      },
+      "parameter": "ccie_basic_timeout_ms",
+      "minimum": 20,
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "FIELD_BASIC",
+        "ccie_basic_optional_1g_supported": false
+      },
+      "parameter": "bitrate_bps",
+      "allowed": [
+        100000000
+      ],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_controller_mode": "NORMAL"
+      },
+      "parameter": "ccie_controller_lb_bits",
+      "maximum": 16384,
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_controller_mode": "NORMAL"
+      },
+      "parameter": "ccie_controller_lw_words",
+      "maximum": 16384,
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_controller_mode": "EXTENDED"
+      },
+      "parameter": "ccie_controller_lb_bits",
+      "maximum": 32768,
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_controller_mode": "EXTENDED"
+      },
+      "parameter": "ccie_controller_lw_words",
+      "maximum": 131072,
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_controller_network_extended": false
+      },
+      "parameter": "ccie_controller_network_lb_bits",
+      "maximum": 32768,
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_controller_network_extended": false
+      },
+      "parameter": "ccie_controller_network_lw_words",
+      "maximum": 131072,
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {},
+      "parameter": "ccie_tsn_guard_us",
+      "maximum_parameter": "ccie_tsn_gate_period_us",
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {},
+      "parameter": "ccie_tsn_guard_us",
+      "maximum_parameter": "ccie_tsn_cycle_us",
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "FIELD"
+      },
+      "parameter": "ccie_network_rx_bits",
+      "maximum": 16384,
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "FIELD"
+      },
+      "parameter": "ccie_network_ry_bits",
+      "maximum": 16384,
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "FIELD"
+      },
+      "parameter": "ccie_network_rwr_words",
+      "maximum": 8192,
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "FIELD"
+      },
+      "parameter": "ccie_network_rww_words",
+      "maximum": 8192,
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "FIELD_BASIC"
+      },
+      "parameter": "ccie_network_rx_bits",
+      "maximum": 4096,
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "FIELD_BASIC"
+      },
+      "parameter": "ccie_network_ry_bits",
+      "maximum": 4096,
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "FIELD_BASIC"
+      },
+      "parameter": "ccie_network_rwr_words",
+      "maximum": 2048,
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "FIELD_BASIC"
+      },
+      "parameter": "ccie_network_rww_words",
+      "maximum": 2048,
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "FIELD"
+      },
+      "parameter": "ccie_tsn_class",
+      "allowed": [],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "FIELD"
+      },
+      "parameter": "ccie_tsn_version",
+      "allowed": [],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "FIELD"
+      },
+      "parameter": "ccie_tsn_sync",
+      "allowed": [],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "FIELD"
+      },
+      "parameter": "ccie_tsn_cycle_us",
+      "allowed": [],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "FIELD"
+      },
+      "parameter": "ccie_tsn_gate_period_us",
+      "allowed": [],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "FIELD"
+      },
+      "parameter": "ccie_tsn_guard_us",
+      "allowed": [],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "FIELD_BASIC"
+      },
+      "parameter": "ccie_tsn_class",
+      "allowed": [],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "FIELD_BASIC"
+      },
+      "parameter": "ccie_tsn_version",
+      "allowed": [],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "FIELD_BASIC"
+      },
+      "parameter": "ccie_tsn_sync",
+      "allowed": [],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "FIELD_BASIC"
+      },
+      "parameter": "ccie_tsn_cycle_us",
+      "allowed": [],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "FIELD_BASIC"
+      },
+      "parameter": "ccie_tsn_gate_period_us",
+      "allowed": [],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "FIELD_BASIC"
+      },
+      "parameter": "ccie_tsn_guard_us",
+      "allowed": [],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "CONTROLLER"
+      },
+      "parameter": "ccie_tsn_class",
+      "allowed": [],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "CONTROLLER"
+      },
+      "parameter": "ccie_tsn_version",
+      "allowed": [],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "CONTROLLER"
+      },
+      "parameter": "ccie_tsn_sync",
+      "allowed": [],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "CONTROLLER"
+      },
+      "parameter": "ccie_tsn_cycle_us",
+      "allowed": [],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "CONTROLLER"
+      },
+      "parameter": "ccie_tsn_gate_period_us",
+      "allowed": [],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "CONTROLLER"
+      },
+      "parameter": "ccie_tsn_guard_us",
+      "allowed": [],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "FIELD"
+      },
+      "parameter": "ccie_basic_cyclic_udp_port",
+      "allowed": [],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "FIELD"
+      },
+      "parameter": "ccie_basic_discovery_udp_port",
+      "allowed": [],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "FIELD"
+      },
+      "parameter": "ccie_basic_group",
+      "allowed": [],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "FIELD"
+      },
+      "parameter": "ccie_basic_timeout_ms",
+      "allowed": [],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "FIELD"
+      },
+      "parameter": "ccie_basic_disconnect_count",
+      "allowed": [],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "FIELD"
+      },
+      "parameter": "ccie_basic_optional_1g_supported",
+      "allowed": [],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "FIELD"
+      },
+      "parameter": "ccie_basic_controller",
+      "allowed": [],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "FIELD"
+      },
+      "parameter": "ccie_basic_tool_revision",
+      "allowed": [],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "FIELD"
+      },
+      "parameter": "ccie_occupied_stations",
+      "allowed": [],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "CONTROLLER"
+      },
+      "parameter": "ccie_basic_cyclic_udp_port",
+      "allowed": [],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "CONTROLLER"
+      },
+      "parameter": "ccie_basic_discovery_udp_port",
+      "allowed": [],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "CONTROLLER"
+      },
+      "parameter": "ccie_basic_group",
+      "allowed": [],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "CONTROLLER"
+      },
+      "parameter": "ccie_basic_timeout_ms",
+      "allowed": [],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "CONTROLLER"
+      },
+      "parameter": "ccie_basic_disconnect_count",
+      "allowed": [],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "CONTROLLER"
+      },
+      "parameter": "ccie_basic_optional_1g_supported",
+      "allowed": [],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "CONTROLLER"
+      },
+      "parameter": "ccie_basic_controller",
+      "allowed": [],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "CONTROLLER"
+      },
+      "parameter": "ccie_basic_tool_revision",
+      "allowed": [],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "CONTROLLER"
+      },
+      "parameter": "ccie_occupied_stations",
+      "allowed": [],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "TSN"
+      },
+      "parameter": "ccie_basic_cyclic_udp_port",
+      "allowed": [],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "TSN"
+      },
+      "parameter": "ccie_basic_discovery_udp_port",
+      "allowed": [],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "TSN"
+      },
+      "parameter": "ccie_basic_group",
+      "allowed": [],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "TSN"
+      },
+      "parameter": "ccie_basic_timeout_ms",
+      "allowed": [],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "TSN"
+      },
+      "parameter": "ccie_basic_disconnect_count",
+      "allowed": [],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "TSN"
+      },
+      "parameter": "ccie_basic_optional_1g_supported",
+      "allowed": [],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "TSN"
+      },
+      "parameter": "ccie_basic_controller",
+      "allowed": [],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "TSN"
+      },
+      "parameter": "ccie_basic_tool_revision",
+      "allowed": [],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "TSN"
+      },
+      "parameter": "ccie_occupied_stations",
+      "allowed": [],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "FIELD"
+      },
+      "parameter": "ccie_controller_mode",
+      "allowed": [],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "FIELD"
+      },
+      "parameter": "ccie_controller_network_extended",
+      "allowed": [],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "FIELD"
+      },
+      "parameter": "ccie_controller_networks",
+      "allowed": [],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "FIELD"
+      },
+      "parameter": "ccie_controller_groups",
+      "allowed": [],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "FIELD"
+      },
+      "parameter": "ccie_controller_lb_bits",
+      "allowed": [],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "FIELD"
+      },
+      "parameter": "ccie_controller_lw_words",
+      "allowed": [],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "FIELD"
+      },
+      "parameter": "ccie_controller_lx_bits",
+      "allowed": [],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "FIELD"
+      },
+      "parameter": "ccie_controller_ly_bits",
+      "allowed": [],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "FIELD"
+      },
+      "parameter": "ccie_controller_network_lb_bits",
+      "allowed": [],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "FIELD"
+      },
+      "parameter": "ccie_controller_network_lw_words",
+      "allowed": [],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "FIELD_BASIC"
+      },
+      "parameter": "ccie_controller_mode",
+      "allowed": [],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "FIELD_BASIC"
+      },
+      "parameter": "ccie_controller_network_extended",
+      "allowed": [],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "FIELD_BASIC"
+      },
+      "parameter": "ccie_controller_networks",
+      "allowed": [],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "FIELD_BASIC"
+      },
+      "parameter": "ccie_controller_groups",
+      "allowed": [],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "FIELD_BASIC"
+      },
+      "parameter": "ccie_controller_lb_bits",
+      "allowed": [],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "FIELD_BASIC"
+      },
+      "parameter": "ccie_controller_lw_words",
+      "allowed": [],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "FIELD_BASIC"
+      },
+      "parameter": "ccie_controller_lx_bits",
+      "allowed": [],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "FIELD_BASIC"
+      },
+      "parameter": "ccie_controller_ly_bits",
+      "allowed": [],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "FIELD_BASIC"
+      },
+      "parameter": "ccie_controller_network_lb_bits",
+      "allowed": [],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "FIELD_BASIC"
+      },
+      "parameter": "ccie_controller_network_lw_words",
+      "allowed": [],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "TSN"
+      },
+      "parameter": "ccie_controller_mode",
+      "allowed": [],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "TSN"
+      },
+      "parameter": "ccie_controller_network_extended",
+      "allowed": [],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "TSN"
+      },
+      "parameter": "ccie_controller_networks",
+      "allowed": [],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "TSN"
+      },
+      "parameter": "ccie_controller_groups",
+      "allowed": [],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "TSN"
+      },
+      "parameter": "ccie_controller_lb_bits",
+      "allowed": [],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "TSN"
+      },
+      "parameter": "ccie_controller_lw_words",
+      "allowed": [],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "TSN"
+      },
+      "parameter": "ccie_controller_lx_bits",
+      "allowed": [],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "TSN"
+      },
+      "parameter": "ccie_controller_ly_bits",
+      "allowed": [],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "TSN"
+      },
+      "parameter": "ccie_controller_network_lb_bits",
+      "allowed": [],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_variant": "TSN"
+      },
+      "parameter": "ccie_controller_network_lw_words",
+      "allowed": [],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_basic_controller": "MELSEC_IQ_R"
+      },
+      "parameter": "ccie_basic_disconnect_count",
+      "allowed": [
+        3,
+        5,
+        10
+      ],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_basic_controller": "MELSEC_IQ_L"
+      },
+      "parameter": "ccie_basic_disconnect_count",
+      "allowed": [
+        3,
+        5,
+        10
+      ],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_basic_controller": "MELSEC_IQ_F"
+      },
+      "parameter": "ccie_basic_disconnect_count",
+      "allowed": [
+        3,
+        5,
+        10
+      ],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_basic_controller": "MELSEC_Q"
+      },
+      "parameter": "ccie_basic_disconnect_count",
+      "allowed": [
+        3,
+        5,
+        10
+      ],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    },
+    {
+      "when": {
+        "ccie_basic_controller": "MELSEC_L"
+      },
+      "parameter": "ccie_basic_disconnect_count",
+      "allowed": [
+        3,
+        5,
+        10
+      ],
+      "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+      "source_revision": "CLPA variant tables2026-10-01; SH081684ENG-J October2024; MELSEC current product-specific extensions"
+    }
+  ],
+  "physical_layer_profile_id": "CCLINK_IE_VARIANT_EXPLICIT",
+  "medium_access_model": "VARIANT_DEPENDENT",
+  "native_parameter_prefixes": [],
+  "parameter_aliases": {},
+  "parameter_alias_limits": {},
+  "parameter_evidence_scope": null,
+  "rate_source_profile_id": null,
+  "arbitration_model_id": null,
+  "max_payload_bytes": null,
+  "capabilities": {
+    "supports_signals": true,
+    "supports_data_objects": true,
+    "supports_streams": false,
+    "supports_multicast": false,
+    "supports_publish_subscribe": true,
+    "supports_request_response": false,
+    "supports_cyclic": true,
+    "supports_event": true,
+    "supports_redundancy": false,
+    "supports_time_sync": true,
+    "supports_safety_profile": false,
+    "supports_segmentation": false,
+    "supports_fragmentation": false,
+    "supports_qos": true
+  },
+  "deterministic": false,
+  "overhead_bytes": 8,
+  "implementation_status": "PARTIAL",
+  "connection_type": "COMMUNICATION_TECHNOLOGY",
+  "parameter_proposals": {
+    "kind": "VARIANT_DEPENDENT",
+    "unit": "bit/s",
+    "status": "REVIEW_REQUIRED",
+    "source": "https://www.cc-link.org/en/networktechnology/spec.html",
+    "source_revision": "CLPA separateController/Field/FieldBasic/TSN tables accessed2026-10-01",
+    "note": "Select the actual variant before proposing a link speed. Controller/Field1G, Basic100M mandatory/1G optional, TSN100M/1G. No universal1G or10M Ethernet fallback."
+  },
+  "capacity_evidence": {
+    "status": "MODEL_MISSING",
+    "frame_model": null,
+    "schedule_model": null,
+    "requires_confirmed_device_parameters": true
+  },
+  "components": {
+    "binding": "cc_link_ie.binding",
+    "generator": "cc_link_ie.generator",
+    "validator": "cc_link_ie.validator",
+    "timing_model": null,
+    "load_model": null,
+    "encoder": "cc_link_ie.encoder",
+    "decoder": "cc_link_ie.decoder"
+  },
+  "known_limitations": "Technology-specific conformance details require a vendor/profile extension."
+}

@@ -1,0 +1,906 @@
+--- a/backend/nis/agent/tools/validation.py
++++ b/backend/nis/agent/tools/validation.py
+@@ -176,7 +176,36 @@
+             for check in report['checks']:
+                 if check['severity'] in {'ERROR', 'OPEN'}:
+                     findings.append({'severity': 'ERROR', 'object_id': identifier, 'message': check['text']})
+-    for identifier in affected_ports:
++    findings.extend(_capacity_findings(graph, affected_ports, declared, workflow_state, touched))
++    from backend.nis.engineering.network.physical_ports import topology_port_findings
++    for index, change in enumerate(changes):
++        if change['object_type'] == 'NetworkTopology':
++            findings.extend({**finding, 'index': index} for finding in topology_port_findings(
++                (change.get('data') or {}).get('topology') or {},
++                list(graph['HardwareNode'].values()), list(graph['HardwareNetworkInterface'].values())))
++    from backend.nis.engineering.communication.device_communication import communication_findings
++    for finding in communication_findings(graph):
++        key = (finding['object_type'], finding['object_id'])
++        if key in touched or (key[0] == 'Message' and key[1] in affected_messages):
++            findings.append({**finding, 'index': touched.get(key)})
++    from backend.nis.engineering.communication.wizard_communication import contract_findings
++    for finding in contract_findings(graph):
++        if (finding['kind'], finding['id']) in touched:
++            findings.append(finding)
++    return findings
++
++
++def _capacity_findings(graph, affected_ports, declared, workflow_state, touched):
++    """One capacity check for proposal preview and current parameter review."""
++    findings = []
++    messages_by_port = {}
++    for message in graph['Message'].values():
++        bindings = {str(message.get('hardware_interface_id'))}
++        bindings.update(str(binding.get('hardware_interface_id')) for binding in
++                        (message.get('configuration') or {}).get('physical_transmit_bindings') or [])
++        for identifier in bindings:
++            messages_by_port.setdefault(identifier, []).append(message)
++    for identifier in sorted(affected_ports):
+         port = graph['HardwareNetworkInterface'][identifier]
+         from backend.nis.engineering.capacity.service import parameters_for_protocol
+         from backend.nis.engineering.capacity.transmission import profile
+@@ -186,9 +215,7 @@
+         network_parameters = network if _network_supports_interface(network.get('technology'), port['technology']) else {}
+         scoped = {**(network_parameters.get('configuration') or {}), **network_parameters, **(port.get('configuration') or {}), **{key: value for key, value in port.items() if value is not None}}
+         parameters = parameters_for_protocol(port['technology'], confirmed, scoped, port.get('network_ref'), confirmed)
+-        messages = [item for item in graph['Message'].values()
+-            if str(item.get('hardware_interface_id')) == identifier or any(str(binding.get('hardware_interface_id')) == identifier
+-                for binding in (item.get('configuration') or {}).get('physical_transmit_bindings') or [])]
++        messages = messages_by_port.get(identifier, [])
+         frames = [(item, estimate_frame(port['technology'], int(item.get('dlc') or 0), parameters)) for item in messages]
+         if frames and DEFAULT_TECHNOLOGY_REGISTRY.profile(port['technology']).get('capacity_evidence', {}).get('status') == 'NOT_APPLICABLE':
+             findings.append({'severity': 'ERROR', 'object_id': identifier,
+@@ -213,7 +240,7 @@
+             findings.append({'severity': 'ERROR', 'index': touched.get(('HardwareNetworkInterface', identifier)),
+                 'object_id': identifier, 'object_type': 'HardwareNetworkInterface', 'object_name': port.get('name') or identifier,
+                 'node_name': node.get('name'), 'network_id': port.get('network_ref'), 'network_name': network.get('name') or network.get('id'),
+-                'technology': technology, 'missing_fields': missing, 'repair_action': 'REVIEW_TECHNOLOGY_PARAMETERS', 'code': 'CAPACITY_UNVERIFIED',
++                'technology': technology, 'missing_fields': missing, 'parameter_findings': parameters.get('_rate_findings', []), 'repair_action': 'REVIEW_TECHNOLOGY_PARAMETERS', 'code': 'CAPACITY_UNVERIFIED',
+                 'message': message})
+             continue
+         releases = [(item, frame, profile(transmission_contract(item), item.get('cycle_ms'))) for item, frame in frames]
+@@ -224,19 +251,37 @@
+         load = sum(utilization_percent(frame.transmission_time_s, release['period_ms']) for _, frame, release in releases)
+         if load > float(port.get('target_load_limit') or 60):
+             findings.append({'severity': 'ERROR', 'object_id': identifier, 'message': f'Interface-Auslastung {load:.2f}% überschreitet die zulässige Zielauslastung.'})
+-    from backend.nis.engineering.network.physical_ports import topology_port_findings
+-    for index, change in enumerate(changes):
+-        if change['object_type'] == 'NetworkTopology':
+-            findings.extend({**finding, 'index': index} for finding in topology_port_findings(
+-                (change.get('data') or {}).get('topology') or {},
+-                list(graph['HardwareNode'].values()), list(graph['HardwareNetworkInterface'].values())))
+-    from backend.nis.engineering.communication.device_communication import communication_findings
+-    for finding in communication_findings(graph):
+-        key = (finding['object_type'], finding['object_id'])
+-        if key in touched or (key[0] == 'Message' and key[1] in affected_messages):
+-            findings.append({**finding, 'index': touched.get(key)})
+-    from backend.nis.engineering.communication.wizard_communication import contract_findings
+-    for finding in contract_findings(graph):
+-        if (finding['kind'], finding['id']) in touched:
+-            findings.append(finding)
+     return findings
++
++
++def review_parameter_findings(workflow_state):
++    """Read current canonical ports, never replay historical proposal deltas."""
++    from backend.nis.communication.catalog import PARAMETER_UI_ALIASES
++    graph = {kind: {str(row['id']): row for row in objects(kind)}
++             for kind in ('HardwareNode', 'HardwareNetworkInterface', 'Message')}
++    declared = {str(row['id']): row for row in workflow_state['parameters'].get('networks', [])}
++    findings = _capacity_findings(graph, set(graph['HardwareNetworkInterface']), declared, workflow_state, {})
++    for finding in findings:
++        port = graph['HardwareNetworkInterface'].get(str(finding.get('object_id')), {})
++        technology = DEFAULT_TECHNOLOGY_REGISTRY.normalize_id(port.get('technology'))
++        profile = DEFAULT_TECHNOLOGY_REGISTRY.profile(technology)
++        schema = profile.get('parameter_schema') or {}
++        aliases = profile.get('parameter_aliases') or {}
++        fields = []
++        for detail in finding.get('parameter_findings') or []:
++            for key in schema:
++                import re
++                if re.search(r'(?<![A-Za-z0-9_])' + re.escape(key) + r'(?![A-Za-z0-9_])', detail.get('message') or ''):
++                    fields.append(PARAMETER_UI_ALIASES.get(key, key))
++        for key in finding.get('missing_fields') or []:
++            native = aliases.get(key, next((native for native, ui in PARAMETER_UI_ALIASES.items() if ui == key), key))
++            ui = PARAMETER_UI_ALIASES.get(native, native)
++            if native in schema or ui in schema:
++                fields.append(ui)
++        if not fields and finding.get('missing_fields') == ['confirmed_rate_evidence_or_transmission_model']:
++            fields = [PARAMETER_UI_ALIASES.get(key, key) for key, spec in schema.items()
++                      if spec.get('unit') == 'bit/s' and spec.get('scope') == 'network']
++        finding.update(technology=technology, network_id=port.get('network_ref'),
++                       node_name=graph['HardwareNode'].get(str(port.get('hardware_node_id')), {}).get('name'),
++                       parameter_fields=list(dict.fromkeys(fields)))
++    return findings
+--- a/backend/nis/interfaces/http/engineering.py
++++ b/backend/nis/interfaces/http/engineering.py
+@@ -847,6 +847,20 @@
+                     "parameter_storage": state['parameter_storage']})
+ 
+ 
++@engineering_api.route('/workflow/parameters/review', methods=['GET'])
++def parameter_review_route():
++    from backend.nis.agent.tools.validation import review_parameter_findings
++    service = WorkflowStatusService(_project_id())
++    state = service.get()
++    findings = review_parameter_findings(state)
++    current = service.get()
++    if state['versions'] != current['versions'] or state['edit_tokens']['parameters'] != current['edit_tokens']['parameters']:
++        return jsonify({'error': 'Das Modell wurde während der Prüfung geändert. Bitte erneut prüfen.'}), 409
++    return jsonify({'project_id': state['project_id'], 'versions': state['versions'],
++                    'edit_token': state['edit_tokens']['parameters'], 'source': 'CURRENT_CANONICAL_MODEL',
++                    'findings': findings})
++
++
+ @engineering_api.route('/workflow/parameters/user-defined-values', methods=['GET'])
+ def user_defined_values_route():
+     from backend.nis.infrastructure.storage.saved_storage import committed_user_defined_values
+--- a/backend/tests/test_proposal_capacity.py
++++ b/backend/tests/test_proposal_capacity.py
+@@ -79,3 +79,39 @@
+         assert capacity[0]['missing_fields'] and capacity[0]['repair_action'] == 'REVIEW_TECHNOLOGY_PARAMETERS'
+         if technology == 'CAN_FD':
+             assert capacity[0]['missing_fields'] == ['data_bitrate']
++
++
++@pytest.mark.parametrize('technology,fields', [('LIN',['lin_bitrate_bps']),('CAN_FD',['arbitration_bitrate','data_bitrate']),('ETHERNET',['bitrate'])])
++def test_current_parameter_review_uses_native_fields_and_ignores_proposal_history(monkeypatch, technology, fields):
++    from backend.nis.agent.tools import validation
++    port={'id':'port','hardware_node_id':'ecu','technology':technology,'network_ref':'local','name':'Local port','bitrate':None}
++    rows={'HardwareNode':[{'id':'ecu','name':'Controller'}],'HardwareNetworkInterface':[port],
++          'Message':[{'id':'message','hardware_interface_id':'port','dlc':1,'cycle_ms':100}]}
++    monkeypatch.setattr(validation,'objects',lambda kind:rows[kind])
++    state={'parameters':{'technology':'can_fd','defaults_source':'technology-registry','networks':[{'id':'local','name':'Local bus','technology':technology}],
++                        'simulation_parameter_assumptions':{'can_fd':{'values':{'arbitration_bitrate':500000,'data_bitrate':2000000}}}}}
++    from copy import deepcopy
++    before=deepcopy(state)
++    findings=validation.review_parameter_findings(state)
++    assert findings and findings[0]['code']=='CAPACITY_UNVERIFIED'
++    assert set(fields) <= set(findings[0]['parameter_fields'])
++    if technology == 'LIN':
++        assert 'lin_device_source' in findings[0]['parameter_fields']
++        assert 'lin_schedule_source' in findings[0]['parameter_fields']
++    assert findings[0]['network_id']=='local' and findings[0]['node_name']=='Controller'
++    assert state==before
++
++
++def test_current_parameter_review_disappears_only_after_matching_rate_confirmation(monkeypatch):
++    from backend.nis.agent.tools import validation
++    rows={'HardwareNode':[{'id':'ecu','name':'Controller'}],
++          'HardwareNetworkInterface':[{'id':'port','hardware_node_id':'ecu','technology':'CAN_FD','network_ref':'bus','bitrate':None}],
++          'Message':[{'id':'m','hardware_interface_id':'port','dlc':1,'cycle_ms':100}]}
++    monkeypatch.setattr(validation,'objects',lambda kind:rows[kind])
++    state={'parameters':{'technology':'can_fd','defaults_source':'technology-registry','networks':[{'id':'bus','technology':'CAN_FD'}]}}
++    assert validation.review_parameter_findings(state)
++    values={'arbitration_bitrate':500000,'data_bitrate':2000000}
++    state['parameters']['technology_parameters']={'can_fd':{'values':values,'provenance':{k:{'source':'USER_CONFIRMED','status':'CONFIRMED','value':v} for k,v in values.items()}}}
++    assert validation.review_parameter_findings(state)==[]
++    state['parameters']['technology_parameters']['can_fd']['provenance']['data_bitrate']['value']=1000000
++    assert validation.review_parameter_findings(state)[0]['parameter_fields']==['data_bitrate']
+--- a/backend/tests/test_technology_parameter_review.py
++++ b/backend/tests/test_technology_parameter_review.py
+@@ -222,3 +222,20 @@
+     assert check['required'][source_field] is False
+     assert any(f['code'] == 'TECHNOLOGY_PARAMETER_MISSING' and f.get('parameter') == source_field
+                for f in check['profile_findings'])
++
++
++
++def test_current_parameter_review_endpoint_is_read_only_and_project_scoped():
++    from backend.nis.app import create_app
++    from uuid import uuid4
++    client=create_app(testing=True).test_client()
++    project='parameter-review-'+uuid4().hex
++    headers={'X-Project-ID':project}
++    before=client.get('/api/engineering/workflow/parameters',headers=headers).get_json()
++    review=client.get('/api/engineering/workflow/parameters/review',headers=headers)
++    assert review.status_code==200,review.get_json()
++    result=review.get_json()
++    assert result['project_id']==before['project_id'] and result['edit_token']==before['edit_token']
++    assert result['source']=='CURRENT_CANONICAL_MODEL' and result['findings']==[]
++    after=client.get('/api/engineering/workflow/parameters',headers=headers).get_json()
++    assert after==before
+--- a/frontend/src/features/communication/lib/technology-parameters.ts
++++ b/frontend/src/features/communication/lib/technology-parameters.ts
+@@ -4,7 +4,10 @@
+ export type DeclaredNetwork = Parameters & { id: string; name?: string; technology?: string };
+ const record = (value: unknown): Parameters => value && typeof value === 'object' && !Array.isArray(value) ? value as Parameters : {};
+ const present = (value: unknown) => value === '' || value === null ? undefined : value;
+-export const technologyKey = (value: unknown) => String(value ?? '').toLowerCase().replace(/[ -]/g, '_');
++export const technologyKey = (value: unknown) => {
++  const key = String(value ?? '').toLowerCase().replace(/[ -]/g, '_');
++  return ({automotive_ethernet:'ethernet',canfd:'can_fd',some_ip:'someip'} as Record<string,string>)[key] ?? key;
++};
+ const matchingProof = (proof: Parameters, technologyId: string) => ['technology', 'technology_id', 'protocol']
+   .every(key => !proof[key] || technologyKey(proof[key]) === technologyKey(technologyId));
+ 
+@@ -101,6 +104,9 @@
+ 
+ export function technologyParameterUnverified(parameters: Parameters, key: string, technologyId: string): boolean {
+   const scoped = record(record(parameters.technology_parameters)[technologyId]);
++  if (key === 'technology') return technologyKey(parameters.technology) !== technologyKey(technologyId)
++    && !Object.keys(record(scoped.values)).length
++    && !Object.keys(record(record(record(parameters.simulation_parameter_assumptions)[technologyId]).values)).length;
+   const value = record(scoped.values)[key];
+   const proof = record(record(scoped.provenance)[key]);
+   if (value !== undefined && value !== null && matchingProof(proof, technologyId) && proof.source === 'USER_CONFIRMED' && proof.status === 'CONFIRMED' && proof.value === value) return false;
+@@ -198,3 +204,26 @@
+   }
+   return [...groups.values()];
+ }
++
++
++export type ParameterFinding = ReviewFinding & { severity?: string; technology?: string; network_id?: string;
++  network_name?: string; node_name?: string; object_name?: string; missing_fields?: string[]; parameter_fields?: string[];
++  parameter_findings?: Array<{parameter?: string; code?: string; message?: string}> };
++
++/** A saved scenario is still not hardware evidence, but it is no longer an unsaved draft. */
++export function parameterValueStatus(parameters: Parameters, key: string, technologyId: string) {
++  if (!technologyParameterUnverified(parameters, key, technologyId)) return 'CONFIRMED';
++  const assumed = record(record(record(parameters.simulation_parameter_assumptions)[technologyId]).values);
++  return present(assumed[key]) !== undefined ? 'SAVED_ASSUMPTION' : 'PROPOSAL';
++}
++
++export function parameterReviewHref(projectId: string, technology: string, proposalId?: string) {
++  const query = new URLSearchParams({mode:'parameters', project:projectId, technology:technologyKey(technology)});
++  if (proposalId) query.set('proposal', proposalId);
++  return `/studio?${query}#parameter-findings`;
++}
++
++export function findingsForParameter(findings: ParameterFinding[], technologyId: string, key: string) {
++  return findings.filter(finding => technologyKey(finding.technology) === technologyKey(technologyId)
++    && (finding.parameter_fields ?? finding.missing_fields ?? []).includes(key));
++}
+--- a/frontend/src/features/communication/lib/technology-parameters.test.mjs
++++ b/frontend/src/features/communication/lib/technology-parameters.test.mjs
+@@ -287,3 +287,28 @@
+   const confirmed = confirmTechnologyParameters({},profile,{mode:'STANDARD',version:'A',timeout:200});
+   assert.equal(technologyParameterValues(confirmed,profile).timeout,200);
+ });
++
++
++import { parameterValueStatus, parameterReviewHref, findingsForParameter, technologyKey } from './technology-parameters.ts';
++test('saved assumptions and reviewed technology selection are distinct from unsaved proposals', () => {
++  const params={technology:'can_fd',simulation_parameter_assumptions:{can_fd:{values:{can_clock_hz:40000000}}}};
++  assert.equal(parameterValueStatus(params,'can_clock_hz','can_fd'),'SAVED_ASSUMPTION');
++  assert.equal(parameterValueStatus(params,'arbitration_bitrate','can_fd'),'PROPOSAL');
++  assert.equal(technologyParameterUnverified(params,'technology','can_fd'),false);
++  assert.equal(technologyParameterUnverified(params,'technology','lin'),true);
++  assert.equal(technologyParameterUnverified(params,'can_clock_hz','can_fd'),true);
++});
++
++test('context links select the actual bus and canonical UI fields without mixing project buses', () => {
++  const href=parameterReviewHref('project a','AUTOMOTIVE_ETHERNET','proposal/1');
++  const url=new URL(href,'http://localhost');
++  assert.equal(url.searchParams.get('project'),'project a');
++  assert.equal(url.searchParams.get('technology'),'ethernet');
++  assert.equal(url.searchParams.get('proposal'),'proposal/1');
++  assert.equal(url.hash,'#parameter-findings');
++  const rows=[{technology:'CAN_FD',network_id:'can',missing_fields:['nominal_bitrate_bps'],parameter_fields:['arbitration_bitrate']},
++    {technology:'LIN',network_id:'lin',parameter_fields:['lin_bitrate_bps']}];
++  assert.equal(findingsForParameter(rows,'can_fd','arbitration_bitrate').length,1);
++  assert.equal(findingsForParameter(rows,'lin','arbitration_bitrate').length,0);
++  assert.equal(technologyKey('Ethernet'),'ethernet');
++});
+--- a/frontend/src/features/workflow/lib/workflow-api.ts
++++ b/frontend/src/features/workflow/lib/workflow-api.ts
+@@ -854,3 +854,9 @@
+     clearWorkflowApiCaches(projectId);
+     return { ...result, workflow: normalizeWorkflowState(result.workflow) };
+   });
++
++
++export type ParameterReview = WorkflowResourceRevision & {source:'CURRENT_CANONICAL_MODEL';
++  findings: import('@/features/communication/lib/technology-parameters').ParameterFinding[]};
++export const getParameterReview = (projectId = readActiveProjectId()) => request<ParameterReview>(
++  '/workflow/parameters/review', {headers:{'X-Project-ID':projectId}, signal:AbortSignal.timeout(180000)});
+--- a/frontend/src/features/agent/ui/engineering-agent-event.tsx
++++ b/frontend/src/features/agent/ui/engineering-agent-event.tsx
+@@ -15,6 +15,8 @@
+ import { engineeringContextHref, readAssistantContext } from "@/features/agent/lib/assistant-context";
+ import { readConversation } from '@/features/agent/lib/conversation-client';
+ import { applyReviewedProposal, approveAndApplyWizardProposal, hasCompleteProposal, proposalChangePage, proposalFindingGroups, refreshProposal } from '@/features/agent/lib/proposal-client';
++
++import { parameterReviewHref } from "@/features/communication/lib/technology-parameters";
+ 
+ function LazyDetails({ title, children }: { title: string; children: () => React.ReactNode }) {
+   const [open, setOpen] = useState(false);
+@@ -134,6 +136,7 @@
+     {!complete && <p role="status">Vollständiger Vorschlag wird aus dem gespeicherten Modell geladen. Freigabe ist bis dahin gesperrt.</p>}
+     {complete && Boolean(proposal.validation_result.findings?.length) && <section aria-label="Prüfbefunde des Vorschlags">
+       <h4>{proposal.validation_result.findings!.length} Prüfbefunde</h4>
++      {proposal.status === "APPLIED" && <p role="status">Befunde der Vorschlagsprüfung vor der Übernahme. Die Parameteransicht prüft den aktuellen Modellstand erneut.</p>}
+       {proposalFindingGroups(proposal).map(group => <article key={group.key}>
+         <strong>{group.code === 'CAPACITY_UNVERIFIED' ? `${group.technology} · ${group.network} · ${group.findings.length} Anschlüsse ohne Kapazitätsnachweis` : group.findings[0].object_name}</strong>
+         <p>{group.findings[0].message}</p>
+@@ -141,7 +144,7 @@
+           ? <><p>Busfrequenz und Gerätenachweis werden getrennt geprüft. Nach Übernahme des Modells die betroffenen Anschlüsse unter „Gerätespezifische Zeitdaten“ bearbeiten. Master, Adresse/Chip-Select, Transferumfang und Zeitgrenzen benötigen Geräteunterlagen; sie werden nicht aus Standardwerten erfunden.</p>
+             <a className="button secondary tiny" href={`/studio/engineering?resource=hardware-interfaces&project=${encodeURIComponent(projectId)}`}>Geräteanschlüsse und Zeitdaten prüfen</a></>
+           : <><p>Kapazitätsprüfung erfolgt mit dem Modell dieser Technologie nach Bestätigung und Übernahme der Parameter. Modellfreigabe bestätigt keine Kapazität.</p>
+-            <a className="button secondary tiny" href={`/studio?mode=parameters&project=${encodeURIComponent(projectId)}`}>Technologieparameter bearbeiten und bestätigen</a></>)}
++            <a className="button secondary tiny" href={parameterReviewHref(projectId, group.technology, proposal.proposal_id)}>Technologieparameter bearbeiten und bestätigen</a></>)}
+         {group.code === 'CAPACITY_UNVERIFIED' ? <LazyDetails title={`Alle betroffenen Objekte und Befunde (${group.findings.length})`}>{() => <FindingGroupDetails findings={group.findings} />}</LazyDetails>
+           : group.findings.map((finding, index) => <div key={index}>
+             <p role={finding.severity === 'WARNING' ? 'status' : 'alert'}>{finding.message}</p>
+--- a/frontend/src/features/agent/ui/wizard-preflight-review.tsx
++++ b/frontend/src/features/agent/ui/wizard-preflight-review.tsx
+@@ -12,11 +12,11 @@
+ type Snapshot = Awaited<ReturnType<typeof getWorkflowParameters>>;
+ const rateFields = (technology: Technology) => (technology.parameter_schema ?? []).filter(field => field.scope === 'network' && field.unit === 'bit/s');
+ 
+-function NetworkRateReview({ technology, networks, snapshot, projectId, disabled, onContinue }: {
+-  technology: Technology; networks: DeclaredNetwork[]; snapshot: Snapshot; projectId: string; disabled: boolean; onContinue: () => Promise<void>;
++export function NetworkRateReview({ technology, networks, snapshot, projectId, disabled, onContinue, fieldKeys, onBusyChange }: {
++  technology: Technology; networks: DeclaredNetwork[]; snapshot: Snapshot; projectId: string; disabled: boolean; onContinue: () => Promise<void>; fieldKeys?: string[]; onBusyChange?: (busy: boolean) => void;
+ }) {
+   const [selected, setSelected] = useState(networks.map(item => item.id));
+-  const fields = rateFields(technology);
++  const fields = rateFields(technology).filter(field => !fieldKeys?.length || fieldKeys.includes(field.key));
+   const proposed = technologyParameterValues(snapshot.parameters, technology);
+   const [values, setValues] = useState<Record<string, unknown>>(() => Object.fromEntries(fields.map(field => {
+     const common = networks.map(item => item[field.key]);
+@@ -26,7 +26,7 @@
+   const [error, setError] = useState('');
+   async function confirm() {
+     if (busy || disabled || !snapshot.edit_token) return;
+-    setBusy(true); setError('');
++    setBusy(true); onBusyChange?.(true); setError('');
+     try {
+       const parameters = confirmNetworkParameters(snapshot.parameters, technology, selected, values);
+       const saved = await saveWorkflowParameters(parameters, snapshot.edit_token, projectId);
+@@ -34,15 +34,16 @@
+       notifyWorkflowChanged();
+       await onContinue();
+     } catch (cause) { setError(cause instanceof Error ? cause.message : 'Die Parameter konnten nicht bestätigt werden.'); }
+-    finally { setBusy(false); }
++    finally { setBusy(false); onBusyChange?.(false); }
+   }
++  if (!fields.length) return null;
+   return <form className="agent-wizard-inline-question" aria-label={`${technology.label ?? technology.id.toUpperCase()}-Netze bestätigen`} onSubmit={event => { event.preventDefault(); void confirm(); }}>
+     <strong>{technology.label ?? technology.id.toUpperCase()} · {networks.length} betroffene Netze</strong>
+     <p>Die Rate fehlt als bestätigter Projektwert. Kapazität und Timing sind davon abhängige Befunde. Ein Profilvorschlag wird erst mit deiner Bestätigung für die ausgewählten Netze verwendet.</p>
+     <fieldset disabled={disabled || busy}>
+-      {fields.map((field: TechnologyParameterField) => <label className="field" key={field.key}>
++      {fields.map((field: TechnologyParameterField) => <label className="field parameter-field-finding" key={field.key}>
+         <span>{field.label} ({field.unit})</span>
+-        <input name={field.key} required type="number" min={field.min} max={field.max} step="any" value={String(values[field.key] ?? '')}
++        <input aria-label={`${field.label} · betroffene Netze`} name={field.key} required type="number" min={field.min} max={field.max} step="any" value={String(values[field.key] ?? '')}
+           onChange={event => setValues(current => ({ ...current, [field.key]: event.target.value === '' ? '' : Number(event.target.value) }))} />
+         <small>{field.default === undefined && field.simulation_default !== undefined
+           ? 'SIMULATIONSANNAHME · Kein Gerätenachweis · vor der Bestätigung Hardware und physische Rate prüfen'
+--- a/frontend/src/features/simulation/ui/simulation-wizard.tsx
++++ b/frontend/src/features/simulation/ui/simulation-wizard.tsx
+@@ -2,9 +2,12 @@
+ 
+ import { parseLosslessJson } from "../../../shared/api/lossless-json.ts";
+ 
+-import { booleanParameterValue, numericParameterValue, conditionalParameterDefault, confirmTechnologyParameters, technologyParameterUnverified as parameterIsUnverified, technologyParameterValues } from "@/features/communication/lib/technology-parameters";
++import { booleanParameterValue, numericParameterValue, conditionalParameterDefault, confirmTechnologyParameters, technologyParameterUnverified as parameterIsUnverified, technologyParameterValues, parameterValueStatus, findingsForParameter, technologyKey, type DeclaredNetwork } from "@/features/communication/lib/technology-parameters";
+ 
+ import Link from "next/link";
++import { engineeringContextHref } from "@/features/agent/lib/assistant-context";
++import { useSearchParams } from "next/navigation";
++import { NetworkRateReview } from "@/features/agent/ui/wizard-preflight-review";
+ import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+ import { getCatalog } from "@/shared/api/api";
+ import { listAllEngineeringObjects, syncEngineeringTopology } from "@/shared/api/engineering-api";
+@@ -24,7 +27,7 @@
+   type TopologyNode,
+   type TopologyPort,
+ } from "@/features/network/lib/topology";
+-import { getNetworkView, saveNetworkView, renamePhysicalBus, getWorkflowSummary, getWorkflowParameters, saveWorkflowParameters, saveWorkflowTopology, saveBusChange, saveNetworkAssignment, createFrameDevice, type FrameDeviceRequest, type NetworkAssignmentRequest, type BusChangeRequest } from "@/features/workflow/lib/workflow-api";
++import { getNetworkView, saveNetworkView, renamePhysicalBus, getWorkflowSummary, getWorkflowParameters, getParameterReview, type ParameterReview, saveWorkflowParameters, saveWorkflowTopology, saveBusChange, saveNetworkAssignment, createFrameDevice, type FrameDeviceRequest, type NetworkAssignmentRequest, type BusChangeRequest } from "@/features/workflow/lib/workflow-api";
+ import { routingBusType as routingBus } from "@/features/communication/lib/bus-technology";
+ import { defaultSimulationFormats } from "@/features/simulation/lib/simulation-formats";
+ import { fuzzyTechnologySearch, parameterTechnologySelection, registeredTechnologies } from "@/features/communication/lib/technology-catalog-selection";
+@@ -534,6 +537,12 @@
+   initialProjectId?: string;
+   initialMode?: "parameters" | "network";
+ }) {
++  const searchParams = useSearchParams();
++  const requestedTechnology = searchParams.get("technology");
++  const [parameterReview, setParameterReview] = useState<ParameterReview | null>(null);
++  const [parameterReviewError, setParameterReviewError] = useState("");
++  const [parameterDraftDirty, setParameterDraftDirty] = useState(false);
++  const [networkConfirming, setNetworkConfirming] = useState(false);
+   const [catalog, setCatalog] = useState<Catalog>(localCatalog);
+   const [catalogError, setCatalogError] = useState("");
+   const [catalogLoaded, setCatalogLoaded] = useState(false);
+@@ -740,7 +749,7 @@
+         setStoredParameters(state.parameters);
+         const selection = parameterTechnologySelection(state.parameters, summary.context ?? {});
+         setDomainId(selection.domainId);
+-        setTechnologyId(selection.technologyId);
++        setTechnologyId(requestedTechnology ? technologyKey(requestedTechnology) : selection.technologyId);
+         setWorkflowLoaded(true);
+       }).catch(error => { if (active) setFormError(error instanceof Error ? error.message : "Parameter konnten nicht geladen werden."); });
+       return () => { active = false; };
+@@ -757,7 +766,18 @@
+       }).catch(error => { if (active) setFormError(error instanceof Error ? error.message : "Netzwerkansicht konnte nicht geladen werden."); });
+       return () => { active = false; };
+     }
+-  }, [mode, initialProjectId]);
++  }, [mode, initialProjectId, requestedTechnology]);
++
++  useEffect(() => {
++    if (mode !== "parameters" || !workflowLoaded) return;
++    let active = true; setParameterReview(null); setParameterReviewError("");
++    void getParameterReview(initialProjectId).then(review => {
++      if (!active) return;
++      if (review.edit_token !== editTokensRef.current.parameters) throw new Error("Der gespeicherte Parameterstand wurde geändert. Bitte die Ansicht neu laden.");
++      setParameterReview(review);
++    }).catch(error => { if (active) setParameterReviewError(error instanceof Error ? error.message : "Parameterprüfung fehlgeschlagen."); });
++    return () => { active = false; };
++  }, [mode, initialProjectId, workflowLoaded, syncRequest]);
+ 
+   useEffect(() => {
+     if (mode !== "parameters") return;
+@@ -991,7 +1011,7 @@
+         const parsed = parseLosslessJson(advancedConfig) as Record<string, unknown>;
+         const saved = await saveWorkflowParameters(parsed, editTokensRef.current.parameters, initialProjectId);
+         editTokensRef.current = saved.edit_tokens ?? {};
+-        setStoredParameters(parsed);
++        setStoredParameters(saved.parameters);
+         setSavedMessage("Parameterkonfiguration gespeichert.");
+       } else {
+         if (!formElement) throw new Error("Konfigurationsformular nicht gefunden.");
+@@ -1029,11 +1049,11 @@
+           {preserveSimulationAssumptions:true}), industry: domainId, formats };
+         const saved = await saveWorkflowParameters(parameters, editTokensRef.current.parameters, initialProjectId);
+         editTokensRef.current = saved.edit_tokens ?? {};
+-        setStoredParameters(parameters);
++        setStoredParameters(saved.parameters);
+         setSavedMessage("Technologie- und Timing-Parameter gespeichert.");
+       }
+       if (mode === "network") localWorkflowChangeRef.current = true;
+-      if (mode === "parameters") notifyWorkflowDraftStatus("parameters", null);
++      if (mode === "parameters") { setParameterDraftDirty(false); notifyWorkflowDraftStatus("parameters", null); setSyncRequest(value => value + 1); }
+       notifyWorkflowChanged();
+     } catch (error) {
+       setFormError(error instanceof Error ? error.message : "Anfrage fehlgeschlagen.");
+@@ -1041,6 +1061,25 @@
+       setSubmitting(false);
+     }
+   }
++
++  async function afterNetworkConfirmation() {
++    const state = await getWorkflowParameters(initialProjectId);
++    editTokensRef.current.parameters = state.edit_token;
++    setStoredParameters(state.parameters);
++    setSyncRequest(value => value + 1);
++  }
++
++  const currentFindings = parameterReview?.findings ?? [];
++  const selectedFindings = currentFindings.filter(item => technologyKey(item.technology) === technologyKey(technologyId));
++  const networkRateKeys = (technology?.parameter_schema ?? []).filter(field => field.scope === 'network' && field.unit === 'bit/s').map(field => field.key);
++  const affectedNetworks = ((storedParameters.networks ?? []) as DeclaredNetwork[]).filter(network =>
++    technologyKey(network.technology) === technologyKey(technologyId)
++    && selectedFindings.some(finding => finding.network_id === network.id && finding.code === 'CAPACITY_UNVERIFIED'
++      && finding.parameter_fields?.some(key => networkRateKeys.includes(key))));
++  const affectedFieldKeys = [...new Set(selectedFindings.flatMap(finding => finding.parameter_fields ?? []))];
++  const findingTechnologies = [...new Set(currentFindings.map(item => technologyKey(item.technology)))];
++  const proposedFieldCount = (technology?.parameter_schema ?? []).filter(field => parameterValueStatus(storedParameters, field.key, technologyId) === 'PROPOSAL').length;
++  const assumptionFieldCount = (technology?.parameter_schema ?? []).filter(field => parameterValueStatus(storedParameters, field.key, technologyId) === 'SAVED_ASSUMPTION').length;
+ 
+   if (catalogError) {
+     return (
+@@ -1085,12 +1124,37 @@
+ 
+   return (
+     <>
++      {mode === 'parameters' && <section className="panel parameter-findings-panel" id="parameter-findings" aria-label="Aktuelle Parameterbefunde">
++        <h3>Aktuelle Parameterprüfung</h3>
++        <p>Prüfung der gespeicherten Netz- und Geräteanschlüsse. Änderungen im Formular werden nach dem Speichern erneut geprüft.</p>
++        {searchParams.get('proposal') && <p>Du kommst aus einer Vorschlagsprüfung. Hier werden die aktuellen Projektwerte geprüft; frühere Vorschlagsbefunde können bereits erledigt sein.</p>}
++        {!parameterReview && !parameterReviewError && <p role="status">Aktuelle Befunde werden geprüft …</p>}
++        {parameterReviewError && <p className="notice error" role="alert">{parameterReviewError}</p>}
++        {parameterReview && <>
++          <p role="status">{currentFindings.length ? `${currentFindings.length} offene Anschlussbefunde · ${selectedFindings.length} für ${technology.label}` : 'Keine offenen Anschlussbefunde in dieser Parameterprüfung.'} Diese Prüfung ersetzt keine vollständige Preflight- oder Timing-Freigabe.</p>
++          <nav aria-label="Technologien mit Parameterbefunden">{findingTechnologies.map(id => <button type="button" className="button secondary tiny" key={id} onClick={() => chooseTechnology(id)}>{allTechnologies.find(item => item.id === id)?.label ?? id} · {currentFindings.filter(item => technologyKey(item.technology) === id).length}</button>)}</nav>
++          {Boolean(selectedFindings.length) && <div className="notice error" role="alert">
++            <strong>{new Set(selectedFindings.map(item => item.network_id).filter(Boolean)).size} betroffene Netze · {selectedFindings.length} Anschlüsse</strong>
++            <p>Ein angezeigter Profilwert oder eine gespeicherte Simulationsannahme ist noch kein bestätigter Netzparameter. Offene Bestätigungen sind im Formular markiert; Geräte- und Modellnachweise bleiben separat sichtbar.</p>
++            <nav aria-label="Betroffene Parameterfelder">{affectedFieldKeys.map(key => <a key={key} href={`#parameter-field-${key}`}>{technology.parameter_schema?.find(field => field.key === key)?.label ?? key}</a>)}</nav>
++            <details><summary>Betroffene Anschlüsse und Netze anzeigen</summary><ul>{selectedFindings.map((finding,index) => <li key={index}><strong>{finding.node_name} · {finding.network_name ?? finding.network_id}</strong>: {finding.message} <a href={engineeringContextHref({object_type:'HardwareNetworkInterface',id:finding.object_id ?? ''}, initialProjectId) ?? withProjectParam('/studio/engineering?resource=hardware-interfaces',initialProjectId)}>Anschluss prüfen</a>
++              {!!finding.parameter_findings?.length && <ul>{finding.parameter_findings.map((detail,i) => <li key={i}>{detail.message ?? detail.code}</li>)}</ul>}
++            </li>)}</ul></details>
++          </div>}
++          {!!affectedNetworks.length && <NetworkRateReview key={`${parameterReview.edit_token}:${technologyId}`} technology={technology} networks={affectedNetworks}
++            snapshot={{project_id:parameterReview.project_id,parameters:storedParameters,edit_token:parameterReview.edit_token}}
++            projectId={initialProjectId} disabled={submitting || parameterDraftDirty} fieldKeys={affectedFieldKeys} onContinue={afterNetworkConfirmation} onBusyChange={setNetworkConfirming} />}
++          {!!affectedNetworks.length && parameterDraftDirty && <p role="status">Speichere zuerst die Änderungen im Parameterformular. Danach können die ausgewählten Netzwerte bestätigt werden.</p>}
++        </>}
++        <button className="button secondary tiny" type="button" onClick={() => setSyncRequest(value => value + 1)}>Parameterbefunde erneut prüfen</button>
++      </section>}
+       <div className={`workspace-grid ${mode === "network" ? "network-mode" : "parameters-mode"}`}>
+       <form
+         key={`${mode}:${JSON.stringify(storedParameters)}`}
+         className="panel config-panel"
++        inert={networkConfirming || undefined}
+         onChange={() => {
+-          if (mode === "parameters") notifyWorkflowDraftStatus("parameters", "OUTDATED");
++          if (mode === "parameters") { setParameterDraftDirty(true); notifyWorkflowDraftStatus("parameters", "OUTDATED"); }
+         }}
+         onSubmit={(event: FormEvent<HTMLFormElement>) => {
+           event.preventDefault();
+@@ -1300,14 +1364,11 @@
+               <span>01</span>
+               Technologie
+             </div>
+-            {(parameterIsUnverified(storedParameters, "technology", technologyId)
+-              || (technology.parameter_schema ?? []).some(field => parameterIsUnverified(storedParameters, field.key, technologyId))) && (
+-              <p className="notice warning parameter-gap-notice">
+-                <strong>UNVERIFIED · Nicht bestätigte Parameter</strong><br />
+-                Nicht gespeicherte Werte sind Profilvorschläge. Sie sind noch keine bestätigten Projektdaten und bleiben bis zur bewussten Übernahme offen.
+-                Fehlende Gerätewerte sind als bearbeitbare Simulationsannahmen vorbelegt. Sie ersetzen keine Hardware- oder Messnachweise. Geänderte Parameter werden als Nutzerwerte in der Projektdatei user_defined_values.json gespeichert. Die zentralen Technologie-Defaults bleiben unverändert.
+-              </p>
+-            )}
++            {(proposedFieldCount > 0 || assumptionFieldCount > 0) && <p className="notice parameter-gap-notice" role="status">
++              <strong>Parameterherkunft · {assumptionFieldCount} gespeicherte Simulationsannahmen · {proposedFieldCount} Profilvorschläge</strong><br />
++              Simulationsannahmen sind gespeicherte Projektwerte und enthalten keinen Hardware- oder Messnachweis. Profilvorschläge werden mit „Parameter speichern“ in das Projekt übernommen. Offene Prüfanforderungen stehen unter „Aktuelle Parameterprüfung“ und an den betroffenen Feldern.
++              Geänderte Parameter werden als Nutzerwerte in der Projektdatei user_defined_values.json gespeichert. Die zentralen Technologie-Defaults bleiben unverändert.
++            </p>}
+             <div className="form-grid">
+               <div className="field">
+                 <label htmlFor="domain">Anwendungsbereich</label>
+@@ -1373,14 +1434,18 @@
+                   <legend>{parameterCategoryLabels[category]}</legend>
+                   <div className="form-grid three">
+                     {fields.map((field) => (
++                      <div key={field.key} id={`parameter-field-${field.key}`} className={findingsForParameter(currentFindings, technologyId, field.key).length ? 'parameter-field-finding' : undefined}>
++                      {findingsForParameter(currentFindings, technologyId, field.key).length > 0 && <p className="parameter-field-finding-message" role="status">Prüfbefund · {new Set(findingsForParameter(currentFindings, technologyId, field.key).map(item => item.network_id)).size} betroffene Netze: Bestätigung oder passender Nachweis fehlt. Ein vorbelegter Wert allein erledigt den Befund nicht.</p>}
+                       <ParameterControl
+                         field={field}
+                         key={field.key}
+                         value={displayedParameters[field.key]}
+                         unverified={parameterIsUnverified(storedParameters, field.key, technologyId)}
++                        savedAssumption={parameterValueStatus(storedParameters, field.key, technologyId) === "SAVED_ASSUMPTION"}
+                         simulationAssumption={field.default === undefined && field.simulation_default !== undefined && parameterIsUnverified(storedParameters, field.key, technologyId)}
+                         proposal={field.key === "bitrate" ? technology.parameter_proposals : undefined}
+                       />
++                      </div>
+                     ))}
+                   </div>
+                 </fieldset>
+@@ -1428,18 +1493,19 @@
+   );
+ }
+ 
+-function ParameterControl({ field, value, unverified = false, simulationAssumption = false, proposal }: {
++function ParameterControl({ field, value, unverified = false, simulationAssumption = false, savedAssumption = false, proposal }: {
+   field: TechnologyParameterField;
+   value: unknown;
+   unverified?: boolean;
+   simulationAssumption?: boolean;
++  savedAssumption?: boolean;
+   proposal?: Technology["parameter_proposals"];
+ }) {
+   const [proposalError, setProposalError] = useState('');
+   const label = `${field.label}${field.unit ? ` (${field.unit})` : ""}`;
+   const missing = value === undefined || value === null || value === "";
+   const suggestion = field.parameter_origin === 'NIS_SCENARIO' ? 'NIS-Szenariovorschlag' : 'Profilvorschlag';
+-  const gap = unverified ? <small>{simulationAssumption ? 'SIMULATIONSANNAHME · Kein Gerätenachweis' : `UNVERIFIED · ${missing ? "Eingabe erforderlich" : suggestion}`}</small> : null;
++  const gap = unverified ? <small>{simulationAssumption ? (savedAssumption ? 'SIMULATIONSANNAHME · Gespeichert · Kein Gerätenachweis' : 'SIMULATIONSANNAHME · Kein Gerätenachweis') : `UNVERIFIED · ${missing ? "Eingabe erforderlich" : suggestion}`}</small> : null;
+   const conditionalProposal = field.conditional_defaults?.length ? <>
+     <button className="button secondary" type="button" onClick={(event) => {
+       const form = event.currentTarget.closest('form');
+--- a/frontend/src/app/globals.css
++++ b/frontend/src/app/globals.css
+@@ -15558,3 +15558,13 @@
+ .agent-controller-functions > small { display: block; margin-block: 6px 10px; color: var(--muted, #8da2b5); }
+ .agent-controller-functions li > span { min-width: 0; overflow-wrap: anywhere; }
+ .agent-controller-functions li small { display: block; margin-top: 4px; }
++
++
++.parameter-findings-panel { margin-bottom: 16px; padding: 22px; }
++.parameter-findings-panel .notice.error { color: var(--text); border-color: var(--danger); }
++.parameter-findings-panel .notice.error a { color: var(--danger); font-weight: 600; }
++.parameter-findings-panel nav { display: flex; flex-wrap: wrap; gap: 10px; margin: 10px 0; }
++.parameter-findings-panel details { margin: 12px 0; }
++.parameter-field-finding { border: 2px solid var(--danger); background: color-mix(in srgb, var(--danger) 8%, var(--surface)); padding: 10px; border-radius: 8px; scroll-margin-top: 100px; }
++.parameter-field-finding-message { color: var(--danger); font-size: 12px; margin: 0 0 8px; }
++.parameter-gap-notice { background: var(--surface-raised); }
+--- a/frontend/e2e/technology-parameter-review.spec.ts
++++ b/frontend/e2e/technology-parameter-review.spec.ts
+@@ -375,3 +375,63 @@
+   await page.reload();
+   await expect(page.locator('#spb_alias')).toHaveValue(edited);
+ });
++
++
++test('proposal parameter link selects its technology and live findings highlight only affected fields @technology-review', async ({page}) => {
++  const project='nis-e2e-current-parameter-review-'+randomUUID();
++  const headers={'X-Project-ID':project};
++  const networks=[{id:'can-local',name:'CAN Local',technology:'CAN_FD'},{id:'lin-local',name:'LIN Local',technology:'LIN'}];
++  const seed=await page.request.patch('/api/engineering/workflow/parameters',{headers,data:{parameters:{industry:'custom',technology:'can_fd',defaults_source:'technology-registry',networks,formats:['universal-jsonl']}}});
++  expect(seed.ok(),await seed.text()).toBe(true);
++  async function create(resource:string,data:Record<string,unknown>) {
++    const response=await page.request.post('/api/engineering/'+resource,{headers,data});
++    expect(response.ok(),await response.text()).toBe(true); return response.json();
++  }
++  const node=await create('hardware-nodes',{name:'Review ECU',device_type:'EmbeddedController'});
++  for (const network of networks) {
++    const port=await create('hardware-interfaces',{name:network.name,hardware_node_id:node.id,technology:network.technology,network_ref:network.id,bitrate:null,data_bitrate:null});
++    const logical=await create('interfaces',{name:network.name,hardware_node_id:node.id,interface_type:network.technology});
++    await create('messages',{name:network.name+' Status',interface_id:logical.id,hardware_interface_id:port.id,dlc:1,cycle_ms:100,direction:'tx'});
++  }
++  const before=await (await page.request.get('/api/engineering/workflow/parameters/review',{headers})).json();
++  expect(before.source).toBe('CURRENT_CANONICAL_MODEL');
++  expect(before.findings.filter((f:{technology:string})=>f.technology==='can_fd')).toHaveLength(1);
++  await page.goto(`/studio?mode=parameters&project=${project}&technology=lin&proposal=historical-review#parameter-findings`);
++  await expect(page.locator('#technology')).toHaveValue('lin');
++  await expect(page.getByRole('region',{name:'Aktuelle Parameterbefunde'})).toContainText('1 für LIN');
++  await expect(page.locator('#parameter-field-lin_bitrate_bps')).toHaveClass(/parameter-field-finding/);
++  await expect(page.locator('#parameter-field-lin_device_source')).toHaveClass(/parameter-field-finding/);
++  await page.getByRole('navigation',{name:'Technologien mit Parameterbefunden'}).getByRole('button',{name:/CAN-FD/}).click();
++  await expect(page.locator('#technology')).toHaveValue('can_fd');
++  await expect(page.locator('#parameter-field-arbitration_bitrate')).toHaveClass(/parameter-field-finding/);
++  await expect(page.locator('#parameter-field-data_bitrate')).toHaveClass(/parameter-field-finding/);
++  await expect(page.locator('#parameter-field-can_clock_hz')).not.toHaveClass(/parameter-field-finding/);
++  const confirm=page.getByRole('form',{name:'CAN-FD-Netze bestätigen'});
++  await page.locator('[name="can_clock_hz"]').fill('80000000');
++  await expect(confirm.getByRole('button',{name:'Für 1 Netze bestätigen & erneut prüfen',exact:true})).toBeDisabled();
++  await expect(page.getByRole('region',{name:'Aktuelle Parameterbefunde'})).toContainText('Speichere zuerst die Änderungen');
++  await page.getByRole('button',{name:'Parameter speichern →',exact:true}).click();
++  await expect(confirm.getByRole('button',{name:'Für 1 Netze bestätigen & erneut prüfen',exact:true})).toBeEnabled();
++  await confirm.getByRole('spinbutton',{name:/Nominal Bitrate/}).fill('500000');
++  await confirm.getByRole('spinbutton',{name:/Data Bitrate/}).fill('2000000');
++  await confirm.getByRole('button',{name:'Für 1 Netze bestätigen & erneut prüfen',exact:true}).click();
++  await expect(page.getByRole('region',{name:'Aktuelle Parameterbefunde'})).toContainText('0 für CAN-FD');
++  await expect(page.locator('#parameter-field-arbitration_bitrate')).not.toHaveClass(/parameter-field-finding/);
++  const after=await (await page.request.get('/api/engineering/workflow/parameters/review',{headers})).json();
++  expect(after.findings.some((f:{technology:string})=>f.technology==='can_fd')).toBe(false);
++  expect(after.findings.some((f:{technology:string})=>f.technology==='lin')).toBe(true);
++  const saved=await (await page.request.get('/api/engineering/workflow/parameters',{headers})).json();
++  expect(saved.parameters.networks.find((n:{id:string})=>n.id==='lin-local')).toEqual(networks[1]);
++  expect(saved.parameters.simulation_parameter_assumptions.can_fd.values.can_clock_hz).toBe(80000000);
++  await page.getByRole('navigation',{name:'Technologien mit Parameterbefunden'}).getByRole('button',{name:/LIN/}).click();
++  const linConfirm=page.getByRole('form',{name:'LIN-Netze bestätigen'});
++  await linConfirm.getByRole('spinbutton',{name:/bit.*rate/i}).fill('19200');
++  await linConfirm.getByRole('button',{name:'Für 1 Netze bestätigen & erneut prüfen',exact:true}).click();
++  await expect(page.locator('#parameter-field-lin_bitrate_bps')).not.toHaveClass(/parameter-field-finding/);
++  await expect(page.locator('#parameter-field-lin_device_source')).toHaveClass(/parameter-field-finding/);
++  await expect(page.getByRole('region',{name:'Aktuelle Parameterbefunde'})).toContainText('1 für LIN');
++  await expect(linConfirm).toHaveCount(0);
++  await expect(page.getByText('Die Rate fehlt als bestätigter Projektwert.',{exact:false})).toHaveCount(0);
++  const foreign=await (await page.request.get('/api/engineering/workflow/parameters/review',{headers:{'X-Project-ID':'nis-e2e-other-'+randomUUID()}})).json();
++  expect(foreign.findings).toEqual([]);
++});
+--- a/docs/migrations/structure_mapping.csv
++++ b/docs/migrations/structure_mapping.csv
+@@ -330,7 +330,7 @@
+ backend/engineering/agent_tools/structure_transfer_adapter.py,backend/nis/agent/tools/structure_transfer_adapter.py,move-with-forwarding-entry,Canonical module owner: backend.nis.agent.tools.structure_transfer_adapter,[],No stored identity or schema change,backend/tests/test_structure_architecture.py; backend/tests/test_structure_completion.py; full release receipt linked in completion report,RETAINED_COMPATIBLE,backend.nis.agent.tools.structure_transfer_adapter,"[""backend/engineering/agent_tools/structure_transfer_adapter.py"", ""backend/nis/agent/tools/services.py""]","Python AST (including retired alias module paths, relative and literal dynamic imports), TypeScript imports, literal paths and documentation links; external/persisted consumers not observable",Owner backend.nis.agent.tools.structure_transfer_adapter must migrate repository consumers []; inventory persisted module/CLI references and supported external callers for backend/engineering/agent_tools/structure_transfer_adapter.py; prove alias/import and behavior regressions plus full release PASS before removal. No retirement deadline authorized.
+ backend/engineering/agent_tools/structured_project_draft.py,backend/nis/agent/tools/structured_project_draft.py,move-with-forwarding-entry,Canonical module owner: backend.nis.agent.tools.structured_project_draft,[],No stored identity or schema change,backend/tests/test_structure_architecture.py; backend/tests/test_structure_completion.py; full release receipt linked in completion report,RETAINED_COMPATIBLE,backend.nis.agent.tools.structured_project_draft,"[""backend/engineering/agent_tools/structured_project_draft.py"", ""backend/nis/agent/tools/conversation.py"", ""backend/nis/agent/tools/project_draft.py""]","Python AST (including retired alias module paths, relative and literal dynamic imports), TypeScript imports, literal paths and documentation links; external/persisted consumers not observable",Owner backend.nis.agent.tools.structured_project_draft must migrate repository consumers []; inventory persisted module/CLI references and supported external callers for backend/engineering/agent_tools/structured_project_draft.py; prove alias/import and behavior regressions plus full release PASS before removal. No retirement deadline authorized.
+ backend/engineering/agent_tools/timing_diagnosis.py,backend/nis/agent/tools/timing_diagnosis.py,move-with-forwarding-entry,Canonical module owner: backend.nis.agent.tools.timing_diagnosis,[],No stored identity or schema change,backend/tests/test_structure_architecture.py; backend/tests/test_structure_completion.py; full release receipt linked in completion report,RETAINED_COMPATIBLE,backend.nis.agent.tools.timing_diagnosis,"[""backend/engineering/agent_tools/timing_diagnosis.py"", ""backend/nis/agent/tools/services.py"", ""backend/tests/test_agent_timing_diagnosis_runtime.py""]","Python AST (including retired alias module paths, relative and literal dynamic imports), TypeScript imports, literal paths and documentation links; external/persisted consumers not observable",Owner backend.nis.agent.tools.timing_diagnosis must migrate repository consumers []; inventory persisted module/CLI references and supported external callers for backend/engineering/agent_tools/timing_diagnosis.py; prove alias/import and behavior regressions plus full release PASS before removal. No retirement deadline authorized.
+-backend/engineering/agent_tools/validation.py,backend/nis/agent/tools/validation.py,move-with-forwarding-entry,Canonical module owner: backend.nis.agent.tools.validation,[],No stored identity or schema change,backend/tests/test_structure_architecture.py; backend/tests/test_structure_completion.py; full release receipt linked in completion report,RETAINED_COMPATIBLE,backend.nis.agent.tools.validation,"[""backend/engineering/agent_tools/validation.py"", ""backend/nis/agent/tools/proposal_service.py"", ""backend/nis/workflow/definition.py"", ""backend/tests/test_proposal_capacity.py"", ""backend/tests/test_wizard_generation.py""]","Python AST (including retired alias module paths, relative and literal dynamic imports), TypeScript imports, literal paths and documentation links; external/persisted consumers not observable",Owner backend.nis.agent.tools.validation must migrate repository consumers []; inventory persisted module/CLI references and supported external callers for backend/engineering/agent_tools/validation.py; prove alias/import and behavior regressions plus full release PASS before removal. No retirement deadline authorized.
++backend/engineering/agent_tools/validation.py,backend/nis/agent/tools/validation.py,move-with-forwarding-entry,Canonical module owner: backend.nis.agent.tools.validation,[],No stored identity or schema change,backend/tests/test_structure_architecture.py; backend/tests/test_structure_completion.py; full release receipt linked in completion report,RETAINED_COMPATIBLE,backend.nis.agent.tools.validation,"[""backend/engineering/agent_tools/validation.py"", ""backend/nis/agent/tools/proposal_service.py"", ""backend/nis/interfaces/http/engineering.py"", ""backend/nis/workflow/definition.py"", ""backend/tests/test_proposal_capacity.py"", ""backend/tests/test_wizard_generation.py""]","Python AST (including retired alias module paths, relative and literal dynamic imports), TypeScript imports, literal paths and documentation links; external/persisted consumers not observable",Owner backend.nis.agent.tools.validation must migrate repository consumers []; inventory persisted module/CLI references and supported external callers for backend/engineering/agent_tools/validation.py; prove alias/import and behavior regressions plus full release PASS before removal. No retirement deadline authorized.
+ backend/engineering/agent_tools/wizard_commands.py,backend/nis/agent/tools/wizard_commands.py,move-with-forwarding-entry,Canonical module owner: backend.nis.agent.tools.wizard_commands,[],No stored identity or schema change,backend/tests/test_structure_architecture.py; backend/tests/test_structure_completion.py; full release receipt linked in completion report,RETAINED_COMPATIBLE,backend.nis.agent.tools.wizard_commands,"[""backend/engineering/agent_tools/wizard_commands.py"", ""backend/nis/agent/tools/conversation.py"", ""backend/nis/agent/tools/draft_workflow_revision.py"", ""backend/nis/agent/tools/project_draft.py"", ""backend/nis/agent/tools/structured_project_draft.py"", ""backend/nis/agent/tools/wizard_generation.py"", ""backend/tests/test_draft_workflow_amendment.py"", ""backend/tests/test_shared_draft_workflow.py"", ""backend/tests/test_wizard_commands.py""]","Python AST (including retired alias module paths, relative and literal dynamic imports), TypeScript imports, literal paths and documentation links; external/persisted consumers not observable",Owner backend.nis.agent.tools.wizard_commands must migrate repository consumers []; inventory persisted module/CLI references and supported external callers for backend/engineering/agent_tools/wizard_commands.py; prove alias/import and behavior regressions plus full release PASS before removal. No retirement deadline authorized.
+ backend/engineering/agent_tools/wizard_generation.py,backend/nis/agent/tools/wizard_generation.py,move-with-forwarding-entry,Canonical module owner: backend.nis.agent.tools.wizard_generation,"[""docs/TECHNISCHE_UMSETZUNG_MODELL_LLM_CPU_GPU.md"", ""docs/implementation_audit/2026-09-09-abgasnachbehandlung-schnittstellenstatus.md"", ""docs/implementation_audit/verification/2026-09-09-source-parity.json"", ""docs/implementation_audit/verification/2026-09-09-source-parity.py""]",No stored identity or schema change,backend/tests/test_structure_architecture.py; backend/tests/test_structure_completion.py; full release receipt linked in completion report,RETAINED_COMPATIBLE,backend.nis.agent.tools.wizard_generation,"[""backend/engineering/agent_tools/wizard_generation.py"", ""backend/nis/agent/tools/project_draft.py"", ""backend/nis/agent/tools/services.py"", ""backend/nis/engineering/communication/confirmed_routes.py"", ""backend/nis/engineering/network/bus_migration.py"", ""backend/nis/intelligence/engineering/reasoning/service.py"", ""backend/tests/test_automatic_resource_planning.py"", ""backend/tests/test_model_ownership.py"", ""backend/tests/test_network_scene.py"", ""backend/tests/test_physical_ports.py"", ""backend/tests/test_project_draft.py"", ""backend/tests/test_proposal_capacity.py"", ""backend/tests/test_reasoning_integration.py"", ""backend/tests/test_routing_enabled.py"", ""backend/tests/test_shared_draft_workflow.py"", ""backend/tests/test_simulation_observation.py"", ""backend/tests/test_spatial_architecture.py"", ""backend/tests/test_spatial_zoning.py"", ""backend/tests/test_technology_full_parameter_audit.py"", ""backend/tests/test_technology_standard_defaults.py"", ""backend/tests/test_unverified_technology_capacity.py"", ""backend/tests/test_wizard_actual_audit.py"", ""backend/tests/test_wizard_amendment_model.py"", ""backend/tests/test_wizard_communication.py"", ""backend/tests/test_wizard_generation.py"", ""backend/tests/test_wizard_large_routing.py"", ""backend/tests/test_wizard_review_defaults.py"", ""backend/tests/test_wizard_routing_stability.py"", ""backend/tests/test_wizard_technology_identity.py"", ""scripts/maintenance/repair-wizard-backbones.py"", ""scripts/verification/verify-backbone-model.py"", ""scripts/verification/verify-wizard-routing-performance.py""]","Python AST (including retired alias module paths, relative and literal dynamic imports), TypeScript imports, literal paths and documentation links; external/persisted consumers not observable","Owner backend.nis.agent.tools.wizard_generation must migrate repository consumers [""docs/TECHNISCHE_UMSETZUNG_MODELL_LLM_CPU_GPU.md"", ""docs/implementation_audit/2026-09-09-abgasnachbehandlung-schnittstellenstatus.md"", ""docs/implementation_audit/verification/2026-09-09-source-parity.json"", ""docs/implementation_audit/verification/2026-09-09-source-parity.py""]; inventory persisted module/CLI references and supported external callers for backend/engineering/agent_tools/wizard_generation.py; prove alias/import and behavior regressions plus full release PASS before removal. No retirement deadline authorized."
+ backend/engineering/api.py,backend/nis/interfaces/http/engineering.py,move-with-forwarding-entry,Canonical module owner: backend.nis.interfaces.http.engineering,"[""docs/python_core/01_CURRENT_STATE_ANALYSIS.md"", ""docs/python_core/02_MIGRATION_MAP.md"", ""docs/python_core/13_API_BOUNDARIES.md""]",No stored identity or schema change,backend/tests/test_structure_architecture.py; backend/tests/test_structure_completion.py; full release receipt linked in completion report,RETAINED_COMPATIBLE,backend.nis.interfaces.http.engineering,"[""backend/engineering/api.py"", ""backend/nis/engineering/__init__.py"", ""backend/nis/interfaces/__init__.py"", ""backend/nis/workflow/definition.py"", ""backend/tests/test_collaboration.py"", ""backend/tests/test_model_ownership.py"", ""backend/tests/test_network_distribution.py"", ""backend/tests/test_server_startup.py"", ""backend/tests/test_simulation_observation.py"", ""backend/tests/test_simulation_scope_flow.py"", ""scripts/verification/smoke-all-endpoints.py"", ""scripts/verification/verify-assignment-rollback.py""]","Python AST (including retired alias module paths, relative and literal dynamic imports), TypeScript imports, literal paths and documentation links; external/persisted consumers not observable","Owner backend.nis.interfaces.http.engineering must migrate repository consumers [""docs/python_core/01_CURRENT_STATE_ANALYSIS.md"", ""docs/python_core/02_MIGRATION_MAP.md"", ""docs/python_core/13_API_BOUNDARIES.md""]; inventory persisted module/CLI references and supported external callers for backend/engineering/api.py; prove alias/import and behavior regressions plus full release PASS before removal. No retirement deadline authorized."
+@@ -625,7 +625,7 @@
+ backend/nis/agent/tools/structure_transfer_adapter.py,backend/nis/agent/tools/structure_transfer_adapter.py,canonical-owner,Canonical module owner: backend.nis.agent.tools.structure_transfer_adapter,"[""backend/engineering/agent_tools/structure_transfer_adapter.py"", ""backend/nis/agent/tools/services.py""]",No stored identity or schema change,backend/tests/test_structure_architecture.py; backend/tests/test_structure_completion.py; full release receipt linked in completion report,CANONICAL_PRESENT,backend.nis.agent.tools.structure_transfer_adapter,"[""backend/engineering/agent_tools/structure_transfer_adapter.py"", ""backend/nis/agent/tools/services.py""]","Python AST (including retired alias module paths, relative and literal dynamic imports), TypeScript imports, literal paths and documentation links; external/persisted consumers not observable",Not a removable compatibility wrapper
+ backend/nis/agent/tools/structured_project_draft.py,backend/nis/agent/tools/structured_project_draft.py,canonical-owner,Canonical module owner: backend.nis.agent.tools.structured_project_draft,"[""backend/engineering/agent_tools/structured_project_draft.py"", ""backend/nis/agent/tools/conversation.py"", ""backend/nis/agent/tools/project_draft.py""]",No stored identity or schema change,backend/tests/test_structure_architecture.py; backend/tests/test_structure_completion.py; full release receipt linked in completion report,CANONICAL_PRESENT,backend.nis.agent.tools.structured_project_draft,"[""backend/engineering/agent_tools/structured_project_draft.py"", ""backend/nis/agent/tools/conversation.py"", ""backend/nis/agent/tools/project_draft.py""]","Python AST (including retired alias module paths, relative and literal dynamic imports), TypeScript imports, literal paths and documentation links; external/persisted consumers not observable",Not a removable compatibility wrapper
+ backend/nis/agent/tools/timing_diagnosis.py,backend/nis/agent/tools/timing_diagnosis.py,canonical-owner,Canonical module owner: backend.nis.agent.tools.timing_diagnosis,"[""backend/engineering/agent_tools/timing_diagnosis.py"", ""backend/nis/agent/tools/services.py"", ""backend/tests/test_agent_timing_diagnosis_runtime.py""]",No stored identity or schema change,backend/tests/test_structure_architecture.py; backend/tests/test_structure_completion.py; full release receipt linked in completion report,CANONICAL_PRESENT,backend.nis.agent.tools.timing_diagnosis,"[""backend/engineering/agent_tools/timing_diagnosis.py"", ""backend/nis/agent/tools/services.py"", ""backend/tests/test_agent_timing_diagnosis_runtime.py""]","Python AST (including retired alias module paths, relative and literal dynamic imports), TypeScript imports, literal paths and documentation links; external/persisted consumers not observable",Not a removable compatibility wrapper
+-backend/nis/agent/tools/validation.py,backend/nis/agent/tools/validation.py,canonical-owner,Canonical module owner: backend.nis.agent.tools.validation,"[""backend/engineering/agent_tools/validation.py"", ""backend/nis/agent/tools/proposal_service.py"", ""backend/nis/workflow/definition.py"", ""backend/tests/test_proposal_capacity.py"", ""backend/tests/test_wizard_generation.py""]",No stored identity or schema change,backend/tests/test_structure_architecture.py; backend/tests/test_structure_completion.py; full release receipt linked in completion report,CANONICAL_PRESENT,backend.nis.agent.tools.validation,"[""backend/engineering/agent_tools/validation.py"", ""backend/nis/agent/tools/proposal_service.py"", ""backend/nis/workflow/definition.py"", ""backend/tests/test_proposal_capacity.py"", ""backend/tests/test_wizard_generation.py""]","Python AST (including retired alias module paths, relative and literal dynamic imports), TypeScript imports, literal paths and documentation links; external/persisted consumers not observable",Not a removable compatibility wrapper
++backend/nis/agent/tools/validation.py,backend/nis/agent/tools/validation.py,canonical-owner,Canonical module owner: backend.nis.agent.tools.validation,"[""backend/engineering/agent_tools/validation.py"", ""backend/nis/agent/tools/proposal_service.py"", ""backend/nis/interfaces/http/engineering.py"", ""backend/nis/workflow/definition.py"", ""backend/tests/test_proposal_capacity.py"", ""backend/tests/test_wizard_generation.py""]",No stored identity or schema change,backend/tests/test_structure_architecture.py; backend/tests/test_structure_completion.py; full release receipt linked in completion report,CANONICAL_PRESENT,backend.nis.agent.tools.validation,"[""backend/engineering/agent_tools/validation.py"", ""backend/nis/agent/tools/proposal_service.py"", ""backend/nis/interfaces/http/engineering.py"", ""backend/nis/workflow/definition.py"", ""backend/tests/test_proposal_capacity.py"", ""backend/tests/test_wizard_generation.py""]","Python AST (including retired alias module paths, relative and literal dynamic imports), TypeScript imports, literal paths and documentation links; external/persisted consumers not observable",Not a removable compatibility wrapper
+ backend/nis/agent/tools/wizard_commands.py,backend/nis/agent/tools/wizard_commands.py,canonical-owner,Canonical module owner: backend.nis.agent.tools.wizard_commands,"[""backend/engineering/agent_tools/wizard_commands.py"", ""backend/nis/agent/tools/conversation.py"", ""backend/nis/agent/tools/draft_workflow_revision.py"", ""backend/nis/agent/tools/project_draft.py"", ""backend/nis/agent/tools/structured_project_draft.py"", ""backend/nis/agent/tools/wizard_generation.py"", ""backend/tests/test_draft_workflow_amendment.py"", ""backend/tests/test_shared_draft_workflow.py"", ""backend/tests/test_wizard_commands.py""]",No stored identity or schema change,backend/tests/test_structure_architecture.py; backend/tests/test_structure_completion.py; full release receipt linked in completion report,CANONICAL_PRESENT,backend.nis.agent.tools.wizard_commands,"[""backend/engineering/agent_tools/wizard_commands.py"", ""backend/nis/agent/tools/conversation.py"", ""backend/nis/agent/tools/draft_workflow_revision.py"", ""backend/nis/agent/tools/project_draft.py"", ""backend/nis/agent/tools/structured_project_draft.py"", ""backend/nis/agent/tools/wizard_generation.py"", ""backend/tests/test_draft_workflow_amendment.py"", ""backend/tests/test_shared_draft_workflow.py"", ""backend/tests/test_wizard_commands.py""]","Python AST (including retired alias module paths, relative and literal dynamic imports), TypeScript imports, literal paths and documentation links; external/persisted consumers not observable",Not a removable compatibility wrapper
+ backend/nis/agent/tools/wizard_generation.py,backend/nis/agent/tools/wizard_generation.py,canonical-owner,Canonical module owner: backend.nis.agent.tools.wizard_generation,"[""backend/engineering/agent_tools/wizard_generation.py"", ""backend/nis/agent/tools/project_draft.py"", ""backend/nis/agent/tools/services.py"", ""backend/nis/engineering/communication/confirmed_routes.py"", ""backend/nis/engineering/network/bus_migration.py"", ""backend/nis/intelligence/engineering/reasoning/service.py"", ""backend/tests/test_automatic_resource_planning.py"", ""backend/tests/test_model_ownership.py"", ""backend/tests/test_network_scene.py"", ""backend/tests/test_physical_ports.py"", ""backend/tests/test_project_draft.py"", ""backend/tests/test_proposal_capacity.py"", ""backend/tests/test_reasoning_integration.py"", ""backend/tests/test_routing_enabled.py"", ""backend/tests/test_shared_draft_workflow.py"", ""backend/tests/test_simulation_observation.py"", ""backend/tests/test_spatial_architecture.py"", ""backend/tests/test_spatial_zoning.py"", ""backend/tests/test_technology_full_parameter_audit.py"", ""backend/tests/test_technology_standard_defaults.py"", ""backend/tests/test_unverified_technology_capacity.py"", ""backend/tests/test_wizard_actual_audit.py"", ""backend/tests/test_wizard_amendment_model.py"", ""backend/tests/test_wizard_communication.py"", ""backend/tests/test_wizard_generation.py"", ""backend/tests/test_wizard_large_routing.py"", ""backend/tests/test_wizard_review_defaults.py"", ""backend/tests/test_wizard_routing_stability.py"", ""backend/tests/test_wizard_technology_identity.py"", ""scripts/maintenance/repair-wizard-backbones.py"", ""scripts/verification/verify-backbone-model.py"", ""scripts/verification/verify-wizard-routing-performance.py""]",No stored identity or schema change,backend/tests/test_structure_architecture.py; backend/tests/test_structure_completion.py; full release receipt linked in completion report,CANONICAL_PRESENT,backend.nis.agent.tools.wizard_generation,"[""backend/engineering/agent_tools/wizard_generation.py"", ""backend/nis/agent/tools/project_draft.py"", ""backend/nis/agent/tools/services.py"", ""backend/nis/engineering/communication/confirmed_routes.py"", ""backend/nis/engineering/network/bus_migration.py"", ""backend/nis/intelligence/engineering/reasoning/service.py"", ""backend/tests/test_automatic_resource_planning.py"", ""backend/tests/test_model_ownership.py"", ""backend/tests/test_network_scene.py"", ""backend/tests/test_physical_ports.py"", ""backend/tests/test_project_draft.py"", ""backend/tests/test_proposal_capacity.py"", ""backend/tests/test_reasoning_integration.py"", ""backend/tests/test_routing_enabled.py"", ""backend/tests/test_shared_draft_workflow.py"", ""backend/tests/test_simulation_observation.py"", ""backend/tests/test_spatial_architecture.py"", ""backend/tests/test_spatial_zoning.py"", ""backend/tests/test_technology_full_parameter_audit.py"", ""backend/tests/test_technology_standard_defaults.py"", ""backend/tests/test_unverified_technology_capacity.py"", ""backend/tests/test_wizard_actual_audit.py"", ""backend/tests/test_wizard_amendment_model.py"", ""backend/tests/test_wizard_communication.py"", ""backend/tests/test_wizard_generation.py"", ""backend/tests/test_wizard_large_routing.py"", ""backend/tests/test_wizard_review_defaults.py"", ""backend/tests/test_wizard_routing_stability.py"", ""backend/tests/test_wizard_technology_identity.py"", ""scripts/maintenance/repair-wizard-backbones.py"", ""scripts/verification/verify-backbone-model.py"", ""scripts/verification/verify-wizard-routing-performance.py""]","Python AST (including retired alias module paths, relative and literal dynamic imports), TypeScript imports, literal paths and documentation links; external/persisted consumers not observable",Not a removable compatibility wrapper
+ backend/nis/agent/validation/__init__.py,backend/nis/agent/validation/__init__.py,canonical-owner,Canonical module owner: backend.nis.agent.validation,"[""backend/agent_core/validation/__init__.py"", ""backend/nis/engineering/workloads/models.py"", ""backend/nis/engineering/workloads/service.py""]",No stored identity or schema change,backend/tests/test_structure_architecture.py; backend/tests/test_structure_completion.py; full release receipt linked in completion report,CANONICAL_PRESENT,backend.nis.agent.validation,"[""backend/agent_core/validation/__init__.py"", ""backend/nis/engineering/workloads/models.py"", ""backend/nis/engineering/workloads/service.py""]","Python AST (including retired alias module paths, relative and literal dynamic imports), TypeScript imports, literal paths and documentation links; external/persisted consumers not observable",Not a removable compatibility wrapper
+@@ -3291,7 +3291,7 @@
+ frontend/src/components/technology-picker.module.css,frontend/src/features/communication/ui/technology-picker.module.css,move,Canonical module owner: frontend/src/features/communication/ui,[],No stored identity or schema change,backend/tests/test_structure_architecture.py; backend/tests/test_structure_completion.py; full release receipt linked in completion report,CANONICAL_PRESENT,frontend/src/features/communication/ui,"[""frontend/src/features/simulation/ui/simulation-wizard.tsx""]","Python AST (including retired alias module paths, relative and literal dynamic imports), TypeScript imports, literal paths and documentation links; external/persisted consumers not observable",Not a removable compatibility wrapper
+ frontend/src/components/trace-analysis-workbench.tsx,frontend/src/features/traces/ui/trace-analysis-workbench.tsx,move-with-forwarding-entry,Canonical module owner: frontend/src/features/traces/ui,"[""docs/TRACE_IMPORT.md""]",No stored identity or schema change,backend/tests/test_structure_architecture.py; backend/tests/test_structure_completion.py; full release receipt linked in completion report,RETAINED_COMPATIBLE,frontend/src/features/traces/ui,"[""frontend/src/app/trace-analysis/page.tsx"", ""frontend/src/components/trace-analysis-workbench.tsx""]","Python AST (including retired alias module paths, relative and literal dynamic imports), TypeScript imports, literal paths and documentation links; external/persisted consumers not observable","Owner frontend/src/features/traces/ui must migrate repository consumers [""docs/TRACE_IMPORT.md""]; inventory persisted module/CLI references and supported external callers for frontend/src/components/trace-analysis-workbench.tsx; prove alias/import and behavior regressions plus full release PASS before removal. No retirement deadline authorized."
+ frontend/src/components/trace-storage-settings.tsx,frontend/src/features/traces/ui/trace-storage-settings.tsx,move-with-forwarding-entry,Canonical module owner: frontend/src/features/traces/ui,[],No stored identity or schema change,backend/tests/test_structure_architecture.py; backend/tests/test_structure_completion.py; full release receipt linked in completion report,RETAINED_COMPATIBLE,frontend/src/features/traces/ui,"[""frontend/src/components/trace-storage-settings.tsx"", ""frontend/src/features/settings/ui/settings-panel.tsx""]","Python AST (including retired alias module paths, relative and literal dynamic imports), TypeScript imports, literal paths and documentation links; external/persisted consumers not observable",Owner frontend/src/features/traces/ui must migrate repository consumers []; inventory persisted module/CLI references and supported external callers for frontend/src/components/trace-storage-settings.tsx; prove alias/import and behavior regressions plus full release PASS before removal. No retirement deadline authorized.
+-frontend/src/components/wizard-preflight-review.tsx,frontend/src/features/agent/ui/wizard-preflight-review.tsx,move-with-forwarding-entry,Canonical module owner: frontend/src/features/agent/ui,[],No stored identity or schema change,backend/tests/test_structure_architecture.py; backend/tests/test_structure_completion.py; full release receipt linked in completion report,RETAINED_COMPATIBLE,frontend/src/features/agent/ui,"[""frontend/src/components/wizard-preflight-review.tsx"", ""frontend/src/features/agent/ui/agent-chat-core.tsx""]","Python AST (including retired alias module paths, relative and literal dynamic imports), TypeScript imports, literal paths and documentation links; external/persisted consumers not observable",Owner frontend/src/features/agent/ui must migrate repository consumers []; inventory persisted module/CLI references and supported external callers for frontend/src/components/wizard-preflight-review.tsx; prove alias/import and behavior regressions plus full release PASS before removal. No retirement deadline authorized.
++frontend/src/components/wizard-preflight-review.tsx,frontend/src/features/agent/ui/wizard-preflight-review.tsx,move-with-forwarding-entry,Canonical module owner: frontend/src/features/agent/ui,[],No stored identity or schema change,backend/tests/test_structure_architecture.py; backend/tests/test_structure_completion.py; full release receipt linked in completion report,RETAINED_COMPATIBLE,frontend/src/features/agent/ui,"[""frontend/src/components/wizard-preflight-review.tsx"", ""frontend/src/features/agent/ui/agent-chat-core.tsx"", ""frontend/src/features/simulation/ui/simulation-wizard.tsx""]","Python AST (including retired alias module paths, relative and literal dynamic imports), TypeScript imports, literal paths and documentation links; external/persisted consumers not observable",Owner frontend/src/features/agent/ui must migrate repository consumers []; inventory persisted module/CLI references and supported external callers for frontend/src/components/wizard-preflight-review.tsx; prove alias/import and behavior regressions plus full release PASS before removal. No retirement deadline authorized.
+ frontend/src/components/workflow-header.tsx,frontend/src/features/workflow/ui/workflow-header.tsx,move-with-forwarding-entry,Canonical module owner: frontend/src/features/workflow/ui,[],No stored identity or schema change,backend/tests/test_structure_architecture.py; backend/tests/test_structure_completion.py; full release receipt linked in completion report,RETAINED_COMPATIBLE,frontend/src/features/workflow/ui,"[""frontend/src/app/studio/capacity/page.tsx"", ""frontend/src/app/studio/engineering/page.tsx"", ""frontend/src/app/studio/intelligence/page.tsx"", ""frontend/src/app/studio/page.tsx"", ""frontend/src/app/studio/results/page.tsx"", ""frontend/src/app/studio/routing/page.tsx"", ""frontend/src/app/studio/simulation/page.tsx"", ""frontend/src/app/studio/validation/page.tsx"", ""frontend/src/app/trace-analysis/page.tsx"", ""frontend/src/components/workflow-header.tsx"", ""frontend/src/features/agent/ui/agent-chat-core.tsx"", ""frontend/src/features/agent/ui/engineering-agent-event.tsx"", ""frontend/src/features/agent/ui/global-agent-widget.tsx"", ""frontend/src/features/agent/ui/wizard-preflight-review.tsx"", ""frontend/src/features/capacity/ui/capacity-workbench.tsx"", ""frontend/src/features/communication/ui/communication-repair-agent.tsx"", ""frontend/src/features/communication/ui/communication-sizing-panel.tsx"", ""frontend/src/features/engineering/ui/engineering-import-wizard.tsx"", ""frontend/src/features/projects/ui/project-actions.tsx"", ""frontend/src/features/projects/ui/project-refresh-button.tsx"", ""frontend/src/features/routing/ui/routing-workbench.tsx"", ""frontend/src/features/settings/ui/settings-panel.tsx"", ""frontend/src/features/simulation/ui/model-simulation-runner.tsx"", ""frontend/src/features/simulation/ui/simulation-runner.tsx"", ""frontend/src/features/simulation/ui/simulation-wizard.tsx"", ""frontend/src/features/workflow/stage_06_validation/preflight-workbench.tsx"", ""frontend/src/features/workflow/stage_09_intelligence/intelligence-workbench.tsx"", ""frontend/src/features/workflow/ui/workflow-status-overview.tsx""]","Python AST (including retired alias module paths, relative and literal dynamic imports), TypeScript imports, literal paths and documentation links; external/persisted consumers not observable",Owner frontend/src/features/workflow/ui must migrate repository consumers []; inventory persisted module/CLI references and supported external callers for frontend/src/components/workflow-header.tsx; prove alias/import and behavior regressions plus full release PASS before removal. No retirement deadline authorized.
+ frontend/src/components/workflow-status-overview.tsx,frontend/src/features/workflow/ui/workflow-status-overview.tsx,move-with-forwarding-entry,Canonical module owner: frontend/src/features/workflow/ui,[],No stored identity or schema change,backend/tests/test_structure_architecture.py; backend/tests/test_structure_completion.py; full release receipt linked in completion report,RETAINED_COMPATIBLE,frontend/src/features/workflow/ui,"[""frontend/src/components/workflow-status-overview.tsx"", ""frontend/src/features/workflow/ui/studio-workflow-hero.tsx""]","Python AST (including retired alias module paths, relative and literal dynamic imports), TypeScript imports, literal paths and documentation links; external/persisted consumers not observable",Owner frontend/src/features/workflow/ui must migrate repository consumers []; inventory persisted module/CLI references and supported external callers for frontend/src/components/workflow-status-overview.tsx; prove alias/import and behavior regressions plus full release PASS before removal. No retirement deadline authorized.
+ frontend/src/components/workload-progress.tsx,frontend/src/features/agent/ui/workload-progress.tsx,move-with-forwarding-entry,Canonical module owner: frontend/src/features/agent/ui,[],No stored identity or schema change,backend/tests/test_structure_architecture.py; backend/tests/test_structure_completion.py; full release receipt linked in completion report,RETAINED_COMPATIBLE,frontend/src/features/agent/ui,"[""frontend/src/components/workload-progress.tsx"", ""frontend/src/features/agent/ui/agent-chat-core.tsx"", ""frontend/src/features/agent/ui/engineering-agent-event.tsx""]","Python AST (including retired alias module paths, relative and literal dynamic imports), TypeScript imports, literal paths and documentation links; external/persisted consumers not observable",Owner frontend/src/features/agent/ui must migrate repository consumers []; inventory persisted module/CLI references and supported external callers for frontend/src/components/workload-progress.tsx; prove alias/import and behavior regressions plus full release PASS before removal. No retirement deadline authorized.
+@@ -3310,7 +3310,7 @@
+ frontend/src/features/agent/lib/agent-task-events.test.mjs,frontend/src/features/agent/lib/agent-task-events.test.mjs,canonical-owner,Canonical module owner: frontend/src/features/agent/lib,[],No stored identity or schema change,backend/tests/test_structure_architecture.py; backend/tests/test_structure_completion.py; full release receipt linked in completion report,CANONICAL_PRESENT,frontend/src/features/agent/lib,[],"Python AST (including retired alias module paths, relative and literal dynamic imports), TypeScript imports, literal paths and documentation links; external/persisted consumers not observable",Not a removable compatibility wrapper
+ frontend/src/features/agent/lib/agent-task-events.ts,frontend/src/features/agent/lib/agent-task-events.ts,canonical-owner,Canonical module owner: frontend/src/features/agent/lib,"[""frontend/src/features/agent/lib/agent-task-events.test.mjs"", ""frontend/src/features/agent/ui/agent-chat-core.tsx"", ""frontend/src/features/agent/ui/global-agent-widget.tsx"", ""frontend/src/features/communication/ui/communication-repair-agent.tsx"", ""frontend/src/features/engineering/ui/engineering-workbench.tsx"", ""frontend/src/features/engineering/ui/structure-tree-workbench.tsx"", ""frontend/src/features/network/ui/network-editor.tsx"", ""frontend/src/features/projects/ui/project-actions.tsx"", ""frontend/src/features/projects/ui/project-gallery.tsx"", ""frontend/src/features/projects/ui/project-sync-notice.tsx"", ""frontend/src/features/routing/ui/routing-workbench.tsx"", ""frontend/src/features/traces/ui/trace-analysis-workbench.tsx"", ""frontend/src/features/workflow/stage_09_intelligence/intelligence-workbench.tsx"", ""frontend/src/features/workflow/ui/studio-topbar.tsx"", ""frontend/src/lib/agent-task-events.ts""]",No stored identity or schema change,backend/tests/test_structure_architecture.py; backend/tests/test_structure_completion.py; full release receipt linked in completion report,CANONICAL_PRESENT,frontend/src/features/agent/lib,"[""frontend/src/features/agent/lib/agent-task-events.test.mjs"", ""frontend/src/features/agent/ui/agent-chat-core.tsx"", ""frontend/src/features/agent/ui/global-agent-widget.tsx"", ""frontend/src/features/communication/ui/communication-repair-agent.tsx"", ""frontend/src/features/engineering/ui/engineering-workbench.tsx"", ""frontend/src/features/engineering/ui/structure-tree-workbench.tsx"", ""frontend/src/features/network/ui/network-editor.tsx"", ""frontend/src/features/projects/ui/project-actions.tsx"", ""frontend/src/features/projects/ui/project-gallery.tsx"", ""frontend/src/features/projects/ui/project-sync-notice.tsx"", ""frontend/src/features/routing/ui/routing-workbench.tsx"", ""frontend/src/features/traces/ui/trace-analysis-workbench.tsx"", ""frontend/src/features/workflow/stage_09_intelligence/intelligence-workbench.tsx"", ""frontend/src/features/workflow/ui/studio-topbar.tsx"", ""frontend/src/lib/agent-task-events.ts""]","Python AST (including retired alias module paths, relative and literal dynamic imports), TypeScript imports, literal paths and documentation links; external/persisted consumers not observable",Not a removable compatibility wrapper
+ frontend/src/features/agent/lib/assistant-context.test.mjs,frontend/src/features/agent/lib/assistant-context.test.mjs,canonical-owner,Canonical module owner: frontend/src/features/agent/lib,[],No stored identity or schema change,backend/tests/test_structure_architecture.py; backend/tests/test_structure_completion.py; full release receipt linked in completion report,CANONICAL_PRESENT,frontend/src/features/agent/lib,[],"Python AST (including retired alias module paths, relative and literal dynamic imports), TypeScript imports, literal paths and documentation links; external/persisted consumers not observable",Not a removable compatibility wrapper
+-frontend/src/features/agent/lib/assistant-context.ts,frontend/src/features/agent/lib/assistant-context.ts,canonical-owner,Canonical module owner: frontend/src/features/agent/lib,"[""frontend/src/features/agent/lib/agent-response.test.mjs"", ""frontend/src/features/agent/lib/assistant-context.test.mjs"", ""frontend/src/features/agent/ui/agent-chat-core.tsx"", ""frontend/src/features/agent/ui/engineering-agent-event.tsx"", ""frontend/src/features/agent/ui/global-agent-widget.tsx"", ""frontend/src/features/agent/ui/wizard-preflight-review.tsx"", ""frontend/src/features/engineering/ui/engineering-workbench.tsx"", ""frontend/src/features/traces/ui/trace-analysis-workbench.tsx"", ""frontend/src/lib/agent/assistant-context.ts""]",No stored identity or schema change,backend/tests/test_structure_architecture.py; backend/tests/test_structure_completion.py; full release receipt linked in completion report,CANONICAL_PRESENT,frontend/src/features/agent/lib,"[""frontend/src/features/agent/lib/agent-response.test.mjs"", ""frontend/src/features/agent/lib/assistant-context.test.mjs"", ""frontend/src/features/agent/ui/agent-chat-core.tsx"", ""frontend/src/features/agent/ui/engineering-agent-event.tsx"", ""frontend/src/features/agent/ui/global-agent-widget.tsx"", ""frontend/src/features/agent/ui/wizard-preflight-review.tsx"", ""frontend/src/features/engineering/ui/engineering-workbench.tsx"", ""frontend/src/features/traces/ui/trace-analysis-workbench.tsx"", ""frontend/src/lib/agent/assistant-context.ts""]","Python AST (including retired alias module paths, relative and literal dynamic imports), TypeScript imports, literal paths and documentation links; external/persisted consumers not observable",Not a removable compatibility wrapper
++frontend/src/features/agent/lib/assistant-context.ts,frontend/src/features/agent/lib/assistant-context.ts,canonical-owner,Canonical module owner: frontend/src/features/agent/lib,"[""frontend/src/features/agent/lib/agent-response.test.mjs"", ""frontend/src/features/agent/lib/assistant-context.test.mjs"", ""frontend/src/features/agent/ui/agent-chat-core.tsx"", ""frontend/src/features/agent/ui/engineering-agent-event.tsx"", ""frontend/src/features/agent/ui/global-agent-widget.tsx"", ""frontend/src/features/agent/ui/wizard-preflight-review.tsx"", ""frontend/src/features/engineering/ui/engineering-workbench.tsx"", ""frontend/src/features/simulation/ui/simulation-wizard.tsx"", ""frontend/src/features/traces/ui/trace-analysis-workbench.tsx"", ""frontend/src/lib/agent/assistant-context.ts""]",No stored identity or schema change,backend/tests/test_structure_architecture.py; backend/tests/test_structure_completion.py; full release receipt linked in completion report,CANONICAL_PRESENT,frontend/src/features/agent/lib,"[""frontend/src/features/agent/lib/agent-response.test.mjs"", ""frontend/src/features/agent/lib/assistant-context.test.mjs"", ""frontend/src/features/agent/ui/agent-chat-core.tsx"", ""frontend/src/features/agent/ui/engineering-agent-event.tsx"", ""frontend/src/features/agent/ui/global-agent-widget.tsx"", ""frontend/src/features/agent/ui/wizard-preflight-review.tsx"", ""frontend/src/features/engineering/ui/engineering-workbench.tsx"", ""frontend/src/features/simulation/ui/simulation-wizard.tsx"", ""frontend/src/features/traces/ui/trace-analysis-workbench.tsx"", ""frontend/src/lib/agent/assistant-context.ts""]","Python AST (including retired alias module paths, relative and literal dynamic imports), TypeScript imports, literal paths and documentation links; external/persisted consumers not observable",Not a removable compatibility wrapper
+ frontend/src/features/agent/lib/automotive-functions.ts,frontend/src/features/agent/lib/automotive-functions.ts,relocated-generated-duplicate,Canonical module owner: frontend/src/features/agent/lib,[],No stored identity or schema change,backend/tests/test_structure_architecture.py; backend/tests/test_structure_completion.py; full release receipt linked in completion report,HISTORICAL_REFERENCE,frontend/src/features/agent/lib,[],"Python AST (including retired alias module paths, relative and literal dynamic imports), TypeScript imports, literal paths and documentation links; external/persisted consumers not observable",Not a removable compatibility wrapper
+ frontend/src/features/agent/lib/automotive.ts,frontend/src/features/agent/lib/automotive.ts,relocated-generated-duplicate,Canonical module owner: frontend/src/features/agent/lib,[],No stored identity or schema change,backend/tests/test_structure_architecture.py; backend/tests/test_structure_completion.py; full release receipt linked in completion report,HISTORICAL_REFERENCE,frontend/src/features/agent/lib,[],"Python AST (including retired alias module paths, relative and literal dynamic imports), TypeScript imports, literal paths and documentation links; external/persisted consumers not observable",Not a removable compatibility wrapper
+ frontend/src/features/agent/lib/building-automation.ts,frontend/src/features/agent/lib/building-automation.ts,relocated-generated-duplicate,Canonical module owner: frontend/src/features/agent/lib,[],No stored identity or schema change,backend/tests/test_structure_architecture.py; backend/tests/test_structure_completion.py; full release receipt linked in completion report,HISTORICAL_REFERENCE,frontend/src/features/agent/lib,[],"Python AST (including retired alias module paths, relative and literal dynamic imports), TypeScript imports, literal paths and documentation links; external/persisted consumers not observable",Not a removable compatibility wrapper
+@@ -3392,7 +3392,7 @@
+ frontend/src/features/agent/ui/goal-hardware-facts.tsx,frontend/src/features/agent/ui/goal-hardware-facts.tsx,canonical-owner,Canonical module owner: frontend/src/features/agent/ui,"[""frontend/src/components/goal-hardware-facts.tsx"", ""frontend/src/features/agent/ui/engineering-agent-event.tsx""]",No stored identity or schema change,backend/tests/test_structure_architecture.py; backend/tests/test_structure_completion.py; full release receipt linked in completion report,CANONICAL_PRESENT,frontend/src/features/agent/ui,"[""frontend/src/components/goal-hardware-facts.tsx"", ""frontend/src/features/agent/ui/engineering-agent-event.tsx""]","Python AST (including retired alias module paths, relative and literal dynamic imports), TypeScript imports, literal paths and documentation links; external/persisted consumers not observable",Not a removable compatibility wrapper
+ frontend/src/features/agent/ui/reasoning-panel.tsx,frontend/src/features/agent/ui/reasoning-panel.tsx,canonical-owner,Canonical module owner: frontend/src/features/agent/ui,"[""frontend/src/components/reasoning-panel.tsx"", ""frontend/src/features/traces/ui/trace-analysis-workbench.tsx""]",No stored identity or schema change,backend/tests/test_structure_architecture.py; backend/tests/test_structure_completion.py; full release receipt linked in completion report,CANONICAL_PRESENT,frontend/src/features/agent/ui,"[""frontend/src/components/reasoning-panel.tsx"", ""frontend/src/features/traces/ui/trace-analysis-workbench.tsx""]","Python AST (including retired alias module paths, relative and literal dynamic imports), TypeScript imports, literal paths and documentation links; external/persisted consumers not observable",Not a removable compatibility wrapper
+ frontend/src/features/agent/ui/specialist-review.tsx,frontend/src/features/agent/ui/specialist-review.tsx,canonical-owner,Canonical module owner: frontend/src/features/agent/ui,"[""frontend/src/components/specialist-review.tsx"", ""frontend/src/features/communication/ui/communication-repair-agent.tsx"", ""frontend/src/features/engineering/ui/structure-tree-workbench.tsx"", ""frontend/src/features/network/ui/ecu-structure-transfer-dialog.tsx"", ""frontend/src/shared/api/types.ts""]",No stored identity or schema change,backend/tests/test_structure_architecture.py; backend/tests/test_structure_completion.py; full release receipt linked in completion report,CANONICAL_PRESENT,frontend/src/features/agent/ui,"[""frontend/src/components/specialist-review.tsx"", ""frontend/src/features/communication/ui/communication-repair-agent.tsx"", ""frontend/src/features/engineering/ui/structure-tree-workbench.tsx"", ""frontend/src/features/network/ui/ecu-structure-transfer-dialog.tsx"", ""frontend/src/shared/api/types.ts""]","Python AST (including retired alias module paths, relative and literal dynamic imports), TypeScript imports, literal paths and documentation links; external/persisted consumers not observable",Not a removable compatibility wrapper
+-frontend/src/features/agent/ui/wizard-preflight-review.tsx,frontend/src/features/agent/ui/wizard-preflight-review.tsx,canonical-owner,Canonical module owner: frontend/src/features/agent/ui,"[""frontend/src/components/wizard-preflight-review.tsx"", ""frontend/src/features/agent/ui/agent-chat-core.tsx""]",No stored identity or schema change,backend/tests/test_structure_architecture.py; backend/tests/test_structure_completion.py; full release receipt linked in completion report,CANONICAL_PRESENT,frontend/src/features/agent/ui,"[""frontend/src/components/wizard-preflight-review.tsx"", ""frontend/src/features/agent/ui/agent-chat-core.tsx""]","Python AST (including retired alias module paths, relative and literal dynamic imports), TypeScript imports, literal paths and documentation links; external/persisted consumers not observable",Not a removable compatibility wrapper
++frontend/src/features/agent/ui/wizard-preflight-review.tsx,frontend/src/features/agent/ui/wizard-preflight-review.tsx,canonical-owner,Canonical module owner: frontend/src/features/agent/ui,"[""frontend/src/components/wizard-preflight-review.tsx"", ""frontend/src/features/agent/ui/agent-chat-core.tsx"", ""frontend/src/features/simulation/ui/simulation-wizard.tsx""]",No stored identity or schema change,backend/tests/test_structure_architecture.py; backend/tests/test_structure_completion.py; full release receipt linked in completion report,CANONICAL_PRESENT,frontend/src/features/agent/ui,"[""frontend/src/components/wizard-preflight-review.tsx"", ""frontend/src/features/agent/ui/agent-chat-core.tsx"", ""frontend/src/features/simulation/ui/simulation-wizard.tsx""]","Python AST (including retired alias module paths, relative and literal dynamic imports), TypeScript imports, literal paths and documentation links; external/persisted consumers not observable",Not a removable compatibility wrapper
+ frontend/src/features/agent/ui/workload-progress.tsx,frontend/src/features/agent/ui/workload-progress.tsx,canonical-owner,Canonical module owner: frontend/src/features/agent/ui,"[""frontend/src/components/workload-progress.tsx"", ""frontend/src/features/agent/ui/agent-chat-core.tsx"", ""frontend/src/features/agent/ui/engineering-agent-event.tsx""]",No stored identity or schema change,backend/tests/test_structure_architecture.py; backend/tests/test_structure_completion.py; full release receipt linked in completion report,CANONICAL_PRESENT,frontend/src/features/agent/ui,"[""frontend/src/components/workload-progress.tsx"", ""frontend/src/features/agent/ui/agent-chat-core.tsx"", ""frontend/src/features/agent/ui/engineering-agent-event.tsx""]","Python AST (including retired alias module paths, relative and literal dynamic imports), TypeScript imports, literal paths and documentation links; external/persisted consumers not observable",Not a removable compatibility wrapper
+ frontend/src/features/capacity/lib/capacity-network-inspection.test.mjs,frontend/src/features/capacity/lib/capacity-network-inspection.test.mjs,canonical-owner,Canonical module owner: frontend/src/features/capacity/lib,[],No stored identity or schema change,backend/tests/test_structure_architecture.py; backend/tests/test_structure_completion.py; full release receipt linked in completion report,CANONICAL_PRESENT,frontend/src/features/capacity/lib,[],"Python AST (including retired alias module paths, relative and literal dynamic imports), TypeScript imports, literal paths and documentation links; external/persisted consumers not observable",Not a removable compatibility wrapper
+ frontend/src/features/capacity/lib/capacity-network-inspection.ts,frontend/src/features/capacity/lib/capacity-network-inspection.ts,canonical-owner,Canonical module owner: frontend/src/features/capacity/lib,"[""frontend/src/features/capacity/lib/capacity-network-inspection.test.mjs"", ""frontend/src/features/capacity/ui/capacity-workbench.tsx"", ""frontend/src/features/workflow/lib/workflow-api.ts"", ""frontend/src/lib/capacity-network-inspection.ts""]",No stored identity or schema change,backend/tests/test_structure_architecture.py; backend/tests/test_structure_completion.py; full release receipt linked in completion report,CANONICAL_PRESENT,frontend/src/features/capacity/lib,"[""frontend/src/features/capacity/lib/capacity-network-inspection.test.mjs"", ""frontend/src/features/capacity/ui/capacity-workbench.tsx"", ""frontend/src/features/workflow/lib/workflow-api.ts"", ""frontend/src/lib/capacity-network-inspection.ts""]","Python AST (including retired alias module paths, relative and literal dynamic imports), TypeScript imports, literal paths and documentation links; external/persisted consumers not observable",Not a removable compatibility wrapper
+@@ -3410,7 +3410,7 @@
+ frontend/src/features/communication/lib/technology-catalog-selection.test.mjs,frontend/src/features/communication/lib/technology-catalog-selection.test.mjs,canonical-owner,Canonical module owner: frontend/src/features/communication/lib,[],No stored identity or schema change,backend/tests/test_structure_architecture.py; backend/tests/test_structure_completion.py; full release receipt linked in completion report,CANONICAL_PRESENT,frontend/src/features/communication/lib,[],"Python AST (including retired alias module paths, relative and literal dynamic imports), TypeScript imports, literal paths and documentation links; external/persisted consumers not observable",Not a removable compatibility wrapper
+ frontend/src/features/communication/lib/technology-catalog-selection.ts,frontend/src/features/communication/lib/technology-catalog-selection.ts,canonical-owner,Canonical module owner: frontend/src/features/communication/lib,"[""frontend/src/features/communication/lib/technology-catalog-selection.test.mjs"", ""frontend/src/features/simulation/ui/simulation-wizard.tsx"", ""frontend/src/features/sources/lib/source-directory.ts"", ""frontend/src/lib/technology-catalog-selection.ts""]",No stored identity or schema change,backend/tests/test_structure_architecture.py; backend/tests/test_structure_completion.py; full release receipt linked in completion report,CANONICAL_PRESENT,frontend/src/features/communication/lib,"[""frontend/src/features/communication/lib/technology-catalog-selection.test.mjs"", ""frontend/src/features/simulation/ui/simulation-wizard.tsx"", ""frontend/src/features/sources/lib/source-directory.ts"", ""frontend/src/lib/technology-catalog-selection.ts""]","Python AST (including retired alias module paths, relative and literal dynamic imports), TypeScript imports, literal paths and documentation links; external/persisted consumers not observable",Not a removable compatibility wrapper
+ frontend/src/features/communication/lib/technology-parameters.test.mjs,frontend/src/features/communication/lib/technology-parameters.test.mjs,canonical-owner,Canonical module owner: frontend/src/features/communication/lib,[],No stored identity or schema change,backend/tests/test_structure_architecture.py; backend/tests/test_structure_completion.py; full release receipt linked in completion report,CANONICAL_PRESENT,frontend/src/features/communication/lib,[],"Python AST (including retired alias module paths, relative and literal dynamic imports), TypeScript imports, literal paths and documentation links; external/persisted consumers not observable",Not a removable compatibility wrapper
+-frontend/src/features/communication/lib/technology-parameters.ts,frontend/src/features/communication/lib/technology-parameters.ts,canonical-owner,Canonical module owner: frontend/src/features/communication/lib,"[""frontend/src/features/agent/ui/wizard-preflight-review.tsx"", ""frontend/src/features/communication/lib/technology-parameters.test.mjs"", ""frontend/src/features/engineering/ui/engineering-workbench.tsx"", ""frontend/src/features/simulation/ui/simulation-wizard.tsx"", ""frontend/src/lib/technology-parameters.ts""]",No stored identity or schema change,backend/tests/test_structure_architecture.py; backend/tests/test_structure_completion.py; full release receipt linked in completion report,CANONICAL_PRESENT,frontend/src/features/communication/lib,"[""frontend/src/features/agent/ui/wizard-preflight-review.tsx"", ""frontend/src/features/communication/lib/technology-parameters.test.mjs"", ""frontend/src/features/engineering/ui/engineering-workbench.tsx"", ""frontend/src/features/simulation/ui/simulation-wizard.tsx"", ""frontend/src/lib/technology-parameters.ts""]","Python AST (including retired alias module paths, relative and literal dynamic imports), TypeScript imports, literal paths and documentation links; external/persisted consumers not observable",Not a removable compatibility wrapper
++frontend/src/features/communication/lib/technology-parameters.ts,frontend/src/features/communication/lib/technology-parameters.ts,canonical-owner,Canonical module owner: frontend/src/features/communication/lib,"[""frontend/src/features/agent/ui/engineering-agent-event.tsx"", ""frontend/src/features/agent/ui/wizard-preflight-review.tsx"", ""frontend/src/features/communication/lib/technology-parameters.test.mjs"", ""frontend/src/features/engineering/ui/engineering-workbench.tsx"", ""frontend/src/features/simulation/ui/simulation-wizard.tsx"", ""frontend/src/features/workflow/lib/workflow-api.ts"", ""frontend/src/lib/technology-parameters.ts""]",No stored identity or schema change,backend/tests/test_structure_architecture.py; backend/tests/test_structure_completion.py; full release receipt linked in completion report,CANONICAL_PRESENT,frontend/src/features/communication/lib,"[""frontend/src/features/agent/ui/engineering-agent-event.tsx"", ""frontend/src/features/agent/ui/wizard-preflight-review.tsx"", ""frontend/src/features/communication/lib/technology-parameters.test.mjs"", ""frontend/src/features/engineering/ui/engineering-workbench.tsx"", ""frontend/src/features/simulation/ui/simulation-wizard.tsx"", ""frontend/src/features/workflow/lib/workflow-api.ts"", ""frontend/src/lib/technology-parameters.ts""]","Python AST (including retired alias module paths, relative and literal dynamic imports), TypeScript imports, literal paths and documentation links; external/persisted consumers not observable",Not a removable compatibility wrapper
+ frontend/src/features/communication/lib/technology-projection.json,frontend/src/features/communication/lib/technology-projection.json,canonical-owner,Canonical module owner: frontend/src/features/communication/lib,"[""backend/tests/test_structure_completion.py"", ""frontend/src/features/communication/lib/bus-settings.ts"", ""frontend/src/features/communication/lib/bus-technology.ts"", ""frontend/src/features/network/lib/topology.ts"", ""scripts/build/project-vocabulary.py"", ""scripts/tests/structure_checker_preflight.py""]",No schema or stored identity change,backend/tests/test_structure_architecture.py; backend/tests/test_structure_completion.py; full release receipt linked in completion report,CANONICAL_PRESENT,frontend/src/features/communication/lib,"[""backend/tests/test_structure_completion.py"", ""frontend/src/features/communication/lib/bus-settings.ts"", ""frontend/src/features/communication/lib/bus-technology.ts"", ""frontend/src/features/network/lib/topology.ts"", ""scripts/build/project-vocabulary.py"", ""scripts/tests/structure_checker_preflight.py""]","Python AST (including retired alias module paths, relative and literal dynamic imports), TypeScript imports, literal paths and documentation links; external/persisted consumers not observable",Not a removable compatibility wrapper
+ frontend/src/features/communication/ui/communication-repair-agent.tsx,frontend/src/features/communication/ui/communication-repair-agent.tsx,canonical-owner,Canonical module owner: frontend/src/features/communication/ui,"[""frontend/src/components/communication-repair-agent.tsx"", ""frontend/src/features/engineering/ui/engineering-workbench.tsx"", ""frontend/src/features/routing/ui/routing-workbench.tsx""]",No stored identity or schema change,backend/tests/test_structure_architecture.py; backend/tests/test_structure_completion.py; full release receipt linked in completion report,CANONICAL_PRESENT,frontend/src/features/communication/ui,"[""frontend/src/components/communication-repair-agent.tsx"", ""frontend/src/features/engineering/ui/engineering-workbench.tsx"", ""frontend/src/features/routing/ui/routing-workbench.tsx""]","Python AST (including retired alias module paths, relative and literal dynamic imports), TypeScript imports, literal paths and documentation links; external/persisted consumers not observable",Not a removable compatibility wrapper
+ frontend/src/features/communication/ui/communication-sizing-panel.tsx,frontend/src/features/communication/ui/communication-sizing-panel.tsx,canonical-owner,Canonical module owner: frontend/src/features/communication/ui,"[""frontend/src/components/communication-sizing-panel.tsx"", ""frontend/src/features/capacity/ui/capacity-workbench.tsx"", ""frontend/src/features/workflow/stage_09_intelligence/intelligence-workbench.tsx""]",No stored identity or schema change,backend/tests/test_structure_architecture.py; backend/tests/test_structure_completion.py; full release receipt linked in completion report,CANONICAL_PRESENT,frontend/src/features/communication/ui,"[""frontend/src/components/communication-sizing-panel.tsx"", ""frontend/src/features/capacity/ui/capacity-workbench.tsx"", ""frontend/src/features/workflow/stage_09_intelligence/intelligence-workbench.tsx""]","Python AST (including retired alias module paths, relative and literal dynamic imports), TypeScript imports, literal paths and documentation links; external/persisted consumers not observable",Not a removable compatibility wrapper
+@@ -3587,7 +3587,7 @@
+ frontend/src/lib/agent/agent-response.test.mjs,frontend/src/features/agent/lib/agent-response.test.mjs,move,Canonical module owner: frontend/src/features/agent/lib,[],No stored identity or schema change,backend/tests/test_structure_architecture.py; backend/tests/test_structure_completion.py; full release receipt linked in completion report,CANONICAL_PRESENT,frontend/src/features/agent/lib,[],"Python AST (including retired alias module paths, relative and literal dynamic imports), TypeScript imports, literal paths and documentation links; external/persisted consumers not observable",Not a removable compatibility wrapper
+ frontend/src/lib/agent/agent-response.ts,frontend/src/features/agent/lib/agent-response.ts,move-with-forwarding-entry,Canonical module owner: frontend/src/features/agent/lib,[],No stored identity or schema change,backend/tests/test_structure_architecture.py; backend/tests/test_structure_completion.py; full release receipt linked in completion report,RETAINED_COMPATIBLE,frontend/src/features/agent/lib,"[""frontend/src/app/api/agent/chat/route.ts"", ""frontend/src/features/agent/lib/agent-response.test.mjs"", ""frontend/src/features/agent/lib/conversation-client.ts"", ""frontend/src/features/agent/lib/engineering-agent.ts"", ""frontend/src/features/agent/lib/use-goal-response.ts"", ""frontend/src/features/agent/lib/wizard-protocol.ts"", ""frontend/src/features/agent/ui/agent-chat-core.tsx"", ""frontend/src/features/agent/ui/engineering-agent-event.tsx"", ""frontend/src/lib/agent/agent-response.ts""]","Python AST (including retired alias module paths, relative and literal dynamic imports), TypeScript imports, literal paths and documentation links; external/persisted consumers not observable",Owner frontend/src/features/agent/lib must migrate repository consumers []; inventory persisted module/CLI references and supported external callers for frontend/src/lib/agent/agent-response.ts; prove alias/import and behavior regressions plus full release PASS before removal. No retirement deadline authorized.
+ frontend/src/lib/agent/assistant-context.test.mjs,frontend/src/features/agent/lib/assistant-context.test.mjs,move,Canonical module owner: frontend/src/features/agent/lib,[],No stored identity or schema change,backend/tests/test_structure_architecture.py; backend/tests/test_structure_completion.py; full release receipt linked in completion report,CANONICAL_PRESENT,frontend/src/features/agent/lib,[],"Python AST (including retired alias module paths, relative and literal dynamic imports), TypeScript imports, literal paths and documentation links; external/persisted consumers not observable",Not a removable compatibility wrapper
+-frontend/src/lib/agent/assistant-context.ts,frontend/src/features/agent/lib/assistant-context.ts,move-with-forwarding-entry,Canonical module owner: frontend/src/features/agent/lib,[],No stored identity or schema change,backend/tests/test_structure_architecture.py; backend/tests/test_structure_completion.py; full release receipt linked in completion report,RETAINED_COMPATIBLE,frontend/src/features/agent/lib,"[""frontend/src/features/agent/lib/agent-response.test.mjs"", ""frontend/src/features/agent/lib/assistant-context.test.mjs"", ""frontend/src/features/agent/ui/agent-chat-core.tsx"", ""frontend/src/features/agent/ui/engineering-agent-event.tsx"", ""frontend/src/features/agent/ui/global-agent-widget.tsx"", ""frontend/src/features/agent/ui/wizard-preflight-review.tsx"", ""frontend/src/features/engineering/ui/engineering-workbench.tsx"", ""frontend/src/features/traces/ui/trace-analysis-workbench.tsx"", ""frontend/src/lib/agent/assistant-context.ts""]","Python AST (including retired alias module paths, relative and literal dynamic imports), TypeScript imports, literal paths and documentation links; external/persisted consumers not observable",Owner frontend/src/features/agent/lib must migrate repository consumers []; inventory persisted module/CLI references and supported external callers for frontend/src/lib/agent/assistant-context.ts; prove alias/import and behavior regressions plus full release PASS before removal. No retirement deadline authorized.
++frontend/src/lib/agent/assistant-context.ts,frontend/src/features/agent/lib/assistant-context.ts,move-with-forwarding-entry,Canonical module owner: frontend/src/features/agent/lib,[],No stored identity or schema change,backend/tests/test_structure_architecture.py; backend/tests/test_structure_completion.py; full release receipt linked in completion report,RETAINED_COMPATIBLE,frontend/src/features/agent/lib,"[""frontend/src/features/agent/lib/agent-response.test.mjs"", ""frontend/src/features/agent/lib/assistant-context.test.mjs"", ""frontend/src/features/agent/ui/agent-chat-core.tsx"", ""frontend/src/features/agent/ui/engineering-agent-event.tsx"", ""frontend/src/features/agent/ui/global-agent-widget.tsx"", ""frontend/src/features/agent/ui/wizard-preflight-review.tsx"", ""frontend/src/features/engineering/ui/engineering-workbench.tsx"", ""frontend/src/features/simulation/ui/simulation-wizard.tsx"", ""frontend/src/features/traces/ui/trace-analysis-workbench.tsx"", ""frontend/src/lib/agent/assistant-context.ts""]","Python AST (including retired alias module paths, relative and literal dynamic imports), TypeScript imports, literal paths and documentation links; external/persisted consumers not observable",Owner frontend/src/features/agent/lib must migrate repository consumers []; inventory persisted module/CLI references and supported external callers for frontend/src/lib/agent/assistant-context.ts; prove alias/import and behavior regressions plus full release PASS before removal. No retirement deadline authorized.
+ frontend/src/lib/agent/chat-attachments.test.mjs,frontend/src/features/agent/lib/chat-attachments.test.mjs,move,Canonical module owner: frontend/src/features/agent/lib,[],No stored identity or schema change,backend/tests/test_structure_architecture.py; backend/tests/test_structure_completion.py; full release receipt linked in completion report,CANONICAL_PRESENT,frontend/src/features/agent/lib,[],"Python AST (including retired alias module paths, relative and literal dynamic imports), TypeScript imports, literal paths and documentation links; external/persisted consumers not observable",Not a removable compatibility wrapper
+ frontend/src/lib/agent/chat-attachments.ts,frontend/src/features/agent/lib/chat-attachments.ts,move-with-forwarding-entry,Canonical module owner: frontend/src/features/agent/lib,[],No stored identity or schema change,backend/tests/test_structure_architecture.py; backend/tests/test_structure_completion.py; full release receipt linked in completion report,RETAINED_COMPATIBLE,frontend/src/features/agent/lib,"[""frontend/src/app/api/agent/chat/route.ts"", ""frontend/src/features/agent/lib/chat-attachments.test.mjs"", ""frontend/src/features/agent/lib/engineering-agent.ts"", ""frontend/src/features/agent/ui/agent-chat-composer.tsx"", ""frontend/src/features/agent/ui/agent-chat-core.tsx"", ""frontend/src/lib/agent/chat-attachments.ts""]","Python AST (including retired alias module paths, relative and literal dynamic imports), TypeScript imports, literal paths and documentation links; external/persisted consumers not observable",Owner frontend/src/features/agent/lib must migrate repository consumers []; inventory persisted module/CLI references and supported external callers for frontend/src/lib/agent/chat-attachments.ts; prove alias/import and behavior regressions plus full release PASS before removal. No retirement deadline authorized.
+ frontend/src/lib/agent/conversation-client.test.mjs,frontend/src/features/agent/lib/conversation-client.test.mjs,move,Canonical module owner: frontend/src/features/agent/lib,[],No stored identity or schema change,backend/tests/test_structure_architecture.py; backend/tests/test_structure_completion.py; full release receipt linked in completion report,CANONICAL_PRESENT,frontend/src/features/agent/lib,[],"Python AST (including retired alias module paths, relative and literal dynamic imports), TypeScript imports, literal paths and documentation links; external/persisted consumers not observable",Not a removable compatibility wrapper
+@@ -3746,7 +3746,7 @@
+ frontend/src/lib/technology-catalog-selection.test.mjs,frontend/src/features/communication/lib/technology-catalog-selection.test.mjs,move,Canonical module owner: frontend/src/features/communication/lib,[],No stored identity or schema change,backend/tests/test_structure_architecture.py; backend/tests/test_structure_completion.py; full release receipt linked in completion report,CANONICAL_PRESENT,frontend/src/features/communication/lib,[],"Python AST (including retired alias module paths, relative and literal dynamic imports), TypeScript imports, literal paths and documentation links; external/persisted consumers not observable",Not a removable compatibility wrapper
+ frontend/src/lib/technology-catalog-selection.ts,frontend/src/features/communication/lib/technology-catalog-selection.ts,move-with-forwarding-entry,Canonical module owner: frontend/src/features/communication/lib,[],No stored identity or schema change,backend/tests/test_structure_architecture.py; backend/tests/test_structure_completion.py; full release receipt linked in completion report,RETAINED_COMPATIBLE,frontend/src/features/communication/lib,"[""frontend/src/features/communication/lib/technology-catalog-selection.test.mjs"", ""frontend/src/features/simulation/ui/simulation-wizard.tsx"", ""frontend/src/features/sources/lib/source-directory.ts"", ""frontend/src/lib/technology-catalog-selection.ts""]","Python AST (including retired alias module paths, relative and literal dynamic imports), TypeScript imports, literal paths and documentation links; external/persisted consumers not observable",Owner frontend/src/features/communication/lib must migrate repository consumers []; inventory persisted module/CLI references and supported external callers for frontend/src/lib/technology-catalog-selection.ts; prove alias/import and behavior regressions plus full release PASS before removal. No retirement deadline authorized.
+ frontend/src/lib/technology-parameters.test.mjs,frontend/src/features/communication/lib/technology-parameters.test.mjs,move,Canonical module owner: frontend/src/features/communication/lib,[],No stored identity or schema change,backend/tests/test_structure_architecture.py; backend/tests/test_structure_completion.py; full release receipt linked in completion report,CANONICAL_PRESENT,frontend/src/features/communication/lib,[],"Python AST (including retired alias module paths, relative and literal dynamic imports), TypeScript imports, literal paths and documentation links; external/persisted consumers not observable",Not a removable compatibility wrapper
+-frontend/src/lib/technology-parameters.ts,frontend/src/features/communication/lib/technology-parameters.ts,move-with-forwarding-entry,Canonical module owner: frontend/src/features/communication/lib,[],No stored identity or schema change,backend/tests/test_structure_architecture.py; backend/tests/test_structure_completion.py; full release receipt linked in completion report,RETAINED_COMPATIBLE,frontend/src/features/communication/lib,"[""frontend/src/features/agent/ui/wizard-preflight-review.tsx"", ""frontend/src/features/communication/lib/technology-parameters.test.mjs"", ""frontend/src/features/engineering/ui/engineering-workbench.tsx"", ""frontend/src/features/simulation/ui/simulation-wizard.tsx"", ""frontend/src/lib/technology-parameters.ts""]","Python AST (including retired alias module paths, relative and literal dynamic imports), TypeScript imports, literal paths and documentation links; external/persisted consumers not observable",Owner frontend/src/features/communication/lib must migrate repository consumers []; inventory persisted module/CLI references and supported external callers for frontend/src/lib/technology-parameters.ts; prove alias/import and behavior regressions plus full release PASS before removal. No retirement deadline authorized.
++frontend/src/lib/technology-parameters.ts,frontend/src/features/communication/lib/technology-parameters.ts,move-with-forwarding-entry,Canonical module owner: frontend/src/features/communication/lib,[],No stored identity or schema change,backend/tests/test_structure_architecture.py; backend/tests/test_structure_completion.py; full release receipt linked in completion report,RETAINED_COMPATIBLE,frontend/src/features/communication/lib,"[""frontend/src/features/agent/ui/engineering-agent-event.tsx"", ""frontend/src/features/agent/ui/wizard-preflight-review.tsx"", ""frontend/src/features/communication/lib/technology-parameters.test.mjs"", ""frontend/src/features/engineering/ui/engineering-workbench.tsx"", ""frontend/src/features/simulation/ui/simulation-wizard.tsx"", ""frontend/src/features/workflow/lib/workflow-api.ts"", ""frontend/src/lib/technology-parameters.ts""]","Python AST (including retired alias module paths, relative and literal dynamic imports), TypeScript imports, literal paths and documentation links; external/persisted consumers not observable",Owner frontend/src/features/communication/lib must migrate repository consumers []; inventory persisted module/CLI references and supported external callers for frontend/src/lib/technology-parameters.ts; prove alias/import and behavior regressions plus full release PASS before removal. No retirement deadline authorized.
+ frontend/src/lib/topology-cluster-knowledge.test.mjs,frontend/src/features/network/lib/topology-cluster-knowledge.test.mjs,move,Canonical module owner: frontend/src/features/network/lib,[],No stored identity or schema change,backend/tests/test_structure_architecture.py; backend/tests/test_structure_completion.py; full release receipt linked in completion report,CANONICAL_PRESENT,frontend/src/features/network/lib,[],"Python AST (including retired alias module paths, relative and literal dynamic imports), TypeScript imports, literal paths and documentation links; external/persisted consumers not observable",Not a removable compatibility wrapper
+ frontend/src/lib/topology-cluster-knowledge.ts,frontend/src/features/network/lib/topology-cluster-knowledge.ts,move-with-forwarding-entry,Canonical module owner: frontend/src/features/network/lib,[],No stored identity or schema change,backend/tests/test_structure_architecture.py; backend/tests/test_structure_completion.py; full release receipt linked in completion report,RETAINED_COMPATIBLE,frontend/src/features/network/lib,"[""frontend/src/features/agent/lib/equipment-clustering.ts"", ""frontend/src/features/agent/lib/semantic-routing.ts"", ""frontend/src/features/agent/ui/agent-chat-core.tsx"", ""frontend/src/features/engineering/lib/engineering-terms.test.mjs"", ""frontend/src/features/network/lib/topology-cluster-knowledge.test.mjs"", ""frontend/src/features/network/lib/topology.ts"", ""frontend/src/features/network/ui/network-editor.tsx"", ""frontend/src/lib/topology-cluster-knowledge.ts""]","Python AST (including retired alias module paths, relative and literal dynamic imports), TypeScript imports, literal paths and documentation links; external/persisted consumers not observable",Owner frontend/src/features/network/lib must migrate repository consumers []; inventory persisted module/CLI references and supported external callers for frontend/src/lib/topology-cluster-knowledge.ts; prove alias/import and behavior regressions plus full release PASS before removal. No retirement deadline authorized.
+ frontend/src/lib/topology.test.mjs,frontend/src/features/network/lib/topology.test.mjs,move,Canonical module owner: frontend/src/features/network/lib,[],No stored identity or schema change,backend/tests/test_structure_architecture.py; backend/tests/test_structure_completion.py; full release receipt linked in completion report,CANONICAL_PRESENT,frontend/src/features/network/lib,[],"Python AST (including retired alias module paths, relative and literal dynamic imports), TypeScript imports, literal paths and documentation links; external/persisted consumers not observable",Not a removable compatibility wrapper
+--- a/frontend/e2e/wizard.spec.ts
++++ b/frontend/e2e/wizard.spec.ts
+@@ -57,8 +57,14 @@
+ 
+ async function readProject(page: Page, project: string, path: string) {
+   const result = await page.request.get(path, { headers: { 'X-Project-ID': project }, timeout: 60_000 });
+-  if (!result.ok()) throw new Error(`${path}: HTTP ${result.status()} ${(await result.text()).slice(0, 4000)}`);
+-  return result.json();
++  try {
++    if (!result.ok()) throw new Error(`${path}: HTTP ${result.status()} ${(await result.text()).slice(0, 4000)}`);
++    return await result.json();
++  } finally {
++    // Playwright otherwise retains every polled response until context teardown.
++    // Keep the parsed evidence, release its duplicate transport body immediately.
++    await result.dispose();
++  }
+ }
+ 
+ async function readWarningReviewState(page: Page, project: string) {
+@@ -147,13 +153,19 @@
+ }
+ 
+ async function verifyArtifacts(page: Page, project: string, minimumCanonicalSignals: number, internalController?: string) {
+-  const workflow = await readProject(page, project, '/api/engineering/workflow?view=summary');
++  // The completed model is stable; these independent reads need no serial waits.
++  const [workflow, jobList, snapshots, signals, messages] = await Promise.all([
++    readProject(page, project, '/api/engineering/workflow?view=summary'),
++    readProject(page, project, '/api/simulations'),
++    readProject(page, project, '/api/engineering/workflow/snapshots'),
++    allObjects(page, project, 'signals'),
++    allObjects(page, project, 'messages'),
++  ]);
+   expect(Object.keys(workflow.statuses).sort()).toEqual([...steps].sort());
+   for (const step of steps) expect(done.has(workflow.statuses[step]), `${step}: ${workflow.statuses[step]}`).toBeTruthy();
+-  const jobs = (await readProject(page, project, '/api/simulations')).jobs;
++  const jobs = jobList.jobs;
+   expect(jobs).toHaveLength(1);
+   expect(jobs[0].status).toBe('completed');
+-  const snapshots = await readProject(page, project, '/api/engineering/workflow/snapshots');
+   const snapshot = snapshots.simulations.find((item: { job_id: string }) => item.job_id === jobs[0].id);
+   expect(snapshot).toBeTruthy();
+   const full = await readProject(page, project, `/api/engineering/workflow/simulation-snapshots/${snapshot.id}`);
+@@ -162,10 +174,8 @@
+   expect(assessment.scope_coverage.complete).toBe(true);
+   expect(assessment.conformance).toBe('PASS');
+   expect(assessment.failed_route_count).toBe(0);
+-  const signals = await allObjects(page, project, 'signals');
+   expect(signals.length, 'The full canonical signal inventory must survive generation.').toBeGreaterThanOrEqual(minimumCanonicalSignals);
+   const excluded = assessment.scope_coverage.transport_exclusions ?? [];
+-  const messages = await allObjects(page, project, 'messages');
+   for (const item of excluded) {
+     const message = messages.find(row => row.id === item.message_id);
+     expect(message, `Excluded message ${item.message_id} must exist.`).toBeTruthy();
+--- a/backend/nis/engineering/routing/validation.py
++++ b/backend/nis/engineering/routing/validation.py
+@@ -152,6 +152,23 @@
+     def _snapshot_rows(self, table):
+         snapshot = getattr(self, 'model_snapshot', None)
+         return snapshot['tables'][table] if snapshot is not None else None
++
++    @classmethod
++    def for_current_batch(cls, project_id=None):
++        """Capture physical evidence once after an atomic batch's model writes.
++
++        This is caller-owned evidence for that batch, never a cross-request cache.
++        Reference, payload, timing and forwarding checks still run on every route.
++        """
++        from backend.nis.engineering.projects.project_context import normalize_context_project_id
++        from backend.nis.engineering.communication.communication_repair import load_plan
++        selected = normalize_context_project_id(project_id or current_project_id())
++        if selected != current_project_id():
++            raise ValueError('Routing batch must use the active project.')
++        planner, state = load_plan()
++        if state['project_id'] != selected:
++            raise ValueError('Physical routing evidence belongs to another project.')
++        return cls(selected, physical_planner=planner)
+ 
+     def _physical_path_mapping(
+         self,
+@@ -822,7 +839,14 @@
+         }
+ 
+     def validate_table(self, routes: list[dict[str, Any]]) -> dict[str, Any]:
+-        results = [self.validate(route, exclude_route_id=str(route.get("id")) if route.get("id") else None) for route in routes]
++        previous = getattr(self, 'physical_planner', None)
++        if previous is None and any((route.get('route') or {}).get('physical_paths') for route in routes):
++            self.physical_planner = self.for_current_batch(getattr(self, 'project_id', None)).physical_planner
++        try:
++            results = [self.validate(route, exclude_route_id=str(route.get("id")) if route.get("id") else None) for route in routes]
++        finally:
++            # A later table read must see edited physical connections.
++            self.physical_planner = previous
+         table_errors = [] if results else [
+             {
+                 "code": "ROUTING_TABLE_EMPTY",
+--- a/backend/nis/engineering/capacity/sizing_service.py
++++ b/backend/nis/engineering/capacity/sizing_service.py
+@@ -117,7 +117,7 @@
+                 db.flush_model_changes(actor=actor, reason="Nachrichten, Signale und Routen gemeinsam dimensioniert.")
+                 self.workflow.mark_changed("routing", "Dimensionierte Zyklen müssen auf dem aktuellen Modell geprüft werden.", actor=actor)
+             valid, invalid = [], []
+-            validator = RoutingValidator()
++            validator = RoutingValidator.for_current_batch(self.project_id)
+             for route in changed_routes:
+                 validation = validator.validate(route, exclude_route_id=str(route["id"]))
+                 save_validation(str(route["id"]), validation, actor=actor)
+--- a/backend/nis/engineering/structure/zoning_service.py
++++ b/backend/nis/engineering/structure/zoning_service.py
+@@ -74,7 +74,7 @@
+             sync_topology({**topology, 'topology_id': 'studio-network'})
+             db.flush_model_changes(actor=actor, reason='Kanonische physische Beziehungen mit Einbauzonen synchronisiert.')
+             self.workflow.save_topology(topology, actor=actor)
+-            validator = RoutingValidator(self.project_id)
++            validator = RoutingValidator.for_current_batch(self.project_id)
+             valid = []
+             for route in plan['routes']:
+                 key = refs.get(str(route['id']), str(route['id']))
+--- a/backend/tests/test_routing_prospective_model.py
++++ b/backend/tests/test_routing_prospective_model.py
+@@ -99,3 +99,45 @@
+     snap = candidate['snapshot']; validator = RoutingValidator(snap['project_id'], model_snapshot=snap)
+     snap['tables']['engineering_hardware_nodes'].clear(); snap['topology']['edges'].clear()
+     assert validator.validate(candidate['route'])['valid'] is True
++
++
++def test_table_reuses_native_physical_evidence_and_refreshes_after_wire_edit(candidate, monkeypatch):
++    from backend.nis.engineering.communication import communication_repair
++    from backend.nis.engineering.projects.project_context import activate_project, reset_project
++    from backend.nis.workflow.services.service import WorkflowStatusService
++    project = candidate['snapshot']['project_id']
++    token = activate_project(project)
++    original = communication_repair.load_plan
++    captures = []
++    def capture():
++        value = original()
++        captures.append(value)
++        return value
++    monkeypatch.setattr(communication_repair, 'load_plan', capture)
++    try:
++        validator = RoutingValidator(project)
++        first = validator.validate_table([candidate['route'], deepcopy(candidate['route'])])
++        assert first['valid'] and len(captures) == 1
++        expected = {k: v for k, v in candidate['baseline'].items() if k != 'validation_timestamp'}
++        for result in first['results']:
++            assert {k: v for k, v in result.items() if k != 'validation_timestamp'} == expected
++        assert validator.physical_planner is None
++        WorkflowStatusService(project).save_topology({**candidate['snapshot']['topology'], 'edges': []})
++        second = validator.validate_table([candidate['route']])
++        assert len(captures) == 2 and not second['valid']
++        assert 'PHYSICAL_PATH_REMOVED' in {issue['code'] for issue in second['results'][0]['errors']}
++        assert validator.physical_planner is None
++    finally:
++        reset_project(token)
++
++
++def test_routing_batch_rejects_foreign_active_project_before_loading(candidate, monkeypatch):
++    from backend.nis.engineering.communication import communication_repair
++    from backend.nis.engineering.projects.project_context import activate_project, reset_project
++    token = activate_project('foreign-' + candidate['snapshot']['project_id'])
++    monkeypatch.setattr(communication_repair, 'load_plan', forbid_database)
++    try:
++        with pytest.raises(ValueError, match='active project'):
++            RoutingValidator.for_current_batch(candidate['snapshot']['project_id'])
++    finally:
++        reset_project(token)

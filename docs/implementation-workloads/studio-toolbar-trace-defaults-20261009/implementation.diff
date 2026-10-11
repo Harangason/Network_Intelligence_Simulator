@@ -1,0 +1,1141 @@
+--- before/frontend/src/features/network/ui/network-editor.tsx
++++ after/frontend/src/features/network/ui/network-editor.tsx
+@@ -3380,7 +3380,8 @@
+ 
+   const editor = (
+     <div className={`net-editor ${scene ? "persisted-scene" : ""} ${largeTopology ? "large-topology" : ""} ${fullscreen ? "fullscreen" : ""}`}>
+-      <div className="net-toolbar">
++      <div className="net-toolbar" aria-label="Netzwerk-Werkzeuge">
++        <div className="net-toolbar-primary">
+         <div className="net-palette" role="group" aria-label="Geräte hinzufügen">
+           {(Object.keys(kindLabels) as NodeKind[]).map((kind) => {
+             const available = modelHardware.filter(
+@@ -3424,13 +3425,19 @@
+           })}
+         </div>
+         <NetworkEditorSearch entries={searchEntries} query={searchQuery} onQueryChange={setSearchQuery} onSelect={focusSearchResult} />
++        </div>
+         <div className="net-toolbar-actions">
++          <div className="net-toolbar-group" role="group" aria-label="Netzwerk anordnen">
++          <span className="net-toolbar-label">Anordnen</span>
+           {scene && onLayoutChange && <button type="button" className="net-add" disabled={layoutSaving || deleting || portSaving || relationshipSaving || Boolean(drag)}
+             title="Buslinien und verbundene Anschlusspositionen automatisch führen. Gerätepositionen beibehalten."
+             onClick={() => {setLayoutSaving(true); setLayoutError(''); failedLayoutRef.current = null;
+               void onLayoutChange(topology, false, true).catch(error => setLayoutError(error instanceof Error ? error.message : 'Linienführung fehlgeschlagen.')).finally(() => setLayoutSaving(false));}}>Linien automatisch</button>}
+           {scene && onAssignmentChange && <button type="button" className="net-add" aria-pressed={lasso} onClick={()=>{setLasso(!lasso);setAssignmentSelection([]);setLayoutError('');}} title="Rechteck um Geräte oder Systemrahmen ziehen">{lasso?'Markieren beenden':'Lasso · Zuordnen'}</button>}
+           {selectedNode && onAssignmentChange && <button type="button" className="net-add" onClick={()=>setAssignmentSelection([selectedNode])}>Gerät zuordnen</button>}
++          </div>
++          <div className="net-toolbar-group net-toolbar-view" role="group" aria-label="Netzwerkansicht">
++          <span className="net-toolbar-label">Ansicht</span>
+           <div aria-label="Zoom" className="net-zoom-controls" role="group">
+             <button aria-label="Verkleinern" disabled={zoom <= MIN_ZOOM} onClick={() => changeZoom(zoom - ZOOM_STEP)} title="Verkleinern" type="button">−</button>
+             <button aria-label="Zoom auf 100 Prozent zurücksetzen" className="net-zoom-value" onClick={() => changeZoom(1)} title="Zoom zurücksetzen" type="button">{Math.round(zoom * 100)} %</button>
+@@ -3446,6 +3453,9 @@
+           >
+             {fullscreen ? "Vollbild schließen" : "Vollbild"}
+           </button>
++          </div>
++          <div className="net-toolbar-group net-toolbar-selection" role="group" aria-label="Auswahl bearbeiten">
++          <span className="net-toolbar-label">Auswahl</span>
+           <span
+             className={`net-eva-status ${layoutStatus.className}`}
+             data-layout-semantics={layoutStatus.semantics}
+@@ -3490,6 +3500,7 @@
+               EVA gruppieren
+             </button>
+           )}
++          </div>
+         </div>
+       </div>
+ 
+--- before/frontend/src/app/globals.css
++++ after/frontend/src/app/globals.css
+@@ -7209,11 +7209,30 @@
+ }
+ 
+ .net-toolbar {
+-  display: flex;
+-  flex-wrap: wrap;
+-  align-items: center;
+-  gap: 8px;
+-  justify-content: space-between;
++  display: grid;
++  gap: 12px;
++  min-width: 0;
++  padding: 12px;
++  border: 1px solid var(--border);
++  border-radius: 8px;
++  background: var(--surface-deep);
++  container-type: inline-size;
++}
++
++.net-toolbar-primary { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; min-width: 0; }
++.net-toolbar-group { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-width: 0; }
++.net-toolbar-label { flex-basis: 100%; color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: .08em; }
++.net-toolbar-view { justify-content: flex-end; }
++.net-toolbar-view .net-toolbar-label { text-align: right; }
++.net-toolbar-selection { grid-column: 1 / -1; padding-top: 10px; border-top: 1px solid var(--border); }
++.net-toolbar-selection .net-eva-status { order: 1; margin-left: auto; }
++
++@container (max-width: 660px) {
++  .net-toolbar .net-toolbar-actions { grid-template-columns: 1fr; }
++  .net-toolbar-view { justify-content: flex-start; }
++  .net-toolbar-view .net-toolbar-label { text-align: left; }
++  .net-toolbar-primary .net-search { flex-basis: 100%; max-width: none; margin-left: 0; }
++  .net-toolbar-selection .net-eva-status { flex-basis: 100%; margin-left: 0; }
+ }
+ 
+ .net-editor.fullscreen .net-toolbar {
+@@ -7232,12 +7251,10 @@
+ }
+ 
+ .net-toolbar-actions {
+-  display: flex;
+-  flex-basis: 100%;
+-  flex-wrap: wrap;
+-  align-items: center;
+-  justify-content: flex-end;
+-  gap: 6px;
++  display: grid;
++  grid-template-columns: minmax(0, 1fr) auto;
++  align-items: start;
++  gap: 12px;
+ }
+ 
+ .net-search {
+--- before/frontend/src/features/simulation/lib/simulation-formats.ts
++++ after/frontend/src/features/simulation/lib/simulation-formats.ts
+@@ -31,6 +31,13 @@
+ ];
+ 
+ export const defaultSimulationFormats = ["universal-jsonl", "universal-csv"];
++
++/** Native exports follow the registered profiles of all physical project buses. */
++export function projectSimulationFormats(profiles: Array<{ native_formats?: readonly string[] }>) {
++  const native = new Set(profiles.flatMap((profile) => profile.native_formats ?? []));
++  const preferred = ["blf", "dbc", "pcap"].filter((format) => native.has(format));
++  return preferred.length ? preferred : defaultSimulationFormats;
++}
+ 
+ export const simulationFormatGroupLabels: Record<SimulationFormatGroupId, string> = {
+   universal: "Universell",
+--- before/frontend/src/features/simulation/lib/simulation-formats.test.mjs
++++ after/frontend/src/features/simulation/lib/simulation-formats.test.mjs
+@@ -5,11 +5,19 @@
+   groupSimulationFormats,
+   mergeSimulationFormats,
+   simulationFormatExtension,
++  projectSimulationFormats,
+ } from "./simulation-formats.ts";
+ 
+ test("format catalog exposes universal and native simulator formats in stable order", () => {
+   const formats = mergeSimulationFormats(["pcapng", "universal-jsonl"], ["asc", "blf"], defaultSimulationFormats);
+   assert.deepEqual(formats, ["universal-jsonl", "universal-csv", "blf", "asc", "pcapng"]);
++});
++
++test("project defaults select BLF/DBC for CAN and PCAP for Ethernet from registered profiles", () => {
++  assert.deepEqual(projectSimulationFormats([{ native_formats: ["blf", "dbc"] }]), ["blf", "dbc"]);
++  assert.deepEqual(projectSimulationFormats([{ native_formats: ["pcap", "pcapng"] }]), ["pcap"]);
++  assert.deepEqual(projectSimulationFormats([{ native_formats: ["blf", "dbc"] }, { native_formats: ["pcap"] }]), ["blf", "dbc", "pcap"]);
++  assert.deepEqual(projectSimulationFormats([{ native_formats: ["ldf"] }]), defaultSimulationFormats);
+ });
+ 
+ test("output format groups keep CAN and Ethernet choices visible", () => {
+--- before/frontend/src/features/simulation/ui/model-simulation-runner.tsx
++++ after/frontend/src/features/simulation/ui/model-simulation-runner.tsx
+@@ -18,6 +18,7 @@
+   describeSimulationFormat,
+   groupSimulationFormats,
+   mergeSimulationFormats,
++  projectSimulationFormats,
+   simulationFormatDefinitions,
+ } from "@/features/simulation/lib/simulation-formats";
+ import { topologyToConfig, type NetworkTopology } from "@/features/network/lib/topology";
+@@ -80,6 +81,7 @@
+   const [speed, setSpeed] = useState(1);
+   const [seed, setSeed] = useState(42);
+   const [formats, setFormats] = useState(defaultSimulationFormats);
++  const [formatsEdited, setFormatsEdited] = useState(false);
+   const [formatPickerOpen, setFormatPickerOpen] = useState(false);
+   const [faults, setFaults] = useState<ScenarioFault[]>([]);
+   const [faultScope, setFaultScope] = useState<keyof typeof FAULT_TYPES>("SIGNAL");
+@@ -221,6 +223,16 @@
+     ),
+     [catalog?.formats, formats, selectedTechnology?.native_formats],
+   );
++  useEffect(() => {
++    if (!catalog || !workflow || formatsEdited) return;
++    const networks = Array.isArray(workflow.parameters.networks) ? workflow.parameters.networks : [];
++    const technologies = networks.length
++      ? networks.map((network: { technology?: string }) => String(network.technology ?? "").toLowerCase())
++      : [String(workflow.parameters.technology ?? "").toLowerCase()];
++    const profiles = catalog.domains.flatMap((domain) => domain.technologies)
++      .filter((profile) => technologies.includes(profile.id.toLowerCase()));
++    setFormats(projectSimulationFormats(profiles));
++  }, [catalog, workflow?.project_id, workflow?.parameters.networks, workflow?.parameters.technology, formatsEdited]);
+   const formatGroups = useMemo(() => groupSimulationFormats(availableFormats), [availableFormats]);
+   const selectedFormatLabels = useMemo(
+     () => formats.map((format) => describeSimulationFormat(format).label),
+@@ -376,6 +388,7 @@
+   }
+ 
+   function toggleFormat(format: string, checked: boolean) {
++    setFormatsEdited(true);
+     setFormats((current) => checked
+       ? mergeSimulationFormats(current, [format])
+       : current.filter((item) => item !== format));
+--- before/backend/nis/simulation/communication_simulator.py
++++ after/backend/nis/simulation/communication_simulator.py
+@@ -195,6 +195,7 @@
+     model_trace: dict[str, Any] = {}
+     model_trace_reference: dict[str, Any] = {}
+     native_ethernet: dict[str, Any] = {}
++    native_can: dict[str, Any] = {}
+ 
+     if not validate_only and validation["valid"]:
+         trace_start = datetime.now(timezone.utc).timestamp()
+@@ -253,7 +254,13 @@
+         written.extend(packet_paths)
+         if native_ethernet.get("unsupported_events"):
+             warnings.append("PCAP enthält ausschließlich unterstützte IP-Ereignisse; andere Technologien bleiben im Universal Trace. Keine Ersatz-/Demo-Pakete.")
+-        native_config = _native_configuration(config, profile, out_dir, formats)
++        legacy_formats = formats
++        if config.get("engineering_model"):
++            from backend.nis.communication.technologies.can.formats.can_format_writers import write_project_can_artifacts
++            can_paths, native_can = write_project_can_artifacts(out_dir / "native", config, routes, events, formats)
++            written.extend(can_paths)
++            legacy_formats = [item for item in formats if item not in {"blf", "dbc"}]
++        native_config = _native_configuration(config, profile, out_dir, legacy_formats)
+         if native_config is not None:
+             try:
+                 from backend.nis.simulation.communication_generator import run_simulation as run_native_simulation
+@@ -283,6 +290,7 @@
+         "trace": trace_summary(routes, events),
+         "model_simulation": model_trace_reference,
+         "native_ethernet": native_ethernet,
++        "native_can": native_can,
+     }
+     manifest_path = out_dir / "generation_manifest.json"
+     manifest_path.write_text(json.dumps(manifest, indent=2, ensure_ascii=False, default=str), encoding="utf-8")
+@@ -299,6 +307,7 @@
+         "trace": trace_summary(routes, events),
+         "model_simulation": model_trace,
+         "native_ethernet": native_ethernet,
++        "native_can": native_can,
+     }
+     result_path = out_dir / "simulation_result.json"
+     result["artifacts"].append(str(result_path))
+--- before/backend/nis/communication/technologies/can/formats/can_format_writers.py
++++ after/backend/nis/communication/technologies/can/formats/can_format_writers.py
+@@ -5,11 +5,193 @@
+ 
+ import csv
+ import json
++import hashlib
++import math
++import re
+ from pathlib import Path
+ from xml.etree import ElementTree as ET
+ 
+ from backend.nis.communication.technologies.can.formats.trace_model import CanFrame, MessageDef, ROUTE_INFO_LENGTH, ROUTE_INFO_START_BYTE
+ from backend.nis.traces.trace_support import iso_utc, route_label, write_text
++
++
++def write_project_can_artifacts(out_dir: Path, config: dict, routes: list[dict], events: list[dict], formats: list[str]):
++    """Export the frozen canonical model and actual scheduled CAN transmissions.
++
++    Each physical bus has its own DBC; a BLF channel map retains network identity.
++    This adapter never invokes the standalone example traffic generator.
++    """
++    selected = set(formats) & {"blf", "dbc"}
++    if not selected:
++        return [], {}
++    import can
++    import cantools
++    from cantools.database.can import Database, Message, Signal, Node
++    from cantools.database.conversion import BaseConversion
++    from cantools.database.can.formats.dbc.dbc_specifics import DbcSpecifics
++    from cantools.database.can.formats.dbc.dbc_attribute import DbcAttribute
++    from cantools.database.can.formats.dbc.dbc_attribute_definition import DbcAttributeDefinition
++    from collections import OrderedDict
++    from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY as registry
++    from backend.nis.simulation.model_based_simulation import integer_signal_signed
++
++    model = config.get("engineering_model") or {}
++    messages = {str(item["id"]): item for item in model.get("messages") or []}
++    signals = {}
++    for signal in model.get("signals") or []:
++        signals.setdefault(str(signal["message_id"]), []).append(signal)
++    can_routes = [route for route in routes
++                  if selected.intersection(registry.profile(route["technology"]).get("native_formats") or [])
++                  and route["technology"] in {"can", "can_fd"}]
++    if not can_routes:
++        return [], {"generator": "canonical-can-export-v1", "frames": 0, "networks": []}
++    networks = sorted({route["network"] for route in can_routes})
++    channels = {network: index for index, network in enumerate(networks)}
++    definitions = {network: {} for network in networks}
++    bitrate_switch = {route['network']: bool(route.get('network_metadata', {}).get('can_fd_brs', False)) for route in can_routes}
++    identifiers = {}
++    used_names = {}
++    frame_format = DbcAttributeDefinition('VFrameFormat', default_value=0, kind='BO_', type_name='ENUM',
++        choices=['StandardCAN', 'ExtendedCAN', 'StandardCAN_FD', 'ExtendedCAN_FD'])
++
++    def name(value, identity, namespace):
++        key = (namespace, identity)
++        if key not in identifiers:
++            candidate = re.sub(r"[^A-Za-z0-9_]", "_", str(value)) or "NIS"
++            if candidate[0].isdigit():
++                candidate = "NIS_" + candidate
++            candidate = candidate[:32]
++            used = used_names.setdefault(namespace, set())
++            if candidate in used:
++                candidate = candidate[:23] + "_" + hashlib.sha256(identity.encode()).hexdigest()[:8]
++            used.add(candidate)
++            identifiers[key] = candidate
++        return identifiers[key]
++
++    def number(raw, field):
++        if raw.get(field) is None or isinstance(raw[field], bool) or not math.isfinite(float(raw[field])):
++            raise ValueError(f"CAN_EXPORT_ENCODING_MISSING: {raw.get('name')} / {field}")
++        return float(raw[field])
++
++    def integer(raw, field):
++        value = number(raw, field)
++        if not value.is_integer():
++            raise ValueError(f"CAN_EXPORT_ENCODING_INVALID: {raw.get('name')} / {field} must be an integer")
++        return int(value)
++
++    for route in can_routes:
++        refs = route["metadata"].get("message_ids") or []
++        if len(refs) != 1 or str(refs[0]) not in messages:
++            raise ValueError(f"CAN_EXPORT_MESSAGE_BINDING: {route['id']} requires one canonical message")
++        identity = str(refs[0])
++        raw = messages[identity]
++        network = route["network"]
++        source = name(route["sender"]["hardware_name"], route["sender"]["hardware_id"], "nodes")
++        receivers = [name(item["hardware_name"], item["hardware_id"], "nodes") for item in route["receivers"]]
++        if identity in definitions[network]:
++            definition = definitions[network][identity]
++            if definition.senders != [source]:
++                raise ValueError(f"CAN_EXPORT_SENDER_CONFLICT: {identity} on {network}")
++            for signal in definition.signals:
++                signal.receivers = sorted(set(signal.receivers + receivers))
++            continue
++        raw_id = raw.get("message_id_hex")
++        if raw_id is None:
++            raise ValueError(f"CAN_EXPORT_ID_MISSING: {identity}")
++        frame_id = int(str(raw_id), 16 if str(raw_id).lower().startswith("0x") else 10)
++        extended = (raw.get("configuration") or {}).get("is_extended_frame", frame_id > 0x7ff)
++        if not isinstance(extended, bool) or not 0 <= frame_id <= (0x1fffffff if extended else 0x7ff):
++            raise ValueError(f"CAN_EXPORT_ID_INVALID: {identity}")
++        if any(item.frame_id == frame_id and item.is_extended_frame == extended for item in definitions[network].values()):
++            raise ValueError(f"CAN_EXPORT_ID_COLLISION: {frame_id} on {network}")
++        length = integer(raw, "dlc")
++        is_fd = route["technology"] == "can_fd"
++        if length < 0 or length > (64 if is_fd else 8):
++            raise ValueError(f"CAN_EXPORT_DLC_INVALID: {identity}")
++        encoded = []
++        for signal in signals.get(identity, []):
++            start = integer(signal, "start_bit")
++            bits = integer(signal, "length_bits")
++            order = signal.get("byte_order")
++            if order not in {"little_endian", "big_endian"}:
++                raise ValueError(f"CAN_EXPORT_BYTE_ORDER_INVALID: {signal['id']}")
++            # The existing model's aligned big-endian start denotes the first
++            # byte's bit 0. DBC Motorola denotes that byte's most significant bit.
++            if order == "big_endian":
++                if start % 8 or bits % 8:
++                    raise ValueError(f"CAN_EXPORT_ENCODING_UNSUPPORTED: {signal['id']} requires aligned big-endian encoding")
++                start += 7
++            kind = str(signal.get("data_type") or "").lower()
++            if not (kind in {"signed", "unsigned", "bool", "boolean", "enum"} or re.fullmatch(r"(?:u?int|sint)\d*", kind)):
++                raise ValueError(f"CAN_EXPORT_DATA_TYPE_UNSUPPORTED: {signal['id']}")
++            factor = number(signal, "factor")
++            if factor <= 0 or bits < 1 or bits > 64 or start < 0:
++                raise ValueError(f"CAN_EXPORT_ENCODING_INVALID: {signal['id']}")
++            choices = (signal.get("data") or {}).get("enum") or (signal.get("configuration") or {}).get("enum")
++            encoded.append(Signal(name(signal['name'], str(signal['id']), identity), start, bits,
++                byte_order=order, is_signed=integer_signal_signed(kind),
++                conversion=BaseConversion.factory(scale=factor, offset=number(signal, "offset_value"),
++                    choices={int(value): label for label, value in choices.items()} if choices else None),
++                minimum=signal.get("min_value"), maximum=signal.get("max_value"), unit=signal.get("unit"),
++                receivers=receivers, comment=f"CanonicalSignal={signal['id']}"))
++        definition = Message(frame_id, name(raw['name'], identity, network), length, encoded,
++            is_extended_frame=extended, is_fd=is_fd, senders=[source], strict=True,
++            dbc_specifics=DbcSpecifics(attributes=OrderedDict([
++                ('VFrameFormat', DbcAttribute((2 if is_fd else 0) + int(extended), frame_format))])),
++            comment=f"CanonicalMessage={identity}; Network={network}; Technology={route['technology']}")
++        definitions[network][identity] = definition
++
++    # Validate every database before creating any artifact. No invalid layouts,
++    # duplicate IDs or truncated encodings can masquerade as an export success.
++    databases = {}
++    for network, items in definitions.items():
++        nodes = sorted({node for item in items.values() for node in item.senders}
++                       | {node for item in items.values() for signal in item.signals for node in signal.receivers})
++        database = Database(messages=list(items.values()), nodes=[Node(node) for node in nodes], strict=True,
++            dbc_specifics=DbcSpecifics(attribute_definitions=OrderedDict([('VFrameFormat', frame_format)])))
++        text = database.as_dbc_string()
++        cantools.database.load_string(text, database_format="dbc", strict=True)
++        databases[network] = text
++    frames = []
++    mapping = []
++    for event in events:
++        if event.get("network") not in channels or event.get("technology") not in {"can", "can_fd"}:
++            continue
++        refs = event.get("message_ids") or []
++        if len(refs) != 1 or str(refs[0]) not in definitions[event['network']]:
++            raise ValueError(f"CAN_EXPORT_EVENT_BINDING: {event.get('event_id')}")
++        definition = definitions[event['network']][str(refs[0])]
++        payload = bytes.fromhex(event['payload_hex'])
++        if len(payload) != definition.length or event.get('arbitration_id') != definition.frame_id:
++            raise ValueError(f"CAN_EXPORT_EVENT_ENCODING_MISMATCH: {event.get('event_id')}")
++        captured = event.get('status') != 'dropped' and not event.get('shared_transmission_observation')
++        tx = float(event['timestamp_unix']) - float(event['time_s']) + float(event.get('tx_start_s', event['time_s']))
++        if captured:
++            frames.append(can.Message(timestamp=tx, arbitration_id=definition.frame_id, is_extended_id=definition.is_extended_frame,
++                is_fd=definition.is_fd, bitrate_switch=definition.is_fd and bitrate_switch[event['network']],
++                data=payload, channel=channels[event['network']], is_rx=False, check=True))
++        mapping.append({'event_id':event.get('event_id'), 'physical_transmission_id':event.get('physical_transmission_id'),
++            'route_id':event['route_id'], 'message_id':str(refs[0]), 'network_id':event['network'],
++            'channel':channels[event['network']], 'status':event['status'], 'captured':captured, 'tx_timestamp':tx})
++    out_dir.mkdir(parents=True, exist_ok=True)
++    paths = []
++    if 'dbc' in selected:
++        for network, text in databases.items():
++            filename = re.sub(r'[^A-Za-z0-9_-]', '_', network)[:80] + '_' + hashlib.sha256(network.encode()).hexdigest()[:8]
++            path = out_dir / f'{filename}.dbc'
++            path.write_text(text, encoding='utf-8', newline='')
++            paths.append(path)
++    if 'blf' in selected:
++        path = out_dir / 'can_trace.blf'
++        with can.BLFWriter(str(path)) as writer:
++            for frame in sorted(frames, key=lambda item: item.timestamp):
++                writer.on_message_received(frame)
++        paths.append(path)
++    sidecar = out_dir / 'can_export_map.json'
++    sidecar.write_text(json.dumps({'channels':channels, 'events':mapping}, ensure_ascii=False), encoding='utf-8')
++    paths.append(sidecar)
++    return paths, {'generator':'canonical-can-export-v1', 'frames':len(frames), 'networks':networks,
++        'messages':sum(len(items) for items in definitions.values()), 'map':str(sidecar)}
+ 
+ 
+ def hex_payload(data: bytes, sep: str = " ") -> str:
+--- before/backend/nis/communication/technologies/can/profile.json
++++ after/backend/nis/communication/technologies/can/profile.json
+@@ -1425,5 +1425,9 @@
+       "can_dlc": 8
+     },
+     "hardware_evidence": false
+-  }
++  },
++  "native_formats": [
++    "blf",
++    "dbc"
++  ]
+ }
+--- before/backend/nis/communication/technologies/can_fd/profile.json
++++ after/backend/nis/communication/technologies/can_fd/profile.json
+@@ -2230,5 +2230,9 @@
+       "can_fd_data_sjw_tq",
+       "can_fd_data_sample_point_percent"
+     ]
+-  }
++  },
++  "native_formats": [
++    "blf",
++    "dbc"
++  ]
+ }
+--- before/backend/nis/communication/technologies/ethernet/profile.json
++++ after/backend/nis/communication/technologies/ethernet/profile.json
+@@ -2568,5 +2568,9 @@
+       "mtu_bytes": 1500,
+       "eth_ifg_bits": 96
+     }
+-  }
++  },
++  "native_formats": [
++    "pcap",
++    "pcapng"
++  ]
+ }
+--- before/backend/requirements.txt
++++ after/backend/requirements.txt
+@@ -5,6 +5,7 @@
+ httpx>=0.28.0
+ psycopg[binary,pool]>=3.3.4
+ python-can>=4.6.1
++cantools==44.2.1
+ asammdf==8.8.11
+ dpkt==1.9.8
+ pyyaml>=6.0.3
+--- before/backend/pyproject.toml
++++ after/backend/pyproject.toml
+@@ -27,6 +27,7 @@
+     "jsonschema>=4.23,<5",
+     "psycopg[binary,pool]>=3.3.4",
+     "python-can>=4.6.1",
++    "cantools==44.2.1",
+     "asammdf==8.8.11",
+     "dpkt==1.9.8",
+     "pyyaml>=6.0.3",
+--- before/backend/tests/test_project_can_exports.py
++++ after/backend/tests/test_project_can_exports.py
+@@ -0,0 +1,134 @@
++"""Independent BLF/DBC decoders verify project identities and actual wire bytes."""
++from copy import deepcopy
++import json
++from pathlib import Path
++
++import can
++import cantools
++import pytest
++
++from backend.nis.communication.technologies.can.formats.can_format_writers import write_project_can_artifacts
++from backend.nis.simulation.communication_simulator import run_simulation
++from backend.nis.simulation.hardware_profile import normalize_hardware_config
++from backend.nis.simulation.model_based_simulation import MessageCodec, SignalDefinition
++from backend.nis.traces.universal_trace import generate_universal_events
++
++
++def config(tmp_path):
++    return {'output_dir':str(tmp_path), 'duration_s':.02, 'seed':42,
++        'formats':['universal-jsonl','blf','dbc'],
++        'networks':[{'id':'project-can', 'technology':'can_fd', 'bitrate':500_000,
++                     'arbitration_bitrate':500_000, 'data_bitrate':2_000_000, 'can_fd_brs':True}],
++        'hardware':{'devices':[{'id':node, 'name':node, 'ports':[{'id':node+'-port',
++            'interfaces':[{'id':node+'-if', 'technology':'can_fd', 'network':'project-can'}]}]} for node in ['a','b','c']]},
++        'communications':[{'id':'real-route', 'sender_interface':'a-if', 'receiver_interfaces':['b-if','c-if'],
++            'network_id':'project-can', 'technology':'can_fd', 'cycle_ms':10, 'payload_bytes':3,
++            'message_ids':['message-1'], 'signal_ids':['state','temperature'], 'arbitration_id':0x321, 'jitter_ratio':0}],
++        'engineering_model':{'messages':[{'id':'message-1','name':'VehicleState','message_id_hex':'0x321','dlc':3}],
++            'signals':[{'id':'state','name':'State','message_id':'message-1','start_bit':0,'length_bits':8,
++                'byte_order':'little_endian','data_type':'unsigned','factor':1,'offset_value':0,
++                'min_value':0,'max_value':255,'behavior':{'type':'CONSTANT','value':200}},
++                {'id':'temperature','name':'Temperature','message_id':'message-1','start_bit':8,'length_bits':16,
++                'byte_order':'little_endian','data_type':'signed','factor':.1,'offset_value':-40,
++                'min_value':-100,'max_value':100,'unit':'degC','behavior':{'type':'CONSTANT','value':-45}}]},
++        'scenario':{'mode':'NORMAL','faults':[]}}
++
++
++def test_primary_project_run_exports_actual_blf_and_decodable_canonical_dbc(tmp_path):
++    cfg=config(tmp_path); before=deepcopy(cfg)
++    result=run_simulation(cfg)
++    assert result['status']=='completed'
++    assert result['native_can']['generator']=='canonical-can-export-v1'
++    assert cfg==before
++    events=[json.loads(line) for line in (tmp_path/'traces/universal_trace.jsonl').read_text().splitlines()]
++    frames=list(can.BLFReader(str(tmp_path/'native/can_trace.blf')))
++    dbc=cantools.database.load_file(str(next((tmp_path/'native').glob('*.dbc'))),strict=True)
++    assert [m.frame_id for m in dbc.messages]==[0x321]
++    assert dbc.messages[0].name=='VehicleState'
++    assert dbc.messages[0].is_fd
++    expected=[e for e in events if e['status']!='dropped' and not e.get('shared_transmission_observation')]
++    assert len(frames)==len(expected)>0
++    for frame,event in zip(frames,expected):
++        assert frame.arbitration_id==event['arbitration_id']==0x321
++        assert bytes(frame.data)==bytes.fromhex(event['payload_hex'])
++        assert frame.is_fd and frame.bitrate_switch and not frame.is_extended_id
++        assert frame.timestamp==pytest.approx(event['timestamp_unix']-event['time_s']+event['tx_start_s'],abs=2e-6)
++        decoded=dbc.decode_message(frame.arbitration_id,frame.data,decode_choices=False)
++        assert decoded['State']==200  # Upper unsigned half must never be signed/clipped.
++        assert decoded['Temperature']==pytest.approx(-45)
++    assert not (tmp_path/'native/network.dbc').exists(), 'no example database'
++    sidecar=json.loads((tmp_path/'native/can_export_map.json').read_text())
++    assert sidecar['channels']=={'project-can':0}
++    assert {e['message_id'] for e in sidecar['events']}=={'message-1'}
++
++
++@pytest.mark.parametrize('data_type,value,expected', [('unsigned',200,'C8'),('uint8',255,'FF'),('signed',-56,'C8'),('int8',-1,'FF')])
++def test_codec_preserves_explicit_signedness(data_type,value,expected):
++    definition=SignalDefinition.from_record({'id':'s','start_bit':0,'length_bits':8,'data_type':data_type,'factor':1})
++    payload=MessageCodec.encode([(definition,value)],1)
++    assert payload==expected
++    assert MessageCodec.decode(payload,definition)==value
++
++
++@pytest.mark.parametrize('change,match', [
++    (lambda c:c['engineering_model']['signals'][0].pop('factor'), 'ENCODING_MISSING'),
++    (lambda c:c['engineering_model']['signals'][0].update(start_bit=32), 'does not fit'),
++    (lambda c:c['engineering_model']['messages'][0].update(message_id_hex='0x20000000'), 'ID_INVALID'),
++    (lambda c:c['engineering_model']['signals'][0].update(byte_order='invented'), 'BYTE_ORDER_INVALID'),
++    (lambda c:c['engineering_model']['signals'][0].update(start_bit=.5), 'must be an integer'),
++])
++def test_invalid_export_encoding_never_creates_native_files(tmp_path,change,match):
++    cfg=config(tmp_path)
++    routes,events=generate_universal_events(cfg,normalize_hardware_config(cfg),start_utc=1700000000)
++    change(cfg)
++    with pytest.raises((ValueError,cantools.database.errors.Error),match=match):
++        write_project_can_artifacts(tmp_path/'invalid',cfg,routes,events,['blf','dbc'])
++    assert not (tmp_path/'invalid').exists()
++
++
++def test_dropped_and_shared_route_observations_are_not_extra_physical_blf_frames(tmp_path):
++    cfg=config(tmp_path)
++    routes,events=generate_universal_events(cfg,normalize_hardware_config(cfg),start_utc=1700000000)
++    events[0]['status']='dropped'
++    repeated={**events[-1],'shared_transmission_observation':True,'event_id':'same-physical-frame'}
++    _,summary=write_project_can_artifacts(tmp_path/'native',cfg,routes,events+[repeated],['blf','dbc'])
++    frames=list(can.BLFReader(str(tmp_path/'native/can_trace.blf')))
++    assert len(frames)==summary['frames']==len(events)-1
++    mapping=json.loads((tmp_path/'native/can_export_map.json').read_text())['events']
++    assert len([e for e in mapping if not e['captured']])==2
++
++
++def test_extended_id_and_aligned_motorola_layout_decode_without_model_rewrite(tmp_path):
++    cfg=config(tmp_path)
++    cfg['engineering_model']['messages'][0].update(message_id_hex='0x18FEF100',dlc=2)
++    cfg['engineering_model']['signals']=[{'id':'big','name':'Big','message_id':'message-1','start_bit':0,
++        'length_bits':16,'byte_order':'big_endian','data_type':'unsigned','factor':.5,'offset_value':-20,
++        'min_value':-20,'max_value':32747,'behavior':{'type':'CONSTANT','value':1000}}]
++    cfg['communications'][0].update(payload_bytes=2,arbitration_id=0x18FEF100,signal_ids=['big'])
++    before=deepcopy(cfg)
++    run_simulation(cfg)
++    dbc=cantools.database.load_file(str(next((tmp_path/'native').glob('*.dbc'))),strict=True)
++    frame=next(iter(can.BLFReader(str(tmp_path/'native/can_trace.blf'))))
++    assert frame.is_extended_id
++    assert dbc.messages[0].is_fd and dbc.messages[0].is_extended_frame
++    assert dbc.messages[0].signals[0].start==7
++    assert dbc.decode_message(frame.arbitration_id,frame.data)['Big']==1000
++    assert cfg==before
++
++
++def test_reused_frame_ids_on_separate_buses_keep_independent_dbc_and_blf_channels(tmp_path):
++    cfg=config(tmp_path)
++    cfg['networks'].append({**cfg['networks'][0], 'id':'second-can'})
++    for node in cfg['hardware']['devices']:
++        node['ports'].append({'id':node['id']+'-other-port','interfaces':[
++            {'id':node['id']+'-other-if','technology':'can_fd','network':'second-can'}]})
++    cfg['communications'].append({**cfg['communications'][0], 'id':'other-route','sender_interface':'a-other-if',
++        'receiver_interfaces':['b-other-if'], 'network_id':'second-can','message_ids':['other-message'], 'signal_ids':['other-state']})
++    cfg['engineering_model']['messages'].append({**cfg['engineering_model']['messages'][0], 'id':'other-message','name':'OtherState'})
++    cfg['engineering_model']['signals'].append({**cfg['engineering_model']['signals'][0], 'id':'other-state','message_id':'other-message'})
++    run_simulation(cfg)
++    databases=[cantools.database.load_file(str(path),strict=True) for path in (tmp_path/'native').glob('*.dbc')]
++    assert len(databases)==2
++    assert {db.messages[0].name for db in databases}=={'VehicleState','OtherState'}
++    assert all(db.messages[0].frame_id==0x321 for db in databases)
++    assert {frame.channel for frame in can.BLFReader(str(tmp_path/'native/can_trace.blf'))}=={0,1}
+--- before/frontend/e2e/studio-export-controls.spec.ts
++++ after/frontend/e2e/studio-export-controls.spec.ts
+@@ -0,0 +1,74 @@
++import { test, expect } from 'playwright/test';
++import { randomUUID } from 'node:crypto';
++
++test('network tools remain grouped and usable at narrow and desktop widths @studio-controls', async ({ page }) => {
++  const project = 'nis-e2e-toolbar-' + randomUUID();
++  const headers = { 'X-Project-ID': project };
++  const created = await page.request.post('/api/engineering/hardware-nodes', {
++    headers, data: { name: 'Toolbar Controller', device_type: 'EmbeddedController' },
++  });
++  expect(created.ok(), await created.text()).toBe(true);
++  const controller = await created.json();
++  const view = await (await page.request.get('/api/engineering/workflow/topology', { headers })).json();
++  const saved = await page.request.put('/api/engineering/workflow/topology', {
++    headers, data: { expected_token: view.edit_token, topology: {
++      nodes: [{ id: controller.id, engineeringId: controller.id, name: controller.name,
++        kind: 'ecu', x: 100, y: 100, width: 210, height: 150, ports: [] }], edges: [],
++    } },
++  });
++  expect(saved.ok(), await saved.text()).toBe(true);
++  await page.goto(`/studio?mode=network&project=${project}`);
++  await expect(page.getByRole('heading', { name: 'ECU-Netzwerk', exact: true })).toBeVisible();
++  for (const width of [954, 390, 1417]) {
++    await page.setViewportSize({ width, height: 1244 });
++    const toolbar = page.locator('.net-toolbar');
++    for (const name of ['Geräte hinzufügen', 'Netzwerkansicht', 'Auswahl bearbeiten']) {
++      await expect(toolbar.getByRole('group', { name, exact: true })).toBeVisible();
++    }
++    expect(await toolbar.evaluate(element => element.scrollWidth <= element.clientWidth + 1)).toBe(true);
++    const overflow = await toolbar.evaluate(element => {
++      const bounds = element.getBoundingClientRect();
++      return [...element.querySelectorAll('button, input')].filter(control => {
++        const rect = control.getBoundingClientRect();
++        return rect.width > 0 && (rect.left < bounds.left - 1 || rect.right > bounds.right + 1);
++      }).map(control => control.textContent);
++    });
++    expect(overflow).toEqual([]);
++    await toolbar.getByRole('button', { name: 'Vergrößern', exact: true }).click();
++    await expect(toolbar.getByRole('button', { name: 'Zoom auf 100 Prozent zurücksetzen' })).not.toHaveText('100 %');
++    await toolbar.getByRole('button', { name: 'Zoom auf 100 Prozent zurücksetzen' }).click();
++    await expect(toolbar.getByRole('button', { name: 'Zoom auf 100 Prozent zurücksetzen' })).toHaveText('100 %');
++    await toolbar.getByRole('button', { name: '+ ECU', exact: true }).click();
++    await expect(page.getByRole('menu', { name: 'ECU auswählen' })).toBeVisible();
++    await toolbar.getByRole('button', { name: '+ ECU', exact: true }).click();
++  }
++});
++
++for (const scenario of [
++  { name: 'CAN', technologies: ['CAN_FD'], expected: ['BLF', 'DBC'] },
++  { name: 'Ethernet', technologies: ['ETHERNET'], expected: ['PCAP'] },
++  { name: 'mixed', technologies: ['CAN_FD', 'ETHERNET', 'LIN'], expected: ['BLF', 'DBC', 'PCAP'] },
++]) test(`simulation selects real native defaults for ${scenario.name} and preserves manual choice @studio-controls`, async ({ page }) => {
++  const project = 'nis-e2e-formats-' + randomUUID();
++  const headers = { 'X-Project-ID': project };
++  const initial = await (await page.request.get('/api/engineering/workflow/parameters', { headers })).json();
++  const parameters = { industry: 'custom', technology: scenario.technologies[0].toLowerCase(),
++    networks: scenario.technologies.map((technology, index) => ({ id: `bus-${index}`, name: `Bus ${index}`, technology })) };
++  const saved = await page.request.patch('/api/engineering/workflow/parameters', {
++    headers, data: { expected_token: initial.edit_token, parameters },
++  });
++  expect(saved.ok(), await saved.text()).toBe(true);
++  await page.goto(`/studio/simulation?project=${project}`);
++  const trigger = page.locator('.trace-format-trigger');
++  await expect(trigger).toContainText(scenario.expected.join(', '));
++  await expect(trigger.locator('strong')).toHaveText(String(scenario.expected.length));
++  await trigger.click();
++  const picker = page.getByRole('dialog', { name: 'Trace-Formate auswählen' });
++  await expect(picker).toBeVisible();
++  await expect(picker.getByRole('checkbox', { name: 'Universelle Tabellenablage', exact: false })).not.toBeChecked();
++  const csv = picker.getByRole('checkbox', { name: 'Universelle Tabellenablage', exact: false });
++  await csv.check();
++  await page.evaluate(() => window.dispatchEvent(new Event('workflow:changed')));
++  await expect(csv).toBeChecked();
++  await expect(trigger.locator('strong')).toHaveText(String(scenario.expected.length + 1));
++});
+--- before/backend/nis/simulation/model_based_simulation.py
++++ after/backend/nis/simulation/model_based_simulation.py
+@@ -468,6 +468,11 @@
+         return applied
+ 
+ 
++def integer_signal_signed(data_type: str) -> bool:
++    kind = data_type.lower().strip()
++    return kind == "signed" or kind.startswith(("int", "sint"))
++
++
+ class MessageCodec:
+     @staticmethod
+     def encode(signals: list[tuple[SignalDefinition, float | None]], payload_bytes: int) -> str:
+@@ -480,7 +485,7 @@
+                 continue
+             length = min(signal.length_bits, bit_count - signal.start_bit)
+             raw = int(round((physical_value - signal.offset) / signal.factor))
+-            signed = "int" in signal.data_type.lower() and "uint" not in signal.data_type.lower() or "signed" in signal.data_type.lower()
++            signed = integer_signal_signed(signal.data_type)
+             if signed:
+                 raw = max(-(1 << (length - 1)), min((1 << (length - 1)) - 1, raw))
+                 if raw < 0:
+@@ -506,7 +511,7 @@
+         else:
+             raw_payload = int.from_bytes(data, byteorder="little", signed=False)
+             raw = (raw_payload >> signal.start_bit) & ((1 << signal.length_bits) - 1)
+-        signed = "int" in signal.data_type.lower() and "uint" not in signal.data_type.lower() or "signed" in signal.data_type.lower()
++        signed = integer_signal_signed(signal.data_type)
+         if signed and raw & (1 << (signal.length_bits - 1)):
+             raw -= 1 << signal.length_bits
+         return raw * signal.factor + signal.offset
+--- before/backend/requirements.lock
++++ after/backend/requirements.lock
+@@ -1,4 +1,9 @@
+ # Exact Linux Python3.13 runtime snapshot; regenerate intentionally and run release gate.
++cantools==44.2.1
++bitstruct==8.23.0
++textparser==0.26.2
++argparse-addons==0.12.0
++crccheck==1.3.1
+ asammdf==8.8.11
+ canmatrix==1.2
+ chardet==7.6.0
+--- before/backend/uv.lock
++++ after/backend/uv.lock
+@@ -27,6 +27,15 @@
+ sdist = { url = "https://files.pythonhosted.org/packages/1c/b5/001890774a9552aff22502b8da382593109ce0c95314abaebbb116567545/anyio-4.14.0.tar.gz", hash = "sha256:b47c1f9ccf73e67021df785332508f99379c68fa7d0684e8e3492cb1d4b23f89", size = 253586, upload-time = "2026-06-15T22:00:49.021Z" }
+ wheels = [
+     { url = "https://files.pythonhosted.org/packages/ba/16/9826f089383c593cdfc4a6e5aca94d9e91ae1692c57af82c3b2aa5e810f7/anyio-4.14.0-py3-none-any.whl", hash = "sha256:dd9b7a2a9799ed6552fde617b2c5df02b7fdd7d88392fc48101e51bae46164d9", size = 123506, upload-time = "2026-06-15T22:00:47.595Z" },
++]
++
++[[package]]
++name = "argparse-addons"
++version = "0.12.0"
++source = { registry = "https://pypi.org/simple" }
++sdist = { url = "https://files.pythonhosted.org/packages/9e/35/33ecca1cdbebc5397a77f66edbc20ab76265176f7e3511b7696008ad9038/argparse_addons-0.12.0.tar.gz", hash = "sha256:6322a0dcd706887e76308d23136d5b86da0eab75a282dc6496701d1210b460af", size = 3780, upload-time = "2023-01-29T15:52:13.862Z" }
++wheels = [
++    { url = "https://files.pythonhosted.org/packages/c1/41/629e70c4cb32c1ddb88de970cd174bbb43d8241c8e07bdffc62a8280297c/argparse_addons-0.12.0-py3-none-any.whl", hash = "sha256:48b70ecd719054fcb0d7e6f25a1fecc13607aac61d446e83f47d211b4ead0d61", size = 3310, upload-time = "2023-01-29T15:52:12.255Z" },
+ ]
+ 
+ [[package]]
+@@ -65,6 +74,36 @@
+ ]
+ 
+ [[package]]
++name = "bitstruct"
++version = "8.23.0"
++source = { registry = "https://pypi.org/simple" }
++sdist = { url = "https://files.pythonhosted.org/packages/6c/b5/83142324f662f23d22c6bb018e2f3caefca9b24b877e4a76ecf516bc81ce/bitstruct-8.23.0.tar.gz", hash = "sha256:3d20a8d748add9b1c68efc6c592a99b4b0937c9dcddd140fdae352bf2513aea5", size = 35774, upload-time = "2026-08-21T05:07:06.021Z" }
++wheels = [
++    { url = "https://files.pythonhosted.org/packages/61/45/cc9dacd60cb5a90703bab97b77261d86179b1f334ecc552e4ce9fca956f3/bitstruct-8.23.0-cp312-cp312-macosx_10_13_x86_64.whl", hash = "sha256:52183a69bfcb046470b042109f2f9ca695fe0c5e9b12ead59359f90d5c06632c", size = 38331, upload-time = "2026-08-21T05:05:56.487Z" },
++    { url = "https://files.pythonhosted.org/packages/f5/f1/d73a83786ca4d6418e71227f47b47f76845dfb25904f29671239d495dcd9/bitstruct-8.23.0-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:7eae7e4eedde321ba6063869770c40ec0a9dbb4ac3f07847c218c5079da7b84e", size = 38570, upload-time = "2026-08-21T05:05:57.39Z" },
++    { url = "https://files.pythonhosted.org/packages/4d/18/e7818162aa3f402759bf9c02c75bd7bfa087398d9fc9f29dc5345a929c83/bitstruct-8.23.0-cp312-cp312-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:122cfe63b4e2a3a48d11338d8028e083ad0c3ab9c7831b8c8ac1ce5ba81c5197", size = 82768, upload-time = "2026-08-21T05:05:58.414Z" },
++    { url = "https://files.pythonhosted.org/packages/a8/1c/2ab8e3224e066f1543fc197a1fa1ad4e5e8ded2bb7eb04ed4d97060e5b2e/bitstruct-8.23.0-cp312-cp312-manylinux2014_armv7l.manylinux_2_17_armv7l.manylinux_2_31_armv7l.whl", hash = "sha256:1bfd071abf80ee9721ad7aa01c516388a72e808fa150bf1b8c82d1aec014261d", size = 87818, upload-time = "2026-08-21T05:05:59.246Z" },
++    { url = "https://files.pythonhosted.org/packages/dc/b2/4cc25d93d368e6c917f63d7426453e0886bc71a57760126f5382fa6bf3e2/bitstruct-8.23.0-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:ea950e3aa1d3fbb96a35f9ab3bae90fa44ea0c5655068af11e7402ecf6860547", size = 82105, upload-time = "2026-08-21T05:06:00.159Z" },
++    { url = "https://files.pythonhosted.org/packages/6e/d0/db2bc79cc7f5fa2bdfd01e92144033d975fb506b22c595aaf846322beeac/bitstruct-8.23.0-cp312-cp312-musllinux_1_2_aarch64.whl", hash = "sha256:38250c1d176a48583afe2996743bf6ae57622c2b14620b3f717bdf761db006af", size = 81897, upload-time = "2026-08-21T05:06:00.993Z" },
++    { url = "https://files.pythonhosted.org/packages/f7/3c/c2bd6d741cf1046ed12ab8d1a80273c56bbb23ad1325255e4abc6de39f64/bitstruct-8.23.0-cp312-cp312-musllinux_1_2_armv7l.whl", hash = "sha256:92663b4f56e0479f7f5d9363a0062c0a46bb1afe819f74ab74cddc74863d9a40", size = 78512, upload-time = "2026-08-21T05:06:01.805Z" },
++    { url = "https://files.pythonhosted.org/packages/99/f3/25eafa4a8c509db9f90b840ea256e6b7f6d38f9e9c806163a31d7fa3172d/bitstruct-8.23.0-cp312-cp312-musllinux_1_2_x86_64.whl", hash = "sha256:32845c4c613af2835b95b8980cf5fde34be0dc0cf98d26bb3e87665c10c5fc05", size = 81344, upload-time = "2026-08-21T05:06:02.665Z" },
++    { url = "https://files.pythonhosted.org/packages/a2/d0/ec8a378c0933a0056aa727bf7b01d18da592d24f1183a27661e2d5f0203c/bitstruct-8.23.0-cp312-cp312-win32.whl", hash = "sha256:61f03ea33b22dae83f30248a4b26efa27371be45941ba73aff7a64a3b9a0be95", size = 34397, upload-time = "2026-08-21T05:06:03.508Z" },
++    { url = "https://files.pythonhosted.org/packages/e8/3b/c20cb3df5abe87d87b25046ad9b751c10b8909c382f414fcbe87a1c45a70/bitstruct-8.23.0-cp312-cp312-win_amd64.whl", hash = "sha256:6127331b2b006d29fab83e0490d6ba82110df697df835f8219a14c45e0f23bc7", size = 36273, upload-time = "2026-08-21T05:06:04.275Z" },
++    { url = "https://files.pythonhosted.org/packages/d0/5c/c27f6162e65c183ebc5125b2aa9346d328b483a956bdec122fba8e0c4424/bitstruct-8.23.0-cp312-cp312-win_arm64.whl", hash = "sha256:b81e40ee6d12f4b7a2dc1e5484c38fbf30f3081813688877befe14443f18dbe6", size = 35814, upload-time = "2026-08-21T05:06:05.073Z" },
++    { url = "https://files.pythonhosted.org/packages/28/16/e616c177a703ed31835943c75ea93132840069f4f618365882b826091d5c/bitstruct-8.23.0-cp313-cp313-macosx_10_13_x86_64.whl", hash = "sha256:af2ea733c620bcf9370ccd2ac20ffff45acd838cfb5b81116fb4dbfaa4738bb1", size = 38380, upload-time = "2026-08-21T05:06:05.831Z" },
++    { url = "https://files.pythonhosted.org/packages/ca/25/87d21dffffc5bf241c3658418959e5e1727377a0777a0a8df7f4b720f8c7/bitstruct-8.23.0-cp313-cp313-macosx_11_0_arm64.whl", hash = "sha256:ee97a93330c68568625494b64979a0bb930e5aabc32e9d902dd624a903a44f5b", size = 38563, upload-time = "2026-08-21T05:06:06.687Z" },
++    { url = "https://files.pythonhosted.org/packages/79/6c/9ae899486230443f5afd723bff0ed67fbb889144e6c948397d33117ba407/bitstruct-8.23.0-cp313-cp313-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:ecbb28b94f1d20e5a8f42800cff33b7a411c5dbeaf3c586fe1abf0461eb26abf", size = 82782, upload-time = "2026-08-21T05:06:07.469Z" },
++    { url = "https://files.pythonhosted.org/packages/f7/52/2a8fbc88817c81f780387591e09de10d458ef37925152fb110e48163cab5/bitstruct-8.23.0-cp313-cp313-manylinux2014_armv7l.manylinux_2_17_armv7l.manylinux_2_31_armv7l.whl", hash = "sha256:e3f706e2320b73d1fcf476dcd46dcecafdb9fb0cd818e155187a87c0cf07772b", size = 86429, upload-time = "2026-08-21T05:06:08.283Z" },
++    { url = "https://files.pythonhosted.org/packages/0e/b1/ce5c6edb115977668c439beda4c437849807527470c12199c0687fb80a3f/bitstruct-8.23.0-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:110d48ef3bd803ac4807b6c892b23392f16969e6a1259266263922ac5dc603e9", size = 82110, upload-time = "2026-08-21T05:06:09.186Z" },
++    { url = "https://files.pythonhosted.org/packages/44/21/c0a6ecfde82b69c124e47b99d590f8516f715287782a88a01fbf6fe49ede/bitstruct-8.23.0-cp313-cp313-musllinux_1_2_aarch64.whl", hash = "sha256:a25d2a4b181b53dba0c271e77749704334559d3a24c83570713b4f226572c0f1", size = 81944, upload-time = "2026-08-21T05:06:10.021Z" },
++    { url = "https://files.pythonhosted.org/packages/af/ea/503aada1deef5040a25c2aa859c41ae2801a0356cd4aa2cdef853344706d/bitstruct-8.23.0-cp313-cp313-musllinux_1_2_armv7l.whl", hash = "sha256:ac8693cd6c7324fc04194e8f698b980fd83c7cafdd0ba8b01340940e5dd0f020", size = 78576, upload-time = "2026-08-21T05:06:10.84Z" },
++    { url = "https://files.pythonhosted.org/packages/3c/26/9eae32f92a2e65c9f222a2973783f6abc3a7773d0f824b9f173a7365b5e0/bitstruct-8.23.0-cp313-cp313-musllinux_1_2_x86_64.whl", hash = "sha256:ba0c8625642c2a1b25a5a715fc23b608f0d11654b664c2cb0bc76631477738e4", size = 81392, upload-time = "2026-08-21T05:06:11.747Z" },
++    { url = "https://files.pythonhosted.org/packages/69/a3/2d7ab97042681b7354bab3ff4d7b54d27a6d1f98cfd974dbb920b2cfe9da/bitstruct-8.23.0-cp313-cp313-win32.whl", hash = "sha256:f45f1f05802086ea6f0640b6e4337fd7703615ad554005714cc0a5c49fcabaa6", size = 34396, upload-time = "2026-08-21T05:06:12.585Z" },
++    { url = "https://files.pythonhosted.org/packages/b2/31/4a2bf783fae1e16606909e5322e88c83bb46adb940f808ad4283ab20a268/bitstruct-8.23.0-cp313-cp313-win_amd64.whl", hash = "sha256:0ce0e26170e66bf71958cf7f7217c577b1f78c8c899258d1ce6ef35b411a26a0", size = 36272, upload-time = "2026-08-21T05:06:13.366Z" },
++    { url = "https://files.pythonhosted.org/packages/6f/5d/3da05f36853396335ccdc82216162f41ac6b83468d714006bcbe282477de/bitstruct-8.23.0-cp313-cp313-win_arm64.whl", hash = "sha256:02886d6e6cf149b6103c924f40c67cc38f5cdb532d29536150823f9317756107", size = 35815, upload-time = "2026-08-21T05:06:14.176Z" },
++]
++
++[[package]]
+ name = "blinker"
+ version = "1.9.0"
+ source = { registry = "https://pypi.org/simple" }
+@@ -89,6 +128,22 @@
+ [package.optional-dependencies]
+ arxml = [
+     { name = "lxml" },
++]
++
++[[package]]
++name = "cantools"
++version = "44.2.1"
++source = { registry = "https://pypi.org/simple" }
++dependencies = [
++    { name = "argparse-addons" },
++    { name = "bitstruct" },
++    { name = "crccheck" },
++    { name = "python-can" },
++    { name = "textparser" },
++]
++sdist = { url = "https://files.pythonhosted.org/packages/2d/aa/0a67872a95357bdb513730590b1e685fb4ddf797bb5c98802be75b70e478/cantools-44.2.1.tar.gz", hash = "sha256:5255f7c24660346b240e8bdadaa45ab25bb3e2ebc5302071509ded8df7c4cf9c", size = 1055678, upload-time = "2026-10-07T19:18:39.328Z" }
++wheels = [
++    { url = "https://files.pythonhosted.org/packages/6d/4b/1626d35e6d5b5c1b8d7d8c18ddf8e40a71da07871247adcbb297b323917b/cantools-44.2.1-py3-none-any.whl", hash = "sha256:a45d2c73bf58a79084b79243dc5c2dacbece560ccaa15c78b1da59550574874c", size = 167922, upload-time = "2026-10-07T19:18:37.601Z" },
+ ]
+ 
+ [[package]]
+@@ -182,14 +237,16 @@
+ [[package]]
+ name = "communication-simulator"
+ version = "0.1.0"
+-source = { virtual = "." }
++source = { editable = "." }
+ dependencies = [
+     { name = "asammdf" },
++    { name = "cantools" },
+     { name = "cupy-cuda13x", extra = ["ctk"] },
+     { name = "dpkt" },
+     { name = "flask" },
+     { name = "httpx" },
+     { name = "ijson" },
++    { name = "jsonschema" },
+     { name = "mcp" },
+     { name = "numpy" },
+     { name = "openai" },
+@@ -207,11 +264,13 @@
+ [package.metadata]
+ requires-dist = [
+     { name = "asammdf", specifier = "==8.8.11" },
++    { name = "cantools", specifier = "==44.2.1" },
+     { name = "cupy-cuda13x", extras = ["ctk"], specifier = ">=14.2,<15" },
+     { name = "dpkt", specifier = "==1.9.8" },
+     { name = "flask", specifier = ">=3.1.2" },
+     { name = "httpx", specifier = ">=0.28.0" },
+     { name = "ijson", specifier = "==3.4.0.post0" },
++    { name = "jsonschema", specifier = ">=4.23,<5" },
+     { name = "mcp", specifier = ">=2.1,<3" },
+     { name = "numpy", specifier = ">=2.0,<2.5" },
+     { name = "openai", specifier = ">=2.43.0" },
+@@ -223,6 +282,15 @@
+ 
+ [package.metadata.requires-dev]
+ dev = [{ name = "pytest", specifier = ">=9.0.2" }]
++
++[[package]]
++name = "crccheck"
++version = "1.3.1"
++source = { registry = "https://pypi.org/simple" }
++sdist = { url = "https://files.pythonhosted.org/packages/3c/d1/a943f4f1ca899917cc3fe1cb89d59348edd1b407503e4b02608e8d6b421e/crccheck-1.3.1.tar.gz", hash = "sha256:1544c0110bf0a697d875d4f29dc40d7079f9d4d402a9317383f55f90ca72563a", size = 41696, upload-time = "2025-07-10T07:01:08.683Z" }
++wheels = [
++    { url = "https://files.pythonhosted.org/packages/01/b5/68a9054be852e61f31de1be4e8d95802646b93344ce17c2380a1748706fa/crccheck-1.3.1-py3-none-any.whl", hash = "sha256:1680c9a7bb1ca4bec45fa19b8ca64319f10d2ce4eb8b0d25d51cb99a20ca0108", size = 24608, upload-time = "2025-07-10T07:01:07.25Z" },
++]
+ 
+ [[package]]
+ name = "cryptography"
+@@ -1361,6 +1429,15 @@
+ ]
+ 
+ [[package]]
++name = "textparser"
++version = "0.26.2"
++source = { registry = "https://pypi.org/simple" }
++sdist = { url = "https://files.pythonhosted.org/packages/2c/f4/5825bb4dc4d91ab0eef62496e1a1495a698a433fc016159934fa2a854aba/textparser-0.26.2.tar.gz", hash = "sha256:859825876a9c38f7c313ee1cf991a59d6b56232a9f67be6dcc0a758d84654fba", size = 100264, upload-time = "2026-06-20T07:49:28.882Z" }
++wheels = [
++    { url = "https://files.pythonhosted.org/packages/7d/cc/812fe3ae07a1917bb4cfb6dec5f6fc6e8825d65b4e77cd25bc52cd59230f/textparser-0.26.2-py3-none-any.whl", hash = "sha256:e14ec4fd58d3515d897196a71f4ccf8d354f5c5c6b87910571b4d250de073c4b", size = 9638, upload-time = "2026-06-20T07:49:27.777Z" },
++]
++
++[[package]]
+ name = "tqdm"
+ version = "4.68.3"
+ source = { registry = "https://pypi.org/simple" }
+--- before/frontend/src/features/communication/lib/technology-projection.json
++++ after/frontend/src/features/communication/lib/technology-projection.json
+@@ -1,6 +1,6 @@
+ {
+   "schema_version": 1,
+-  "source_sha256": "4d30b0171a47b69ff972d5697215077215d299f0b62f3ab2d559939de23b2dfc",
++  "source_sha256": "74acb8fe47f6d7cd5df86900f3d82cc9409b93cbe3ca42c0f445e576a0e1f7bf",
+   "technologies": [
+     {
+       "id": "5g",
+--- before/docs/migrations/structure_mapping.csv
++++ after/docs/migrations/structure_mapping.csv
+@@ -2302,6 +2302,7 @@
+ backend/tests/test_profinet_parameter_review.py,backend/tests/test_profinet_parameter_review.py,canonical-owner,Canonical module owner: backend.tests.test_profinet_parameter_review,[],No stored identity or schema change,backend/tests/test_structure_architecture.py; backend/tests/test_structure_completion.py; full release receipt linked in completion report,CANONICAL_PRESENT,backend.tests.test_profinet_parameter_review,[],"Python AST (including retired alias module paths, relative and literal dynamic imports), TypeScript imports, literal paths and documentation links; external/persisted consumers not observable",Not a removable compatibility wrapper
+ backend/tests/test_profisafe_parameter_review.py,backend/tests/test_profisafe_parameter_review.py,canonical-owner,Canonical module owner: backend.tests.test_profisafe_parameter_review,[],No stored identity or schema change,backend/tests/test_structure_architecture.py; backend/tests/test_structure_completion.py; full release receipt linked in completion report,CANONICAL_PRESENT,backend.tests.test_profisafe_parameter_review,[],"Python AST (including retired alias module paths, relative and literal dynamic imports), TypeScript imports, literal paths and documentation links; external/persisted consumers not observable",Not a removable compatibility wrapper
+ backend/tests/test_project_bundle.py,backend/tests/test_project_bundle.py,canonical-owner,Canonical module owner: backend.tests.test_project_bundle,"[""scripts/verification/verify_goal_execution_sql.py""]",No stored identity or schema change,backend/tests/test_structure_architecture.py; backend/tests/test_structure_completion.py; full release receipt linked in completion report,CANONICAL_PRESENT,backend.tests.test_project_bundle,"[""scripts/verification/verify_goal_execution_sql.py""]","Python AST (including retired alias module paths, relative and literal dynamic imports), TypeScript imports, literal paths and documentation links; external/persisted consumers not observable",Not a removable compatibility wrapper
++backend/tests/test_project_can_exports.py,backend/tests/test_project_can_exports.py,unchanged,Canonical module owner: backend.tests.test_project_can_exports,[],No schema or stored identity change,backend/tests/test_structure_architecture.py; backend/tests/test_structure_completion.py; full release receipt linked in completion report,CANONICAL_PRESENT,backend.tests.test_project_can_exports,[],"Python AST (including retired alias module paths, relative and literal dynamic imports), TypeScript imports, literal paths and documentation links; external/persisted consumers not observable",Not a removable compatibility wrapper
+ backend/tests/test_project_draft.py,backend/tests/test_project_draft.py,canonical-owner,Canonical module owner: backend.tests.test_project_draft,[],No stored identity or schema change,backend/tests/test_structure_architecture.py; backend/tests/test_structure_completion.py; full release receipt linked in completion report,CANONICAL_PRESENT,backend.tests.test_project_draft,[],"Python AST (including retired alias module paths, relative and literal dynamic imports), TypeScript imports, literal paths and documentation links; external/persisted consumers not observable",Not a removable compatibility wrapper
+ backend/tests/test_project_draft_inventory.py,backend/tests/test_project_draft_inventory.py,canonical-owner,Canonical module owner: backend.tests.test_project_draft_inventory,[],No stored identity or schema change,backend/tests/test_structure_architecture.py; backend/tests/test_structure_completion.py; full release receipt linked in completion report,CANONICAL_PRESENT,backend.tests.test_project_draft_inventory,[],"Python AST (including retired alias module paths, relative and literal dynamic imports), TypeScript imports, literal paths and documentation links; external/persisted consumers not observable",Not a removable compatibility wrapper
+ backend/tests/test_project_draft_live_model.py,backend/tests/test_project_draft_live_model.py,canonical-owner,Canonical module owner: backend.tests.test_project_draft_live_model,[],No stored identity or schema change,backend/tests/test_structure_architecture.py; backend/tests/test_structure_completion.py; full release receipt linked in completion report,CANONICAL_PRESENT,backend.tests.test_project_draft_live_model,[],"Python AST (including retired alias module paths, relative and literal dynamic imports), TypeScript imports, literal paths and documentation links; external/persisted consumers not observable",Not a removable compatibility wrapper
+--- before/backend/nis/engineering/routing/validation.py
++++ after/backend/nis/engineering/routing/validation.py
+@@ -168,7 +168,19 @@
+         planner, state = load_plan()
+         if state['project_id'] != selected:
+             raise ValueError('Physical routing evidence belongs to another project.')
+-        return cls(selected, physical_planner=planner)
++        from backend.nis.engineering.pagination import all_pages
++        from backend.nis.infrastructure.persistence.repository import ENTITY_SPECS
++        from backend.nis.engineering.routing.repository import list_routes
++        validator = cls(selected, physical_planner=planner)
++        # The batch owns this post-mutation model. Reuse its references as well
++        # as its physical graph; individual routes still run every check. Keep
++        # all routing revisions for duplicate detection, not only planner.routes.
++        validator.model_snapshot = deepcopy({
++            'project_id': selected, 'topology': state['topology'], 'parameters': state['parameters'],
++            'tables': {**{ENTITY_SPECS[kind].table: rows for kind, rows in planner.objects.items()},
++                       'engineering_routing_entries': all_pages(list_routes)},
++        })
++        return validator
+ 
+     def _physical_path_mapping(
+         self,
+@@ -727,11 +739,11 @@
+             if segment_protocol in DIRECT_SIGNAL_PROTOCOLS:
+                 continue
+             try:
+-                profile = DEFAULT_TECHNOLOGY_REGISTRY.profile(segment_protocol)
++                profile = DEFAULT_TECHNOLOGY_REGISTRY.profile(segment_protocol, fields=('max_payload_bytes',))
+             except KeyError:
+                 profile = None
+             capacity = PROTOCOL_CAPACITY.get(segment_protocol)
+-            max_payload = profile.get("max_payload_bytes") if profile else capacity[1] if capacity else None
++            max_payload = profile.get("max_payload_bytes") if profile is not None else capacity[1] if capacity else None
+             if max_payload is not None and frame_payload_bytes > max_payload:
+                 error("PAYLOAD_TOO_LARGE", f"Payload {frame_payload_bytes} Byte überschreitet {max_payload} Byte für {segment_protocol}. Eine Protokollübersetzung allein erzeugt keine kleinere kodierte Nachricht.")
+         bitrate = source.get("bitrate") if protocol in SUPPORTED_CAPACITY_PROTOCOLS else None
+@@ -840,13 +852,16 @@
+ 
+     def validate_table(self, routes: list[dict[str, Any]]) -> dict[str, Any]:
+         previous = getattr(self, 'physical_planner', None)
++        previous_snapshot = getattr(self, 'model_snapshot', None)
+         if previous is None and any((route.get('route') or {}).get('physical_paths') for route in routes):
+-            self.physical_planner = self.for_current_batch(getattr(self, 'project_id', None)).physical_planner
++            batch = self.for_current_batch(getattr(self, 'project_id', None))
++            self.physical_planner, self.model_snapshot = batch.physical_planner, batch.model_snapshot
+         try:
+             results = [self.validate(route, exclude_route_id=str(route.get("id")) if route.get("id") else None) for route in routes]
+         finally:
+             # A later table read must see edited physical connections.
+             self.physical_planner = previous
++            self.model_snapshot = previous_snapshot
+         table_errors = [] if results else [
+             {
+                 "code": "ROUTING_TABLE_EMPTY",
+--- before/backend/nis/engineering/capacity/sizing_service.py
++++ after/backend/nis/engineering/capacity/sizing_service.py
+@@ -66,6 +66,7 @@
+             signals = all_pages(list_objects, "Signal")
+             routes = all_pages(list_routes)
+             now = datetime.now(timezone.utc).isoformat()
++            changed_messages, changed_signals = 0, 0
+             for message in messages:
+                 change = changes.get(str(message["id"]))
+                 if not change:
+@@ -78,6 +79,12 @@
+                     "source": "automatic_dimensioning", "calculation_version": VERSION,
+                     "source_token": plan["source_token"], "requires_functional_review": True}
+                 contract["transmission"]["timing_evaluation"] = change.get("evaluation", "FEASIBLE_UNDER_ASSUMPTIONS")
++                # A fresh plan token proves this adoption, not a new physical
++                # transmission. Preserve the last write's provenance when all
++                # transmission semantics already match the reviewed result.
++                if ({key: value for key, value in contract["transmission"].items() if key != "source_token"}
++                        == {key: value for key, value in previous.items() if key != "source_token"}):
++                    contract["transmission"] = previous
+                 # Keep existing explicit deadlines; only synchronize period copies.
+                 for key in ("cycle_time", "cycle_time_ms"):
+                     if key in configuration:
+@@ -85,8 +92,11 @@
+                 transport = configuration.get("transport_unit")
+                 if isinstance(transport, dict):
+                     transport.setdefault("timing", {})["cycle_ms"] = change["after_ms"]
++                if configuration == message.get("configuration") and message.get("cycle_ms") == change["after_ms"]:
++                    continue
+                 update_object("Message", str(message["id"]), {"configuration": configuration, "cycle_ms": change["after_ms"],
+                     "expected_version": message["version"], "actor": actor})
++                changed_messages += 1
+             for signal in signals:
+                 change = changes.get(str(signal.get("message_id")))
+                 if not change:
+@@ -96,9 +106,12 @@
+                 if "cycle_time" in communication:
+                     communication["cycle_time"] = change["after_ms"]
+                 communication["timing_source"] = "canonical_message_transmission"
++                if communication == signal.get("communication"):
++                    continue
+                 update_object("Signal", str(signal["id"]), {"communication": communication,
+                     "expected_version": signal["version"], "actor": actor})
+-            changed_routes = []
++                changed_signals += 1
++            changed_routes, reviewed_routes = [], []
+             for route in routes:
+                 if route.get("status") in {"REJECTED", "SUPERSEDED", "DEPRECATED", "OUTDATED"}:
+                     continue
+@@ -113,27 +126,40 @@
+                 if "cycle_time" in timing:
+                     timing["cycle_time"] = timing["cycle_time_ms"]
+                 timing.setdefault("provenance", {})["cycle_time_ms"] = {"source": "communication-sizing", "version": VERSION}
+-                updated = update_route(str(route["id"]), {"timing": timing, "expected_revision": route["revision"], "actor": actor})
+-                changed_routes.append(updated)
++                if timing == route.get("timing"):
++                    reviewed_routes.append(route)
++                else:
++                    updated = update_route(str(route["id"]), {"timing": timing, "expected_revision": route["revision"], "actor": actor})
++                    changed_routes.append(updated)
++                    reviewed_routes.append(updated)
+             parameters = {**(state.get("parameters") or {}), "communication_sizing": plan["policy"]}
+             parameters["communication_schedule"] = {"version": VERSION, "source_token": plan["source_token"],
+                 "networks": [{"network_id": item["network_id"], **item["schedule"]} for item in plan["networks"]
+                              if item["status"] == "FEASIBLE_UNDER_ASSUMPTIONS"]}
++            previous_schedule = (state.get("parameters") or {}).get("communication_schedule") or {}
++            if ({key: value for key, value in parameters["communication_schedule"].items() if key != "source_token"}
++                    == {key: value for key, value in previous_schedule.items() if key != "source_token"}):
++                parameters["communication_schedule"] = previous_schedule
+             self.workflow.save_parameters(parameters, actor=actor)
+-            if changes:
++            model_changed = bool(changed_messages or changed_signals or changed_routes)
++            if model_changed:
+                 db.flush_model_changes(actor=actor, reason="Nachrichten, Signale und Routen gemeinsam dimensioniert.")
+                 self.workflow.mark_changed("routing", "Dimensionierte Zyklen müssen auf dem aktuellen Modell geprüft werden.", actor=actor)
+-            valid, invalid = [], []
++            valid, invalid, to_approve = [], [], []
+             validator = RoutingValidator.for_current_batch(self.project_id)
+-            for route in changed_routes:
++            for route in reviewed_routes:
+                 validation = validator.validate(route, exclude_route_id=str(route["id"]))
+-                save_validation(str(route["id"]), validation, actor=actor)
++                comparable = lambda value: {key: item for key, item in value.items() if key != "validation_timestamp"}
++                if route.get("approval_state") != "APPROVED" or comparable(validation) != comparable(route.get("validation") or {}):
++                    save_validation(str(route["id"]), validation, actor=actor)
++                    if validation.get("valid"):
++                        to_approve.append(str(route["id"]))
+                 (valid if validation.get("valid") else invalid).append(str(route["id"]))
+-            if approve_valid and valid:
+-                approve_routes(valid, actor=actor)
++            if approve_valid and to_approve:
++                approve_routes(to_approve, actor=actor)
+             # A period edit invalidates downstream stages. Recheck the unchanged
+             # physical topology before confirming its current model reference.
+-            if changes and not invalid:
++            if model_changed and not invalid:
+                 self.workflow.save_topology(self.workflow.get()["topology"], actor=actor)
+                 self.workflow.save_parameters(parameters, actor=actor)
+             receipt_id = sha256((plan["source_token"] + now).encode()).hexdigest()[:20]
+@@ -146,7 +172,8 @@
+                 "communication_sizing_receipt": {"id": receipt_id, "source_versions": plan["source_versions"],
+                     "changes": plan["changes"], "status": plan["status"], "created_at": now,
+                     "valid_route_ids": valid, "invalid_route_ids": invalid, "approved": bool(approve_valid)}})
+-            result = {"applied": True, "plan": plan, "receipt_id": receipt_id, "changed_messages": len(changes),
++            result = {"applied": True, "plan": plan, "receipt_id": receipt_id, "changed_messages": changed_messages,
++                      "changed_signals": changed_signals,
+                       "changed_routes": len(changed_routes), "valid_routes": len(valid), "invalid_routes": invalid,
+                       "approved": bool(approve_valid)}
+             if own:
+--- before/backend/tests/test_routing_prospective_model.py
++++ after/backend/tests/test_routing_prospective_model.py
+@@ -193,3 +193,28 @@
+             RoutingValidator.for_current_batch(candidate['snapshot']['project_id'])
+     finally:
+         reset_project(token)
++
++
++def test_current_batch_checks_references_without_route_sql_and_refreshes_after_edit(candidate, monkeypatch):
++    from backend.nis.engineering.projects.project_context import activate_project, reset_project
++    from backend.nis.workflow.services.service import WorkflowStatusService
++    project = candidate['snapshot']['project_id']
++    token = activate_project(project)
++    try:
++        batch = RoutingValidator.for_current_batch(project)
++        with monkeypatch.context() as patch:
++            patch.setattr(validation, 'get_connection', forbid_database)
++            actual = batch.validate(candidate['route'])
++            assert {k: v for k, v in actual.items() if k != 'validation_timestamp'} == {
++                k: v for k, v in candidate['baseline'].items() if k != 'validation_timestamp'}
++            broken = deepcopy(candidate['route'])
++            broken['source']['node_id'] = str(uuid4())
++            assert 'SOURCE_NOT_FOUND' in {item['code'] for item in batch.validate(broken)['errors']}
++        WorkflowStatusService(project).save_topology({**candidate['snapshot']['topology'], 'edges': []})
++        refreshed = RoutingValidator.for_current_batch(project)
++        with monkeypatch.context() as patch:
++            patch.setattr(validation, 'get_connection', forbid_database)
++            assert 'PHYSICAL_PATH_REMOVED' in {item['code'] for item in refreshed.validate(candidate['route'])['errors']}
++            assert batch.validate(candidate['route'])['valid']
++    finally:
++        reset_project(token)
+--- before/backend/tests/test_communication_sizing_api.py
++++ after/backend/tests/test_communication_sizing_api.py
+@@ -85,5 +85,23 @@
+         assert workflow.get()["parameters"]["communication_schedule"]["networks"]
+         assert workflow.get()["context"]["communication_sizing_history"]
+         assert client.post("/api/engineering/capacity/dimension/apply", json=payload).status_code == 409
++        # A fresh review of unchanged traffic must still check its routes, but
++        # must not rewrite periods, revoke approvals or invalidate the model.
++        before_message = get_object("Message", ids["status"])
++        before_signal = get_object("Signal", str(signal["id"]))
++        before_routes = {ids[row["id"]]: get_route(ids[row["id"]]) for row in routes}
++        repeat_plan = client.post("/api/engineering/capacity/dimension", json={}).get_json()
++        repeated = client.post("/api/engineering/capacity/dimension/apply", json={
++            "source_token": repeat_plan["source_token"], "policy": repeat_plan["policy"], "approve_valid": True})
++        assert repeated.status_code == 200, repeated.get_json()
++        assert repeated.get_json()["changed_messages"] == 0
++        assert repeated.get_json()["changed_signals"] == 0
++        assert repeated.get_json()["changed_routes"] == 0
++        assert get_object("Message", ids["status"])["version"] == before_message["version"]
++        assert get_object("Signal", str(signal["id"]))["version"] == before_signal["version"]
++        for route_id, before_route in before_routes.items():
++            after_route = get_route(route_id)
++            assert after_route["revision"] == before_route["revision"]
++            assert after_route["approval_state"] == before_route["approval_state"]
+     finally:
+         reset_project(token)
+--- before/backend/nis/engineering/capacity/dimensioning.py
++++ after/backend/nis/engineering/capacity/dimensioning.py
+@@ -40,12 +40,13 @@
+     from backend.nis.engineering.capacity.calculators import estimate_simulation_frame, utilization_percent
+     registry = DEFAULT_TECHNOLOGY_REGISTRY
+     technology = registry.normalize_id(technology)
+-    definition = registry.profile(technology)
++    definition = registry.profile(technology, fields=(
++        'simulation_defaults', 'rate_model', 'parameter_aliases', 'parameter_constraints'))
+     preset = definition.get('simulation_defaults') or {}
+     fields = registry.parameter_fields(technology)
+     model = definition.get('rate_model') or {}
+     native_rates = model.get('fields') or preset.get('rate_fields') or [
+-        registry.profile(technology).get('parameter_aliases', {}).get('bitrate', field['key'])
++        definition.get('parameter_aliases', {}).get('bitrate', field['key'])
+         for field in fields if field.get('required') and field.get('scope') == 'network' and field.get('unit') == 'bit/s']
+     # Required protocol context and recorded starter choices are editable assumptions.
+     base = {field['key']: field['simulation_default'] for field in fields if field.get('required')}

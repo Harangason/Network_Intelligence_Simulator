@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 from copy import deepcopy
+from contextlib import contextmanager
+from contextvars import ContextVar
+import json
 from math import isfinite
 from typing import Any, Iterable
 
@@ -55,6 +58,7 @@ class TechnologyRegistry:
         self._timing_models: dict[str, Any] = {}
         self._revision = 0
         self._parameter_key_snapshots: dict[str | None, tuple[int, frozenset[str]]] = {}
+        self._parameter_validation_cache = ContextVar('technology_parameter_validation_cache', default=None)
 
     @property
     def revision(self) -> int:
@@ -493,7 +497,48 @@ class TechnologyRegistry:
         # alter another protocol or survive a registry revision.
         return set(names)
 
+    @contextmanager
+    def parameter_validation_session(self):
+        """Reuse pure native validation only within one synchronous calculation."""
+        token = self._parameter_validation_cache.set({})
+        try:
+            yield
+        finally:
+            self._parameter_validation_cache.reset(token)
+
     def validate_parameters(self, technology_id: str, parameters: dict[str, Any]) -> dict[str, Any]:
+        cache = self._parameter_validation_cache.get()
+        cache_key = None
+        if cache is not None:
+            key = self.normalize_id(technology_id)
+            definition = self._profiles[key].definition if key in self._profiles else {}
+            stack = (self.normalize_id(item) for item in definition.get('default_stack') or (key,))
+            # Extension validators may depend on external evidence or state.
+            # Only the built-in, parameter-only validator can be memoized.
+            pure = all(type(validator) is TechnologyValidator
+                       for layer in stack for validator in self._validators.get(layer, ()))
+            def json_value(value):
+                if type(value) in (str, int, float, bool, type(None)):
+                    return True
+                if type(value) is list:
+                    return all(json_value(item) for item in value)
+                if type(value) is dict:
+                    return all(type(name) is str and json_value(item) for name, item in value.items())
+                return False
+            try:
+                if pure and json_value(parameters):
+                    cache_key = (self._revision, key, json.dumps(parameters, sort_keys=True,
+                                 separators=(',', ':'), allow_nan=False))
+            except (ValueError, TypeError, RecursionError):
+                pass  # Preserve the ordinary validator for non-JSON inputs.
+            if cache_key is not None and cache_key in cache:
+                return deepcopy(cache[cache_key])
+        result = self._validate_parameters(technology_id, parameters)
+        if cache_key is not None and len(cache) < 2048:
+            cache[cache_key] = deepcopy(result)
+        return result
+
+    def _validate_parameters(self, technology_id: str, parameters: dict[str, Any]) -> dict[str, Any]:
         key = self.normalize_id(technology_id)
         if key not in self._profiles:
             return {"technology_id": key, "status": "UNKNOWN", "findings": [{

@@ -1,0 +1,33 @@
+--- before/frontend/src/features/communication/lib/technology-parameters.test.mjs
++++ after/frontend/src/features/communication/lib/technology-parameters.test.mjs
+@@ -22,7 +22,29 @@
+   assert.equal(technologyParameterUnverified(p,'lin_bitrate_bps','lin'),false);
+   assert.equal('data_bitrate' in technologyParameterValues(p,lin),false);
+ });
+-import { localEvidenceFieldRequired, booleanParameterValue, numericParameterValue, conditionalParameterDefault, technologyParameterValues, technologyParameterApplicable, technologyParameterUnverified, technologyRateParameters, confirmTechnologyParameters, confirmNetworkParameters, groupPreflightFindings } from './technology-parameters.ts';
++import { commonTechnologyParameters, localEvidenceFieldRequired, booleanParameterValue, numericParameterValue, conditionalParameterDefault, technologyParameterValues, technologyParameterApplicable, technologyParameterUnverified, technologyRateParameters, confirmTechnologyParameters, confirmNetworkParameters, groupPreflightFindings } from './technology-parameters.ts';
++
++test('common controls use native rate order and exclude evidence and identities', () => {
++  const profile = {id:'lin',simulation_defaults:{rate_fields:['lin_bitrate_bps']},parameter_schema:[
++    {key:'lin_registered_source',value_role:'EVIDENCE'}, {key:'cycle_ms'}, {key:'payload_bytes'},
++    {key:'lin_commander_node_id',value_role:'REFERENCE'}, {key:'lin_bitrate_bps',unit:'bit/s',scope:'network'}]};
++  assert.deepEqual(commonTechnologyParameters(profile).map(field=>field.key), ['lin_bitrate_bps','payload_bytes','cycle_ms']);
++});
++
++test('legacy fabricated reference assumptions disappear without touching actual user references or operational values', () => {
++  const reference = 'simulation:lin:lin_registered_source';
++  const profile = {id:'lin',parameter_schema:[{key:'lin_registered_source',value_role:'EVIDENCE',type:'text',simulation_default:null},
++    {key:'lin_bitrate_bps',simulation_default:19200}]};
++  const old = {technology:'lin',simulation_parameter_assumptions:{lin:{values:{lin_registered_source:reference,lin_bitrate_bps:9600}}}};
++  const displayed = technologyParameterValues(old, profile);
++  assert.equal(displayed.lin_registered_source, null);
++  assert.equal(displayed.lin_bitrate_bps, 9600);
++  const saved = confirmTechnologyParameters(old,profile,displayed,{preserveSimulationAssumptions:true});
++  assert.equal(saved.simulation_parameter_assumptions.lin.values.lin_registered_source, undefined);
++  assert.equal(saved.technology_parameters.lin.values.lin_registered_source, undefined);
++  const actual = confirmTechnologyParameters({},profile,{lin_registered_source:reference,lin_bitrate_bps:19200});
++  assert.equal(technologyParameterValues(actual,profile).lin_registered_source, reference);
++});
+ 
+ test('native rate identity binds phase fields and never substitutes a foreign UI rate', () => {
+   const profile={id:'dual',rate_model:{fields:['native_nominal','native_data']},parameter_schema:[

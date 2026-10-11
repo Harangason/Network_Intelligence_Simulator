@@ -1,0 +1,99 @@
+"""NMEA2000 native PGN/packet and explicitly qualified installation regressions."""
+from copy import deepcopy
+import pytest
+from backend.communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY as registry
+from backend.communication.technologies import nmea2000 as N
+def actual(packet='FAST_PACKET',impl='TIMO_PINNED'):
+ x={'n2_'+k:'synthetic-actual-'+k for k in N.REQUIRED}
+ x.update(bitrate_bps=250000,n2_implementation=impl,n2_edition='3.000',n2_packet_class=packet,n2_role='ACTIVE',
+  n2_claim_status='CLAIMED',n2_claim_source='synthetic-claim-response',n2_source_address=35,n2_name_hex='123456789ABCDEF0',
+  n2_automatic_retransmission=True,n2_id_bits=29,n2_fd=False,n2_brs=False,n2_built_in_termination=False,
+  n2_physical_source='synthetic-actual-installation',n2_cable_catalog='REGISTERED',n2_registered_source='synthetic-registered-device-rating')
+ return x
+def status(x):return registry.validate_parameters('nmea2000',x)['status']
+def test_nmea2000_own_rate_stack_application_and_no_foreign_ethernet_can_or_name_defaults():
+ x=actual();assert status(x)=='VALID'
+ p=registry.profile('nmea2000');assert p['domain']=='generic_networking';assert p['default_stack']==['nmea2000']
+ assert p['capacity_evidence']['status']=='MODEL_MISSING'
+ assert registry.parameter_defaults_review('nmea2000')['values']=={'bitrate_bps':250000}
+ keys=[v['key']for v in registry.parameter_fields('nmea2000')];assert len(keys)==len(set(keys))
+ assert not set(keys)&set(N.REMOVED)
+ for patch in({'bitrate_bps':4800},{'bitrate_bps':500000},{'mtu_bytes':1500},{'can_controller_profile':'M_CAN_3_3_1'},
+  {'n2_fd':True},{'n2_brs':True},{'n2_id_bits':11},{'n2_automatic_retransmission':False},
+  {'n2_built_in_termination':True},{'n2_name_hex':'18446744073709551615'}):assert status({**x,**patch})=='INVALID'
+ for key in('payload_bytes','n2_name_hex','n2_source_address','n2_len','n2_product_code','n2_industry_group','n2_power_feed_v','n2_priority'):
+  f=next(f for f in registry.parameter_fields('nmea2000')if f['key']==key);assert 'default'not in f;assert not f.get('conditional_defaults')
+@pytest.mark.parametrize('field',registry.parameter_fields('nmea2000'),ids=lambda f:f['key'])
+def test_nmea2000_each_declared_native_or_application_field_type_and_bound(field):
+ bad='not-number' if field['type']=='number' else 1
+ assert status({**actual(),field['key']:bad})=='INVALID'
+ for edge,offset in [('min',-1),('max',1)]:
+  if field.get(edge)is not None:assert status({**actual(),field['key']:field[edge]+offset})=='INVALID'
+def test_nmea2000_pdu1_pdu2_priority_identifier_and_destination_are_different():
+ x={**actual('SINGLE'),'n2_priority':6,'n2_dp':0,'n2_pf':0xEE,'n2_ps':0xFF,'n2_pgn':60928,'n2_destination':255,'n2_can_id':0x18EEFF23}
+ assert status(x)=='VALID'
+ for patch in({'n2_pgn':60929},{'n2_destination':35},{'n2_can_id':0x18EE2323},{'n2_edp':1},{'n2_pf':239}):assert status({**x,**patch})=='INVALID'
+ x.update(n2_dp=1,n2_pf=0xF8,n2_ps=1,n2_pgn=129025,n2_can_id=0x19F80123)
+ assert status(x)=='VALID';assert status({**x,'n2_destination':0})=='INVALID'
+ assert status({**x,'n2_pgn':129024})=='INVALID'
+@pytest.mark.parametrize('length,frames',[(0,1),(6,1),(7,2),(8,2),(13,2),(14,3),(222,32),(223,32)])
+def test_nmea2000_fastpacket223_requires32frames_not31_and_no_length_selected_transport(length,frames):
+ x={**actual(),'n2_data_bytes':length,'payload_bytes':length,'n2_packet_frames':frames,'n2_frame_bytes':8,
+  'n2_fast_sequence':7,'n2_fast_frame_index':frames-1,'n2_fast_header':224+frames-1}
+ assert status(x)=='VALID'
+ for patch in({'n2_data_bytes':224,'payload_bytes':224},{'n2_packet_frames':frames+1},{'n2_fast_sequence':255},
+  {'n2_fast_header':0},{'n2_fast_frame_index':frames},{'n2_frame_bytes':9},{'payload_bytes':length+1}):assert status({**x,**patch})=='INVALID'
+ assert status({**actual('SINGLE'),'n2_data_bytes':8,'payload_bytes':8,'n2_packet_frames':1,'n2_frame_bytes':8})=='VALID'
+ assert status({**actual('SINGLE'),'n2_data_bytes':9})=='INVALID'
+def test_nmea2000_iso1785_distinct_pinned_storage223_and_transport_management():
+ x={**actual('ISO_TP_BAM','SIMMA_1_3'),'n2_data_bytes':1785,'payload_bytes':1785,'n2_packet_frames':255,'n2_tp_packet_sequence':255,'n2_destination':255}
+ assert status(x)=='VALID'
+ for patch in({'n2_data_bytes':1786},{'n2_packet_frames':254},{'n2_destination':1},
+  {'n2_tp_packet_sequence':0},{'n2_implementation':'TIMO_PINNED'}):assert status({**x,**patch})=='INVALID'
+ x.update(n2_packet_class='ISO_TP_RTS_CTS',n2_destination=35);assert status(x)=='VALID'
+ assert status({**x,'n2_destination':255})=='INVALID'
+def test_nmea2000_actual_claimed_source_not_generic_j1939_and_silent_monitor():
+ x={**actual(),'n2_source_address':251};assert status(x)=='VALID';assert status({**x,'n2_source_address':252})=='INVALID'
+ x.update(n2_claim_status='CANNOT_CLAIM',n2_source_address=254);assert status(x)=='VALID'
+ assert status({**x,'n2_source_address':255})=='INVALID'
+ x.update(n2_role='SILENT_MONITOR',n2_claim_status='LISTEN_ONLY',n2_automatic_retransmission=False);assert status(x)=='VALID'
+ assert status({**x,'n2_automatic_retransmission':True})=='INVALID'
+ x.update(n2_certified=True);assert status(x)=='UNVERIFIED'
+ x.update(n2_certification_source='synthetic-product-specific-evidence');assert status(x)=='VALID'
+@pytest.mark.parametrize('cable,length,amps',[('MICRO_LITE',100,3),('MID',250,4),('MINI_HEAVY',250,8)])
+def test_nmea2000_backbone_drop_limits_and_catalog_qualified_current(cable,length,amps):
+ x={**actual(),'n2_cable':cable,'n2_cable_catalog':'ACTISENSE_2021','n2_backbone_m':length,'n2_branch_current_a':amps,
+  'n2_drop_m':6,'n2_sum_drops_m':78,'n2_termination_count':2,'n2_termination_ohm':120,'n2_nominal_parallel_ohm':60,'n2_node_count':50}
+ assert status(x)=='VALID'
+ for key in('n2_backbone_m','n2_branch_current_a','n2_drop_m','n2_sum_drops_m','n2_node_count','n2_termination_count'):
+  assert status({**x,key:x[key]+1})=='INVALID'
+ assert status({**x,'n2_cable_catalog':'REGISTERED','n2_branch_current_a':amps+1,'n2_registered_source':'synthetic-new-cable-connector-rating'})=='VALID'
+def test_nmea2000_bus_power_len_actual_current_both_conductors_and_extended24v():
+ x={**actual(),'n2_power_profile':'STANDARD_9_16','n2_power_feed_v':12,'n2_loop_ohm':3,'n2_branch_current_a':1,'n2_device_v':9,
+  'n2_power_source':'synthetic-current-loaded-branch','n2_len':20,'n2_device_bus_current_ma':1000,'n2_power_method':'BUS_ONLY','n2_ground_points':1}
+ assert status(x)=='VALID'
+ for patch in({'n2_device_v':10.5},{'n2_power_feed_v':24},{'n2_len':21},{'n2_device_bus_current_ma':1001},
+  {'n2_device_v':8.9},{'n2_ground_points':2}):assert status({**x,**patch})=='INVALID'
+ x.update(n2_power_profile='DEVICE_24V_REGISTERED',n2_power_feed_v=24,n2_device_v=21)
+ assert status(x)=='UNVERIFIED'
+ x.update(n2_extended_power_warning=True,n2_registered_source='synthetic-every-device-extended-rating');assert status(x)=='VALID'
+ assert status({**x,'n2_extended_power_warning':False})=='INVALID'
+def test_nmea2000_simma_settings_are_qualified_not_all_stacks_or_application_deadlines():
+ x={**actual(impl='SIMMA_1_3'),'n2_sample_point_percent':87.5,'n2_tick_ms':10,'n2_bip_percent':100,
+  'n2_bip_window_ms':250,'n2_tp_rx_bytes':1785,'n2_fp_rx_bytes':223};assert status(x)=='VALID'
+ for patch in({'n2_sample_point_percent':90},{'n2_tick_ms':0},{'n2_tick_ms':26},{'n2_fp_rx_bytes':224},
+  {'n2_tp_rx_bytes':1786},{'n2_bip_window_ms':100}):assert status({**x,**patch})=='INVALID'
+ f=next(f for f in registry.parameter_fields('nmea2000')if f['key']=='n2_tick_ms')
+ assert f['conditional_defaults'][0]['when']=={'n2_implementation':'SIMMA_1_3'}
+ assert status({**actual(),'n2_sample_point_percent':90})=='VALID'
+def test_nmea2000_confirmed_iso_payload_custom_retry_and_claim_identity_preserved():
+ from backend.engineering.workflow.service import WorkflowStatusService
+ from backend.engineering.project_context import current_project_id
+ x={**actual('ISO_TP_BAM','SIMMA_1_3'),'payload_bytes':1785,'n2_data_bytes':1785,'n2_packet_frames':255,
+  'n2_destination':255,'n2_retry_bound_ms':42.5,'n2_name_hex':'FEDCBA9876543210'}
+ g={'values':x,'provenance':{k:{'source':'USER_CONFIRMED','status':'CONFIRMED','value':v}for k,v in x.items()}}
+ params={'technology':'nmea2000','technology_parameters':{'nmea2000':g}}
+ service=WorkflowStatusService(current_project_id());service.save_parameters(params);assert service.get()['parameters']==params
+ bad=deepcopy(params);bad['technology_parameters']['nmea2000']['values']['bitrate_bps']=100000000
+ with pytest.raises(ValueError):service.save_parameters(bad)
+ assert service.get()['parameters']==params

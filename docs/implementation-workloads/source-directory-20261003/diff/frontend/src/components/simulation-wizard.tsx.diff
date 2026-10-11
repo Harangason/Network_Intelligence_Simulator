@@ -1,0 +1,94 @@
+--- before/frontend/src/components/simulation-wizard.tsx
++++ after/frontend/src/components/simulation-wizard.tsx
+@@ -34,7 +34,8 @@
+   notifyWorkflowDraftStatus,
+   WORKFLOW_CHANGED_EVENT,
+ } from "./workflow-header";
+-import { withProjectParam } from "@/lib/user-settings";
++import { withProjectParam, readActiveProjectId } from "@/lib/user-settings";
++import type { LicenseState } from "@/lib/source-directory";
+ 
+ const parameterNavItems = [
+   ["parameter-technology", "Technologie"],
+@@ -531,6 +532,8 @@
+   const [catalog, setCatalog] = useState<Catalog>(localCatalog);
+   const [catalogError, setCatalogError] = useState("");
+   const [catalogLoaded, setCatalogLoaded] = useState(false);
++  const [licenseStates, setLicenseStates] = useState<Record<string, LicenseState>>({});
++  const [licenseError, setLicenseError] = useState('');
+   const [domainId, setDomainId] = useState("");
+   const [technologyId, setTechnologyId] = useState("");
+   const [technologySearch, setTechnologySearch] = useState("");
+@@ -706,6 +709,17 @@
+     });
+     return () => { active = false; };
+   }, [mode]);
++
++  useEffect(() => {
++    let active = true;
++    setLicenseStates({}); setLicenseError('');
++    const project = initialProjectId || readActiveProjectId();
++    void fetch('/api/technology-licenses', {cache: 'no-store', headers: {'X-Project-ID': project}})
++      .then(async response => { const data = await response.json(); if (!response.ok) throw new Error(data.error || 'Lizenzstatus nicht erreichbar.'); return data; })
++      .then(data => { if (active) setLicenseStates(data.licenses); })
++      .catch(error => { if (active) setLicenseError(error instanceof Error ? error.message : 'Lizenzstatus nicht erreichbar.'); });
++    return () => { active = false; };
++  }, [initialProjectId]);
+ 
+   useEffect(() => {
+     if (mode === "parameters") {
+@@ -1053,7 +1067,7 @@
+         <div className={pickerStyles.pickerRow}>
+           <select aria-label="Bus / Protokoll auswählen" id="initial-technology" value={technology ? technologyId : ""} onChange={(event) => chooseTechnology(event.target.value)}>
+             <option value="">Bitte auswählen</option>
+-            <TechnologyOptions domain={domain} technologies={allTechnologies} matches={matchingTechnologies} query={technologySearch} selectedId={technologyId} />
++            <TechnologyOptions domain={domain} technologies={allTechnologies} matches={matchingTechnologies} query={technologySearch} selectedId={technologyId} licenses={licenseStates} />
+           </select>
+           <input aria-label="Bus / Protokoll suchen" onChange={(event) => setTechnologySearch(event.target.value)} placeholder="Bus suchen" type="search" value={technologySearch} />
+         </div>
+@@ -1306,7 +1320,7 @@
+                     onChange={(event) => chooseTechnology(event.target.value)}
+                     value={technologyId}
+                   >
+-                    <TechnologyOptions domain={domain} technologies={allTechnologies} matches={matchingTechnologies} query={technologySearch} selectedId={technologyId} />
++                    <TechnologyOptions domain={domain} technologies={allTechnologies} matches={matchingTechnologies} query={technologySearch} selectedId={technologyId} licenses={licenseStates} />
+                   </select>
+                   <input
+                     aria-label="Bus / Protokoll suchen"
+@@ -1321,6 +1335,13 @@
+             </div>
+ 
+             <TechnologyCard technology={technology} />
++            {technology.licensing_policy?.clearance_required && <div className="notice warning" role="status">
++              {licenseStates[technology.id]?.blocked === false ? '✓ Geprüfte projektbezogene Technikfreigabe vorhanden.'
++                : '⚠ Ausführung gesperrt: Eine geprüfte projektbezogene Technikfreigabe fehlt.'}
++              {licenseError && <p>{licenseError} Eine Freigabe wird nicht angenommen.</p>}
++              <p>{technology.licensing_policy.reason}</p>
++              <Link href={withProjectParam('/sources', projectIdForLinks)}>Nachweise im Quellenverzeichnis prüfen ↗</Link>
++            </div>}
+ 
+             <div className="section-title" id="parameter-values">
+               <span>02</span>
+@@ -1657,12 +1678,13 @@
+   );
+ }
+ 
+-function TechnologyOptions({ domain, technologies, matches, query, selectedId }: {
++function TechnologyOptions({ domain, technologies, matches, query, selectedId, licenses }: {
+   domain?: TechnologyDomain;
+   technologies: Technology[];
+   matches: Technology[];
+   query: string;
+   selectedId: string;
++  licenses: Record<string, LicenseState>;
+ }) {
+   const recommended = domain?.technologies ?? [];
+   const recommendedIds = new Set(recommended.map(item => item.id));
+@@ -1670,6 +1692,7 @@
+   const option = (item: Technology) => <option key={item.id} value={item.id}>
+     {item.id.replaceAll('_', ' ').toUpperCase()}{item.implementation_status && item.implementation_status !== 'IMPLEMENTED'
+       ? ` · ${item.implementation_status}` : ''}
++    {item.licensing_policy?.clearance_required ? licenses[item.id]?.blocked === false ? ' · ✓ Lizenzfreigabe' : ' · ⚠ Ausführung gesperrt' : ''}
+   </option>;
+   if (query.trim()) {
+     const selected = technologies.find(item => item.id === selectedId);

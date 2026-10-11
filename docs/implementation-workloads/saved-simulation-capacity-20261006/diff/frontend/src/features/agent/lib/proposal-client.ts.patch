@@ -1,0 +1,11 @@
+--- before/frontend/src/features/agent/lib/proposal-client.ts
++++ after/frontend/src/features/agent/lib/proposal-client.ts
+@@ -104,7 +104,7 @@
+     const network = finding.network_name || finding.network_id || String(data.network_ref ?? 'Projekt');
+     const resolved = { ...finding, network_name: network, object_name: finding.object_name || String(data.name ?? change?.object_name ?? finding.object_id ?? 'Projekt') };
+     const code = finding.code ?? 'REVIEW';
+-    const key = code === 'CAPACITY_UNVERIFIED' ? JSON.stringify([code, technology, finding.missing_fields ?? []]) : JSON.stringify([code, resolved.object_name]);
++    const key = ['CAPACITY_UNVERIFIED','CAPACITY_DEVICE_EVIDENCE_MISSING'].includes(code) ? JSON.stringify([code, technology, finding.missing_fields ?? []]) : JSON.stringify([code, resolved.object_name]);
+     const group = groups.get(key) ?? { key, technology, network, code, findings: [] };
+     if (group.network !== network) group.network = "mehrere Netze";
+     group.findings.push(resolved); groups.set(key, group);

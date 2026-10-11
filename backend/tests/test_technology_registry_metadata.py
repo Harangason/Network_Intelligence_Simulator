@@ -1,5 +1,6 @@
 """Registry identity is enumerable; registration cannot stand in for evidence."""
 from copy import deepcopy
+from types import SimpleNamespace
 
 import pytest
 
@@ -11,6 +12,95 @@ from backend.nis.communication.registry import TechnologyRegistry
 def definition(label, **extra):
     return {"label": label, "layer": "DATA_LINK", "implementation_status": "PLANNED",
             "rate_model": {"fields": []}, **extra}
+
+
+def validation_registry():
+    registry = TechnologyRegistry()
+    registry.register_defaults([definition('Session Bus', id='session_bus',
+        parameter_schema={'flag': {'type': 'boolean', 'default': False}})])
+    return registry
+
+
+def test_native_validation_session_preserves_results_and_does_not_escape_calculation(monkeypatch):
+    registry = validation_registry()
+    original = registry._validate_parameters
+    calls = []
+    def observed(technology, values):
+        calls.append((technology, deepcopy(values)))
+        return original(technology, values)
+    monkeypatch.setattr(registry, '_validate_parameters', observed)
+    expected = registry.validate_parameters('session_bus', {'flag': True})
+    assert expected['status'] == 'VALID'
+    with registry.parameter_validation_session():
+        for _ in range(25):
+            actual = registry.validate_parameters('session_bus', {'flag': True})
+            assert actual == expected
+            actual['findings'].append({'code': 'CALLER_MUTATION'})
+        invalid = registry.validate_parameters('session_bus', {'flag': 'true'})
+        assert invalid['status'] == 'INVALID'
+        assert registry.validate_parameters('session_bus', {'flag': 'true'}) == invalid
+    assert len(calls) == 3
+    registry.validate_parameters('session_bus', {'flag': True})
+    assert len(calls) == 4
+    with pytest.raises(RuntimeError), registry.parameter_validation_session():
+        registry.validate_parameters('session_bus', {'flag': True})
+        raise RuntimeError('calculation aborted')
+    registry.validate_parameters('session_bus', {'flag': True})
+    assert len(calls) == 6
+
+
+def test_native_validation_session_separates_input_types_technologies_and_registry_revisions(monkeypatch):
+    registry = validation_registry()
+    registry.register_defaults([definition('Other Session Bus', id='other_session_bus',
+        parameter_schema={'flag': {'type': 'number', 'default': 0}})])
+    original = registry._validate_parameters
+    calls = []
+    def observed(technology, values):
+        calls.append((technology, deepcopy(values)))
+        return original(technology, values)
+    monkeypatch.setattr(registry, '_validate_parameters', observed)
+    with registry.parameter_validation_session():
+        assert registry.validate_parameters('session_bus', {'flag': True})['status'] == 'VALID'
+        assert registry.validate_parameters('session_bus', {'flag': 1})['status'] == 'INVALID'
+        assert registry.validate_parameters('other_session_bus', {'flag': 1})['status'] == 'VALID'
+        assert registry.validate_parameters('session_bus', {'flag': True})['status'] == 'VALID'
+        registry.register_defaults([definition('Revision Bus', id='revision_bus')])
+        assert registry.validate_parameters('session_bus', {'flag': True})['status'] == 'VALID'
+    assert len(calls) == 4
+
+
+def test_custom_validator_is_never_skipped_even_with_identical_parameter_inputs():
+    registry = validation_registry()
+    calls = []
+    class ExternalEvidenceValidator:
+        def validate(self, payload):
+            calls.append(payload)
+            return [] if len(calls) == 1 else [SimpleNamespace(stage='EXTERNAL_EVIDENCE',
+                code='EVIDENCE_EXPIRED', severity='BLOCKER', message='External evidence changed.')]
+    registry.register_validator('session_bus', ExternalEvidenceValidator())
+    with registry.parameter_validation_session():
+        assert registry.validate_parameters('session_bus', {'flag': True})['status'] == 'VALID'
+        assert registry.validate_parameters('session_bus', {'flag': True})['status'] == 'INVALID'
+    assert len(calls) == 2
+
+
+def test_native_validation_session_avoids_non_json_coercion_and_nested_session_leakage(monkeypatch):
+    registry = validation_registry()
+    original = registry._validate_parameters
+    calls = []
+    def observed(technology, values):
+        calls.append(values)
+        return original(technology, values)
+    monkeypatch.setattr(registry, '_validate_parameters', observed)
+    with registry.parameter_validation_session():
+        registry.validate_parameters('session_bus', {'flag': True})
+        with registry.parameter_validation_session():
+            registry.validate_parameters('session_bus', {'flag': True})
+        registry.validate_parameters('session_bus', {'flag': True})
+        for _ in range(2):
+            registry.validate_parameters('session_bus', {'flag': (True,)})
+            registry.validate_parameters('session_bus', {'flag': float('nan')})
+    assert len(calls) == 6
 
 
 def test_parameter_key_snapshots_refresh_after_registration_and_generated_update():

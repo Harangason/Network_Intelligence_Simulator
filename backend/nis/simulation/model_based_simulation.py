@@ -468,6 +468,11 @@ class FaultInjectionEngine:
         return applied
 
 
+def integer_signal_signed(data_type: str) -> bool:
+    kind = data_type.lower().strip()
+    return kind == "signed" or kind.startswith(("int", "sint"))
+
+
 class MessageCodec:
     @staticmethod
     def encode(signals: list[tuple[SignalDefinition, float | None]], payload_bytes: int) -> str:
@@ -480,7 +485,7 @@ class MessageCodec:
                 continue
             length = min(signal.length_bits, bit_count - signal.start_bit)
             raw = int(round((physical_value - signal.offset) / signal.factor))
-            signed = "int" in signal.data_type.lower() and "uint" not in signal.data_type.lower() or "signed" in signal.data_type.lower()
+            signed = integer_signal_signed(signal.data_type)
             if signed:
                 raw = max(-(1 << (length - 1)), min((1 << (length - 1)) - 1, raw))
                 if raw < 0:
@@ -506,7 +511,7 @@ class MessageCodec:
         else:
             raw_payload = int.from_bytes(data, byteorder="little", signed=False)
             raw = (raw_payload >> signal.start_bit) & ((1 << signal.length_bits) - 1)
-        signed = "int" in signal.data_type.lower() and "uint" not in signal.data_type.lower() or "signed" in signal.data_type.lower()
+        signed = integer_signal_signed(signal.data_type)
         if signed and raw & (1 << (signal.length_bits - 1)):
             raw -= 1 << signal.length_bits
         return raw * signal.factor + signal.offset

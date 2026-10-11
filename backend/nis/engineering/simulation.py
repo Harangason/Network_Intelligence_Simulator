@@ -54,6 +54,7 @@ def _list_behaviors() -> list[dict[str, Any]]:
 
 
 def load_engineering_simulation_model(project_id: str) -> dict[str, Any]:
+    from backend.nis.engineering.safety_assurance import active_requirements
     token = activate_project(project_id)
     try:
         nodes = all_pages(list_objects, "HardwareNode")
@@ -70,6 +71,7 @@ def load_engineering_simulation_model(project_id: str) -> dict[str, Any]:
             "interfaces": interfaces,
             "messages": messages,
             "signals": signals,
+            "safety_requirements": active_requirements(all_pages(list_objects, "SafetyRequirement")),
             "routes": routes,
             "behaviors": _list_behaviors(),
             "counts": {

@@ -1,0 +1,19 @@
+--- before/backend/tests/test_communication_runtime.py
++++ after/backend/tests/test_communication_runtime.py
+@@ -3,6 +3,7 @@
+ from backend.tests.test_model_based_simulation import simulation_config
+ from hardware_profile import normalize_hardware_config
+ from universal_trace import generate_universal_events
++from backend.tests.native_transport_fixtures import lin_design
+ 
+ 
+ def test_runtime_splits_frames_and_uses_canonical_period_over_old_route_copy():
+@@ -46,7 +47,7 @@
+ 
+ def test_gateway_does_not_inherit_source_bus_schedule():
+     config = {'duration_s': .25, 'seed': 42, 'max_events': 100, 'formats': [],
+-        'networks': [{'id': 'local', 'technology': 'lin', 'bitrate': 19200},
++        'networks': [{'id': 'local', 'technology': 'lin', 'bitrate': 19200, **lin_design()},
+                      {'id': 'backbone', 'technology': 'can_fd', 'bitrate': 500000, 'data_bitrate': 2000000}],
+         'hardware': {'devices': [
+             {'id': 'sensor', 'name': 'Sensor', 'type': 'sensor', 'interfaces': [{'id': 's', 'technology': 'lin', 'network': 'local'}]},

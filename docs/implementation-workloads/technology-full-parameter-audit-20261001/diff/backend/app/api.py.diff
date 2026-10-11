@@ -1,0 +1,20 @@
+--- before/backend/app/api.py
++++ after/backend/app/api.py
+@@ -5,7 +5,7 @@
+ import os
+ from pathlib import Path
+ 
+-from flask import Blueprint, jsonify, request, send_file
++from flask import Blueprint, Response, jsonify, request, send_file
+ from psycopg import Error as DatabaseError
+ 
+ from .job_service import JOBS
+@@ -118,7 +118,7 @@
+ 
+ @api.route("/technologies", methods=["GET"])
+ def technologies():
+-    return jsonify(JOBS.simulations.catalog())
++    return Response(JOBS.simulations.catalog_json(), mimetype='application/json')
+ 
+ 
+ @api.post("/technologies/resolve")

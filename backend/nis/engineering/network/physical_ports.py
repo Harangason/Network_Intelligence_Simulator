@@ -73,6 +73,8 @@ def topology_port_findings(topology, hardware, interfaces):
             if interface is None:
                 error('UNKNOWN_PHYSICAL_CHANNEL', 'Topologie-Port benötigt einen vorhandenen Hardwarekanal.', port_id=port_id)
                 continue
+            if interface.get('lifecycle_state') in {'deprecated', 'superseded'}:
+                error('PHYSICAL_CHANNEL_RETIRED', 'Die aktive Topologie verwendet einen ausgemusterten Hardwarekanal.', hardware_interface_id=interface_id)
             if str(interface.get('hardware_node_id')) != hardware_id:
                 error('PHYSICAL_CHANNEL_OWNER', 'Hardwarekanal gehört zu einem anderen Gerät.', port_id=port_id)
             if technology_id(interface.get('technology')) != technology_id(port.get('bus')):
@@ -123,6 +125,29 @@ def _free_port_rebindings(previous, current):
     connected = {str(e.get(side + 'Port') or '') for e in (previous or {}).get('edges') or [] for side in ('source', 'target')}
     now_connected = {str(e.get(side + 'Port') or '') for e in current.get('edges') or [] for side in ('source', 'target')}
     allowed = set()
+    # A complete same-technology move (including a capacity-split drawing clone)
+    # reuses the actual connector. Parallel networks still need separate channels.
+    before_channels = {}
+    current_channels = {}
+    for identifier, (owner, port) in old.items():
+        if identifier in connected and port.get('hardwareInterfaceId'):
+            key = (owner, str(port['hardwareInterfaceId']), technology_id(port.get('bus')))
+            before_channels.setdefault(key, set()).add(str(port.get('physicalNetworkId') or ''))
+    for node in current.get('nodes') or []:
+        for port in node.get('ports') or []:
+            if str(port['id']) not in now_connected or not port.get('hardwareInterfaceId'):
+                continue
+            key = (str(node.get('engineeringId') or ''), str(port['hardwareInterfaceId']), technology_id(port.get('bus')))
+            current_channels.setdefault(key, []).append(port)
+    for key, ports in current_channels.items():
+        old_networks = before_channels.get(key, set())
+        new_networks = {str(port.get('physicalNetworkId') or '') for port in ports}
+        if len(old_networks) == 1 and new_networks and '' not in old_networks | new_networks and not old_networks & new_networks:
+            # A complete split retains one existing connector and adds only the
+            # other independent channels. The proposal exposes this choice;
+            # a surviving old network still prevents its connector being stolen.
+            retained_network = min(new_networks)
+            allowed.update((str(port['id']), key[1]) for port in ports if str(port.get('physicalNetworkId')) == retained_network)
     for node in current.get('nodes') or []:
         for port in node.get('ports') or []:
             identifier = str(port['id'])
@@ -148,7 +173,7 @@ def _free_port_rebindings(previous, current):
     return allowed
 
 
-def materialize_physical_ports(topology, hardware, interfaces, networks, *, routes=(), messages=(), prune_unconnected=True, previous_topology=None):
+def materialize_physical_ports(topology, hardware, interfaces, networks, *, routes=(), messages=(), logical_interfaces=(), prune_unconnected=True, previous_topology=None):
     """Return a topology and explicit ordered changes; never mutate canonical state.
 
     Each (device, technology, physical network) gets one actual channel. Existing
@@ -213,6 +238,7 @@ def materialize_physical_ports(topology, hardware, interfaces, networks, *, rout
             key = (hardware_id, technology_id(technology), network_id)
             if key not in assignments:
                 candidates = sorted((row for row in canonical.values() if str(row.get('hardware_node_id')) == hardware_id
+                    and row.get('lifecycle_state') not in {'deprecated', 'superseded'}
                     and technology_id(row.get('technology')) == key[1]
                     and str(row['id']) not in assignments.values()
                     and (not row.get('network_ref') or str(row['network_ref']) == network_id
@@ -226,7 +252,7 @@ def materialize_physical_ports(topology, hardware, interfaces, networks, *, rout
                 controller = str((existing or {}).get('controller_ref') or '')
                 channel_scope = (hardware_id, key[1], controller)
                 current_index = (existing or {}).get('channel_index')
-                occupied = [int(row.get('channel_index') or 0) for row in canonical.values() if (
+                occupied = [int(row.get('channel_index') or 0) for row in canonical.values() if row.get('lifecycle_state') not in {'deprecated', 'superseded'} and (
                     str(row.get('hardware_node_id')), technology_id(row.get('technology')), str(row.get('controller_ref') or '')) == channel_scope]
                 index = current_index if isinstance(current_index, int) and current_index > 0 and (*channel_scope, current_index) not in used_channels else max(occupied or [0]) + 1
                 connector = str((existing or {}).get('physical_port_ref') or f'physical-port-{digest}')
@@ -287,10 +313,10 @@ def materialize_physical_ports(topology, hardware, interfaces, networks, *, rout
     findings = topology_port_findings(updated, hardware, list(canonical.values()))
     if findings:
         raise ValueError('; '.join(item['message'] for item in findings[:5]))
-    return updated, network_changes + channel_changes + physical_transmit_changes(updated, routes, messages)
+    return updated, network_changes + channel_changes + physical_transmit_changes(updated, routes, messages, logical_interfaces=logical_interfaces)
 
 
-def physical_transmit_changes(topology, routes, messages):
+def physical_transmit_changes(topology, routes, messages, *, logical_interfaces=()):
     """Declare every reviewed source channel when a message spans several buses."""
     nodes = {str(node['id']): node for node in topology.get('nodes') or []}
     ports = {str(port['id']): port for node in nodes.values() for port in node.get('ports') or []}
@@ -323,11 +349,40 @@ def physical_transmit_changes(topology, routes, messages):
         if all(identifier == primary for identifier, _ in bindings) and not configuration.get('physical_transmit_bindings'):
             continue
         expected = [{'hardware_interface_id': identifier, 'network_id': network, 'source': 'approved-topology'} for identifier, network in sorted(bindings)]
-        if configuration.get('physical_transmit_bindings') == expected:
+        primary_id = primary if any(identifier == primary for identifier, _ in bindings) else min(bindings)[0]
+        if configuration.get('physical_transmit_bindings') == expected and primary == primary_id:
             continue
         configuration['physical_transmit_bindings'] = expected
+        data = {'configuration': configuration}
+        if primary != primary_id:
+            data['hardware_interface_id'] = primary_id
         changes.append({'action': 'UPDATE', 'object_type': 'Message', 'object_id': str(message['id']),
-            'local_ref': 'physical-message-' + str(message['id']), 'data': {'configuration': configuration}})
+            'local_ref': 'physical-message-' + str(message['id']), 'data': data})
+    # Logical function interfaces remain independent identities. Reconcile only
+    # their physical binding metadata, preserving unrelated configuration and
+    # channels still used by another (including unreviewed) sibling message.
+    from backend.nis.engineering.signals.message_bindings import message_hardware_interface_ids
+    changed_messages = {c['object_id']: c['data'] for c in changes}
+    for logical in logical_interfaces:
+        owned = [m for m in messages if str(m.get('interface_id') or '') == str(logical['id'])]
+        reviewed = [m for m in owned if str(m['id']) in by_message]
+        if not reviewed:
+            continue
+        effective_ids, displaced = set(), set()
+        for message in owned:
+            updated_message = {**message, **changed_messages.get(str(message['id']), {})}
+            identifiers = message_hardware_interface_ids(updated_message)
+            effective_ids.update(identifiers)
+            if str(message['id']) in by_message:
+                displaced.update(message_hardware_interface_ids(message) - identifiers)
+        configuration = deepcopy(logical.get('configuration') or {})
+        previous_ids = {str(identifier) for identifier in configuration.get('physical_interface_ids') or []}
+        expected_ids = sorted((previous_ids - displaced) | effective_ids)
+        if configuration.get('physical_interface_ids') == expected_ids:
+            continue
+        configuration['physical_interface_ids'] = expected_ids
+        changes.append({'action': 'UPDATE', 'object_type': 'Interface', 'object_id': str(logical['id']),
+                        'data': {'configuration': configuration}})
     return changes
 
 
@@ -337,7 +392,8 @@ def create_physical_port_repair_proposal():
     from backend.nis.agent.tools import proposal_service as proposal_service
     snapshot = model.model()
     topology, changes = materialize_physical_ports(snapshot['topology'], snapshot['hardware'],
-        snapshot['hardware-interfaces'], model.networks(), routes=snapshot['routing'], messages=snapshot['messages'])
+        snapshot['hardware-interfaces'], model.networks(), routes=snapshot['routing'], messages=snapshot['messages'],
+        logical_interfaces=snapshot['interfaces'])
     if not changes and topology == snapshot['topology']:
         return {'status': 'UNCHANGED', 'changes': []}
     proposal = proposal_service.create('PHYSICAL_CHANNEL_REPAIR', [*changes, {'object_type': 'NetworkTopology', 'data': {

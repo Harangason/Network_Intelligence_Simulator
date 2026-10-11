@@ -168,7 +168,19 @@ class RoutingValidator:
         planner, state = load_plan()
         if state['project_id'] != selected:
             raise ValueError('Physical routing evidence belongs to another project.')
-        return cls(selected, physical_planner=planner)
+        from backend.nis.engineering.pagination import all_pages
+        from backend.nis.infrastructure.persistence.repository import ENTITY_SPECS
+        from backend.nis.engineering.routing.repository import list_routes
+        validator = cls(selected, physical_planner=planner)
+        # The batch owns this post-mutation model. Reuse its references as well
+        # as its physical graph; individual routes still run every check. Keep
+        # all routing revisions for duplicate detection, not only planner.routes.
+        validator.model_snapshot = deepcopy({
+            'project_id': selected, 'topology': state['topology'], 'parameters': state['parameters'],
+            'tables': {**{ENTITY_SPECS[kind].table: rows for kind, rows in planner.objects.items()},
+                       'engineering_routing_entries': all_pages(list_routes)},
+        })
+        return validator
 
     def _physical_path_mapping(
         self,
@@ -521,6 +533,9 @@ class RoutingValidator:
             port = hardware_interfaces.get(str(endpoint.get("port_id") or ""))
             if port is None:
                 continue  # Missing IDs/legacy aliases are handled separately above.
+            if port.get('lifecycle_state') in {'deprecated', 'superseded'}:
+                error(f'{role}_HARDWARE_INTERFACE_RETIRED',
+                      f'Anschluss {port.get("name")} ist ausgemustert und darf nicht für aktive Kommunikation verwendet werden.')
             network = str(port.get("network_ref") or "")
             if not network:
                 error(f"{role}_HARDWARE_INTERFACE_UNASSIGNED",
@@ -727,11 +742,11 @@ class RoutingValidator:
             if segment_protocol in DIRECT_SIGNAL_PROTOCOLS:
                 continue
             try:
-                profile = DEFAULT_TECHNOLOGY_REGISTRY.profile(segment_protocol)
+                profile = DEFAULT_TECHNOLOGY_REGISTRY.profile(segment_protocol, fields=('max_payload_bytes',))
             except KeyError:
                 profile = None
             capacity = PROTOCOL_CAPACITY.get(segment_protocol)
-            max_payload = profile.get("max_payload_bytes") if profile else capacity[1] if capacity else None
+            max_payload = profile.get("max_payload_bytes") if profile is not None else capacity[1] if capacity else None
             if max_payload is not None and frame_payload_bytes > max_payload:
                 error("PAYLOAD_TOO_LARGE", f"Payload {frame_payload_bytes} Byte überschreitet {max_payload} Byte für {segment_protocol}. Eine Protokollübersetzung allein erzeugt keine kleinere kodierte Nachricht.")
         bitrate = source.get("bitrate") if protocol in SUPPORTED_CAPACITY_PROTOCOLS else None
@@ -840,13 +855,16 @@ class RoutingValidator:
 
     def validate_table(self, routes: list[dict[str, Any]]) -> dict[str, Any]:
         previous = getattr(self, 'physical_planner', None)
+        previous_snapshot = getattr(self, 'model_snapshot', None)
         if previous is None and any((route.get('route') or {}).get('physical_paths') for route in routes):
-            self.physical_planner = self.for_current_batch(getattr(self, 'project_id', None)).physical_planner
+            batch = self.for_current_batch(getattr(self, 'project_id', None))
+            self.physical_planner, self.model_snapshot = batch.physical_planner, batch.model_snapshot
         try:
             results = [self.validate(route, exclude_route_id=str(route.get("id")) if route.get("id") else None) for route in routes]
         finally:
             # A later table read must see edited physical connections.
             self.physical_planner = previous
+            self.model_snapshot = previous_snapshot
         table_errors = [] if results else [
             {
                 "code": "ROUTING_TABLE_EMPTY",

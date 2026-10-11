@@ -1,6 +1,36 @@
 import { test, expect } from 'playwright/test';
 import { randomUUID } from 'node:crypto';
 
+test('description keeps individual space and Enter keystrokes and preserves its draft on reload', async ({ page }) => {
+  const retrievals = new Map<string, number>();
+  page.on('request', request => {
+    if (request.method() === 'POST' && new URL(request.url()).pathname === '/api/engineering/generation-experience/retrieve') {
+      const body = request.postData() ?? '';
+      retrievals.set(body, (retrievals.get(body) ?? 0) + 1);
+    }
+  });
+  await page.goto(`/studio/engineering?assistant=project&project=nis-e2e-description-spaces-${randomUUID()}`);
+  const description = page.locator('.engineering-agent-wizard-dialog').getByRole('textbox', { name: 'Projektbeschreibung', exact: true });
+  await expect(description).toBeEnabled();
+  await description.press('Space');
+  await description.pressSequentially('Ein');
+  await description.press('Space');
+  await expect(description).toHaveValue(' Ein ');
+  await description.pressSequentially('Temperatursensor');
+  await description.press('Space');
+  await description.press('Space');
+  await description.press('Enter');
+  await description.press('Enter');
+  await description.pressSequentially('misst ');
+  const draft = ' Ein Temperatursensor  \n\nmisst ';
+  await expect(description).toHaveValue(draft);
+  await page.reload();
+  await expect(description).toHaveValue(draft);
+  // At most one identical scope per mount; typing must not saturate the backend
+  // with duplicate work and prevent the real persisted draft from reopening.
+  for (const count of retrievals.values()) expect(count).toBeLessThanOrEqual(2);
+});
+
 test('proportional valve actuator and unsubmitted description survive wizard reload', async ({ page }) => {
   await page.goto(`/studio/engineering?assistant=project&project=nis-e2e-proportional-${randomUUID()}`);
   const dialog = page.locator('.engineering-agent-wizard-dialog');
@@ -29,6 +59,12 @@ test('generic ECU and reviewed I2C choices survive returning to the project desc
   await dialog.getByLabel('ECU: Anschluss', { exact: true }).selectOption('I2C');
   await dialog.getByTitle('Projektname', { exact: true }).click();
   await expect(dialog.getByRole('textbox', { name: 'Projektbeschreibung', exact: true })).toHaveValue('ein sensor temperatur mess , eine ECU, ein Aktor Ventil schließen');
+  const description = dialog.getByRole('textbox', { name: 'Projektbeschreibung', exact: true });
+  await description.press('ControlOrMeta+End');
+  await description.press('Space');
+  await expect(description).toHaveValue('ein sensor temperatur mess , eine ECU, ein Aktor Ventil schließen ');
+  await description.pressSequentially('mit Regelung ');
+  await expect(description).toHaveValue('ein sensor temperatur mess , eine ECU, ein Aktor Ventil schließen mit Regelung ');
   await dialog.getByRole('textbox', { name: 'Projektbeschreibung', exact: true }).fill('ein sensor temperatur misst, eine ECU steuert ein Ventil');
   await dialog.getByTitle('Geräteumfang', { exact: true }).click();
   await expect(dialog.getByLabel('ECU: Anschluss', { exact: true })).toHaveValue('I2C');

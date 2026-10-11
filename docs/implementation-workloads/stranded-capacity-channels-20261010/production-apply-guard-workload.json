@@ -1,0 +1,301 @@
+{
+  "goal_id": "stranded-capacity-channels-20261010",
+  "kind": "repair",
+  "repository": "I:\\PycharmProjects\\My_first_Network_Simulator",
+  "project_scope": "20261009072206008-4bb505f1",
+  "modify_code": true,
+  "allow_repair": true,
+  "revision_before": {
+    "backend/nis/engineering/network/physical_ports.py": "e87818a6100293dfdb9b5912d39e605b3151b525c3095d213744d898e74faa4e",
+    "backend/nis/agent/tools/wizard_generation.py": "872c8acfd0ec9334aea62182ba7c29bed28893645af1729e9c850c790fdc99db",
+    "backend/nis/interfaces/http/engineering.py": "2eabb92c0e3b8728295e3e15a5668db375f1d88c8016a8f06ea13ab9a1155aa3",
+    "backend/tests/test_physical_ports.py": "8e9117f90f175034a4bf1d9ba3baf9fd29a3d2aa9877728bfe0c32714e0385a8",
+    "frontend/src/features/communication/lib/communication-warnings.ts": "e0b410ec88f597b0a4e66444dca147d9a6dd067b92ae7cd6c469855f6e883c9c",
+    "frontend/src/features/communication/lib/communication-warnings.test.mjs": "74f42a7d4908ff8f3fed18ebc0086567e5b6d4c5d48092a64c0093f8946cf97a",
+    "backend/nis/engineering/routing/validation.py": "f7aa4203d0d30e4ba65ae92f38c0faae893c607ea163fb6813e62020fc8b22a1",
+    "backend/nis/engineering/routing/generation.py": "95cba5906cbd371f089c67c587d1b0842c2f778c30083d570a84a994b0f65a0f",
+    "backend/nis/engineering/network/topology_sync.py": "965df47d64f55e981462d9ee7e900c23f70217b07b915c30a287c660812862af",
+    "backend/tests/test_routing_context_consistency.py": "90ad3470fd161b7c701cdfc5f8a4f326214b0962431a9f7b798a10e9ab4fc254",
+    "docs/implementation-workloads/stranded-capacity-channels-20261010/reconciliation-preview.json": "fc8e94e85087509eef318c97b565a0329d436e93e0376d55d4e3da5f38766a30",
+    "docs/implementation-workloads/stranded-capacity-channels-20261010/prepared-reconciliation-proposal.json": "70131ae24c2c6d77431408d2b698bab9f760e37f4664bc86eee778a560559b84"
+  },
+  "files_inspected": [
+    "backend/nis/engineering/network/physical_ports.py",
+    "backend/nis/agent/tools/wizard_generation.py",
+    "backend/nis/interfaces/http/engineering.py",
+    "backend/tests/test_physical_ports.py",
+    "frontend/src/features/communication/lib/communication-warnings.ts",
+    "frontend/src/features/communication/lib/communication-warnings.test.mjs",
+    "backend/nis/engineering/routing/validation.py",
+    "backend/nis/engineering/routing/generation.py",
+    "backend/nis/engineering/network/topology_sync.py",
+    "backend/tests/test_routing_context_consistency.py"
+  ],
+  "files_changed": [
+    "backend/nis/engineering/network/physical_ports.py",
+    "backend/nis/agent/tools/wizard_generation.py",
+    "backend/nis/interfaces/http/engineering.py",
+    "backend/tests/test_physical_ports.py",
+    "frontend/src/features/communication/lib/communication-warnings.ts",
+    "frontend/src/features/communication/lib/communication-warnings.test.mjs",
+    "backend/nis/engineering/routing/validation.py",
+    "backend/nis/engineering/routing/generation.py",
+    "backend/nis/engineering/network/topology_sync.py",
+    "backend/tests/test_routing_context_consistency.py"
+  ],
+  "required_outcomes": [
+    "retain_original_channels_on_complete_split",
+    "synchronize_logical_and_message_bindings",
+    "preserve_parallel_and_unreviewed_paths",
+    "release_and_deploy",
+    "existing_project_cleanup"
+  ],
+  "validation_requirements": [
+    "isolated_regression",
+    "release_gate",
+    "production_verification",
+    "capacity_and_preflight"
+  ],
+  "unresolved_decisions": [],
+  "completion_status": "IN_PROGRESS",
+  "repair": {
+    "owner": "PROJECT_PRODUCT",
+    "root_cause": "Capacity split retains disconnected original hardware channels when one original network becomes several branches; logical Interface.configuration.physical_interface_ids is not reconciled with approved message transmission bindings. Earlier primary-only maintenance left these logical references behind.",
+    "first_failing_layer": "Canonical hardware and logical physical binding reconciliation",
+    "reproduction": "25 disconnected original AI-generated channels; 23 remain referenced by logical interfaces, including Licht. All retain versioned history and relations.",
+    "evidence": [
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\stranded-capacity-channels-20261010\\canonical-inspection.json",
+        "sha256": "d1138abd43237c14a4daadae16b92cce5a8e5c58dda76326900538b2aab33a86"
+      }
+    ],
+    "affected_files": [
+      "backend/nis/engineering/network/physical_ports.py",
+      "backend/nis/agent/tools/wizard_generation.py",
+      "backend/nis/interfaces/http/engineering.py",
+      "backend/tests/test_physical_ports.py"
+    ],
+    "acceptance_criteria": [
+      "Complete moves retain one original connector and allocate only the additional independent channels",
+      "Logical interface references include all reviewed message transmit channels",
+      "Explicit active parallel channels and unreviewed paths remain preserved",
+      "Production uses exact complete PASS image and canonical project is reconciled without blanket warning suppression"
+    ],
+    "targeted_tests": [
+      "physical ports split, multichannel logical bindings, wizard apply/reload"
+    ],
+    "weaken_assertions_to_pass": false
+  },
+  "implementation_plan": [
+    "Reuse the original channel on one reviewed segment when a complete network split removes its old network",
+    "Reconcile logical references using approved message transports in the shared materializer",
+    "Add split and logical binding regression cases; run isolated tests",
+    "Pass full release and deploy exact image, then prepare canonical existing-project resource reconciliation with impact evidence",
+    "Respect explicitly superseded physical resources: do not require unused retired inventory to be wired; reject any live message, route or topology still using it. Preserve history and retire only duplicate generated resources in a revision-checked canonical repair."
+  ],
+  "delivery": {
+    "decision": "YES",
+    "authorization": "Standing production authorization and user dann mach das produktiv; do not prune historical images without retention evidence.",
+    "status": "FULL_RELEASE_RETRY_IN_PROGRESS",
+    "running_version": "sha256:ebba6b6c79f448b7ad6736b461098310da056b1f951cf873f306f131239e5ba1",
+    "storage_review": [
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\stranded-capacity-channels-20261010\\storage-review.json",
+        "sha256": "4b637c81c4dba1989309ff2357621a317713ae0a0e22c40a2d841e19dcc7981b"
+      }
+    ],
+    "retention_exception": {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\stranded-capacity-channels-20261010\\authorized-image-removal.json",
+      "sha256": "6917315619d137e90063519786fc39d1536bd4f0986139f58c66f1959b049ef0"
+    }
+  },
+  "before": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\stranded-capacity-channels-20261010\\before\\backend\\nis\\engineering\\network\\physical_ports.py",
+      "sha256": "c2ce8ea91c9321ecc07c0ea1164a7e8e7037f0c691c7520ef7067e1c4ae2fb5e"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\stranded-capacity-channels-20261010\\before\\backend\\nis\\agent\\tools\\wizard_generation.py",
+      "sha256": "26c0c58d168ff112f78dc8c5ff37386d798c6a2a6de9fe594f84b8699b5db966"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\stranded-capacity-channels-20261010\\before\\backend\\nis\\interfaces\\http\\engineering.py",
+      "sha256": "582b57c17d0c75e21a50cdea79c68800779e6396d418c9484ac04cee9bba14cb"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\stranded-capacity-channels-20261010\\before\\backend\\tests\\test_physical_ports.py",
+      "sha256": "35969019b6d5f0150386ad457c8bf1d9ba788f13f5aa815cb9333830a8fa4db6"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\stranded-capacity-channels-20261010\\before\\frontend\\src\\features\\communication\\lib\\communication-warnings.ts",
+      "sha256": "73456ea1682733939d0faa1ac66682a25900b6a02df752f8e33f8a912ec7a152"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\stranded-capacity-channels-20261010\\before\\frontend\\src\\features\\communication\\lib\\communication-warnings.test.mjs",
+      "sha256": "5c8d5abb7560b9ad222be61d6e53e1530b2a1a1abdff55e0edc9e7535f2f7766"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\stranded-capacity-channels-20261010\\before\\backend\\nis\\engineering\\routing\\validation.py",
+      "sha256": "9cd71435bdff113843cce5cf31dedd83408bf71286892d07a0d0ca0732a8917a"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\stranded-capacity-channels-20261010\\before\\backend\\nis\\engineering\\routing\\generation.py",
+      "sha256": "55ebb5e1119ece0e973137d4a66e12af18315545708bd8508e04516adb271f88"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\stranded-capacity-channels-20261010\\before\\backend\\nis\\engineering\\network\\topology_sync.py",
+      "sha256": "a768c892637439e06892adec148b1ffc66688e0298620e0a4d50e6cbace98f0d"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\stranded-capacity-channels-20261010\\before\\backend\\tests\\test_routing_context_consistency.py",
+      "sha256": "6bd52a94192f85115daf6a2d735ab67bfb17a9525111f19e26968f2587de7ae0"
+    }
+  ],
+  "after": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\stranded-capacity-channels-20261010\\after\\backend\\nis\\engineering\\network\\physical_ports.py",
+      "sha256": "e87818a6100293dfdb9b5912d39e605b3151b525c3095d213744d898e74faa4e"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\stranded-capacity-channels-20261010\\after\\backend\\nis\\agent\\tools\\wizard_generation.py",
+      "sha256": "872c8acfd0ec9334aea62182ba7c29bed28893645af1729e9c850c790fdc99db"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\stranded-capacity-channels-20261010\\after\\backend\\nis\\interfaces\\http\\engineering.py",
+      "sha256": "2eabb92c0e3b8728295e3e15a5668db375f1d88c8016a8f06ea13ab9a1155aa3"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\stranded-capacity-channels-20261010\\after\\backend\\tests\\test_physical_ports.py",
+      "sha256": "8e9117f90f175034a4bf1d9ba3baf9fd29a3d2aa9877728bfe0c32714e0385a8"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\stranded-capacity-channels-20261010\\after\\frontend\\src\\features\\communication\\lib\\communication-warnings.ts",
+      "sha256": "e0b410ec88f597b0a4e66444dca147d9a6dd067b92ae7cd6c469855f6e883c9c"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\stranded-capacity-channels-20261010\\after\\frontend\\src\\features\\communication\\lib\\communication-warnings.test.mjs",
+      "sha256": "74f42a7d4908ff8f3fed18ebc0086567e5b6d4c5d48092a64c0093f8946cf97a"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\stranded-capacity-channels-20261010\\after\\backend\\nis\\engineering\\routing\\validation.py",
+      "sha256": "f7aa4203d0d30e4ba65ae92f38c0faae893c607ea163fb6813e62020fc8b22a1"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\stranded-capacity-channels-20261010\\after\\backend\\nis\\engineering\\routing\\generation.py",
+      "sha256": "95cba5906cbd371f089c67c587d1b0842c2f778c30083d570a84a994b0f65a0f"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\stranded-capacity-channels-20261010\\after\\backend\\nis\\engineering\\network\\topology_sync.py",
+      "sha256": "965df47d64f55e981462d9ee7e900c23f70217b07b915c30a287c660812862af"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\stranded-capacity-channels-20261010\\after\\backend\\tests\\test_routing_context_consistency.py",
+      "sha256": "90ad3470fd161b7c701cdfc5f8a4f326214b0962431a9f7b798a10e9ab4fc254"
+    }
+  ],
+  "diff": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\stranded-capacity-channels-20261010\\implementation.diff",
+      "sha256": "e0bf770058b670c9a3806d433b94b37c9acf4bd71d2e4b3e2c3a9efa5d11cf98"
+    }
+  ],
+  "tests": [
+    {
+      "scope": "physical ports, resources, capacity reserve, real captured wizard routing",
+      "passed": 58,
+      "seconds": 536.33,
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\stranded-capacity-channels-20261010\\isolated-tests.log",
+          "sha256": "d4099f0873985b4eafe268315a65634169a157171a389dbf4e587c77a973b33b"
+        }
+      ],
+      "scope_note": "Development regression run; the later retired-routing selection checks and final UI boundary were separately retested. This is not a full frozen-source release gate."
+    },
+    {
+      "scope": "Final source physical ports, retired routing channels, unreviewed sibling preservation, idempotence",
+      "passed": 39,
+      "seconds": 5.97,
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\stranded-capacity-channels-20261010\\final-binding-tests.log",
+          "sha256": "b58d62bbc4343f0f78b37e9bd9c49513a252a60463819da4b7da4c7082becfd6"
+        }
+      ]
+    },
+    {
+      "scope": "Communication warning UI including retired references",
+      "passed": 8,
+      "tool_result": "Actual node test invocation completed exit 0; immutable and live failure cases covered.",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\stranded-capacity-channels-20261010\\final-warning-tests.log",
+          "sha256": "656954074753625d4eaa5533c52ec58e857979c56aa7945c8bef87d114782187"
+        }
+      ]
+    },
+    {
+      "scope": "TypeScript",
+      "exit_code": 0,
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\stranded-capacity-channels-20261010\\final-typecheck.log",
+          "sha256": "ac68ddebed8e966d1ec1b44bd6f6f7a92ea0e5f1889a0897c93039432164437c"
+        }
+      ]
+    }
+  ],
+  "validation": {
+    "canonical_reconciliation_preview": [
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\stranded-capacity-channels-20261010\\before-encoding-repair-reconciliation-preview.json",
+        "sha256": "a4017145e8c66b88e0a368a4cfccf9012ceaacc1cea9b00e5c0439a3ed582268"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\stranded-capacity-channels-20261010\\reconciliation-preview.json",
+        "sha256": "fc8e94e85087509eef318c97b565a0329d436e93e0376d55d4e3da5f38766a30"
+      }
+    ],
+    "release_gate": [
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\delivery-aa5a9723adae\\8e2d36958f93\\receipt.json",
+        "sha256": "fd921156fc3bbd6600829d35b53b438d366c733e05707a44f9a619942c1508e1"
+      }
+    ],
+    "canonical_prepared_proposal": [
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\stranded-capacity-channels-20261010\\before-encoding-repair-prepared-reconciliation-proposal.json",
+        "sha256": "2c632f6921e4217a50b2a4d54d93f228dabbebcb6ab1a63f1792c0f93e1d095c"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\stranded-capacity-channels-20261010\\prepared-reconciliation-proposal.json",
+        "sha256": "70131ae24c2c6d77431408d2b698bab9f760e37f4664bc86eee778a560559b84"
+      }
+    ],
+    "plan_encoding_preservation": [
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\stranded-capacity-channels-20261010\\verified-plan-text-repair.json",
+        "sha256": "9e2f1d051e13a9ebe846369a40f9b277be0be4c2fadc0a56aa94cd201bd44698"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\stranded-capacity-channels-20261010\\rejected-encoding-plan.json",
+        "sha256": "b85cc3c8106360048407a0168337d0032386ac27c022f145d80b38f97160ef86"
+      }
+    ]
+  },
+  "remaining_findings": [
+    "Full release retry in progress after structure inventory repair.",
+    "Canonical reconciliation validated with UTF-8 preservation; apply after exact complete PASS deployment."
+  ],
+  "context": {
+    "production_model_mutations": 0,
+    "proposal_preparation_does_not_apply_changes": true,
+    "archive_verified_blobs": 23,
+    "proposed_exact_image_removal_count": 1,
+    "image_deleted": true,
+    "production_fix_pending": true
+  },
+  "prepared_proposal_id": "06a903ac-2cf2-4579-9263-00946cf30e80",
+  "action_scope": "Apply the explicitly approved, validated 86-change canonical channel reconciliation through normal versioned proposal review/apply, only after complete PASS deployment. No application edits or deletions.",
+  "model_revision_before": "540f446a7441a4a0360fdf3a00081b5b1b03835efbdd271a776fa7f8cb3f3e32"
+}

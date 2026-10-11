@@ -1,0 +1,207 @@
+"""Classic ISOBUS, explicit registered functionality and version-qualified stack settings."""
+SHA='40efe24161e4d3f62b7ba1309b56475c280bfa24'
+RAW=f'https://raw.githubusercontent.com/Open-Agriculture/AgIsoStack-plus-plus/{SHA}/'
+CONFIG=RAW+'isobus/include/isobus/isobus/can_network_configuration.hpp'
+TP=RAW+'isobus/include/isobus/isobus/can_transport_protocol.hpp'
+ETP=RAW+'isobus/include/isobus/isobus/can_extended_transport_protocol.hpp'
+FP=RAW+'isobus/include/isobus/isobus/nmea2000_fast_packet_protocol.hpp'
+NAME=RAW+'isobus/src/can_NAME.cpp'
+IDENT=RAW+'isobus/src/can_identifier.cpp'
+CLAIM=RAW+'isobus/src/can_internal_control_function.cpp'
+CLAIM_H=RAW+'isobus/include/isobus/isobus/can_internal_control_function.hpp'
+AEF='https://www.aef-online.org/about-us/activities/high-speed-isobus.html'
+ISO='https://committee.iso.org/standard/89949.html?browse=tc'
+DICT='https://www.isobus.net/isobus/'
+CONF='https://www.aef-online.org/products/conformance-test.html'
+SOURCES={u:'AgIsoStack++ pinned commit'+SHA+'2026-10-01T03:02:37Z; publisher source downloaded and hash manifest; relevant declared parameter code read'for u in(CONFIG,TP,ETP,FP,NAME,IDENT,CLAIM,CLAIM_H)}
+SOURCES.update({AEF:'AEF original CAN250k/backbone40m versus independent high-speed Ethernet project; accessed2026-10-01',
+ ISO:'ISO11783-3:2026 Ed5 March2026 publisher metadata/CEFF scope read; full licensed55-page text not read',
+ DICT:'VDMA maintenance agency live ISO11783-11 data dictionary, revision snapshot must be selected per actual PGN/DDI',
+ CONF:'AEF functionality-specific conformance process; certification requires actual product records, accessed2026-10-01'})
+DECLARATIONS=[]
+def d(key,kind,meaning,source=CONFIG,unit=None,options=None,minimum=None,maximum=None,**extra):
+    DECLARATIONS.append(dict(key='iso_'+key,type=kind,description=meaning,source=source,source_revision=SOURCES[source],
+        unit=unit,options=options,min=minimum,max=maximum,**extra))
+d('path','select','Explicit classic CAN path; High Speed ISOBUS must have a separate registered Ethernet profile, never CAN overclock.',source=ISO,options=['CLASSIC_CAN'])
+d('profile','select','Actual selected device/version versus unchanged factory profile of the exact reviewed library commit.',options=['QUALIFIED_DEVICE','AGISOSTACK_40EFE24_FACTORY'])
+d('direction','select','Actual transfer sender/receiver; BAM concurrency limit applies to one sender, not all receivers.',source=TP,options=['TRANSMITTER','RECEIVER'])
+d('service','select','Actual registered functionality; VT/TC/TIM/DDI and GNSS require their own application schema/evidence.',source=CONF,
+ options=['PROCESS_DATA','ADDRESS_CLAIM','REQUEST_PGN','COMMANDED_ADDRESS','GNSS_FAST_PACKET','VIRTUAL_TERMINAL','TASK_CONTROLLER','DIAGNOSTICS','FILE_SERVER','TIM'])
+d('transport','select','Actual single CAN frame, TP BAM/connection, ETP or qualified GNSS FastPacket; payload ceilings differ.',source=TP,options=['SINGLE_FRAME','TP_BAM','TP_CONNECTION','ETP','GNSS_FAST_PACKET'])
+d('frame_format','select','ISO11783-3 CEFF classical extended29-bit, not11-bit/FD/BRS/XL.',source=ISO,options=['CLASSIC_EXTENDED_29'],default='CLASSIC_EXTENDED_29')
+d('frame_phase','select','Actual application/control/data/FastPacket first/subsequent frame; whole-message PGN differs from TP frame PGN.',source=TP,
+ options=['APPLICATION','TP_CM','TP_DT','ETP_CM','ETP_DT','FP_FIRST','FP_NEXT'])
+d('pdu_kind','select','Actual PDU1 destination-specific versus PDU2 group-extension broadcast identifier layout.',source=IDENT,options=['PDU1','PDU2'])
+d('claim_state','select','Actual claimed versus cannot-claim/request state; NULL254 is not an ordinary application source.',source=CLAIM,options=['CLAIMED','REQUESTING','CANNOT_CLAIM'])
+for key,meaning,source in [('part3_revision','Actual qualified ISO11783-3 edition; no assumed2026 conformance from a library source.',ISO),
+ ('build_commit','Actual exact implementation commit, not floating main reference.',CONFIG),
+ ('build_source','Actual binary/build configuration and modified/unmodified firmware evidence.',CONFIG),
+ ('device_source','Actual controller/driver/transceiver firmware and supported services/transport.',CONFIG),
+ ('physical_source','Actual ISO11783-2 harness, stub/termination/power/EMC/propagation/PHY evidence.',AEF),
+ ('binding_source','Actual canonical CAN port/segment and independently registered gateways.',AEF),
+ ('pgn_source','Actual selected PGN/DDI/function dictionary revision and codec, not copied J1939/NMEA industry defaults.',DICT),
+ ('name_source','Actual unique NAME allocation, manufacturer/function/industry assignments and changing address.',NAME),
+ ('application_source','Actual selected VT/TC/GNSS/diagnostics/file/TIM application schema and role capabilities.',CONF),
+ ('schedule_source','Actual priority/interference/update/transport/claim/driver-queue schedule.',TP),
+ ('acceptance_source','Actual complete functional E2E/freshness/safety acceptance distinct from TP timer.',TP),
+ ('capacity_source','Actual whole shared CAN segment traffic, retries/errors, bit stuffing and arbitration proof.',AEF),
+ ('conformance_source','Actual AEF product/version and selected certified functionality records.',CONF),
+ ('name_hex','Actual exact64-bit NAME in16hex digits; JS float/placeholder allFF cannot represent identity.',NAME)]:d(key,'text',meaning,source=source)
+for key,meaning,lo,hi,unit,source in [
+ ('bitrate_bps','Classic ISOBUS250000bit/s nominal rate, not genericCAN1M/FD8M.',250000,250000,'bit/s',AEF),
+ ('backbone_m','Actual classic CAN backbone length40m ceiling, not whole Ethernet/switch path.',0,40,'m',AEF),
+ ('stub_m','Actual qualified harness branch length; no unverified universal stub default.',0,None,'m',AEF),
+ ('propagation_ns','Actual round-trip harness/transceiver delay.',0,None,'ns',AEF),
+ ('termination_count','Actual termination/active termination units; generic passive120Ohm count is not inferred.',0,None,None,AEF),
+ ('supply_v','Actual bus/control/termination power supply and operating evidence, not example tractor12V.',0,None,'V',AEF),
+ ('priority','Actual3-bit CAN identifier priority; pinned library application6/control/data7 proposals differ.',0,7,None,IDENT),
+ ('pgn','Actual18-bit PGN; PDU1 low byte0 versus PDU2 group extension; current data frame versus whole application message separate.',0,262143,None,IDENT),
+ ('message_pgn','Actual whole reassembled application PGN distinct from TP/ETP control/data PGNs.',0,262143,None,TP),
+ ('extended_data_page','Actual identifier EDP bit with qualified dictionary, not implicit industry alias.',0,1,None,IDENT),
+ ('data_page','Actual identifier data-page bit.',0,1,None,IDENT),
+ ('pdu_format','Actual8-bit PF determines PDU1 PF<240 or PDU2 PF>=240.',0,255,None,IDENT),
+ ('pdu_specific','Actual destination byte for PDU1 or group extension for PDU2.',0,255,None,IDENT),
+ ('source_address','Actual current SA, broadcast255 is never sender.',0,254,None,CLAIM),
+ ('destination_address','Actual DA, NULL254 unavailable, broadcast255 distinct from specific0..253.',0,255,None,IDENT),
+ ('preferred_address','Actual requested SA or NULL254 requiring arbitrary-address capability.',0,254,None,CLAIM),
+ ('can_id','Actual encoded29-bit identifier; flags in a host32-bit CAN structure are not ID bits.',0,536870911,None,IDENT),
+ ('manufacturer_code','Actual11-bit manufacturer allocation, not factory identity0.',0,2047,None,NAME),
+ ('identity_number','Actual21-bit unique control-function identity.',0,2097151,None,NAME),
+ ('ecu_instance','Actual3-bit ECU instance.',0,7,None,NAME),('function_instance','Actual5-bit function instance.',0,31,None,NAME),
+ ('function_code','Actual8-bit function interpreted in actual class/industry dictionary.',0,255,None,NAME),
+ ('device_class','Actual7-bit device class.',0,127,None,NAME),('device_class_instance','Actual4-bit class instance.',0,15,None,NAME),
+ ('industry_group','Actual NAME industry group0..5; never copied from NIS industry selection;6/7 reserved in reviewed library.',0,5,None,NAME),
+ ('name_reserved_bit','Actual reserved NAME bit48, kept explicit for exact encoding.',0,1,None,NAME),
+ ('claim_contention_ms','Pinned library address contention250ms, not transmission completion deadline.',0,None,'ms',CLAIM_H),
+ ('claim_random_delay_ms','Actual randomized floor(U[0,255]*0.6) in reviewed library; do not default one random value.',0,153,'ms',CLAIM),
+ ('arbitration_start_address','Actual dynamic SA search start128 in pinned library.',0,253,None,CLAIM_H),
+ ('arbitration_end_address','Actual dynamic search end depends on NAME group/library revision.',0,253,None,CLAIM),
+ ('message_octets','Actual full application message, not per-CAN frame8 or TP1785 universal bound.',0,117440505,'Byte',ETP),
+ ('frame_octets','Actual current classical CAN data field0..8; transport frames normally8.',0,8,'Byte',TP),
+ ('transport_data_octets','Actual TP/ETP data per frame7 after1-byte sequence.',0,7,'Byte',TP),
+ ('fp_first_data_octets','Actual FastPacket first frame6 data after sequence+length.',0,6,'Byte',FP),
+ ('fp_next_data_octets','Actual subsequent FastPacket7 data after counter.',0,7,'Byte',FP),
+ ('data_frames','Actual ceil(message/7) TP/ETP or1+ceil((message-6)/7) FastPacket.',1,16777215,None,TP),
+ ('tp_sequence','Actual TP data sequence1..255, not0-based CAN frame index.',1,255,None,TP),
+ ('etp_offset_packets','Actual24-bit ETP DPO packet offset.',0,16777215,None,ETP),
+ ('absolute_packet','Actual ETP offset+1-based local sequence within full message.',1,16777215,None,ETP),
+ ('fp_sequence','Actual3-bit FastPacket flow sequence.',0,7,None,FP),('fp_frame_counter','Actual5-bit FastPacket frame counter0..31.',0,31,None,FP),
+ ('max_sessions','Actual implementation memory cap on transport sessions,0 disables admission.',0,4294967295,None,CONFIG),
+ ('active_sessions','Actual concurrent sessions, not a proposed factory memory bound.',0,None,None,CONFIG),
+ ('frames_per_update','Actual implementation queue admission cap per manager update; not universal bus-load proof.',0,255,None,CONFIG),
+ ('cts_packets','Actual negotiated receiver CTS count,0 may pause; sender and receiver capability separate.',0,255,None,CONFIG),
+ ('dpo_packets','Actual ETP block packets0..255 at selected protocol phase.',0,255,None,CONFIG),
+ ('bam_interval_ms','Actual ISOBUS BAM frame spacing10..200ms; pinned library50ms for J1939 compatibility.',10,200,'ms',CONFIG),
+ ('t1_ms','Actual TP/ETP inter-data timeout; pinned library750ms.',0,None,'ms',TP),
+ ('t2_ms','Actual TP/ETP receiver response timeout; pinned library1250ms.',0,None,'ms',TP),
+ ('t3_ms','Actual TP/ETP connection response timeout; pinned library1250ms.',0,None,'ms',TP),
+ ('t4_ms','Actual TP/ETP hold timeout; pinned header1050ms, exact state-machine use remains distinct.',0,None,'ms',TP),
+ ('tr_ms','Actual TP/ETP retry/hold timing bound; pinned header200ms, not end-to-end latency.',0,None,'ms',TP),
+ ('fp_timeout_ms','Actual FastPacket reassembly timeout; pinned library750ms.',0,None,'ms',FP),
+ ('driver_update_ms','Actual manager/driver update period; frames/update alone does not determine throughput.',0,None,'ms',CONFIG),
+ ('stuffed_frame_bits','Actual bounded classical extended CAN wire bits including stuffing/ACK/IFS, not message_octets*8.',0,None,'bit',AEF),
+ ('arbitration_bound_ms','Actual interference/priority blocking bound on selected shared segment.',0,None,'ms',AEF),
+ ('functional_bound_ms','Actual complete application E2E deadline.',0,None,'ms',TP)]:d(key,'number',meaning,source=source,unit=unit,minimum=lo,maximum=hi)
+for key,meaning in [('unmodified_build','Actual pinned source/build has no settings modifications.'),
+ ('arbitrary_address_capable','Actual NAME bit63 and address-claiming capability.'),
+ ('brs','Classical ISOBUS has no FD bit-rate switch.'),('fd_enabled','Classical ISOBUS has no FD frames.'),
+ ('claim_confirmed','Actual observed address claim; library constant alone cannot confirm claim.'),
+ ('schedule_confirmed','Actual schedule confirmation.'),('capacity_confirmed','Actual full segment capacity confirmation.')]:d(key,'boolean',meaning)
+REMOVED={k:'Removed inherited '+k+': selected classic ISOBUS has native fixed250k/29bit and service-specific CAN/TP/ETP/FastPacket settings; no industry-selectedCAN settings, generic queues, retransmission percentages or gateway capacity defaults.'for k in
+ ('bitrate','arbitration_bitrate','data_bitrate','queue_size','queue_policy','qos_priority','reserved_bandwidth_percent','sync_method','rate_limit_bit_s',
+ 'retransmission_enabled','retransmission_rate','retry_limit','retransmission_delay_ms','gateway_maximum_throughput','gateway_input_buffer',
+ 'gateway_output_buffer','gateway_maximum_routes','gateway_maximum_messages_s')}
+REQUIRED=['path','profile','direction','service','transport','part3_revision','device_source','physical_source','binding_source','pgn_source',
+ 'name_source','application_source','schedule_source','acceptance_source','capacity_source','bitrate_bps']
+def semantics():
+    rules=[]
+    def r(key,when=None,source=CONFIG,**kw):rules.append(dict(parameter='iso_'+key,when={'iso_'+k:v for k,v in(when or {}).items()},source=source,source_revision=SOURCES[source],**kw))
+    for key in ('fd_enabled','brs'):r(key,allowed=[False],source=ISO)
+    r('name_hex',pattern=r'[0-9a-fA-F]{16}',forbidden=['ffffffffffffffff','FFFFFFFFFFFFFFFF'],source=NAME,
+        integer_text_base=16,integer_bitfields=[{'parameter':'iso_'+key,'offset':offset,'width':width,'boolean':boolean}
+            for key,offset,width,boolean in [('identity_number',0,21,False),('manufacturer_code',21,11,False),
+            ('ecu_instance',32,3,False),('function_instance',35,5,False),('function_code',40,8,False),('name_reserved_bit',48,1,False),
+            ('device_class',49,7,False),('device_class_instance',56,4,False),('industry_group',60,3,False),('arbitrary_address_capable',63,1,True)]])
+    r('destination_address',forbidden=[254],source=IDENT)
+    r('source_address',{'claim_state':'CLAIMED'},maximum=253,source=CLAIM)
+    r('source_address',{'claim_state':'CANNOT_CLAIM'},allowed=[254],source=CLAIM)
+    r('source_address',when_not={'iso_service':'REQUEST_PGN','iso_claim_state':'CANNOT_CLAIM'},when_present=['iso_service'],maximum=253,source=CLAIM)
+    r('service',{'claim_state':'CANNOT_CLAIM'},allowed=['ADDRESS_CLAIM'],source=CLAIM)
+    r('arbitrary_address_capable',{'preferred_address':254},allowed=[True],required=True,source=CLAIM)
+    r('arbitration_end_address',minimum_parameter='iso_arbitration_start_address',source=CLAIM)
+    r('pdu_format',{'pdu_kind':'PDU1'},maximum=239,source=IDENT)
+    r('pdu_format',{'pdu_kind':'PDU2'},minimum=240,source=IDENT)
+    r('pdu_specific',{'pdu_kind':'PDU1'},equal_parameter='iso_destination_address',source=IDENT)
+    r('destination_address',{'pdu_kind':'PDU2'},allowed=[255],source=IDENT)
+    pgn={'sum':[{'product':['iso_extended_data_page',131072]},{'product':['iso_data_page',65536]},{'product':['iso_pdu_format',256]}]}
+    r('pgn',{'pdu_kind':'PDU1'},multiple_of=256,equal_expression=pgn,source=IDENT)
+    r('pgn',{'pdu_kind':'PDU2'},equal_expression={'sum':[pgn,'iso_pdu_specific']},source=IDENT)
+    r('can_id',equal_expression={'sum':[{'product':['iso_priority',67108864]},{'product':['iso_extended_data_page',33554432]},
+        {'product':['iso_data_page',16777216]},{'product':['iso_pdu_format',65536]},{'product':['iso_pdu_specific',256]},'iso_source_address']},source=IDENT)
+    r('message_octets',equal_parameter='payload_bytes',source=TP)
+    for transport in ('TP_BAM','TP_CONNECTION'):
+        when={'transport':transport};r('message_octets',when,minimum=9,maximum=1785,source=TP)
+        r('data_frames',when,equal_expression={'ceiling':[{'product':['iso_message_octets',1/7]}]},maximum=255,source=TP)
+        r('frame_phase',when,allowed=['TP_CM','TP_DT'],source=TP)
+    r('message_octets',{'transport':'SINGLE_FRAME'},maximum=8,source=TP)
+    r('data_frames',{'transport':'SINGLE_FRAME'},allowed=[1],source=TP)
+    r('frame_octets',{'transport':'SINGLE_FRAME'},equal_parameter='iso_message_octets',source=TP)
+    r('message_pgn',{'transport':'SINGLE_FRAME'},equal_parameter='iso_pgn',source=TP)
+    r('frame_phase',{'transport':'SINGLE_FRAME'},allowed=['APPLICATION'],source=TP)
+    for key in ('bam_interval_ms','tp_sequence','cts_packets','dpo_packets','etp_offset_packets','absolute_packet','fp_sequence','fp_frame_counter'):
+        r(key,{'transport':'SINGLE_FRAME'},allowed=[],source=TP)
+    r('message_octets',{'transport':'ETP'},minimum=1786,maximum=117440505,source=ETP)
+    r('data_frames',{'transport':'ETP'},equal_expression={'ceiling':[{'product':['iso_message_octets',1/7]}]},source=ETP)
+    r('frame_phase',{'transport':'ETP'},allowed=['ETP_CM','ETP_DT'],source=ETP)
+    r('destination_address',{'transport':'ETP'},maximum=253,source=ETP)
+    r('destination_address',{'transport':'TP_CONNECTION'},maximum=253,source=TP)
+    r('destination_address',{'transport':'TP_BAM'},allowed=[255],source=TP)
+    r('active_sessions',maximum_parameter='iso_max_sessions',source=CONFIG)
+    r('active_sessions',{'transport':'TP_BAM','direction':'TRANSMITTER'},maximum=1,source=TP)
+    for transport in ('TP_BAM','TP_CONNECTION','ETP'):r('max_sessions',{'transport':transport},minimum=1)
+    for phase,pgn_number in [('TP_CM',60416),('TP_DT',60160),('ETP_CM',51200),('ETP_DT',50944)]:
+        r('pgn',{'frame_phase':phase},allowed=[pgn_number],source=TP if phase.startswith('TP')else ETP)
+        r('frame_octets',{'frame_phase':phase},allowed=[8],source=TP)
+    for phase in ('TP_DT','ETP_DT'):r('transport_data_octets',{'frame_phase':phase},allowed=[7],source=TP)
+    r('absolute_packet',{'transport':'ETP'},equal_expression={'sum':['iso_etp_offset_packets','iso_tp_sequence']},maximum_parameter='iso_data_frames',source=ETP)
+    r('service',{'transport':'GNSS_FAST_PACKET'},allowed=['GNSS_FAST_PACKET'],source=FP)
+    r('message_octets',{'transport':'GNSS_FAST_PACKET'},minimum=9,maximum=223,source=FP)
+    r('frame_phase',{'transport':'GNSS_FAST_PACKET'},allowed=['FP_FIRST','FP_NEXT'],source=FP)
+    r('pgn',{'transport':'GNSS_FAST_PACKET'},minimum=126976,maximum=131071,source=FP)
+    r('data_frames',{'transport':'GNSS_FAST_PACKET'},equal_expression={'sum':[1,{'ceiling':[{'product':[{'subtract':['iso_message_octets',6]},1/7]}]}]},source=FP)
+    r('fp_frame_counter',{'frame_phase':'FP_FIRST'},allowed=[0],source=FP)
+    r('fp_frame_counter',{'frame_phase':'FP_NEXT'},minimum=1,source=FP)
+    for service,size in [('ADDRESS_CLAIM',8),('REQUEST_PGN',3),('COMMANDED_ADDRESS',9)]:r('message_octets',{'service':service},allowed=[size],source=CLAIM)
+    for key in ('build_source','build_commit','unmodified_build'):r(key,{'profile':'AGISOSTACK_40EFE24_FACTORY'},required=True)
+    r('build_commit',{'profile':'AGISOSTACK_40EFE24_FACTORY'},allowed=[SHA])
+    r('unmodified_build',{'profile':'AGISOSTACK_40EFE24_FACTORY'},allowed=[True])
+    for key,value in [('t1_ms',750),('t2_ms',1250),('t3_ms',1250),('t4_ms',1050),('tr_ms',200),('fp_timeout_ms',750),('claim_contention_ms',250)]:
+        r(key,{'profile':'AGISOSTACK_40EFE24_FACTORY'},allowed=[value],source=FP if key=='fp_timeout_ms'else CLAIM_H if key=='claim_contention_ms'else TP)
+    # Header timer constants are proposed for the exact reviewed implementation,
+    # not substituted for actual negotiated/current ISO edition conformance.
+    return {'rate_model':{'type':'CLASSIC_ISOBUS_NATIVE_CAN_250K','fields':[]},'required_parameters':['iso_'+k for k in REQUIRED],
+        'native_parameter_prefixes':['iso_'],'parameter_constraints':rules,'mechanisms':{'framing':['CLASSIC_EXTENDED_CAN_29'],
+        'arbitration':['ACTUAL_CAN_IDENTIFIER_PRIORITY_AND_NAME_ADDRESS_CLAIM'],'addressing':['UNIQUE_NAME_AND_CHANGING_SOURCE_ADDRESS'],
+        'segmentation':['SINGLE8_TP1785_ETP117440505_GNSS_FP223_SEPARATE'],
+        'acceptance':['AEF_SELECTED_FUNCTIONALITY_AND_FULL_SEGMENT_SCHEDULE_NOT_INFERRED']}}
+def fields():
+    result=[];required=set(semantics()['required_parameters'])
+    factory={'max_sessions':4,'frames_per_update':255,'cts_packets':16,'dpo_packets':16,'bam_interval_ms':50,
+        't1_ms':750,'t2_ms':1250,'t3_ms':1250,'t4_ms':1050,'tr_ms':200,'fp_timeout_ms':750,'claim_contention_ms':250,'arbitration_start_address':128}
+    for spec in DECLARATIONS:
+        item={k:v for k,v in spec.items()if v is not None};key=item['key'].removeprefix('iso_')
+        item.update(label=key.replace('_',' '),category='communication',scope='network',required=item['key']in required,
+            editable=True,integer=spec['type']=='number'and spec['unit']not in ('ms','ns','m','V'),parameter_origin='DEVICE_CONFIGURATION',
+            default_status='PROPOSED_STANDARD'if'default'in item else'UNKNOWN',validation_relevant=True,simulation_relevant=False)
+        if key=='bitrate_bps':item.update(default=250000,default_status='PROPOSED_STANDARD')
+        proposals=[]
+        when={'iso_profile':'AGISOSTACK_40EFE24_FACTORY','iso_build_commit':SHA,'iso_unmodified_build':True}
+        if key in factory:
+            scope={}if key in('max_sessions','frames_per_update','claim_contention_ms','arbitration_start_address')else{'iso_transport':'TP_BAM'if key=='bam_interval_ms'else'ETP'if key=='dpo_packets'else'TP_CONNECTION'if key=='cts_packets'else'GNSS_FAST_PACKET'if key=='fp_timeout_ms'else'TP_CONNECTION'}
+            proposals=[{'when':{**when,**scope},'value':factory[key]}]
+            if key in ('t1_ms','t2_ms','t3_ms','t4_ms','tr_ms'):proposals.append({'when':{**when,'iso_transport':'ETP'},'value':factory[key]})
+        if key=='arbitration_end_address':proposals=[{'when':{**when,'iso_industry_group':group},'value':end}for group,end in[(0,247),(1,158),(2,235),(3,207),(4,207),(5,207)]]
+        if key=='priority':proposals=[{'when':{**when,'iso_frame_phase':phase},'value':priority}for phase,priority in[('APPLICATION',6),('TP_CM',7),('TP_DT',7),('ETP_CM',7),('ETP_DT',7)]]
+        if proposals:item.update(conditional_defaults=[{**v,'source':item['source'],'source_revision':item['source_revision']}for v in proposals],default_status='PROPOSED_CONDITIONAL')
+        result.append(item)
+    return result

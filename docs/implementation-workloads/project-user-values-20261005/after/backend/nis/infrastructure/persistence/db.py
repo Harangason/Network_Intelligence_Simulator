@@ -1,0 +1,250 @@
+"""Datenbank-Zugriff für das kanonische Engineering-Modell.
+
+Nutzt ``psycopg`` (v3) mit einem synchronen Connection-Pool, da das Flask-
+Backend selbst synchron läuft (``ThreadedWSGIServer``). Ein asynchroner
+Treiber wie ``asyncpg`` würde pro Request ein eigenes Event-Loop verlangen
+und wäre mit dem bestehenden Server-Modell nicht sinnvoll kombinierbar.
+"""
+
+from __future__ import annotations
+
+import os
+import threading
+from contextlib import contextmanager
+from contextvars import ContextVar
+from typing import Iterator
+
+from psycopg import Connection
+from psycopg.rows import dict_row
+from psycopg_pool import ConnectionPool
+
+from backend.nis.infrastructure.persistence.schema import ensure_schema
+
+_pool: ConnectionPool | None = None
+_pool_pid: int | None = None
+_pool_lock = threading.Lock()
+_project_locks_guard = threading.Lock()
+_project_locks: dict[str, threading.RLock] = {}
+DEFAULT_CONNECT_TIMEOUT_SECONDS = 2.0
+_request_unit: ContextVar["RequestUnit | None"] = ContextVar("engineering_request_unit", default=None)
+_connection_resources: ContextVar[dict | None] = ContextVar("engineering_connection_resources", default=None)
+
+
+def transaction_resource(key: str):
+    unit = _request_unit.get()
+    resources = unit.resources if unit is not None else _connection_resources.get()
+    return resources.get(key) if resources is not None else None
+
+
+def enlist_transaction_resource(key: str, resource) -> None:
+    """Reversible project-file writes share the existing SQL commit boundary."""
+    unit = _request_unit.get()
+    resources = unit.resources if unit is not None else _connection_resources.get()
+    if resources is None:
+        raise RuntimeError('Projektdateien müssen innerhalb einer Speichertransaktion geschrieben werden.')
+    resources[key] = resource
+
+
+class ConcurrentUpdateError(RuntimeError):
+    """The editor's source data no longer matches the persisted data."""
+
+
+def check_revision(expected, actual) -> None:
+    if expected is not None and (type(expected) is not int or expected != actual):
+        raise ConcurrentUpdateError(
+            "Dieses Objekt wurde inzwischen geändert. Bitte neu laden und die Änderungen vergleichen."
+        )
+
+
+def mark_model_changed() -> None:
+    unit = _request_unit.get()
+    if unit is not None:
+        unit.model_changed = True
+
+
+def flush_model_changes(*, actor: str, reason: str) -> None:
+    """Invalidate dependencies before a reviewed downstream artifact is saved."""
+    unit = _request_unit.get()
+    if unit is not None and unit.model_changed:
+        from backend.nis.workflow.services.service import WorkflowStatusService
+        WorkflowStatusService(unit.project_id).mark_changed('engineering_model', reason, actor=actor)
+        unit.model_changed = False
+
+
+class RequestUnit:
+    """One lazy transaction for a complete API mutation, including invalidation.
+
+    The database lock works across browser sessions and backend processes.
+    Nested repository contexts use savepoints, so caught constraint errors do
+    not poison the outer transaction. No connection is opened for pure tools.
+    """
+
+    def __init__(self, project_id: str):
+        self.project_id = project_id
+        self.model_changed = False
+        self.connection = None
+        self.pool_context = None
+        self.local_project_lock: threading.RLock | None = None
+        self.resources: dict = {}
+        self.token = _request_unit.set(self)
+
+    def acquire(self):
+        if self.connection is None:
+            timeout = _timeout_seconds("ENGINEERING_PROJECT_LOCK_TIMEOUT", 60.0)
+            with _project_locks_guard:
+                project_lock = _project_locks.setdefault(self.project_id, threading.RLock())
+            if not project_lock.acquire(timeout=timeout):
+                raise ConcurrentUpdateError(
+                    "Eine andere Änderung dieses Projekts wird noch gespeichert. Bitte den Vorgang erneut ausführen."
+                )
+            self.local_project_lock = project_lock
+            try:
+                context = get_pool().connection()
+                connection = context.__enter__()
+                self.pool_context = context
+                self.connection = connection
+                self.connection.execute("SELECT set_config('lock_timeout', %s, true)", (f"{timeout:g}s",))
+                self.connection.execute(
+                    "SELECT pg_advisory_xact_lock(hashtextextended(%s, 0))",
+                    (f"engineering-project:{self.project_id}",),
+                )
+            except Exception:
+                self.local_project_lock = None
+                project_lock.release()
+                raise
+        return self.connection
+
+    def finish(self, success: bool) -> None:
+        context, self.pool_context = self.pool_context, None
+        self.connection = None
+        resources, self.resources = self.resources, {}
+        try:
+            if context is not None:
+                if success:
+                    try:
+                        for resource in resources.values():
+                            resource.prepare()
+                    except Exception as error:
+                        context.__exit__(type(error), error, error.__traceback__)
+                        raise
+                    context.__exit__(None, None, None)
+                else:
+                    error = RuntimeError("Engineering request rolled back")
+                    context.__exit__(type(error), error, error.__traceback__)
+        except Exception:
+            for resource in reversed(list(resources.values())):
+                resource.rollback()
+            raise
+        finally:
+            project_lock, self.local_project_lock = self.local_project_lock, None
+            if project_lock is not None:
+                project_lock.release()
+
+    def close(self) -> None:
+        try:
+            self.finish(False)
+        finally:
+            if self.token is not None:
+                _request_unit.reset(self.token)
+                self.token = None
+
+
+def _database_url() -> str:
+    url = os.environ.get("DATABASE_URL")
+    if not url:
+        raise RuntimeError(
+            "DATABASE_URL ist nicht gesetzt. Das Engineering-Modul benötigt eine "
+            "Neon-Postgres-Verbindung."
+        )
+    return url.replace("postgresql+psycopg://", "postgresql://", 1)
+
+
+def _timeout_seconds(name: str, default: float) -> float:
+    raw_value = os.environ.get(name)
+    if raw_value is None:
+        return default
+    try:
+        value = float(raw_value)
+    except ValueError as error:
+        raise RuntimeError(f"{name} muss eine Zahl sein.") from error
+    if value <= 0:
+        raise RuntimeError(f"{name} muss größer als 0 sein.")
+    return value
+
+
+def get_pool() -> ConnectionPool:
+    """Gibt den lazily initialisierten, prozessweiten Connection-Pool zurück."""
+    global _pool, _pool_pid
+    process_id = os.getpid()
+    if _pool is not None and _pool_pid == process_id:
+        return _pool
+    with _pool_lock:
+        if _pool is not None and _pool_pid != process_id:
+            # Never operate on inherited psycopg connections. Closing such a
+            # pool can send protocol messages over the parent's copied sockets.
+            _pool = None
+            _pool_pid = None
+        if _pool is not None:
+            return _pool
+        timeout = _timeout_seconds("ENGINEERING_DB_TIMEOUT", DEFAULT_CONNECT_TIMEOUT_SECONDS)
+        candidate = ConnectionPool(
+            conninfo=_database_url(),
+            min_size=1,
+            max_size=10,
+            timeout=timeout,
+            kwargs={"autocommit": False, "connect_timeout": timeout, "row_factory": dict_row},
+            open=True,
+        )
+        try:
+            with candidate.connection() as connection:
+                ensure_schema(connection)
+        except Exception:
+            candidate.close()
+            raise
+        _pool = candidate
+        _pool_pid = process_id
+    return _pool
+
+
+@contextmanager
+def get_connection() -> Iterator[Connection]:
+    """Kontext-Manager, der eine Connection aus dem Pool ausleiht.
+
+    Committet automatisch bei erfolgreichem Verlassen des Blocks und rollt bei
+    Exceptions zurück.
+    """
+    unit = _request_unit.get()
+    if unit is not None:
+        conn = unit.acquire()
+        previous_resources = dict(unit.resources)
+        try:
+            with conn.transaction():
+                yield conn
+        except Exception:
+            # A caught savepoint failure must not retain its staged file writes.
+            unit.resources = previous_resources
+            raise
+        return
+    pool = get_pool()
+    resources: dict = {}
+    token = _connection_resources.set(resources)
+    try:
+        with pool.connection() as conn:
+            yield conn
+            for resource in resources.values():
+                resource.prepare()
+    except Exception:
+        for resource in reversed(list(resources.values())):
+            resource.rollback()
+        raise
+    finally:
+        _connection_resources.reset(token)
+
+
+def close_pool() -> None:
+    """Schließt den Connection-Pool (z. B. für Tests/Teardown)."""
+    global _pool, _pool_pid
+    if _pool is not None and _pool_pid == os.getpid():
+        _pool.close()
+    _pool = None
+    _pool_pid = None

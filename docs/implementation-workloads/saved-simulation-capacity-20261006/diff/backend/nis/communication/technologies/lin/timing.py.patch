@@ -1,0 +1,39 @@
+--- before/backend/nis/communication/technologies/lin/timing.py
++++ after/backend/nis/communication/technologies/lin/timing.py
+@@ -11,6 +11,36 @@
+ def estimate_planning_frame(protocol, payload_bytes, parameters):
+     """Use the same nominal wire model for marked scenarios, never device proof."""
+     return _nominal_frame(protocol, payload_bytes, parameters, planning=True)
++
++
++def prepare_simulation_parameters(parameters):
++    return planning_frame_parameters(parameters.get('lin_data_octets', 0), parameters)
++
++
++def planning_frame_parameters(payload_bytes, parameters):
++    """A starter length is replaced by the canonical message's own payload size."""
++    assumed = set(parameters.get('_simulation_assumption_fields', []))
++    if 'lin_data_octets' not in assumed:
++        return parameters
++    from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY as registry
++    from backend.nis.communication.catalog import _constrained_simulation_proposals
++    definition = registry.profile('lin')
++    values = {key: value for key, value in parameters.items() if key in definition['parameter_schema']}
++    values['lin_data_octets'] = payload_bytes
++    dependent = {'lin_response_nominal_bits', 'lin_frame_nominal_bits', 'lin_frame_max_ms',
++                 'lin_header_actual_ms', 'lin_response_actual_ms', 'lin_slot_ms'} & assumed
++    def derive(current):
++        proposals = {key: {'value': value} for key, value in current.items()}
++        result = _constrained_simulation_proposals('lin', definition, proposals, set(current) - dependent)
++        return {key: item['value'] for key, item in result.items()}
++    values = derive(values)
++    if {'lin_slot_ms', 'lin_slot_ticks'} <= assumed:
++        from math import floor
++        timebase = values.get('lin_time_base_ms', 0)
++        if timebase > 0:
++            values['lin_slot_ticks'] = max(1, floor((values.get('lin_frame_max_ms', 0) + values.get('lin_jitter_ms', 0)) / timebase) + 1)
++            values = derive(values)
++    return {**parameters, **values}
+ 
+ 
+ def _nominal_frame(protocol, payload_bytes, parameters, *, planning):

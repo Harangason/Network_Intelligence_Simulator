@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 import uuid
+from copy import deepcopy
 from datetime import date, datetime, timezone
 from typing import Any
 
@@ -25,6 +26,7 @@ SOURCE_TABLES = (
     "engineering_hardware_nodes",
     "engineering_hardware_interfaces",
     "engineering_functions",
+    "engineering_safety_requirements",
     "engineering_interfaces",
     "engineering_messages",
     "engineering_signals",
@@ -78,6 +80,7 @@ PROJECT_TABLES_WITH_PROJECT_ID = {
 }
 
 WORKSPACE_RESET_TABLES = (
+    "engineering_safety_requirements",
     "engineering_execution_goals",
     "engineering_communication_resources",
     "engineering_routing_audit",
@@ -99,6 +102,7 @@ WORKSPACE_RESET_TABLES = (
 )
 
 SOURCE_UUID_KEYS = {
+    "engineering_safety_requirements": "id",
     "engineering_hardware_nodes": "id",
     "engineering_hardware_interfaces": "id",
     "engineering_functions": "id",
@@ -453,7 +457,17 @@ class ProjectBundleService:
             report["existing"] += existing
             report["tables"]["engineering_analysis_snapshots"] = {"inserted": inserted, "existing": existing}
 
-            simulation_rows = project_data.get("engineering_simulation_snapshots") or []
+            simulation_rows = deepcopy(project_data.get("engineering_simulation_snapshots") or [])
+            # Project files are operator input, not a server-generated proof.
+            # Keep historical simulation data, but never promote an imported
+            # safety PASS to the evidence exported by this NIS instance.
+            for row in simulation_rows:
+                result = row.get("result")
+                metrics = result.get("runtime_metrics") if isinstance(result, dict) else None
+                if isinstance(metrics, dict) and "safety_assurance" in metrics:
+                    metrics.pop("safety_assurance")
+                    row["is_outdated"] = True
+                    row["outdated_reason"] = "Importierte Sicherheitsbelege benötigen einen neuen serverseitigen Simulationslauf."
             if not preserve_ids:
                 simulation_rows = [
                     {

@@ -1,0 +1,51 @@
+--- before/backend/tests/test_bus_rate_planning.py
++++ after/backend/tests/test_bus_rate_planning.py
+@@ -79,7 +79,17 @@
+ def test_active_scenario_defaults_obey_native_dependencies_without_populating_inactive_fields(technology):
+     proposals = simulation_parameter_values(technology, registry.profile(technology))
+     values = {key: proof['value'] for key, proof in proposals.items() if proof.get('applicable') is not False}
+-    assert registry.validate_parameters(technology, values)['status'] == 'VALID'
++    report = registry.validate_parameters(technology, values)
++    if technology == 'lin':
++        assert report['status'] == 'UNVERIFIED'
++        references = {field['native_key'] for field in registry.parameter_fields(technology)
++                      if field['value_role'] in {'EVIDENCE', 'REFERENCE'}}
++        assert report['findings']
++        assert all(finding['code'] == 'TECHNOLOGY_PARAMETER_MISSING'
++                   and (finding.get('parameter') or finding['message'].split()[0]) in references
++                   for finding in report['findings'])
++    else:
++        assert report['status'] == 'VALID'
+     project = registry.simulation_defaults_for_project({'technology': technology})
+     group = project['simulation_parameter_assumptions'][technology]
+     fields = registry.parameter_fields(technology)
+@@ -126,6 +136,29 @@
+     faster=bus_rate_plan('can_fd',[message(.3)],{},industry='automotive')
+     assert faster['selected_values']['arbitration_bitrate']==1000000
+     assert faster['selected_values']['data_bitrate']==2000000
++
++
++def test_lin_wire_planning_without_sources_keeps_actual_estimator_unverified_and_rejects_invalid_phy():
++    from backend.nis.communication.technologies.lin.timing import estimate_frame, estimate_planning_frame
++    from backend.nis.communication.catalog import PARAMETER_UI_ALIASES
++    values = {PARAMETER_UI_ALIASES.get(key, key): proof['value']
++              for key, proof in simulation_parameter_values('lin', registry.profile('lin')).items()
++              if proof.get('applicable') is not False and proof['value'] is not None}
++    values.update(bitrate=19200)
++    # This assertion isolates reference gaps: the existing strict validator and
++    # actual-device estimator must never turn them into confirmed evidence.
++    for key in ('lin_revision', 'lin_ldf_source', 'lin_commander_node_id'):
++        assert key not in values
++    assert registry.validate_parameters('lin', values)['status'] == 'UNVERIFIED'
++    actual = estimate_frame('LIN', 1, values)
++    scenario = estimate_planning_frame('LIN', 1, values)
++    assert not actual.transmission_time_available
++    assert scenario.transmission_time_available
++    assert scenario.frame_bits == actual.frame_bits == 54
++    assert scenario.transmission_time_s == pytest.approx(54 / 19200)
++    for patch in ({'lin_bitrate_bps':2000000}, {'lin_node_count':200},
++                  {'lin_physical_profile':'REGISTERED_PHY'}, {'lin_data_octets':7}):
++        assert not estimate_planning_frame('LIN', 1, {**values, **patch}).transmission_time_available
+ 
+ 
+ def test_overloaded_lin_proposes_only_selected_industry_paths_and_never_changes_bus():

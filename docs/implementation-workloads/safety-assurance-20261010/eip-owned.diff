@@ -1,0 +1,557 @@
+--- before/core/assurance_methods.py
++++ after/core/assurance_methods.py
+@@ -5,7 +5,7 @@
+ import re
+ 
+ SCHEMA = "eip.assurance-draft.v1"
+-METHODS = {"fmea": "safety", "fta": "safety", "stride": "security", "attack-tree": "security"}
++METHODS = {"fmea": "safety", "fta": "safety", "stride": "security", "attack-tree": "security", "nis-evidence": "safety", "nis-security-evidence": "security"}
+ STRIDE = ("spoofing", "tampering", "repudiation", "information-disclosure", "denial-of-service", "elevation-of-privilege")
+ 
+ 
+@@ -40,7 +40,11 @@
+     if not isinstance(method, str) or method not in METHODS:
+         raise ValueError("Unsupported assurance method")
+     gaps, used = [], set()
+-    if method == "fmea":
++    if method in {"nis-evidence", "nis-security-evidence"}:
++        from core.nis_assurance import evaluate_nis
++        imported = evaluate_nis(analysis, sources)
++        result, gaps, used = imported["result"], imported["gaps"], set(sources)
++    elif method == "fmea":
+         _fields(analysis, {"rows"}, {"rows"})
+         rows = []
+         for index, row in enumerate(_rows(analysis["rows"])):
+@@ -138,7 +142,7 @@
+         raise RevisionRequired("Authenticated command context and Idempotency-Key required")
+     require_actor(project_id, context.actor_id, auth_db_factory=auth_db_factory)
+     _fields(payload, {"id", "title", "method", "sourceRevisions", "analysis", "reason"}, {"id", "title", "method", "sourceRevisions", "analysis", "reason"})
+-    if len(json.dumps(payload, allow_nan=False)) > 65536: raise ValueError("Analysis exceeds 64 KiB")
++    if len(json.dumps(payload, allow_nan=False)) > (2097152 if payload.get("method") in {"nis-evidence", "nis-security-evidence"} else 65536): raise ValueError("Analysis exceeds its bounded import size")
+     if type(expected_revision) is not int or expected_revision < 0: raise RevisionRequired("Original analysis revision required; zero for new draft")
+     key = _text(payload["id"], "id", maximum=200)
+     if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._:-]*", key): raise ValueError("Stable analysis reference required")
+@@ -147,6 +151,8 @@
+     if not isinstance(sources, dict) or not 1 <= len(sources) <= 20 or any(not isinstance(ref, str) or type(rev) is not int or rev < 1 for ref, rev in sources.items()):
+         raise ValueError("1–20 source references with original positive revisions required")
+     evaluated = evaluate(payload["method"], payload["analysis"], sources)
++    if payload["method"] in {"nis-evidence", "nis-security-evidence"} and payload["analysis"]["eipProjectId"] != project_id:
++        raise ValueError("Mapped EIP project differs from authenticated command project")
+     repo = repository or ProfessionalRepository()
+     digest = request_hash({"payload": payload, "expectedRevision": expected_revision})
+     with repo.engine.begin() as connection:
+@@ -165,6 +171,8 @@
+                 raise ObjectNotFound("Active source missing from this project")
+             if row["object_type"] == "AssuranceAnalysis": raise ValueError("Nested analyses require an explicit dependency contract")
+             repo._check_revision(row["revision"], revision)
++            if payload["method"] in {"nis-evidence", "nis-security-evidence"} and any(item["sourceRef"] == ref for item in evaluated["result"]["requirements"]) and row["object_type"] != ("SafetyRequirement" if METHODS[payload["method"]] == "safety" else "SecurityRequirement"):
++                raise ValueError("NIS requirements must bind canonical Core safety/security requirement objects")
+         metadata = {"schemaVersion": SCHEMA, "method": payload["method"], "domain": METHODS[payload["method"]],
+             "sourceRevisions": deepcopy(sources), "analysis": deepcopy(payload["analysis"]), "assessment": evaluated,
+             "reason": reason, "reviewRequired": True, "releaseApproved": False}
+--- before/core/assurance_projection.py
++++ after/core/assurance_projection.py
+@@ -89,7 +89,7 @@
+             "limitations": "Heuristische Risikokandidaten mit Standardannahmen; keine normative Bewertung oder Releasefreigabe."})
+     gaps = ["Keine fachlich zugeordneten Core-Objekte."] if not relevant else []
+     gaps += [f"{row['ref']}: aktueller unabhängiger Nachweis fehlt." for row in analysis if row["status"] != "covered"]
+-    unsupported = ("fmea", "fta", "stpa", "hazop", "bowtie") if safety else ("attack-tree", "stride")
++    unsupported = ("fmea", "fta", "nis-evidence", "stpa", "hazop", "bowtie") if safety else ("attack-tree", "stride", "nis-security-evidence")
+     from core.assurance_methods import METHODS, SCHEMA
+     drafts = []
+     for item in snapshot["objects"]:
+--- before/core/nis_assurance.py
++++ after/core/nis_assurance.py
+@@ -0,0 +1,90 @@
++"""Conservative import adapter for frozen NIS evidence, not a safety calculator."""
++from copy import deepcopy
++from hashlib import sha256
++import json
++from math import isfinite
++
++SCHEMA = "nis.safety-evidence.v1"
++
++
++def evidence_hash(value):
++    def canonical(item):
++        if isinstance(item, dict): return {key: canonical(child) for key, child in item.items()}
++        if isinstance(item, list): return [canonical(child) for child in item]
++        if type(item) is float and isfinite(item) and item.is_integer(): return int(item)
++        return item
++    return sha256(json.dumps(canonical(value), sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False).encode()).hexdigest()
++
++
++def evaluate_nis(analysis, sources):
++    if not isinstance(analysis, dict) or set(analysis) != {"nisProjectId", "eipProjectId", "bundle"}:
++        raise ValueError("Explicit NIS/EIP project mapping and original evidence bundle required")
++    if any(not isinstance(analysis[key], str) or not analysis[key].strip() or len(analysis[key]) > 200 for key in ("nisProjectId", "eipProjectId")):
++        raise ValueError("Explicit bounded project identities required")
++    bundle = analysis["bundle"]
++    if not isinstance(bundle, dict) or set(bundle) != {"payload", "sha256"}:
++        raise ValueError("Original payload and sha256 required")
++    payload = bundle["payload"]
++    digest = evidence_hash(payload)
++    if digest != bundle["sha256"]:
++        raise ValueError("NIS evidence content hash does not match")
++    if not isinstance(payload, dict) or set(payload) != {"schema", "rule_version", "project_id", "snapshot_id", "job_id", "source_versions", "requirement_revisions", "execution_status", "freshness", "assessment", "release_approved"}:
++        raise ValueError("Unsupported NIS evidence envelope")
++    if payload["schema"] != SCHEMA or payload["rule_version"] != "1.0" or payload["release_approved"] is not False:
++        raise ValueError("Unsupported NIS evidence version or forged release approval")
++    if payload["project_id"] != analysis["nisProjectId"]:
++        raise ValueError("NIS project identity mismatch")
++    if payload["freshness"] not in ("CURRENT", "OUTDATED"):
++        raise ValueError("Explicit provider freshness required")
++    if payload["execution_status"] != "COMPLETED" or not payload["snapshot_id"] or not payload["job_id"]:
++        raise ValueError("Completed original simulation snapshot and job required")
++    assessment = payload["assessment"]
++    if not isinstance(assessment, dict) or assessment.get("schema") != SCHEMA or assessment.get("release_approved") is not False or assessment.get("normative_status") != "NOT_EVALUATED":
++        raise ValueError("Import cannot declare normative conformity or release approval")
++    rows = assessment.get("requirements")
++    if not isinstance(rows, list) or not 1 <= len(rows) <= 64:
++        raise ValueError("1–64 explicitly mapped requirements required")
++    used, vector, mapped = {}, {}, []
++    for row in rows:
++        if not isinstance(row, dict) or not isinstance(row.get("id"), str) or row["id"] in vector or type(row.get("revision")) is not int or row["revision"] < 1:
++            raise ValueError("Unique original requirement identity and positive revision required")
++        if row.get("technical_status") not in ("PASS", "FAIL", "NOT_EVALUATED") or row.get("normative_status") != "NOT_EVALUATED" or row.get("review_status") != "REVIEW_REQUIRED":
++            raise ValueError("Unsupported requirement assessment or forged approval")
++        vector[row["id"]] = row["revision"]
++        config = row.get("configuration")
++        if not isinstance(config, dict) or not isinstance(config.get("profile"), dict):
++            raise ValueError("Original typed requirement profile required")
++        profile = config["profile"]
++        for key in ("standard", "edition", "domain", "applicability", "reason"):
++            if not isinstance(profile.get(key), str) or not profile[key].strip() or len(profile[key]) > 500:
++                raise ValueError("Explicit bounded normative profile fields required")
++        checks, refs = row.get("checks"), row.get("evidence_event_ids")
++        if not isinstance(checks, list) or len(checks) > 64 or any(not isinstance(check, dict) or check.get("status") not in ("PASS", "FAIL", "NOT_EVALUATED") for check in checks):
++            raise ValueError("Bounded original technical check list required")
++        if not isinstance(refs, list) or len(refs) > 100000 or any(not isinstance(ref, str) or len(ref) > 500 for ref in refs):
++            raise ValueError("Bounded original event references required")
++        mapping = config.get("eip")
++        if not isinstance(mapping, dict) or mapping.get("project_id") != analysis["eipProjectId"]:
++            raise ValueError("Every requirement needs its explicit target EIP project")
++        revisions = mapping.get("source_revisions")
++        if not isinstance(revisions, dict) or mapping.get("requirement_ref") not in revisions or not 1 <= len(revisions) <= 20:
++            raise ValueError("Original EIP requirement/source revisions required")
++        for ref, revision in revisions.items():
++            if ref not in sources or sources[ref] != revision or type(revision) is not int or revision < 1:
++                raise ValueError("Original EIP revision mismatch")
++            if ref in used and used[ref] != revision: raise ValueError("Conflicting source revisions")
++            used[ref] = revision
++        mapped.append({"nisRequirementId": row["id"], "nisRevision": row["revision"], "sourceRef": mapping["requirement_ref"],
++            "name": row.get("name"), "profile": deepcopy((row.get("configuration") or {}).get("profile")),
++            "providerTechnicalStatus": row["technical_status"], "checks": deepcopy(row.get("checks", [])),
++            "eventRefs": deepcopy(row.get("evidence_event_ids", []))})
++    if used != sources or vector != payload["requirement_revisions"]:
++        raise ValueError("Evidence and source revision maps must match the actual cited requirements")
++    if not isinstance(payload["source_versions"], dict) or not payload["source_versions"]:
++        raise ValueError("Original NIS model revision vector required")
++    return {"result": {"nisProjectId": analysis["nisProjectId"], "eipProjectId": analysis["eipProjectId"],
++        "snapshotId": payload["snapshot_id"], "jobId": payload["job_id"], "contentHash": digest,
++        "providerFreshness": payload["freshness"], "sourceAuthenticity": "UNVERIFIED_OPERATOR_IMPORT",
++        "liveNisFreshness": "UNVERIFIED", "normativeStatus": "NOT_EVALUATED", "requirements": mapped},
++        "gaps": ["nis_origin_requires_independent_verification", "nis_live_revision_requires_verification", "normative_lifecycle_and_regulatory_evidence_not_evaluated", "independent_review_required"]
++            + (["provider_evidence_outdated"] if payload["freshness"] != "CURRENT" else [])}
+--- before/frontend/components/risk/assurance-drafts.tsx
++++ after/frontend/components/risk/assurance-drafts.tsx
+@@ -16,7 +16,7 @@
+   const [message, setMessage] = useState("")
+   const [reviewing, setReviewing] = useState<string | null>(null)
+   const reviewAttempts = useRef(new Map<string, VerificationCommand>())
+-  if (!["fmea", "fta", "stride", "attack-tree"].includes(method)) return null
++  if (!["fmea", "fta", "stride", "attack-tree", "nis-evidence", "nis-security-evidence"].includes(method)) return null
+   async function review(row: AssuranceDraft) {
+     if (reviewing) return
+     setReviewing(row.ref); setMessage("")
+@@ -52,6 +52,14 @@
+     {records(method === "fmea" ? result.rows : result.entries).map((record, index) => <dl key={index} className="grid grid-cols-[minmax(0,1fr)_minmax(0,2fr)] gap-x-3 gap-y-1 rounded border p-2">{Object.entries(record).map(([key, value]) => <div key={key} className="contents"><dt className="text-muted-foreground">{labels[key] ?? key}</dt><dd className="break-words">{value == null || value === "" ? "Nicht bewertet" : String(value)}</dd></div>)}</dl>)}
+     <p>{method === "fmea" ? "Lokale S/O/D-Skala 1–10; keine normative Akzeptanzschwelle." : `Nicht untersuchte Kategorien: ${Array.isArray(result.unassessedCategories) ? result.unassessedCategories.join(", ") : "unbekannt"}`}</p>
+   </div>
++  if (["nis-evidence", "nis-security-evidence"].includes(method)) return <div className="space-y-2">
++    <p>NIS-Projekt: {String(result.nisProjectId)} · Snapshot: {String(result.snapshotId)}</p>
++    <p>Herkunft: ungeprüfter Operator-Import · aktueller NIS-Modellstand: ungeprüft · normative Bewertung: offen</p>
++    <table className="w-full"><thead><tr><th>Anforderung</th><th>Norm / Ausgabe</th><th>Lieferantenergebnis</th></tr></thead><tbody>{records(result.requirements).map((row, index) => {
++      const profile = row.profile as Record<string, unknown> | undefined;
++      return <tr key={index}><td>{String(row.name)} · {String(row.sourceRef)}</td><td>{String(profile?.standard ?? "Offen")} · {String(profile?.edition ?? "Offen")}</td><td>{String(row.providerTechnicalStatus)}</td></tr>
++    })}</tbody></table><p>Hash: {String(result.contentHash)}</p><p>Der Originalbericht bleibt im Core-Draft gespeichert. Review und Evidence-Qualifikation sind getrennte Schritte.</p>
++  </div>
+   const nodes = records(result.nodes)
+   const names = new Map(nodes.map(node => [String(node.id), String(node.label)]))
+   const sets = method === "fta" ? result.minimalCutSets : result.minimalAttackSets
+@@ -73,6 +81,8 @@
+   const [reason, setReason] = useState("")
+   const [fields, setFields] = useState<Record<string, string>>({})
+   const [category, setCategory] = useState(categories[0])
++  const [bundleText, setBundleText] = useState("")
++  const [nisProjectId, setNisProjectId] = useState("")
+   const [gate, setGate] = useState("or")
+   const [events, setEvents] = useState(["", ""])
+   const [busy, setBusy] = useState(false)
+@@ -108,18 +118,30 @@
+     } catch (error) { setMessage(workflowFailure(error)) } finally { setBusy(false) }
+   }
+   async function save() {
+-    if (!source || busy || !title.trim() || !reason.trim()) return
++    if ((!source && !["nis-evidence", "nis-security-evidence"].includes(method)) || busy || !title.trim() || !reason.trim()) return
+     setBusy(true); setMessage("")
+     try {
+       let analysis: Record<string, unknown>
+-      if (method === "fmea") {
+-        const row: Record<string, unknown> = { ...fields, sourceRef: source.ref }
++      let sourceRevisions: Record<string, number> = source ? { [source.ref]: source.revision } : {}
++      if (["nis-evidence", "nis-security-evidence"].includes(method)) {
++        const bundle = JSON.parse(bundleText)
++        analysis = { bundle, nisProjectId, eipProjectId: projectId }
++        sourceRevisions = {}
++        for (const row of bundle.payload.assessment.requirements) {
++          const revisions = row.configuration.eip.source_revisions as Record<string, number>
++          for (const [ref, revision] of Object.entries(revisions)) {
++            if (ref in sourceRevisions && sourceRevisions[ref] !== revision) throw new Error("Widersprüchliche Quellenrevisionen.")
++            sourceRevisions[ref] = revision
++          }
++        }
++      } else if (method === "fmea") {
++        const row: Record<string, unknown> = { ...fields, sourceRef: source!.ref }
+         for (const key of ["severity", "occurrence", "detectability"]) row[key] = fields[key]?.trim() ? Number(fields[key]) : null
+         analysis = { rows: [row] }
+-      } else if (method === "stride") analysis = { entries: [{ sourceRef: source.ref, category, scenario: fields.scenario ?? "", mitigation: fields.mitigation ?? "" }] }
++      } else if (method === "stride") analysis = { entries: [{ sourceRef: source!.ref, category, scenario: fields.scenario ?? "", mitigation: fields.mitigation ?? "" }] }
+       else analysis = { rootId: "top", nodes: [{ id: "top", label: title, kind: gate, children: events.map((_, index) => `e${index + 1}`) },
+-        ...events.map((label, index) => ({ id: `e${index + 1}`, label, kind: "event", sourceRef: source.ref }))] }
+-      await attempt.current.send(projectId, "assurance/drafts", { id, title, reason, method, sourceRevisions: { [source.ref]: source.revision }, analysis }, 0, id)
++        ...events.map((label, index) => ({ id: `e${index + 1}`, label, kind: "event", sourceRef: source!.ref }))] }
++      await attempt.current.send(projectId, "assurance/drafts", { id, title, reason, method, sourceRevisions, analysis }, 0, id)
+       router.refresh(); onClose()
+     } catch (error) { setMessage(workflowFailure(error)) } finally { setBusy(false) }
+   }
+@@ -128,10 +150,11 @@
+     <h3 id="assurance-title" className="mb-3 font-semibold">{method.toUpperCase()}-Draft erstellen</h3>
+     <fieldset disabled={busy || attempt.current.uncertain || attempt.current.blocked} className="grid gap-3 disabled:opacity-60">
+       <label>Titel<input className="block w-full rounded border bg-background p-2" value={title} onChange={e => setTitle(e.target.value)} maxLength={300} /></label>
+-      <div><label>Core-Quelle suchen<input className="block w-full rounded border bg-background p-2" value={search} onChange={e => setSearch(e.target.value)} /></label><button className="mt-1 rounded border p-2" onClick={() => void find()}>Quellen suchen</button></div>
+-      <label>Quelle<select className="block w-full rounded border bg-background p-2" value={source?.ref ?? ""} onChange={e => setSource(sources.find(row => row.ref === e.target.value) ?? null)}><option value="">Quelle auswählen</option>{sources.map(row => <option key={row.ref} value={row.ref}>{row.label} · {row.ref} · r{row.revision}</option>)}</select></label>
++      {!["nis-evidence", "nis-security-evidence"].includes(method) && <><div><label>Core-Quelle suchen<input className="block w-full rounded border bg-background p-2" value={search} onChange={e => setSearch(e.target.value)} /></label><button className="mt-1 rounded border p-2" onClick={() => void find()}>Quellen suchen</button></div>
++      <label>Quelle<select className="block w-full rounded border bg-background p-2" value={source?.ref ?? ""} onChange={e => setSource(sources.find(row => row.ref === e.target.value) ?? null)}><option value="">Quelle auswählen</option>{sources.map(row => <option key={row.ref} value={row.ref}>{row.label} · {row.ref} · r{row.revision}</option>)}</select></label></>}
++      {["nis-evidence", "nis-security-evidence"].includes(method) && <><label>Originales NIS-Projekt<input className="block w-full rounded border bg-background p-2" value={nisProjectId} onChange={e => setNisProjectId(e.target.value)} required /></label><label>Exportierten NIS-Prüfbericht einfügen<textarea className="block w-full rounded border bg-background p-2 font-mono" rows={10} value={bundleText} onChange={e => setBundleText(e.target.value)} maxLength={2097152} /></label><p>Core-Safety-/SecurityRequirement-Referenzen und originale Revisionen werden aus den expliziten EIP-Zuordnungen geprüft. Keine automatische Risikofreigabe.</p></>}
+       {method === "stride" ? <label>STRIDE-Kategorie<select className="block rounded border bg-background p-2" value={category} onChange={e => setCategory(e.target.value)}>{categories.map(value => <option key={value}>{value}</option>)}</select></label> : null}
+-      {["fmea", "stride"].includes(method) ? Object.entries(labels).map(([key, label]) => <label key={key}>{label}<input className="block w-full rounded border bg-background p-2" value={fields[key] ?? ""} onChange={e => setFields({ ...fields, [key]: e.target.value })} /></label>) : <>
++      {["nis-evidence", "nis-security-evidence"].includes(method) ? null : ["fmea", "stride"].includes(method) ? Object.entries(labels).map(([key, label]) => <label key={key}>{label}<input className="block w-full rounded border bg-background p-2" value={fields[key] ?? ""} onChange={e => setFields({ ...fields, [key]: e.target.value })} /></label>) : <>
+         <p>Ein AND/OR-Gatter mit expliziten Basisereignissen derselben Quelle. Keine Wahrscheinlichkeitsbewertung.</p>
+         <label>Verknüpfung<select className="block rounded border bg-background p-2" value={gate} onChange={e => setGate(e.target.value)}><option value="or">ODER: mindestens ein Ereignis</option><option value="and">UND: alle Ereignisse</option></select></label>
+         {events.map((value, index) => <label key={index}>Basisereignis {index + 1}<input className="block w-full rounded border bg-background p-2" value={value} onChange={e => setEvents(events.map((old, i) => i === index ? e.target.value : old))} /></label>)}
+@@ -141,6 +164,6 @@
+     </fieldset>
+     <p className="my-3">Fehlende Bewertungen bleiben offen. Speichern erzeugt einen Draft; die unabhängige Prüfung wird danach separat angefordert.</p>
+     {message ? <p role="alert" className="my-2">{message}</p> : null}
+-    <footer className="flex justify-end gap-2"><button className="rounded border p-2" disabled={busy} onClick={onClose}>Schließen</button><button className="rounded border p-2 disabled:opacity-50" disabled={busy || !source || !title.trim() || !reason.trim() || attempt.current.blocked} onClick={() => void save()}>{attempt.current.uncertain ? "Unverändert wiederholen" : "Draft speichern"}</button></footer>
++    <footer className="flex justify-end gap-2"><button className="rounded border p-2" disabled={busy} onClick={onClose}>Schließen</button><button className="rounded border p-2 disabled:opacity-50" disabled={busy || (["nis-evidence", "nis-security-evidence"].includes(method) ? !bundleText.trim() || !nisProjectId.trim() : !source) || !title.trim() || !reason.trim() || attempt.current.blocked} onClick={() => void save()}>{attempt.current.uncertain ? "Unverändert wiederholen" : "Draft speichern"}</button></footer>
+   </section></div>
+ }
+--- before/frontend/components/safety/safety-view.tsx
++++ after/frontend/components/safety/safety-view.tsx
+@@ -34,6 +34,7 @@
+   return (
+     <div className="flex h-full flex-col gap-4">
+ 
++      <AssuranceDrafts projectId={projectId} method="nis-evidence" rows={data.draftAnalyses ?? []} total={data.draftAnalysisTotal ?? 0} canEdit={data.canEditAnalyses === true} />
+       <RiskMethodToolbar domain="safety" projectId={projectId} selected={selectedNode} capabilities={data.capabilities} method={method} onMethodChange={setMethod} />
+ 
+       <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 xl:grid-cols-12">
+@@ -52,7 +53,7 @@
+ 
+         <div className="flex min-w-0 flex-col gap-4 xl:col-span-6">
+           <RiskMethodResults rows={data.methodRows ?? []} method={method} />
+-          <AssuranceDrafts projectId={projectId} method={method} rows={data.draftAnalyses ?? []} total={data.draftAnalysisTotal ?? 0} canEdit={data.canEditAnalyses === true} />
++          <AssuranceDrafts projectId={projectId} method={method.startsWith("nis-") ? "" : method} rows={data.draftAnalyses ?? []} total={data.draftAnalysisTotal ?? 0} canEdit={data.canEditAnalyses === true} />
+           <div className="flex min-h-[300px] flex-1 flex-col overflow-hidden rounded-lg border border-border bg-card">
+             <RiskAnalysisPanel domain="safety" rows={data.analysis} selectedId={selectedId} onSelect={setSelectedId} />
+           </div>
+--- before/tests/test_nis_assurance.py
++++ after/tests/test_nis_assurance.py
+@@ -0,0 +1,63 @@
++"""Original NIS calculator export, conservative Core import, no approval inference."""
++from copy import deepcopy
++from hashlib import sha256
++import json
++from pathlib import Path
++import pytest
++from core.assurance_methods import evaluate
++from core.nis_assurance import evidence_hash
++
++
++def bundle():
++    return json.loads((Path(__file__).parent / "fixtures/nis_safety_evidence.json").read_text(encoding="utf-8"))
++
++
++def rehash(value):
++    value["sha256"] = evidence_hash(value["payload"])
++    return value
++
++
++def analysis(value=None):
++    return {"nisProjectId": "nis-1", "eipProjectId": "eip-1", "bundle": value or bundle()}
++
++
++def test_original_nis_export_import_keeps_measurement_separate_from_review():
++    result = evaluate("nis-evidence", analysis(), {"SR-1": 2})
++    assert result["result"]["requirements"][0]["providerTechnicalStatus"] == "PASS"
++    assert result["result"]["sourceAuthenticity"] == "UNVERIFIED_OPERATOR_IMPORT"
++    assert result["result"]["liveNisFreshness"] == "UNVERIFIED"
++    assert result["releaseApproved"] is False and result["reviewRequired"] is True
++    assert result["riskAcceptance"] == "not_assessed"
++
++
++@pytest.mark.parametrize("mutation", ["hash", "nis_project", "eip_project", "stale_revision", "approval", "normative", "execution", "missing_job", "extra_source", "requirement_vector", "schema"])
++def test_invalid_scope_or_forged_proof_is_rejected(mutation):
++    value = bundle(); data = analysis(value); sources = {"SR-1": 2}
++    if mutation == "hash": value["sha256"] = "0" * 64
++    if mutation == "nis_project": data["nisProjectId"] = "wrong"
++    if mutation == "eip_project": data["eipProjectId"] = "wrong"
++    if mutation == "stale_revision": sources["SR-1"] = 3
++    if mutation == "approval": value["payload"]["release_approved"] = True; rehash(value)
++    if mutation == "normative": value["payload"]["assessment"]["normative_status"] = "PASS"; rehash(value)
++    if mutation == "execution": value["payload"]["execution_status"] = "RUNNING"; rehash(value)
++    if mutation == "missing_job": value["payload"]["job_id"] = None; rehash(value)
++    if mutation == "extra_source": sources["SR-2"] = 1
++    if mutation == "requirement_vector": value["payload"]["requirement_revisions"]["safety-1"] = 2; rehash(value)
++    if mutation == "schema": value["payload"]["rule_version"] = "unknown"; rehash(value)
++    with pytest.raises(ValueError): evaluate("nis-evidence", data, sources)
++
++
++def test_historical_evidence_remains_historical_after_import():
++    value = bundle(); value["payload"]["freshness"] = "OUTDATED"; rehash(value)
++    result = evaluate("nis-evidence", analysis(value), {"SR-1": 2})
++    assert "provider_evidence_outdated" in result["gaps"]
++    assert result["releaseApproved"] is False
++
++
++def test_browser_reserialized_integral_numbers_retain_hash_and_security_import_remains_draft():
++    value = bundle()
++    value["payload"]["assessment"]["requirements"][0]["checks"][0]["observed_max_latency_ms"] = 2
++    assert evaluate("nis-security-evidence", analysis(value), {"SR-1": 2})["releaseApproved"] is False
++    value["payload"]["assessment"]["requirements"][0]["configuration"] = []
++    rehash(value)
++    with pytest.raises(ValueError): evaluate("nis-evidence", analysis(value), {"SR-1": 2})
+--- before/tests/test_nis_assurance_postgres.py
++++ after/tests/test_nis_assurance_postgres.py
+@@ -0,0 +1,33 @@
++from uuid import uuid4
++import pytest
++from tests.test_agent_mailbox_handoff_postgres import handoff
++from tests.test_factory_command_contract import pg_factory
++from tests.test_nis_assurance import bundle, rehash
++from core.assurance_methods import save_draft
++from core.persistence.repository import CommandContext, RevisionConflict
++
++
++@pytest.mark.parametrize("method,source_type", [("nis-evidence", "SafetyRequirement"), ("nis-security-evidence", "SecurityRequirement")])
++def test_nis_import_original_core_revision_replay_project_mismatch_and_staleness(handoff, method, source_type):
++    f, repo, _ = handoff
++    def ctx(): return CommandContext("factory-alice", "nis-assurance", uuid4().hex)
++    source = repo.upsert_engineering_object(f.keys[0], "SR-1", source_type, "Lenkung sicher abschalten", status="draft", context=ctx(), expected_revision=0, connection=f.connection)
++    value = bundle(); value["payload"]["assessment"]["requirements"][0]["configuration"]["eip"] = {
++        "project_id": f.keys[0], "requirement_ref": "SR-1", "source_revisions": {"SR-1": source["revision"]}}
++    rehash(value)
++    payload = {"id": "ASM-NIS", "title": "Original NIS evidence", "method": method, "reason": "SCRIPTED_TEST operator import", "sourceRevisions": {"SR-1": 1},
++        "analysis": {"nisProjectId": "nis-1", "eipProjectId": f.keys[0], "bundle": value}}
++    attempt = ctx()
++    result = save_draft(f.keys[0], payload, attempt, expected_revision=0, repository=repo, auth_db_factory=f.auth_factory)
++    assert result["releaseApproved"] is False
++    stored = repo.object_by_key(f.keys[0], "ASM-NIS", connection=f.connection)
++    assert stored["status"] == "draft"
++    assert stored["technical_metadata"]["analysis"]["bundle"]["sha256"] == value["sha256"]
++    assert save_draft(f.keys[0], payload, attempt, expected_revision=0, repository=repo, auth_db_factory=f.auth_factory)["idempotentReplay"] is True
++    with pytest.raises(ValueError, match="project"):
++        save_draft(f.keys[1], payload, ctx(), expected_revision=0, repository=repo, auth_db_factory=f.auth_factory)
++    repo.upsert_engineering_object(f.keys[0], "SR-1", source_type, "Changed requirement", status="draft", context=ctx(), expected_revision=1, connection=f.connection)
++    payload["id"] = "ASM-STALE"
++    with pytest.raises(RevisionConflict):
++        save_draft(f.keys[0], payload, ctx(), expected_revision=0, repository=repo, auth_db_factory=f.auth_factory)
++    assert repo.object_by_key(f.keys[0], "ASM-STALE", connection=f.connection) is None
+--- before/tests/fixtures/nis_safety_evidence.json
++++ after/tests/fixtures/nis_safety_evidence.json
+@@ -0,0 +1,129 @@
++{
++  "payload": {
++    "schema": "nis.safety-evidence.v1",
++    "rule_version": "1.0",
++    "project_id": "nis-1",
++    "snapshot_id": "snapshot-1",
++    "job_id": "job-1",
++    "source_versions": {
++      "engineering_model": 1
++    },
++    "requirement_revisions": {
++      "safety-1": 1
++    },
++    "execution_status": "COMPLETED",
++    "freshness": "CURRENT",
++    "assessment": {
++      "schema": "nis.safety-evidence.v1",
++      "rule_version": "1.0",
++      "requirements": [
++        {
++          "id": "safety-1",
++          "name": "Lenkung sicher abschalten",
++          "revision": 1,
++          "function_id": "fn-1",
++          "configuration": {
++            "profile": {
++              "standard": "ISO 26262",
++              "edition": "2018",
++              "domain": "road_vehicle",
++              "applicability": "APPLICABLE",
++              "reason": "Approved item scope"
++            },
++            "hazard_ref": "H-1",
++            "safety_goal_ref": "SG-1",
++            "route_ids": [
++              "route-1"
++            ],
++            "eip": {
++              "project_id": "eip-1",
++              "requirement_ref": "SR-1",
++              "source_revisions": {
++                "SR-1": 2
++              }
++            },
++            "criteria": {
++              "deadline_ms": 20,
++              "freshness_ms": 30,
++              "required_protections": [
++                "CRC"
++              ],
++              "fault_cases": [
++                {
++                  "id": "loss-test",
++                  "type": "LOSS",
++                  "detection_ms": 10,
++                  "ftti_ms": 20,
++                  "safe_state": "torque_zero",
++                  "receiver_id": "rx"
++                }
++              ]
++            }
++          },
++          "technical_status": "PASS",
++          "checks": [
++            {
++              "id": "route-1",
++              "kind": "COMMUNICATION",
++              "status": "PASS",
++              "sample_count": 1,
++              "transaction_ids": [
++                "transaction-1"
++              ],
++              "deadline_ms": 20,
++              "freshness_ms": 30,
++              "observed_max_latency_ms": 2.0,
++              "observed_max_data_age_ms": 2.0
++            },
++            {
++              "id": "loss-test",
++              "kind": "FAULT_REACTION",
++              "status": "PASS",
++              "sample_count": 1,
++              "detection_limit_ms": 10,
++              "ftti_ms": 20,
++              "safe_state": "torque_zero",
++              "observations": [
++                {
++                  "fault_event_id": "fault",
++                  "detection_event_id": "detect",
++                  "reaction_event_id": "react",
++                  "receiver_id": "rx",
++                  "detection_ms": 5.0,
++                  "reaction_ms": 10.0,
++                  "observed_state": "torque_zero",
++                  "status": "PASS"
++                }
++              ]
++            }
++          ],
++          "evidence_event_ids": [
++            "accept",
++            "detect",
++            "fault",
++            "react",
++            "tx"
++          ],
++          "gaps": [
++            "normative_clause_scope_missing",
++            "normative_work_products_missing",
++            "integrity_decision_missing"
++          ],
++          "normative_status": "NOT_EVALUATED",
++          "review_status": "REVIEW_REQUIRED"
++        }
++      ],
++      "technical_status": "PASS",
++      "normative_status": "NOT_EVALUATED",
++      "release_approved": false,
++      "time_basis": "SIMULATION_CLOCK",
++      "limitations": [
++        "Project-defined technical criteria only; no ASIL assignment or normative conformity.",
++        "Physical safe-state reaction requires explicit causal measurement evidence.",
++        "Independent human approval and complete lifecycle/regulatory evidence remain separate."
++      ]
++    },
++    "release_approved": false
++  },
++  "sha256": "5c6364916d0521f868f3f19cb3cfea3d7fdc13be66c4e17aae256c56e4a9e9dd"
++}--- before/frontend/components/security/security-view.tsx
++++ after/frontend/components/security/security-view.tsx
+@@ -34,6 +34,7 @@
+   return (
+     <div className="flex h-full flex-col gap-4">
+ 
++      <AssuranceDrafts projectId={projectId} method="nis-security-evidence" rows={data.draftAnalyses ?? []} total={data.draftAnalysisTotal ?? 0} canEdit={data.canEditAnalyses === true} />
+       <RiskMethodToolbar domain="security" projectId={projectId} selected={selectedNode} capabilities={data.capabilities} method={method} onMethodChange={setMethod} />
+ 
+       <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 xl:grid-cols-12">
+@@ -52,7 +53,7 @@
+ 
+         <div className="flex min-w-0 flex-col gap-4 xl:col-span-6">
+           <RiskMethodResults rows={data.methodRows ?? []} method={method} />
+-          <AssuranceDrafts projectId={projectId} method={method} rows={data.draftAnalyses ?? []} total={data.draftAnalysisTotal ?? 0} canEdit={data.canEditAnalyses === true} />
++          <AssuranceDrafts projectId={projectId} method={method.startsWith("nis-") ? "" : method} rows={data.draftAnalyses ?? []} total={data.draftAnalysisTotal ?? 0} canEdit={data.canEditAnalyses === true} />
+           <div className="flex min-h-[300px] flex-1 flex-col overflow-hidden rounded-lg border border-border bg-card">
+             <RiskAnalysisPanel domain="security" rows={data.analysis} selectedId={selectedId} onSelect={setSelectedId} />
+           </div>
+--- before/documentation/02_platform/runtime/ASSURANCE_DRAFT_METHODS_V1.0.md
++++ after/documentation/02_platform/runtime/ASSURANCE_DRAFT_METHODS_V1.0.md
+@@ -61,3 +61,33 @@
+ Tool-Checker-Delivery `9ca54d355768493588379362b46b6e15` ist
+ `CONFIRMED_BY_RUNTIME`. Die vollständige Kampagnen-Folgerunde bleibt offen.
+ Eine unabhängige menschliche Fachfreigabe wurde nicht durchgeführt.
++
++
++## NIS-Prüfbelegadapter (2026-10-10)
++
++Safety bietet `nis-evidence`, Security `nis-security-evidence`. Beide erweitern
++denselben Core-AssuranceAnalysis-Service und nutzen `nis.safety-evidence.v1`.
++Importe benötigen originale NIS-/EIP-Projektzuordnung, einen abgeschlossenen
++Snapshot/Job, Schema-/Regelversion, Inhalts-Hash und originale Core-Quellenrevisionen.
++NIS-Anforderungen müssen im jeweiligen Board SafetyRequirement bzw.
++SecurityRequirement referenzieren. CAS, Idempotenz, Audit und Projektgrenzen
++bleiben im bestehenden Service.
++
++Der Adapter übernimmt technische Lieferantenergebnisse als Operator-Import.
++Herkunft und aktueller NIS-Modellstand bleiben UNVERIFIED; normative
++Vollständigkeit bleibt NOT_EVALUATED. Hashprüfung bestätigt Inhalt, keine
++Herkunft. Ein Import erzeugt keine qualifizierte Test-Evidence, ASIL-Zuweisung,
++CSMS-/SUMS-Bestätigung oder Releasefreigabe. Unabhängiges Review sowie
++TestResult-/Evidence-Qualifikation bleiben eigene bestehende Arbeitsschritte.
++Originalpaket und Quellrevisionen werden im Draft unverändert gespeichert;
++Core-Quellenänderungen erzeugen OUTDATED. Der Bericht ist auf 2 MiB begrenzt.
++
++Kanonisches Hashformat: rekursiv sortierte JSON-Schlüssel, UTF-8, keine
++Nicht-JSON-Zahlen; ganzzahlige Floats werden als Integer normalisiert, damit
++Browser-JSON denselben Hash behält. Es wird keine zweite technische
++Berechnungsengine in EIP aufgebaut. Die fachlichen Normtexte und
++projektabhängig anwendbaren Änderungsserien werden dadurch nicht ersetzt.
++
++Lokale gezielte Methoden-, PostgreSQL- und TypeScript-Nachweise liegen in NIS
++unter `docs/implementation-workloads/safety-assurance-20261010`. Eine
++Produktivübernahme dieses neuen Adapters ist damit noch nicht belegt.

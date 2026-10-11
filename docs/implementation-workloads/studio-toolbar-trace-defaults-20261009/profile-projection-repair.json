@@ -1,0 +1,31 @@
+{
+  "goal_id": "wizard-sizing-performance",
+  "kind": "repair",
+  "repository": "I:\\PycharmProjects\\My_first_Network_Simulator",
+  "modify_code": true,
+  "allow_repair": true,
+  "revision_before": {
+    "backend/nis/engineering/capacity/dimensioning.py": "d8a3f1af4bcce8d1ed69ee8426f650e562c52937fc2e3aa371ce39b4a3f4e3e8",
+    "backend/nis/engineering/routing/validation.py": "d1b5a2606a8c3168d3eefa2bf6a972083a2afd427f38d40223e71f54ccd4e914"
+  },
+  "unresolved_decisions": [],
+  "repair": {
+    "owner": "PROJECT_PRODUCT",
+    "root_cause": "Measured full TechnologyProfile copies consume 8.9 seconds in the adoption replay although routing only reads max_payload_bytes and rate planning only reads four named fields.",
+    "first_failing_layer": "Communication sizing adoption during capacity_timing continuation",
+    "reproduction": "Captured 552-device/1404-signal model replayed through real preview/apply in scripts/run-isolated-tests.py: 144.625 seconds, 20071 SQL execute calls, 694 route validations.",
+    "evidence": [
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\studio-toolbar-trace-defaults-20261009\\sizing-after-profile.txt",
+        "sha256": "0b82b9619735dfdce8fc0eb0c0c7dc89db4c36873316eb8296a3b87fc37968ba"
+      }
+    ],
+    "affected_files": [
+      "backend/nis/engineering/capacity/dimensioning.py",
+      "backend/nis/engineering/routing/validation.py"
+    ],
+    "acceptance_criteria": "Current project snapshot checks every route without per-route SQL reads; repeat sizing preserves synchronized object versions and approved routes; stale tokens and atomic rollback still enforced; full release bounds unchanged.",
+    "targeted_tests": "SQL/snapshot validation equivalence and fresh snapshot after model edit; repeated real sizing adoption version preservation; existing stale-token and injected-failure rollback regression; same captured workload measured again.",
+    "weaken_assertions_to_pass": false
+  }
+}

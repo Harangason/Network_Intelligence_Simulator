@@ -1,0 +1,59 @@
+--- before/backend/tests/test_simulation_parameter_defaults.py
++++ after/backend/tests/test_simulation_parameter_defaults.py
+@@ -9,13 +9,18 @@
+ from backend.nis.workflow.services.service import WorkflowStatusService
+ 
+ 
+-def test_every_registered_parameter_has_a_typed_nonempty_simulation_start_value():
++def test_every_operational_parameter_has_a_typed_start_value_and_references_are_not_invented():
+     profiles = registry.profiles()
+     assert len(profiles) == 125
+     for profile in profiles:
+         for field in registry.parameter_fields(profile['id']):
+             value = field['simulation_default']
+             proof = field['simulation_default_provenance']
++            if field['value_role'] != 'CONFIGURATION' and value is None:
++                assert proof['status'] == 'UNKNOWN'
++                assert proof['basis'] == 'EXPLICIT_REFERENCE_REQUIRED'
++                assert proof['hardware_evidence'] is False
++                continue
+             assert value is not None and value != '', (profile['id'], field['key'])
+             assert proof['technology'] == profile['id']
+             assert proof['source'] == 'NIS_SIMULATION_ASSUMPTION'
+@@ -53,7 +58,11 @@
+     for domain in catalog['domains']:
+         for profile in domain['technologies']:
+             for field in profile.get('local_timing_schema') or []:
+-                assert field['simulation_default'] is not None and field['simulation_default'] != ''
++                if field['key'] in {'master_node_id', 'hs_clock_timing_source'}:
++                    assert field['simulation_default'] is None
++                    assert field['simulation_default_provenance']['basis'] == 'EXPLICIT_REFERENCE_REQUIRED'
++                else:
++                    assert field['simulation_default'] is not None and field['simulation_default'] != ''
+                 assert field['simulation_default_provenance']['hardware_evidence'] is False
+ 
+ 
+@@ -87,3 +96,23 @@
+     with pytest.raises(ValueError, match='Gerätebestätigung'):
+         service.save_parameters(malicious)
+     assert service.get()['parameters'] == saved
++
++
++def test_lin_simulation_defaults_never_fabricate_device_ids_or_evidence_sources():
++    fields = {field['key']: field for field in registry.parameter_fields('lin')}
++    for key in ['lin_registered_source', 'lin_device_source', 'lin_revision', 'lin_commander_node_id']:
++        assert fields[key]['simulation_default'] is None
++        assert fields[key]['simulation_default_provenance']['status'] == 'UNKNOWN'
++    parameters = registry.simulation_defaults_for_project({'technology': 'lin'}, ['lin'])
++    values = parameters['simulation_parameter_assumptions']['lin']['values']
++    assert values['lin_bitrate_bps'] == 19200
++    assert 'lin_registered_source' not in values
++    assert 'lin_commander_node_id' not in values
++    assert registry.validate_parameters('lin', values)['status'] != 'VALID'
++    old = deepcopy(parameters)
++    old['simulation_parameter_assumptions']['lin']['values'].update(lin_registered_source='simulation:lin:lin_registered_source', lin_bitrate_bps=9600)
++    old['technology_parameters'] = {'lin': {'values': {'lin_device_source': 'reviewed-device-file'}, 'provenance': {}}}
++    repaired = registry.simulation_defaults_for_project(old, ['lin'])
++    assert 'lin_registered_source' not in repaired['simulation_parameter_assumptions']['lin']['values']
++    assert repaired['simulation_parameter_assumptions']['lin']['values']['lin_bitrate_bps'] == 9600
++    assert repaired['technology_parameters'] == old['technology_parameters']

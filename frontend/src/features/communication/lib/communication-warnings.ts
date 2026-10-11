@@ -54,12 +54,14 @@ export function communicationWarnings(objects: EngineeringObject[], routes: Rout
   }
   function portProblem(port: HardwareNetworkInterface | undefined): { code: string; reason: string } | null {
     if (!port) return { code: 'PORT_MISSING', reason: 'Der physische Anschluss fehlt.' };
+    if (['deprecated', 'superseded'].includes(port.lifecycle_state)) return { code: 'PORT_RETIRED', reason: `Anschluss „${port.name}“ ist ausgemustert und darf nicht mehr für aktive Kommunikation verwendet werden.` };
     if (!port.network_ref) return { code: 'BUS_UNASSIGNED', reason: `Anschluss „${port.name}“ (Kanal ${port.channel_index ?? 'offen'}) ist keinem Bus zugeordnet.` };
     if (!networkIds.has(port.network_ref)) return { code: 'BUS_MISSING', reason: `Der Bus des Anschlusses „${port.name}“ existiert nicht mehr.` };
     if (!activePorts.has(port.id)) return { code: 'PORT_DISCONNECTED', reason: `Anschluss „${port.name}“ ist im aktuellen Netzwerk nicht verbunden.` };
     return null;
   }
   for (const port of ports) {
+    if (['deprecated', 'superseded'].includes(port.lifecycle_state) && !activePorts.has(port.id)) continue;
     const problem = portProblem(port);
     if (problem) add(port.id, { ...problem, key: `port:${port.id}`, fields: ['Anschluss', 'Buszuordnung'] });
   }

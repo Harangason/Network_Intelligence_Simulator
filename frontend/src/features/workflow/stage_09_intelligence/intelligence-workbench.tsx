@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { CommunicationSizingPanel } from "@/features/communication/ui/communication-sizing-panel";
+import { SafetyAssurancePanel } from "@/features/intelligence/ui/safety-assurance-panel";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   assessIntelligence,
@@ -138,6 +139,7 @@ export function IntelligenceWorkbench() {
   return (
     <section className="intelligence-workbench">
       <CommunicationSizingPanel />
+      <SafetyAssurancePanel />
       <header className="intelligence-toolbar">
         <div>
           <p className="eyebrow">09 Intelligence</p>
@@ -182,7 +184,7 @@ function Overview({ snapshot, proposals, onCreate, onApprove, onApproveAll }: { 
 
       <div className="intelligence-overview-grid">
         <section className="intelligence-section">
-          <div className="section-heading"><div><p className="eyebrow">System health</p><h3>Coverage & Compliance</h3></div></div>
+          <div className="section-heading"><div><p className="eyebrow">System health</p><h3>Technische Abdeckung & Datenqualität</h3></div></div>
           <div className="score-list">{Object.entries(health.metrics).map(([name, value]) => <ScoreBar key={name} label={METRIC_LABELS[name] ?? label(name)} value={value} evaluated={!health.unevaluated_metrics?.includes(name)} evidence={health.metric_evidence?.[name]} />)}</div>
         </section>
         <section className="intelligence-section">
@@ -308,7 +310,7 @@ function IssueTable({ issues, proposals, onCreate, onApprove, onApproveAll }: { 
     <section className="intelligence-section full issue-table-section">
       <div className="section-heading"><div><p className="eyebrow">Critical issues</p><h3>Technische Problemübersicht</h3></div><div className="analysis-actions"><span>{filtered.length} von {issues.length}</span><button className="button primary tiny" disabled={!visibleConfirmable.length} onClick={() => void onApproveAll(visibleConfirmable)} type="button">Allow all</button></div></div>
       <div className="table-controls"><label><span>Suche</span><input onChange={(event) => setSearch(event.target.value)} placeholder="Objekt, Ursache, Code ..." value={search} /></label><label><span>Severity</span><select onChange={(event) => setSeverity(event.target.value)} value={severity}><option>ALL</option><option>ERROR</option><option>WARNING</option><option>INFO</option></select></label><label><span>Kategorie</span><select onChange={(event) => setCategory(event.target.value)} value={category}><option>ALL</option>{categories.map((item) => <option key={item}>{item}</option>)}</select></label><label><span>Sortieren</span><select onChange={(event) => setSort(event.target.value)} value={sort}><option value="severity">Severity</option><option value="category">Kategorie</option><option value="object">Objekt</option></select></label><label><span>Gruppieren</span><select onChange={(event) => setGroup(event.target.value)} value={group}><option value="none">Keine</option><option value="severity">Severity</option><option value="category">Kategorie</option></select></label></div>
-      <div className="analysis-table-wrap"><table className="analysis-table issue-table"><thead><tr><th>Severity</th><th>Status</th><th>Category</th><th>Object</th><th>Problem</th><th>Detected Cause</th><th>Affected</th><th>Recommendation</th><th>Aktionen</th></tr></thead><tbody>{visible.map((item, index) => { const rowKey = `${item.code}-${item.object_id}-${index}`; const approved = item.status === "APPROVED" || item.approval_state === "APPROVED"; const confirmable = isConfirmableIssue(item); return <tr key={rowKey}><td><Status value={item.severity} />{item.original_severity && <small>vorher {item.original_severity}</small>}</td><td><Status value={approved ? "APPROVED" : item.approval_state || item.status} /></td><td>{item.category}</td><td><strong className="issue-object-name">{issueObjectLabel(item)}</strong><small className={`eng-object-badge ${engineeringObjectTypeClass(item.object_type)}`}>{engineeringObjectTypeLabel(item.object_type)}</small><small className="issue-object-id">{item.object_id}</small></td><td><button className="issue-problem-button" onClick={() => setSelectedIssue(item)} type="button">{item.problem}</button><small>{item.code}</small>{item.approval_note && <small>{item.approval_note}</small>}</td><td>{item.detected_cause}</td><td>{item.affected_objects.length}</td><td>{item.recommendation}</td><td><div className="table-actions"><button className="button secondary tiny" onClick={() => setSelectedIssue(item)} type="button">Details</button>{confirmable && <button className="button primary tiny" onClick={() => void onApprove(item)} type="button">Allow</button>}<Link className="button secondary tiny" href={objectLink(item)}>Zum Editor</Link><Link className="button secondary tiny" href={withProjectParam("/studio?mode=network")}>Netz öffnen</Link><Link className="button secondary tiny" href={withProjectParam(`/studio/engineering?graph=${encodeURIComponent(item.object_id)}`)}>Graph</Link><button className="button secondary tiny" onClick={() => askAgent(buildIssueAgentPrompt(item))} type="button">Ask AI</button><button className="button primary tiny" disabled={approved || proposals.some((proposal) => proposal.problem === item.problem)} onClick={() => void onCreate(recommendationFromIssue(item))} type="button">Create Proposal</button></div></td></tr>; })}</tbody></table></div>
+      <div className="analysis-table-wrap"><table className="analysis-table issue-table"><thead><tr><th>Severity</th><th>Status</th><th>Category</th><th>Object</th><th>Problem</th><th>Detected Cause</th><th>Affected</th><th>Recommendation</th><th>Aktionen</th></tr></thead><tbody>{visible.map((item, index) => { const rowKey = `${item.code}-${item.object_id}-${index}`; const approved = item.status === "APPROVED" || item.approval_state === "APPROVED"; const confirmable = isConfirmableIssue(item); return <tr key={rowKey}><td><Status value={item.severity} />{item.original_severity && <small>vorher {item.original_severity}</small>}</td><td><Status value={approved ? "APPROVED" : item.approval_state || item.status} /></td><td>{item.category}</td><td><strong className="issue-object-name">{issueObjectLabel(item)}</strong><small className={`eng-object-badge ${engineeringObjectTypeClass(item.object_type)}`}>{engineeringObjectTypeLabel(item.object_type)}</small><small className="issue-object-id">{item.object_id}</small></td><td><button className="issue-problem-button" onClick={() => setSelectedIssue(item)} type="button">{item.problem}</button><small>{item.code}</small>{item.approval_note && <small>{item.approval_note}</small>}</td><td>{item.detected_cause}</td><td>{item.affected_objects.length}</td><td>{item.recommendation}</td><td><div className="table-actions"><button className="button secondary tiny" onClick={() => setSelectedIssue(item)} type="button">Details</button>{confirmable && <button className="button primary tiny" onClick={() => void onApprove(item)} type="button">Allow</button>}<IssueEditorLinks issue={item} compact /><Link className="button secondary tiny" href={withProjectParam(`/studio/engineering?graph=${encodeURIComponent(item.object_id)}`)}>Graph</Link><button className="button secondary tiny" onClick={() => askAgent(buildIssueAgentPrompt(item))} type="button">Ask AI</button><button className="button primary tiny" disabled={approved || proposals.some((proposal) => proposal.problem === item.problem)} onClick={() => void onCreate(recommendationFromIssue(item))} type="button">Create Proposal</button></div></td></tr>; })}</tbody></table></div>
       {selectedIssue && <IssueDetailDialog issue={selectedIssue} onClose={() => setSelectedIssue(null)} onCreate={onCreate} proposalExists={proposals.some((proposal) => proposal.problem === selectedIssue.problem)} />}
       <footer className="table-pagination"><span>{filtered.length ? `${page * pageSize + 1}-${Math.min((page + 1) * pageSize, filtered.length)} von ${filtered.length}` : "Keine Treffer"}</span><div><button className="button secondary tiny" disabled={page === 0} onClick={() => setPage((current) => Math.max(0, current - 1))} type="button">Zurück</button><span>Seite {page + 1} / {pageCount}</span><button className="button secondary tiny" disabled={page + 1 >= pageCount} onClick={() => setPage((current) => Math.min(pageCount - 1, current + 1))} type="button">Weiter</button></div></footer>
     </section>
@@ -347,8 +349,7 @@ function IssueDetailDialog({ issue, onClose, onCreate, proposalExists }: { issue
           </section>
         </div>
         <footer>
-          <Link className="button secondary" href={objectLink(issue)}>Zum Editor</Link>
-          <Link className="button secondary" href={withProjectParam("/studio?mode=network")}>Netz öffnen</Link>
+          <IssueEditorLinks issue={issue} />
           <button className="button secondary" onClick={() => askAgent(buildIssueAgentPrompt(issue))} type="button">Ask AI</button>
           <button className="button primary" disabled={proposalExists} onClick={() => void onCreate(recommendationFromIssue(issue))} type="button">Create Proposal</button>
         </footer>
@@ -410,6 +411,16 @@ function objectLink(issue: IntelligenceIssue) {
   const resource = ISSUE_RESOURCE_BY_TYPE[issue.object_type];
   const resourceParam = resource ? `resource=${encodeURIComponent(resource)}&type=${encodeURIComponent(issue.object_type)}&` : "";
   return withProjectParam(`/studio/engineering?${resourceParam}object=${encodeURIComponent(issue.object_id)}&edit=1`);
+}
+
+function IssueEditorLinks({ issue, compact = false }: { issue: IntelligenceIssue; compact?: boolean }) {
+  const editorHref = objectLink(issue);
+  const networkHref = withProjectParam("/studio?mode=network");
+  const className = `button secondary${compact ? " tiny" : ""}`;
+  return <>
+    <Link className={className} href={editorHref}>{editorHref === networkHref ? "Netz öffnen" : "Zum Editor"}</Link>
+    {editorHref !== networkHref && <Link className={className} href={networkHref}>Netz öffnen</Link>}
+  </>;
 }
 
 function recommendationFromIssue(issue: IntelligenceIssue): IntelligenceRecommendation {

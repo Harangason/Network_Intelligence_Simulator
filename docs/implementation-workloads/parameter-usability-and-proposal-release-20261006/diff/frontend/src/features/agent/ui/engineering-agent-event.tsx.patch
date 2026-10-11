@@ -1,0 +1,38 @@
+--- before/frontend/src/features/agent/ui/engineering-agent-event.tsx
++++ after/frontend/src/features/agent/ui/engineering-agent-event.tsx
+@@ -61,6 +61,7 @@
+   const [loaded, setLoaded] = useState(false);
+   const [busy, setBusy] = useState(false);
+   const [error, setError] = useState("");
++  const [loadError, setLoadError] = useState('');
+   const [editing, setEditing] = useState(false);
+   const [names, setNames] = useState<Record<string, string>>({});
+   const [rationale, setRationale] = useState(initial.rationale);
+@@ -74,9 +75,9 @@
+         if (!loaded || proposal.revision !== result.revision || proposal.proposal_id !== result.proposal_id) {
+           setRationale(result.rationale); setNames({}); setEditing(false); setPage(0);
+         }
+-        setProposal(result); onProposalChange?.(result); setLoaded(true); setError("");
++        setProposal(result); onProposalChange?.(result); setLoaded(true); setLoadError('');
+       } })
+-      .catch(cause => { if (!controller.signal.aborted) { setLoaded(false); setError(cause instanceof Error ? cause.message : "Vorschlag konnte nicht vollständig geladen werden."); } });
++      .catch(cause => { if (!controller.signal.aborted) { setLoaded(false); setLoadError(cause instanceof Error ? cause.message : "Vorschlag konnte nicht vollständig geladen werden."); } });
+     void refresh();
+     const timer = window.setInterval(() => { if (document.visibilityState === "visible") void refresh(); }, 5000);
+     return () => { controller.abort(); window.clearInterval(timer); };
+@@ -126,6 +127,7 @@
+   const references = Object.fromEntries((complete ? proposal.changes : []).map(change => [`$${change.local_ref}`, String(change.data?.name ?? change.object_name ?? change.object_type)]));
+   return <section className="engineering-proposal-review" aria-label="Engineering-Vorschlag">
+     <strong>{statusLabels[proposal.status]}</strong>
++    {proposal.status === 'OUTDATED' && <p role="status">Gespeicherte Projektwerte haben sich seit der Prüfung geändert. „Erneut prüfen“ aktualisiert die Prüfung; danach kannst du die aktuelle Fassung freigeben und übernehmen.</p>}
+     <p>{proposal.rationale}</p>
+     <p>{proposal.change_count ?? proposal.changes.length} Änderungen</p>
+     {complete && typeof proposal.validation_result.valid_count === 'number' && <p>
+@@ -193,6 +195,7 @@
+       <details><summary>Prüfevidenz</summary><Value value={{ capacity_snapshot_id: proposal.dependent_results.capacity_snapshot_id, preflight_snapshot_id: proposal.dependent_results.preflight_snapshot_id }} /></details>
+     </section> : proposal.status === "APPLIED" && <p>{proposal.canonical_count ?? proposal.canonical_ids.length} Modellobjekte bestätigt.</p>}
+     {error && <p role="alert">{error}</p>}
++    {loadError && <p role="alert">{loadError}</p>}
+   </section>;
+ }
+ 

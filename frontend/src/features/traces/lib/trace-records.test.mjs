@@ -13,7 +13,36 @@ test('signal dictionaries preserve decoded numeric values and discrete states', 
   assert.equal(event.signals[3].value, 'ACTIVE');
   assert.equal(event.signals[4].value, 'OK');
 });
-import { eventFromRecord, parseTraceText, MAX_IMPORT_BYTES } from './trace-records.ts';
+import { eventFromRecord, parseTraceText, traceMessagePresentation, traceSignalInventory, traceEventFindings, MAX_IMPORT_BYTES } from './trace-records.ts';
+
+test('trace names resolve from the exact frozen snapshot while source IDs remain intact', () => {
+  const id = '8a3254f8-8244-45e6-8c0e-634348d56cd4';
+  const event = eventFromRecord({ time_s: 0, message_ids: [id] }, 0);
+  const original = structuredClone(event);
+  const resolved = traceMessagePresentation(event, { engineering_model: { messages: [{ id, name: 'Diagnose Status' }] } });
+  assert.equal(resolved.message, 'Diagnose Status');
+  assert.deepEqual(resolved.original.message_ids, [id]);
+  assert.deepEqual(event, original);
+  assert.equal(traceMessagePresentation(event).message, 'Nachricht ohne Klartextnamen');
+  assert.equal(traceMessagePresentation(event, { engineering_model: { messages: [{ id: 'another', name: 'Wrong model' }] } }).message, 'Nachricht ohne Klartextnamen');
+  const named = eventFromRecord({ time_s: 0, message_name: 'Explicit Trace Name', message_ids: [id] }, 0);
+  assert.equal(traceMessagePresentation(named, { engineering_model: { messages: [{ id, name: 'Other name' }] } }).message, 'Explicit Trace Name');
+  assert.equal(traceMessagePresentation(eventFromRecord({ time_s: 0, message: 'Imported Status', message_ids: [id] }, 0)).message, 'Imported Status');
+});
+
+test('a loaded window exposes every decoded channel including channels beyond 128', () => {
+  const signals = Array.from({ length: 317 }, (_, i) => ({ signal_id: `signal-${i}`, signal: `Signal ${i}`, value: i, unit: 'V' }));
+  const frames = Array.from({ length: 6 }, (_, i) => eventFromRecord({ time_s: i, signals: signals.slice(i * 64, (i + 1) * 64) }, i));
+  assert.equal(traceSignalInventory([...frames, frames[0]]).length, 317);
+  assert.equal(traceSignalInventory(frames).at(-1).name, 'Signal 316');
+  assert.equal(frames.flatMap(frame => frame.refs.filter(ref => ref.object_type === 'Signal')).length, 317);
+});
+
+test('fault chart findings preserve explicit source categories and missing decoders do not fabricate errors', () => {
+  const event = eventFromRecord({ time_s: 0, faults: '["BUS_OFF","BUS_OFF","MESSAGE_LOSS"]', status: 'dropped', receiver_action: 'REJECT', deadline_status: 'FAIL' }, 0);
+  assert.deepEqual(traceEventFindings(event), ['BUS_OFF', 'MESSAGE_LOSS', 'Status: dropped', 'Empfänger: REJECTED', 'deadline_status: FAIL']);
+  assert.deepEqual(traceEventFindings(eventFromRecord({ time_s: 0, payload_hex: '01 02' }, 0)), []);
+});
 
 test('IPv6 project addresses and physical TX/RX ports survive JSONL and CSV projection', () => {
   const ethernet = { ip_version: 6, transport_protocol: 'udp', source_port: 1234, destination_ports: [5000],

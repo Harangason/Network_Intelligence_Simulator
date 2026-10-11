@@ -1,0 +1,3738 @@
+
+PAGE 1
+ 
+ 
+ 
+  
+ 
+Product Overview  
+ 
+The DW1000 is a fully integrated single chip Ultra Wideband (UWB) 
+low-power low-cost transceiver IC compliant to IEEE802.15.4-2011. It 
+can be used in 2-way ranging or TDoA location systems to locate 
+assets to a precision of 10 cm. It also supports data transfer at rates 
+up to 6.8 Mbps 
+ 
+ 
+Key Features 
+ 
+• IEEE802.15.4-2011 UWB 
+compliant 
+• Supports 6 RF bands from 
+3.5 GHz to 6.5 GHz 
+• Programmable transmitter 
+output power  
+• Fully coherent receiver for 
+maximum range and accuracy 
+• Complies with FCC & ETSI 
+UWB spectral masks 
+• Supply voltage 2.8 V to 3.6 V 
+• Low power consumption  
+• SLEEP current 1 µA 
+• DEEPSLEEP current 50 nA 
+• Data rates of 110 kbps, 850 
+kbps, 6.8 Mbps 
+• Maximum packet length of 
+1023 bytes for high data 
+throughput applications 
+• Integrated MAC support 
+features  
+• Supports TWR and TDOA  
+• SPI interface to host processor 
+• 6 mm x 6 mm 48-pin QFN 
+package with 0.4 mm lead 
+pitch 
+• Small number of external 
+components 
+  
+Key Benefits 
+ 
+• Supports precision location and 
+data transfer concurrently 
+• Asset location to a precision of 
+10 cm 
+• Extended communications 
+range up to 290 m @ 110 kbps 
+10% PER minimises required 
+infrastructure in RTLS 
+• High multipath fading immunity 
+• Supports high tag densities in 
+RTLS 
+• Small PCB footprint allows cost- 
+effective hardware 
+implementations 
+• Long battery life minimises 
+system lifetime cost 
+ 
+Applications 
+ 
+• Precision real time location 
+systems (RTLS) using two-way 
+ranging or TDOA schemes in a 
+variety of markets: - 
+o Healthcare 
+o Consumer 
+o Industrial 
+o Other 
+• Location aware wireless sensor 
+networks 
+ 
+DW1000  IEEE802.15.4-2011 UWB Transceiver 
+ 
+High Level Block Diagram 
+POWER MANAGEMENT
+STATE CONTROLLER
+DIGITAL TRANSCEIVER
+ANALOG RECEIVER
+HOST INTERFACE / SPIPLL / CLOCK GENERATOR
+ANALOG TRANSMITTER
+TO HOST
+DW1000
+
+PAGE 2
+DW1000 Datasheet  
+ 
+ 
+© Decawave Ltd 2017 Subject to change without notice Version 2.23 Page 2 
+ 
+Table of Contents 
+ 
+1 IC DESCRIPTION ............................................. 5 
+2 PIN CONNECTIONS ......................................... 6 
+2.1 PIN NUMBERING ............................................ 6 
+2.2 PIN DESCRIPTIONS .......................................... 6 
+3 ELECTRICAL SPECIFICATIONS ........................ 10 
+3.1 NOMINAL OPERATING CONDITIONS ................. 10 
+3.2 DC CHARACTERISTICS .................................... 10 
+3.3 RECEIVER AC CHARACTERISTICS ...................... 11 
+3.4 RECEIVER SENSITIVITY CHARACTERISTICS ........... 11 
+3.5 REFERENCE CLOCK AC CHARACTERISTICS .......... 12 
+3.5.1 Reference Frequency ........................ 12 
+3.6 TRANSMITTER AC CHARACTERISTICS ................ 12 
+3.7 TEMPERATURE AND VOLTAGE MONITOR 
+CHARACTERISTICS .................................................... 13 
+3.8 ABSOLUTE MAXIMUM RATINGS ...................... 13 
+3.9 THERMAL CHARACTERISTICS ........................... 13 
+4 TYPICAL PERFORMANCE .............................. 14 
+5 FUNCTIONAL DESCRIPTION .......................... 18 
+5.1 PHYSICAL LAYER MODES ................................ 18 
+5.1.1 Supported Channels and Bandwidths
+ 18 
+5.1.2 Supported Bit Rates and Pulse 
+Repetition Frequencies (PRF) .......................... 18 
+5.1.3 Frame Format ................................... 19 
+5.1.4 Symbol Timings ................................ 19 
+5.1.5 Proprietary Long Frames .................. 19 
+5.1.6 Turnaround Times ............................ 19 
+5.1.7 Frame Filter ...................................... 20 
+5.1.8 Frame Check Sequence (FCS) ............ 20 
+5.2 REFERENCE CRYSTAL OSCILLATOR .................... 20 
+5.3 SYNTHESIZER ............................................... 20 
+5.4 RECEIVER .................................................... 20 
+5.4.1 Bandwidth setting ............................ 20 
+5.4.2 Automatic Gain Control (AGC) ......... 20 
+5.5 TRANSMITTER .............................................. 20 
+5.5.1 Transmit Output Power .................... 20 
+5.5.2 Transmit Bandwidth Setting ............. 21 
+5.6 POWER-UP SEQUENCE ................................... 22 
+5.6.1 Typical power-up sequence .............. 22 
+5.6.2 Variation in the power-up sequence 22 
+5.6.3 External control of RSTn / use of RSTn 
+by external circuitry ........................................ 23 
+5.7 VOLTAGE/TEMPERATURE MONITORS ............... 23 
+5.8 HOST CONTROLLER INTERFACE ........................ 23 
+5.8.1 Configuring the SPI Mode ................. 25 
+5.8.2 SPI Signal Timing .............................. 26 
+5.9 GENERAL PURPOSE INPUT OUTPUT (GPIO) ...... 27 
+5.10 MEMORY ................................................ 27 
+5.10.1 Receive and Transmit data buffers27 
+5.10.2 Accumulator memory ................... 27 
+5.10.3 One Time Programmable (OTP) 
+Calibration Memory ........................................ 28 
+5.11 INTERRUPTS AND DEVICE STATUS ................. 28 
+5.12 MAC FEATURES ....................................... 28 
+5.12.1 Timestamping ............................... 28 
+5.12.2 FCS Generation and Checking ....... 28 
+5.12.3 Automatic Frame Filtering ............ 28 
+5.12.4 Automatic Acknowledge............... 28 
+5.12.5 Double Receive Buffer .................. 28 
+5.13 EXTERNAL SYNCHRONIZATION ..................... 28 
+5.14 CALIBRATION AND SPECTRAL TUNING OF THE 
+DW1000 29 
+5.14.1 Introduction .................................. 29 
+5.14.2 Crystal Oscillator Trim .................. 29 
+5.14.3 Transmitter Calibration ................ 30 
+5.14.4 Antenna Delay Calibration ........... 30 
+6 OPERATIONAL STATES AND POWER 
+MANAGEMENT ................................................... 31 
+6.1 OVERVIEW .................................................. 31 
+6.2 OPERATING STATES AND THEIR EFFECT ON POWER 
+CONSUMPTION ....................................................... 31 
+6.3 TRANSMIT AND RECEIVE POWER PROFILES......... 32 
+6.3.1 Typical transmit profile .................... 35 
+6.3.2 Typical receive profiles ..................... 35 
+7 POWER SUPPLY ............................................ 36 
+7.1 POWER SUPPLY CONNECTIONS ....................... 36 
+7.2 USE OF EXTERNAL DC / DC CONVERTER .......... 36 
+7.3 POWERING DOWN THE DW1000 ................... 37 
+8 APPLICATION INFORMATION ....................... 38 
+8.1 APPLICATION CIRCUIT DIAGRAM ..................... 38 
+8.2 RECOMMENDED COMPONENTS ...................... 39 
+8.3 APPLICATION CIRCUIT LAYOUT ........................ 40 
+8.3.1 PCB Stack ......................................... 40 
+8.3.2 RF Traces .......................................... 41 
+8.3.3 PLL Loop Filter Layout ...................... 41 
+8.3.4 Decoupling Layout ........................... 41 
+8.3.5 Layout Guidance .............................. 41 
+9 PACKAGING & ORDERING INFORMATION .... 42 
+9.1 PACKAGE DIMENSIONS .................................. 42 
+9.2 DEVICE PACKAGE MARKING ........................... 43 
+9.3 TRAY INFORMATION ..................................... 43 
+9.4 TAPE & REEL INFORMATION........................... 44 
+9.4.1 Important note ................................. 44 
+9.4.2 Tape Orientation and Dimensions ... 44 
+9.4.3 Reel Information: 330 mm Reel ....... 45 
+9.5 REFLOW PROFILE .......................................... 45 
+9.6 ORDERING INFORMATION .............................. 46 
+10 GLOSSARY ................................................. 47 
+11 REFERENCES ............................................. 48 
+12 DOCUMENT HISTORY ................................ 48 
+13 MAJOR CHANGES...................................... 49 
+14 FURTHER INFORMATION .......................... 53 
+
+PAGE 3
+DW1000 Datasheet  
+ 
+ 
+© Decawave Ltd 2017 Subject to change without notice Version 2.23 Page 3 
+ 
+List of Figures 
+ 
+FIGURE 1: IC BLOCK DIAGRAM ...................................... 5 
+FIGURE 2: DW1000 PIN ASSIGNMENTS ......................... 6 
+FIGURE 3 : RX INTERFERER IMMUNITY ON CHANNEL 2 ..... 14 
+FIGURE 4: TX OUTPUT POWER OVER TEMP & VOLTAGE ... 14 
+FIGURE 5: RECEIVER SENSITIVITY CHANNEL 5 110KBPS DATA 
+RATE 16 MHZ PRF 2048 PREAMBLE SYMBOLS ...... 14 
+FIGURE 6: RECEIVER SENSITIVITY CHANNEL 5 110KBPS DATA 
+RATE 64 MHZ PRF 2048 PREAMBLE SYMBOLS ...... 15 
+FIGURE 7: RECEIVER SENSITIVITY CHANNEL 5 850KBPS DATA 
+RATE 16 MHZ PRF 1024 PREAMBLE SYMBOLS ...... 15 
+FIGURE 8: RECEIVER SENSITIVITY CHANNEL 5 850KBPS DATA 
+RATE 64 MHZ PRF 1024 PREAMBLE SYMBOLS ...... 15 
+FIGURE 9: RECEIVER SENSITIVITY CHANNEL 5 6.81MBPS 
+DATA RATE 16 MHZ PRF 256 PREAMBLE SYMBOLS 16 
+FIGURE 10: RECEIVER SENSITIVITY CHANNEL 5 6.81MBPS 
+DATA RATE 64 MHZ PRF 1256 PREAMBLE SYMBOLS
+ ...................................................................... 16 
+FIGURE 11: TYPICAL PROBABILITY DISTRIBUTION OF LINE OF 
+SIGHT 2-WAY RANGING PERFORMANCE .................. 16 
+FIGURE 12: TX SPECTRUM CHANNEL 1 ......................... 17 
+FIGURE 13: TX SPECTRUM CHANNEL 2 ......................... 17 
+FIGURE 14: TX SPECTRUM CHANNEL 3 ......................... 17 
+FIGURE 15: TX SPECTRUM CHANNEL 4 ......................... 17 
+FIGURE 16: TX SPECTRUM CHANNEL 5 ......................... 17 
+FIGURE 17: TX SPECTRUM CHANNEL 7 ......................... 17 
+FIGURE 18:  IEEE802.15.4-2011 PPDU STRUCTURE ... 19 
+FIGURE 19:  IEEE802.15.4-2011 MAC FRAME FORMAT
+ ...................................................................... 20 
+FIGURE 20: DW1000 POWER-UP SEQUENCE................ 22 
+FIGURE 21: POWER UP EXAMPLE WHERE VDDLDOD 
+CANNOT BE GUARANTEED TO BE READY IN TIME FOR THE 
+RSTN GOING HIGH ............................................. 22 
+FIGURE 22:  DW1000 SPIPHA=0 TRANSFER PROTOCOL 24 
+FIGURE 23:  DW1000SPIPHA=1 TRANSFER PROTOCOL . 24 
+FIGURE 24:  SPI BYTE FORMATTING ............................. 24 
+FIGURE 25: SPI CONNECTIONS .................................... 25 
+FIGURE 26:  DW1000 SPI TIMING DIAGRAM ............... 26 
+FIGURE 27:  DW1000 SPI DETAILED TIMING DIAGRAM .. 26 
+FIGURE 28: SYNC SIGNAL TIMING RELATIVE TO XTAL1 .... 29 
+FIGURE 29: TYPICAL DEVICE CRYSTAL TRIM PPM 
+ADJUSTMENT .................................................... 29 
+FIGURE 30: SLEEP OPTIONS BETWEEN OPERATIONS ......... 32 
+FIGURE 31: TYPICAL RANGE VERSUS TX AVERAGE CURRENT 
+(CHANNEL 2)..................................................... 34 
+FIGURE 32: TYPICAL TX POWER PROFILE ....................... 35 
+FIGURE 33: TYPICAL RX POWER PROFILE ...................... 35 
+FIGURE 34:  TYPICAL RX POWER PROFILE USING SNIFF 
+MODE .............................................................. 35 
+FIGURE 35: POWER SUPPLY CONNECTIONS .................... 36 
+FIGURE 36: SWITCHING REGULATOR CONNECTION.......... 36 
+FIGURE 37: DW1000 APPLICATION CIRCUIT ................. 38 
+FIGURE 38: PCB LAYER STACK FOR 4-LAYER BOARD ........ 40 
+FIGURE 39: DW1000 RF TRACES LAYOUT .................... 41 
+FIGURE 40: DEVICE PACKAGE MECHANICAL SPECIFICATIONS
+ ...................................................................... 42 
+FIGURE 41: DEVICE PACKAGE MARKINGS ...................... 43 
+FIGURE 42: TRAY ORIENTATION .................................. 43 
+FIGURE 43: TAPE & REEL ORIENTATION ........................ 44 
+FIGURE 44: TAPE DIMENSIONS .................................... 44 
+FIGURE 45: 330 MM REEL DIMENSIONS ........................ 45 
+ 
+List of Tables 
+ 
+TABLE 1: DW1000 PIN FUNCTIONS............................... 6 
+TABLE 2: EXPLANATION OF ABBREVIATIONS ..................... 9 
+TABLE 3: DW1000 OPERATING CONDITIONS ................ 10 
+TABLE 4: DW1000 DC CHARACTERISTICS .................... 10 
+TABLE 5: DW1000 RECEIVER AC CHARACTERISTICS ....... 11 
+TABLE 6: TYPICAL RECEIVER SENSITIVITY CHARACTERISTICS 11 
+TABLE 7: DW1000 REFERENCE CLOCK AC CHARACTERISTICS
+ ...................................................................... 12 
+TABLE 8: DW1000 TRANSMITTER AC CHARACTERISTICS . 12 
+TABLE 9: DW1000 TEMPERATURE AND VOLTAGE MONITOR 
+CHARACTERISTICS .............................................. 13 
+TABLE 10: DW1000 ABSOLUTE MAXIMUM RATINGS ..... 13 
+TABLE 11 THERMAL CHARACTERISTICS .......................... 13 
+TABLE 12: CHANNELS SUPPORTED BY THE DW1000 ....... 18 
+TABLE 13: UWB BIT RATES AND PRF MODES SUPPORTED BY 
+THE DW1000 .................................................. 18 
+TABLE 14:  DW1000 SYMBOL DURATIONS ................... 19 
+TABLE 15: TURN-AROUND TIMES ................................ 19 
+TABLE 16: DW1000 POWER-UP TIMINGS .................... 22 
+TABLE 17: EXTERNAL USE OF RSTN .............................. 23 
+TABLE 18: DW1000 SPI MODE CONFIGURATION .......... 25 
+TABLE 19: DW1000 SPI TIMING PARAMETERS @ A) 125 
+MHZ SYSTEM CLOCK AND B) 19.2 MHZ SYSTEM CLOCK
+ ...................................................................... 26 
+TABLE 20: TRANSMIT & RECEIVE BUFFER MEMORY SIZE .. 27 
+TABLE 21: ACCUMULATOR MEMORY SIZE ..................... 27 
+TABLE 22: OTP CALIBRATION MEMORY......................... 28 
+TABLE 23: SYNC SIGNAL TIMING RELATIVE TO XTAL ....... 29 
+TABLE 24: OPERATING STATES .................................... 31 
+TABLE 25: OPERATING STATES AND THEIR EFFECT ON POWER 
+CONSUMPTION .................................................. 31 
+TABLE 26: OPERATIONAL MODES ................................ 32 
+TABLE 27: TYPICAL TX CURRENT CONSUMPTION ............ 33 
+TABLE 28: TYPICAL RX CURRENT CONSUMPTION ............ 33 
+TABLE 29: LOWEST POWER AND LONGEST RANGE MODES OF 
+OPERATION ....................................................... 34 
+TABLE 30: DEVICE ORDERING INFORMATION .................. 46 
+TABLE 31: GLOSSARY OF TERMS .................................. 47 
+TABLE 32: DOCUMENT HISTORY .................................. 48 
+ 
+
+PAGE 4
+DW1000 Datasheet  
+ 
+ 
+© Decawave Ltd 2017 Subject to change without notice Version 2.23 Page 4 
+ 
+ 
+ 
+DOCUMENT INFORMATION 
+ 
+Disclaimer 
+ 
+Decawave reserves the r ight to change product specifications without notice. As far as possible change s to 
+functionality and specifications will be issued in product specific errata sheets or in new versions of this 
+document.  Customers are advised to check with Decawave for the most recent updates on this product. 
+ 
+Copyright © 2015 Decawave Ltd 
+ 
+ 
+ 
+ 
+ 
+LIFE SUPPORT POLICY 
+ 
+Decawave products are not authorized for use in safety-critical applications (such as life support) where a 
+failure of the Decawave product would reasonably be expected to cause severe personal injury or death.  
+Decawave customers using or selling Decawave products in such a manner do so entirely at their own risk 
+and agree to fully indemnify Decawave and its representatives against any damages arising out of the use of 
+Decawave products in such safety-critical applications. 
+ 
+ 
+ 
+ 
+Caution! ESD sensitive device.  Precaution should be used when handling the device in order 
+to prevent permanent damage. 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+REGULATORY APPROVALS 
+ 
+The DW1000, as supplied from Decawave, has not been certified for use in any particular geographic region 
+by the appropriate regulatory body governing radio emissions in that region although it is capable of such 
+certification depending on the region and the manner in which it is used.  
+ 
+All products developed by the user incorporating the DW1000 must be approved by the relevant authority 
+governing radio emissions in any given jurisdiction prior to the marketing or sale of such products in that 
+jurisdiction and user bears all responsibility for obtaining such approval as needed from the appropriate 
+authorities. 
+ 
+ 
+
+
+PAGE 5
+DW1000 Datasheet  
+ 
+ 
+© Decawave Ltd 2017 Subject to change without notice Version 2.23 Page 5 
+ 
+1 IC DESCRIPTION 
+ 
+Figure 1: IC Block Diagram
+DW1000 is a fully integrated low -power, single chip 
+CMOS RF transceiver IC compliant with the 
+IEEE802.15.4-2011 [1] UWB standard.  
+ 
+DW1000 consists of an analog front end containing 
+a receiver and a transmitter and a digital back end 
+that in terfaces to an off -chip host processor.  A 
+TX/RX switch is used to  connect the receiver or 
+transmitter to the antenna port.  Temperature and 
+voltage monitors are provided on-chip 
+ 
+The receiver consists of an RF front end which 
+amplifies the received signal in a low-noise amplifier 
+before down-converting it directly to baseband.  The 
+receiver is optimi zed for wide bandwidth, linearity 
+and noise figure.  This allows each of the supported 
+UWB channels to be down converted with minimum 
+additional noise and distortion.  The baseband signal 
+is demodulated and t he resulting rece ived data is 
+made available to the host controller via SPI. 
+ 
+The transmit pulse  train is generated by applying 
+digitally encoded transmit data to the analog pulse 
+generator. The pulse train is up -converted by a 
+double balanced mixer to a carrier generated by the 
+synthesizer and centred on one of the permitted 
+UWB channels. The modu lated RF waveform is 
+amplified be fore transmission  from the external 
+antenna. 
+ 
+The IC has an  on-chip One -Time Programmable 
+(OTP) memory.  This memory can be used to store 
+calibration data such as TX power level, crystal initial 
+frequency error adjustment, and range accuracy 
+adjustment.  T hese adjustment values can be 
+automatically retrieved when needed.  See section 
+5.14 for more details. 
+ 
+The Always-On (AON) memory can be used to retain 
+DW1000 configuration data during the lowest power 
+operational states  when the on -chip voltage 
+regulators are disabled . This data is uploaded and 
+downloaded automatically.  Use of DW1000 AON 
+memory is configurable. 
+ 
+The DW1000 clocking scheme is based around 3 
+main circuits; Crystal Oscillator, Clock PLL and RF 
+PLL.  The on-chip oscillator is designed to operate at 
+a frequency of 38.4 MHz using an external crystal. 
+An external 38.4 MHz clock signal may be applied in 
+place of the crystal if an appropriately stable clock is 
+available elsewhere in the user’s system. T his 
+38.4 MHz clock is used as the reference clock input 
+to the two on-chip PLLs.  The clock PLL (denoted 
+CLKPLL) generates the clock required by the digital 
+back end for signal processing.   The RF  PLL 
+generates the down-conversion local oscillator (LO) 
+for the receive chain and the up -conversion LO for 
+the transmit cha in.  An internal 13  kHz oscillator is 
+provided for use in the SLEEP state. 
+ 
+The host interface includes a slave -only SPI for 
+device communications and configuration.  A 
+number of MAC features are implemented including 
+CRC generation, CRC checking and receive frame 
+filtering.
+Configuration 
+Retention
+Pulse Generator
+Rx Analog 
+Baseband
+ADC
+RF RX
+RF TX
+Tx / Rx 
+Calibration
+Power 
+Management 
+and State 
+Control 
+(PMSC)
+Loop 
+Circuits
+RF PLL / Synth
+Loop 
+Circuits
+CLK PLL / Synth
+Temperature 
+/ Battery 
+monitor
+On-Chip 
+Regulators Bias
+To all 
+circuits
+SPICLK
+SPICSn
+SPIMOSI
+SPIMISO
+XTAL2
+XTAL1
+RF_P
+RF_N
+IRQ
+SYNC
+VDDLDOA
+VREF
+VDDIF
+VDDCLK
+VDDVCO
+VDDSYN
+VDDLNA
+To all 
+circuits
+VDDPA1
+VDDMS
+VDDLDOD
+VDDDIG
+AON
+RSTn
+WAKEUP
+POR
+De-
+spreader
+Viterbi 
+Decoder
+SECDED/
+Reed-
+Solomon 
+Decoder
+Carrier/
+Timing 
+Recovery
+Digital Filter
+DIGITAL RX 
+Register 
+File
+Host Interface 
+SPIH/W 
+MAC
+Digital AON 
+I/F
+Timers
+Burst 
+Control
+Convolutional 
+Encoder
+Reed-
+Solomon 
+Encoder
+SECDED Transmit 
+Control
+DIGITAL TX
+IF Gain Control
+FORCEON
+EXTON
+13kHz 
+Osc
+CAS
+Memory 
+Array
+OTP
+To all 
+circuits
+DIGITAL Control
+Leading Edge 
+and Diagnostics 
+(LDE)
+VDDPA2
+VDDBAT
+VDDAON
+CLKTUNE
+VCOTUNE
+GPIO[0..6]
+To all digital 
+blocks via PMSC
+Oscillator
+
+PAGE 6
+DW1000 Datasheet  
+ 
+ 
+© Decawave Ltd 2017 Subject to change without notice Version 2.23 Page 6 
+ 
+2 PIN CONNECTIONS 
+2.1 Pin Numbering 
+QFN-48 package with pin assignments as follows: - 
+ 
+  
+Figure 2: DW1000 Pin Assignments 
+2.2 Pin Descriptions 
+Table 1: DW1000 Pin functions 
+SIGNAL 
+NAME PIN 
+I/O 
+(defaul
+t) 
+DESCRIPTION 
+Crystal Interface  
+EXTCLK / 
+XTAL1 3 AI Reference crystal input or external reference overdrive pin. 
+XTAL2 4 AI Reference crystal input. Leave floating if external clock is used. 
+Digital Interface 
+SPICLK 41 DI SPI clock 
+SPIMISO 40 DO  
+(O-L) SPI data output. Refer to section 5.8. 
+SPIMOSI 39 DI SPI data input. Refer to section 5.8. 
+SPICSn 24 DI 
+SPI chip select.  This is an active low enable input.  The high-to-low transition 
+on SPICSn signals the start of a new SPI transaction.  SPICSn can also act 
+as a wake-up signal to bring DW1000 out of either SLEEP or DEEPSLEEP 
+states. Refer to section 6. 
+SYNC / 
+GPIO7 29 DIO  
+(I) 
+The SYNC input pin is used for external synchronization (see section 5.13).  
+When the SYNC input functionality is not being used this pin may be 
+reconfigured as a general purpose I/O pin, GPIO7.  
+WAKEUP 23 DI 
+When asserted into its active high state, the WAKEUP pin brings the 
+DW1000 out of SLEEP or DEEPSLEEP states into operational mode.   
+When this pin is not being used as WAKEUP it should be tied to VSSIO 
+EXTON 21 DO 
+(O-L) 
+External device enable.  Asserted during wake-up process and held active 
+until device enters sleep mode. Can be used to control external DC-DC 
+converters or other circuits that are not required when the device is in sleep 
+mode so as to minimize power consumption. Refer to sections 5.5.1 & 7. 
+EXTON can be left floating if not used. 
+
+
+PAGE 7
+DW1000 Datasheet  
+ 
+ 
+© Decawave Ltd 2017 Subject to change without notice Version 2.23 Page 7 
+ 
+SIGNAL 
+NAME PIN 
+I/O 
+(defaul
+t) 
+DESCRIPTION 
+FORCEON 22 DI Not used in normal operation. Must be connected to ground 
+IRQ / GPIO8 45 DIO 
+(O-L) 
+Interrupt Request output from the DW1000 to the host processor.  By default 
+IRQ is an active-high output but may be configured to be active low if 
+required.  For correct operation in SLEEP and DEEPSLEEP modes it should 
+be configured for active high operation. This pin will float in SLEEP and 
+DEEPSLEEP states and may cause spurious interrupts unless pulled low. 
+When the IRQ functionality is not being used the pin may be reconfigured as 
+a general purpose I/O line, GPIO8.   
+This pin has an internal pulldown to VSSIO and can be left unconnected if 
+not being used. 
+GPIO6 / 
+EXTRXE / 
+SPIPHA 
+30 DIO 
+(I) 
+General purpose I/O pin. 
+On power-up it acts as the SPIPHA (SPI phase selection) pin for configuring 
+the SPI operation mode.  For details of this please refer to section 5.8.   
+After power-up, the pin will default to a General Purpose I/O pin.  
+It may be configured for use as EXTRXE (External Receiver Enable). This 
+pin goes high when the DW1000 is in receive mode. 
+This pin has an internal pulldown to VSSIO and can be left unconnected if 
+not being used. 
+GPIO5 / 
+EXTTXE / 
+SPIPOL 
+33 DIO 
+(I) 
+General purpose I/O pin.   
+On power-up it acts as the SPIPOL (SPI polarity selection) pin for configuring 
+the SPI mode of operation. Refer to section 5.8 for further information.  
+After power-up, the pin will default to a General Purpose I/O pin.  
+It may be configured for use as EXTTXE (External Transmit Enable). This pin 
+goes high when the DW1000 is in transmit mode. 
+This pin has an internal pulldown to VSSIO and can be left unconnected if 
+not being used. 
+GPIO4 / 
+EXTPA 34 DIO 
+(I) 
+General purpose I/O pin.   
+It may be configured for use as EXTPA (External Power Amplifier). This pin 
+can enable an external Power Amplifier. 
+This pin has an internal pulldown to VSSIO and can be left unconnected if 
+not being used. 
+GPIO3 / 
+TXLED 35 DIO 
+(I) 
+General purpose I/O pin.   
+It may be configured for use as a TXLED driving pin that can be used to light 
+a LED following a transmission.  Refer to the DW1000 User Manual [2] for 
+details of LED use. 
+This pin has an internal pulldown to VSSIO and can be left unconnected if 
+not being used. 
+GPIO2 / 
+RXLED 36 DIO 
+(I) 
+General purpose I/O pin.  
+It may be configured for use as a RXLED driving pin that can be used to light 
+a LED during receive mode.  Refer to the DW1000 User Manual [2] for 
+details of LED use. 
+This pin has an internal pulldown to VSSIO and can be left unconnected if 
+not being used. 
+GPIO1 / 
+SFDLED 37 DIO 
+(I) 
+General purpose I/O pin. 
+It may be configured for use as a SFDLED driving pin that can be used to 
+light a LED when SFD (Start Frame Delimiter) is found by the receiver.  Refer 
+to the DW1000 User Manual [2] for details of LED use. 
+This pin has an internal pulldown to VSSIO and can be left unconnected if 
+not being used. 
+GPIO0 / 
+RXOKLED 38 DIO 
+(I) 
+General purpose I/O pin. 
+It may be configured for use as a RXOKLED driving pin that can be used to 
+light a LED on reception of a good frame.  Refer to the DW1000 User Manual 
+[2] for details of LED use. 
+This pin has an internal pulldown to VSSIO and can be left unconnected if 
+not being used. 
+
+PAGE 8
+DW1000 Datasheet  
+ 
+ 
+© Decawave Ltd 2017 Subject to change without notice Version 2.23 Page 8 
+ 
+SIGNAL 
+NAME PIN 
+I/O 
+(defaul
+t) 
+DESCRIPTION 
+RSTn 27 DIO 
+(O-H) 
+Reset pin. Active Low Output. 
+May be pulled low by external open drain driver to reset the DW1000. Must 
+not be pulled high by external source. Refer to section 5.6.  
+TESTMODE 46 DI Not used in normal operation. Must be connected to ground. 
+Reference voltages  
+VREF 5 AIO Used for on-chip reference current generation. Must be connected to an 
+11 kΩ (1% tolerance) resistor to ground. 
+Digital Power Supplies  
+VDDLDOD 26 P External supply for digital circuits. 
+VDDIOA 28 P External supply for digital IO ring. 
+VSSIO 32 
+43 G Negative I/O ring supply. Must be connected to ground. 
+Digital Decoupling 
+VDDREG 20 PD Output of on-chip regulator. Connect to VDDDIG on PCB. Requires a local 
+100 nF capacitor to VSSIO. 
+VDDDIG 44 PD Output of on-chip regulator. Connect to VDDREG on PCB. Requires a local 
+100 nF capacitor to VSSIO. 
+VDDIO 31 
+42 PD Digital IO Ring Decoupling. 
+RF Interface 
+RF_P 16 AIO Positive pin of the 100 Ω differential RF pair. Should be AC coupled. 
+RF_N 17 AIO Negative pin of the 100 Ω differential RF pair. Should be AC coupled. 
+PLL Interface 
+CLKTUNE 8 AIO Clock PLL loop filter connection to off-chip filter components. Referenced to 
+VDDCLK. 
+VCOTUNE 12 AIO RF PLL loop filter connection to off-chip filter components. Referenced to 
+VDDVCO.  
+Analog Power Supplies 
+VDDAON 25 P External supply for the Always-On (AON) portion of the chip. See 7.3 
+VDDPA1  18 P External supply to the transmitter power amplifier.  
+VDDPA2  19 P External supply to the transmitter power amplifier.  
+VDDLNA 15 P External supply to the receiver LNA.  
+VDDLDOA 48 P External supply to analog circuits. 
+VDDBATT 47 P 
+External supply to all other on-chip circuits.  If a TCXO is being used with the 
+DW1000 this pin should be supplied by the regulated supply used to power 
+the TCXO.  See Figure 37. 
+Analog Supply Decoupling 
+VDDCLK 9 PD Output of on-chip regulator to off-chip decoupling capacitor. 
+VDDIF 7 PD Output of on-chip regulator to off-chip decoupling capacitor. 
+VDDMS 6 PD Output of on-chip regulator to off-chip decoupling capacitor. 
+VDDSYN 10 PD Output of on-chip regulator to off-chip decoupling capacitor. 
+VDDVCO 11 PD Output of on-chip regulator to off-chip decoupling capacitor. 
+Ground Paddle 
+GND 49 G Ground Paddle on underside of package. Must be soldered to the PCB 
+ground plane for thermal and RF performance.  
+Others 
+
+PAGE 9
+DW1000 Datasheet  
+ 
+ 
+© Decawave Ltd 2017 Subject to change without notice Version 2.23 Page 9 
+ 
+SIGNAL 
+NAME PIN 
+I/O 
+(defaul
+t) 
+DESCRIPTION 
+NC 
+1 
+2 
+13 
+14 
+NC Not used in normal operation. Do not connect. 
+ 
+Table 2: Explanation of Abbreviations 
+ 
+ABBREVIATION EXPLANATION 
+AI Analog Input 
+AIO Analog Input / Output 
+AO Analog Output 
+DI Digital Input 
+DIO Digital Input / Output 
+DO Digital Output 
+G Ground 
+P Power Supply 
+PD Power Decoupling 
+NC No Connect 
+O-L Defaults to output, low level after reset 
+O-H Defaults to output, high level after reset 
+I Defaults to input. 
+Note: Any signal with the suffix ‘n’ indicates an active low signal. 
+ 
+ 
+
+PAGE 10
+DW1000 Datasheet  
+ 
+ 
+© Decawave Ltd 2017 Subject to change without notice Version 2.23 Page 10 
+ 
+3 ELECTRICAL SPECIFICATIONS 
+3.1 Nominal Operating Conditions 
+Table 3: DW1000 Operating Conditions 
+Parameter Min. Typ. Max. Units Condition/Note 
+Operating temperature -40  +85 ˚C  
+Supply voltage VDDIOA 2.8 3.3 3.6 V  
+Supply voltage VDDBATT, VDDAON, 
+VDDLNA, VDDPA 2.8 3.3 3.6 V  
+Supply voltage VDDLDOA, VDDLDOD  1.6  1.8 3.6 V See section 7.2 
+Optional: Supply voltage VDDIO 3.7 3.8 3.9 V 
+Only to be used if programming 
+the OTP memory. See the 
+DW1000 User Manual [2] for 
+details. 
+Voltage on GPIO0..8, WAKEUP, RSTn, 
+SPICSn, SPIMOSI, SPICLK, TESTMODE, 
+FORCEON 
+  3.6 V 
+Note that 3.6 V is the max 
+voltage that should be applied 
+to these pins 
+Note: Unit operation is guaranteed by design when operating within these ranges 
+3.2 DC Characteristics  
+Tamb = 25 ˚C, all supplies centered on typical values 
+ 
+Table 4: DW1000 DC Characteristics 
+Parameter Min. Typ. Max. Units Condition/Note 
+Supply current DEEPSLEEP mode  50  nA 
+Total current drawn from 
+all 3.3 V and 1.8 V 
+supplies. 
+Supply current SLEEP mode  1  µA 
+Supply current  IDLE mode  19  mA 
+Supply current  INIT mode  5  mA 
+TX   : 3.3 V supplies  
+(VDDBAT, VDDPA1, VDDPA2, VDDLNA, 
+VDDAON, VDDIOA) 
+  70 mA Channel 5 
+TX Power = MAX mean 
+( -9.3 dBm/500 MHz) TX   : 1.8 V supplies  
+(VDDLDOA, VDDLDOD)   90* mA 
+RX   : 3.3 V supplies  
+(VDDBAT, VDDPA1, VDDPA2, VDDLNA, 
+VDDAON, VDDIOA) 
+  30 mA 
+Channel 5 
+RX   : 1.8 V supplies  
+(VDDLDOA, VDDLDOD)   210* mA 
+Digital input voltage high 0.7*VDDIO   V  
+Digital input voltage low    0.3*VDDIO V  
+Digital output voltage high 0.7*VDDIO   V Assumes 500 Ω load. 
+Digital output voltage low   0.3*VDDIO V Assumes 500 Ω load. 
+Digital Output Drive Current 
+GPIOx, IRQ 
+SPIMISO 
+EXTON 
+ 
+4 
+8 
+3 
+ 
+6 
+10 
+4 
+ mA  
+* These currents are on the 1.8 V supplies, not referenced back to the 3.3 V supply 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+PAGE 11
+DW1000 Datasheet  
+ 
+ 
+© Decawave Ltd 2017 Subject to change without notice Version 2.23 Page 11 
+ 
+3.3 Receiver AC Characteristics 
+Tamb = 25 ˚C, all supplies centered on nominal values 
+ 
+Table 5: DW1000 Receiver AC Characteristics 
+Parameter Min. Typ. Max. Units Condition/Note 
+Frequency range 3244  6999 MHz  
+Channel bandwidths  500 
+900  MHz Channel 1,2,3 and 5 
+Channel 4 and 7 
+Input P1Db compression point   -39 dBm Measured at balun input 
+In-band blocking level*  30  dBc Continuous wave interferer 
+Out-of-band blocking level*  55  dBc Continuous wave interferer 
+Relative velocity between Receiver & 
+Transmitter 
+0 
+ 
+0 
+ 5 
+ 
+500 
+m/s 
+ 
+m/s 
+4096 preamble 110kbps, 128 
+bytes 
+64 preamble 6.8 Mbps, 12 
+bytes  
+ 
+*Blocking level is power relative to reference sensitivity level plus 3 dB to cause 1% packet error rate, e.g. -60 
+dBm in-band blocking for -93 dBm receiver sensitivity. 
+A continuous wave interferer is one which has no modulation applied - just a sinusoidal signal. In-band blocking 
+is where the interferer is within the UWB channel bandwidth being used and out-of-band is where the interferer is 
+outside the channel bandwidth. 
+ 
+3.4 Receiver Sensitivity Characteristics 
+Tamb = 25 ˚C, all supplies centered on typical values. 20 byte payload 
+Table 6: Typical Receiver Sensitivity Characteristics 
+Packet 
+Error 
+Rate 
+Data Rate 
+Typical 
+Receiver  
+Sensitivity 
+Units Condition/Note 
+1% 110 kbps -106 dBm/500 MHz Preamble 2048 
+Carrier frequency 
+offset ±1 ppm. 
+Requires use of the 
+“tight” Rx operating 
+parameter set – 
+see [2] 
+All 
+measureme
+nts 
+performed 
+on Channel 
+5, PRF 16 
+MHz. 
+Channel 2 
+is 
+approximat
+ely 1 dB 
+less 
+sensitive 
+ 
+10% 110 kbps -107 dBm/500 MHz Preamble 2048 
+1% 
+110 kbps -102 dBm/500 MHz Preamble 2048 
+Carrier frequency 
+offset ±10 ppm 
+850 kbps -101 dBm/500 MHz Preamble 1024 
+6.8 Mbps -93 (*-97) dBm/500 MHz Preamble 256 
+10% 
+110 kbps -106 dBm/500 MHz Preamble 2048 
+850 kbps -102 dBm/500 MHz Preamble 1024 
+6.8 Mbps -94 (*-98) dBm/500 MHz Preamble 256 
+*equivalent sensitivity with Smart TX Power enabled 
+  
+
+PAGE 12
+DW1000 Datasheet  
+ 
+ 
+© Decawave Ltd 2017 Subject to change without notice Version 2.23 Page 12 
+ 
+3.5 Reference Clock AC Characteristics  
+Tamb = 25 ˚C, all supplies centered on typical values 
+3.5.1 Reference Frequency 
+Table 7: DW1000 Reference Clock AC Characteristics 
+Parameter Min. Typ. Max. Units Condition/Note 
+Crystal oscillator reference 
+frequency  38.4  MHz 
+A 38.4 MHz signal can be provided from an 
+external reference in place of a crystal if 
+desired.  See Figure 37 
+Crystal specifications      
+Load capacitance 0  35 pF Depends on crystal used and PCB parasitics 
+Shunt capacitance 0  4 pF  
+Drive level   200 µW Depends on crystal & load capacitance used 
+Equivalent Series 
+Resistance (ESR)   60 Ω  
+Frequency tolerance   ±20 ppm DW1000 includes circuitry to trim the crystal 
+oscillator to reduce the initial frequency offset. 
+Crystal trimming range  ±25  ppm Trimming range provided by on-chip circuitry. 
+Depends on the crystal used and PCB design. 
+External Reference      
+Amplitude 0.8   Vpp Must be AC coupled. A coupling capacitor 
+value of 2200 pF is recommended 
+SSB phase noise power 
+density   -132 dBc/Hz @1 kHz offset. 
+SSB phase noise power 
+density   -145 
+ dBc/Hz @10 kHz offset. 
+Duty Cycle 40  60 %  
+Low Power RC Oscillator 5 12 15 kHz  
+3.6 Transmitter AC Characteristics  
+Tamb = 25 ˚C, all supplies centered on typical values 
+Table 8: DW1000 Transmitter AC Characteristics 
+ 
+ 
+ 
+  
+Parameter Min.  Typ. Max. Units Condition/Note 
+Frequency range 3244   6999 MHz  
+Channel Bandwidths   500 
+900  MHz Channel 1, 2, 3 and 5 
+Channel 4 and 7 
+Output power spectral density 
+(programmable)   -39 -35 dBm/MHz See Section 5.5 
+Load impedance   100  Ω Differential 
+Power level range   37  dB  
+Coarse Power level step   2.5  dB  
+Fine Power level step    0.5  dB  
+Output power variation with 
+temperature   0.05  dB/OC  
+Output power variation with 
+voltage   2.73 
+3.34  dB/V Channel 2 
+Channel 5 
+
+PAGE 13
+DW1000 Datasheet  
+ 
+ 
+© Decawave Ltd 2017 Subject to change without notice Version 2.23 Page 13 
+ 
+ 
+3.7 Temperature and Voltage Monitor Characteristics 
+Table 9: DW1000 Temperature and Voltage Monitor Characteristics 
+Parameter Min. Typ. Max. Units Condition/Note 
+Voltage Monitor Range 2.4  3.75 V  
+Voltage Monitor Precision  20  mV  
+Voltage Monitor Accuracy  140  mV  
+Temperature Monitor Range -40  +100 °C  
+Temperature Monitor Precision  0.9  °C  
+Temperature Monitor Accuracy  +/-5%  °C  
+3.8 Absolute Maximum Ratings 
+Table 10: DW1000 Absolute Maximum Ratings 
+Parameter Min. Max. Units 
+Voltage   
+VDDPA / VDDLNA / VDDLDOD / VDDLDOA / VDDBATT / 
+VDDIOA / VDDAON / VDDIO 
+-0.3 4.0 V 
+    
+Receiver Power  0 dBm 
+    
+Temperature  - Storage temperature -65 +150 ˚C 
+Temperature – Operating temperature -40 +85 ˚C 
+Junction Temperature  +105 ˚C 
+    
+ESD  (Human Body Model)  2000 V 
+ 
+Stresses beyond those listed in this table may cause permanent damage to the device.  This is a stress rating 
+only; functional operation of the device at these or any other conditions beyond those indicated in the operating 
+conditions of the specification is not implied.  Exposure to the absolute maximum rating conditions for extended 
+periods may affect device reliability. 
+3.9 Thermal Characteristics 
+Table 11 Thermal Characteristics 
+Symbol Description Value Unit 
+   θJA Junction to Air 32 ℃/W 
+ θJC Junction to Case 2.4 ℃/W 
+ΨJt Junction to top 0.5 ℃/W 
+ 
+ 
+ 
+ 
+ 
+
+PAGE 14
+DW1000 Datasheet  
+ 
+ 
+© Decawave Ltd 2017 Subject to change without notice Version 2.23 Page 14 
+ 
+4 TYPICAL PERFORMANCE 
+ 
+Figure 3 : RX Interferer Immunity on Channel 2 
+ 
+Figure 4: TX output Power over Temp & Voltage  
+(note that 2.5 volt data points are shown for information only) 
+ 
+Figure 5: Receiver Sensitivity Channel 5 110kbps Data Rate 16 MHz PRF 2048 Preamble Symbols 
+ 
+30
+40
+50
+60
+70
+80
+90
+1 1.5 2 2.5 3 3.5 4 4.5 5 5.5 6
+Blocker Rejection (dB)
+Blocker Frequency (GHz)
+Wanted channel 2 (3.9936 GHz)
+-52
+-50
+-48
+-46
+-44
+-42
+-40
+-38
+-36
+-34
+-32
+0 1 2 3 4 5 6 7
+Tx Pwr (dBm/MHz)
+Channel
+2.5 Volts, +25⁰C
+3.3 Volts, +25⁰C
+3.6 Volts, +25⁰C
+2.5 Volts, -40⁰C
+3.3 Volts, -40⁰C
+3.6 Volts, -40⁰C
+2.5 Volts, +85⁰C
+3.3 Volts, +85⁰C
+3.6 Volts, +85⁰C
+
+
+PAGE 15
+DW1000 Datasheet  
+ 
+ 
+© Decawave Ltd 2017 Subject to change without notice Version 2.23 Page 15 
+ 
+ 
+Figure 6: Receiver Sensitivity Channel 5 110kbps Data Rate 64 MHz PRF 2048 Preamble Symbols 
+ 
+Figure 7: Receiver Sensitivity Channel 5 850kbps Data Rate 16 MHz PRF 1024 Preamble Symbols 
+ 
+Figure 8: Receiver Sensitivity Channel 5 850kbps Data Rate 64 MHz PRF 1024 Preamble Symbols 
+
+
+PAGE 16
+DW1000 Datasheet  
+ 
+ 
+© Decawave Ltd 2017 Subject to change without notice Version 2.23 Page 16 
+ 
+ 
+Figure 9: Receiver Sensitivity Channel 5 6.81Mbps Data Rate 16 MHz PRF 256 Preamble Symbols 
+ 
+Figure 10: Receiver Sensitivity Channel 5 6.81Mbps Data Rate 64 MHz PRF 1256 Preamble Symbols 
+ 
+ 
+Figure 11: Typical probability distribution of Line of Sight 2-way ranging performance 
+ 
+ 
+  
+-8 -6 -4 -2 0 2 4 6 8
+0
+0.02
+0.04
+0.06
+0.08
+0.1
+0.12
+Error (cm)
+Probability
+
+PAGE 17
+DW1000 Datasheet  
+ 
+ 
+© Decawave Ltd 2017 Subject to change without notice Version 2.23 Page 17 
+ 
+ 
+ 
+Figure 12: TX Spectrum Channel 1 
+ 
+Figure 13: TX Spectrum Channel 2 
+ 
+Figure 14: TX Spectrum Channel 3 
+ 
+Figure 15: TX Spectrum Channel 4 
+ 
+Figure 16: TX Spectrum Channel 5 
+ 
+Figure 17: TX Spectrum Channel 7 
+ 
+Att  5 dB *
+ A 
+Ref -40 dBm
+*
+ 
+1 RM
+CLRWR
+Center 3.499 GHz Span 4 GHz400 MHz/
+*
+*
+3DB
+RBW 1 MHz
+VBW 1 MHz
+SWT 4 s*
+-90
+-85
+-80
+-75
+-70
+-65
+-60
+-55
+-50
+-45
+-40
+Date: 25.SEP.2013  16:07:44
+Att  5 dB *
+RBW 1 MHz*
+ A 
+3DB
+Ref -40 dBm
+Center 3.9936 GHz Span 4 GHz400 MHz/
+*
+ 
+1 RM
+AVG
+SWT 4 s
+*VBW 1 MHz
+*
+-90
+-85
+-80
+-75
+-70
+-65
+-60
+-55
+-50
+-45
+-40
+Date: 25.SEP.2013  15:47:44
+Att  5 dB *
+ A 
+Ref -40 dBm
+*
+ 
+1 RM
+CLRWR
+Center 4.493 GHz Span 4 GHz400 MHz/
+*
+*
+3DB
+RBW 1 MHz
+VBW 1 MHz
+SWT 4 s*
+-90
+-85
+-80
+-75
+-70
+-65
+-60
+-55
+-50
+-45
+-40
+Date: 25.SEP.2013  16:09:23
+Att  5 dB *
+RBW 1 MHz*
+ A 
+3DB
+Ref -40 dBm
+Center 3.9936 GHz Span 4 GHz400 MHz/
+SWT 4 s
+*VBW 1 MHz
+*
+*
+ 
+1 RM
+CLRWR
+-90
+-85
+-80
+-75
+-70
+-65
+-60
+-55
+-50
+-45
+-40
+Date: 25.SEP.2013  15:49:33
+Att  5 dB *
+ A 
+Ref -40 dBm
+*
+ 
+1 RM
+CLRWR
+Center 6.489 GHz Span 4 GHz400 MHz/
+*
+*
+3DB
+RBW 1 MHz
+VBW 1 MHz
+SWT 4 s*
+-90
+-85
+-80
+-75
+-70
+-65
+-60
+-55
+-50
+-45
+-40
+Date: 25.SEP.2013  16:10:30
+ A 
+Ref -40 dBm
+*
+ 
+1 RM
+CLRWR
+Att  5 dB *
+Center 6.489 GHz Span 4 GHz400 MHz/
+*
+*
+3DB
+RBW 1 MHz
+VBW 1 MHz
+SWT 4 s*
+-90
+-85
+-80
+-75
+-70
+-65
+-60
+-55
+-50
+-45
+-40
+Date: 25.SEP.2013  16:20:23
+
+PAGE 18
+DW1000 Datasheet  
+ 
+ 
+© Decawave Ltd 2017 Subject to change without notice Version 2.23 Page 18 
+ 
+5 FUNCTIONAL DESCRIPTION 
+5.1 Physical Layer Modes 
+Please refer to IEEE802.15.4-2011 [1] for the PHY specification. 
+5.1.1 Supported Channels and Bandwidths  
+The DW1000 supports the following six IEEE802.15.4-2011 [1] UWB channels: - 
+Table 12: Channels supported by the DW1000 
+UWB Channel 
+Number 
+Centre Frequency  
+(MHz) 
+Band 
+ (MHz) 
+Bandwidth  
+(MHz) 
+1 3494.4 3244.8 – 3744 499.2 
+2 3993.6 3774 – 4243.2 499.2 
+3 4492.8 4243.2 – 4742.4 499.2 
+4 3993.6 3328 – 4659.2 1331.2* 
+5 6489.6 6240 – 6739.2 499.2 
+7 6489.6 5980.3 – 6998.9 1081.6* 
+       *DW1000 maximum receiver bandwidth is approximately 900 MHz 
+5.1.2 Supported Bit Rates and Pulse Repetition Frequencies (PRF) 
+The DW1000 supports standard bit rates of 110 kbps, 850 kbps and 6.81 Mbps and nominal PRF values of 16 
+and 64 MHz. 
+ 
+Table 13: UWB bit rates and PRF modes supported by the DW1000 
+PRF* 
+(MHz) 
+Data Rate  
+(Mbps) 
+16 0.11 
+16 0.85 
+16 6.81 
+64 0.11 
+64 0.85 
+64 6.81 
+ 
+*Actual PRF mean values are slightly higher for SYNC as opposed to the other portions of a frame.  Mean PRF values are 
+16.1/15.6 MHz and 62.89/62.4 MHz, nominally referred to as 16 and 64MHz in this document.  Refer to [1] for full details of 
+peak and mean PRFs. 
+ 
+Generally speaking, lower data rates give increased receiver sensitivity, increased link margin and longer range 
+but due to longer frame lengths for a given number of data bytes they result in increased air occupancy per frame 
+and a reduction in the number of individual transmissions that can take place per unit time.  
+ 
+16 MHz PRF gives a marginal reduction in transmitter power consumption over 64 MHz PRF.  
+When using 16 MHz and 64 MHz PRF on the same physical while using different preamble codes some 
+interference may result because while the preamble codes have a low cross-correlation they are not orthogonal.  
+See APH010 [6] for further details on channel interference. 
+  
+
+PAGE 19
+DW1000 Datasheet  
+ 
+ 
+© Decawave Ltd 2017 Subject to change without notice Version 2.23 Page 19 
+ 
+5.1.3 Frame Format 
+UWB frames are structured as shown in Figure 18.  Detailed descriptions of the frame format are given in the 
+UWB standard [1].  The frame consists of a synchronisation header (SHR) which includes the preamble symbols 
+and start frame delimiter (SFD), followed by the PHY header (PHR) and data.  The data frame is usually specified 
+in number of bytes and the frame format will include 48 Reed-Solomon parity bits following each block of 330 
+data bits (or less). 
+ 
+The maximum standard frame length is 127 bytes, including the 2-byte FCS. 
+ 
+ 
+Figure 18:  IEEE802.15.4-2011 PPDU Structure 
+5.1.4 Symbol Timings 
+Timing durations in UWB standard are expressed in an integer number of symbols. This convention is adopted in 
+DW1000 documentation.  Symbol times vary depending on the data rate and PRF configuration of the device and 
+the part of the frame.  See Table 14:  DW1000 Symbol Durations, for all symbol timings supported by DW1000. 
+Table 14:  DW1000 Symbol Durations 
+PRF 
+(MHz) 
+Data Rate 
+(Mbps) SHR (ns) PHR (ns) Data (ns) 
+16 0.11 993.59 8205.13 8205.13 
+16 0.85 993.59 1025.64 1025.64 
+16 6.81 993.59 1025.64 128.21 
+64 0.11 1017.63 8205.13 8205.13 
+64 0.85 1017.63 1025.64 1025.64 
+64 6.81 1017.63 1025.64 128.21 
+5.1.5 Proprietary Long Frames 
+The DW1000 offers a proprietary long frame mode where frames of up to 1023 bytes may be transferred.  This 
+requires a non-standard PHR encoding and so cannot be used in a standard system.  Refer to the DW1000 User 
+Manual for full details [2]. 
+5.1.6 Turnaround Times 
+Turn-around times given in the table below are as defined in [1]. 
+Table 15: Turn-around Times 
+Parameter Min. Typ. Max. Units Condition/Note 
+Turn-around time RX to TX*.  10  μs Achievable turnaround time depends 
+on device configuration and frame 
+parameters and on external host 
+controller. Turn-around time TX to RX*.  6  μs 
+ 
+  
+
+
+PAGE 20
+DW1000 Datasheet  
+ 
+ 
+© Decawave Ltd 2017 Subject to change without notice Version 2.23 Page 20 
+ 
+5.1.7 Frame Filter 
+A standard frame filtering format is defined in IEEE802.15.4-2011 [1].  An overview of the MAC frame format is 
+given in Figure 19 .  Note that the Auxiliary Security Header is not processed in DW1000 hardware. 
+ 
+ 
+Figure 19:  IEEE802.15.4-2011 MAC Frame Format 
+Frame filtering allows the receiver to automatically discard frames that do not match a defined set of criteria. The 
+DW1000 has a number of separately configurable frame filtering criteria to allow selection of the frame types to 
+accept or discard.  See IEEE802.15.4-2011 standard [1] for filtering field definition and acceptance rules.  
+5.1.8 Frame Check Sequence (FCS) 
+The FCS is also known as the MAC Footer (MFR).  It is a 2-byte CRC appended to frames.  See standard for 
+information on FCS generation. 
+5.2 Reference Crystal Oscillator 
+The on-chip crystal oscillator generates the reference frequency for the integrated frequency synthesizers RFPLL 
+and CLKPLL. The oscillator operates at a frequency of 38.4 MHz.  
+ 
+DW1000 provides the facility to trim out initial frequency error in the 38.4 MHz reference crystal, see section 5.14. 
+The trimming range depends on the crystal chosen and the loading capacitors used. Typically a trimming range 
+of ±25 ppm is possible. Loading capacitors should be chosen such that minimum frequency error (from the 
+channel center frequency) is achieved when the trim value is approximately mid-range.  
+ 
+In applications that require tighter frequency tolerance (maximum range) an external oscillator such as a TCXO 
+can be used to drive the XTAL1 pin directly. 
+5.3 Synthesizer 
+DW1000 contains 2 frequency synthesizers, RFPLL which is used as a local oscillator (LO) for the TX and RX 
+and CLKPLL which is used as a system clock. Both of these synthesizers are fully integrated apart from external 
+passive 2nd order loop filters. The component values for these loop filters do not change regardless of the RF 
+channel used. The register programming values for these synthesizers is contained in the user manual [2] 
+5.4 Receiver 
+5.4.1 Bandwidth setting 
+The receiver can be configured to operate in one of two bandwidth modes; 500 MHz or 900 MHz.  The selection 
+of a particular bandwidth mode is made by register settings and is described in the DW1000 User Manual [2]. 
+5.4.2 Automatic Gain Control (AGC) 
+Automatic Gain Control is provided to ensure optimum receiver performance by adjusting receiver gain for 
+changing signal and environmental conditions.  The DW1000 monitors the received signal level and makes 
+appropriate automatic adjustments to ensure optimum receiver performance is maintained. 
+5.5 Transmitter 
+5.5.1 Transmit Output Power 
+DW1000 transmit power is fully adjustable as is the transmit spectrum width ensuring that applicable regulatory 
+standards such as FCC [4] and ETSI [3] can be met.  For maximum range the transmit power should be set such 
+that the EIRP at the antenna is as close as possible to the maximum allowed, -41.3 dBm/MHz in most regions.  
+See section 5.14.3 for more details. 
+MAC Protocol Data Unit (MPDU)
+Frame Control 
+Field (FCF)
+Sequence 
+Number
+Address 
+Information
+Frame Check 
+Seq. (FCS)Frame Payload
+MAC Header (MHR) MAC Payload MAC Footer 
+(MFR)
+2 1 0 to 20 variable 2Bytes:
+8*Frame Length + Reed-Solomon Encoding bits
+PHY Service Data Unit (PSDU)
+Auxiliary 
+Security Header
+0 to 14
+
+PAGE 21
+DW1000 Datasheet  
+ 
+ 
+© Decawave Ltd 2017 Subject to change without notice Version 2.23 Page 21 
+ 
+5.5.2 Transmit Bandwidth Setting 
+The transmitter can be configured to operate over a wide range of bandwidths.  The selection of a particular 
+bandwidth mode is made by register settings and is described in the DW1000 User Manual [2] 
+ 
+Transmit spectral shape can also be adjusted to compensate for PCB and external components in order to give 
+an optimal transmit spectral mask. 
+  
+
+PAGE 22
+DW1000 Datasheet  
+ 
+ 
+© Decawave Ltd 2017 Subject to change without notice Version 2.23 Page 22 
+ 
+5.6 Power-up sequence 
+5.6.1 Typical power-up sequence 
+  
+Figure 20: DW1000 Power-up Sequence 
+When power is applied to the DW1000, RSTn is driven low by the DW1000 internal circuitry as part of its power 
+up sequence.  See Figure 20 above.  RSTn remains low until the XTAL oscillator has powered up and its output 
+is suitable for use by the rest of the device.  Once that time is reached the DW1000 de-asserts RSTn. 
+Table 16: DW1000 Power-up Timings 
+Parameter Description Min 
+Value 
+Nominal 
+Value Units 
+VON Voltage threshold to enable overall IC power up.  2.0 V 
+TOSC_ON Time taken for oscillator to start up and stabilise. 1.0 1.5 ms 
+TEXT_ON EXTON goes high this long before RSTn is released. 1.5 2 ms 
+TDIG_ON RSTn held low by internal reset circuit / driven low by external 
+reset circuit. 1.5 2 ms 
+VLDO_OK Voltage threshold on the VDDLDOD supply at which the digital 
+core powers up. 1.6  V 
+TRST_OK 
+Time for which RSTn must continue to remain low once 
+VDDLDOD exceeds VLDO_OK min. 
+If TRST_OK min cannot be met due to the timing of the 
+VDDLDOD supply ramp then RSTn should be manually driven 
+low for at least TRST_OK min time to ensure correct reset 
+operation 
+10 50 ns 
+ 
+5.6.2 Variation in the power-up sequence 
+It is possible, that in some circuit arrangements, the start-up sequence may need to be altered. This can happen 
+if, for example, the VDDLDOD supply is controlled via an external controller or if a slow ramp regulator is used to 
+provide the VDDLDOD supply. In these situations the RSTn pin would have to be controlled by the external 
+circuitry to ensure the digital circuits receive proper reset on power up. 
+ 
+Figure 21: Power up example where VDDLDOD cannot be guaranteed to be ready in time for the RSTn 
+going high 
+3.3 V Supplies
+(VDDAON / VDDBAT / VDDIOA / 
+VDDLNA / VDDPA1 / VDDPA2)
+XTAL1 (38.4MHz)XTAL1
+VDDLDOA & VDDLDOD 
+EXTON
+Tosc_on
+RSTn
+Von
+INITPOWER UP
+Text_on
+Tdig_on
+STATE OFF
+TRST_OK
+VLDO_OK
+VDDLDOA & VDDLDOD 
+EXTON
+RSTn
+INITPOWER UPSTATE OFF
+TRST_OK
+VLDO_OK
+VDDLDOD not ready
+User asserts RSTn to 
+ensure reset occurs
+
+PAGE 23
+DW1000 Datasheet  
+ 
+ 
+© Decawave Ltd 2017 Subject to change without notice Version 2.23 Page 23 
+ 
+Figure 21 shows a situation where the VDDLDOD supply is not high until after the first RSTn low to high 
+transition (start of shaded area of RSTn). In this case the external circuitry must pull RSTn down again after the 
+VDDLDOD supply has exceeded VLDO_OK. This will ensure the digital circuits receive proper reset on power up. 
+The RSTn pin should be either held low during power up until TRST_OK is met or driven low for a minimum of 
+TRST_OK.  
+5.6.3 External control of RSTn / use of RSTn by external circuitry 
+5.6.3.1 External control of RSTn 
+An external circuit can reset the DW1000 by asserting RSTn for a minimum of TRST_OK.  RSTn is an 
+asynchronous input.  DW1000 initialization will proceed when the RSTn pin is released to high impedance. 
+ 
+An external source should open-drain the RSTn pin once the DW1000 has been reset.  If RSTn is controlled by a 
+GPIO of an external micro-controller care should be taken to ensure that the GPIO is configured as high-
+impedance as soon as it is released from the LOW state. 
+ 
+When in DEEPSLEEP mode, the DW1000 drives RSTn to ground.  This can result in current flowing if RSTn is 
+driven high externally and will result in incorrect wake-up operation. 
+ 
+RSTn should never be driven high by an external source. 
+5.6.3.2 Use of RSTn by external circuitry 
+Table 17: External use of RSTn 
+Use of RSTn Description 
+As output to control 
+external circuitry 
+RSTn may be used as an output to reset external circuitry as part of an orderly bring up 
+of a system as power is applied. 
+As interrupt input to 
+external host 
+RSTn may be used as an interrupt input to the external host to indicate that the 
+DW1000 has entered the INIT state. When RSTn is used in this way care should be 
+taken to ensure that the interrupt pin of the external host does not pull-up the RSTn 
+signal which should be left open-drain. Refer to Table 1 and Figure 37. 
+ 
+5.7 Voltage/Temperature Monitors 
+The on-chip voltage and temperature monitors allow the host to read the voltage on the VDDAON pin and the 
+internal die temperature information from the DW1000.  See Table 9 for characteristics. 
+5.8 Host Controller Interface 
+The DW1000 host communications interface is a slave-only SPI.  Both clock polarities (SPIPOL=0/1) and phases 
+(SPIPHA=0/1) are supported.  The data transfer protocol supports single and multiple byte read/writes accesses.  
+All bytes are transferred MSB first and LSB last.  A transfer is initiated by asserting SPICSn low and terminated 
+when SPICSn is deasserted high.  
+ 
+The DW1000 transfer protocols for each SPIPOL and SPIPHA setting are given in Figure 22 and Figure 23. 
+ 
+Note:  Figure 22 and Figure 23 detail the SPI protocol as defined for SPICLK polarities and phases.  The 
+sampling and launch edges used by the SPI bus master are shown.  DW1000 is a SPI slave device and 
+will comply with the protocol by ensuring that the SPIMISO data is valid on the required SPICLK edge 
+with setup and hold times as given by Table 19. 
+ 
+ 
+
+PAGE 24
+DW1000 Datasheet  
+ 
+ 
+© Decawave Ltd 2017 Subject to change without notice Version 2.23 Page 24 
+ 
+ 
+Figure 22:  DW1000 SPIPHA=0 Transfer Protocol 
+ 
+ 
+Figure 23:  DW1000SPIPHA=1 Transfer Protocol 
+The MSB of the first byte is the read/write indicator, a low bit indicates a read access and a high bit indicates a 
+write access.  The second bit, bit 6 of the first byte, indicates whether a sub address byte will be included in the 
+SPI access, a high bit indicates a further address byte to follow the initial byte and a low bit indicating that the 
+bytes to follow the first byte are data.  The 6 LSBs of the first byte contain an access address. 
+ 
+The second byte of a transfer command, if included, gives the sub address being accessed.  If the MSB of this 
+optional second byte is high, it indicates a second sub address byte to follow in the third transfer byte.  The 7 
+LSBs of this second byte give the 7 LSBs of the sub address. 
+ 
+The third byte of a transfer command, if included give the 8 MSBs of the sub address. 
+ 
+The number of data bytes to follow the 1-3 command bytes is not limited by the DW1000 transfer protocol. 
+Figure 24:  SPI Byte Formatting 
+Byte Bit 7 Bit 6 Bit 5 Bit 4 Bit 3 Bit 2 Bit 1 Bit 0 
+Command 
+Read/Write  
+0 – Read 
+1 – Write 
+Sub address 
+0 – no sub address 
+1 – sub address present 
+6-bit access address 
+Sub Address 0 
+(Optional) 
+Extended sub address 
+0 – 1 byte sub address 
+1 – 2 byte sub address 
+7-bits of sub address.  These will be the LSBs if more bits are to follow. 
+Sub Address 1 
+(Optional) 
+8 bits of sub address.  These will form the MSBs, bits [14:7] of the 15-bit sub address. 
+Data 8-bit read/write bytes (variable number). 
+ 
+The SPIMISO line may be connected to multiple slave SPI devices each of which is required to go open-drain 
+when their respective SPICSn lines are de-asserted.  
+SPIPOL=0, SPIPHA=0
+z MSB 6 5 4 3 2 1 LSB
+SPICLK
+SPICSn
+Cycle 
+Number, #
+SPIMISO
+SPIMOSI
+SPIPOL=1, SPIPHA=0
+SPICLK
+z MSB 6 5 4 3 2 1 LSB
+1 2 3 4 5 6 7 8
+MSB LSB
+MSB LSB
+9 8*Number of 
+bytes
+X
+X
+Z
+Z
+SPIPOL=0, SPIPHA=1
+z MSB 6 5 4 3 2 1 LSB
+SPICLK
+SPICSn
+Cycle 
+Number, #
+SPIMISO
+SPIMOSI
+SPIPOL=1, SPIPHA=1
+SPICLK
+z MSB 6 5 4 3 2 1 LSB
+1 2 3 4 5 6 7 8
+MSB LSB
+MSB LSB
+9 8*Number of 
+bytes
+X
+X
+Z
+Z
+
+PAGE 25
+DW1000 Datasheet  
+ 
+ 
+© Decawave Ltd 2017 Subject to change without notice Version 2.23 Page 25 
+ 
+ 
+ 
+Figure 25: SPI Connections 
+ 
+More details of the protocol used for data transfer, the description of the accessible registers and the description 
+of the bit functions of those registers are published in the DW1000 User Manual [2]. 
+5.8.1 Configuring the SPI Mode 
+The SPI interface supports a number of different clock polarity and clock / data phase modes of operation.  These 
+modes are selected using GPIO5 & 6 as follows: - 
+Table 18: DW1000 SPI Mode Configuration 
+GPIO 5 
+(SPIPOL) 
+GPIO 6 
+(SPIPHA) 
+SPI 
+Mode Description (from the master / host point of view) 
+0 0 0 Data is sampled on the rising (first) edge of the clock and launched on the 
+falling (second) edge. 
+0 1 1 Data is sampled on the falling (second) edge of the clock and launched on 
+the rising (first) edge. 
+1 0 2 Data is sampled on the falling (first) edge of the clock and launched on the 
+rising (second) edge. 
+1 1 3 Data is sampled on the rising (second) edge of the clock and launched on 
+the falling (first) edge. 
+Note: The 0 on the GPIO pins can either be open circuit or a pull down to ground. The 1 on the GPI O pins is a pull up to VDDIO. 
+ 
+GPIO 5 / 6 are sampled / latched on the rising edge of the RSTn pin to determine the SPI mode.  They are 
+internally pulled low to configure a default SPI mode 0 without the use of external components.  If a mode other 0 
+is required then they should be pulled up using an external resistor of value no greater than 10 kΩ to the VDDIO 
+output supply. 
+ 
+If GPIO5 / 6 are also being used to control an external transmit / receive switch then external pull-up resistors of 
+no less than 1 kΩ should be used so that the DW1000 can correctly drive these outputs in normal operation after 
+the reset sequence / SPI configuration operation is complete. 
+ 
+The recommended range of resistance values to pull-up GPIO 5 / 6 is in the range of 1-10 kΩ.  If it is required to 
+pull-down GPIO 5 / 6, such as in the case where the signal is also pulled high at the input to an external IC, the 
+resistor value chosen needs to take account of the DW1000 internal pull-down resistor values as well as those of 
+any connected external pull-up resistors. 
+ 
+It is possible to set the SPI mode using the DW1000’s one-time programmable configuration block to avoid the 
+need for external components and to leave the GPIO free for use.  This is a one-time activity and cannot be 
+reversed so care must be taken to ensure that the desired SPI mode is set.  Please refer to the DW1000 User 
+Manual [2] for details of OTP use and configuration. 
+ 
+The operating mode of the SPI is determined when the DW1000’s digital control function is initialised as a result 
+of a device reset or is woken up from a SLEEP or DEEPSLEEP state and is in state INIT or IDLE. At this time 
+GPIO lines 5 and 6 are sampled and their values act to select the SPI mode. 
+DW1000 Host Controller
+SPICLK
+SPICSn
+SPIMOSI
+SPIMISO
+41
+24
+39
+40
+SPI PORT
+VDDIOA
+The DW1000 has internal pull up and pull down circuits to ensure safe operation 
+in the event of the host interface signals being disconnected. These are for 
+internal use only, and should not be used to pull an external signal high or low.
+Internal pull-down resistance values are in the range 34 kΩ – 90 kΩ, internal pull-
+up resistance values are in the range 40 kΩ - 90 kΩ.
+33GPIO5
+(SPIPOL)
+30GPIO6
+(SPIPHA)
+~55kΩ
+~55 kΩ
+~55kΩ
+~55kΩ
+~60kΩ
+
+PAGE 26
+DW1000 Datasheet  
+ 
+ 
+© Decawave Ltd 2017 Subject to change without notice Version 2.23 Page 26 
+ 
+See section 6 OPERATIONAL STATES AND POWER MANAGEMENT 
+ 
+When the DW1000 is put in SLEEP or DEEPSLEEP modes, the SPI MISO is held low. It is possible to share a 
+SPI bus with the DW1000, in this case access to the other SPI slave would have to occur when the DW1000 is 
+not in SLEEP or DEEPSLEEP. 
+ 
+5.8.2 SPI Signal Timing 
+ 
+Figure 26:  DW1000 SPI Timing Diagram 
+ 
+ 
+Figure 27:  DW1000 SPI Detailed Timing Diagram 
+ 
+SPI transactions are initiated by the assertion of the active low chip select line, SPICSn. The high-to-low 
+assertion (low) of SPICSn initialises the SPI transaction handler so that the DW1000 interprets the next octet(s) 
+as a new transaction header. The low-to-high de-assertion of SPICSn ends the SPI transaction.   
+ 
+Note- The SPICSn should remain low for an entire SPI transaction. If the CSn goes high between octets, the 
+transaction will be terminated where the CSn goes high and the next octet will be treated as a new transaction. 
+ 
+See the DW1000 User Manual [2] for further details on SPI transactions. 
+ 
+ Table 19: DW1000 SPI Timing Parameters @ A) 125 MHz system clock and B) 19.2 MHz system clock 
+A: 
+Parameter Min Typ Max Unit Description @ 125 MHz 
+SPICLK 
+Period 50   ns The maximum SPI frequency is 20 MHz when the CLKPLL is locked, 
+otherwise the maximum SPI frequency is 3 MHz. 
+t1   38 ns SPICSn select asserted low to valid slave output data 
+t2 12   ns SPICLK low to valid slave output data 
+t3 10   ns Master data output setup and hold time  i.e Master data = MOSI 
+t4 10   ns Master data output setup and hold time  i.e Master data = MOSI 
+t5 32   ns LSB last byte to MSB next byte 
+t6   10 ns SPICSn de-asserted high to SPIMISO tri-state 
+t7 16   ns Start time; time from select asserted to first SPICLK 
+t8 40   ns  Last SPICLK to SPICSn de-asserted 
+t9 40   ns  Idle time between consecutive accesses 
+ 
+ 
+ 
+ 
+ 
+ 
+SPICSn 
+S 
+PI 
+CLK 
+SPIMISO 
+SPIMOSI 
+7 
+ 6 
+ 5 
+ 4 
+ 3 
+ 2 
+ 1 
+ 0 
+ 7 
+ 6 
+ 5 
+ 4 
+ 3 
+ 2 
+ 1 
+ 0 
+Bit  
+7 
+ Bit  
+6 
+ Bit  
+5 
+ Bit  
+4 
+ Bit  
+3 
+ Bit  
+2 
+ Bit  
+1 
+ Bit  
+0 
+ Bit  
+7 
+ Bit  
+6 
+ Bit  
+5 
+ Bit  
+4 
+ Bit  
+3 
+ Bit  
+2 
+ Bit  
+1 
+ Bit  
+0 
+ Bit  
+7 
+ Bit  
+6 
+ Bit  
+5 
+7 
+ 6 
+ 5 
+t 
+8 
+t 
+9 
+t 
+6 
+t 
+5 
+t 
+7 
+SPICSn 
+S 
+PI 
+CLK 
+SPIMISO 
+SPIMOSI 
+7 
+ 6 
+ 5 
+Bit  
+7 
+ Bit  
+6 
+ Bit  
+5 
+t 
+1 
+t 
+4 
+t 
+3 
+t 
+2 
+
+PAGE 27
+DW1000 Datasheet  
+ 
+ 
+© Decawave Ltd 2017 Subject to change without notice Version 2.23 Page 27 
+ 
+B: 
+Parameter Min Typ Max Unit Description @ 19.2 MHz 
+SPICLK 
+Period 300   ns 
+The SPI will be clocked directly from the crystal when the PLL is not 
+active or has not been switched in due to settling.  The maximum SPI 
+frequency is 3 MHz when the system is clocked from the crystal 
+@19.6 MHz. 
+t1   210 ns SPICSn select asserted low to valid slave output data 
+t2 55   ns SPICLK low to valid slave output data 
+t3 10   ns Master data output setup and hold time  i.e Master data = MOSI 
+t4 10   ns Master data output setup and hold time  i.e Master data = MOSI 
+t5 205   ns LSB last byte to MSB next byte 
+t6   55 ns SPICSn de-asserted high to SPIMISO tri-state 
+t7 105   ns Start time; time from select asserted to first SPICLK 
+t8 250   ns  Last SPICLK to SPICSn de-asserted 
+t9 250   ns  Idle time between consecutive accesses 
+ 
+ 
+5.9 General Purpose Input Output (GPIO) 
+The DW1000 provides 8 user-configurable I/O pins. 
+ 
+On reset, all GPIO pins default to input. GPIO inputs, when appropriately 
+configured, are capable of generating interrupts to the host processor via 
+the IRQ signal. Some GPIO lines have multiple functions as described in 
+2.2 above. 
+ 
+GPIO0, 1, 2, & 3, as one of their optional functions, can drive LEDs to 
+indicate the status of various chip operations.  Any GPIO line being used 
+to drive an LED in this way should be connected as shown. GPIO5 & 6 
+are used to configure the operating mode of the SPI as described in 
+5.8.1. GPIO4, 5 & 6 may be optionally used to implement a scheme with 
+an external power amplifier to provide a transmit power level in excess of 
+that provided by the DW1000.   
+ 
+The DW1000 User Manual [2] provides details of the configuration and use of the GPIO lines. 
+5.10 Memory 
+The DW1000 includes a number of user accessible memories: - 
+5.10.1 Receive and Transmit data buffers 
+Buffers used to store received data to be read from the DW1000 by the host controller and data for transmission 
+written into the DW1000 by the host controller.  These are sized as follows: - 
+Table 20: Transmit & Receive Buffer Memory Size 
+Memory Size (bits) Description 
+Tx Buffer 1024 x 8 Transmit data buffer. Contains data written by the host processor 
+to be transmitted via the transmitter 
+Rx Buffer 1024 x 8 x 2 
+Receive data buffer.  Contains data received via the receiver to 
+be read by the host processor via the SPI interface. Double 
+buffered so that the receiver can receive a second packet while 
+the first is being read by the host controller 
+ 
+5.10.2 Accumulator memory  
+The accumulator memory is used to store the channel impulse response estimate. 
+Table 21: Accumulator Memory Size 
+Memory Size (bits) Description 
+Accumulator 1016 x 32 Accumulator buffer. Used to store channel impulse response 
+FROM GPIO
+470Ω 
+LED
+
+PAGE 28
+DW1000 Datasheet  
+ 
+ 
+© Decawave Ltd 2017 Subject to change without notice Version 2.23 Page 28 
+ 
+estimate data to be optionally read by the host controller 
+5.10.3 One Time Programmable (OTP) Calibration Memory 
+The DW1000 contains a small amount of user programmable OTP memory that is used to store per chip 
+calibration information. When programming the OTP, the user should ensure that the VDDIO pins are supplied 
+with 3.7 V minimum. If the VDDIO pin is unavailable, then the VDDIOA pin should be driven instead. 
+Table 22: OTP calibration memory 
+Memory Size (bits) Description 
+Calibration 56 x 32 One time programmable area of memory used for storing 
+calibration data.  
+5.11 Interrupts and Device Status 
+DW1000 has a number of interrupt events that can be configured to drive the IRQ output pin.  The default IRQ 
+pin polarity is active high.  A number of status registers are provided in the system to monitor and report data of 
+interest.  See DW1000 User Manual [2] for a full description of system interrupts and their configuration and 
+status registers. 
+5.12 MAC Features 
+5.12.1 Timestamping 
+DW1000 generates transmit timestamps and captures receive timestamps. These timestamps are 40-bit values 
+at a nominal 64 GHz resolution, for approximately 15 ps event timing precision.  These timestamps enable 
+ranging calculations. 
+ 
+DW1000 allows antenna delay values to be programmed for automatic adjustment of timestamps.  See the 
+DW1000 User Manual [2] for more details of DW1000 implementation and IEEE802.15.4-2011 [1] for details of 
+definitions and required precision of timestamps and antenna delay values. 
+5.12.2 FCS Generation and Checking 
+DW1000 will automatically append a 2-byte FCS to transmitted frames and check received frames’ FCS.  The 
+DW1000 can be used to send frames with a host-generated FCS, if desired. 
+5.12.3 Automatic Frame Filtering 
+Automatic frame filtering can be carried out using the DW1000.  Incoming frames can be rejected automatically if 
+they fail frame type or destination address checks.  See the DW1000 User Manual [2] for details. 
+ 
+5.12.4 Automatic Acknowledge 
+The DW1000 can be configured to automatically acknowledge received frames requesting acknowledgement.  
+See the DW1000 User Manual [2] for details. 
+ 
+Note that RX-TX turnaround is optimised for Automatic Acknowledge and is typically ~6.5 µs, but depends on the 
+configured frame parameters.  The delay applied between frames is programmable in preamble symbol durations 
+to allow compliance with standard SIFS and LIFS requirements. 
+5.12.5 Double Receive Buffer 
+The DW1000 has two receive buffers to allow the device to receive another frame whilst the host is accessing a 
+previously received frame.  Achievable throughput is increased by this feature.  See the DW1000 User Manual [2] 
+for details. 
+5.13 External Synchronization 
+The DW1000 provides a SYNC input. This allows: - 
+ 
+• Synchronization of multiple DW1000 timestamps.  
+• Transmission synchronous to an external reference. 
+• Receive timestamping synchronous to an external counter. 
+ 
+As shown in Figure 28 the SYNC input must be source synchronous with the external frequency reference. The 
+
+PAGE 29
+DW1000 Datasheet  
+ 
+ 
+© Decawave Ltd 2017 Subject to change without notice Version 2.23 Page 29 
+ 
+SYNC input from the host system provides a common reference point in time to synchronise all the devices with 
+the accuracy necessary to achieve high resolution location estimation. 
+ 
+ 
+ 
+Figure 28: SYNC signal timing relative to XTAL1 
+ 
+Table 23: SYNC signal timing relative to XTAL 
+Parameter Min Typ Max Unit Description 
+tSYNC_SU 10   ns SYNC signal setup time before XTAL1 rising edge 
+tSYNC_HD 10   ns SYNC signal hold time after XTAL1 rising edge 
+ 
+Further details on wired and wireless synchronization are available from Decawave. 
+5.14 Calibration and Spectral Tuning of the DW1000   
+5.14.1 Introduction 
+Depending on the end use application and the system design, certain internal settings in the DW1000 may need 
+to be tuned. To help with this tuning a number of built in functions such as continuous wave TX and continuous 
+packet transmission can be enabled. See the DW1000 User Manual [2] for further details on the sections 
+described below. 
+5.14.2 Crystal Oscillator Trim 
+Minimising the carrier frequency offset between different DW1000 devices improves receiver sensitivity. The 
+DW1000 allows trimming to reduce crystal initial frequency error. The simplest way to measure this frequency 
+error is to observe the output of the transmitter at an expected known frequency using a spectrum analyser or 
+frequency counter. 
+ 
+To adjust the frequency offset, the device is configured to transmit a CW signal at a particular channel frequency 
+(e.g. 6.5 GHz).  By accurately measuring the actual center frequency of the transmission the difference between 
+it and the desired frequency can be determined.  The trim value is then adjusted until the smallest frequency 
+offset from the desired center frequency is obtained. Figure 29 gives the relationship between crystal trim code 
+and crystal ppm offset. 
+ 
+If required, crystal trimming should be carried out on each DW1000 unit or module.  
+ 
+ 
+Figure 29: Typical Device Crystal Trim PPM Adjustment 
+The type of crystal used and the value of the loading capacitors will affect the crystal trim step size and the total 
+trimming range.  The total trim range and frequency step per trim code in ppm can be approximated using the 
+following formula: 
+XTAL1
+SYNC
+tsync_su tsync_hd
+-30.00
+-20.00
+-10.00
+0.00
+10.00
+20.00
+30.00
+1 3 5 7 9 11 13 15 17 19 21 23 25 27 29 31
+ppm offset
+Crystal Trim Code
+
+PAGE 30
+DW1000 Datasheet  
+ 
+ 
+© Decawave Ltd 2017 Subject to change without notice Version 2.23 Page 30 
+ 
+ 
+Total trim range in ppm    𝑇𝑟𝑖𝑚_𝑅𝑎𝑛𝑔𝑒 = 106 ⌈
+𝐶𝑀
+2∗(𝐶0+𝐶𝐿+𝐶𝑇𝑅𝐼𝑀)⌉ ⌈
+𝐶𝑇𝑅𝐼𝑀
+𝐶𝐿+𝐶𝑇𝑅𝐼𝑀
+⌉ 
+ 
+Trim step size in ppm      𝑇𝑟𝑖𝑚_𝑆𝑡𝑒𝑝 =
+𝑇𝑟𝑖𝑚_𝑅𝑎𝑛𝑔𝑒
+31  
+ 
+Where CM and Co are derived from the crystal model shown below, which is available from the crystal 
+manufacturer. CL is the external load capacitance including PCB parasitic and CTRIM = 7.75 pF, which is the 
+maximum internal trimming capacitance in DW1000. 
+ 
+5.14.3 Transmitter Calibration 
+In order to maximise range DW1000 transmit power spectral density (PSD) should be set to the maximum 
+allowable for the geographic region. For most regions this is -41.3 dBm/MHz. 
+ 
+The DW1000 provides the facility to adjust the transmit power in coarse and fine steps; 2.5 dB and 0.5 dB 
+nominally. It also provides the ability to adjust the spectral bandwidth.  These adjustments can be used to 
+maximise transmit power whilst meeting regulatory spectral mask. 
+ 
+If required, transmit calibration should be carried out on each DW1000 PCB / module.  
+5.14.4 Antenna Delay Calibration 
+In order to measure range accurately, precise calculation of timestamps is required. To do this the antenna delay 
+must be known. The DW1000 allows this delay to be calibrated and provides the facility to compensate for delays 
+introduced by PCB, external components, antenna and internal DW1000 delays. 
+ 
+To calibrate the antenna delay, range is measured at a known distance using 2 DW1000 systems.  Antenna 
+delay is adjusted until the known distance and reported range agree. The antenna delay can be stored in OTP 
+memory. 
+ 
+Antenna delay calibration must be carried out as a once off measurement for each DW1000 design 
+implementation. If required, for greater accuracy, antenna delay calibration should be carried out on each 
+DW1000 PCB / module. 
+
+
+PAGE 31
+DW1000 Datasheet  
+ 
+ 
+© Decawave Ltd 2017 Subject to change without notice Version 2.23 Page 31 
+ 
+6 OPERATIONAL STATES AND POWER MANAGEMENT 
+6.1 Overview 
+The DW1000 has a number of basic operating states as follows: - 
+Table 24: Operating States 
+Name Description 
+OFF The chip is powered down 
+INIT 
+This is the lowest power state that allows external micro-controller access. In this state the 
+DW1000 host interface clock is running off the 38.4 MHz reference clock.  In this mode the 
+SPICLK frequency can be no greater than 3 MHz. 
+IDLE In this state the internal clock generator is running and ready for use. The analog receiver 
+and transmitter are powered down. Full speed SPI accesses may be used in this state. 
+DEEPSLEEP 
+This is the lowest power state apart from the OFF state. In this state SPI communication is 
+not possible. This state requires an external pin to be driven (can be SPICSn held low or 
+WAKEUP held high) for a minimum of 500 µs to indicate a wake up condition.  Once the 
+device has detected the wake up condition, the EXTON pin will be asserted and internal 
+reference oscillator (38.4 MHz) is enabled. 
+SLEEP 
+In this state it is possible for the DW1000 to wake up after a programmed sleep count. The 
+low power oscillator is running and the internal sleep counter is active. The sleep counter 
+allows for periods from approximately 300 ms to 450 hours before the DW1000 wakes up. 
+In this state SPI communication is not possible. In this state it is also possible for an external 
+pin to be driven (can be SPICSn held low or WAKEUP held high) for a minimum of 500 µs to 
+indicate a wake up condition.  Once the device has detected the wake up condition, the 
+EXTON pin will be asserted and internal reference oscillator (38.4 MHz) is enabled. 
+RX The DW1000 is actively looking for preamble or receiving a packet 
+RX PREAMBLE SNIFF 
+In this state the DW1000 periodically enters the RX state, searches for preamble and if no 
+preamble is found returns to the IDLE state. If preamble is detected it will stay in the RX 
+state and demodulate the packet. Can be used to lower overall power consumption.   
+TX The DW1000 is actively transmitting a packet 
+ 
+For more information on operating states please refer to the user manual [2]. 
+6.2 Operating States and their effect on power consumption 
+The DW1000 can be configured to return to any one of the states,  IDLE, INIT, SLEEP or DEEPSLEEP between 
+active transmit and receive states. This choice has implications for overall system power consumption and timing, 
+see table below. 
+Table 25: Operating States and their effect on power consumption 
+ 
+DEVICE STATE 
+IDLE INIT SLEEP DEEPSLEEP OFF 
+Entry to State 
+Host controller 
+command or 
+previous operation 
+completion 
+Host controller 
+command 
+Host controller 
+command or 
+previous 
+operation 
+completion 
+Host controller 
+command or 
+previous 
+operation 
+completion 
+External supplies 
+are off 
+Exit from State Host controller 
+command 
+Host controller 
+command 
+Sleep counter 
+timeout 
+SPICSn held low 
+Or WAKEUP held 
+high for 500 µs  
+External 3.3 V 
+supply on 
+Next state Various IDLE INIT INIT INIT 
+Current 
+Consumption  
+18 mA (No DC/DC) 
+12 mA (with 
+DC/DC) 
+4 mA 1 µA 50 nA 0 
+Configuration Maintained Maintained Maintained Maintained Not maintained 
+Time before RX 
+State Ready Immediate 5 μs 3 ms 3 ms 3 ms 
+Time before TX 
+State Ready Immediate 5 μs 3 ms 3 ms 3 ms 
+ 
+In the SLEEP, DEEPSLEEP and OFF states, it is necessary to wait for the main on-board crystal oscillator to power 
+up and stabilize before the DW1000 can be used.  This introduces a delay of up to 3 ms each time the DW1000 
+exits SLEEP, DEEPSLEEP and OFF states. 
+
+PAGE 32
+DW1000 Datasheet  
+ 
+ 
+© Decawave Ltd 2017 Subject to change without notice Version 2.23 Page 32 
+ 
+6.3 Transmit and Receive power profiles 
+ 
+1. POWER OFF BETWEEN OPERATIONS
+Configuration lost
+OSC / PLL 
+STARTUP TX / RX OPERATION OSC / PLL 
+STARTUP TX / RX OPERATIONOFF Idd = 0
+2. DEEP SLEEP BETWEEN OPERATIONS
+Configuration retained
+OSC / PLL 
+STARTUP TX / RX OPERATION OSC / PLL 
+STARTUP TX / RX OPERATIONDEEPSLEEP Idd = 
+100 nA
+3. SLEEP BETWEEN OPERATIONS
+Configuration retained
+OSC / PLL 
+STARTUP TX / RX OPERATION OSC / PLL 
+STARTUP TX / RX OPERATIONSLEEP Idd = 2 µA
+4. INIT STATE BETWEEN OPERATIONS
+Configuration retained
+OSC / PLL 
+STARTUP TX / RX OPERATION PLL 
+LOCK TX / RX OPERATIONINIT Idd = 4 mA
+SLEEP Idd = 2 µA
+DEEPSLEEP Idd = 100 nA
+OFF Idd = 0
+INIT Idd = 4 mA
+5 ms approx /
+1mA
+5 ms approx / 
+1mA
+5 ms approx / 
+1mA
+Device ready for 
+operation
+Device ready for 
+operation
+Device ready for 
+operation
+Device ready for 
+operation
+5µs approx / 5mA
+ 
+Figure 30: Sleep options between operations 
+ 
+The tables below show typical configurations of the DW1000 and their associated power profiles. 
+Table 26: Operational Modes 
+Example 
+Setting Data Rate PRF 
+(MHz) 
+Preamble 
+(Symbols) 
+Data 
+Length 
+(Bytes) 
+Packet 
+Duration 
+(µs) 
+Typical Use Case 
+(Refer to DW1000 user manual for further information) 
+A 110 kbps 16 1024 12 2443 RTLS, TDOA Scheme, Long Range, Low 
+Density 
+B 6.8 Mbps 16 128 12 175 RTLS, TDOA Scheme, Short  Range, High 
+Density 
+C 110 kbps 16 1024 30 3625 RTLS, 2-way ranging scheme, Long Range, 
+Low Density 
+D 6.8 Mbps 16 128 30 194 RTLS, 2-way ranging scheme, Short Range, 
+High Density 
+E 6.8 Mbps 16 1024 1023 2250 Data transfer, Short Range, Long Payload 
+F 6.8 Mbps 16 128 127 312 Data transfer, Short Range, Short Payload 
+G 110 kbps 16 1024 1023 78258 Data transfer, Long  Range, Long Payload 
+H 110 kbps 16 1024 127 11173 Data transfer, Long Range, Short Payload 
+I 110 kbps 64 1024 12 2469 As Mode 1 using 64 MHz PRF 
+J 6.8 Mbps 64 128 12 179 As Mode 2 using 64 MHz PRF 
+K 110 kbps 64 1024 30 3651 As Mode 3 using 64 MHz PRF 
+L 6.8 Mbps 64 128 30 197 As Mode 4 using 64 MHz PRF 
+M 6.8 Mbps 64 1024 1023 2275 As Mode 5 using 64 MHz PRF 
+N 6.8 Mbps 64 128 127 315 As Mode 6 using 64 MHz PRF 
+O 110 kbps 64 1024 1023 78284 As Mode 7 using 64 MHz PRF 
+P 110 kbps 64 1024 127 11199 As Mode 8 using 64 MHz PRF 
+Note: Other modes are possible 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+PAGE 33
+DW1000 Datasheet  
+ 
+ 
+© Decawave Ltd 2017 Subject to change without notice Version 2.23 Page 33 
+ 
+Table 27: Typical TX Current Consumption 
+ 
+Example 
+Setting 
+TX IAVG (mA) 
+Units Channel 2 Channel 5 
+Avg Preamble Data Avg Preamble Data 
+A 48 68 35 56 74 42 mA 
+B 68 68 50 69 74 57 mA 
+C 44 68 35 50 74 42 mA 
+D 60 68 51 67 74 58 mA 
+E 50 68 51 56 74 58 mA 
+F 56 68 51 62 74 58 mA 
+G 35 68 35 42 74 42 mA 
+H 38 68 35 44 74 42 mA 
+I 61 83 40 67 89 46 mA 
+J 79 83 52 85 89 59 mA 
+K 52 83 40 59 89 46 mA 
+L 75 83 52 82 89 59 mA 
+M 53 83 52 60 89 59 mA 
+N 65 83 52 72 89 59 mA 
+O 40 83 40 46 89 46 mA 
+P 43 83 40 50 89 46 mA 
+ 
+Table 28: Typical RX Current Consumption 
+Example 
+Setting 
+RX IAVG (mA) 
+Units Channel 2 Channel 5 
+Avg Preamble Data 
+Demod Avg Preamble Data 
+Demod 
+A 86 113 129 92 118 62 mA 
+B 115 113 118 122 118 123 mA 
+C 76 113 129 81 118 62 mA 
+D 115 113 115 123 118 123 mA 
+E 118 113 118 126 118 126 mA 
+F 113 113 113 125 118 126 mA 
+G 57 113 129 65 118 62 mA 
+H 62 113 129 70 118 62 mA 
+I 90 113 129 94 118 75 mA 
+J 112 113 118 117 118 123 mA 
+K 82 113 129 85 118 75 mA 
+L 112 113 118 118 118 123 mA 
+M 114 113 118 120 118 123 mA 
+N 113 113 118 119 118 123 mA 
+O 72 113 129 76 118 75 mA 
+P 76 113 129 80 118 75 mA 
+ 
+Tamb = 25 ˚C, All supplies centered on typical values. All currents referenced to 3.3 V (VDDLDOA, VDDLDOD 
+supplies fed via a 1.6 V 90% efficient DC/DC converter) 
+ 
+From Table 26, Table 27 and Table 28 above it is clear that there is a trade-off between communications range 
+and power consumption.  Lower data rates allow longer range communication but consume more power.  Higher 
+data rates consume less power but have a reduced communications range. 
+ 
+For a given payload length, the following table shows two configurations of the DW1000. The first achieves 
+minimum power consumption (not including DEEPSLEEP, SLEEP, INIT & IDLE) and the second achieves 
+longest communication range.  
+ 
+
+PAGE 34
+DW1000 Datasheet  
+ 
+ 
+© Decawave Ltd 2017 Subject to change without notice Version 2.23 Page 34 
+ 
+Table 29: Lowest power and longest range modes of operation 
+Mode Data Rate Channel PRF 
+(MHz) 
+Preamble 
+(Symbols) 
+Data 
+Length 
+(Bytes) 
+Rx PAC 
+(Symbols) 
+Notes 
+(Refer to DW1000 user manual 
+for further information) 
+Lowest 
+Power 
+ 2 options 
+based on 
+hardware 
+configuration 
+6.8 Mbps with 
+gating gain 
+1 
+16 64 
+As short 
+as 
+possible 
+8 
+Using 64 gearing tables   
+6.8 Mbps with 
+gating gain 16 128 Using “standard” 
+gearing tables   
+Longest 
+Range 110 Kbps 16 2048 
+All 
+supported 
+lengths 
+32 
+Using “tight” gearing 
+tables and a TCXO as 
+the source of the 38.4 
+MHz clock at each node 
+ 
+ 
+The graph below shows typical range and average transmitter current consumption per frame with the transmitter 
+running at -41.3 dBm/MHz output power and using 0 dBi gain antennas for channel 2. 
+ 
+ 
+ 
+Figure 31: Typical Range versus TX average current (channel 2) 
+Tamb = 25 ˚C, All supplies centered on typical values. All currents referenced to 3.3 V (VDDLDOA, VDDLDOD 
+supplies fed via a 1.6 V 90% efficient DC/DC converter) 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+0
+50
+100
+150
+200
+250
+0
+10
+20
+30
+40
+50
+60
+70
+80
+90
+Range
+(m)
+TX I avg
+(mA)
+Modes
+TX Iavg (mA)
+Range
+
+PAGE 35
+DW1000 Datasheet  
+ 
+ 
+© Decawave Ltd 2017 Subject to change without notice Version 2.23 Page 35 
+ 
+6.3.1 Typical transmit profile 
+  
+Figure 32: Typical TX Power Profile 
+6.3.2 Typical receive profiles 
+ 
+Figure 33: Typical RX Power Profile 
+ 
+Figure 34:  Typical RX Power Profile using SNIFF mode
+OSC STARTUP
+~2ms
+7µs
+0
+5
+10
+20
+30
+40
+50
+60
+70
+TX SHR
+135µs
+TX PHR /
+PSDU
+40µs
+PLL 
+STARTUP
+mA
+t
+65 mA 12 Byte 
+Packet
+ 48 mA
+12mA3mA 100nA 
+max
+WR TX DATA
+10µs
+15mA
+DEEPSLEEP
+TX power profile for Mode 2 (Returning to DEEPSLEEP state)
+Date rate 6.8Mb/s; Channel 2; Preamble length 128 symbols; 12 byte frame. 
+Power measured over this duration
+
+
+PAGE 36
+DW1000 Datasheet 
+ 
+  
+© Decawave Ltd 2017 Subject to change without notice Version 2.23 Page 36 
+ 
+7 POWER SUPPLY 
+7.1 Power Supply Connections 
+There are a number of different power supply connections to the DW1000. 
+ 
+The chip operates from a nominal 3.3 V supply.  Some circuits in the chip are directly connected to the external 3.3 
+V supply. Other circuits are fed from a number of on -chip low -dropout regulators.  The outputs of these LDO 
+regulators are brought out to pins of the chip for decoupling purposes. Refer to Figure 35 for further details. 
+ 
+The majority of the supplies are used in the analog & RF section of the chip where it is important to maintain supply 
+isolation between individual circuits to achieve the required performance.   
+ 
+ 
+Figure 35: Power Supply Connections 
+7.2 Use of External DC / DC Converter 
+The DW10 00 supports the use of external  switching regulators to reduce overall power consumption from the 
+power source.  Using switching regulators can reduce system power consumption. The EXTON pin can be used 
+to further reduce power by disabling the external regulator when the DW1000 is in the SLEEP or DEEPSLEEP 
+states (provided the EXTON turn on time is sufficient). 
+ 
+Figure 36: Switching Regulator Connection 
+On-chip 
+LDOs for 
+analog 
+circuits
+VDDSYN
+VDDCLK
+VDDVCO
+VDDMS
+VDDIF
+VDDLNA
+VDDPA1
+VDDIO VDDIOA
+VDDLDOA
+VDDLDOD
+VDDBATT
+VDDREG
+VDDAON
+On-chip  
+LDO for 
+digital 
+circuits
+Rx 
+LNA
+Tx 
+PA
+“Always 
+On” 
+Config 
+Store
+All other 
+3V3 
+circuits
+To External Decoupling Capacitors
+Internal 
+Switches
+VDDDIG
+DW1000
+Digital
+IO 
+Ring
+VDDPA2
+3.3 V Supply
+On-chip 
+LDOs for 
+analog 
+circuits
+VDDSYN
+VDDCLK
+VDDVCO
+VDDMS
+VDDIF
+VDDLNA
+VDDPA1
+VDDIO VDDIOA
+VDDLDOA
+VDDLDOD
+VDDBATT
+VDDREG
+VDDAON
+On-chip  
+LDO for 
+digital 
+circuits
+Rx 
+LNA
+Tx 
+PA
+“Always 
+On” 
+Config 
+Store
+All other 
+3V3 
+circuits
+To External Decoupling Capacitors
+Internal 
+Switches
+VDDDIG
+DW1000
+Digital
+IO 
+Ring
+VDDPA2
+DC / DC
+EXTON
+EN VIN
+VOUT
+1.8 V
+3.3 V Supply
+
+PAGE 37
+DW1000 Datasheet 
+ 
+  
+© Decawave Ltd 2017 Subject to change without notice Version 2.23 Page 37 
+ 
+7.3 Powering down the DW1000 
+The DW1000 has a very low DEEPSLEEP current (typ. 50 nA – see Table 3).  The recommended practise is to 
+keep the DW1000 powered up and use DEEPSLEEP mode when the device is inactive.   
+ 
+In situations where the DW1000 must be power-cycled (the 3.3 V supply in Figure 35 / Figure 36 respectively 
+turned off and then back on), it is important to note that when power is removed the supply voltage will decay 
+towards 0 V at a rate determined by the characteristics of the power source and the amount of decoupling 
+capacitance in the system. 
+ 
+In this scenario, power should only be reapplied to the DW1000 when: - 
+ 
+• VDDAON is above 2.3 V or: 
+• VDDAON has fallen below 100 mV 
+ 
+Reapplying power while VDDAON is between 100 mV and 2.3 V can lead to the DW1000 powering up in an 
+unknown state which can only be recovered by fully powering down the device until the voltage on VDDAON falls 
+below 100 mV. 
+ 
+
+PAGE 38
+DW1000 Datasheet 
+ 
+  
+© Decawave Ltd 2017 Subject to change without notice Version 2.23 Page 38 
+ 
+8 APPLICATION INFORMATION  
+8.1 Application Circuit Diagram 
+ 
+DW1000
+1
+GND GND
+GND
+2
+3
+4
+5
+8
+9
+NC
+XTAL1
+XTAL2
+NC
+VREF
+VDDMS
+VDDIF
+6
+7
+10
+10pF
+10pF
+16k
+11k (1%)
+27p
+1p2
+CLKTUNE
+VDDCLK
+VDDSYN
+VDDVCO
+VCOTUNE
+VDDLNA
+NC
+NC
+RF_P
+RF_N
+VDDPA1
+VDDPA2
+VDDDREG
+EXTON
+FORCEON
+WAKEUP
+SPICSn
+11
+12
+VDDLNA
+GND
+GND
+RF  Traces 100R
+RF  Traces 100R
+RF  Trace 50R
+VDDPA1
+VDDPA2
+VDDDIG
+13
+14
+15
+16
+17
+18
+19
+20
+GND
+18p
+270R 820p
+GND
+12p
+12p
+GND
+SPICSn
+WAKEUP
+EXTON
+36
+35
+34
+33
+32
+29
+28
+GPIO3
+GPIO4
+GPIO5
+GPIO2
+VSSIO
+VDDIO
+GPIO6
+31
+30
+27
+SYNC
+VDDIOA
+RSTn
+VDDLDOD
+VDDAON
+26
+25
+GPIO1
+GPIO0
+SPIMOSI
+SPIMISO
+SPICLK
+VDDIO
+VSSIO
+VDDDIG
+IRQ
+TESTMODE
+VDDBAT
+VDDLDOA
+21
+22
+23
+24
+VDDAON
+VDDLDOD
+RSTn
+VDDIOA
+GND
+SYNC
+GPIO6
+GPIO5
+GPIO4
+GPIO3
+GPIO2
+GND 0.1uF
+0.1uF
+0.1uF
+VDDLDOA
+VDDBAT
+GND
+GND
+VDDDIG
+GPIO1
+GPIO0
+SPIMOSI
+SPIMISO
+SPICLK
+IRQ
+0.1 uF
+0.1uF
+0.1uF
+0.1uF
+0.1uF
+GND0.1uF
+X1
+38.4 MHz
+VDDLDOA
+VDDLDOD
+VDDPA1 VDDPA2 VDDLNA VDDAONVDDIOAVDDBAT
+VDD_3V3
+GND
+0.1 uF
+10pF
+330 pF
+0.1 uF
+10 pF
+330 pF
+10000 pF
+47 uF
+0.1 uF
+0.1 uF
+Decoupling: Place capacitors close to pins
+VDD_3V3
+En
+Vin
+Vout
+1V8
+DC-DC Convertor
+(optional)
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+(paddle)
+T1
+U2
+U1
+X2
+38.4 MHz TCXO
+2200pF XTAL1
+OUTVCC
+GND
+GND
+VDD_TCXO
+Optional Use of TCXO
+10k
+10k
+optional external 
+pull-ups for SPI 
+mode configuration
+Antenna
+GND
+GND
+0.1uF
+GND
+VDD_3V3
+Don t Do 
+This!
+100K
+GND
+Optional  external pull -down if SLEEP or 
+DEEPSLEEP modes are used*
+0.1 uF
+0.1 uF
+VDDLDOD
+0.1 uF
+VDDLDOA
+GND
+OUTVCC
+GND
+GND
+VDD_3V3
+U3
+3V LDO
+Leave XTAL2 pin 
+floating if TCXO used
+ 
+ 
+Figure 37: DW1000 Application Circuit 
+ 
+ 
+*The external pull-down is not required if the connected MCU has an internal MCU pull-down 
+  
+
+PAGE 39
+DW1000 Datasheet 
+ 
+  
+© Decawave Ltd 2017 Subject to change without notice Version 2.23 Page 39 
+ 
+8.2 Recommended Components 
+ 
+Function Manufacturer  Part No Ref Web Link 
+Antenna 
+Partron ACS5200HFAUWB   www.partron.co.kr   
+Taiyo Yuden AH086M555003   www.yuden.co.jp   
+SMT UWB 
+Balun            
+3-8 GHz 
+TDK Corporation HHM1595A1 T1 www.tdk.co.jp 
+STMicroelectronics BAL-UWB-01E3 T1 www.st.com 
+Capacitors 
+(Non 
+polarized) 
+Murata GRM155 series   www.murata.com  
+KEMET C0805C476M9PACTU 47 µF www.kemet.com 
+Crystal 
+(38.4 MHz +/-
+10ppm) 
+TXC 8Y38472012 
+X1 
+www.txccorp.com 
+Abracon ABM10-165-
+38.400MHz-T3 www.abracon.com 
+Geyer KX-5T (need to request 
+tight tolerance option) www.geyer-electronic.de 
+Rakon HDD10RSX-10 509344 www.rakon.com    
+Note that the crystal loading caps must be selected according to the crystal manufacturer’s 
+recommendation and your PCB design so as to place the nominal crystal oscillation frequency in the 
+centre of the DW1000 crystal trim range.  The values given in Figure 37 above are for example 
+purposes only and may not apply to your design.  
+  
+DC/DC 3V3 Torex XC9258B33CER-G VDD_3V3 www.torexsemi.com  
+DC/DC 1V8 
+Torex XC9282B18E0R-G-ND 
+U2 
+www.torexsemi.com   XCL222B181ER-G 
+ XC9258B18CER-G 
+Texas Instruments LM3671TL-1.8/NOPB www.ti.com 
+Resistors ROHM MCR01MZPF  www.rohm.com  
+TCXO 
+(optional use 
+in Anchor 
+nodes. 38.4 
+MHz) 
+  
+TXC 7Z38470005 
+X2 
+  
+www.txccorp.com 
+Abracon ASTXR-12-38.400MHz-
+514054-T www.abracon.com 
+Geyer KXO-84 www.geyer-electronic.de 
+Rakon IT2200K 3.3V 38.4MHz  www.rakon.com 
+ 
+  
+
+PAGE 40
+DW1000 Datasheet 
+ 
+  
+© Decawave Ltd 2017 Subject to change without notice Version 2.23 Page 40 
+ 
+8.3 Application Circuit Layout 
+8.3.1 PCB Stack 
+The following 4-layer PCB stack up is one suggested stack up which can be used to achieve optimum 
+performance. 
+ 
+ 
+ 
+Figure 38: PCB Layer Stack for 4-layer board 
+  
+Controlled Impedance Traces are as follows : -
+a) Tolerance on all lines , unless other wise specified +/- 10% 
+b) 50 Ω Single Ended CPW Traces on Top Layer (50 Ω with reference to Inner Layer 1, no solder resist ) = 0.95 mm (1.00 mm GND gap )
+c) 100 Ω Differential Microstrip Traces on Top Layer (100 Ω with reference to Inner Layer 1, no solder resist ) = 0.235 mm Track / 0.127 mm Gap 
+FR4 Core Copper 38 µm (finished)
+Copper 18 µm
+Copper 38 µm (finished)
+Copper 18 µm
+510 µm
+1 x 7628 50% FR4 Pre Preg 207 µm
+1 x 106 76% FR4 Pre Preg 58 µm
+207 µm
+510 µm
+1 x 7628 50% FR4 Pre Preg
+FR4 Core
+Top Layer
+Inner Layer 1
+Inner Layer 2
+Bottom Layer
+Top Solder
+Top Silkscreen
+Top Paste
+Bottom Solder
+Bottom Silkscreen
+Bottom Paste
+GTP
+GTO
+GTS
+GTL
+G1
+G2
+GBL
+GBS
+GBO
+GBP
+File Ext Description Board Stackup
+MANUFACTURING STACKUP
+4-LAYER IMPEDANCE CONTROLLED PCB WITH TH VIAS
+TOTAL THICKNESS 1.600 mm +/- 10%
+
+PAGE 41
+DW1000 Datasheet 
+ 
+  
+© Decawave Ltd 2017 Subject to change without notice Version 2.23 Page 41 
+ 
+8.3.2 RF Traces 
+As with all high frequency designs, particular care should be taken with the routing and matching of the RF 
+sections of the PCB layout. All RF traces should be kept as short as possible and where possible impedance 
+discontinuities should be avoided. Where possible RF traces should cover component land patterns.  
+ 
+Poor RF matching of signals to/from the antenna will degrade system performance. A 100 Ω differential 
+impedance should be presented to the RF_P and RF_N pins of DW1000 for optimal performance. This can be 
+realised as either 100 Ω differential RF traces or as 2 single-ended 50 Ω traces depending on the PCB layout. In 
+most cases a single-ended antenna will be used and a wideband balun will be required to convert from 100 Ω 
+differential to 50 Ω single-ended. 
+ 
+Figure 39 gives an example of a suggested RF section layout.  In this example traces to the 12 pF series 
+capacitors from the RF_P and RF_N pins are realised as 100 Ω differential RF traces referenced to inner layer 1.  
+After the 12 pF capacitors the traces are realized as 50 Ω micro-strip traces again referenced to inner layer 1. 
+Using this method, thin traces can be used to connect to DW1000 and then wider traces can be used to connect 
+to the antenna. 
+GND
+GND
+RF  Traces 100R
+RF  Traces 100R
+RF  Trace 50R
+12p
+12p
+T1
+RF trace – 50 Ω 
+single ended 
+referenced to inner 
+layer 1
+RF trace -  100 Ω differential 
+referenced to inner layer 1.
+2 x 50 Ω single-ended RF 
+trace can also be used. Need 
+to ensure the traces are 
+referenced to correct ground 
+layer
+RF_P
+RF_N
+Antenna
+  
+Figure 39: DW1000 RF Traces Layout 
+8.3.3 PLL Loop Filter Layout 
+The components associated with the loop filters of the on-chip PLLs should be placed as close as possible to the 
+chip connection pins to minimize noise pick-up on these lines. 
+8.3.4 Decoupling Layout 
+All decoupling capacitors should be kept as close to their respective pins of the chip as possible to minimize trace 
+inductance and maximize their effectiveness. 
+8.3.5 Layout Guidance 
+An application note is available from Decawave together with a set of DXF files to assist customers in 
+reproducing the optimum layout for the DW1000.   
+ 
+PCB land-pattern libraries for the DW1000 are available for the most commonly used CAD packages. 
+ 
+Contact Decawave for further information. 
+ 
+ 
+ 
+
+PAGE 42
+DW1000 Datasheet 
+ 
+ 
+© Decawave Ltd 2017 Subject to change without notice Version 2.23 Page 42 
+ 
+9 PACKAGING & ORDERING INFORMATION 
+9.1 Package Dimensions 
+ 
+Figure 40: Device Package mechanical specifications 
+Parameter Min Typ Max Units 
+Unit weight  0.105  g 
+ 
+
+PAGE 43
+DW1000 Datasheet 
+ 
+ 
+© Decawave Ltd 2017 Subject to change without notice Version 2.23 Page 43 
+ 
+9.2 Device Package Marking 
+The diagram below shows the package markings for DW1000.  
+ 
+  
+Figure 41: Device Package Markings 
+Legend: 
+W228E-1N  7 digit manufacturing code 
+LLLLLL   6 digit lot ID 
+ZZ   2 digit lot split number 
+PH   Assembly location 
+YY   2 digit year number 
+WW   2 digit week number 
+9.3 Tray Information 
+The general orientation of the 48QFN package in the tray is as shown in Figure 42. 
+ 
+ 
+Figure 42: Tray Orientation 
+The white dot marking in the chip’s top left hand corner aligns with the chamfered edge of the tray. 
+
+
+PAGE 44
+DW1000 Datasheet 
+ 
+ 
+© Decawave Ltd 2017 Subject to change without notice Version 2.23 Page 44 
+ 
+9.4 Tape & Reel Information 
+9.4.1 Important note 
+The following diagrams and information relate to reel shipments made from 23rd March 2015 onwards.  
+Information relating to reels shipped prior to that date may be obtained from Decawave. 
+9.4.2 Tape Orientation and Dimensions 
+The general orientation of the 48QFN package in the tape is as shown in Figure 43. 
+ 
+ 
+Figure 43: Tape & Reel orientation 
+ 
+ 
+ 
+ 
+Dimensions Values Notes 
+Ao 6.3 ± 0.1 
+All dimensions in mm 
+sprocket hole pitch cumulative tolerance ± 0.20  
+Material: Conductive Polystyrene 
+Camber not to exceed 1.0 mm in 250 mm 
+Bo 6.3 ± 0.1 
+Ko 1.1 ± 0.1 
+P 12.00 ± 0.1 
+T 0.30 ± 0.05 
+W 16.00 + 0.30 – 0.10 
+Figure 44: Tape dimensions 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+User Direction of Feed
+K0
+T
+B0
+Expanded Section ‘X - X’
+
+PAGE 45
+DW1000 Datasheet 
+ 
+ 
+© Decawave Ltd 2017 Subject to change without notice Version 2.23 Page 45 
+ 
+9.4.3 Reel Information: 330 mm Reel 
+Base material:    High Impact Polystyrene with Integrated Antistatic Additive 
+Surface resistivity:  Antistatic with surface resistivity less than 1 x 10e12 Ohms per square 
+ 
+ 
+ 
+ 
+Figure 45: 330 mm reel dimensions 
+All dimensions and tolerances are fully compliant with EIA- 481-C and are specified in millimetres. Thre are 4000 
+pieces per reel. 
+ 
+9.5 Reflow profile 
+ 
+The DW1000 should be soldered using the reflow profile specified in JEDEC J-STD-020 as adapted for the 
+particular PCB onto which the IC is being soldered. 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+Tape 
+Width 
+A 
+Diameter 
+B 
+(min) C D 
+(min) 
+N 
+Hub W1 W2 
+(max) 
+W3 
+(min) 
+W4 
+(max) 
+16 330 / 380 1.5 13 + 0.5 -
+0.2 20.2 100 / 150 
++/-1 mm 
+16.4 + 
+2.0 – 0.0 22.4 15.9 19.4 
+
+PAGE 46
+DW1000 Datasheet 
+ 
+ 
+© Decawave Ltd 2017 Subject to change without notice Version 2.23 Page 46 
+ 
+9.6 Ordering Information 
+The standard qualification for the DW1000 is industrial temperature range: -40 ºC to +85 ºC, packaged in a 48-
+pin QFN package. 
+Table 30: Device ordering information 
+Ordering Codes:  
+ 
+High Volume     
+Ordering code Status Package Type Package Qty Note 
+DW1000-I Active Tray 490 Available  
+     
+DW1000-ITR13 Active Tape & Reel 4000 Available  
+     
+Samples     
+Ordering Code Status Package Type Package Qty Note 
+DW1000-I Active Tray 10-490 Available  
+     
+DW1000-ITR13 Active Tape & Reel 100 – 4000 Available  
+ 
+All IC’s are packaged in a 48-pin QFN package which is Pb free, RoHS, Green, NiPd lead finish, MSL level 3 
+IC Operation Temperature -40 ºC to +85 ºC.  
+
+PAGE 47
+DW1000 Datasheet 
+ 
+ 
+© Decawave Ltd 2017 Subject to change without notice Version 2.23 Page 47 
+ 
+10  GLOSSARY 
+Table 31: Glossary of Terms 
+Abbreviation Full Title Explanation 
+EIRP Equivalent Isotropically 
+Radiated Power 
+The amount of power that a theoretical isotropic antenna (which evenly 
+distributes power in all directions) would emit to produce the peak power density 
+observed in the direction of maximum gain of the antenna being used. 
+ETSI 
+European 
+Telecommunication 
+Standards Institute 
+Regulatory body in the EU charged with the management of the radio spectrum 
+and the setting of regulations for devices that use it 
+FCC Federal Communications 
+Commission 
+Regulatory body in the USA charged with the management of the radio spectrum 
+and the setting of regulations for devices that use it. 
+FFD Full Function Device Defined in the context of the IEEE802.15.4-2011 standard. 
+GPIO General Purpose Input / 
+Output 
+Pin of an IC that can be configured as an input or output under software control 
+and has no specifically identified function. 
+IEEE Institute of Electrical and 
+Electronic Engineers 
+Is the world’s largest technical professional society. It is designed to serve 
+professionals involved in all aspects of the electrical, electronic and computing 
+fields and related areas of science and technology. 
+LIFS Long Inter-Frame 
+Spacing 
+Defined in the context of the IEEE802.15.4-2011standard. 
+LNA Low Noise Amplifier Circuit normally found at the front-end of a radio receiver designed to amplify 
+very low level signals while keeping any added noise to as low a level as possible 
+LOS Line of Sight Physical radio channel configuration in which there is a direct line of sight 
+between the transmitter and the receiver. 
+Open Drain Open Drain 
+A technique allowing a signal to be driven by more than one device.  Generally, 
+each device is permitted to pull the signal to ground but when not doing so it 
+must allow the signal to float.  Devices should not drive the signal high so as to 
+prevent contention with devices attempting to pull it low.  
+NLOS Non Line of Sight Physical radio channel configuration in which there is no direct line of sight 
+between the transmitter and the receiver. 
+PGA Programmable Gain 
+Amplifier 
+Amplifier whose gain can be set / changed via a control mechanism usually by 
+changing register values. 
+PLL  Phase Locked Loop Circuit designed to generate a signal at a particular frequency whose phase is 
+related to an incoming “reference” signal.  
+PPM Parts Per Million Used to quantify very small relative proportions.  Just as 1% is one out of a 
+hundred, 1 ppm is one part in a million. 
+RF Radio Frequency 
+Generally used to refer to signals in the range of 3 kHz to 300 GHz.  In the 
+context of a radio receiver, the term is generally used to refer to circuits in a 
+receiver before down-conversion takes place and in a transmitter after up-
+conversion takes place. 
+RFD Reduced Function 
+Device 
+Defined in the context of the IEEE802.15.4-2011 [1] standard. 
+RTLS Real Time Location 
+System 
+System intended to provide information on the location of various items in real-
+time.   
+SFD Start of Frame Delimiter Defined in the context of the IEEE802.15.4-2011  standard.  
+SIFS Short Inter-Frame 
+Spacing 
+Defined in the context of the IEEE802.15.4-2011  standard.  
+SPI Serial Peripheral 
+Interface 
+An industry standard method for interfacing between IC’s using a synchronous 
+serial scheme first introduced by Motorola. 
+TCXO Temperature Controlled 
+Crystal Oscillator 
+A crystal oscillator whose output frequency is very accurately maintained at its 
+specified value over its specified temperature range of operation. 
+TWR Two Way Ranging 
+Method of measuring the physical distance between two radio units by 
+exchanging messages between the units and noting the times of transmission 
+and reception.  Refer to Decawave’s website for further information. 
+TDOA Time Difference of 
+Arrival 
+Method of deriving information on the location of a transmitter. The time of arrival 
+of a transmission at two physically different locations whose clocks are 
+synchronized is noted and the difference in the arrival times provides information 
+on the location of the transmitter.  A number of such TDOA measurements at 
+different locations can be used to uniquely determine the position of the 
+transmitter.  Refer to Decawave’s website for further information.   
+UWB Ultra Wideband A radio scheme employing channel bandwidths of, or in excess of, 500 MHz. 
+WSN Wireless Sensor Network A network of wireless nodes intended to enable the monitoring and control of the 
+physical environment. 
+
+PAGE 48
+DW1000 Datasheet 
+ 
+ 
+© Decawave Ltd 2017 Subject to change without notice Version 2.23 Page 48 
+ 
+ 
+11 REFERENCES 
+[1] IEEE802.15.4-2011 or “IEEE Std 802.15.4™‐2011” (Revision of IEEE Std 802.15.4-2006).  IEEE Standard 
+for Local and metropolitan area networks – Part 15.4: Low-Rate Wireless Personal Area Networks (LR-
+WPANs).  IEEE Computer Society Sponsored by the LAN/MAN Standards Committee.  Available from 
+http://standards.ieee.org/ 
+[2] Decawave DW1000 User Manual   
+[3] www.etsi.org 
+[4] www.fcc.gov 
+[5] EIA-481-C Standard 
+[6] APH010  DW1000 inter channel interference 
+12 DOCUMENT HISTORY 
+Table 32: Document History 
+Revision Date Description 
+2.00 7th November 2012 Initial release for production device. 
+2.01 31st March, 2014 Scheduled update 
+2.02 8th July 2014 Scheduled update 
+2.03 30th September 2014 Scheduled update 
+2.04 31st December 2014 Scheduled update 
+2.05 31st March 2015 Scheduled update 
+2.06 30th June 2015 Scheduled update 
+2.07 30th September 2015 Scheduled update 
+2.08 31st December 2015 Scheduled update 
+2.09 31st March 2016 Scheduled update 
+2.10 30th June 2016 Scheduled update 
+2.11 30th September 2016 Scheduled update 
+2.12 30th December 2016 Scheduled update 
+2.13 30th April 2017 Scheduled update 
+2.14 1st  august 2017 Scheduled update 
+2.15 18th December 2017 Scheduled update 
+2.16 30th April 2018 Scheduled update 
+2.17 30th August 2018 Scheduled update 
+2.18 28th January 2019 Scheduled update 
+2.19 7th June 2019 Scheduled update 
+2.20 15th Dec 2019 Scheduled update 
+2.21 1st April 2020 Scheduled update 
+2.22 29th May 2020 Scheduled update 
+2.23 14th December 2020 Scheduled update 
+ 
+  
+
+PAGE 49
+DW1000 Datasheet 
+ 
+ 
+© Decawave Ltd 2017 Subject to change without notice Version 2.23 Page 49 
+ 
+13 MAJOR CHANGES 
+ 
+Revision 2.03 
+ 
+Page Change Description 
+All Update of version number to 2.03 
+All Various typographical changes 
+15 Modification to figure 11 caption  
+21 Addition of text relating to use of RSTn as indicator to external µcontroller 
+35 Change to application schematic to modify value of TCXO coupling capacitor  
+36 Correction of Rakon TCXO part number 
+44 
+Addition of v2.03 to revision history table 
+Addition of this table and section heading 
+Modification of heading format on this page only 
+ 
+Revision 2.04 
+ 
+Page Change Description 
+All Update of version number to 2.04 
+All Various typographical changes 
+2 Update of table of contents 
+23 Modification of SPI timing diagrams figure 25 & 26 to correct timing definitions 
+33 Addition of section 7.3 re power down 
+37 Change of page orientation to landscape to expand figure 39 for legibility   
+43 
+Corrections to v2.03 change table 
+Addition of v2.04 to revision history table 
+Addition of this table 
+43 Removal of page breaks in heading numbers 11, 12, 13 and 14 
+ 
+Revision 2.05 
+ 
+Page Change Description 
+All Update of version number to 2.05 
+2 Update to table of contents 
+4 Modification of copyright notice to 2015 
+11 Modifications to Table 6 re Rx sensitivity conditions and Table 7 re recommended TCXO coupling 
+capacitor value 
+20 Update to Figure 20 and Table 15 to further clarify power up timings  
+21 addition of Figure 21 to further clarify power up timings 
+23 Addition to heading of Table 16 
+34 Addition of clarification  re power supplies that should be removed to power down the chip 
+38 Addition of device weight to Figure 40 
+44 Addition of v2.05 to revision history table 
+45 Addition of this table 
+ 
+Revision 2.06 
+ 
+Page Change Description 
+All Update of version number to 2.06 
+All Various typographical / formatting changes 
+1 Addition of pin pitch / Update to SLEEP current & DEEPSLEEP current 
+2 Update to table of contents 
+10 Addition to table 3 to indicate max digital input voltage 
+37 Modification to figure 39 to clarify referenced layers for impedance matching purposes 
+
+PAGE 50
+DW1000 Datasheet 
+ 
+ 
+© Decawave Ltd 2017 Subject to change without notice Version 2.23 Page 50 
+ 
+40 – 41 Changes to tape and reel drawings NOTE CHANGE IN QFN ORIENTATION vs. FEED DIRECTION 
+44 Addition of v2.06 to revision history table 
+45 Addition of this table 
+ 
+Revision 2.07 
+ 
+Page Change Description 
+All Update of version number to 2.07 
+All Various typographical / formatting changes 
+35 – 36 Addition of Abracon parts to “Recommended Components” table 
+44 Addition of v2.07 to revision history table 
+45 Addition of this table 
+ 
+ 
+ 
+ 
+ 
+Revision 2.08 
+ 
+Page Change Description 
+All Update of version number to 2.08 
+All Various typographical / formatting changes 
+10 Update to typ current values for INIT & IDLE states 
+35 Figure 37: Addition of decoupling caps on VDDLDOA and VDDLDOD 
+37 Clarification of reference layers in Figure 38  
+44 Addition of v2.08 to revision history table 
+45 Addition of this table 
+ 
+ 
+Revision 2.09 
+ 
+Page Change Description 
+All Update of version number to 2.09 
+All Various typographical / formatting changes 
+20 Modifications to description of power up sequence in section 5.6 to clarify use and control of RSTn 
+including addition of new section 5.6.3 and new Table 17 
+36 Modification to Figure 38 to correct impedance reference layer from 2 to 1 
+37 Modification to Figure 37 to include external LDO for TCXO 
+44 Addition of 2.09 to Table 31 
+46 Addition of this Table 
+ 
+Revision 2.10 
+ 
+Page Change Description 
+All Update of version number to 2.10 
+All Various typographical / formatting changes 
+7 Correction of pinout functionality for GPIO5 & 6 in Figure 2 
+8 Correction of pinout functionality for GPIO5 & 6 in Table 1 
+8 Addition of explanatory text to GPIO and WAKEUP pins in Table 1 
+39 Modifications to Figure 41 to reflect actual device markings 
+39 Modification to Figure 42 to reflect actual device markings 
+42 Addition of section 9.5 dealing with reflow soldering profile 
+42 Change of numbering of previous section 9.5 to 9.6 
+44 Addition of 2.10 to Table 31 
+46 Addition of this Table 
+ 
+
+PAGE 51
+DW1000 Datasheet 
+ 
+ 
+© Decawave Ltd 2017 Subject to change without notice Version 2.23 Page 51 
+ 
+Revision 2.11 
+ 
+Page Change Description 
+All Update of version number to 2.11 
+36 Modification to Figure 37 to remove 4.7 uF capacitor on VDDLDOA 
+37 Addition of DCDC converter part to recommended components table 
+46 Addition of 2.11 to Table 31 
+48 Addition of this Table 
+ 
+Revision 2.12 
+ 
+Page Change Description 
+All Update of version number to 2.12 
+28 Extended description of the SLEEP state and methods of exiting it. 
+35 Abracon added as current antenna manufacturer 
+ 
+Revision 2.13 
+ 
+Page Change Description 
+All Update of version number to 2.13 
+6 Updated XTAL2 pin description in Table 1  
+11 In-band blocking level, and Out-of-band blocking level and its values described  
+18 Update Table 18, PHR is 21 Symbols, was shown as 21bits 
+24 Updated SPI timings, split spec for 125MHz and 19.2MHz system clock 
+20 Table 25 Operational Modes updated 
+36 Text added to Figure 37 describing treatment of XTAL2 pin if TCXO used   
+47 Addition of this table 
+Revision 2.14 
+ 
+Page Change Description 
+All Update of version number to 2.14 
+30,31 Updates to column 1 of Table 26 and 27, to match A,B,C of Table 25 
+31 Updates to current issues in table 27 to match that achievable with released API. 
+36 Fig 37 updated to correctly name VDDPA1 and VDDPA2 
+48 Addition of this table 
+ 
+ 
+Revision 2.15 
+ 
+Page Change Description 
+All Update of version number to 2.15 
+24 Explain SPI transactions  
+37 Update recommended components  
+32 Update table 28   
+48 Addition of this table  
+ 
+ 
+Revision 2.16 
+ 
+Page  Change Description 
+ALL Logo Change 
+ 
+ 
+ 
+ 
+ 
+
+PAGE 52
+DW1000 Datasheet 
+ 
+ 
+© Decawave Ltd 2017 Subject to change without notice Version 2.23 Page 52 
+ 
+ 
+Revision 2.17 
+ 
+Page  Change Description 
+ 18 Update section to warn about possible channel interference  
+37 Removed Abracon antenna  ACA-107 as it is no longer available 
+ 
+Revision 2.18 
+ 
+Page  Change Description 
+23 & 24 Restriction on  SPI MISO pin usage in sleep mode  
+ 24 & 25  SPI timing values t_8 and t_9 swapped to match timing diagram in table 18 (A) and (B) 
+ 
+Revision 2.19  
+ 
+Page  Change Description 
+8 Removed reference to LEDs in Digital Decoupling 
+ 27 Removed Parton TCXO (EOL), added ST Balun and added TOREX and TI  DC/DC 
+33 Typical power in Fig 32, 33 & 34 updated  
+ 
+Revision 2.20  
+Page  Change Description 
+6 Update to EXTON pin description, when not used it can be left floating 
+ 38 Explanation included when there is no need to use pull-down resistor for IRQ (pin 45)  
+26 Update of timing parameters t3 and t4  
+38 Updated list of recommended components  
+ALL  Removed repetition of IEEE802.15.4-2011 [1] 
+ 
+Revision 2.21 
+ 
+Page  Change Description 
+11 Description of in-band and out-band added 
+  
+  
+ 
+Revision 2.22 
+ 
+Page  Change Description 
+39 Update TXC address 
+46 Removal of 180mm reel information as no longer supported per PCN 1741 
+ All Logo update for Qorvo  
+ 
+Revision 2.23 
+ 
+Page  Change Description 
+12 & 30 The Tx power coarse level step is updated to a typical value of 2.5 dBm. The DW1000 device functionality 
+has not changed, this is the corrected typical coarse step value. 
+13 New section 3.9 describing thermal resistance   
+13 Table 10, Added Maximum Junction Temperature  
+  
+
+PAGE 53
+DW1000 Datasheet 
+ 
+ 
+© Decawave Ltd 2017 Subject to change without notice Version 2.23 Page 53 
+ 
+ 
+14 FURTHER INFORMATION 
+Decawave develops semiconductors solutions, software, modules, reference designs - that enable real-time, 
+ultra-accurate, ultra-reliable local area micro-location services.  Decawave’s technology enables an entirely new 
+class of easy to implement, highly secure, intelligent location functionality and services for IoT and smart 
+consumer products and applications. 
+ 
+For further information on this or any other Decawave product, please refer to our website www.decawave.com. 
+  
+ 

@@ -647,6 +647,7 @@ test('new small wizard traverses all nine stages and survives reload/restart @sm
   await expect(runner).toHaveAttribute('data-job-id', artifacts.job);
   // A new browser context has no session key from either wizard or simulation UI.
   const freshContext = await browser.newContext({ baseURL: new URL(page.url()).origin });
+  let restartedJob: string | null = null;
   try {
     const fresh = await freshContext.newPage();
     await fresh.goto(`/studio/simulation?project=${project}`);
@@ -654,6 +655,8 @@ test('new small wizard traverses all nine stages and survives reload/restart @sm
     await expect(freshRunner).toHaveAttribute('data-job-id', artifacts.job);
     await expect(freshRunner).toHaveAttribute('data-snapshot-id', artifacts.snapshot);
     await expect(fresh.getByRole('heading', { name: 'Simulation abgeschlossen', exact: true })).toBeVisible();
+    // A completed historical run must not block the current approved preflight.
+    await expect(fresh.getByRole('button', { name: 'Start', exact: true })).toBeEnabled();
     await fresh.getByRole('button', { name: 'Reset', exact: true }).click();
     await fresh.getByRole('button', { name: 'Ansicht zurücksetzen', exact: true }).click();
     await expect(freshRunner).not.toHaveAttribute('data-job-id');
@@ -664,6 +667,21 @@ test('new small wizard traverses all nine stages and survives reload/restart @sm
     await expect(fresh.locator('.result-run-list button.active')).toHaveAttribute('data-snapshot-id', artifacts.snapshot);
     await expect(fresh.getByText('Anforderungserfüllung: Bestanden', { exact: true })).toBeVisible();
     await testInfo.attach('wizard-result-restoration', { body: await fresh.screenshot(), contentType: 'image/png' });
+    // Actual normal START, without resetting/deleting the restored completed run.
+    await fresh.goto(`/studio/simulation?project=${project}&snapshot=${artifacts.snapshot}`);
+    await expect(freshRunner).toHaveAttribute('data-job-id', artifacts.job);
+    await fresh.getByRole('button', { name: 'Start', exact: true }).click();
+    await expect.poll(async () => {
+      restartedJob = await freshRunner.getAttribute('data-job-id');
+      return Boolean(restartedJob && restartedJob !== artifacts.job);
+    }).toBe(true);
+    await expect.poll(async () => (await readProject(fresh, project, `/api/simulations/${restartedJob}`)).status,
+      { timeout: 180_000 }).toBe('completed');
+    const preserved = await readProject(fresh, project, `/api/engineering/workflow/simulation-snapshots/${artifacts.snapshot}`);
+    expect(preserved.job_id).toBe(artifacts.job);
+    expect(preserved.result.trace.events).toBe(artifacts.trace_events);
+    await fresh.reload();
+    await expect(freshRunner).toHaveAttribute('data-job-id', restartedJob!);
     await fresh.goto(`/studio/results?project=${project}-other&snapshot=${artifacts.snapshot}`);
     await expect(fresh.getByText('Dieser Simulationslauf ist in diesem Projekt nicht verfügbar.', { exact: true })).toBeVisible();
     await expect(fresh.locator('.result-run-list button.active')).toHaveCount(0);
@@ -671,7 +689,8 @@ test('new small wizard traverses all nine stages and survives reload/restart @sm
     await freshContext.close();
   }
   await openWizard(page, project);
-  expect((await readProject(page, project, '/api/simulations')).jobs).toHaveLength(1);
+  expect((await readProject(page, project, '/api/simulations')).jobs.map((job: { id: string }) => job.id).sort())
+    .toEqual([artifacts.job, restartedJob].sort());
   expect(errors).toEqual([]);
   await testInfo.attach('evidence', { body: JSON.stringify({ project, ...continuity, ...artifacts }), contentType: 'application/json' });
 });

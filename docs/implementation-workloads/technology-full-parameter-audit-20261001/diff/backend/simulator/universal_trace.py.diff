@@ -1,0 +1,42 @@
+--- before/backend/simulator/universal_trace.py
++++ after/backend/simulator/universal_trace.py
+@@ -538,16 +538,34 @@
+         frame_parameters = dict(network_metadata)
+         if "bitrate" not in frame_parameters and "link_speed" in frame_parameters:
+             frame_parameters["bitrate"] = frame_parameters["link_speed"]
+-        frame = estimate_frame(technology["id"], payload_size, frame_parameters)
++        ethernet = resolve_flow({**route, 'network_metadata': {
++            **{key: config[key] for key in ('ip_version', 'transport_protocol', 'source_port', 'destination_port', 'mtu', 'vlan_id') if key in config},
++            **network_metadata}})
++        if ethernet and technology['id'] == 'ethernet':
++            # This is the selected virtual full-duplex IP data-plane serializer.
++            # Its exact encoded headers are simulation evidence, never a saved PHY fact.
++            if network_metadata.get('duplex') not in {None, 'FULL'}:
++                raise ValueError('TIMING_UNVERIFIED: the IP data-plane serializer requires full duplex.')
++            derived = {
++                'eth_payload_layer': 'UPPER_LAYER',
++                'eth_upper_header_bytes': (20 if ethernet['ip_version'] == 4 else 40) + (8 if ethernet['transport_protocol'] == 'udp' else 20),
++                'eth_vlan_tags': int(ethernet['vlan_id'] is not None),
++                'mtu_bytes': ethernet['mtu'], 'eth_ifg_bits': 96,
++                'eth_frame_profile': 'BASIC_MAC' if ethernet['mtu'] <= 1500 else 'JUMBO_DEVICE',
++                'duplex': 'FULL',
++            }
++            for key, value in derived.items():
++                if key in frame_parameters and frame_parameters[key] != value:
++                    raise ValueError(f'Ethernet serializer geometry contradicts {key}.')
++            frame_parameters.update(derived)
++            packet_bytes({'ethernet': ethernet, 'payload_hex': bytes(payload_size).hex(), 'sequence': 0, 'route_id': route['id']})
++        frame = estimate_frame(technology['id'], payload_size, frame_parameters)
+         if frame.is_generic_estimate or not frame.transmission_time_available:
+             raise ValueError(
+                 f"TIMING_UNVERIFIED: {technology['id']} auf Netz {route['network']}: "
+                 "Explizite gültige Raten und ein technologiespezifisches Übertragungsmodell sind erforderlich."
+             )
+-        bitrate = frame_parameters.get("bitrate") or frame_parameters.get("arbitration_bitrate") or 0
+-        ethernet = resolve_flow({**route, 'network_metadata': {
+-            **{key: config[key] for key in ('ip_version', 'transport_protocol', 'source_port', 'destination_port', 'mtu', 'vlan_id') if key in config},
+-            **network_metadata}})
++        bitrate = frame_parameters.get('bitrate') or frame_parameters.get('arbitration_bitrate') or 0
+         if ethernet:
+             for endpoint in [ethernet["source"], *ethernet["destinations"]]:
+                 for key in ("ip", "mac"):

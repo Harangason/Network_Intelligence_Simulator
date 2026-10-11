@@ -1977,7 +1977,7 @@ def generate_network_topology(arguments: dict) -> dict:
             adjacency.setdefault(node_id, set()).add(anchor)
     topology = {'nodes': list(node_data.values()), 'edges': list(segments.values())}
     topology, physical_changes = materialize_physical_ports(topology, hardware, interfaces, model.networks(),
-        routes=routes, messages=model.objects('Message'), prune_unconnected=False)
+        routes=routes, messages=model.objects('Message'), logical_interfaces=model.objects('Interface'), prune_unconnected=False)
     from backend.nis.engineering.network.network_scene import build_network_scene
     positions = (existing_topology.get('scene') or {}).get('manualPositions')
     if not existing_topology.get('scene'):
@@ -2053,7 +2053,8 @@ def generate_capacity_network_repair(arguments: dict) -> dict:
     if changed_edges <= 0:
         raise ValueError('Der Capacity-Plan konnte keiner physischen Route des überlasteten Zweigs zugeordnet werden.')
     topology, physical_changes = materialize_physical_ports(topology, model.objects('HardwareNode'),
-        model.objects('HardwareNetworkInterface'), model.networks(), routes=model.routes(), messages=model.objects('Message'))
+        model.objects('HardwareNetworkInterface'), model.networks(), routes=model.routes(), messages=model.objects('Message'),
+        logical_interfaces=model.objects('Interface'), previous_topology=state.get('topology'))
     policy = planning_policy(state)
     resource_receipt = resource_decision(state.get('topology') or {}, topology,
         planning_inventory(state, prompt), policy)

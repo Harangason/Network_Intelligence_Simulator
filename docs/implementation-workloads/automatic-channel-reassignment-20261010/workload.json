@@ -1,0 +1,350 @@
+{
+  "goal_id": "automatic-channel-reassignment-20261010",
+  "kind": "repair",
+  "repository": "I:\\PycharmProjects\\My_first_Network_Simulator",
+  "project_scope": "20261009072206008-4bb505f1",
+  "modify_code": true,
+  "allow_repair": true,
+  "revision_before": {
+    "backend/nis/engineering/network/physical_ports.py": "1a82336deafa6692198b146768619ea1135e0a0d230667367878500447058b03",
+    "backend/nis/agent/tools/wizard_generation.py": "535009e945a722913191f014f7a4bbe7d3162b25fb140f00500f5da6268be0c6",
+    "backend/tests/test_physical_ports.py": "35969019b6d5f0150386ad457c8bf1d9ba788f13f5aa815cb9333830a8fa4db6",
+    "backend/tests/test_wizard_large_routing.py": "4c0f6c415cf415564041c37038914ab956136f25465c5ad9e6b764dff766869f"
+  },
+  "files_inspected": [
+    "backend/nis/engineering/network/physical_ports.py",
+    "backend/nis/agent/tools/wizard_generation.py",
+    "backend/tests/test_physical_ports.py",
+    "backend/tests/test_wizard_large_routing.py"
+  ],
+  "required_outcomes": [
+    "consistent_primary_binding",
+    "single_channel_reuse",
+    "parallel_channel_preservation",
+    "wizard_regression",
+    "production_delivery",
+    "existing_project_consistency"
+  ],
+  "validation_requirements": [
+    "targeted_regression",
+    "release_gate",
+    "live_verification",
+    "postrepair_assessments"
+  ],
+  "unresolved_decisions": [],
+  "remaining_findings": [],
+  "completion_status": "COMPLETED",
+  "files_changed": [
+    "backend/nis/engineering/network/physical_ports.py",
+    "backend/nis/agent/tools/wizard_generation.py",
+    "backend/tests/test_physical_ports.py",
+    "backend/tests/test_wizard_large_routing.py"
+  ],
+  "implementation_plan": [
+    "Reconcile primary and all physical transmission bindings in the shared materializer",
+    "Reuse a previously connected channel only on an unambiguous complete move; retain parallel channels",
+    "Pass prior topology from capacity remediation",
+    "Verify split/apply/reload and unchanged signals in isolated SQL and full release"
+  ],
+  "repair": {
+    "owner": "PROJECT_PRODUCT",
+    "root_cause": "Capacity splitting drops old drawing ports but materialization does not reconcile the primary Message.hardware_interface_id with the approved physical senders. It creates replacement channels even when the same reviewed connector moves entirely to one network. Manual assignment and zoning already reconcile the primary.",
+    "first_failing_layer": "Canonical physical channel/message reconciliation",
+    "reproduction": "Stored Licht message retains detached original channel although approved topology binds its real sender on Komfort_02; shared source and existing tests confirm only configuration changes.",
+    "evidence": [
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\automatic-channel-reassignment-20261010\\diagnosis.json",
+        "sha256": "b525549c52b25189c9b8c12282e20216ed27546085aeccf28f274736a66c48a5"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\automatic-channel-reassignment-20261010\\reproduction.json",
+        "sha256": "00e98ad1f569138207e8dae5de2156452a2bf7ffd2a95144716fbfb54f20aac3"
+      }
+    ],
+    "affected_files": [
+      "backend/nis/engineering/network/physical_ports.py",
+      "backend/nis/agent/tools/wizard_generation.py",
+      "backend/tests/test_physical_ports.py",
+      "backend/tests/test_wizard_large_routing.py"
+    ],
+    "acceptance_criteria": [
+      "Primary belongs to actual reviewed source channels",
+      "One-to-one channel moves preserve identity",
+      "Parallel channels are never collapsed",
+      "Missing or invalid bindings still fail validation"
+    ],
+    "targeted_tests": [
+      "test_physical_ports.py",
+      "test_wizard_large_routing.py"
+    ],
+    "weaken_assertions_to_pass": false
+  },
+  "before": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\automatic-channel-reassignment-20261010\\before\\backend\\nis\\engineering\\network\\physical_ports.py",
+      "sha256": "1a82336deafa6692198b146768619ea1135e0a0d230667367878500447058b03"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\automatic-channel-reassignment-20261010\\before\\backend\\nis\\agent\\tools\\wizard_generation.py",
+      "sha256": "535009e945a722913191f014f7a4bbe7d3162b25fb140f00500f5da6268be0c6"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\automatic-channel-reassignment-20261010\\before\\backend\\tests\\test_physical_ports.py",
+      "sha256": "0069fd741b953f692f5d92b76b8ac8c451215a7a9ab73913193457235d25ef65"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\automatic-channel-reassignment-20261010\\before\\backend\\tests\\test_wizard_large_routing.py",
+      "sha256": "4c0f6c415cf415564041c37038914ab956136f25465c5ad9e6b764dff766869f"
+    }
+  ],
+  "delivery": {
+    "decision": "YES",
+    "basis": "Standing AGENTS.md authorization after complete PASS release gate",
+    "status": "DEPLOYED_AND_VERIFIED",
+    "target": "Canonical NetworkIS stack, port 13500",
+    "running_version": "sha256:ebba6b6c79f448b7ad6736b461098310da056b1f951cf873f306f131239e5ba1",
+    "authorization": "Explicit user request: dann mach das produktiv, das nervt mich. Standing AGENTS.md authorization and exact archived-image exception.",
+    "authorization_evidence": [
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\automatic-channel-reassignment-20261010\\image-exchange-authorization.json",
+        "sha256": "1c885905fea3daee4bd049fe6cf495329fc3a6437f12697630abe82159a898ca"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\automatic-channel-reassignment-20261010\\image-exchange-evidence.json",
+        "sha256": "9fc4106a433cd24f951f69c06decbc3ca7b56f8c2b181ba9203c78353dfe785c"
+      }
+    ],
+    "tested_version": "sha256:ebba6b6c79f448b7ad6736b461098310da056b1f951cf873f306f131239e5ba1",
+    "checks": {
+      "release": {
+        "status": "PASSED",
+        "evidence": [
+          {
+            "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\delivery-fe22602c08d5\\264282c9a63a\\receipt.json",
+            "sha256": "889ed7584a1b5688799d4835aa155d5c3e0c74b775a5555c5976303dc4e55c09"
+          }
+        ]
+      },
+      "deployment": {
+        "status": "PASSED",
+        "evidence": [
+          {
+            "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\automatic-channel-reassignment-20261010\\production-delivery-verification.json",
+            "sha256": "a68b77bd441370880c5b11040124069a66cefb65b68dc415591490e482b5c28f"
+          }
+        ]
+      },
+      "health": {
+        "status": "PASSED",
+        "evidence": [
+          {
+            "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\automatic-channel-reassignment-20261010\\production-delivery-verification.json",
+            "sha256": "a68b77bd441370880c5b11040124069a66cefb65b68dc415591490e482b5c28f"
+          },
+          {
+            "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\automatic-channel-reassignment-20261010\\production-final-health.json",
+            "sha256": "dd8fde39372bfe5c6f4f822a2e6183bd22e6e42d58ee0eeeb707a94dccd132e1"
+          }
+        ]
+      },
+      "functional": {
+        "status": "PASSED",
+        "evidence": [
+          {
+            "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\automatic-channel-reassignment-20261010\\existing-project-alignment-verification.json",
+            "sha256": "ae2a1c3c5ca63df8bf0f1935aa05e4b27128802f2658d3df2a75a0a8bc2b820e"
+          },
+          {
+            "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\automatic-channel-reassignment-20261010\\production-functional-verification.json",
+            "sha256": "bc1f74added275da44fc3c09187e64fcbcf89afe3a0ff7a5cc3bf84b58f44a7a"
+          },
+          {
+            "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\automatic-channel-reassignment-20261010\\production-ui-verification.json",
+            "sha256": "e15d7834ee2dd8527b32eddd2611c1c7ca3e1207daab91435d3368b197149680"
+          },
+          {
+            "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\automatic-channel-reassignment-20261010\\existing-project-refreshed-assessments.json",
+            "sha256": "56b5cace63928b2a78d7eeeb45513e62b883f97f539d42cbf8f38fe9ce4e8b0a"
+          }
+        ]
+      }
+    }
+  },
+  "after": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\automatic-channel-reassignment-20261010\\after\\backend\\nis\\engineering\\network\\physical_ports.py",
+      "sha256": "c2ce8ea91c9321ecc07c0ea1164a7e8e7037f0c691c7520ef7067e1c4ae2fb5e"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\automatic-channel-reassignment-20261010\\after\\backend\\nis\\agent\\tools\\wizard_generation.py",
+      "sha256": "26c0c58d168ff112f78dc8c5ff37386d798c6a2a6de9fe594f84b8699b5db966"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\automatic-channel-reassignment-20261010\\after\\backend\\tests\\test_physical_ports.py",
+      "sha256": "35969019b6d5f0150386ad457c8bf1d9ba788f13f5aa815cb9333830a8fa4db6"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\automatic-channel-reassignment-20261010\\after\\backend\\tests\\test_wizard_large_routing.py",
+      "sha256": "533d0e536c5962d9f180fe98fac0057f05f39a3e4743fc5e8afa78a5222cab57"
+    }
+  ],
+  "diff": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\automatic-channel-reassignment-20261010\\implementation.diff",
+      "sha256": "809e532fb6631b91c6e35b82a61efdd85b83779e705d02b9f929899fa87fe3c9"
+    }
+  ],
+  "validations": {
+    "targeted_regression": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\automatic-channel-reassignment-20261010\\targeted-tests.log",
+          "sha256": "ecb81c06d0847ed5ed9ab7e332879b132cb1e386637ba849a6c40bfc553bb05c"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\automatic-channel-reassignment-20261010\\local-verification.json",
+          "sha256": "478d6e2bb4de844f09128699e535e260b4848a537e3442aff7d97ba3124f8e13"
+        }
+      ]
+    },
+    "release_gate": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\delivery-fe22602c08d5\\264282c9a63a\\receipt.json",
+          "sha256": "889ed7584a1b5688799d4835aa155d5c3e0c74b775a5555c5976303dc4e55c09"
+        }
+      ]
+    },
+    "live_verification": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\automatic-channel-reassignment-20261010\\production-delivery-verification.json",
+          "sha256": "a68b77bd441370880c5b11040124069a66cefb65b68dc415591490e482b5c28f"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\automatic-channel-reassignment-20261010\\existing-project-alignment-verification.json",
+          "sha256": "ae2a1c3c5ca63df8bf0f1935aa05e4b27128802f2658d3df2a75a0a8bc2b820e"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\automatic-channel-reassignment-20261010\\production-functional-verification.json",
+          "sha256": "bc1f74added275da44fc3c09187e64fcbcf89afe3a0ff7a5cc3bf84b58f44a7a"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\automatic-channel-reassignment-20261010\\production-ui-verification.json",
+          "sha256": "e15d7834ee2dd8527b32eddd2611c1c7ca3e1207daab91435d3368b197149680"
+        }
+      ]
+    },
+    "postrepair_assessments": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\automatic-channel-reassignment-20261010\\existing-project-refreshed-assessments.json",
+          "sha256": "56b5cace63928b2a78d7eeeb45513e62b883f97f539d42cbf8f38fe9ce4e8b0a"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\automatic-channel-reassignment-20261010\\existing-project-refreshed-preflight.json",
+          "sha256": "eec280ee2eef4ab3abf6a643f10650078efc37868c0c66e2c237a9a1ed10656d"
+        }
+      ]
+    }
+  },
+  "outcomes": {
+    "consistent_primary_binding": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\automatic-channel-reassignment-20261010\\targeted-tests.log",
+          "sha256": "ecb81c06d0847ed5ed9ab7e332879b132cb1e386637ba849a6c40bfc553bb05c"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\automatic-channel-reassignment-20261010\\local-verification.json",
+          "sha256": "478d6e2bb4de844f09128699e535e260b4848a537e3442aff7d97ba3124f8e13"
+        }
+      ]
+    },
+    "single_channel_reuse": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\automatic-channel-reassignment-20261010\\targeted-tests.log",
+          "sha256": "ecb81c06d0847ed5ed9ab7e332879b132cb1e386637ba849a6c40bfc553bb05c"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\automatic-channel-reassignment-20261010\\local-verification.json",
+          "sha256": "478d6e2bb4de844f09128699e535e260b4848a537e3442aff7d97ba3124f8e13"
+        }
+      ]
+    },
+    "parallel_channel_preservation": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\automatic-channel-reassignment-20261010\\targeted-tests.log",
+          "sha256": "ecb81c06d0847ed5ed9ab7e332879b132cb1e386637ba849a6c40bfc553bb05c"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\automatic-channel-reassignment-20261010\\local-verification.json",
+          "sha256": "478d6e2bb4de844f09128699e535e260b4848a537e3442aff7d97ba3124f8e13"
+        }
+      ]
+    },
+    "wizard_regression": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\automatic-channel-reassignment-20261010\\targeted-tests.log",
+          "sha256": "ecb81c06d0847ed5ed9ab7e332879b132cb1e386637ba849a6c40bfc553bb05c"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\automatic-channel-reassignment-20261010\\local-verification.json",
+          "sha256": "478d6e2bb4de844f09128699e535e260b4848a537e3442aff7d97ba3124f8e13"
+        }
+      ]
+    },
+    "production_delivery": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\delivery-fe22602c08d5\\264282c9a63a\\receipt.json",
+          "sha256": "889ed7584a1b5688799d4835aa155d5c3e0c74b775a5555c5976303dc4e55c09"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\automatic-channel-reassignment-20261010\\production-delivery-verification.json",
+          "sha256": "a68b77bd441370880c5b11040124069a66cefb65b68dc415591490e482b5c28f"
+        }
+      ]
+    },
+    "existing_project_consistency": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\automatic-channel-reassignment-20261010\\existing-project-alignment-verification.json",
+          "sha256": "ae2a1c3c5ca63df8bf0f1935aa05e4b27128802f2658d3df2a75a0a8bc2b820e"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\automatic-channel-reassignment-20261010\\production-functional-verification.json",
+          "sha256": "bc1f74added275da44fc3c09187e64fcbcf89afe3a0ff7a5cc3bf84b58f44a7a"
+        }
+      ]
+    }
+  },
+  "storage_review": {
+    "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\automatic-channel-reassignment-20261010\\storage-review.json",
+    "sha256": "93e3ec77e90fb4de86c38a3de4ca531ba890b174c6c705fac0ab506d1bfee3b2"
+  },
+  "active_release_receipt": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\delivery-fe22602c08d5\\264282c9a63a\\receipt.json",
+  "resource_observations": [
+    "Licht retains one actual unconnected hardware-interface warning; the stale message sender warning is removed. Hardware inventory and physical paths were preserved."
+  ],
+  "assessment_observations": [
+    "Capacity is COMPLETE and current preflight is READY. Prior simulation/results/assessment snapshots correctly remain OUTDATED after the model correction; their identities and jobs are preserved."
+  ],
+  "completion_evidence": {
+    "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\automatic-channel-reassignment-20261010\\completion-guard.json",
+    "sha256": "1b0a6f27fe3cee39afcc5e09bf284ddb19807176ed61d35afcfb4b25dadc0078"
+  }
+}

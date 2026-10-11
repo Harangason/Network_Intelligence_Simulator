@@ -86,6 +86,9 @@ class EntitySpec:
     enum_fields: dict[str, tuple[str, ...]] | None = None
 
     def validate(self, data: dict[str, Any]) -> None:
+        if self.object_type == 'SafetyRequirement':
+            from backend.nis.engineering.safety_assurance import validate_requirement
+            validate_requirement(data.get('configuration'))
         if self.object_type == 'HardwareNetworkInterface':
             local = (data.get('capabilities') or {}).get('local_timing_evidence')
             if local is not None:
@@ -110,6 +113,8 @@ class EntitySpec:
 BASE_COLUMNS = ("name", "description", "domain")
 
 ENTITY_SPECS: dict[str, EntitySpec] = {
+    "SafetyRequirement": EntitySpec(table="engineering_safety_requirements", object_type="SafetyRequirement",
+        own_columns=("function_id", "configuration"), json_columns=frozenset({"configuration"}), required=("function_id", "configuration")),
     "HardwareNode": EntitySpec(
         table="engineering_hardware_nodes",
         object_type="HardwareNode",
@@ -230,6 +235,7 @@ ENTITY_SPECS: dict[str, EntitySpec] = {
 }
 
 PARENT_LINKS: dict[str, tuple[str, str, str]] = {
+    "SafetyRequirement": ("function_id", "Function", "DEFINED_BY"),
     "Function": ("hardware_node_id", "HardwareNode", "HAS_FUNCTION"),
     "HardwareNetworkInterface": ("hardware_node_id", "HardwareNode", "HAS_HARDWARE_INTERFACE"),
     "Interface": ("function_id", "Function", "HAS_INTERFACE"),
@@ -457,6 +463,9 @@ def create_object(object_type: str, data: dict[str, Any]) -> dict[str, Any]:
         if str(interface.get("interface_type") or "").lower() in DIRECT_IO_TECHNOLOGIES:
             raise EngineeringValidationError("DIRECT_IO_MESSAGE_CREATED: Direkte I/O-Signale besitzen keine Message.")
     spec.validate(data)
+    if object_type == "SafetyRequirement":
+        from backend.nis.engineering.safety_assurance import validate_bindings
+        validate_bindings(data)
 
     columns = list(BASE_COLUMNS) + list(spec.own_columns)
     payload = {col: data[col] for col in columns if col in data}
@@ -666,6 +675,8 @@ def update_object(object_type: str, object_id: str, data: dict[str, Any]) -> dic
     spec = get_spec(object_type)
     _validate_uuid(object_id)
     existing = get_object(object_type, object_id)
+    if object_type == "SafetyRequirement" and (type(data.get("expected_version")) is not int or data["expected_version"] < 1):
+        raise EngineeringValidationError("SafetyRequirement benötigt die originale expected_version.")
     check_revision(data.get("expected_version"), existing["version"])
 
     editable_columns = list(BASE_COLUMNS) + list(spec.own_columns) + [
@@ -775,6 +786,9 @@ def update_object(object_type: str, object_id: str, data: dict[str, Any]) -> dic
     if object_type == "Signal":
         _validate_signal_binding({**existing, **updates})
     spec.validate({**existing, **updates})
+    if object_type == "SafetyRequirement":
+        from backend.nis.engineering.safety_assurance import validate_bindings
+        validate_bindings({**existing, **updates})
 
     for field_name, allowed in {
         "lifecycle_state": LIFECYCLE_STATES,

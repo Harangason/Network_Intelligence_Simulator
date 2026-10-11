@@ -1,0 +1,4642 @@
+{
+  "id": "lvds",
+  "label": "LVDS",
+  "domain": "generic_networking",
+  "layer": "PHYSICAL",
+  "transport_unit": "STREAM_CHUNK",
+  "payload_element_types": [
+    "RAW_DATA"
+  ],
+  "hardware_interface": "lvds_actual_qualified_balanced_pair",
+  "hardware_capability_aliases": [
+    "lvds_interface"
+  ],
+  "default_stack": [
+    "lvds"
+  ],
+  "stack_variants": [
+    [
+      "lvds"
+    ]
+  ],
+  "default_bitrate": null,
+  "rate_model": {
+    "type": "LVDS_ELECTRICAL_CLOCK_SERIALIZER_AND_LOAD_DEPENDENT",
+    "fields": []
+  },
+  "local_timing_schema": [],
+  "parameter_schema": {
+    "payload_bytes": {
+      "label": "Payload",
+      "category": "physical",
+      "scope": "message",
+      "type": "number",
+      "description": "Actual application byte count only where its separately registered codec uses bytes; physical LVDS defines no8byte frame,65535byte payload, address, CRC or packet queue. Non-byte words and actual encoded bit positions remain separate.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+      "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock",
+      "integer": true
+    },
+    "cycle_ms": {
+      "label": "Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "Standardperiode fuer zyklische Nachrichten.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "minimum_cycle_time_ms": {
+      "label": "Minimum Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "deadline_ms": {
+      "label": "Deadline",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "timeout_ms": {
+      "label": "Timeout",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_latency_ms": {
+      "label": "Maximum Latency",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "jitter_ms": {
+      "label": "Jitter Budget",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "freshness_ms": {
+      "label": "Data Freshness",
+      "category": "timing",
+      "scope": "signal",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "source_processing_delay_ms": {
+      "label": "Source Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_processing_delay_ms": {
+      "label": "Target Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "propagation_delay_ms": {
+      "label": "Propagation",
+      "category": "timing",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.01,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_bus_load_percent": {
+      "label": "Ziel-Buslast",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "Zielwert fuer die aus Routing, Payload, Zyklus und Bitrate berechnete Buslast.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "peak_factor": {
+      "label": "Peak Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.15,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_factor": {
+      "label": "Burst Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.5,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_window_ms": {
+      "label": "Burst Window",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "warning_threshold": {
+      "label": "Load Warning",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "critical_threshold": {
+      "label": "Load Critical",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 75,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "overload_threshold": {
+      "label": "Load Overload",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 90,
+      "unit": "%",
+      "min": 1,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "packet_loss_probability": {
+      "label": "Packet Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "frame_loss_probability": {
+      "label": "Frame Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "bit_error_rate": {
+      "label": "Bit Error Rate",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "corruption_probability": {
+      "label": "Corruption",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duplicate_probability": {
+      "label": "Duplication",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "reordering_probability": {
+      "label": "Reordering",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "required_reliability": {
+      "label": "Required Reliability",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.999,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_offset_ms": {
+      "label": "Clock Offset",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_drift_ppm": {
+      "label": "Clock Drift",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 20,
+      "unit": "ppm",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_precision_ms": {
+      "label": "Sync Precision",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_interval_ms": {
+      "label": "Sync Interval",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1000,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_sync_error_ms": {
+      "label": "Maximum Sync Error",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_delay_ms": {
+      "label": "Gateway Processing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.2,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_queue_delay_ms": {
+      "label": "Gateway Queueing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "protocol_conversion_delay_ms": {
+      "label": "Protocol Conversion",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duration_s": {
+      "label": "Simulation Duration",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 1,
+      "unit": "s",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "seed": {
+      "label": "Random Seed",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 42,
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "max_events": {
+      "label": "Maximum Events",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 100000,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "dropout_probability": {
+      "label": "Failure Injection Dropout",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "lv_edition": {
+      "type": "select",
+      "description": "Actual reviewed reference set versus an independently registered electrical/device/serializer revision.",
+      "source": "https://www.ti.com/lit/an/slla108a/slla108a.pdf",
+      "source_revision": "TI SLLA108A February2002/revisedJanuary2013; sections2/3,table1 and full-load figures; primary authored summary, not licensed full TIA standards",
+      "options": [
+        "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "REGISTERED_EDITION"
+      ],
+      "integer": false,
+      "label": "edition",
+      "category": "physical",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "lv_electrical": {
+      "type": "select",
+      "description": "Actual644 point-to-point,644A full-load multidrop or899 multipoint; B-LVDS/LVDM/CML/PECL are independent registered profiles.",
+      "source": "https://www.ti.com/lit/an/slla108a/slla108a.pdf",
+      "source_revision": "TI SLLA108A February2002/revisedJanuary2013; sections2/3,table1 and full-load figures; primary authored summary, not licensed full TIA standards",
+      "options": [
+        "TIA_644_1996",
+        "TIA_644_A_2001",
+        "TIA_899_2002",
+        "REGISTERED_PHY"
+      ],
+      "integer": false,
+      "label": "electrical",
+      "category": "physical",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "lv_hardware": {
+      "type": "select",
+      "description": "Actual exact2016 four-channel driver/receiver pair versus registered other silicon/FPGA I/O; no universal3Gbit/s.",
+      "source": "https://www.ti.com/lit/ds/symlink/ds90lv047a.pdf",
+      "source_revision": "TI DS90LV047A SNLS044D May2000/revisedJuly2016; sections6.3/6.5/6.6/8/9/11; min/typ/max and test-condition columns visually checked",
+      "options": [
+        "DS90LV047A_D_DS90LV048A_C",
+        "REGISTERED_HARDWARE"
+      ],
+      "integer": false,
+      "label": "hardware",
+      "category": "physical",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "lv_topology": {
+      "type": "select",
+      "description": "Actual per-pair point-to-point,one-transmitter multidrop or independently arbitrated multipoint.",
+      "source": "https://www.ti.com/lit/an/slla108a/slla108a.pdf",
+      "source_revision": "TI SLLA108A February2002/revisedJanuary2013; sections2/3,table1 and full-load figures; primary authored summary, not licensed full TIA standards",
+      "options": [
+        "POINT_TO_POINT",
+        "MULTIDROP",
+        "MULTIPOINT",
+        "REGISTERED_TOPOLOGY"
+      ],
+      "integer": false,
+      "label": "topology",
+      "category": "physical",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "lv_driver_position": {
+      "type": "select",
+      "description": "Actual transmitter at a terminated-line end versus mid-line; changes loading requirements.",
+      "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+      "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock",
+      "options": [
+        "END",
+        "MID",
+        "REGISTERED_POSITION"
+      ],
+      "integer": false,
+      "label": "driver position",
+      "category": "physical",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "lv_purpose": {
+      "type": "select",
+      "description": "Actual data stream versus clock pair versus level/interrupt wire; physical LVDS defines no frame/address/CRC.",
+      "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+      "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock",
+      "options": [
+        "DATA_STREAM",
+        "CLOCK_ONLY",
+        "LEVEL_OR_INTERRUPT"
+      ],
+      "integer": false,
+      "label": "purpose",
+      "category": "physical",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "lv_encoding": {
+      "type": "select",
+      "description": "Actual higher-layer encoding, independent from LVDS electrical signaling; no mandatory8b/10b.",
+      "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+      "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock",
+      "options": [
+        "RAW_BITS",
+        "START_STOP_2",
+        "8B10B",
+        "REGISTERED_ENCODING"
+      ],
+      "integer": false,
+      "label": "encoding",
+      "category": "physical",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "lv_clocking": {
+      "type": "select",
+      "description": "Actual direct bit stream versus forwarded word clock versus embedded clock with actual serializer.",
+      "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+      "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock",
+      "options": [
+        "DIRECT",
+        "FORWARDED_WORD",
+        "EMBEDDED",
+        "REGISTERED_CLOCK"
+      ],
+      "integer": false,
+      "label": "clocking",
+      "category": "physical",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "lv_coupling": {
+      "type": "select",
+      "description": "Actual DC versus qualified AC/translation network; selected047A forbids AC or unterminated operation.",
+      "source": "https://www.ti.com/lit/ds/symlink/ds90lv047a.pdf",
+      "source_revision": "TI DS90LV047A SNLS044D May2000/revisedJuly2016; sections6.3/6.5/6.6/8/9/11; min/typ/max and test-condition columns visually checked",
+      "options": [
+        "DC",
+        "AC",
+        "REGISTERED_COUPLING"
+      ],
+      "integer": false,
+      "label": "coupling",
+      "category": "physical",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "lv_load_scope": {
+      "type": "select",
+      "description": "Actual standard full-load fixture versus exact datasheet AC fixture versus commissioned application measurement.",
+      "source": "https://www.ti.com/lit/an/slla108a/slla108a.pdf",
+      "source_revision": "TI SLLA108A February2002/revisedJanuary2013; sections2/3,table1 and full-load figures; primary authored summary, not licensed full TIA standards",
+      "options": [
+        "STANDARD_FIXTURE",
+        "DATASHEET_AC",
+        "APPLICATION_MEASURED",
+        "REGISTERED_LOAD"
+      ],
+      "integer": false,
+      "label": "load scope",
+      "category": "physical",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "lv_power_state": {
+      "type": "select",
+      "description": "Actual powered active/disabled versus power-off; output/supply/leakage requirements differ.",
+      "source": "https://www.ti.com/lit/ds/symlink/ds90lv047a.pdf",
+      "source_revision": "TI DS90LV047A SNLS044D May2000/revisedJuly2016; sections6.3/6.5/6.6/8/9/11; min/typ/max and test-condition columns visually checked",
+      "options": [
+        "ACTIVE",
+        "DISABLED",
+        "OFF"
+      ],
+      "integer": false,
+      "label": "power state",
+      "category": "physical",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "lv_receiver_type": {
+      "type": "select",
+      "description": "Actual standard LVDS versus899Type1/Type2 versus a registered receiver; Type2 offset failsafe is not standardLVDS.",
+      "source": "https://www.ti.com/lit/an/slla108a/slla108a.pdf",
+      "source_revision": "TI SLLA108A February2002/revisedJanuary2013; sections2/3,table1 and full-load figures; primary authored summary, not licensed full TIA standards",
+      "options": [
+        "LVDS",
+        "MLVDS_TYPE1",
+        "MLVDS_TYPE2",
+        "REGISTERED_RECEIVER"
+      ],
+      "integer": false,
+      "label": "receiver type",
+      "category": "physical",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "lv_rate_assurance": {
+      "type": "select",
+      "description": "Actual datasheet reference envelope versus independent measured higher-rate qualification;400Mbit/s is not universal clock or absolute silicon maximum.",
+      "source": "https://www.ti.com/lit/ds/symlink/ds90lv047a.pdf",
+      "source_revision": "TI DS90LV047A SNLS044D May2000/revisedJuly2016; sections6.3/6.5/6.6/8/9/11; min/typ/max and test-condition columns visually checked",
+      "options": [
+        "DATASHEET_REFERENCE",
+        "MEASURED_REGISTERED"
+      ],
+      "integer": false,
+      "label": "rate assurance",
+      "category": "physical",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "lv_input_fault": {
+      "type": "select",
+      "description": "Actual normal data versus open/shorted/floating terminated receiver; failsafe has device-specific common-mode/noise conditions.",
+      "source": "https://www.ti.com/lit/ds/symlink/ds90lv048a.pdf",
+      "source_revision": "TI DS90LV048A SNLS045C July1999/revisedJuly2016; sections6.3/6.5/6.6/8; min/typ/max and common-mode/failsafe footnotes visually checked",
+      "options": [
+        "DATA",
+        "OPEN",
+        "SHORT",
+        "TERMINATED_FLOATING"
+      ],
+      "integer": false,
+      "label": "input fault",
+      "category": "physical",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "lv_failsafe": {
+      "type": "select",
+      "description": "Actual unspecified standardLVDS versus device proven state versus899Type2 LOW.",
+      "source": "https://www.ti.com/lit/an/slla108a/slla108a.pdf",
+      "source_revision": "TI SLLA108A February2002/revisedJanuary2013; sections2/3,table1 and full-load figures; primary authored summary, not licensed full TIA standards",
+      "options": [
+        "NOT_SPECIFIED",
+        "DEVICE_PROVEN",
+        "TYPE2_LOW"
+      ],
+      "integer": false,
+      "label": "failsafe",
+      "category": "physical",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "lv_asserted_logic": {
+      "type": "select",
+      "description": "Actual asserted polarity in a wired-OR profile;899Type2 uses HIGH asserted drivers.",
+      "source": "https://www.ti.com/lit/an/slla108a/slla108a.pdf",
+      "source_revision": "TI SLLA108A February2002/revisedJanuary2013; sections2/3,table1 and full-load figures; primary authored summary, not licensed full TIA standards",
+      "options": [
+        "HIGH",
+        "LOW"
+      ],
+      "integer": false,
+      "label": "asserted logic",
+      "category": "physical",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "lv_revision": {
+      "type": "text",
+      "description": "Actual electrical standard edition and exact silicon/FPGA/serializer and protocol revisions.",
+      "source": "https://www.ti.com/lit/an/slla108a/slla108a.pdf",
+      "source_revision": "TI SLLA108A February2002/revisedJanuary2013; sections2/3,table1 and full-load figures; primary authored summary, not licensed full TIA standards",
+      "integer": false,
+      "label": "revision",
+      "category": "physical",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "lv_registered_source": {
+      "type": "text",
+      "description": "Actual independent schema and test conditions for another electrical/hardware/serializer/topology/load/clock profile.",
+      "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+      "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock",
+      "integer": false,
+      "label": "registered source",
+      "category": "physical",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "lv_binding_source": {
+      "type": "text",
+      "description": "Actual canonical pair/lane/clock ownership and separately registered framing or bridge paths.",
+      "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+      "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock",
+      "integer": false,
+      "label": "binding source",
+      "category": "physical",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "lv_device_source": {
+      "type": "text",
+      "description": "Actual TX/RX device/package/supply/temperature/capability and guaranteed test conditions.",
+      "source": "https://www.ti.com/lit/ds/symlink/ds90lv047a.pdf",
+      "source_revision": "TI DS90LV047A SNLS044D May2000/revisedJuly2016; sections6.3/6.5/6.6/8/9/11; min/typ/max and test-condition columns visually checked",
+      "integer": false,
+      "label": "device source",
+      "category": "physical",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "lv_physical_source": {
+      "type": "text",
+      "description": "Actual loaded differential impedance/termination/pin voltages/current/noise/layout/EMI and worst-case signal integrity.",
+      "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+      "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock",
+      "integer": false,
+      "label": "physical source",
+      "category": "physical",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "lv_loading_source": {
+      "type": "text",
+      "description": "Actual full receiver/leakage/capacitance/stub/connector population;32 DCfull-load receivers do not prove at-speed capacity.",
+      "source": "https://www.ti.com/lit/an/slla108a/slla108a.pdf",
+      "source_revision": "TI SLLA108A February2002/revisedJanuary2013; sections2/3,table1 and full-load figures; primary authored summary, not licensed full TIA standards",
+      "integer": false,
+      "label": "loading source",
+      "category": "physical",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "lv_alternate_loading_source": {
+      "type": "text",
+      "description": "Actual mid-line/double termination or alternate loading beyond the simple100ohmLVDS test fixture.",
+      "source": "https://www.ti.com/lit/an/slla108a/slla108a.pdf",
+      "source_revision": "TI SLLA108A February2002/revisedJanuary2013; sections2/3,table1 and full-load figures; primary authored summary, not licensed full TIA standards",
+      "integer": false,
+      "label": "alternate loading source",
+      "category": "physical",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "lv_rate_source": {
+      "type": "text",
+      "description": "Actual per-lane bit clock/UI and silicon/serializer/receiver/loaded-channel rate qualification, not portfolio3.125G.",
+      "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+      "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock",
+      "integer": false,
+      "label": "rate source",
+      "category": "physical",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "lv_serializer_source": {
+      "type": "text",
+      "description": "Actual width/lane ratio/word clock/coding/bit ordering/lock/recovery and endpoint compatibility.",
+      "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+      "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock",
+      "integer": false,
+      "label": "serializer source",
+      "category": "physical",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "lv_encoding_source": {
+      "type": "text",
+      "description": "Actual complete frame or unframed stream codec, useful/control/idle/pad bits and byte/bit order.",
+      "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+      "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock",
+      "integer": false,
+      "label": "encoding source",
+      "category": "physical",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "lv_timing_source": {
+      "type": "text",
+      "description": "Actual propagation/enable/disable/setup/hold/skew/clock/recovery bounds and test envelope.",
+      "source": "https://www.ti.com/lit/ds/symlink/ds90lv047a.pdf",
+      "source_revision": "TI DS90LV047A SNLS044D May2000/revisedJuly2016; sections6.3/6.5/6.6/8/9/11; min/typ/max and test-condition columns visually checked",
+      "integer": false,
+      "label": "timing source",
+      "category": "physical",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "lv_capacity_source": {
+      "type": "text",
+      "description": "Actual complete lane/control/idle/burst/scheduler and optional shared-bus access workload.",
+      "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+      "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock",
+      "integer": false,
+      "label": "capacity source",
+      "category": "physical",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "lv_acceptance_source": {
+      "type": "text",
+      "description": "Actual functional E2E/freshness/safety acceptance; electrical failsafe is not functional safety assurance.",
+      "source": "https://www.ti.com/lit/ds/symlink/ds90lv048a.pdf",
+      "source_revision": "TI DS90LV048A SNLS045C July1999/revisedJuly2016; sections6.3/6.5/6.6/8; min/typ/max and common-mode/failsafe footnotes visually checked",
+      "integer": false,
+      "label": "acceptance source",
+      "category": "physical",
+      "scope": "network",
+      "required": true,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "lv_arbitration_source": {
+      "type": "text",
+      "description": "Actual multi-driver ownership/turnaround/contention or wired-OR policy;899 is an electrical standard,not a CAN arbiter.",
+      "source": "https://www.ti.com/lit/an/slla108a/slla108a.pdf",
+      "source_revision": "TI SLLA108A February2002/revisedJanuary2013; sections2/3,table1 and full-load figures; primary authored summary, not licensed full TIA standards",
+      "integer": false,
+      "label": "arbitration source",
+      "category": "physical",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "lv_full_load_source": {
+      "type": "text",
+      "description": "Actual driver644A full-load compatibility; a644 marketing claim is not full-load proof.",
+      "source": "https://www.ti.com/lit/an/slla108a/slla108a.pdf",
+      "source_revision": "TI SLLA108A February2002/revisedJanuary2013; sections2/3,table1 and full-load figures; primary authored summary, not licensed full TIA standards",
+      "integer": false,
+      "label": "full load source",
+      "category": "physical",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "lv_ac_balance_source": {
+      "type": "text",
+      "description": "Actual coupling/RC/run-length/DCbalance and startup/idle behavior; start-stop alone does not imply DCbalance.",
+      "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+      "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock",
+      "integer": false,
+      "label": "ac balance source",
+      "category": "physical",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "lv_translation_source": {
+      "type": "text",
+      "description": "Actual different-domain I/O compatibility; LVDS cannot silently become CML/PECL/MIPI/RS485.",
+      "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+      "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock",
+      "integer": false,
+      "label": "translation source",
+      "category": "physical",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "lv_failsafe_source": {
+      "type": "text",
+      "description": "Actual fault/noise/common-mode/powered-state qualified receiver behavior, not generic defaultHIGH.",
+      "source": "https://www.ti.com/lit/ds/symlink/ds90lv048a.pdf",
+      "source_revision": "TI DS90LV048A SNLS045C July1999/revisedJuly2016; sections6.3/6.5/6.6/8; min/typ/max and common-mode/failsafe footnotes visually checked",
+      "integer": false,
+      "label": "failsafe source",
+      "category": "physical",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "lv_measurement_source": {
+      "type": "text",
+      "description": "Actual test points/instrument load/bandwidth/probe and test conditions, not a typical graph as a universal bound.",
+      "source": "https://www.ti.com/lit/ds/symlink/ds90lv047a.pdf",
+      "source_revision": "TI DS90LV047A SNLS044D May2000/revisedJuly2016; sections6.3/6.5/6.6/8/9/11; min/typ/max and test-condition columns visually checked",
+      "integer": false,
+      "label": "measurement source",
+      "category": "physical",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "lv_external_clock_source": {
+      "type": "text",
+      "description": "Actual independent forwarded-clock driver/lane when not carried by the same four-channel chip.",
+      "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+      "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock",
+      "integer": false,
+      "label": "external clock source",
+      "category": "physical",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "lv_lane_bps": {
+      "type": "number",
+      "description": "Actual encoded information bit positions per second per data lane; not square-wave MHz, aggregate lanes or useful throughput.",
+      "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+      "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock",
+      "min": 1,
+      "unit": "bit/s",
+      "integer": true,
+      "label": "lane bps",
+      "category": "physical",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016"
+      }
+    },
+    "lv_aggregate_bps": {
+      "type": "number",
+      "description": "Actual sum of equal-rate active data lanes, excluding separate clock pairs and useful coding ratio.",
+      "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+      "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock",
+      "min": 1,
+      "unit": "bit/s",
+      "integer": true,
+      "label": "aggregate bps",
+      "category": "physical",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016"
+      }
+    },
+    "lv_data_lanes": {
+      "type": "number",
+      "description": "Actual active data differential pairs; not4automatically because a chip has4channels.",
+      "source": "https://www.ti.com/lit/ds/symlink/ds90lv047a.pdf",
+      "source_revision": "TI DS90LV047A SNLS044D May2000/revisedJuly2016; sections6.3/6.5/6.6/8/9/11; min/typ/max and test-condition columns visually checked",
+      "min": 1,
+      "integer": true,
+      "label": "data lanes",
+      "category": "physical",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016"
+      }
+    },
+    "lv_clock_lanes": {
+      "type": "number",
+      "description": "Actual additional clock pairs distinct from data lanes; embedded clock may use0.",
+      "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+      "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock",
+      "min": 0,
+      "integer": true,
+      "label": "clock lanes",
+      "category": "physical",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016"
+      }
+    },
+    "lv_word_clock_hz": {
+      "type": "number",
+      "description": "Actual serializer word strobe frequency, not the 1010 square-wave characterization fMAX.",
+      "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+      "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock",
+      "min": 1,
+      "unit": "Hz",
+      "integer": false,
+      "label": "word clock hz",
+      "category": "physical",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016"
+      }
+    },
+    "lv_word_data_bits": {
+      "type": "number",
+      "description": "Actual payload bits in a per-lane serialized word; can be non-byte-aligned.",
+      "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+      "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock",
+      "min": 1,
+      "unit": "bit",
+      "integer": true,
+      "label": "word data bits",
+      "category": "physical",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016"
+      },
+      "conditional_defaults": [
+        {
+          "when": {
+            "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+            "lv_encoding": "8B10B"
+          },
+          "value": 8,
+          "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+          "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock"
+        }
+      ]
+    },
+    "lv_word_wire_bits": {
+      "type": "number",
+      "description": "Actual per-lane encoded word including embedded clock/control/padding, not application bytes.",
+      "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+      "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock",
+      "min": 1,
+      "unit": "bit",
+      "integer": true,
+      "label": "word wire bits",
+      "category": "physical",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016"
+      },
+      "conditional_defaults": [
+        {
+          "when": {
+            "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+            "lv_encoding": "8B10B"
+          },
+          "value": 10,
+          "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+          "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock"
+        }
+      ]
+    },
+    "lv_ui_ns": {
+      "type": "number",
+      "description": "Actual bit unit interval1e9/lane_bps; not propagation or transition time.",
+      "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+      "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock",
+      "min": 0,
+      "unit": "ns",
+      "integer": false,
+      "label": "ui ns",
+      "category": "physical",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016"
+      }
+    },
+    "lv_transmitters": {
+      "type": "number",
+      "description": "Actual connected transmitters per pair, not active concurrent talkers.",
+      "source": "https://www.ti.com/lit/an/slla108a/slla108a.pdf",
+      "source_revision": "TI SLLA108A February2002/revisedJanuary2013; sections2/3,table1 and full-load figures; primary authored summary, not licensed full TIA standards",
+      "min": 1,
+      "integer": true,
+      "label": "transmitters",
+      "category": "physical",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016"
+      }
+    },
+    "lv_receivers": {
+      "type": "number",
+      "description": "Actual connected receiver/load population; full-load fixture32 is not default hardware allocation.",
+      "source": "https://www.ti.com/lit/an/slla108a/slla108a.pdf",
+      "source_revision": "TI SLLA108A February2002/revisedJanuary2013; sections2/3,table1 and full-load figures; primary authored summary, not licensed full TIA standards",
+      "min": 1,
+      "integer": true,
+      "label": "receivers",
+      "category": "physical",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016"
+      }
+    },
+    "lv_terminations": {
+      "type": "number",
+      "description": "Actual resistor load locations, not implicit two100ohm terminators for ordinaryLVDS.",
+      "source": "https://www.ti.com/lit/an/slla108a/slla108a.pdf",
+      "source_revision": "TI SLLA108A February2002/revisedJanuary2013; sections2/3,table1 and full-load figures; primary authored summary, not licensed full TIA standards",
+      "min": 1,
+      "integer": true,
+      "label": "terminations",
+      "category": "physical",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016"
+      }
+    },
+    "lv_design_term_ohm": {
+      "type": "number",
+      "description": "Literature nominal design termination100ohm, matched to loaded line; not a measured resistor.",
+      "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+      "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock",
+      "min": 1,
+      "unit": "ohm",
+      "integer": false,
+      "label": "design term ohm",
+      "category": "physical",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016"
+      },
+      "conditional_defaults": [
+        {
+          "when": {
+            "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+            "lv_electrical": "TIA_644_1996"
+          },
+          "value": 100,
+          "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+          "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock"
+        },
+        {
+          "when": {
+            "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+            "lv_electrical": "TIA_644_A_2001"
+          },
+          "value": 100,
+          "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+          "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock"
+        },
+        {
+          "when": {
+            "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+            "lv_electrical": "TIA_899_2002"
+          },
+          "value": 100,
+          "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+          "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock"
+        }
+      ]
+    },
+    "lv_line_impedance_ohm": {
+      "type": "number",
+      "description": "Actual loaded differential impedance, not single-ended50ohm or unloaded board geometry.",
+      "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+      "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock",
+      "min": 1,
+      "unit": "ohm",
+      "integer": false,
+      "label": "line impedance ohm",
+      "category": "physical",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016"
+      }
+    },
+    "lv_end1_ohm": {
+      "type": "number",
+      "description": "Actual first termination resistor; measured separately from nominal target and bias loading.",
+      "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+      "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock",
+      "min": 1,
+      "unit": "ohm",
+      "integer": false,
+      "label": "end1 ohm",
+      "category": "physical",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016"
+      }
+    },
+    "lv_end2_ohm": {
+      "type": "number",
+      "description": "Actual second termination resistor where required; no zero means missing.",
+      "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+      "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock",
+      "min": 1,
+      "unit": "ohm",
+      "integer": false,
+      "label": "end2 ohm",
+      "category": "physical",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016"
+      }
+    },
+    "lv_effective_load_ohm": {
+      "type": "number",
+      "description": "Actual net resistive load; two ideal end resistors are parallel, not100+100=200.",
+      "source": "https://www.ti.com/lit/an/slla108a/slla108a.pdf",
+      "source_revision": "TI SLLA108A February2002/revisedJanuary2013; sections2/3,table1 and full-load figures; primary authored summary, not licensed full TIA standards",
+      "min": 1,
+      "unit": "ohm",
+      "integer": false,
+      "label": "effective load ohm",
+      "category": "physical",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016"
+      }
+    },
+    "lv_fixture_load_ohm": {
+      "type": "number",
+      "description": "Reference electrical full-load shunt100ohmLVDS versus50ohmMLVDS; not actual loaded impedance.",
+      "source": "https://www.ti.com/lit/an/slla108a/slla108a.pdf",
+      "source_revision": "TI SLLA108A February2002/revisedJanuary2013; sections2/3,table1 and full-load figures; primary authored summary, not licensed full TIA standards",
+      "min": 1,
+      "unit": "ohm",
+      "integer": false,
+      "label": "fixture load ohm",
+      "category": "physical",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016"
+      },
+      "conditional_defaults": [
+        {
+          "when": {
+            "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+            "lv_electrical": "TIA_644_1996",
+            "lv_load_scope": "STANDARD_FIXTURE"
+          },
+          "value": 100,
+          "source": "https://www.ti.com/lit/an/slla108a/slla108a.pdf",
+          "source_revision": "TI SLLA108A February2002/revisedJanuary2013; sections2/3,table1 and full-load figures; primary authored summary, not licensed full TIA standards"
+        },
+        {
+          "when": {
+            "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+            "lv_electrical": "TIA_644_A_2001",
+            "lv_load_scope": "STANDARD_FIXTURE"
+          },
+          "value": 100,
+          "source": "https://www.ti.com/lit/an/slla108a/slla108a.pdf",
+          "source_revision": "TI SLLA108A February2002/revisedJanuary2013; sections2/3,table1 and full-load figures; primary authored summary, not licensed full TIA standards"
+        },
+        {
+          "when": {
+            "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+            "lv_electrical": "TIA_899_2002",
+            "lv_load_scope": "STANDARD_FIXTURE"
+          },
+          "value": 50,
+          "source": "https://www.ti.com/lit/an/slla108a/slla108a.pdf",
+          "source_revision": "TI SLLA108A February2002/revisedJanuary2013; sections2/3,table1 and full-load figures; primary authored summary, not licensed full TIA standards"
+        }
+      ]
+    },
+    "lv_tx_diff_abs_mv": {
+      "type": "number",
+      "description": "Actual driven differential magnitude at declared load, not nominal350mV or peak-to-peak twiceVod.",
+      "source": "https://www.ti.com/lit/an/slla108a/slla108a.pdf",
+      "source_revision": "TI SLLA108A February2002/revisedJanuary2013; sections2/3,table1 and full-load figures; primary authored summary, not licensed full TIA standards",
+      "min": 0,
+      "unit": "mV",
+      "integer": false,
+      "label": "tx diff abs mv",
+      "category": "physical",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016"
+      }
+    },
+    "lv_tx_common_v": {
+      "type": "number",
+      "description": "Actual driver offset voltage at the specified fixture, not receiver common-mode after ground offset.",
+      "source": "https://www.ti.com/lit/an/slla108a/slla108a.pdf",
+      "source_revision": "TI SLLA108A February2002/revisedJanuary2013; sections2/3,table1 and full-load figures; primary authored summary, not licensed full TIA standards",
+      "unit": "V",
+      "integer": false,
+      "label": "tx common v",
+      "category": "physical",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016"
+      }
+    },
+    "lv_tx_common_pp_mv": {
+      "type": "number",
+      "description": "Actual common-mode peak-to-peak variation, not steady offset or swing of one conductor.",
+      "source": "https://www.ti.com/lit/an/slla108a/slla108a.pdf",
+      "source_revision": "TI SLLA108A February2002/revisedJanuary2013; sections2/3,table1 and full-load figures; primary authored summary, not licensed full TIA standards",
+      "min": 0,
+      "unit": "mV",
+      "integer": false,
+      "label": "tx common pp mv",
+      "category": "physical",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016"
+      }
+    },
+    "lv_tx_diff_change_mv": {
+      "type": "number",
+      "description": "Actual complementary-state differential magnitude variation, not full signed swing.",
+      "source": "https://www.ti.com/lit/an/slla108a/slla108a.pdf",
+      "source_revision": "TI SLLA108A February2002/revisedJanuary2013; sections2/3,table1 and full-load figures; primary authored summary, not licensed full TIA standards",
+      "min": 0,
+      "unit": "mV",
+      "integer": false,
+      "label": "tx diff change mv",
+      "category": "physical",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016"
+      }
+    },
+    "lv_tx_common_change_mv": {
+      "type": "number",
+      "description": "Actual complementary-state offset variation, not peak-to-peak variation.",
+      "source": "https://www.ti.com/lit/an/slla108a/slla108a.pdf",
+      "source_revision": "TI SLLA108A February2002/revisedJanuary2013; sections2/3,table1 and full-load figures; primary authored summary, not licensed full TIA standards",
+      "min": 0,
+      "unit": "mV",
+      "integer": false,
+      "label": "tx common change mv",
+      "category": "physical",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016"
+      }
+    },
+    "lv_tx_loop_ma": {
+      "type": "number",
+      "description": "Actual resistive-loop current magnitude; I*R givesVod in mV, not total quad supply current.",
+      "source": "https://www.ti.com/lit/ds/symlink/ds90lv047a.pdf",
+      "source_revision": "TI DS90LV047A SNLS044D May2000/revisedJuly2016; sections6.3/6.5/6.6/8/9/11; min/typ/max and test-condition columns visually checked",
+      "min": 0,
+      "unit": "mA",
+      "integer": false,
+      "label": "tx loop ma",
+      "category": "physical",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016"
+      }
+    },
+    "lv_ground_shift_v": {
+      "type": "number",
+      "description": "Actual transmitter ground relative to receiver ground; signed, not defaultzero.",
+      "source": "https://www.ti.com/lit/an/slla108a/slla108a.pdf",
+      "source_revision": "TI SLLA108A February2002/revisedJanuary2013; sections2/3,table1 and full-load figures; primary authored summary, not licensed full TIA standards",
+      "unit": "V",
+      "integer": false,
+      "label": "ground shift v",
+      "category": "physical",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016"
+      }
+    },
+    "lv_rx_common_v": {
+      "type": "number",
+      "description": "Actual receiver common-mode; DC-linked ideal value=driver offset+signedgroundshift.",
+      "source": "https://www.ti.com/lit/ds/symlink/ds90lv048a.pdf",
+      "source_revision": "TI DS90LV048A SNLS045C July1999/revisedJuly2016; sections6.3/6.5/6.6/8; min/typ/max and common-mode/failsafe footnotes visually checked",
+      "unit": "V",
+      "integer": false,
+      "label": "rx common v",
+      "category": "physical",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016"
+      }
+    },
+    "lv_rx_diff_abs_mv": {
+      "type": "number",
+      "description": "Actual received differential magnitude, not transmitterVod after loss/noise.",
+      "source": "https://www.ti.com/lit/ds/symlink/ds90lv048a.pdf",
+      "source_revision": "TI DS90LV048A SNLS045C July1999/revisedJuly2016; sections6.3/6.5/6.6/8; min/typ/max and common-mode/failsafe footnotes visually checked",
+      "min": 0,
+      "unit": "mV",
+      "integer": false,
+      "label": "rx diff abs mv",
+      "category": "physical",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016"
+      }
+    },
+    "lv_rx_threshold_abs_mv": {
+      "type": "number",
+      "description": "Actual device threshold magnitude bound from its own device proof; not nominal transmittedVod.",
+      "source": "https://www.ti.com/lit/an/slla108a/slla108a.pdf",
+      "source_revision": "TI SLLA108A February2002/revisedJanuary2013; sections2/3,table1 and full-load figures; primary authored summary, not licensed full TIA standards",
+      "min": 0,
+      "unit": "mV",
+      "integer": false,
+      "label": "rx threshold abs mv",
+      "category": "physical",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016"
+      }
+    },
+    "lv_rx_input_plus_v": {
+      "type": "number",
+      "description": "Actual individual positive input voltage; common-mode limits do not bound each pin independently.",
+      "source": "https://www.ti.com/lit/ds/symlink/ds90lv048a.pdf",
+      "source_revision": "TI DS90LV048A SNLS045C July1999/revisedJuly2016; sections6.3/6.5/6.6/8; min/typ/max and common-mode/failsafe footnotes visually checked",
+      "unit": "V",
+      "integer": false,
+      "label": "rx input plus v",
+      "category": "physical",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016"
+      }
+    },
+    "lv_rx_input_minus_v": {
+      "type": "number",
+      "description": "Actual individual negative input voltage, separately checked against receiver envelope.",
+      "source": "https://www.ti.com/lit/ds/symlink/ds90lv048a.pdf",
+      "source_revision": "TI DS90LV048A SNLS045C July1999/revisedJuly2016; sections6.3/6.5/6.6/8; min/typ/max and common-mode/failsafe footnotes visually checked",
+      "unit": "V",
+      "integer": false,
+      "label": "rx input minus v",
+      "category": "physical",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016"
+      }
+    },
+    "lv_input_leakage_abs_ua": {
+      "type": "number",
+      "description": "Actual input leakage under the declared powered/off/pin voltage conditions.",
+      "source": "https://www.ti.com/lit/an/slla108a/slla108a.pdf",
+      "source_revision": "TI SLLA108A February2002/revisedJanuary2013; sections2/3,table1 and full-load figures; primary authored summary, not licensed full TIA standards",
+      "min": 0,
+      "unit": "uA",
+      "integer": false,
+      "label": "input leakage abs ua",
+      "category": "physical",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016"
+      }
+    },
+    "lv_diff_input_leakage_abs_ua": {
+      "type": "number",
+      "description": "Actual differential leakage:644not specified,644A6uA,8994uA; not zero for an unspecified field.",
+      "source": "https://www.ti.com/lit/an/slla108a/slla108a.pdf",
+      "source_revision": "TI SLLA108A February2002/revisedJanuary2013; sections2/3,table1 and full-load figures; primary authored summary, not licensed full TIA standards",
+      "min": 0,
+      "unit": "uA",
+      "integer": false,
+      "label": "diff input leakage abs ua",
+      "category": "physical",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016"
+      }
+    },
+    "lv_transition_ns": {
+      "type": "number",
+      "description": "Actual driver transition according to specified measurement levels;260psLVDS versus1nsMLVDS is a minimum,not default measurededge.",
+      "source": "https://www.ti.com/lit/an/slla108a/slla108a.pdf",
+      "source_revision": "TI SLLA108A February2002/revisedJanuary2013; sections2/3,table1 and full-load figures; primary authored summary, not licensed full TIA standards",
+      "min": 0,
+      "unit": "ns",
+      "integer": false,
+      "label": "transition ns",
+      "category": "physical",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016"
+      }
+    },
+    "lv_rx_noise_abs_mv": {
+      "type": "number",
+      "description": "Actual differential noise during floating-cable failsafe; no defaultzero/noise-free line.",
+      "source": "https://www.ti.com/lit/ds/symlink/ds90lv048a.pdf",
+      "source_revision": "TI DS90LV048A SNLS045C July1999/revisedJuly2016; sections6.3/6.5/6.6/8; min/typ/max and common-mode/failsafe footnotes visually checked",
+      "min": 0,
+      "unit": "mV",
+      "integer": false,
+      "label": "rx noise abs mv",
+      "category": "physical",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016"
+      }
+    },
+    "lv_external_fault_common_v": {
+      "type": "number",
+      "description": "Actual externally applied common-mode in shorted-input fault test;048failsafe does not cover arbitrary imposedCM.",
+      "source": "https://www.ti.com/lit/ds/symlink/ds90lv048a.pdf",
+      "source_revision": "TI DS90LV048A SNLS045C July1999/revisedJuly2016; sections6.3/6.5/6.6/8; min/typ/max and common-mode/failsafe footnotes visually checked",
+      "unit": "V",
+      "integer": false,
+      "label": "external fault common v",
+      "category": "physical",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016"
+      }
+    },
+    "lv_rx_common_noise_v": {
+      "type": "number",
+      "description": "Actual signed common-mode coupled noise, separate from TXoffset and ground reference difference; no default noise-free channel.",
+      "source": "https://www.ti.com/lit/ds/symlink/ds90lv048a.pdf",
+      "source_revision": "TI DS90LV048A SNLS045C July1999/revisedJuly2016; sections6.3/6.5/6.6/8; min/typ/max and common-mode/failsafe footnotes visually checked",
+      "unit": "V",
+      "integer": false,
+      "label": "rx common noise v",
+      "category": "physical",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016"
+      }
+    },
+    "lv_tx_supply_v": {
+      "type": "number",
+      "description": "Actual driver operating supply; absolute maximum4V is not a permissible operating default.",
+      "source": "https://www.ti.com/lit/ds/symlink/ds90lv047a.pdf",
+      "source_revision": "TI DS90LV047A SNLS044D May2000/revisedJuly2016; sections6.3/6.5/6.6/8/9/11; min/typ/max and test-condition columns visually checked",
+      "min": 0,
+      "unit": "V",
+      "integer": false,
+      "label": "tx supply v",
+      "category": "physical",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016"
+      }
+    },
+    "lv_rx_supply_v": {
+      "type": "number",
+      "description": "Actual receiver operating supply, independent from TXsupply.",
+      "source": "https://www.ti.com/lit/ds/symlink/ds90lv048a.pdf",
+      "source_revision": "TI DS90LV048A SNLS045C July1999/revisedJuly2016; sections6.3/6.5/6.6/8; min/typ/max and common-mode/failsafe footnotes visually checked",
+      "min": 0,
+      "unit": "V",
+      "integer": false,
+      "label": "rx supply v",
+      "category": "physical",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016"
+      }
+    },
+    "lv_design_supply_v": {
+      "type": "number",
+      "description": "Nominal3.3V design proposal for the exact047/048pair, not measured board supply.",
+      "source": "https://www.ti.com/lit/ds/symlink/ds90lv047a.pdf",
+      "source_revision": "TI DS90LV047A SNLS044D May2000/revisedJuly2016; sections6.3/6.5/6.6/8/9/11; min/typ/max and test-condition columns visually checked",
+      "min": 0,
+      "unit": "V",
+      "integer": false,
+      "label": "design supply v",
+      "category": "physical",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016"
+      },
+      "conditional_defaults": [
+        {
+          "when": {
+            "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+            "lv_hardware": "DS90LV047A_D_DS90LV048A_C"
+          },
+          "value": 3.3,
+          "source": "https://www.ti.com/lit/ds/symlink/ds90lv047a.pdf",
+          "source_revision": "TI DS90LV047A SNLS044D May2000/revisedJuly2016; sections6.3/6.5/6.6/8/9/11; min/typ/max and test-condition columns visually checked"
+        }
+      ]
+    },
+    "lv_tx_temperature_c": {
+      "type": "number",
+      "description": "Actual transmitter free-air temperature; typical25C or junction150C is not operating ambient evidence.",
+      "source": "https://www.ti.com/lit/ds/symlink/ds90lv047a.pdf",
+      "source_revision": "TI DS90LV047A SNLS044D May2000/revisedJuly2016; sections6.3/6.5/6.6/8/9/11; min/typ/max and test-condition columns visually checked",
+      "unit": "C",
+      "integer": false,
+      "label": "tx temperature c",
+      "category": "physical",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016"
+      }
+    },
+    "lv_rx_temperature_c": {
+      "type": "number",
+      "description": "Actual receiver free-air temperature; same-supply/within5C skew tests are independently qualified.",
+      "source": "https://www.ti.com/lit/ds/symlink/ds90lv048a.pdf",
+      "source_revision": "TI DS90LV048A SNLS045C July1999/revisedJuly2016; sections6.3/6.5/6.6/8; min/typ/max and common-mode/failsafe footnotes visually checked",
+      "unit": "C",
+      "integer": false,
+      "label": "rx temperature c",
+      "category": "physical",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016"
+      }
+    },
+    "lv_ac_load_pf": {
+      "type": "number",
+      "description": "Actual total load including probe/jig; datasheetACfixture15pF is not arbitrary installed capacitance.",
+      "source": "https://www.ti.com/lit/ds/symlink/ds90lv047a.pdf",
+      "source_revision": "TI DS90LV047A SNLS044D May2000/revisedJuly2016; sections6.3/6.5/6.6/8/9/11; min/typ/max and test-condition columns visually checked",
+      "min": 0,
+      "unit": "pF",
+      "integer": false,
+      "label": "ac load pf",
+      "category": "physical",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016"
+      }
+    },
+    "lv_tx_tphld_ns": {
+      "type": "number",
+      "description": "Actual high-to-low driver propagation under the exact load/supply/temperature test envelope.",
+      "source": "https://www.ti.com/lit/ds/symlink/ds90lv047a.pdf",
+      "source_revision": "TI DS90LV047A SNLS044D May2000/revisedJuly2016; sections6.3/6.5/6.6/8/9/11; min/typ/max and test-condition columns visually checked",
+      "min": 0,
+      "unit": "ns",
+      "integer": false,
+      "label": "tx tphld ns",
+      "category": "physical",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016"
+      }
+    },
+    "lv_tx_tplhd_ns": {
+      "type": "number",
+      "description": "Actual low-to-high driver propagation, distinct from typical0.9/1.2ns.",
+      "source": "https://www.ti.com/lit/ds/symlink/ds90lv047a.pdf",
+      "source_revision": "TI DS90LV047A SNLS044D May2000/revisedJuly2016; sections6.3/6.5/6.6/8/9/11; min/typ/max and test-condition columns visually checked",
+      "min": 0,
+      "unit": "ns",
+      "integer": false,
+      "label": "tx tplhd ns",
+      "category": "physical",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016"
+      }
+    },
+    "lv_rx_tphld_ns": {
+      "type": "number",
+      "description": "Actual high-to-low receiver propagation, distinct from driver delay.",
+      "source": "https://www.ti.com/lit/ds/symlink/ds90lv048a.pdf",
+      "source_revision": "TI DS90LV048A SNLS045C July1999/revisedJuly2016; sections6.3/6.5/6.6/8; min/typ/max and common-mode/failsafe footnotes visually checked",
+      "min": 0,
+      "unit": "ns",
+      "integer": false,
+      "label": "rx tphld ns",
+      "category": "physical",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016"
+      }
+    },
+    "lv_rx_tplhd_ns": {
+      "type": "number",
+      "description": "Actual low-to-high receiver propagation, not fixed typical1.9ns.",
+      "source": "https://www.ti.com/lit/ds/symlink/ds90lv048a.pdf",
+      "source_revision": "TI DS90LV048A SNLS045C July1999/revisedJuly2016; sections6.3/6.5/6.6/8; min/typ/max and common-mode/failsafe footnotes visually checked",
+      "min": 0,
+      "unit": "ns",
+      "integer": false,
+      "label": "rx tplhd ns",
+      "category": "physical",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016"
+      }
+    },
+    "lv_tx_pulse_skew_ns": {
+      "type": "number",
+      "description": "Actual047driver pulse skew, not receiver inter-lane skew.",
+      "source": "https://www.ti.com/lit/ds/symlink/ds90lv047a.pdf",
+      "source_revision": "TI DS90LV047A SNLS044D May2000/revisedJuly2016; sections6.3/6.5/6.6/8/9/11; min/typ/max and test-condition columns visually checked",
+      "min": 0,
+      "unit": "ns",
+      "integer": false,
+      "label": "tx pulse skew ns",
+      "category": "physical",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016"
+      }
+    },
+    "lv_rx_pulse_skew_ns": {
+      "type": "number",
+      "description": "Actual048receiver pulse skew, with qualified received amplitude/common-mode.",
+      "source": "https://www.ti.com/lit/ds/symlink/ds90lv048a.pdf",
+      "source_revision": "TI DS90LV048A SNLS045C July1999/revisedJuly2016; sections6.3/6.5/6.6/8; min/typ/max and common-mode/failsafe footnotes visually checked",
+      "min": 0,
+      "unit": "ns",
+      "integer": false,
+      "label": "rx pulse skew ns",
+      "category": "physical",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016"
+      }
+    },
+    "lv_lane_skew_ns": {
+      "type": "number",
+      "description": "Actual inter-lane timing mismatch across boards/cables/chips; not generic0.5ns chip bound.",
+      "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+      "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock",
+      "min": 0,
+      "unit": "ns",
+      "integer": false,
+      "label": "lane skew ns",
+      "category": "physical",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016"
+      }
+    },
+    "lv_reference_switch_mhz": {
+      "type": "number",
+      "description": "Datasheet guaranteed minimum fMAX200MHz from alternating waveform criteria;250MHz is typical,not guaranteed. Not chosen word clock.",
+      "source": "https://www.ti.com/lit/ds/symlink/ds90lv047a.pdf",
+      "source_revision": "TI DS90LV047A SNLS044D May2000/revisedJuly2016; sections6.3/6.5/6.6/8/9/11; min/typ/max and test-condition columns visually checked",
+      "min": 0,
+      "unit": "MHz",
+      "integer": false,
+      "label": "reference switch mhz",
+      "category": "physical",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016"
+      },
+      "conditional_defaults": [
+        {
+          "when": {
+            "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+            "lv_hardware": "DS90LV047A_D_DS90LV048A_C"
+          },
+          "value": 200,
+          "source": "https://www.ti.com/lit/ds/symlink/ds90lv047a.pdf",
+          "source_revision": "TI DS90LV047A SNLS044D May2000/revisedJuly2016; sections6.3/6.5/6.6/8/9/11; min/typ/max and test-condition columns visually checked"
+        }
+      ]
+    },
+    "lv_functional_bound_ms": {
+      "type": "number",
+      "description": "Actual functional deadline, independent from electrical rise/propagation/receiver lock.",
+      "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+      "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "label": "functional bound ms",
+      "category": "physical",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016"
+      }
+    },
+    "lv_dc_balanced": {
+      "type": "boolean",
+      "description": "Actual complete stream balance/idle/startup behavior; encoding label alone is not implemented codec proof.",
+      "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+      "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock",
+      "integer": false,
+      "label": "dc balanced",
+      "category": "physical",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016"
+      }
+    },
+    "lv_clock_same_chip": {
+      "type": "boolean",
+      "description": "Actual clock pair consumes a channel on the selected four-channel driver/receiver.",
+      "source": "https://www.ti.com/lit/ds/symlink/ds90lv047a.pdf",
+      "source_revision": "TI DS90LV047A SNLS044D May2000/revisedJuly2016; sections6.3/6.5/6.6/8/9/11; min/typ/max and test-condition columns visually checked",
+      "integer": false,
+      "label": "clock same chip",
+      "category": "physical",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016"
+      }
+    },
+    "lv_wired_or": {
+      "type": "boolean",
+      "description": "Actual899Type2 wired-OR control policy; not arbitrary simultaneous independent data streams.",
+      "source": "https://www.ti.com/lit/an/slla108a/slla108a.pdf",
+      "source_revision": "TI SLLA108A February2002/revisedJanuary2013; sections2/3,table1 and full-load figures; primary authored summary, not licensed full TIA standards",
+      "integer": false,
+      "label": "wired or",
+      "category": "physical",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016"
+      }
+    },
+    "lv_capacity_confirmed": {
+      "type": "boolean",
+      "description": "Actual complete capacity approval; neverTrue from100ohm or a catalog3G clock.",
+      "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+      "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock",
+      "integer": false,
+      "label": "capacity confirmed",
+      "category": "physical",
+      "scope": "network",
+      "required": false,
+      "editable": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "schema_when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016"
+      }
+    }
+  },
+  "mechanisms": {
+    "addressing": [
+      "NONE_AT_LVDS_PHYSICAL_LAYER"
+    ],
+    "integrity": [
+      "REGISTERED_HIGHER_LAYER_CODEC"
+    ],
+    "medium_access": [
+      "POINT_TO_POINT_SINGLE_DRIVER",
+      "644A_QUALIFIED_MULTIDROP",
+      "899_REGISTERED_MULTIPOINT_ACCESS"
+    ],
+    "supervision": [
+      "ELECTRICAL_FAILSAFE_NOT_FUNCTIONAL_ACK"
+    ],
+    "clocking": [
+      "ACTUAL_CLOCK_AND_SERIALIZER_REQUIRED"
+    ]
+  },
+  "parameter_constraints": [
+    {
+      "parameter": "local_timing_evidence",
+      "allowed": [],
+      "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+      "source_revision": "LVDS electrical pair is not an addressed I2C transaction"
+    },
+    {
+      "parameter": "lv_registered_source",
+      "when": {
+        "lv_edition": "REGISTERED_EDITION"
+      },
+      "required": true,
+      "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+      "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock"
+    },
+    {
+      "parameter": "lv_registered_source",
+      "when": {
+        "lv_electrical": "REGISTERED_PHY"
+      },
+      "required": true,
+      "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+      "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock"
+    },
+    {
+      "parameter": "lv_registered_source",
+      "when": {
+        "lv_hardware": "REGISTERED_HARDWARE"
+      },
+      "required": true,
+      "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+      "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock"
+    },
+    {
+      "parameter": "lv_registered_source",
+      "when": {
+        "lv_topology": "REGISTERED_TOPOLOGY"
+      },
+      "required": true,
+      "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+      "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock"
+    },
+    {
+      "parameter": "lv_registered_source",
+      "when": {
+        "lv_encoding": "REGISTERED_ENCODING"
+      },
+      "required": true,
+      "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+      "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock"
+    },
+    {
+      "parameter": "lv_registered_source",
+      "when": {
+        "lv_clocking": "REGISTERED_CLOCK"
+      },
+      "required": true,
+      "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+      "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock"
+    },
+    {
+      "parameter": "lv_registered_source",
+      "when": {
+        "lv_coupling": "REGISTERED_COUPLING"
+      },
+      "required": true,
+      "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+      "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock"
+    },
+    {
+      "parameter": "lv_registered_source",
+      "when": {
+        "lv_load_scope": "REGISTERED_LOAD"
+      },
+      "required": true,
+      "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+      "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock"
+    },
+    {
+      "parameter": "lv_registered_source",
+      "when": {
+        "lv_receiver_type": "REGISTERED_RECEIVER"
+      },
+      "required": true,
+      "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+      "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock"
+    },
+    {
+      "parameter": "lv_transmitters",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_topology": "POINT_TO_POINT"
+      },
+      "source": "https://www.ti.com/lit/an/slla108a/slla108a.pdf",
+      "source_revision": "TI SLLA108A February2002/revisedJanuary2013; sections2/3,table1 and full-load figures; primary authored summary, not licensed full TIA standards",
+      "allowed": [
+        1
+      ]
+    },
+    {
+      "parameter": "lv_receivers",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_topology": "POINT_TO_POINT"
+      },
+      "source": "https://www.ti.com/lit/an/slla108a/slla108a.pdf",
+      "source_revision": "TI SLLA108A February2002/revisedJanuary2013; sections2/3,table1 and full-load figures; primary authored summary, not licensed full TIA standards",
+      "allowed": [
+        1
+      ]
+    },
+    {
+      "parameter": "lv_transmitters",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_topology": "MULTIDROP"
+      },
+      "source": "https://www.ti.com/lit/an/slla108a/slla108a.pdf",
+      "source_revision": "TI SLLA108A February2002/revisedJanuary2013; sections2/3,table1 and full-load figures; primary authored summary, not licensed full TIA standards",
+      "allowed": [
+        1
+      ]
+    },
+    {
+      "parameter": "lv_arbitration_source",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_topology": "MULTIPOINT"
+      },
+      "source": "https://www.ti.com/lit/an/slla108a/slla108a.pdf",
+      "source_revision": "TI SLLA108A February2002/revisedJanuary2013; sections2/3,table1 and full-load figures; primary authored summary, not licensed full TIA standards",
+      "required": true
+    },
+    {
+      "parameter": "lv_full_load_source",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_electrical": "TIA_644_A_2001",
+        "lv_topology": "MULTIDROP"
+      },
+      "source": "https://www.ti.com/lit/an/slla108a/slla108a.pdf",
+      "source_revision": "TI SLLA108A February2002/revisedJanuary2013; sections2/3,table1 and full-load figures; primary authored summary, not licensed full TIA standards",
+      "required": true
+    },
+    {
+      "parameter": "lv_topology",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_electrical": "TIA_644_1996"
+      },
+      "source": "https://www.ti.com/lit/an/slla108a/slla108a.pdf",
+      "source_revision": "TI SLLA108A February2002/revisedJanuary2013; sections2/3,table1 and full-load figures; primary authored summary, not licensed full TIA standards",
+      "allowed": [
+        "POINT_TO_POINT"
+      ]
+    },
+    {
+      "parameter": "lv_receiver_type",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_electrical": "TIA_644_1996"
+      },
+      "source": "https://www.ti.com/lit/an/slla108a/slla108a.pdf",
+      "source_revision": "TI SLLA108A February2002/revisedJanuary2013; sections2/3,table1 and full-load figures; primary authored summary, not licensed full TIA standards",
+      "allowed": [
+        "LVDS",
+        "REGISTERED_RECEIVER"
+      ]
+    },
+    {
+      "parameter": "lv_rx_threshold_abs_mv",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_electrical": "TIA_644_1996"
+      },
+      "source": "https://www.ti.com/lit/an/slla108a/slla108a.pdf",
+      "source_revision": "TI SLLA108A February2002/revisedJanuary2013; sections2/3,table1 and full-load figures; primary authored summary, not licensed full TIA standards",
+      "maximum": 100
+    },
+    {
+      "parameter": "lv_ground_shift_v",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_electrical": "TIA_644_1996"
+      },
+      "source": "https://www.ti.com/lit/an/slla108a/slla108a.pdf",
+      "source_revision": "TI SLLA108A February2002/revisedJanuary2013; sections2/3,table1 and full-load figures; primary authored summary, not licensed full TIA standards",
+      "minimum": -1,
+      "maximum": 1
+    },
+    {
+      "parameter": "lv_input_leakage_abs_ua",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_electrical": "TIA_644_1996",
+        "lv_load_scope": "STANDARD_FIXTURE"
+      },
+      "source": "https://www.ti.com/lit/an/slla108a/slla108a.pdf",
+      "source_revision": "TI SLLA108A February2002/revisedJanuary2013; sections2/3,table1 and full-load figures; primary authored summary, not licensed full TIA standards",
+      "maximum": 20
+    },
+    {
+      "parameter": "lv_rx_input_plus_v",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_electrical": "TIA_644_1996",
+        "lv_load_scope": "STANDARD_FIXTURE"
+      },
+      "source": "https://www.ti.com/lit/an/slla108a/slla108a.pdf",
+      "source_revision": "TI SLLA108A February2002/revisedJanuary2013; sections2/3,table1 and full-load figures; primary authored summary, not licensed full TIA standards",
+      "minimum": 0,
+      "maximum": 2.4
+    },
+    {
+      "parameter": "lv_rx_input_minus_v",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_electrical": "TIA_644_1996",
+        "lv_load_scope": "STANDARD_FIXTURE"
+      },
+      "source": "https://www.ti.com/lit/an/slla108a/slla108a.pdf",
+      "source_revision": "TI SLLA108A February2002/revisedJanuary2013; sections2/3,table1 and full-load figures; primary authored summary, not licensed full TIA standards",
+      "minimum": 0,
+      "maximum": 2.4
+    },
+    {
+      "parameter": "lv_tx_diff_abs_mv",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_electrical": "TIA_644_1996",
+        "lv_load_scope": "STANDARD_FIXTURE",
+        "lv_power_state": "ACTIVE"
+      },
+      "source": "https://www.ti.com/lit/an/slla108a/slla108a.pdf",
+      "source_revision": "TI SLLA108A February2002/revisedJanuary2013; sections2/3,table1 and full-load figures; primary authored summary, not licensed full TIA standards",
+      "minimum": 247,
+      "maximum": 454
+    },
+    {
+      "parameter": "lv_tx_common_v",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_electrical": "TIA_644_1996",
+        "lv_load_scope": "STANDARD_FIXTURE",
+        "lv_power_state": "ACTIVE"
+      },
+      "source": "https://www.ti.com/lit/an/slla108a/slla108a.pdf",
+      "source_revision": "TI SLLA108A February2002/revisedJanuary2013; sections2/3,table1 and full-load figures; primary authored summary, not licensed full TIA standards",
+      "minimum": 1.125,
+      "maximum": 1.375
+    },
+    {
+      "parameter": "lv_tx_common_pp_mv",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_electrical": "TIA_644_1996",
+        "lv_load_scope": "STANDARD_FIXTURE",
+        "lv_power_state": "ACTIVE"
+      },
+      "source": "https://www.ti.com/lit/an/slla108a/slla108a.pdf",
+      "source_revision": "TI SLLA108A February2002/revisedJanuary2013; sections2/3,table1 and full-load figures; primary authored summary, not licensed full TIA standards",
+      "minimum": 0,
+      "maximum": 150
+    },
+    {
+      "parameter": "lv_tx_diff_change_mv",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_electrical": "TIA_644_1996",
+        "lv_load_scope": "STANDARD_FIXTURE",
+        "lv_power_state": "ACTIVE"
+      },
+      "source": "https://www.ti.com/lit/an/slla108a/slla108a.pdf",
+      "source_revision": "TI SLLA108A February2002/revisedJanuary2013; sections2/3,table1 and full-load figures; primary authored summary, not licensed full TIA standards",
+      "minimum": 0,
+      "maximum": 50
+    },
+    {
+      "parameter": "lv_tx_common_change_mv",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_electrical": "TIA_644_1996",
+        "lv_load_scope": "STANDARD_FIXTURE",
+        "lv_power_state": "ACTIVE"
+      },
+      "source": "https://www.ti.com/lit/an/slla108a/slla108a.pdf",
+      "source_revision": "TI SLLA108A February2002/revisedJanuary2013; sections2/3,table1 and full-load figures; primary authored summary, not licensed full TIA standards",
+      "minimum": 0,
+      "maximum": 50
+    },
+    {
+      "parameter": "lv_transition_ns",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_electrical": "TIA_644_1996",
+        "lv_load_scope": "STANDARD_FIXTURE",
+        "lv_power_state": "ACTIVE"
+      },
+      "source": "https://www.ti.com/lit/an/slla108a/slla108a.pdf",
+      "source_revision": "TI SLLA108A February2002/revisedJanuary2013; sections2/3,table1 and full-load figures; primary authored summary, not licensed full TIA standards",
+      "minimum": 0.26
+    },
+    {
+      "parameter": "lv_fixture_load_ohm",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_electrical": "TIA_644_1996",
+        "lv_load_scope": "STANDARD_FIXTURE"
+      },
+      "source": "https://www.ti.com/lit/an/slla108a/slla108a.pdf",
+      "source_revision": "TI SLLA108A February2002/revisedJanuary2013; sections2/3,table1 and full-load figures; primary authored summary, not licensed full TIA standards",
+      "allowed": [
+        100
+      ]
+    },
+    {
+      "parameter": "lv_effective_load_ohm",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_electrical": "TIA_644_1996",
+        "lv_load_scope": "STANDARD_FIXTURE"
+      },
+      "source": "https://www.ti.com/lit/an/slla108a/slla108a.pdf",
+      "source_revision": "TI SLLA108A February2002/revisedJanuary2013; sections2/3,table1 and full-load figures; primary authored summary, not licensed full TIA standards",
+      "allowed": [
+        100
+      ]
+    },
+    {
+      "parameter": "lv_topology",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_electrical": "TIA_644_A_2001"
+      },
+      "source": "https://www.ti.com/lit/an/slla108a/slla108a.pdf",
+      "source_revision": "TI SLLA108A February2002/revisedJanuary2013; sections2/3,table1 and full-load figures; primary authored summary, not licensed full TIA standards",
+      "allowed": [
+        "POINT_TO_POINT",
+        "MULTIDROP"
+      ]
+    },
+    {
+      "parameter": "lv_receiver_type",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_electrical": "TIA_644_A_2001"
+      },
+      "source": "https://www.ti.com/lit/an/slla108a/slla108a.pdf",
+      "source_revision": "TI SLLA108A February2002/revisedJanuary2013; sections2/3,table1 and full-load figures; primary authored summary, not licensed full TIA standards",
+      "allowed": [
+        "LVDS",
+        "REGISTERED_RECEIVER"
+      ]
+    },
+    {
+      "parameter": "lv_rx_threshold_abs_mv",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_electrical": "TIA_644_A_2001"
+      },
+      "source": "https://www.ti.com/lit/an/slla108a/slla108a.pdf",
+      "source_revision": "TI SLLA108A February2002/revisedJanuary2013; sections2/3,table1 and full-load figures; primary authored summary, not licensed full TIA standards",
+      "maximum": 100
+    },
+    {
+      "parameter": "lv_ground_shift_v",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_electrical": "TIA_644_A_2001"
+      },
+      "source": "https://www.ti.com/lit/an/slla108a/slla108a.pdf",
+      "source_revision": "TI SLLA108A February2002/revisedJanuary2013; sections2/3,table1 and full-load figures; primary authored summary, not licensed full TIA standards",
+      "minimum": -1,
+      "maximum": 1
+    },
+    {
+      "parameter": "lv_input_leakage_abs_ua",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_electrical": "TIA_644_A_2001",
+        "lv_load_scope": "STANDARD_FIXTURE"
+      },
+      "source": "https://www.ti.com/lit/an/slla108a/slla108a.pdf",
+      "source_revision": "TI SLLA108A February2002/revisedJanuary2013; sections2/3,table1 and full-load figures; primary authored summary, not licensed full TIA standards",
+      "maximum": 20
+    },
+    {
+      "parameter": "lv_rx_input_plus_v",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_electrical": "TIA_644_A_2001",
+        "lv_load_scope": "STANDARD_FIXTURE"
+      },
+      "source": "https://www.ti.com/lit/an/slla108a/slla108a.pdf",
+      "source_revision": "TI SLLA108A February2002/revisedJanuary2013; sections2/3,table1 and full-load figures; primary authored summary, not licensed full TIA standards",
+      "minimum": 0,
+      "maximum": 2.4
+    },
+    {
+      "parameter": "lv_rx_input_minus_v",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_electrical": "TIA_644_A_2001",
+        "lv_load_scope": "STANDARD_FIXTURE"
+      },
+      "source": "https://www.ti.com/lit/an/slla108a/slla108a.pdf",
+      "source_revision": "TI SLLA108A February2002/revisedJanuary2013; sections2/3,table1 and full-load figures; primary authored summary, not licensed full TIA standards",
+      "minimum": 0,
+      "maximum": 2.4
+    },
+    {
+      "parameter": "lv_tx_diff_abs_mv",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_electrical": "TIA_644_A_2001",
+        "lv_load_scope": "STANDARD_FIXTURE",
+        "lv_power_state": "ACTIVE"
+      },
+      "source": "https://www.ti.com/lit/an/slla108a/slla108a.pdf",
+      "source_revision": "TI SLLA108A February2002/revisedJanuary2013; sections2/3,table1 and full-load figures; primary authored summary, not licensed full TIA standards",
+      "minimum": 247,
+      "maximum": 454
+    },
+    {
+      "parameter": "lv_tx_common_v",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_electrical": "TIA_644_A_2001",
+        "lv_load_scope": "STANDARD_FIXTURE",
+        "lv_power_state": "ACTIVE"
+      },
+      "source": "https://www.ti.com/lit/an/slla108a/slla108a.pdf",
+      "source_revision": "TI SLLA108A February2002/revisedJanuary2013; sections2/3,table1 and full-load figures; primary authored summary, not licensed full TIA standards",
+      "minimum": 1.125,
+      "maximum": 1.375
+    },
+    {
+      "parameter": "lv_tx_common_pp_mv",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_electrical": "TIA_644_A_2001",
+        "lv_load_scope": "STANDARD_FIXTURE",
+        "lv_power_state": "ACTIVE"
+      },
+      "source": "https://www.ti.com/lit/an/slla108a/slla108a.pdf",
+      "source_revision": "TI SLLA108A February2002/revisedJanuary2013; sections2/3,table1 and full-load figures; primary authored summary, not licensed full TIA standards",
+      "minimum": 0,
+      "maximum": 150
+    },
+    {
+      "parameter": "lv_tx_diff_change_mv",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_electrical": "TIA_644_A_2001",
+        "lv_load_scope": "STANDARD_FIXTURE",
+        "lv_power_state": "ACTIVE"
+      },
+      "source": "https://www.ti.com/lit/an/slla108a/slla108a.pdf",
+      "source_revision": "TI SLLA108A February2002/revisedJanuary2013; sections2/3,table1 and full-load figures; primary authored summary, not licensed full TIA standards",
+      "minimum": 0,
+      "maximum": 50
+    },
+    {
+      "parameter": "lv_tx_common_change_mv",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_electrical": "TIA_644_A_2001",
+        "lv_load_scope": "STANDARD_FIXTURE",
+        "lv_power_state": "ACTIVE"
+      },
+      "source": "https://www.ti.com/lit/an/slla108a/slla108a.pdf",
+      "source_revision": "TI SLLA108A February2002/revisedJanuary2013; sections2/3,table1 and full-load figures; primary authored summary, not licensed full TIA standards",
+      "minimum": 0,
+      "maximum": 50
+    },
+    {
+      "parameter": "lv_transition_ns",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_electrical": "TIA_644_A_2001",
+        "lv_load_scope": "STANDARD_FIXTURE",
+        "lv_power_state": "ACTIVE"
+      },
+      "source": "https://www.ti.com/lit/an/slla108a/slla108a.pdf",
+      "source_revision": "TI SLLA108A February2002/revisedJanuary2013; sections2/3,table1 and full-load figures; primary authored summary, not licensed full TIA standards",
+      "minimum": 0.26
+    },
+    {
+      "parameter": "lv_fixture_load_ohm",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_electrical": "TIA_644_A_2001",
+        "lv_load_scope": "STANDARD_FIXTURE"
+      },
+      "source": "https://www.ti.com/lit/an/slla108a/slla108a.pdf",
+      "source_revision": "TI SLLA108A February2002/revisedJanuary2013; sections2/3,table1 and full-load figures; primary authored summary, not licensed full TIA standards",
+      "allowed": [
+        100
+      ]
+    },
+    {
+      "parameter": "lv_effective_load_ohm",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_electrical": "TIA_644_A_2001",
+        "lv_load_scope": "STANDARD_FIXTURE"
+      },
+      "source": "https://www.ti.com/lit/an/slla108a/slla108a.pdf",
+      "source_revision": "TI SLLA108A February2002/revisedJanuary2013; sections2/3,table1 and full-load figures; primary authored summary, not licensed full TIA standards",
+      "allowed": [
+        100
+      ]
+    },
+    {
+      "parameter": "lv_diff_input_leakage_abs_ua",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_electrical": "TIA_644_A_2001",
+        "lv_load_scope": "STANDARD_FIXTURE"
+      },
+      "source": "https://www.ti.com/lit/an/slla108a/slla108a.pdf",
+      "source_revision": "TI SLLA108A February2002/revisedJanuary2013; sections2/3,table1 and full-load figures; primary authored summary, not licensed full TIA standards",
+      "maximum": 6
+    },
+    {
+      "parameter": "lv_full_load_source",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_electrical": "TIA_644_1996"
+      },
+      "source": "https://www.ti.com/lit/an/slla108a/slla108a.pdf",
+      "source_revision": "TI SLLA108A February2002/revisedJanuary2013; sections2/3,table1 and full-load figures; primary authored summary, not licensed full TIA standards",
+      "when_present": [
+        "lv_diff_input_leakage_abs_ua"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "lv_receiver_type",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_electrical": "TIA_899_2002"
+      },
+      "source": "https://www.ti.com/lit/an/slla108a/slla108a.pdf",
+      "source_revision": "TI SLLA108A February2002/revisedJanuary2013; sections2/3,table1 and full-load figures; primary authored summary, not licensed full TIA standards",
+      "allowed": [
+        "MLVDS_TYPE1",
+        "MLVDS_TYPE2"
+      ]
+    },
+    {
+      "parameter": "lv_arbitration_source",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_electrical": "TIA_899_2002"
+      },
+      "source": "https://www.ti.com/lit/an/slla108a/slla108a.pdf",
+      "source_revision": "TI SLLA108A February2002/revisedJanuary2013; sections2/3,table1 and full-load figures; primary authored summary, not licensed full TIA standards",
+      "required": true
+    },
+    {
+      "parameter": "lv_tx_diff_abs_mv",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_electrical": "TIA_899_2002",
+        "lv_load_scope": "STANDARD_FIXTURE",
+        "lv_power_state": "ACTIVE"
+      },
+      "source": "https://www.ti.com/lit/an/slla108a/slla108a.pdf",
+      "source_revision": "TI SLLA108A February2002/revisedJanuary2013; sections2/3,table1 and full-load figures; primary authored summary, not licensed full TIA standards",
+      "minimum": 480,
+      "maximum": 650
+    },
+    {
+      "parameter": "lv_tx_common_v",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_electrical": "TIA_899_2002",
+        "lv_load_scope": "STANDARD_FIXTURE",
+        "lv_power_state": "ACTIVE"
+      },
+      "source": "https://www.ti.com/lit/an/slla108a/slla108a.pdf",
+      "source_revision": "TI SLLA108A February2002/revisedJanuary2013; sections2/3,table1 and full-load figures; primary authored summary, not licensed full TIA standards",
+      "minimum": 0.3,
+      "maximum": 2.1
+    },
+    {
+      "parameter": "lv_tx_common_pp_mv",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_electrical": "TIA_899_2002",
+        "lv_load_scope": "STANDARD_FIXTURE",
+        "lv_power_state": "ACTIVE"
+      },
+      "source": "https://www.ti.com/lit/an/slla108a/slla108a.pdf",
+      "source_revision": "TI SLLA108A February2002/revisedJanuary2013; sections2/3,table1 and full-load figures; primary authored summary, not licensed full TIA standards",
+      "minimum": 0,
+      "maximum": 150
+    },
+    {
+      "parameter": "lv_tx_diff_change_mv",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_electrical": "TIA_899_2002",
+        "lv_load_scope": "STANDARD_FIXTURE",
+        "lv_power_state": "ACTIVE"
+      },
+      "source": "https://www.ti.com/lit/an/slla108a/slla108a.pdf",
+      "source_revision": "TI SLLA108A February2002/revisedJanuary2013; sections2/3,table1 and full-load figures; primary authored summary, not licensed full TIA standards",
+      "minimum": 0,
+      "maximum": 50
+    },
+    {
+      "parameter": "lv_tx_common_change_mv",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_electrical": "TIA_899_2002",
+        "lv_load_scope": "STANDARD_FIXTURE",
+        "lv_power_state": "ACTIVE"
+      },
+      "source": "https://www.ti.com/lit/an/slla108a/slla108a.pdf",
+      "source_revision": "TI SLLA108A February2002/revisedJanuary2013; sections2/3,table1 and full-load figures; primary authored summary, not licensed full TIA standards",
+      "minimum": 0,
+      "maximum": 50
+    },
+    {
+      "parameter": "lv_transition_ns",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_electrical": "TIA_899_2002",
+        "lv_load_scope": "STANDARD_FIXTURE",
+        "lv_power_state": "ACTIVE"
+      },
+      "source": "https://www.ti.com/lit/an/slla108a/slla108a.pdf",
+      "source_revision": "TI SLLA108A February2002/revisedJanuary2013; sections2/3,table1 and full-load figures; primary authored summary, not licensed full TIA standards",
+      "minimum": 1
+    },
+    {
+      "parameter": "lv_fixture_load_ohm",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_electrical": "TIA_899_2002",
+        "lv_load_scope": "STANDARD_FIXTURE"
+      },
+      "source": "https://www.ti.com/lit/an/slla108a/slla108a.pdf",
+      "source_revision": "TI SLLA108A February2002/revisedJanuary2013; sections2/3,table1 and full-load figures; primary authored summary, not licensed full TIA standards",
+      "allowed": [
+        50
+      ]
+    },
+    {
+      "parameter": "lv_effective_load_ohm",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_electrical": "TIA_899_2002",
+        "lv_load_scope": "STANDARD_FIXTURE"
+      },
+      "source": "https://www.ti.com/lit/an/slla108a/slla108a.pdf",
+      "source_revision": "TI SLLA108A February2002/revisedJanuary2013; sections2/3,table1 and full-load figures; primary authored summary, not licensed full TIA standards",
+      "allowed": [
+        50
+      ]
+    },
+    {
+      "parameter": "lv_rx_input_plus_v",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_electrical": "TIA_899_2002",
+        "lv_load_scope": "STANDARD_FIXTURE"
+      },
+      "source": "https://www.ti.com/lit/an/slla108a/slla108a.pdf",
+      "source_revision": "TI SLLA108A February2002/revisedJanuary2013; sections2/3,table1 and full-load figures; primary authored summary, not licensed full TIA standards",
+      "minimum": -1.4,
+      "maximum": 3.8
+    },
+    {
+      "parameter": "lv_rx_input_minus_v",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_electrical": "TIA_899_2002",
+        "lv_load_scope": "STANDARD_FIXTURE"
+      },
+      "source": "https://www.ti.com/lit/an/slla108a/slla108a.pdf",
+      "source_revision": "TI SLLA108A February2002/revisedJanuary2013; sections2/3,table1 and full-load figures; primary authored summary, not licensed full TIA standards",
+      "minimum": -1.4,
+      "maximum": 3.8
+    },
+    {
+      "parameter": "lv_ground_shift_v",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_electrical": "TIA_899_2002"
+      },
+      "source": "https://www.ti.com/lit/an/slla108a/slla108a.pdf",
+      "source_revision": "TI SLLA108A February2002/revisedJanuary2013; sections2/3,table1 and full-load figures; primary authored summary, not licensed full TIA standards",
+      "minimum": -1,
+      "maximum": 1
+    },
+    {
+      "parameter": "lv_input_leakage_abs_ua",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_electrical": "TIA_899_2002",
+        "lv_load_scope": "STANDARD_FIXTURE"
+      },
+      "source": "https://www.ti.com/lit/an/slla108a/slla108a.pdf",
+      "source_revision": "TI SLLA108A February2002/revisedJanuary2013; sections2/3,table1 and full-load figures; primary authored summary, not licensed full TIA standards",
+      "maximum": 20
+    },
+    {
+      "parameter": "lv_diff_input_leakage_abs_ua",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_electrical": "TIA_899_2002",
+        "lv_load_scope": "STANDARD_FIXTURE"
+      },
+      "source": "https://www.ti.com/lit/an/slla108a/slla108a.pdf",
+      "source_revision": "TI SLLA108A February2002/revisedJanuary2013; sections2/3,table1 and full-load figures; primary authored summary, not licensed full TIA standards",
+      "maximum": 4
+    },
+    {
+      "parameter": "lv_rx_threshold_abs_mv",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_electrical": "TIA_899_2002",
+        "lv_receiver_type": "MLVDS_TYPE1"
+      },
+      "source": "https://www.ti.com/lit/an/slla108a/slla108a.pdf",
+      "source_revision": "TI SLLA108A February2002/revisedJanuary2013; sections2/3,table1 and full-load figures; primary authored summary, not licensed full TIA standards",
+      "maximum": 50
+    },
+    {
+      "parameter": "lv_failsafe",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_receiver_type": "MLVDS_TYPE2"
+      },
+      "source": "https://www.ti.com/lit/an/slla108a/slla108a.pdf",
+      "source_revision": "TI SLLA108A February2002/revisedJanuary2013; sections2/3,table1 and full-load figures; primary authored summary, not licensed full TIA standards",
+      "allowed": [
+        "TYPE2_LOW",
+        "DEVICE_PROVEN"
+      ]
+    },
+    {
+      "parameter": "lv_electrical",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_wired_or": true
+      },
+      "source": "https://www.ti.com/lit/an/slla108a/slla108a.pdf",
+      "source_revision": "TI SLLA108A February2002/revisedJanuary2013; sections2/3,table1 and full-load figures; primary authored summary, not licensed full TIA standards",
+      "allowed": [
+        "TIA_899_2002"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "lv_receiver_type",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_wired_or": true
+      },
+      "source": "https://www.ti.com/lit/an/slla108a/slla108a.pdf",
+      "source_revision": "TI SLLA108A February2002/revisedJanuary2013; sections2/3,table1 and full-load figures; primary authored summary, not licensed full TIA standards",
+      "allowed": [
+        "MLVDS_TYPE2"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "lv_asserted_logic",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_wired_or": true
+      },
+      "source": "https://www.ti.com/lit/an/slla108a/slla108a.pdf",
+      "source_revision": "TI SLLA108A February2002/revisedJanuary2013; sections2/3,table1 and full-load figures; primary authored summary, not licensed full TIA standards",
+      "allowed": [
+        "HIGH"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "lv_arbitration_source",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_wired_or": true
+      },
+      "source": "https://www.ti.com/lit/an/slla108a/slla108a.pdf",
+      "source_revision": "TI SLLA108A February2002/revisedJanuary2013; sections2/3,table1 and full-load figures; primary authored summary, not licensed full TIA standards",
+      "required": true
+    },
+    {
+      "parameter": "lv_effective_load_ohm",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_terminations": 1
+      },
+      "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+      "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock",
+      "equal_parameter": "lv_end1_ohm"
+    },
+    {
+      "parameter": "lv_end1_ohm",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_terminations": 1
+      },
+      "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+      "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock",
+      "required": true
+    },
+    {
+      "parameter": "lv_effective_load_ohm",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_terminations": 2
+      },
+      "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+      "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock",
+      "equal_ratio": {
+        "numerator_offset": 1,
+        "numerator_product": [
+          "lv_end1_ohm",
+          "lv_end2_ohm"
+        ],
+        "denominator_sum": [
+          "lv_end1_ohm",
+          "lv_end2_ohm"
+        ]
+      }
+    },
+    {
+      "parameter": "lv_end1_ohm",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_terminations": 2
+      },
+      "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+      "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock",
+      "required": true
+    },
+    {
+      "parameter": "lv_end2_ohm",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_terminations": 2
+      },
+      "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+      "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock",
+      "required": true
+    },
+    {
+      "parameter": "lv_alternate_loading_source",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_electrical": "TIA_644_1996",
+        "lv_driver_position": "MID"
+      },
+      "source": "https://www.ti.com/lit/an/slla108a/slla108a.pdf",
+      "source_revision": "TI SLLA108A February2002/revisedJanuary2013; sections2/3,table1 and full-load figures; primary authored summary, not licensed full TIA standards",
+      "required": true
+    },
+    {
+      "parameter": "lv_alternate_loading_source",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_electrical": "TIA_644_A_2001",
+        "lv_driver_position": "MID"
+      },
+      "source": "https://www.ti.com/lit/an/slla108a/slla108a.pdf",
+      "source_revision": "TI SLLA108A February2002/revisedJanuary2013; sections2/3,table1 and full-load figures; primary authored summary, not licensed full TIA standards",
+      "required": true
+    },
+    {
+      "parameter": "lv_tx_diff_abs_mv",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016"
+      },
+      "source": "https://www.ti.com/lit/ds/symlink/ds90lv047a.pdf",
+      "source_revision": "TI DS90LV047A SNLS044D May2000/revisedJuly2016; sections6.3/6.5/6.6/8/9/11; min/typ/max and test-condition columns visually checked",
+      "equal_expression": {
+        "product": [
+          "lv_tx_loop_ma",
+          "lv_effective_load_ohm"
+        ]
+      }
+    },
+    {
+      "parameter": "lv_rx_common_v",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_coupling": "DC"
+      },
+      "source": "https://www.ti.com/lit/ds/symlink/ds90lv048a.pdf",
+      "source_revision": "TI DS90LV048A SNLS045C July1999/revisedJuly2016; sections6.3/6.5/6.6/8; min/typ/max and common-mode/failsafe footnotes visually checked",
+      "equal_expression": {
+        "sum": [
+          "lv_tx_common_v",
+          "lv_ground_shift_v",
+          "lv_rx_common_noise_v"
+        ]
+      }
+    },
+    {
+      "parameter": "lv_tx_common_v",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_coupling": "DC"
+      },
+      "source": "https://www.ti.com/lit/ds/symlink/ds90lv048a.pdf",
+      "source_revision": "TI DS90LV048A SNLS045C July1999/revisedJuly2016; sections6.3/6.5/6.6/8; min/typ/max and common-mode/failsafe footnotes visually checked",
+      "when_present": [
+        "lv_rx_common_v"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "lv_ground_shift_v",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_coupling": "DC"
+      },
+      "source": "https://www.ti.com/lit/ds/symlink/ds90lv048a.pdf",
+      "source_revision": "TI DS90LV048A SNLS045C July1999/revisedJuly2016; sections6.3/6.5/6.6/8; min/typ/max and common-mode/failsafe footnotes visually checked",
+      "when_present": [
+        "lv_rx_common_v"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "lv_rx_common_noise_v",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_coupling": "DC"
+      },
+      "source": "https://www.ti.com/lit/ds/symlink/ds90lv048a.pdf",
+      "source_revision": "TI DS90LV048A SNLS045C July1999/revisedJuly2016; sections6.3/6.5/6.6/8; min/typ/max and common-mode/failsafe footnotes visually checked",
+      "when_present": [
+        "lv_rx_common_v"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "lv_aggregate_bps",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016"
+      },
+      "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+      "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock",
+      "equal_expression": {
+        "product": [
+          "lv_lane_bps",
+          "lv_data_lanes"
+        ]
+      }
+    },
+    {
+      "parameter": "lv_ui_ns",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016"
+      },
+      "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+      "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock",
+      "equal_ratio": {
+        "numerator_offset": 1000000000,
+        "denominator_offset": 1,
+        "denominator_product": [
+          "lv_lane_bps"
+        ]
+      }
+    },
+    {
+      "parameter": "lv_lane_bps",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016"
+      },
+      "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+      "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock",
+      "when_present": [
+        "lv_aggregate_bps"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "lv_data_lanes",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016"
+      },
+      "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+      "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock",
+      "when_present": [
+        "lv_aggregate_bps"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "lv_lane_bps",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016"
+      },
+      "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+      "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock",
+      "when_present": [
+        "lv_ui_ns"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "lv_tx_loop_ma",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016"
+      },
+      "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+      "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock",
+      "when_present": [
+        "lv_tx_diff_abs_mv"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "lv_effective_load_ohm",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016"
+      },
+      "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+      "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock",
+      "when_present": [
+        "lv_tx_diff_abs_mv"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "lv_rx_diff_abs_mv",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016"
+      },
+      "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+      "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock",
+      "when_present": [
+        "lv_rx_common_v"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "lv_lane_bps",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_clocking": "FORWARDED_WORD"
+      },
+      "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+      "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock",
+      "equal_expression": {
+        "product": [
+          "lv_word_clock_hz",
+          "lv_word_wire_bits"
+        ]
+      }
+    },
+    {
+      "parameter": "lv_word_wire_bits",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_encoding": "START_STOP_2"
+      },
+      "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+      "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock",
+      "equal_expression": {
+        "sum": [
+          "lv_word_data_bits",
+          2
+        ]
+      }
+    },
+    {
+      "parameter": "lv_word_data_bits",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_encoding": "8B10B"
+      },
+      "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+      "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock",
+      "allowed": [
+        8
+      ]
+    },
+    {
+      "parameter": "lv_word_wire_bits",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_encoding": "8B10B"
+      },
+      "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+      "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock",
+      "allowed": [
+        10
+      ]
+    },
+    {
+      "parameter": "lv_encoding",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_purpose": "DATA_STREAM"
+      },
+      "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+      "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock",
+      "required": true
+    },
+    {
+      "parameter": "lv_clocking",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_purpose": "DATA_STREAM"
+      },
+      "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+      "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock",
+      "required": true
+    },
+    {
+      "parameter": "lv_lane_bps",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_purpose": "DATA_STREAM"
+      },
+      "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+      "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock",
+      "required": true
+    },
+    {
+      "parameter": "lv_data_lanes",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_purpose": "DATA_STREAM"
+      },
+      "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+      "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock",
+      "required": true
+    },
+    {
+      "parameter": "lv_serializer_source",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_purpose": "DATA_STREAM"
+      },
+      "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+      "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock",
+      "required": true
+    },
+    {
+      "parameter": "lv_word_clock_hz",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_clocking": "FORWARDED_WORD"
+      },
+      "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+      "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock",
+      "required": true
+    },
+    {
+      "parameter": "lv_word_wire_bits",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_clocking": "FORWARDED_WORD"
+      },
+      "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+      "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock",
+      "required": true
+    },
+    {
+      "parameter": "lv_clock_lanes",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_clocking": "FORWARDED_WORD"
+      },
+      "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+      "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock",
+      "required": true
+    },
+    {
+      "parameter": "lv_ac_balance_source",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_coupling": "AC"
+      },
+      "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+      "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock",
+      "required": true
+    },
+    {
+      "parameter": "lv_dc_balanced",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_coupling": "AC"
+      },
+      "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+      "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock",
+      "required": true
+    },
+    {
+      "parameter": "lv_dc_balanced",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_coupling": "AC"
+      },
+      "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+      "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock",
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "lv_electrical",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016"
+      },
+      "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+      "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock",
+      "when_present": [
+        "lv_tx_diff_abs_mv"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "lv_electrical",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016"
+      },
+      "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+      "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock",
+      "when_present": [
+        "lv_tx_common_v"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "lv_electrical",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016"
+      },
+      "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+      "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock",
+      "when_present": [
+        "lv_rx_common_v"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "lv_electrical",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016"
+      },
+      "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+      "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock",
+      "when_present": [
+        "lv_rx_input_plus_v"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "lv_electrical",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016"
+      },
+      "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+      "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock",
+      "when_present": [
+        "lv_rx_input_minus_v"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "lv_electrical",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016"
+      },
+      "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+      "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock",
+      "when_present": [
+        "lv_transition_ns"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "lv_power_state",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016"
+      },
+      "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+      "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock",
+      "when_present": [
+        "lv_tx_diff_abs_mv"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "lv_power_state",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016"
+      },
+      "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+      "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock",
+      "when_present": [
+        "lv_tx_common_v"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "lv_power_state",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016"
+      },
+      "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+      "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock",
+      "when_present": [
+        "lv_rx_common_v"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "lv_power_state",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016"
+      },
+      "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+      "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock",
+      "when_present": [
+        "lv_rx_input_plus_v"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "lv_power_state",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016"
+      },
+      "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+      "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock",
+      "when_present": [
+        "lv_rx_input_minus_v"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "lv_power_state",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016"
+      },
+      "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+      "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock",
+      "when_present": [
+        "lv_transition_ns"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "lv_load_scope",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016"
+      },
+      "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+      "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock",
+      "when_present": [
+        "lv_tx_diff_abs_mv"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "lv_load_scope",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016"
+      },
+      "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+      "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock",
+      "when_present": [
+        "lv_tx_common_v"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "lv_load_scope",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016"
+      },
+      "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+      "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock",
+      "when_present": [
+        "lv_rx_common_v"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "lv_load_scope",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016"
+      },
+      "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+      "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock",
+      "when_present": [
+        "lv_rx_input_plus_v"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "lv_load_scope",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016"
+      },
+      "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+      "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock",
+      "when_present": [
+        "lv_rx_input_minus_v"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "lv_load_scope",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016"
+      },
+      "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+      "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock",
+      "when_present": [
+        "lv_transition_ns"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "lv_measurement_source",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016"
+      },
+      "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+      "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock",
+      "when_present": [
+        "lv_tx_diff_abs_mv"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "lv_measurement_source",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016"
+      },
+      "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+      "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock",
+      "when_present": [
+        "lv_tx_common_v"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "lv_measurement_source",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016"
+      },
+      "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+      "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock",
+      "when_present": [
+        "lv_rx_common_v"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "lv_measurement_source",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016"
+      },
+      "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+      "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock",
+      "when_present": [
+        "lv_rx_input_plus_v"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "lv_measurement_source",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016"
+      },
+      "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+      "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock",
+      "when_present": [
+        "lv_rx_input_minus_v"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "lv_measurement_source",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016"
+      },
+      "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+      "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock",
+      "when_present": [
+        "lv_transition_ns"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "lv_electrical",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_hardware": "DS90LV047A_D_DS90LV048A_C"
+      },
+      "source": "https://www.ti.com/lit/ds/symlink/ds90lv047a.pdf",
+      "source_revision": "TI DS90LV047A SNLS044D May2000/revisedJuly2016; sections6.3/6.5/6.6/8/9/11; min/typ/max and test-condition columns visually checked",
+      "forbidden": [
+        "TIA_899_2002"
+      ]
+    },
+    {
+      "parameter": "lv_coupling",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_hardware": "DS90LV047A_D_DS90LV048A_C"
+      },
+      "source": "https://www.ti.com/lit/ds/symlink/ds90lv047a.pdf",
+      "source_revision": "TI DS90LV047A SNLS044D May2000/revisedJuly2016; sections6.3/6.5/6.6/8/9/11; min/typ/max and test-condition columns visually checked",
+      "allowed": [
+        "DC"
+      ]
+    },
+    {
+      "parameter": "lv_data_lanes",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_hardware": "DS90LV047A_D_DS90LV048A_C"
+      },
+      "source": "https://www.ti.com/lit/ds/symlink/ds90lv047a.pdf",
+      "source_revision": "TI DS90LV047A SNLS044D May2000/revisedJuly2016; sections6.3/6.5/6.6/8/9/11; min/typ/max and test-condition columns visually checked",
+      "maximum": 4
+    },
+    {
+      "parameter": "lv_clock_lanes",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_hardware": "DS90LV047A_D_DS90LV048A_C"
+      },
+      "source": "https://www.ti.com/lit/ds/symlink/ds90lv047a.pdf",
+      "source_revision": "TI DS90LV047A SNLS044D May2000/revisedJuly2016; sections6.3/6.5/6.6/8/9/11; min/typ/max and test-condition columns visually checked",
+      "maximum": 4
+    },
+    {
+      "parameter": "lv_data_lanes",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_hardware": "DS90LV047A_D_DS90LV048A_C",
+        "lv_clock_same_chip": true
+      },
+      "source": "https://www.ti.com/lit/ds/symlink/ds90lv047a.pdf",
+      "source_revision": "TI DS90LV047A SNLS044D May2000/revisedJuly2016; sections6.3/6.5/6.6/8/9/11; min/typ/max and test-condition columns visually checked",
+      "maximum_expression": {
+        "subtract": [
+          4,
+          "lv_clock_lanes"
+        ]
+      }
+    },
+    {
+      "parameter": "lv_external_clock_source",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_hardware": "DS90LV047A_D_DS90LV048A_C",
+        "lv_clock_same_chip": false
+      },
+      "source": "https://www.ti.com/lit/ug/snla187/snla187.pdf",
+      "source_revision": "TI/National LVDS owners manual4th edition2008; sections1.1/1.2,2.1-2.5,3.1-3.8,4.1-4.6; portfolio/example speeds are not one standard clock",
+      "when_positive": [
+        "lv_clock_lanes"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "lv_tx_supply_v",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_hardware": "DS90LV047A_D_DS90LV048A_C",
+        "lv_power_state": "ACTIVE"
+      },
+      "source": "https://www.ti.com/lit/ds/symlink/ds90lv047a.pdf",
+      "source_revision": "TI DS90LV047A SNLS044D May2000/revisedJuly2016; sections6.3/6.5/6.6/8/9/11; min/typ/max and test-condition columns visually checked",
+      "minimum": 3,
+      "maximum": 3.6
+    },
+    {
+      "parameter": "lv_rx_supply_v",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_hardware": "DS90LV047A_D_DS90LV048A_C",
+        "lv_power_state": "ACTIVE"
+      },
+      "source": "https://www.ti.com/lit/ds/symlink/ds90lv048a.pdf",
+      "source_revision": "TI DS90LV048A SNLS045C July1999/revisedJuly2016; sections6.3/6.5/6.6/8; min/typ/max and common-mode/failsafe footnotes visually checked",
+      "minimum": 3,
+      "maximum": 3.6
+    },
+    {
+      "parameter": "lv_tx_supply_v",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_hardware": "DS90LV047A_D_DS90LV048A_C",
+        "lv_power_state": "DISABLED"
+      },
+      "source": "https://www.ti.com/lit/ds/symlink/ds90lv047a.pdf",
+      "source_revision": "TI DS90LV047A SNLS044D May2000/revisedJuly2016; sections6.3/6.5/6.6/8/9/11; min/typ/max and test-condition columns visually checked",
+      "minimum": 3,
+      "maximum": 3.6
+    },
+    {
+      "parameter": "lv_rx_supply_v",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_hardware": "DS90LV047A_D_DS90LV048A_C",
+        "lv_power_state": "DISABLED"
+      },
+      "source": "https://www.ti.com/lit/ds/symlink/ds90lv048a.pdf",
+      "source_revision": "TI DS90LV048A SNLS045C July1999/revisedJuly2016; sections6.3/6.5/6.6/8; min/typ/max and common-mode/failsafe footnotes visually checked",
+      "minimum": 3,
+      "maximum": 3.6
+    },
+    {
+      "parameter": "lv_tx_supply_v",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_hardware": "DS90LV047A_D_DS90LV048A_C",
+        "lv_power_state": "OFF"
+      },
+      "source": "https://www.ti.com/lit/ds/symlink/ds90lv047a.pdf",
+      "source_revision": "TI DS90LV047A SNLS044D May2000/revisedJuly2016; sections6.3/6.5/6.6/8/9/11; min/typ/max and test-condition columns visually checked",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "lv_rx_supply_v",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_hardware": "DS90LV047A_D_DS90LV048A_C",
+        "lv_power_state": "OFF"
+      },
+      "source": "https://www.ti.com/lit/ds/symlink/ds90lv048a.pdf",
+      "source_revision": "TI DS90LV048A SNLS045C July1999/revisedJuly2016; sections6.3/6.5/6.6/8; min/typ/max and common-mode/failsafe footnotes visually checked",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "lv_tx_temperature_c",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_hardware": "DS90LV047A_D_DS90LV048A_C"
+      },
+      "source": "https://www.ti.com/lit/ds/symlink/ds90lv047a.pdf",
+      "source_revision": "TI DS90LV047A SNLS044D May2000/revisedJuly2016; sections6.3/6.5/6.6/8/9/11; min/typ/max and test-condition columns visually checked",
+      "minimum": -40,
+      "maximum": 85
+    },
+    {
+      "parameter": "lv_rx_temperature_c",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_hardware": "DS90LV047A_D_DS90LV048A_C"
+      },
+      "source": "https://www.ti.com/lit/ds/symlink/ds90lv048a.pdf",
+      "source_revision": "TI DS90LV048A SNLS045C July1999/revisedJuly2016; sections6.3/6.5/6.6/8; min/typ/max and common-mode/failsafe footnotes visually checked",
+      "minimum": -40,
+      "maximum": 85
+    },
+    {
+      "parameter": "lv_reference_switch_mhz",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_hardware": "DS90LV047A_D_DS90LV048A_C"
+      },
+      "source": "https://www.ti.com/lit/ds/symlink/ds90lv047a.pdf",
+      "source_revision": "TI DS90LV047A SNLS044D May2000/revisedJuly2016; sections6.3/6.5/6.6/8/9/11; min/typ/max and test-condition columns visually checked",
+      "allowed": [
+        200
+      ]
+    },
+    {
+      "parameter": "lv_rate_assurance",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_hardware": "DS90LV047A_D_DS90LV048A_C"
+      },
+      "source": "https://www.ti.com/lit/ds/symlink/ds90lv047a.pdf",
+      "source_revision": "TI DS90LV047A SNLS044D May2000/revisedJuly2016; sections6.3/6.5/6.6/8/9/11; min/typ/max and test-condition columns visually checked",
+      "when_present": [
+        "lv_lane_bps"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "lv_lane_bps",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_hardware": "DS90LV047A_D_DS90LV048A_C",
+        "lv_rate_assurance": "DATASHEET_REFERENCE"
+      },
+      "source": "https://www.ti.com/lit/ds/symlink/ds90lv047a.pdf",
+      "source_revision": "TI DS90LV047A SNLS044D May2000/revisedJuly2016; sections6.3/6.5/6.6/8/9/11; min/typ/max and test-condition columns visually checked",
+      "maximum": 400000000
+    },
+    {
+      "parameter": "lv_registered_source",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_hardware": "DS90LV047A_D_DS90LV048A_C",
+        "lv_rate_assurance": "MEASURED_REGISTERED"
+      },
+      "source": "https://www.ti.com/lit/ds/symlink/ds90lv047a.pdf",
+      "source_revision": "TI DS90LV047A SNLS044D May2000/revisedJuly2016; sections6.3/6.5/6.6/8/9/11; min/typ/max and test-condition columns visually checked",
+      "required": true
+    },
+    {
+      "parameter": "lv_effective_load_ohm",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_hardware": "DS90LV047A_D_DS90LV048A_C",
+        "lv_load_scope": "DATASHEET_AC",
+        "lv_power_state": "ACTIVE",
+        "lv_input_fault": "DATA"
+      },
+      "source": "https://www.ti.com/lit/ds/symlink/ds90lv047a.pdf",
+      "source_revision": "TI DS90LV047A SNLS044D May2000/revisedJuly2016; sections6.3/6.5/6.6/8/9/11; min/typ/max and test-condition columns visually checked",
+      "allowed": [
+        100
+      ]
+    },
+    {
+      "parameter": "lv_ac_load_pf",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_hardware": "DS90LV047A_D_DS90LV048A_C",
+        "lv_load_scope": "DATASHEET_AC",
+        "lv_power_state": "ACTIVE",
+        "lv_input_fault": "DATA"
+      },
+      "source": "https://www.ti.com/lit/ds/symlink/ds90lv047a.pdf",
+      "source_revision": "TI DS90LV047A SNLS044D May2000/revisedJuly2016; sections6.3/6.5/6.6/8/9/11; min/typ/max and test-condition columns visually checked",
+      "allowed": [
+        15
+      ]
+    },
+    {
+      "parameter": "lv_tx_diff_abs_mv",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_hardware": "DS90LV047A_D_DS90LV048A_C",
+        "lv_load_scope": "DATASHEET_AC",
+        "lv_power_state": "ACTIVE",
+        "lv_input_fault": "DATA"
+      },
+      "source": "https://www.ti.com/lit/ds/symlink/ds90lv047a.pdf",
+      "source_revision": "TI DS90LV047A SNLS044D May2000/revisedJuly2016; sections6.3/6.5/6.6/8/9/11; min/typ/max and test-condition columns visually checked",
+      "minimum": 250,
+      "maximum": 450
+    },
+    {
+      "parameter": "lv_tx_common_v",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_hardware": "DS90LV047A_D_DS90LV048A_C",
+        "lv_load_scope": "DATASHEET_AC",
+        "lv_power_state": "ACTIVE",
+        "lv_input_fault": "DATA"
+      },
+      "source": "https://www.ti.com/lit/ds/symlink/ds90lv047a.pdf",
+      "source_revision": "TI DS90LV047A SNLS044D May2000/revisedJuly2016; sections6.3/6.5/6.6/8/9/11; min/typ/max and test-condition columns visually checked",
+      "minimum": 1.125,
+      "maximum": 1.375
+    },
+    {
+      "parameter": "lv_tx_diff_change_mv",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_hardware": "DS90LV047A_D_DS90LV048A_C",
+        "lv_load_scope": "DATASHEET_AC",
+        "lv_power_state": "ACTIVE",
+        "lv_input_fault": "DATA"
+      },
+      "source": "https://www.ti.com/lit/ds/symlink/ds90lv047a.pdf",
+      "source_revision": "TI DS90LV047A SNLS044D May2000/revisedJuly2016; sections6.3/6.5/6.6/8/9/11; min/typ/max and test-condition columns visually checked",
+      "minimum": 0,
+      "maximum": 35
+    },
+    {
+      "parameter": "lv_tx_common_change_mv",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_hardware": "DS90LV047A_D_DS90LV048A_C",
+        "lv_load_scope": "DATASHEET_AC",
+        "lv_power_state": "ACTIVE",
+        "lv_input_fault": "DATA"
+      },
+      "source": "https://www.ti.com/lit/ds/symlink/ds90lv047a.pdf",
+      "source_revision": "TI DS90LV047A SNLS044D May2000/revisedJuly2016; sections6.3/6.5/6.6/8/9/11; min/typ/max and test-condition columns visually checked",
+      "minimum": 0,
+      "maximum": 25
+    },
+    {
+      "parameter": "lv_tx_tphld_ns",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_hardware": "DS90LV047A_D_DS90LV048A_C",
+        "lv_load_scope": "DATASHEET_AC",
+        "lv_power_state": "ACTIVE",
+        "lv_input_fault": "DATA"
+      },
+      "source": "https://www.ti.com/lit/ds/symlink/ds90lv047a.pdf",
+      "source_revision": "TI DS90LV047A SNLS044D May2000/revisedJuly2016; sections6.3/6.5/6.6/8/9/11; min/typ/max and test-condition columns visually checked",
+      "minimum": 0.5,
+      "maximum": 1.7
+    },
+    {
+      "parameter": "lv_tx_tplhd_ns",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_hardware": "DS90LV047A_D_DS90LV048A_C",
+        "lv_load_scope": "DATASHEET_AC",
+        "lv_power_state": "ACTIVE",
+        "lv_input_fault": "DATA"
+      },
+      "source": "https://www.ti.com/lit/ds/symlink/ds90lv047a.pdf",
+      "source_revision": "TI DS90LV047A SNLS044D May2000/revisedJuly2016; sections6.3/6.5/6.6/8/9/11; min/typ/max and test-condition columns visually checked",
+      "minimum": 0.5,
+      "maximum": 1.7
+    },
+    {
+      "parameter": "lv_rx_tphld_ns",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_hardware": "DS90LV047A_D_DS90LV048A_C",
+        "lv_load_scope": "DATASHEET_AC",
+        "lv_power_state": "ACTIVE",
+        "lv_input_fault": "DATA"
+      },
+      "source": "https://www.ti.com/lit/ds/symlink/ds90lv048a.pdf",
+      "source_revision": "TI DS90LV048A SNLS045C July1999/revisedJuly2016; sections6.3/6.5/6.6/8; min/typ/max and common-mode/failsafe footnotes visually checked",
+      "minimum": 1.2,
+      "maximum": 2.7
+    },
+    {
+      "parameter": "lv_rx_tplhd_ns",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_hardware": "DS90LV047A_D_DS90LV048A_C",
+        "lv_load_scope": "DATASHEET_AC",
+        "lv_power_state": "ACTIVE",
+        "lv_input_fault": "DATA"
+      },
+      "source": "https://www.ti.com/lit/ds/symlink/ds90lv048a.pdf",
+      "source_revision": "TI DS90LV048A SNLS045C July1999/revisedJuly2016; sections6.3/6.5/6.6/8; min/typ/max and common-mode/failsafe footnotes visually checked",
+      "minimum": 1.2,
+      "maximum": 2.7
+    },
+    {
+      "parameter": "lv_tx_pulse_skew_ns",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_hardware": "DS90LV047A_D_DS90LV048A_C",
+        "lv_load_scope": "DATASHEET_AC",
+        "lv_power_state": "ACTIVE",
+        "lv_input_fault": "DATA"
+      },
+      "source": "https://www.ti.com/lit/ds/symlink/ds90lv047a.pdf",
+      "source_revision": "TI DS90LV047A SNLS044D May2000/revisedJuly2016; sections6.3/6.5/6.6/8/9/11; min/typ/max and test-condition columns visually checked",
+      "minimum": 0,
+      "maximum": 0.4
+    },
+    {
+      "parameter": "lv_rx_pulse_skew_ns",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_hardware": "DS90LV047A_D_DS90LV048A_C",
+        "lv_load_scope": "DATASHEET_AC",
+        "lv_power_state": "ACTIVE",
+        "lv_input_fault": "DATA"
+      },
+      "source": "https://www.ti.com/lit/ds/symlink/ds90lv048a.pdf",
+      "source_revision": "TI DS90LV048A SNLS045C July1999/revisedJuly2016; sections6.3/6.5/6.6/8; min/typ/max and common-mode/failsafe footnotes visually checked",
+      "minimum": 0,
+      "maximum": 0.4
+    },
+    {
+      "parameter": "lv_rx_diff_abs_mv",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_hardware": "DS90LV047A_D_DS90LV048A_C",
+        "lv_load_scope": "DATASHEET_AC",
+        "lv_power_state": "ACTIVE",
+        "lv_input_fault": "DATA"
+      },
+      "source": "https://www.ti.com/lit/ds/symlink/ds90lv048a.pdf",
+      "source_revision": "TI DS90LV048A SNLS045C July1999/revisedJuly2016; sections6.3/6.5/6.6/8; min/typ/max and common-mode/failsafe footnotes visually checked",
+      "minimum": 200,
+      "maximum": 800
+    },
+    {
+      "parameter": "lv_rx_common_v",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_hardware": "DS90LV047A_D_DS90LV048A_C",
+        "lv_load_scope": "DATASHEET_AC",
+        "lv_power_state": "ACTIVE",
+        "lv_input_fault": "DATA"
+      },
+      "source": "https://www.ti.com/lit/ds/symlink/ds90lv048a.pdf",
+      "source_revision": "TI DS90LV048A SNLS045C July1999/revisedJuly2016; sections6.3/6.5/6.6/8; min/typ/max and common-mode/failsafe footnotes visually checked",
+      "minimum_expression": {
+        "product": [
+          "lv_rx_diff_abs_mv",
+          0.0005
+        ]
+      },
+      "maximum_expression": {
+        "subtract": [
+          2.4,
+          {
+            "product": [
+              "lv_rx_diff_abs_mv",
+              0.0005
+            ]
+          }
+        ]
+      },
+      "exact_decimal_bounds": true
+    },
+    {
+      "parameter": "lv_rx_input_plus_v",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_hardware": "DS90LV047A_D_DS90LV048A_C",
+        "lv_load_scope": "DATASHEET_AC",
+        "lv_power_state": "ACTIVE",
+        "lv_input_fault": "DATA"
+      },
+      "source": "https://www.ti.com/lit/ds/symlink/ds90lv048a.pdf",
+      "source_revision": "TI DS90LV048A SNLS045C July1999/revisedJuly2016; sections6.3/6.5/6.6/8; min/typ/max and common-mode/failsafe footnotes visually checked",
+      "minimum": 0,
+      "maximum": 2.4
+    },
+    {
+      "parameter": "lv_rx_input_minus_v",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_hardware": "DS90LV047A_D_DS90LV048A_C",
+        "lv_load_scope": "DATASHEET_AC",
+        "lv_power_state": "ACTIVE",
+        "lv_input_fault": "DATA"
+      },
+      "source": "https://www.ti.com/lit/ds/symlink/ds90lv048a.pdf",
+      "source_revision": "TI DS90LV048A SNLS045C July1999/revisedJuly2016; sections6.3/6.5/6.6/8; min/typ/max and common-mode/failsafe footnotes visually checked",
+      "minimum": 0,
+      "maximum": 2.4
+    },
+    {
+      "parameter": "lv_external_fault_common_v",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_hardware": "DS90LV047A_D_DS90LV048A_C",
+        "lv_input_fault": "SHORT",
+        "lv_failsafe": "DEVICE_PROVEN"
+      },
+      "source": "https://www.ti.com/lit/ds/symlink/ds90lv048a.pdf",
+      "source_revision": "TI DS90LV048A SNLS045C July1999/revisedJuly2016; sections6.3/6.5/6.6/8; min/typ/max and common-mode/failsafe footnotes visually checked",
+      "allowed": [
+        0
+      ],
+      "required": true
+    },
+    {
+      "parameter": "lv_failsafe_source",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_hardware": "DS90LV047A_D_DS90LV048A_C",
+        "lv_failsafe": "DEVICE_PROVEN"
+      },
+      "source": "https://www.ti.com/lit/ds/symlink/ds90lv048a.pdf",
+      "source_revision": "TI DS90LV048A SNLS045C July1999/revisedJuly2016; sections6.3/6.5/6.6/8; min/typ/max and common-mode/failsafe footnotes visually checked",
+      "required": true
+    },
+    {
+      "parameter": "lv_rx_noise_abs_mv",
+      "when": {
+        "lv_edition": "TI_COMPARE_2013_OWNER_2008_VENDOR_2016",
+        "lv_hardware": "DS90LV047A_D_DS90LV048A_C",
+        "lv_input_fault": "TERMINATED_FLOATING",
+        "lv_failsafe": "DEVICE_PROVEN"
+      },
+      "source": "https://www.ti.com/lit/ds/symlink/ds90lv048a.pdf",
+      "source_revision": "TI DS90LV048A SNLS045C July1999/revisedJuly2016; sections6.3/6.5/6.6/8; min/typ/max and common-mode/failsafe footnotes visually checked",
+      "maximum": 10,
+      "required": true
+    }
+  ],
+  "physical_layer_profile_id": null,
+  "medium_access_model": null,
+  "native_parameter_prefixes": [
+    "lv_"
+  ],
+  "parameter_aliases": {},
+  "parameter_alias_limits": {},
+  "parameter_evidence_scope": null,
+  "rate_source_profile_id": null,
+  "arbitration_model_id": null,
+  "max_payload_bytes": null,
+  "capabilities": {
+    "supports_signals": true,
+    "supports_data_objects": false,
+    "supports_streams": true,
+    "supports_multicast": false,
+    "supports_publish_subscribe": false,
+    "supports_request_response": false,
+    "supports_cyclic": true,
+    "supports_event": true,
+    "supports_redundancy": false,
+    "supports_time_sync": false,
+    "supports_safety_profile": false,
+    "supports_segmentation": false,
+    "supports_fragmentation": false,
+    "supports_qos": false
+  },
+  "deterministic": false,
+  "overhead_bytes": 8,
+  "implementation_status": "PARTIAL",
+  "connection_type": "COMMUNICATION_TECHNOLOGY",
+  "parameter_proposals": {
+    "kind": "DEVICE_DEPENDENT",
+    "status": "REVIEW_REQUIRED",
+    "required_fields": [],
+    "note": "No universal rate is available; inspect the selected hardware/profile."
+  },
+  "capacity_evidence": {
+    "status": "MODEL_MISSING",
+    "frame_model": null,
+    "schedule_model": null,
+    "requires_confirmed_device_parameters": true
+  },
+  "components": {
+    "binding": "lvds.binding",
+    "generator": "lvds.generator",
+    "validator": "lvds.validator",
+    "timing_model": null,
+    "load_model": null,
+    "encoder": "lvds.encoder",
+    "decoder": "lvds.decoder"
+  },
+  "known_limitations": "Technology-specific conformance details require a vendor/profile extension."
+}

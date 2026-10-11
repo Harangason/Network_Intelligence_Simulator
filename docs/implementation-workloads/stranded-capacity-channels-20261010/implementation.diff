@@ -1,0 +1,326 @@
+--- before/backend/nis/engineering/network/physical_ports.py
++++ after/backend/nis/engineering/network/physical_ports.py
+@@ -73,6 +73,8 @@
+             if interface is None:
+                 error('UNKNOWN_PHYSICAL_CHANNEL', 'Topologie-Port benötigt einen vorhandenen Hardwarekanal.', port_id=port_id)
+                 continue
++            if interface.get('lifecycle_state') in {'deprecated', 'superseded'}:
++                error('PHYSICAL_CHANNEL_RETIRED', 'Die aktive Topologie verwendet einen ausgemusterten Hardwarekanal.', hardware_interface_id=interface_id)
+             if str(interface.get('hardware_node_id')) != hardware_id:
+                 error('PHYSICAL_CHANNEL_OWNER', 'Hardwarekanal gehört zu einem anderen Gerät.', port_id=port_id)
+             if technology_id(interface.get('technology')) != technology_id(port.get('bus')):
+@@ -140,8 +142,12 @@
+     for key, ports in current_channels.items():
+         old_networks = before_channels.get(key, set())
+         new_networks = {str(port.get('physicalNetworkId') or '') for port in ports}
+-        if len(old_networks) == len(new_networks) == 1 and '' not in old_networks | new_networks and old_networks != new_networks:
+-            allowed.update((str(port['id']), key[1]) for port in ports)
++        if len(old_networks) == 1 and new_networks and '' not in old_networks | new_networks and not old_networks & new_networks:
++            # A complete split retains one existing connector and adds only the
++            # other independent channels. The proposal exposes this choice;
++            # a surviving old network still prevents its connector being stolen.
++            retained_network = min(new_networks)
++            allowed.update((str(port['id']), key[1]) for port in ports if str(port.get('physicalNetworkId')) == retained_network)
+     for node in current.get('nodes') or []:
+         for port in node.get('ports') or []:
+             identifier = str(port['id'])
+@@ -167,7 +173,7 @@
+     return allowed
+ 
+ 
+-def materialize_physical_ports(topology, hardware, interfaces, networks, *, routes=(), messages=(), prune_unconnected=True, previous_topology=None):
++def materialize_physical_ports(topology, hardware, interfaces, networks, *, routes=(), messages=(), logical_interfaces=(), prune_unconnected=True, previous_topology=None):
+     """Return a topology and explicit ordered changes; never mutate canonical state.
+ 
+     Each (device, technology, physical network) gets one actual channel. Existing
+@@ -232,6 +238,7 @@
+             key = (hardware_id, technology_id(technology), network_id)
+             if key not in assignments:
+                 candidates = sorted((row for row in canonical.values() if str(row.get('hardware_node_id')) == hardware_id
++                    and row.get('lifecycle_state') not in {'deprecated', 'superseded'}
+                     and technology_id(row.get('technology')) == key[1]
+                     and str(row['id']) not in assignments.values()
+                     and (not row.get('network_ref') or str(row['network_ref']) == network_id
+@@ -245,7 +252,7 @@
+                 controller = str((existing or {}).get('controller_ref') or '')
+                 channel_scope = (hardware_id, key[1], controller)
+                 current_index = (existing or {}).get('channel_index')
+-                occupied = [int(row.get('channel_index') or 0) for row in canonical.values() if (
++                occupied = [int(row.get('channel_index') or 0) for row in canonical.values() if row.get('lifecycle_state') not in {'deprecated', 'superseded'} and (
+                     str(row.get('hardware_node_id')), technology_id(row.get('technology')), str(row.get('controller_ref') or '')) == channel_scope]
+                 index = current_index if isinstance(current_index, int) and current_index > 0 and (*channel_scope, current_index) not in used_channels else max(occupied or [0]) + 1
+                 connector = str((existing or {}).get('physical_port_ref') or f'physical-port-{digest}')
+@@ -306,10 +313,10 @@
+     findings = topology_port_findings(updated, hardware, list(canonical.values()))
+     if findings:
+         raise ValueError('; '.join(item['message'] for item in findings[:5]))
+-    return updated, network_changes + channel_changes + physical_transmit_changes(updated, routes, messages)
+-
+-
+-def physical_transmit_changes(topology, routes, messages):
++    return updated, network_changes + channel_changes + physical_transmit_changes(updated, routes, messages, logical_interfaces=logical_interfaces)
++
++
++def physical_transmit_changes(topology, routes, messages, *, logical_interfaces=()):
+     """Declare every reviewed source channel when a message spans several buses."""
+     nodes = {str(node['id']): node for node in topology.get('nodes') or []}
+     ports = {str(port['id']): port for node in nodes.values() for port in node.get('ports') or []}
+@@ -351,6 +358,31 @@
+             data['hardware_interface_id'] = primary_id
+         changes.append({'action': 'UPDATE', 'object_type': 'Message', 'object_id': str(message['id']),
+             'local_ref': 'physical-message-' + str(message['id']), 'data': data})
++    # Logical function interfaces remain independent identities. Reconcile only
++    # their physical binding metadata, preserving unrelated configuration and
++    # channels still used by another (including unreviewed) sibling message.
++    from backend.nis.engineering.signals.message_bindings import message_hardware_interface_ids
++    changed_messages = {c['object_id']: c['data'] for c in changes}
++    for logical in logical_interfaces:
++        owned = [m for m in messages if str(m.get('interface_id') or '') == str(logical['id'])]
++        reviewed = [m for m in owned if str(m['id']) in by_message]
++        if not reviewed:
++            continue
++        effective_ids, displaced = set(), set()
++        for message in owned:
++            updated_message = {**message, **changed_messages.get(str(message['id']), {})}
++            identifiers = message_hardware_interface_ids(updated_message)
++            effective_ids.update(identifiers)
++            if str(message['id']) in by_message:
++                displaced.update(message_hardware_interface_ids(message) - identifiers)
++        configuration = deepcopy(logical.get('configuration') or {})
++        previous_ids = {str(identifier) for identifier in configuration.get('physical_interface_ids') or []}
++        expected_ids = sorted((previous_ids - displaced) | effective_ids)
++        if configuration.get('physical_interface_ids') == expected_ids:
++            continue
++        configuration['physical_interface_ids'] = expected_ids
++        changes.append({'action': 'UPDATE', 'object_type': 'Interface', 'object_id': str(logical['id']),
++                        'data': {'configuration': configuration}})
+     return changes
+ 
+ 
+@@ -360,7 +392,8 @@
+     from backend.nis.agent.tools import proposal_service as proposal_service
+     snapshot = model.model()
+     topology, changes = materialize_physical_ports(snapshot['topology'], snapshot['hardware'],
+-        snapshot['hardware-interfaces'], model.networks(), routes=snapshot['routing'], messages=snapshot['messages'])
++        snapshot['hardware-interfaces'], model.networks(), routes=snapshot['routing'], messages=snapshot['messages'],
++        logical_interfaces=snapshot['interfaces'])
+     if not changes and topology == snapshot['topology']:
+         return {'status': 'UNCHANGED', 'changes': []}
+     proposal = proposal_service.create('PHYSICAL_CHANNEL_REPAIR', [*changes, {'object_type': 'NetworkTopology', 'data': {
+--- before/backend/nis/agent/tools/wizard_generation.py
++++ after/backend/nis/agent/tools/wizard_generation.py
+@@ -1977,7 +1977,7 @@
+             adjacency.setdefault(node_id, set()).add(anchor)
+     topology = {'nodes': list(node_data.values()), 'edges': list(segments.values())}
+     topology, physical_changes = materialize_physical_ports(topology, hardware, interfaces, model.networks(),
+-        routes=routes, messages=model.objects('Message'), prune_unconnected=False)
++        routes=routes, messages=model.objects('Message'), logical_interfaces=model.objects('Interface'), prune_unconnected=False)
+     from backend.nis.engineering.network.network_scene import build_network_scene
+     positions = (existing_topology.get('scene') or {}).get('manualPositions')
+     if not existing_topology.get('scene'):
+@@ -2054,7 +2054,7 @@
+         raise ValueError('Der Capacity-Plan konnte keiner physischen Route des überlasteten Zweigs zugeordnet werden.')
+     topology, physical_changes = materialize_physical_ports(topology, model.objects('HardwareNode'),
+         model.objects('HardwareNetworkInterface'), model.networks(), routes=model.routes(), messages=model.objects('Message'),
+-        previous_topology=state.get('topology'))
++        logical_interfaces=model.objects('Interface'), previous_topology=state.get('topology'))
+     policy = planning_policy(state)
+     resource_receipt = resource_decision(state.get('topology') or {}, topology,
+         planning_inventory(state, prompt), policy)
+--- before/backend/nis/interfaces/http/engineering.py
++++ after/backend/nis/interfaces/http/engineering.py
+@@ -675,7 +675,8 @@
+         physical, changes = materialize_physical_ports(linked,
+             all_pages(list_objects, "HardwareNode"), all_pages(list_objects, "HardwareNetworkInterface"),
+             state["parameters"].get("networks") or [], prune_unconnected=False, previous_topology=previous_topology,
+-            routes=all_pages(list_routes), messages=all_pages(list_objects, "Message"))
++            routes=all_pages(list_routes), messages=all_pages(list_objects, "Message"),
++            logical_interfaces=all_pages(list_objects, "Interface"))
+     except ValueError as error:
+         raise EngineeringValidationError(str(error)) from error
+     networks = list(state["parameters"].get("networks") or [])
+--- before/backend/tests/test_physical_ports.py
++++ after/backend/tests/test_physical_ports.py
+@@ -227,6 +227,69 @@
+     assert change['data'].get('hardware_interface_id', primary) == primary
+     assert len(change['data']['configuration']['physical_transmit_bindings']) == 2
+     assert physical_transmit_changes(topology, [{**r, 'approval_state': 'PENDING'} for r in routes], [message]) == []
++
++
++def test_complete_multibranch_split_reuses_one_original_channel_without_unused_inventory():
++    from backend.nis.intelligence.engineering.intelligence.network_planning import split_topology_by_distribution
++    topology, hardware, interfaces = sample()
++    interfaces[1].update(technology='CAN_FD', network_ref='')
++    topology['nodes'][1]['ports'] = [topology['nodes'][1]['ports'][0]]
++    for node in topology['nodes']:
++        for port in node['ports']:
++            port['physicalNetworkId'] = 'shared'
++    for index, edge in enumerate(topology['edges']):
++        edge.update(physicalNetworkId='shared', routingEntryIds=[f'route-{index}'])
++    topology['edges'][1]['sourcePort'] = topology['nodes'][1]['ports'][0]['id']
++    before, changes = materialize_physical_ports(topology, hardware, interfaces, [])
++    interfaces = effective(interfaces, changes)
++    original = before['nodes'][1]['ports'][0]['hardwareInterfaceId']
++    split, _ = split_topology_by_distribution(before, {'networks': [{'network_id': 'shared',
++        'decision': 'SPLIT_CURRENT_TECHNOLOGY', 'segments': [
++            {'name': 'split-2', 'route_ids': ['route-0']}, {'name': 'split-1', 'route_ids': ['route-1']}]}]})
++    repaired, changes = materialize_physical_ports(split, hardware, interfaces,
++        [{'id': 'shared', 'technology': 'CAN_FD'}], previous_topology=before)
++    canonical = effective(interfaces, changes)
++    active = {p['hardwareInterfaceId'] for n in repaired['nodes'] for p in n['ports']}
++    assert active == {p['id'] for p in canonical}, 'A complete split must not leave phantom hardware behind.'
++    assert len(canonical) == 4, 'Two independent gateway branches need two channels, not three.'
++    assert next(p for p in canonical if p['id'] == original)['network_ref'] == 'split-1'
++
++
++def test_logical_interface_reconciles_reviewed_multichannel_senders_and_preserves_unrelated_configuration():
++    from backend.nis.engineering.network.physical_ports import physical_transmit_changes
++    topology, hardware, interfaces = sample()
++    topology, _ = materialize_physical_ports(topology, hardware, interfaces, [])
++    for index, edge in enumerate(topology['edges']):
++        edge['routingEntryIds'] = [f'route-{index}']
++    routes = [{'id': f'route-{index}', 'approval_state': 'APPROVED', 'source': {'node_id': 'g'},
++               'payload': {'message_id': 'm'}} for index in range(2)]
++    message = {'id': 'm', 'interface_id': 'logical', 'hardware_interface_id': 'old-disconnected', 'configuration': {}}
++    logical = {'id': 'logical', 'configuration': {'physical_interface_ids': ['old-disconnected'], 'endpoint_role': 'SYSTEM_CONTROLLER'}}
++    before = deepcopy((topology, message, logical))
++    changes = physical_transmit_changes(topology, routes, [message], logical_interfaces=[logical])
++    update = next(c for c in changes if c['object_type'] == 'Interface')
++    expected = sorted(p['hardwareInterfaceId'] for p in topology['nodes'][1]['ports'])
++    assert update['data']['configuration'] == {'physical_interface_ids': expected, 'endpoint_role': 'SYSTEM_CONTROLLER'}
++    assert physical_transmit_changes(topology, [{**r, 'approval_state': 'PENDING'} for r in routes],
++                                     [message], logical_interfaces=[logical]) == []
++    assert (topology, message, logical) == before
++    applied_message = {**message, **next(c['data'] for c in changes if c['object_type'] == 'Message')}
++    applied_logical = {**logical, **update['data']}
++    assert physical_transmit_changes(topology, routes, [applied_message], logical_interfaces=[applied_logical]) == []
++    pending = {**message, 'id': 'unreviewed-sibling'}
++    sibling_changes = physical_transmit_changes(topology, routes, [message, pending], logical_interfaces=[logical])
++    sibling_update = next(c for c in sibling_changes if c['object_type'] == 'Interface')
++    assert sibling_update['data']['configuration']['physical_interface_ids'] == sorted([*expected, 'old-disconnected'])
++    assert not any(c.get('object_id') == pending['id'] for c in sibling_changes)
++
++
++def test_retired_physical_channel_cannot_be_reused_or_connected():
++    topology, hardware, interfaces = sample()
++    interfaces[0]['lifecycle_state'] = 'superseded'
++    assert 'PHYSICAL_CHANNEL_RETIRED' in {f['code'] for f in topology_port_findings(topology, hardware, interfaces)}
++    repaired, changes = materialize_physical_ports(topology, hardware, interfaces, [])
++    assert repaired['nodes'][0]['ports'][0]['hardwareInterfaceId'] != interfaces[0]['id']
++    assert interfaces[0]['id'] not in {c.get('object_id') for c in changes}
+ 
+ 
+ def test_split_keeps_parallel_old_bus_instead_of_stealing_its_channel():
+--- before/frontend/src/features/communication/lib/communication-warnings.ts
++++ after/frontend/src/features/communication/lib/communication-warnings.ts
+@@ -54,12 +54,14 @@
+   }
+   function portProblem(port: HardwareNetworkInterface | undefined): { code: string; reason: string } | null {
+     if (!port) return { code: 'PORT_MISSING', reason: 'Der physische Anschluss fehlt.' };
++    if (['deprecated', 'superseded'].includes(port.lifecycle_state)) return { code: 'PORT_RETIRED', reason: `Anschluss „${port.name}“ ist ausgemustert und darf nicht mehr für aktive Kommunikation verwendet werden.` };
+     if (!port.network_ref) return { code: 'BUS_UNASSIGNED', reason: `Anschluss „${port.name}“ (Kanal ${port.channel_index ?? 'offen'}) ist keinem Bus zugeordnet.` };
+     if (!networkIds.has(port.network_ref)) return { code: 'BUS_MISSING', reason: `Der Bus des Anschlusses „${port.name}“ existiert nicht mehr.` };
+     if (!activePorts.has(port.id)) return { code: 'PORT_DISCONNECTED', reason: `Anschluss „${port.name}“ ist im aktuellen Netzwerk nicht verbunden.` };
+     return null;
+   }
+   for (const port of ports) {
++    if (['deprecated', 'superseded'].includes(port.lifecycle_state) && !activePorts.has(port.id)) continue;
+     const problem = portProblem(port);
+     if (problem) add(port.id, { ...problem, key: `port:${port.id}`, fields: ['Anschluss', 'Buszuordnung'] });
+   }
+--- before/frontend/src/features/communication/lib/communication-warnings.test.mjs
++++ after/frontend/src/features/communication/lib/communication-warnings.test.mjs
+@@ -31,6 +31,27 @@
+ 
+ test('connected canonical endpoints have no communication warning', () => {
+   assert.equal(fixture().assess().size, 0);
++});
++
++test('explicitly retired unused inventory is not required to be wired, but live references remain errors', () => {
++  for (const lifecycle_state of ['deprecated', 'superseded']) {
++    const f = fixture();
++    f.objects.push({ id: 'retired', object_type: 'HardwareNetworkInterface', name: 'Old planned channel',
++      hardware_node_id: 'ecu', network_ref: 'bus', lifecycle_state });
++    assert.equal(f.assess().size, 0);
++    f.topology.nodes[0].ports.push({ id: 'p3', hardwareInterfaceId: 'retired', physicalNetworkId: 'bus' });
++    f.topology.edges.push({ sourcePort: 'p3', targetPort: 'p2' });
++    assert.ok(f.assess().get('retired')?.some(w => w.code === 'PORT_RETIRED'), 'A live drawn retired channel remains invalid without a message.');
++    f.topology.edges.pop();
++    f.objects.find(o => o.id === 'message').hardware_interface_id = 'retired';
++    assert.ok(f.assess().get('message')?.some(w => w.code === 'PORT_RETIRED'));
++    f.route.source.port_id = 'retired';
++    assert.ok(f.assess().get('s1')?.some(w => w.code === 'PORT_RETIRED'));
++  }
++  const f = fixture();
++  f.objects.push({ id: 'unconnected', object_type: 'HardwareNetworkInterface', name: 'Normal channel',
++    hardware_node_id: 'ecu', network_ref: 'bus', lifecycle_state: 'draft' });
++  assert.ok(f.assess().get('unconnected')?.some(w => w.code === 'PORT_DISCONNECTED'));
+ });
+ 
+ test('approved route on a detached channel warns through signals, interface and function despite another connected channel', () => {
+--- before/backend/nis/engineering/routing/validation.py
++++ after/backend/nis/engineering/routing/validation.py
+@@ -533,6 +533,9 @@
+             port = hardware_interfaces.get(str(endpoint.get("port_id") or ""))
+             if port is None:
+                 continue  # Missing IDs/legacy aliases are handled separately above.
++            if port.get('lifecycle_state') in {'deprecated', 'superseded'}:
++                error(f'{role}_HARDWARE_INTERFACE_RETIRED',
++                      f'Anschluss {port.get("name")} ist ausgemustert und darf nicht für aktive Kommunikation verwendet werden.')
+             network = str(port.get("network_ref") or "")
+             if not network:
+                 error(f"{role}_HARDWARE_INTERFACE_UNASSIGNED",
+--- before/backend/nis/engineering/routing/generation.py
++++ after/backend/nis/engineering/routing/generation.py
+@@ -89,7 +89,7 @@
+         with get_connection() as connection:
+             return connection.execute(
+                 "SELECT * FROM engineering_hardware_interfaces WHERE hardware_node_id = %s "
+-                "AND project_id = %s ORDER BY channel_index, created_at",
++                "AND project_id = %s AND lifecycle_state NOT IN ('deprecated', 'superseded') ORDER BY channel_index, created_at",
+                 (node_id, current_project_id()),
+             ).fetchall()
+ 
+--- before/backend/nis/engineering/network/topology_sync.py
++++ after/backend/nis/engineering/network/topology_sync.py
+@@ -118,6 +118,7 @@
+         return connection.execute(
+             "SELECT * FROM engineering_hardware_interfaces "
+             "WHERE hardware_node_id = %s AND technology = %s AND project_id = %s "
++            "AND lifecycle_state NOT IN ('deprecated', 'superseded') "
+             "ORDER BY channel_index, created_at, id LIMIT 1",
+             (hardware_id, technology, current_project_id()),
+         ).fetchone()
+--- before/backend/tests/test_routing_context_consistency.py
++++ after/backend/tests/test_routing_context_consistency.py
+@@ -7,6 +7,30 @@
+ from backend.nis.knowledge.semantic_vocabulary import engineering_phrase_match
+ from backend.nis.knowledge.semantic_vocabulary import EngineeringSemanticVocabulary
+ from backend.tests.test_routing import FakeValidator, route_payload, SOURCE, TARGET, SOURCE_INTERFACE, TARGET_INTERFACE, SOURCE_PORT, TARGET_PORT
++
++
++@pytest.mark.parametrize('role', ['source', 'destination'])
++@pytest.mark.parametrize('lifecycle', ['deprecated', 'superseded'])
++def test_retired_selected_channel_is_invalid_even_when_bus_and_reachable_path_match(role, lifecycle):
++    class Validator(FakeValidator):
++        def _physical_path_mapping(self, *args):
++            return True, []
++
++        def _rows(self, table, ids):
++            rows = super()._rows(table, ids)
++            if table == 'engineering_hardware_interfaces':
++                for identifier, row in rows.items():
++                    row['network_ref'] = 'bus'
++                    if identifier == (SOURCE_PORT if role == 'source' else TARGET_PORT):
++                        row['lifecycle_state'] = lifecycle
++            return rows
++
++    route = route_payload()
++    route['source'].update(port_id=SOURCE_PORT, network_id='bus')
++    route['destinations'][0].update(port_id=TARGET_PORT, network_id='bus')
++    result = Validator().validate(route)
++    assert result['valid'] is False
++    assert role.upper() + '_HARDWARE_INTERFACE_RETIRED' in {issue['code'] for issue in result['errors']}
+ 
+ 
+ @pytest.mark.parametrize('role', ['source', 'destination'])

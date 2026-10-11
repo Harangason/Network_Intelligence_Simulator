@@ -1,0 +1,74 @@
+--- before/frontend/src/features/simulation/ui/simulation-wizard.tsx
++++ after/frontend/src/features/simulation/ui/simulation-wizard.tsx
+@@ -1087,11 +1087,15 @@
+ 
+   const currentFindings = parameterReview?.findings ?? [];
+   const selectedFindings = currentFindings.filter(item => technologyKey(item.technology) === technologyKey(technologyId));
++  const simulationFindings = selectedFindings.filter(item => item.code !== 'CAPACITY_DEVICE_EVIDENCE_MISSING');
++  const deviceFindings = selectedFindings.filter(item => item.code === 'CAPACITY_DEVICE_EVIDENCE_MISSING');
++  const simulationChecks = (parameterReview?.simulation_capacity ?? []).filter(item => technologyKey(item.technology) === technologyKey(technologyId));
+   const networkRateKeys = (technology?.parameter_schema ?? []).filter(field => field.scope === 'network' && field.unit === 'bit/s').map(field => field.key);
+   const affectedNetworks = ((storedParameters.networks ?? []) as DeclaredNetwork[]).filter(network =>
+     technologyKey(network.technology) === technologyKey(technologyId)
+-    && selectedFindings.some(finding => finding.network_id === network.id && finding.code === 'CAPACITY_UNVERIFIED'
+-      && finding.parameter_fields?.some(key => networkRateKeys.includes(key))));
++    && selectedFindings.some(finding => finding.network_id === network.id && (
++      finding.code === 'CAPACITY_UNVERIFIED' && finding.parameter_fields?.some(key => networkRateKeys.includes(key))
++      || finding.code === 'CAPACITY_DEVICE_EVIDENCE_MISSING' && finding.missing_fields?.includes('hardware_rate_evidence'))));
+   const affectedFieldKeys = [...new Set(selectedFindings.flatMap(finding => finding.parameter_fields ?? []))];
+   const findingTechnologies = [...new Set(currentFindings.map(item => technologyKey(item.technology)))];
+   const proposedFieldCount = (technology?.parameter_schema ?? []).filter(field => field.simulation_default != null && parameterValueStatus(storedParameters, field.key, technologyId) === 'PROPOSAL').length;
+@@ -1152,6 +1156,17 @@
+         {parameterReview && <>
+           <p role="status">{currentFindings.length ? `${currentFindings.length} offene Anschlussbefunde · ${selectedFindings.length} für ${technology.label}` : 'Keine offenen Anschlussbefunde in dieser Parameterprüfung.'} Diese Prüfung ersetzt keine vollständige Preflight- oder Timing-Freigabe.</p>
+           <nav aria-label="Technologien mit Parameterbefunden">{findingTechnologies.map(id => <button type="button" className="button secondary tiny" key={id} onClick={() => chooseTechnology(id)}>{allTechnologies.find(item => item.id === id)?.label ?? id} · {currentFindings.filter(item => technologyKey(item.technology) === id).length}</button>)}</nav>
++          {simulationChecks.length > 0 && <section aria-label="Auslegung mit gespeicherten Simulationswerten">
++            <h4>Auslegung mit gespeicherten Simulationswerten</h4>
++            <p role="status">{simulationChecks.filter(item => item.status === 'FEASIBLE_UNDER_ASSUMPTIONS').length} von {simulationChecks.length} Bus-/Portgruppen erfüllen die nominale Zielauslastung. Geräte-, Schedule- und funktionaler Timingnachweis bleiben getrennt.</p>
++            <details><summary>Busgeschwindigkeit und berechnete Last anzeigen</summary>
++              {simulationChecks.map((item,index) => <article key={`${item.network_id}:${item.port_id ?? index}`}>
++                <strong>{item.network_name}{item.port_id ? ` · Anschluss ${item.port_id}` : ''}</strong>
++                <p>{Object.entries(item.rates).map(([key,value]) => `${technology.parameter_schema?.find(field => field.key === key)?.label ?? key}: ${value == null ? 'offen' : Number(value).toLocaleString('de-DE') + ' bit/s'}`).join(' · ')}{item.load_percent != null ? ` · ${item.load_percent.toFixed(2)} % nominale Last · Ziel ${item.target_load_percent} %` : ''}</p>
++                <small>SIMULATIONSANNAHME · {item.reason}</small>
++              </article>)}
++            </details>
++          </section>}
+           <button className="button secondary tiny" type="button" disabled={submitting || parameterDraftDirty || networkConfirming} onClick={async () => {
+             setNetworkConfirming(true); setParameterReviewError('');
+             try { await loadProjectSimulationDefaults(initialProjectId, parameterReview.edit_token!, [technologyId]); await afterNetworkConfirmation(); notifyWorkflowChanged(); }
+@@ -1166,17 +1181,22 @@
+               {plan.alternatives.map(item => <p key={item.technology}>Branchenvorschlag: {item.technology.toUpperCase()} · {item.load_percent.toFixed(1)} % Last · neue Hardware/Anschlüsse und physische Auslegung prüfen.</p>)}
+             </article>)}
+           </details>
+-          {Boolean(selectedFindings.length) && <div className="notice error" role="alert">
+-            <strong>{new Set(selectedFindings.map(item => item.network_id).filter(Boolean)).size} betroffene Netze · {selectedFindings.length} Anschlüsse</strong>
+-            <p>Ein angezeigter Profilwert oder eine gespeicherte Simulationsannahme ist noch kein bestätigter Netzparameter. Offene Bestätigungen sind im Formular markiert; Geräte- und Modellnachweise bleiben separat sichtbar.</p>
++          {Boolean(simulationFindings.length) && <div className="notice error" role="alert">
++            <strong>{new Set(simulationFindings.map(item => item.network_id).filter(Boolean)).size} betroffene Netze · {simulationFindings.length} offene Auslegungsbefunde</strong>
++            <p>Fehlende oder ungültige Simulationsparameter, widersprüchliche Anschlüsse und Überlasten sind im Formular markiert. Gespeicherte Vorgaben werden bei der Prüfung verwendet.</p>
+             <nav aria-label="Betroffene Parameterfelder">{affectedFieldKeys.map(key => <a key={key} href={`#parameter-field-${key}`} onClick={() => {
+               const field = document.getElementById(`parameter-field-${key}`);
+               const details = field?.closest('details'); if (details) details.open = true;
+             }}>{technology.parameter_schema?.find(field => field.key === key)?.label ?? key}</a>)}</nav>
+-            <details><summary>Betroffene Anschlüsse und Netze anzeigen</summary><ul>{selectedFindings.map((finding,index) => <li key={index}><strong>{finding.node_name} · {finding.network_name ?? finding.network_id}</strong>: {finding.message} <a href={engineeringContextHref({object_type:'HardwareNetworkInterface',id:finding.object_id ?? ''}, initialProjectId) ?? withProjectParam('/studio/engineering?resource=hardware-interfaces',initialProjectId)}>Anschluss prüfen</a>
++            <details><summary>Betroffene Anschlüsse und Netze anzeigen</summary><ul>{simulationFindings.map((finding,index) => <li key={index}><strong>{finding.node_name} · {finding.network_name ?? finding.network_id}</strong>: {finding.message} <a href={engineeringContextHref({object_type:'HardwareNetworkInterface',id:finding.object_id ?? ''}, initialProjectId) ?? withProjectParam('/studio/engineering?resource=hardware-interfaces',initialProjectId)}>Anschluss prüfen</a>
+               {!!finding.parameter_findings?.length && <ul>{finding.parameter_findings.map((detail,i) => <li key={i}>{detail.message ?? detail.code}</li>)}</ul>}
+             </li>)}</ul></details>
+           </div>}
++          {deviceFindings.length > 0 && <details className="notice warning"><summary>{deviceFindings.length} Anschlüsse mit offenem Gerätenachweis</summary>
++            <p>Die gespeicherten Simulationswerte sind verwendbar. Reale Geräte, Transceiver, Verkabelung und Implementierung sind damit noch nicht bestätigt.</p>
++            <ul>{deviceFindings.map((finding,index) => <li key={index}><strong>{finding.node_name} · {finding.network_name}</strong>: {finding.message}</li>)}</ul>
++          </details>}
++          {!!affectedNetworks.length && deviceFindings.length > 0 && <p>Optionaler nächster Schritt für den Gerätenachweis: bestätigte Netzwerte zuordnen. Die Simulationsauslegung verwendet bereits deine gespeicherten Werte.</p>}
+           {!!affectedNetworks.length && <NetworkRateReview key={`${parameterReview.edit_token}:${technologyId}`} technology={technology} networks={affectedNetworks}
+             snapshot={{project_id:parameterReview.project_id,parameters:storedParameters,edit_token:parameterReview.edit_token}}
+             projectId={initialProjectId} disabled={submitting || parameterDraftDirty} fieldKeys={affectedFieldKeys} onContinue={afterNetworkConfirmation} onBusyChange={setNetworkConfirming} />}
+@@ -1474,7 +1494,7 @@
+                   <div className="form-grid three">
+                     {fields.map((field) => (
+                       <div key={field.key} id={`parameter-field-${field.key}`} className={findingsForParameter(currentFindings, technologyId, field.key).length ? 'parameter-field-finding' : undefined}>
+-                      {findingsForParameter(currentFindings, technologyId, field.key).length > 0 && <p className="parameter-field-finding-message" role="status">Prüfbefund · {new Set(findingsForParameter(currentFindings, technologyId, field.key).map(item => item.network_id)).size} betroffene Netze: Bestätigung oder passender Nachweis fehlt. Ein vorbelegter Wert allein erledigt den Befund nicht.</p>}
++                      {findingsForParameter(currentFindings, technologyId, field.key).length > 0 && <p className="parameter-field-finding-message" role="status">Prüfbefund · {new Set(findingsForParameter(currentFindings, technologyId, field.key).map(item => item.network_id)).size} betroffene Netze: {findingsForParameter(currentFindings, technologyId, field.key).every(item => item.code === 'CAPACITY_DEVICE_EVIDENCE_MISSING') ? 'Geräte-/Implementierungsnachweis offen; die Simulationswerte werden verwendet.' : 'Gespeicherte Konfiguration oder Auslegung prüfen. Einzelheiten stehen in der aktuellen Parameterprüfung.'}</p>}
+                       <ParameterControl
+                         field={field}
+                         key={field.key}

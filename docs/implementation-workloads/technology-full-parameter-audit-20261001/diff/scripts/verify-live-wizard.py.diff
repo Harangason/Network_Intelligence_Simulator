@@ -1,0 +1,36 @@
+--- before/scripts/verify-live-wizard.py
++++ after/scripts/verify-live-wizard.py
+@@ -41,9 +41,9 @@
+     opener = build_opener(HTTPCookieProcessor(CookieJar()))
+     evidence = []
+ 
+-    def request(path, payload=None, headers=None, stream=False):
++    def request(path, payload=None, headers=None, stream=False, method=None):
+         started = time.monotonic()
+-        req = Request(args.base_url + path, method='GET' if payload is None else 'POST',
++        req = Request(args.base_url + path, method=method or ('GET' if payload is None else 'POST'),
+                       headers={'X-Project-ID': project, 'Content-Type': 'application/json', **(headers or {})},
+                       data=None if payload is None else json.dumps(payload).encode())
+         with opener.open(req, timeout=180) as response:
+@@ -97,6 +97,21 @@
+         if metadata.exists():
+             wizard_context.update(json.loads(metadata.read_text(encoding='utf-8')).get('wizard_context') or {})
+     wizard_context.update(project_id=project, run_id=run_id)
++    if args.prompt_file:
++        # Explicit isolated operator input, separate from the captured model.
++        # This exercises virtual LIN/Ethernet timing, not real hardware or a SOME/IP codec.
++        initial = request('/api/engineering/workflow/parameters')
++        groups = dict(initial['parameters'].get('technology_parameters', {}))
++        for technology in ('lin', 'ethernet'):
++            fixture = json.loads((Path(__file__).resolve().parents[1] /
++                f'frontend/e2e/fixtures/virtual-{technology}-profile.json').read_text(encoding='utf-8'))
++            values = fixture['values']
++            groups[technology] = {'values': values, 'provenance': {key: {
++                'source': 'USER_CONFIRMED', 'status': 'CONFIRMED', 'value': value}
++                for key, value in values.items()}}
++        request('/api/engineering/workflow/parameters', {
++            'expected_token': initial['edit_token'], 'parameters': {**initial['parameters'],
++                'technology_parameters': groups}}, method='PATCH')
+     request_revision = None
+     for attempt in range(8):
+         message = prompt + ('\nFortsetzung des bestätigten Wizard-Auftrags: Ziel: data_science_intelligence.' if attempt else '')

@@ -1,0 +1,14 @@
+--- before/backend/engineering/api.py
++++ after/backend/engineering/api.py
+@@ -878,7 +878,10 @@
+     parameters = mark_user_duration(parameters)
+     project_id = _project_id()
+     check_edit_token(payload.get("expected_token"), WorkflowStatusService(project_id).get()["parameters"])
+-    WorkflowStatusService(project_id).save_parameters(parameters, actor=payload.get("actor"))
++    try:
++        WorkflowStatusService(project_id).save_parameters(parameters, actor=payload.get("actor"))
++    except ValueError as error:
++        raise EngineeringValidationError(str(error)) from error
+     _auto_recalculate_capacity(project_id)
+     return jsonify(WorkflowStatusService(project_id).get())
+ 

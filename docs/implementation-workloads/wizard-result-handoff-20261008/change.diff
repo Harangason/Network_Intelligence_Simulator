@@ -1,0 +1,632 @@
+--- before/frontend/src/features/agent/ui/agent-chat-core.tsx
++++ after/frontend/src/features/agent/ui/agent-chat-core.tsx
+@@ -14,6 +14,7 @@
+ import type { EngineeringAgentUIMessage, EngineeringProposal } from "@/features/agent/lib/engineering-agent";
+ import { loadWizardProposal } from '@/features/agent/lib/proposal-client';
+ import { getCatalog } from "@/shared/api/api";
++import { selectSimulationSnapshot } from "@/features/simulation/lib/simulation-result";
+ import {
+   activateEngineeringAgentWizardSession,
+   clearPendingEngineeringAgentTask,
+@@ -83,6 +84,7 @@
+   getPreflightSnapshot,
+   getWorkflow,
+   getWorkflowSummary,
++  getWorkflowSnapshots,
+   setWorkflowContext,
+   type IntelligenceRecommendation,
+   type WorkflowState,
+@@ -2428,6 +2430,7 @@
+ 
+   async function finishWizard() {
+     if (agentPending || routingReviewBusy || supplementBusy || routingReviewPending || runPaused) return;
++    let completedResultsHref: string | undefined;
+     try {
+       const response = await fetch(`/api/engineering/agent/runs/${encodeURIComponent(runId)}/finish`, {
+         method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Project-ID': projectId },
+@@ -2435,6 +2438,20 @@
+       });
+       const result = await response.json();
+       if (!response.ok) throw new Error(result.error ?? result.findings?.[0]?.message ?? 'Der Auftrag ist noch nicht vollständig abgeschlossen.');
++      if (readActiveProjectId() !== projectId || result.project_id !== projectId) {
++        throw new Error('Das aktive Projekt wurde gewechselt. Bitte den abgeschlossenen Auftrag in seinem Projekt öffnen.');
++      }
++      const finishedWorkflow = result as WorkflowState;
++      const requestedTarget = (finishedWorkflow.context.wizard_request as { target?: string } | undefined)?.target;
++      if (requestedTarget && wizardTargets.indexOf(requestedTarget as WorkflowStepId) >= wizardTargets.indexOf('simulation')
++        && ['COMPLETE', 'APPROVED', 'WARNING'].includes(finishedWorkflow.statuses.simulation)) {
++        // The authoritative finish receipt deliberately contains no snapshot details.
++        // Failure of this optional metadata read must not undo an accepted finish.
++        const persisted = await getWorkflowSnapshots(projectId).catch(() => null);
++        const latest = selectSimulationSnapshot(persisted?.simulations ?? []);
++        completedResultsHref = latest?.status === 'COMPLETED' && !latest.is_outdated
++          ? `/studio/results?snapshot=${encodeURIComponent(latest.id)}` : '/studio/results';
++      }
+     } catch (error) {
+       setStatusError(error instanceof Error ? error.message : "Der Agent-Auftrag konnte nicht abgeschlossen werden.");
+       return;
+@@ -2448,6 +2465,7 @@
+       details: "Die temporäre Rückkehr zum Engineering-Auftrag wurde beendet.",
+     }).catch(() => undefined);
+     onFinish?.();
++    if (completedResultsHref && readActiveProjectId() === projectId) window.location.assign(withProjectParam(completedResultsHref, projectId));
+   }
+ 
+   async function cancelWizardRun() {
+--- before/frontend/src/features/simulation/lib/simulation-result.ts
++++ after/frontend/src/features/simulation/lib/simulation-result.ts
+@@ -1,4 +1,33 @@
+ import type { SimulationJob } from "../../../shared/api/types";
++
++type PersistedSimulation = {
++  id: string;
++  job_id?: string | null;
++  created_at: string;
++  is_outdated: boolean;
++};
++
++/** Compact refreshes update status/provenance without dropping frozen details. */
++export function mergeSimulationSnapshots<T extends PersistedSimulation>(summaries: T[], cached: T[]): T[] {
++  const details = new Map(cached.map((item) => [item.id, item]));
++  return summaries.map((item) => ({ ...details.get(item.id), ...item }));
++}
++
++/** Resolve only records returned by the current project's snapshot endpoint. */
++export function selectSimulationSnapshot<T extends PersistedSimulation>(
++  snapshots: T[],
++  selection: { snapshotId?: string; jobId?: string } = {},
++): T | null {
++  if (selection.snapshotId) {
++    const selected = snapshots.find((item) => item.id === selection.snapshotId);
++    if (!selected?.job_id) throw new Error("Dieser Simulationslauf ist in diesem Projekt nicht verfügbar.");
++    return selected;
++  }
++  if (selection.jobId) return snapshots.find((item) => item.job_id === selection.jobId) ?? null;
++  const executed = snapshots.filter((item) => item.job_id);
++  const current = executed.filter((item) => !item.is_outdated);
++  return [...(current.length ? current : executed)].sort((a, b) => b.created_at.localeCompare(a.created_at))[0] ?? null;
++}
+ 
+ /** Job registries contain summaries; snapshot details retain the runtime data. */
+ export function mergeSimulationResult(
+--- before/frontend/src/features/simulation/lib/simulation-result.test.mjs
++++ after/frontend/src/features/simulation/lib/simulation-result.test.mjs
+@@ -1,6 +1,6 @@
+ import test from "node:test";
+ import assert from "node:assert/strict";
+-import { mergeSimulationResult } from "./simulation-result.ts";
++import { mergeSimulationResult, mergeSimulationSnapshots, selectSimulationSnapshot } from "./simulation-result.ts";
+ 
+ test("compact registry data cannot hide a snapshot's measured results", () => {
+   const full = { status: "completed", trace: { events: 101 }, runtime_metrics: { available: true } };
+@@ -12,3 +12,51 @@
+   assert.equal(mergeSimulationResult(undefined, full), full);
+   assert.equal(mergeSimulationResult(full, undefined), full);
+ });
++
++const old = { id: "old", job_id: "job-old", is_outdated: true, created_at: "2026-10-01T00:00:00Z" };
++const latest = { id: "latest", job_id: "job-latest", is_outdated: false, created_at: "2026-10-02T00:00:00Z" };
++const ready = { id: "ready", job_id: null, is_outdated: false, created_at: "2026-10-03T00:00:00Z" };
++
++test("an absent browser session restores the project's latest executed snapshot, not an unexecuted draft", () => {
++  assert.equal(selectSimulationSnapshot([old, ready, latest]), latest);
++  assert.equal(selectSimulationSnapshot([ready]), null);
++  assert.equal(selectSimulationSnapshot([]), null);
++  assert.equal(selectSimulationSnapshot([old]), old);
++});
++
++test("explicit history selection stays exact and cannot silently fall back from another project's snapshot", () => {
++  assert.equal(selectSimulationSnapshot([old, latest], { snapshotId: "old" }), old);
++  assert.equal(selectSimulationSnapshot([old, latest], { jobId: "job-old" }), old);
++  assert.equal(selectSimulationSnapshot([latest], { jobId: "local-standalone" }), null);
++  assert.throws(() => selectSimulationSnapshot([latest], { snapshotId: "another-project" }));
++  assert.throws(() => selectSimulationSnapshot([ready, latest], { snapshotId: "ready" }));
++});
++
++test("restoration preserves complete trace, signal, assessment and source data without mutating historical evidence", () => {
++  const snapshot = { model_simulation: { signals: [{ id: "temperature" }] }, trace: { events: 17 }, assessment: { conformance: "FAIL" }, runtime_metrics: { available: true } };
++  const registry = { registry_truncated: true, status: "completed" };
++  const before = structuredClone(snapshot);
++  const merged = mergeSimulationResult(registry, snapshot);
++  assert.deepEqual(merged.model_simulation.signals, [{ id: "temperature" }]);
++  assert.equal(merged.trace.events, 17);
++  assert.equal(merged.assessment.conformance, "FAIL");
++  assert.deepEqual(snapshot, before);
++});
++
++test("metadata refresh retains frozen prediction, inputs and measured result while applying the current outdated status", () => {
++  const full = { ...latest, status: 'COMPLETED', calculated_metrics: { overview: { network_count: 2 } },
++    configuration: { seed: 42 }, result: { trace: { events: 303 } } };
++  const before = structuredClone(full);
++  const metadata = { ...latest, status: 'OUTDATED', is_outdated: true, outdated_reason: 'Parameter geändert' };
++  const refreshed = mergeSimulationSnapshots([metadata], [full, old]);
++  assert.equal(refreshed.length, 1);
++  assert.equal(refreshed[0].id, full.id);
++  assert.deepEqual(refreshed[0].calculated_metrics, full.calculated_metrics);
++  assert.deepEqual(refreshed[0].configuration, full.configuration);
++  assert.deepEqual(refreshed[0].result, full.result);
++  assert.equal(refreshed[0].is_outdated, true);
++  assert.equal(refreshed[0].status, 'OUTDATED');
++  assert.equal(refreshed[0].outdated_reason, 'Parameter geändert');
++  assert.deepEqual(full, before);
++  assert.equal(mergeSimulationSnapshots([old], [full])[0].result, undefined);
++});
+--- before/frontend/src/features/simulation/ui/model-simulation-runner.tsx
++++ after/frontend/src/features/simulation/ui/model-simulation-runner.tsx
+@@ -21,7 +21,8 @@
+   simulationFormatDefinitions,
+ } from "@/features/simulation/lib/simulation-formats";
+ import { topologyToConfig, type NetworkTopology } from "@/features/network/lib/topology";
+-import { createSimulationSnapshot, getWorkflow, setWorkflowContext, type SimulationSnapshot, type WorkflowState } from "@/features/workflow/lib/workflow-api";
++import { createSimulationSnapshot, getWorkflow, getWorkflowSimulationSnapshot, setWorkflowContext, type SimulationSnapshot, type WorkflowState } from "@/features/workflow/lib/workflow-api";
++import { mergeSimulationResult, selectSimulationSnapshot } from "@/features/simulation/lib/simulation-result";
+ import type { Catalog, ModelSignalSeries, ModelSimulationTrace, RuntimeNetworkMetric, SimulationJob } from "@/shared/api/types";
+ import { SimulationResult } from "./simulation-result";
+ import { notifyWorkflowChanged } from "../../workflow/ui/workflow-header";
+@@ -64,7 +65,9 @@
+   return `nis.active-simulation.${projectId}`;
+ }
+ 
+-export function ModelSimulationRunner({ initialProjectId = "" }: { initialProjectId?: string }) {
++const RESET_SIMULATION_VIEW = "reset-view";
++
++export function ModelSimulationRunner({ initialProjectId = "", initialSnapshotId }: { initialProjectId?: string; initialSnapshotId?: string }) {
+   const [catalog, setCatalog] = useState<Catalog | null>(null);
+   const [workflow, setWorkflow] = useState<WorkflowState | null>(null);
+   const [snapshot, setSnapshot] = useState<SimulationSnapshot | null>(null);
+@@ -97,7 +100,7 @@
+   const [resetPromptOpen, setResetPromptOpen] = useState(false);
+ 
+   useEffect(() => {
+-    const projectId = workflow?.project_id;
++    const projectId = workflow?.project_id ?? "";
+     if (!projectId) return;
+     let active = true;
+     setRestoredProjectId("");
+@@ -105,30 +108,42 @@
+     setJob(null);
+     setSnapshot(null);
+     const savedJobId = window.sessionStorage.getItem(simulationSessionKey(projectId));
+-    if (!savedJobId) {
++    if (!initialSnapshotId && savedJobId === RESET_SIMULATION_VIEW) {
+       setRestoredProjectId(projectId);
+       return () => { active = false; };
+     }
+-    void getSimulation(savedJobId).then((savedJob) => {
++    async function restore() {
++      const persisted = selectSimulationSnapshot(workflow?.simulation_snapshots ?? [],
++        initialSnapshotId ? { snapshotId: initialSnapshotId } : savedJobId ? { jobId: savedJobId } : {});
++      const jobId = persisted?.job_id ?? savedJobId;
++      if (!jobId) {
++        if (active) setRestoredProjectId(projectId);
++        return;
++      }
++      const [savedJob, fullSnapshot] = await Promise.all([
++        getSimulation(jobId, projectId),
++        persisted ? getWorkflowSimulationSnapshot(persisted.id, projectId) : Promise.resolve(null),
++      ]);
+       if (!active) return;
+-      setJob(savedJob);
++      setSnapshot(fullSnapshot);
++      setJob({ ...savedJob, result: mergeSimulationResult(savedJob.result, fullSnapshot?.result) ?? null });
+       setRestoredProjectId(projectId);
+-    }).catch((caught) => {
++    }
++    void restore().catch((caught) => {
+       if (active) setRestoreError(caught instanceof Error ? caught.message : "Simulationslauf nicht erreichbar.");
+     });
+     return () => { active = false; };
+-  }, [restoreAttempt, workflow?.project_id]);
++  }, [initialSnapshotId, restoreAttempt, workflow?.project_id]);
+ 
+   useEffect(() => {
+     const projectId = workflow?.project_id;
+     if (!projectId || restoredProjectId !== projectId) return;
+     const key = simulationSessionKey(projectId);
+     if (job) window.sessionStorage.setItem(key, job.id);
+-    else window.sessionStorage.removeItem(key);
+   }, [job, restoredProjectId, workflow?.project_id]);
+ 
+   useEffect(() => {
+-    if (!job) return;
++    if (!job || ["completed", "failed", "canceled"].includes(job.status)) return;
+     const warnBeforeLeaving = (event: BeforeUnloadEvent) => {
+       event.preventDefault();
+       event.returnValue = "";
+@@ -139,13 +154,13 @@
+ 
+   const loadWorkflow = useCallback(async () => {
+     try {
+-      const nextWorkflow = await getWorkflow();
++      const nextWorkflow = await getWorkflow(initialProjectId || undefined);
+       setWorkflow(nextWorkflow);
+       setError("");
+     } catch (caught) {
+       setError(caught instanceof Error ? caught.message : "Workflow nicht verfügbar.");
+     }
+-  }, []);
++  }, [initialProjectId]);
+   useWorkflowRefresh(loadWorkflow);
+ 
+   useEffect(() => {
+@@ -159,9 +174,10 @@
+   }, [workflow?.project_id, workflow?.versions.engineering_model]);
+ 
+   useEffect(() => {
++    if (!snapshot || !job) return;
+     void setWorkflowContext({
+-      selected_simulation: snapshot ? { snapshot_id: snapshot.id, job_id: job?.id ?? null } : null,
+-    }).catch(() => undefined);
++      selected_simulation: { snapshot_id: snapshot.id, job_id: job.id },
++    }, workflow?.project_id).catch(() => undefined);
+   }, [job?.id, snapshot]);
+ 
+   useEffect(() => {
+@@ -186,7 +202,7 @@
+ 
+   const valid = workflow?.statuses.validation === "APPROVED" || workflow?.statuses.validation === "WARNING";
+   const projectIdForLinks = workflow?.project_id ?? initialProjectId;
+-  const simulationOutdated = workflow?.statuses.simulation === "OUTDATED";
++  const simulationOutdated = snapshot?.is_outdated || workflow?.statuses.simulation === "OUTDATED";
+   const running = Boolean(job && !["completed", "failed", "canceled"].includes(job.status));
+   const selectedTechnology = useMemo(() => {
+     const industry = String(workflow?.parameters.industry ?? "");
+@@ -230,7 +246,9 @@
+   }
+ 
+   const handleJobChange = useCallback((nextJob: SimulationJob) => {
+-    setJob(nextJob);
++    setJob((current) => current?.id === nextJob.id
++      ? { ...nextJob, result: mergeSimulationResult(nextJob.result, current.result) ?? null }
++      : nextJob);
+     if (["completed", "failed", "canceled"].includes(nextJob.status)) {
+       void getWorkflow().then(setWorkflow).catch(() => undefined);
+       notifyWorkflowChanged();
+@@ -346,7 +364,9 @@
+   }
+ 
+   function clearSimulationView() {
+-    if (workflow?.project_id) window.sessionStorage.removeItem(simulationSessionKey(workflow.project_id));
++    if (workflow?.project_id) window.sessionStorage.setItem(simulationSessionKey(workflow.project_id), RESET_SIMULATION_VIEW);
++    // The explicit URL selects a saved run; reset clears that selection, never the persisted evidence.
++    window.history.replaceState(window.history.state, "", withProjectParam("/studio/simulation", projectIdForLinks));
+     setResetPromptOpen(false);
+     setPlaying(false);
+     setPlayhead(0);
+@@ -426,9 +446,12 @@
+   const maximumTime = Number(modelTrace?.scenario.duration_s || duration);
+ 
+   return (
+-    <section className="simulation-runner model-simulation-runner">
++    <section className="simulation-runner model-simulation-runner" data-snapshot-id={snapshot?.id} data-job-id={job?.id}>
++      {snapshot && job && <div className="notice"><strong>Gespeicherter Simulationslauf</strong> · {job.id}
++        <Link href={withProjectParam(`/studio/results?snapshot=${encodeURIComponent(snapshot.id)}`, projectIdForLinks)}>Ergebnis und Bewertung öffnen →</Link>
++      </div>}
+       {!valid && <div className="workflow-blocker error"><strong>Simulation blockiert</strong><span>Ein aktueller Preflight mit Status APPROVED oder WARNING ist erforderlich.</span><Link href={withProjectParam("/studio/validation", projectIdForLinks)}>Preflight öffnen</Link></div>}
+-      {simulationOutdated && <div className="workflow-blocker warning"><strong>Frühere Simulation ist OUTDATED</strong><span>{workflow?.stale_reasons.simulation}</span></div>}
++      {simulationOutdated && <div className="workflow-blocker warning"><strong>Historisches Simulationsergebnis · OUTDATED</strong><span>{snapshot?.outdated_reason ?? workflow?.stale_reasons.simulation}</span></div>}
+ 
+       <form className="panel simulation-command-bar" onSubmit={start}>
+         <label><span>Szenario</span><select value={mode} onChange={(event) => setMode(event.target.value)}><option value="GOLDEN">Golden / Ideal</option><option value="NORMAL">Normal</option><option value="USER_DEFINED_FAULT">Nutzerfehler</option><option value="AI_GENERATED_FAULT">Geprüfter KI-Fehler</option><option value="STRESS">Stresstest</option></select></label>
+@@ -484,14 +507,14 @@
+       </form>
+       {savedScenarioNotice && <div className="notice success">{savedScenarioNotice}</div>}
+       {restoreError && <div className="notice error" role="alert">Der gespeicherte Simulationslauf konnte nicht geladen werden: {restoreError} <button className="button secondary tiny" onClick={() => setRestoreAttempt((attempt) => attempt + 1)} type="button">Erneut laden</button></div>}
+-      {workflow?.project_id && restoredProjectId !== workflow.project_id && !restoreError && <div className="notice" role="status">Der letzte Simulationslauf dieser Sitzung wird wiederhergestellt …</div>}
++      {workflow?.project_id && restoredProjectId !== workflow.project_id && !restoreError && <div className="notice" role="status">Der gespeicherte Simulationslauf dieses Projekts wird geladen …</div>}
+       {resetPromptOpen && job && (
+         <div className="project-dialog-backdrop">
+           <section aria-labelledby="simulation-reset-title" aria-modal="true" className="project-dialog simulation-reset-dialog" role="alertdialog">
+             <div>
+               <p className="eyebrow">Simulations-Trace</p>
+               <h2 id="simulation-reset-title">Trace vor dem Zurücksetzen sichern?</h2>
+-              <p>Der Lauf bleibt bis zum Zurücksetzen in dieser Sitzung erhalten. Lade gewünschte Artefakte jetzt herunter. Danach wird die Ansicht geleert; du kannst den Lauf bis dahin durch Navigation oder Neuladen wieder öffnen.</p>
++              <p>Zurücksetzen leert nur diese Ansicht. Der gespeicherte Lauf und seine Ergebnisse bleiben unter Results / Analysis verfügbar. Du kannst die Trace-Artefakte zusätzlich herunterladen.</p>
+             </div>
+             {!!job.artifact_downloads?.length && (
+               <div className="simulation-reset-artifacts" aria-label="Trace-Artefakte herunterladen">
+--- before/frontend/src/features/workflow/stage_08_results_analysis/results-workbench.tsx
++++ after/frontend/src/features/workflow/stage_08_results_analysis/results-workbench.tsx
+@@ -1,9 +1,9 @@
+ "use client";
+ 
+ import Link from "next/link";
+-import { useCallback, useEffect, useMemo, useState } from "react";
++import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+ import { getSimulation, listSimulations } from "@/shared/api/api";
+-import { mergeSimulationResult } from "@/features/simulation/lib/simulation-result";
++import { mergeSimulationResult, mergeSimulationSnapshots, selectSimulationSnapshot } from "@/features/simulation/lib/simulation-result";
+ import type { RuntimeMetrics, SimulationJob } from "@/shared/api/types";
+ import {
+   getWorkflowSimulationSnapshot,
+@@ -13,44 +13,47 @@
+   type SimulationSnapshot,
+ } from "@/features/workflow/lib/workflow-api";
+ import { useWorkflowRefresh } from "@/features/workflow/lib/use-workflow-refresh";
+-import { withProjectParam } from "@/features/settings/lib/user-settings";
++import { readActiveProjectId, withProjectParam } from "@/features/settings/lib/user-settings";
+ 
+-export function ResultsWorkbench({ initialProjectId = "" }: { initialProjectId?: string }) {
++export function ResultsWorkbench({ initialProjectId = "", initialSnapshotId }: { initialProjectId?: string; initialSnapshotId?: string }) {
+   const [snapshots, setSnapshots] = useState<SimulationSnapshot[]>([]);
+   const [capacity, setCapacity] = useState<AnalysisSnapshot | null>(null);
+   const [jobs, setJobs] = useState<Record<string, SimulationJob>>({});
+-  const [selectedId, setSelectedId] = useState<string | null>(null);
++  const [selectedId, setSelectedId] = useState<string | null>(initialSnapshotId ?? null);
++  const requestedSnapshot = useRef(initialSnapshotId);
++  const loadSequence = useRef(0);
+   const [compareId, setCompareId] = useState<string>("");
+   const [error, setError] = useState("");
+   const [loadedSnapshotDetails, setLoadedSnapshotDetails] = useState<Set<string>>(() => new Set());
+ 
+   const load = useCallback(async () => {
++    const sequence = ++loadSequence.current;
++    const projectId = initialProjectId || readActiveProjectId();
+     try {
+-      const [workflowSnapshots, simulationJobs] = await Promise.all([getWorkflowSnapshots(), listSimulations()]);
+-        setSnapshots((current) => workflowSnapshots.simulations.map((item) => {
+-          const existing = current.find((snapshot) => snapshot.id === item.id);
+-          return existing?.result !== undefined ? { ...item, result: existing.result } : item;
+-        }));
++      const [workflowSnapshots, simulationJobs] = await Promise.all([getWorkflowSnapshots(projectId), listSimulations(projectId)]);
++        if (sequence !== loadSequence.current || readActiveProjectId() !== projectId) return;
++        const selection = selectSimulationSnapshot(workflowSnapshots.simulations, { snapshotId: requestedSnapshot.current });
++        setSnapshots((current) => mergeSimulationSnapshots(workflowSnapshots.simulations, current));
+         setCapacity(workflowSnapshots.capacity);
+         setJobs(Object.fromEntries(simulationJobs.map((job) => [job.id, job])));
+-        setSelectedId((current) => workflowSnapshots.simulations.some((item) => item.id === current)
+-          ? current
+-          : workflowSnapshots.simulations[0]?.id ?? null);
++        requestedSnapshot.current = selection?.id;
++        setSelectedId(selection?.id ?? null);
+         setError("");
+     } catch (caught) {
+-      setError(caught instanceof Error ? caught.message : "Ergebnisse nicht verfügbar.");
++      if (sequence === loadSequence.current) setError(caught instanceof Error ? caught.message : "Ergebnisse nicht verfügbar.");
+     }
+-  }, []);
++  }, [initialProjectId]);
+   useWorkflowRefresh(load);
+ 
+   const selected = useMemo(() => snapshots.find((item) => item.id === selectedId) ?? null, [selectedId, snapshots]);
+   const compareSnapshot = snapshots.find((item) => item.id === compareId);
+ 
+   useEffect(() => {
++    if (!selected) return;
+     void setWorkflowContext({
+-      selected_simulation: selected ? { snapshot_id: selected.id, job_id: selected.job_id ?? null } : null,
+-    }).catch(() => undefined);
+-  }, [selected]);
++      selected_simulation: { snapshot_id: selected.id, job_id: selected.job_id ?? null },
++    }, initialProjectId || readActiveProjectId()).catch(() => undefined);
++  }, [initialProjectId, selected?.id, selected?.job_id]);
+ 
+   useEffect(() => {
+     const ids = [selectedId, compareId].filter((value): value is string => Boolean(value));
+@@ -59,15 +62,16 @@
+       return snapshot && snapshot.result === undefined && !loadedSnapshotDetails.has(id);
+     });
+     if (!missing.length) return;
++    const projectId = initialProjectId || readActiveProjectId();
+     setLoadedSnapshotDetails((current) => new Set([...current, ...missing]));
+     missing.forEach((id) => {
+-      void getWorkflowSimulationSnapshot(id)
++      void getWorkflowSimulationSnapshot(id, projectId)
+         .then((fullSnapshot) => {
+-          setSnapshots((current) => current.map((item) => item.id === fullSnapshot.id ? { ...item, ...fullSnapshot } : item));
++          if (readActiveProjectId() === projectId) setSnapshots((current) => current.map((item) => item.id === fullSnapshot.id ? { ...item, ...fullSnapshot } : item));
+         })
+-        .catch((caught) => setError(caught instanceof Error ? caught.message : "Simulationsergebnis nicht verfügbar."));
++        .catch((caught) => { if (readActiveProjectId() === projectId) setError(caught instanceof Error ? caught.message : "Simulationsergebnis nicht verfügbar."); });
+     });
+-  }, [compareId, loadedSnapshotDetails, selectedId, snapshots]);
++  }, [compareId, initialProjectId, selectedId, snapshots]);
+ 
+   const job = selected?.job_id ? jobs[selected.job_id] : undefined;
+   const observed = mergeSimulationResult(job?.result, selected?.result);
+@@ -95,11 +99,18 @@
+   async function refreshJob() {
+     if (!selected?.job_id) return;
+     try {
+-      const next = await getSimulation(selected.job_id);
++      const next = await getSimulation(selected.job_id, initialProjectId || readActiveProjectId());
+       setJobs((current) => ({ ...current, [next.id]: next }));
+     } catch (caught) {
+       setError(caught instanceof Error ? caught.message : "Lauf konnte nicht aktualisiert werden.");
+     }
++  }
++
++  function selectRun(id: string) {
++    requestedSnapshot.current = id;
++    setSelectedId(id);
++    setError("");
++    window.history.replaceState(window.history.state, "", withProjectParam(`/studio/results?snapshot=${encodeURIComponent(id)}`, initialProjectId || readActiveProjectId()));
+   }
+ 
+   return (
+@@ -109,7 +120,7 @@
+       <div className="results-layout">
+         <aside className="result-run-list">
+           <div className="result-run-list-heading"><strong>SimulationSnapshots</strong><span>{snapshots.length}</span></div>
+-          {snapshots.map((item) => <button className={selectedId === item.id ? "active" : ""} key={item.id} onClick={() => setSelectedId(item.id)} type="button"><span className={`run-state run-${item.status.toLowerCase()}`}>{item.status}</span><strong>{new Date(item.created_at).toLocaleString("de-DE")}</strong><small>{item.job_id ? `Job ${item.job_id.slice(0, 10)}` : "Noch nicht ausgeführt"}</small></button>)}
++          {snapshots.map((item) => <button className={selectedId === item.id ? "active" : ""} data-snapshot-id={item.id} key={item.id} onClick={() => selectRun(item.id)} type="button"><span className={`run-state run-${item.status.toLowerCase()}`}>{item.status}</span><strong>{new Date(item.created_at).toLocaleString("de-DE")}</strong><small>{item.job_id ? `Job ${item.job_id.slice(0, 10)}` : "Noch nicht ausgeführt"}</small></button>)}
+           {!snapshots.length && <div className="analysis-empty"><strong>Keine Snapshots</strong><p>Nach einem erfolgreichen Preflight kann die erste Simulation gestartet werden.</p></div>}
+         </aside>
+         <div className="result-analysis">
+@@ -133,7 +144,7 @@
+           </> : <div className="analysis-empty"><strong>Kein Lauf ausgewählt</strong><p>Ergebnisse werden nicht gelöscht; veraltete Läufe bleiben als historische Evidenz sichtbar.</p></div>}
+         </div>
+       </div>
+-      <div className="analysis-footer-actions"><Link className="button secondary" href={withProjectParam("/studio/simulation", projectIdForLinks)}>Simulation öffnen</Link><Link className="button primary" href={withProjectParam("/studio/engineering", projectIdForLinks)}>Zum Engineering-Modell →</Link></div>
++      <div className="analysis-footer-actions"><Link className="button secondary" href={withProjectParam(selected ? `/studio/simulation?snapshot=${encodeURIComponent(selected.id)}` : "/studio/simulation", projectIdForLinks)}>Simulation öffnen</Link><Link className="button primary" href={withProjectParam("/studio/engineering", projectIdForLinks)}>Zum Engineering-Modell →</Link></div>
+     </section>
+   );
+ }
+--- before/frontend/src/app/studio/results/page.tsx
++++ after/frontend/src/app/studio/results/page.tsx
+@@ -9,7 +9,9 @@
+ }: {
+   searchParams: Promise<ProjectQueryRecord>;
+ }) {
+-  const initialProjectId = projectIdFromSearchParams(await searchParams);
++  const query = await searchParams;
++  const initialProjectId = projectIdFromSearchParams(query);
++  const initialSnapshotId = Array.isArray(query.snapshot) ? query.snapshot[0] : query.snapshot;
+   return (
+     <main className="shell studio-shell workflow-shell">
+       <StudioTopbar initialProjectId={initialProjectId} />
+@@ -17,7 +19,7 @@
+       <StudioWorkflowHero eyebrow="Workflow 08" initialProjectId={initialProjectId} title="Prognose und Simulation gemeinsam analysieren.">
+         Historische Ergebnisse bleiben erhalten, einschließlich Quellversionen, Veraltungsgrund und technischer Evidenz.
+       </StudioWorkflowHero>
+-      <ResultsWorkbench initialProjectId={initialProjectId} />
++      <ResultsWorkbench key={`${initialProjectId}:${initialSnapshotId}`} initialProjectId={initialProjectId} initialSnapshotId={initialSnapshotId} />
+     </main>
+   );
+ }
+--- before/frontend/src/app/studio/simulation/page.tsx
++++ after/frontend/src/app/studio/simulation/page.tsx
+@@ -9,7 +9,9 @@
+ }: {
+   searchParams: Promise<ProjectQueryRecord>;
+ }) {
+-  const initialProjectId = projectIdFromSearchParams(await searchParams);
++  const query = await searchParams;
++  const initialProjectId = projectIdFromSearchParams(query);
++  const initialSnapshotId = Array.isArray(query.snapshot) ? query.snapshot[0] : query.snapshot;
+   return (
+     <main className="shell studio-shell workflow-shell">
+       <StudioTopbar initialProjectId={initialProjectId} />
+@@ -17,7 +19,7 @@
+       <StudioWorkflowHero eyebrow="Workflow 07" initialProjectId={initialProjectId} title="Signale und Kommunikation gemeinsam simulieren.">
+         Modellwerte, Frames, Buslast und Fehlerereignisse laufen auf einer synchronisierten Zeitachse.
+       </StudioWorkflowHero>
+-      <ModelSimulationRunner initialProjectId={initialProjectId} />
++      <ModelSimulationRunner key={`${initialProjectId}:${initialSnapshotId}`} initialProjectId={initialProjectId} initialSnapshotId={initialSnapshotId} />
+     </main>
+   );
+ }
+--- before/frontend/src/shared/api/api.ts
++++ after/frontend/src/shared/api/api.ts
+@@ -78,24 +78,25 @@
+   }
+ }
+ 
+-export async function listSimulations(): Promise<SimulationJob[]> {
+-  const response = await apiRequest<{ jobs: SimulationJob[] }>("/api/simulations");
++export async function listSimulations(projectId = readActiveProjectId()): Promise<SimulationJob[]> {
++  const response = await apiRequest<{ jobs: SimulationJob[] }>("/api/simulations", { headers: { "X-Project-ID": projectId } });
+   return response.jobs;
+ }
+ 
+-export async function getSimulation(id: string): Promise<SimulationJob> {
++export async function getSimulation(id: string, projectId = readActiveProjectId()): Promise<SimulationJob> {
+   if (id.startsWith("local-")) {
+     announceMode("browser");
+     return getLocalSimulation(id);
+   }
+-  const job = await apiRequest<SimulationJob>(`/api/simulations/${id}`);
++  const options = { headers: { "X-Project-ID": projectId } };
++  const job = await apiRequest<SimulationJob>(`/api/simulations/${id}`, options);
+   if (!job.result?.registry_truncated || !job.artifact_downloads?.length) return job;
+   const fullResult = job.artifact_downloads.find(
+     (artifact) => artifact.name === "simulation_result.json",
+   );
+   if (!fullResult) return job;
+   try {
+-    const persisted = await apiRequest<SimulationResultPayload>(fullResult.url);
++    const persisted = await apiRequest<SimulationResultPayload>(fullResult.url, options);
+     return { ...job, result: mergeSimulationResult(job.result, persisted) ?? job.result };
+   } catch {
+     // The compact registry result remains usable while an artifact is moved or unavailable.
+--- before/frontend/src/features/workflow/lib/workflow-api.ts
++++ after/frontend/src/features/workflow/lib/workflow-api.ts
+@@ -634,15 +634,15 @@
+     body: JSON.stringify({ configuration }),
+   });
+ 
+-export const getWorkflowSnapshots = () =>
++export const getWorkflowSnapshots = (projectId = readActiveProjectId()) =>
+   request<{
+     capacity: AnalysisSnapshot | null;
+     preflight: AnalysisSnapshot | null;
+     simulations: SimulationSnapshot[];
+-  }>("/workflow/snapshots");
+-
+-export const getWorkflowSimulationSnapshot = (snapshotId: string) =>
+-  request<SimulationSnapshot>(`/workflow/simulation-snapshots/${encodeURIComponent(snapshotId)}`);
++  }>("/workflow/snapshots", { headers: { "X-Project-ID": projectId } });
++
++export const getWorkflowSimulationSnapshot = (snapshotId: string, projectId = readActiveProjectId()) =>
++  request<SimulationSnapshot>(`/workflow/simulation-snapshots/${encodeURIComponent(snapshotId)}`, { headers: { "X-Project-ID": projectId } });
+ 
+ export type IntelligenceIssue = {
+   severity: "ERROR" | "WARNING" | "INFO";
+--- before/frontend/e2e/wizard.spec.ts
++++ after/frontend/e2e/wizard.spec.ts
+@@ -218,7 +218,7 @@
+   const trace = await readProject(page, project, `/api/simulations/${jobs[0].id}/trace-window?limit=10`);
+   expect(trace.count).toBeGreaterThan(0);
+   expect(trace.events.some((item: { signals?: unknown[] }) => item.signals && Object.keys(item.signals).length)).toBeTruthy();
+-  return { workflow, job: jobs[0].id, assessment, parameter_proof: expectedParameters ? {
++  return { workflow, job: jobs[0].id, snapshot: snapshot.id, trace_events: full.result.trace.events, assessment, parameter_proof: expectedParameters ? {
+     saved: expectedParameters, simulation_rates: full.configuration.networks.map((network: any) => ({
+       technology: network.technology, bitrate: network.bitrate,
+       arbitration_bitrate: network.arbitration_bitrate, data_bitrate: network.data_bitrate,
+@@ -549,7 +549,7 @@
+   expect(catalog.technology_count).toBe(125);
+ });
+ 
+-test('new small wizard traverses all nine stages and survives reload/restart @small', async ({ page }, testInfo) => {
++test('new small wizard traverses all nine stages and survives reload/restart @small', async ({ page, browser }, testInfo) => {
+   const errors: string[] = []; page.on('pageerror', error => errors.push(error.message));
+   const project = 'nis-e2e-small-' + randomUUID();
+   const dialog = await openWizard(page, project);
+@@ -600,6 +600,47 @@
+   await dialog.getByRole('button', { name: 'Fertig stellen', exact: true }).click();
+   expect((await finished).ok()).toBe(true);
+   await expect(dialog).not.toBeVisible();
++  await expect(page).toHaveURL(new RegExp(`/studio/results\\?snapshot=${artifacts.snapshot}&project=${project}$`));
++  const selectedRun = page.locator(`.result-run-list button[data-snapshot-id="${artifacts.snapshot}"]`);
++  await expect(selectedRun).toHaveClass('active');
++  await expect(page.getByText('Anforderungserfüllung: Bestanden', { exact: true })).toBeVisible();
++  await expect(page.locator('.metric').filter({ has: page.getByText('Trace Events', { exact: true }) }))
++    .toContainText(artifacts.trace_events.toLocaleString('de-DE'));
++  await page.reload();
++  await expect(selectedRun).toHaveClass('active');
++  await expect(page.getByText('Anforderungserfüllung: Bestanden', { exact: true })).toBeVisible();
++  await page.getByRole('link', { name: 'Simulation öffnen', exact: true }).click();
++  const runner = page.locator('.model-simulation-runner');
++  await expect(runner).toHaveAttribute('data-job-id', artifacts.job);
++  await expect(runner).toHaveAttribute('data-snapshot-id', artifacts.snapshot);
++  await expect(page.getByRole('heading', { name: 'Simulation abgeschlossen', exact: true })).toBeVisible();
++  await page.reload();
++  await expect(runner).toHaveAttribute('data-job-id', artifacts.job);
++  // A new browser context has no session key from either wizard or simulation UI.
++  const freshContext = await browser.newContext({ baseURL: new URL(page.url()).origin });
++  try {
++    const fresh = await freshContext.newPage();
++    await fresh.goto(`/studio/simulation?project=${project}`);
++    const freshRunner = fresh.locator('.model-simulation-runner');
++    await expect(freshRunner).toHaveAttribute('data-job-id', artifacts.job);
++    await expect(freshRunner).toHaveAttribute('data-snapshot-id', artifacts.snapshot);
++    await expect(fresh.getByRole('heading', { name: 'Simulation abgeschlossen', exact: true })).toBeVisible();
++    await fresh.getByRole('button', { name: 'Reset', exact: true }).click();
++    await fresh.getByRole('button', { name: 'Ansicht zurücksetzen', exact: true }).click();
++    await expect(freshRunner).not.toHaveAttribute('data-job-id');
++    await fresh.reload();
++    await expect(fresh.getByRole('button', { name: 'Start', exact: true })).toBeEnabled();
++    await expect(freshRunner).not.toHaveAttribute('data-job-id');
++    await fresh.goto(`/studio/results?project=${project}&snapshot=${artifacts.snapshot}`);
++    await expect(fresh.locator('.result-run-list button.active')).toHaveAttribute('data-snapshot-id', artifacts.snapshot);
++    await expect(fresh.getByText('Anforderungserfüllung: Bestanden', { exact: true })).toBeVisible();
++    await testInfo.attach('wizard-result-restoration', { body: await fresh.screenshot(), contentType: 'image/png' });
++    await fresh.goto(`/studio/results?project=${project}-other&snapshot=${artifacts.snapshot}`);
++    await expect(fresh.getByText('Dieser Simulationslauf ist in diesem Projekt nicht verfügbar.', { exact: true })).toBeVisible();
++    await expect(fresh.locator('.result-run-list button.active')).toHaveCount(0);
++  } finally {
++    await freshContext.close();
++  }
+   await openWizard(page, project);
+   expect((await readProject(page, project, '/api/simulations')).jobs).toHaveLength(1);
+   expect(errors).toEqual([]);

@@ -1,0 +1,192 @@
+--- before/frontend/src/features/simulation/ui/simulation-wizard.tsx
++++ after/frontend/src/features/simulation/ui/simulation-wizard.tsx
+@@ -2,9 +2,10 @@
+ 
+ import { parseLosslessJson } from "../../../shared/api/lossless-json.ts";
+ 
+-import { booleanParameterValue, numericParameterValue, conditionalParameterDefault, confirmTechnologyParameters, technologyParameterApplicable, technologyParameterUnverified as parameterIsUnverified, technologyParameterValues, parameterValueStatus, findingsForParameter, technologyKey, type DeclaredNetwork } from "@/features/communication/lib/technology-parameters";
++import { commonTechnologyParameters, booleanParameterValue, numericParameterValue, conditionalParameterDefault, confirmTechnologyParameters, technologyParameterApplicable, technologyParameterUnverified as parameterIsUnverified, technologyParameterValues, parameterValueStatus, findingsForParameter, technologyKey, type DeclaredNetwork } from "@/features/communication/lib/technology-parameters";
+ 
+ import Link from "next/link";
++import { requestEngineeringAgentWizard } from '@/features/agent/lib/agent-task-events';
+ import { engineeringContextHref } from "@/features/agent/lib/assistant-context";
+ import { useSearchParams } from "next/navigation";
+ import { NetworkRateReview } from "@/features/agent/ui/wizard-preflight-review";
+@@ -539,6 +540,7 @@
+ }) {
+   const searchParams = useSearchParams();
+   const requestedTechnology = searchParams.get("technology");
++  const requestedProposal = searchParams.get('proposal');
+   const [parameterReview, setParameterReview] = useState<ParameterReview | null>(null);
+   const [parameterReviewError, setParameterReviewError] = useState("");
+   const [parameterDraftDirty, setParameterDraftDirty] = useState(false);
+@@ -771,13 +773,13 @@
+   useEffect(() => {
+     if (mode !== "parameters" || !workflowLoaded) return;
+     let active = true; setParameterReview(null); setParameterReviewError("");
+-    void getParameterReview(initialProjectId).then(review => {
++    void getParameterReview(initialProjectId, requestedProposal).then(review => {
+       if (!active) return;
+       if (review.edit_token !== editTokensRef.current.parameters) throw new Error("Der gespeicherte Parameterstand wurde geändert. Bitte die Ansicht neu laden.");
+       setParameterReview(review);
+     }).catch(error => { if (active) setParameterReviewError(error instanceof Error ? error.message : "Parameterprüfung fehlgeschlagen."); });
+     return () => { active = false; };
+-  }, [mode, initialProjectId, workflowLoaded, syncRequest]);
++  }, [mode, initialProjectId, workflowLoaded, syncRequest, requestedProposal]);
+ 
+   useEffect(() => {
+     if (mode !== "parameters") return;
+@@ -924,14 +926,28 @@
+     [storedParameters.formats],
+   );
+   const parameterGroups = useMemo(() => {
+-    const groups = new Map<TechnologyParameterField["category"], TechnologyParameterField[]>();
++    const common = technology ? commonTechnologyParameters(technology) : [];
++    const commonKeys = new Set(common.map(field => field.key));
++    const groups = new Map<string, TechnologyParameterField[]>();
+     for (const field of technology?.parameter_schema ?? []) {
+-      if (busLoadRangeKeys.has(field.key)) continue;
+-      const category = field.category ?? "physical";
++      if (busLoadRangeKeys.has(field.key) || commonKeys.has(field.key)) continue;
++      const category = field.value_role === 'EVIDENCE' || field.value_role === 'REFERENCE' ? 'evidence' : field.category ?? "physical";
+       groups.set(category, [...(groups.get(category) ?? []), field]);
+     }
+-    return Array.from(groups.entries());
++    return [['common', common], ...Array.from(groups.entries())] as Array<[string, TechnologyParameterField[]]>;
+   }, [technology]);
++  useEffect(() => {
++    if (mode !== 'parameters') return;
++    const reveal = () => {
++      const id = window.location.hash.slice(1);
++      if (!id.startsWith('parameter-field-')) return;
++      const target = document.getElementById(id);
++      const details = target?.closest('details'); if (details) details.open = true;
++      target?.scrollIntoView({block:'center'});
++    };
++    reveal(); window.addEventListener('hashchange', reveal);
++    return () => window.removeEventListener('hashchange', reveal);
++  }, [mode, technology, parameterReview]);
+   const busLoadField = useMemo(
+     () => technology?.parameter_schema?.find((field) => field.key === "target_bus_load_percent"),
+     [technology],
+@@ -1078,7 +1094,7 @@
+       && finding.parameter_fields?.some(key => networkRateKeys.includes(key))));
+   const affectedFieldKeys = [...new Set(selectedFindings.flatMap(finding => finding.parameter_fields ?? []))];
+   const findingTechnologies = [...new Set(currentFindings.map(item => technologyKey(item.technology)))];
+-  const proposedFieldCount = (technology?.parameter_schema ?? []).filter(field => parameterValueStatus(storedParameters, field.key, technologyId) === 'PROPOSAL').length;
++  const proposedFieldCount = (technology?.parameter_schema ?? []).filter(field => field.simulation_default != null && parameterValueStatus(storedParameters, field.key, technologyId) === 'PROPOSAL').length;
+   const assumptionFieldCount = (technology?.parameter_schema ?? []).filter(field => parameterValueStatus(storedParameters, field.key, technologyId) === 'SAVED_ASSUMPTION').length;
+ 
+   if (catalogError) {
+@@ -1127,7 +1143,10 @@
+       {mode === 'parameters' && <section className="panel parameter-findings-panel" id="parameter-findings" aria-label="Aktuelle Parameterbefunde">
+         <h3>Aktuelle Parameterprüfung</h3>
+         <p>Prüfung der gespeicherten Netz- und Geräteanschlüsse. Änderungen im Formular werden nach dem Speichern erneut geprüft.</p>
+-        {searchParams.get('proposal') && <p>Du kommst aus einer Vorschlagsprüfung. Hier werden die aktuellen Projektwerte geprüft; frühere Vorschlagsbefunde können bereits erledigt sein.</p>}
++        {searchParams.get('proposal') && <p>{parameterReview?.source === 'PENDING_PROPOSAL'
++          ? 'Diese Prüfung berücksichtigt die Anschlüsse des noch nicht übernommenen Vorschlags und deine gespeicherten Projektwerte.'
++          : 'Diese Prüfung verwendet den aktuellen gespeicherten Modellstand.'} Parameter speichern übernimmt keine Modellobjekte.
++          {' '}<Link href={withProjectParam('/studio/engineering', projectIdForLinks)} onClick={() => requestEngineeringAgentWizard(projectIdForLinks)}>Zur Vorschlagsprüfung zurück →</Link></p>}
+         {!parameterReview && !parameterReviewError && <p role="status">Aktuelle Befunde werden geprüft …</p>}
+         {parameterReviewError && <p className="notice error" role="alert">{parameterReviewError}</p>}
+         {parameterReview && <>
+@@ -1150,7 +1169,10 @@
+           {Boolean(selectedFindings.length) && <div className="notice error" role="alert">
+             <strong>{new Set(selectedFindings.map(item => item.network_id).filter(Boolean)).size} betroffene Netze · {selectedFindings.length} Anschlüsse</strong>
+             <p>Ein angezeigter Profilwert oder eine gespeicherte Simulationsannahme ist noch kein bestätigter Netzparameter. Offene Bestätigungen sind im Formular markiert; Geräte- und Modellnachweise bleiben separat sichtbar.</p>
+-            <nav aria-label="Betroffene Parameterfelder">{affectedFieldKeys.map(key => <a key={key} href={`#parameter-field-${key}`}>{technology.parameter_schema?.find(field => field.key === key)?.label ?? key}</a>)}</nav>
++            <nav aria-label="Betroffene Parameterfelder">{affectedFieldKeys.map(key => <a key={key} href={`#parameter-field-${key}`} onClick={() => {
++              const field = document.getElementById(`parameter-field-${key}`);
++              const details = field?.closest('details'); if (details) details.open = true;
++            }}>{technology.parameter_schema?.find(field => field.key === key)?.label ?? key}</a>)}</nav>
+             <details><summary>Betroffene Anschlüsse und Netze anzeigen</summary><ul>{selectedFindings.map((finding,index) => <li key={index}><strong>{finding.node_name} · {finding.network_name ?? finding.network_id}</strong>: {finding.message} <a href={engineeringContextHref({object_type:'HardwareNetworkInterface',id:finding.object_id ?? ''}, initialProjectId) ?? withProjectParam('/studio/engineering?resource=hardware-interfaces',initialProjectId)}>Anschluss prüfen</a>
+               {!!finding.parameter_findings?.length && <ul>{finding.parameter_findings.map((detail,i) => <li key={i}>{detail.message ?? detail.code}</li>)}</ul>}
+             </li>)}</ul></details>
+@@ -1174,6 +1196,7 @@
+           event.preventDefault();
+           void submit(event.currentTarget);
+         }}
++        onInvalidCapture={event => { const details = (event.target as HTMLElement).closest('details'); if (details) details.open = true; }}
+       >
+         <div className="panel-heading">
+           <div>
+@@ -1443,9 +1466,11 @@
+               />
+             )}
+             <div className="parameter-groups">
+-              {parameterGroups.map(([category, fields]) => (
++              {parameterGroups.map(([category, fields]) => {
++                const findings = fields.filter(field => findingsForParameter(currentFindings, technologyId, field.key).length > 0).length;
++                const contents = (
+                 <fieldset className={`parameter-group parameter-group-${category}`} key={`${technology.id}:${category}`}>
+-                  <legend>{parameterCategoryLabels[category]}</legend>
++                  <legend>{category === 'common' ? 'Wichtige Simulationsparameter' : category === 'evidence' ? 'Nachweise und Gerätezuordnung' : parameterCategoryLabels[category as TechnologyParameterField['category']]}</legend>
+                   <div className="form-grid three">
+                     {fields.map((field) => (
+                       <div key={field.key} id={`parameter-field-${field.key}`} className={findingsForParameter(currentFindings, technologyId, field.key).length ? 'parameter-field-finding' : undefined}>
+@@ -1457,7 +1482,7 @@
+                         applicable={technologyParameterApplicable(field, displayedParameters)}
+                         unverified={parameterIsUnverified(storedParameters, field.key, technologyId)}
+                         savedAssumption={parameterValueStatus(storedParameters, field.key, technologyId) === "SAVED_ASSUMPTION"}
+-                        simulationAssumption={field.simulation_default !== undefined
++                        simulationAssumption={field.simulation_default != null
+                           && (field.default === undefined || !['SCHEMA_SIMULATION_EXAMPLE', 'REGISTERED_PARAMETER_DEFAULT'].includes(field.simulation_default_provenance?.basis ?? 'REGISTERED_PARAMETER_DEFAULT'))
+                           && parameterIsUnverified(storedParameters, field.key, technologyId)}
+                         proposal={field.key === "bitrate" ? technology.parameter_proposals : undefined}
+@@ -1466,7 +1491,12 @@
+                     ))}
+                   </div>
+                 </fieldset>
+-              ))}
++                );
++                return category === 'common' ? contents : <details className="parameter-details" key={`${technology.id}:${category}`}>
++                  <summary>{category === 'evidence' ? 'Nachweise und Gerätezuordnung' : parameterCategoryLabels[category as TechnologyParameterField['category']]} · {fields.length} weitere Parameter{findings ? ` · ${findings} mit Prüfhinweisen` : ''}</summary>
++                  {contents}
++                </details>;
++              })}
+             </div>
+ 
+           </>
+@@ -1520,13 +1550,18 @@
+   proposal?: Technology["parameter_proposals"];
+ }) {
+   const [proposalError, setProposalError] = useState('');
+-  const label = `${field.label}${field.unit ? ` (${field.unit})` : ""}`;
++  const referenceLabels: Record<string,string> = {registered_source:'Profilquelle',device_source:'Geräteunterlagen',binding_source:'Anschlusszuordnung',physical_source:'Nachweis der Leitung und Physik',ldf_source:'LIN-Beschreibungsdatei (LDF)',ncf_source:'Knotenbeschreibung (NCF)',encoding_source:'Signal- und Nachrichtenkodierung',schedule_source:'Sendeplan',capacity_source:'Kapazitätsnachweis',acceptance_source:'Abnahmekriterien',commander_node_id:'Steuernder Teilnehmer',publisher_node_id:'Sendender Teilnehmer',revision:'Profilrevision'};
++  const referenceLabel = field.value_role && field.value_role !== 'CONFIGURATION' ? Object.entries(referenceLabels).find(([suffix]) => field.key === suffix || field.key.endsWith('_' + suffix))?.[1] : undefined;
++  const commonLabels: Record<string, string> = {lin_bitrate_bps: 'LIN-Busgeschwindigkeit', bitrate: 'Busgeschwindigkeit', arbitration_bitrate: 'Arbitrationsgeschwindigkeit', data_bitrate: 'Datengeschwindigkeit', payload_bytes: 'Nutzdaten je Nachricht', cycle_ms: 'Sendezyklus', deadline_ms: 'Zeitgrenze', duration_s: 'Simulationsdauer', seed: 'Zufallsstartwert'};
++  const label = `${referenceLabel ?? commonLabels[field.key] ?? field.label}${field.unit ? ` (${field.unit})` : ""}`;
+   if (!applicable) return <div><span>{label}</span><p>Nicht zutreffend für die gewählte Protokollkonfiguration.</p></div>;
+   const missing = value === undefined || value === null || value === "";
+   const suggestion = field.parameter_origin === 'NIS_SCENARIO' ? 'NIS-Szenariovorschlag' : 'Profilvorschlag';
+   const comparison = field.simulation_default_provenance?.basis === 'COMPARABLE_PROTOCOL_SCENARIO';
+-  const gap = unverified ? <small>{simulationAssumption ? (comparison ? `VERGLEICHSVORSCHLAG · ${savedAssumption ? 'Gespeicherte Simulationsannahme' : 'Simulationsannahme'} · Kein Gerätenachweis` : savedAssumption ? 'SIMULATIONSANNAHME · Gespeichert · Kein Gerätenachweis' : 'SIMULATIONSANNAHME · Kein Gerätenachweis') : `UNVERIFIED · ${missing ? "Eingabe erforderlich" : suggestion}`}</small> : null;
+-  const conditionalProposal = field.conditional_defaults?.length ? <>
++  const reference = field.value_role === 'EVIDENCE' || field.value_role === 'REFERENCE';
++  const gap = reference ? <small>{missing ? (field.value_role === 'EVIDENCE' ? 'Nachweis offen' : 'Zuordnung offen') : 'Projektangabe'} · Für Geräteprüfung und Freigaben</small>
++    : unverified ? <small>{simulationAssumption ? (comparison ? `VERGLEICHSVORSCHLAG · ${savedAssumption ? 'Gespeicherte Simulationsannahme' : 'Simulationsannahme'} · Kein Gerätenachweis` : savedAssumption ? 'SIMULATIONSANNAHME · Gespeichert · Kein Gerätenachweis' : 'SIMULATIONSANNAHME · Kein Gerätenachweis') : `UNVERIFIED · ${missing ? "Eingabe erforderlich" : suggestion}`}</small> : null;
++  const conditionalProposal = field.conditional_defaults?.length ? <details className="parameter-default-details"><summary>Profilvorgaben ansehen</summary>
+     <button className="button secondary" type="button" onClick={(event) => {
+       const form = event.currentTarget.closest('form');
+       if (!form) return;
+@@ -1550,9 +1585,9 @@
+         setProposalError('');
+       }
+     }}>Bedingten Standardwert übernehmen</button>
+-    <small>{field.description}</small>
++    <p>Die Vorgabe hängt von diesen Einstellungen ab: {[...new Set(field.conditional_defaults.flatMap(item => Object.keys(item.when)))].map(key => key.replaceAll('_', ' ')).join(', ')}.</p>
+     {proposalError && <small role="status">{proposalError}</small>}
+-  </> : null;
++  </details> : null;
+   if (field.type === "select") {
+     return (
+       <div className="field" title={field.description}>
+@@ -1595,7 +1630,7 @@
+       <div className="field" title={field.description}>
+         <label htmlFor={field.key}>{label}</label>
+         {gap}
+-        <input defaultValue={String(value ?? "")} id={field.key} name={field.key} type="text" />
++        <input defaultValue={String(value ?? "")} id={field.key} name={field.key} type="text" placeholder={reference ? 'Bei Bedarf im Projekt angeben' : undefined} />
+         {conditionalProposal}
+       </div>
+     );

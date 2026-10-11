@@ -1,0 +1,69 @@
+{
+  "goal_id": "studio-toolbar-trace-defaults-20261009",
+  "kind": "repair",
+  "modify_code": true,
+  "allow_repair": true,
+  "repository": "I:\\PycharmProjects\\My_first_Network_Simulator",
+  "project_scope": "20261009072206008-4bb505f1",
+  "required_outcomes": [
+    "responsive_toolbar",
+    "native_trace_defaults",
+    "canonical_blf_dbc",
+    "light_explanation",
+    "production_delivery"
+  ],
+  "validation_requirements": [
+    "targeted_regression",
+    "typecheck",
+    "release_gate",
+    "live_verification"
+  ],
+  "revision_before": {
+    "frontend/src/features/communication/lib/technology-projection.json": "3ab4d5f6b34b486966cbc0c8dd38058163b439db23cfded1357f130efdd66c66"
+  },
+  "files_changed": [
+    "frontend/src/features/network/ui/network-editor.tsx",
+    "frontend/src/app/globals.css",
+    "frontend/src/features/simulation/lib/simulation-formats.ts",
+    "frontend/src/features/simulation/lib/simulation-formats.test.mjs",
+    "frontend/src/features/simulation/ui/model-simulation-runner.tsx",
+    "backend/nis/simulation/communication_simulator.py",
+    "backend/nis/communication/technologies/can/formats/can_format_writers.py",
+    "backend/nis/communication/technologies/can/profile.json",
+    "backend/nis/communication/technologies/can_fd/profile.json",
+    "backend/nis/communication/technologies/ethernet/profile.json",
+    "backend/requirements.txt",
+    "backend/pyproject.toml",
+    "backend/tests/test_project_can_exports.py",
+    "frontend/e2e/studio-export-controls.spec.ts",
+    "backend/nis/simulation/model_based_simulation.py",
+    "backend/requirements.lock",
+    "backend/uv.lock",
+    "frontend/src/features/communication/lib/technology-projection.json"
+  ],
+  "unresolved_decisions": [],
+  "repair": {
+    "root_cause": "The deterministic frontend TechnologyProfile projection was stale on the host; Docker generated the current projection before its build manifest.",
+    "owner": "PROJECT_PRODUCT",
+    "first_failing_layer": "Exact source identity",
+    "reproduction": "File-level candidate/host hash comparison: only technology-projection.json differs",
+    "evidence": [
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\studio-toolbar-trace-defaults-20261009\\candidate-source-differences.json",
+        "sha256": "ddfe746a65b4c3040853a4172312e6a643bce91481e8751fa0a5755639c857d4"
+      }
+    ],
+    "affected_files": [
+      "frontend/src/features/communication/lib/technology-projection.json"
+    ],
+    "acceptance_criteria": "Clear responsive toolbar; native project defaults; real CAN events and exact canonical encodings in valid DBC; explain warnings without changing project; tested image deployed",
+    "targeted_tests": "BLFReader and cantools decode roundtrip, rejection of invalid encoding/ID; responsive browser controls and format selection",
+    "weaken_assertions_to_pass": false
+  },
+  "delivery": {
+    "decision": "YES",
+    "authorization": "User AGENTS.md standing authorization for verified production delivery",
+    "target": "Canonical NIS 13500/15050"
+  },
+  "completion_status": "IMPLEMENTING"
+}

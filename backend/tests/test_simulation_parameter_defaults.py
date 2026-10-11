@@ -73,6 +73,36 @@ def assumption_group():
                            for key, value in {'arbitration_bitrate': 500000, 'can_clock_hz': 40000000}.items()}}
 
 
+@pytest.mark.parametrize('technology', ['lin', 'can_fd', 'ethernet'])
+def test_repeated_native_resolution_reuses_validation_without_caching_provenance(monkeypatch, technology):
+    from backend.nis.engineering.capacity.service import simulation_parameters_for_protocol
+    parameters = registry.simulation_defaults_for_project({'technology': technology}, [technology])
+    expected = simulation_parameters_for_protocol(technology, parameters, confirmed_parameters=parameters)
+    original = registry._validate_parameters
+    calls = []
+    def observed(protocol, values):
+        calls.append((protocol, deepcopy(values)))
+        return original(protocol, values)
+    monkeypatch.setattr(registry, '_validate_parameters', observed)
+    with registry.parameter_validation_session():
+        for _ in range(30):
+            assert simulation_parameters_for_protocol(technology, parameters,
+                confirmed_parameters=parameters) == expected
+        assert len(calls) <= 3
+        changed = deepcopy(parameters)
+        group = changed['simulation_parameter_assumptions'][technology]
+        field = next(iter(group['values']))
+        group['provenance'][field]['hardware_evidence'] = True
+        rejected = simulation_parameters_for_protocol(technology, changed, confirmed_parameters=changed)
+        assert not rejected['_simulation_parameters_usable']
+        assert any(row['code'] == 'SIMULATION_PARAMETER_PROVENANCE_MISMATCH'
+                   for row in rejected['_simulation_parameter_findings'])
+    previous = len(calls)
+    assert simulation_parameters_for_protocol(technology, parameters,
+        confirmed_parameters=parameters) == expected
+    assert len(calls) > previous
+
+
 def test_simulation_assumptions_roundtrip_without_actual_confirmation_or_graph_changes():
     service = WorkflowStatusService()
     values = {'technology': 'can_fd', 'simulation_parameter_assumptions': {'can_fd': assumption_group()},

@@ -118,6 +118,7 @@ def _find_hardware_interface(hardware_id: str, technology: str) -> dict[str, Any
         return connection.execute(
             "SELECT * FROM engineering_hardware_interfaces "
             "WHERE hardware_node_id = %s AND technology = %s AND project_id = %s "
+            "AND lifecycle_state NOT IN ('deprecated', 'superseded') "
             "ORDER BY channel_index, created_at, id LIMIT 1",
             (hardware_id, technology, current_project_id()),
         ).fetchone()

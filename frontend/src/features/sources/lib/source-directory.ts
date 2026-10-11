@@ -9,6 +9,7 @@ export type LicenseState = {
 export type SourceRow = {
   id: string; name: string; publisher: string; url: string; accessed_at: string | null;
   technologies: Array<{id: string; abbreviation: string; name: string}>;
+  categories?: Array<{id: string; abbreviation: string; name: string}>;
   revisions: string[];
   rights: {publication: string; label: string; explanation: string; evidence_url: string | null; review_status: string};
 };
@@ -18,6 +19,7 @@ export type SourceDirectory = {
 };
 export type SourceSort = 'abbreviation' | 'technology' | 'name' | 'url' | 'accessed_at' | 'rights' | 'license';
 export type SourceGroup = {
+  kind: 'technology' | 'assurance';
   technology: SourceRow['technologies'][number];
   sources: SourceRow[];
   totalSourceCount: number;
@@ -27,7 +29,7 @@ const compact = (value: string) => value.normalize('NFKD').replace(/[\u0300-\u03
 
 function matches(row: SourceRow, input: string): boolean {
   const terms = [row.name, row.publisher, row.url, row.rights.label, displaySourceDate(row.accessed_at),
-    ...row.technologies.flatMap(item => [item.id, item.abbreviation, item.name])];
+    ...[...row.technologies, ...(row.categories ?? [])].flatMap(item => [item.id, item.abbreviation, item.name])];
   const words = terms.flatMap(term => [term, ...term.split(/[\s/_.:–-]+/)]).filter(Boolean);
   return input.trim().split(/\s+/).every(query => {
     const normalized = compact(query);
@@ -42,8 +44,8 @@ function matches(row: SourceRow, input: string): boolean {
 
 export function sourceRows(rows: SourceRow[], query: string, sort: SourceSort = 'abbreviation', descending = false, licenses: Record<string, LicenseState> = {}): SourceRow[] {
   const key = (row: SourceRow): string => {
-    if (sort === 'abbreviation') return row.technologies.map(item => item.abbreviation).join(', ');
-    if (sort === 'technology') return row.technologies.map(item => item.name).join(', ');
+    if (sort === 'abbreviation') return [...row.technologies, ...(row.categories ?? [])].map(item => item.abbreviation).join(', ');
+    if (sort === 'technology') return [...row.technologies, ...(row.categories ?? [])].map(item => item.name).join(', ');
     if (sort === 'rights') return row.rights.label;
     if (sort === 'license') return row.technologies.map(item => licenses[item.id]?.clearance_required
       ? licenses[item.id].blocked ? 'Gesperrt' : 'Freigegeben' : 'Keine NIS-Lizenzsperre').join(', ');
@@ -66,21 +68,21 @@ export function displaySourceDate(value: string | null): string {
 /** One visible entry per technology; shared references retain their source ID. */
 export function sourceGroups(rows: SourceRow[], query: string, sort: SourceSort = 'abbreviation', descending = false,
   licenses: Record<string, LicenseState> = {}): SourceGroup[] {
-  const byTechnology = new Map<string, {technology: SourceGroup['technology']; sources: Map<string, SourceRow>}>();
-  for (const row of rows) for (const technology of row.technologies) {
+  const byTechnology = new Map<string, {technology: SourceGroup['technology']; kind: SourceGroup['kind']; sources: Map<string, SourceRow>}>();
+  for (const row of rows) for (const technology of [...row.technologies, ...(row.categories ?? [])]) {
     let group = byTechnology.get(technology.id);
     if (!group) {
-      group = {technology, sources: new Map()};
+      group = {technology, kind: row.technologies.some(item => item.id === technology.id) ? 'technology' : 'assurance', sources: new Map()};
       byTechnology.set(technology.id, group);
     }
     // Scope search to this technology, so a shared document's other bus names
     // cannot introduce unrelated technology groups into the results.
-    group.sources.set(row.id, {...row, technologies: [technology]});
+    group.sources.set(row.id, {...row, technologies: group.kind === 'technology' ? [technology] : [], categories: group.kind === 'assurance' ? [technology] : []});
   }
   const groups = new Map<string, SourceGroup>();
   for (const [id, group] of byTechnology) {
     const sources = sourceRows([...group.sources.values()], query, sort, descending, licenses);
-    if (sources.length) groups.set(id, {technology: group.technology, sources, totalSourceCount: group.sources.size});
+    if (sources.length) groups.set(id, {kind: group.kind, technology: group.technology, sources, totalSourceCount: group.sources.size});
   }
   // Source columns order groups by their first source in the chosen direction.
   const representatives = [...groups.values()].map(group => ({...group.sources[0], id: group.technology.id}));

@@ -1,0 +1,42 @@
+"""Runtime bibliography and operator code must invalidate image reuse."""
+import importlib.util
+from pathlib import Path
+import tempfile
+import unittest
+
+SPEC = importlib.util.spec_from_file_location('release_identity', Path(__file__).resolve().parents[1] / 'write-build-info.py')
+MODULE = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(MODULE)
+
+class ReleaseIdentityTests(unittest.TestCase):
+    def test_bibliography_and_rights_changes_require_another_source_identity(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            source = root / 'backend/nis/communication/services/source_metadata.json'
+            source.parent.mkdir(parents=True)
+            source.write_text('{"permission":"UNRESOLVED"}', encoding='utf-8')
+            before = MODULE.build_manifest(root)['source_sha256']
+            source.write_text('{"permission":"CONDITIONAL"}', encoding='utf-8')
+            self.assertNotEqual(before, MODULE.build_manifest(root)['source_sha256'])
+
+    def test_operator_clearance_code_changes_require_another_source_identity(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            source = root / 'scripts/manage-technology-license.py'
+            source.parent.mkdir(parents=True)
+            source.write_text('print("require evidence")', encoding='utf-8')
+            before = MODULE.build_manifest(root)['source_sha256']
+            source.write_text('print("changed review policy")', encoding='utf-8')
+            self.assertNotEqual(before, MODULE.build_manifest(root)['source_sha256'])
+
+    def test_generated_build_info_is_not_an_identity_input(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            before = MODULE.build_manifest(root)['source_sha256']
+            generated = root / 'backend/nis/app/build-info.json'
+            generated.parent.mkdir(parents=True)
+            generated.write_text('{"built_at":"changing timestamp"}', encoding='utf-8')
+            self.assertEqual(before, MODULE.build_manifest(root)['source_sha256'])
+
+if __name__ == '__main__':
+    unittest.main()

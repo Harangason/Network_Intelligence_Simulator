@@ -1,0 +1,55 @@
+--- before/backend/tests/test_network_distribution.py
++++ after/backend/tests/test_network_distribution.py
+@@ -1,5 +1,7 @@
++from backend.tests.native_transport_fixtures import lin_design, ethernet_mac
+ from copy import deepcopy
+ from contextlib import contextmanager
++import pytest
+ 
+ from backend.engineering.physical_segments import physical_port_networks
+ from backend.engineering.system_clusters import system_owners
+@@ -298,7 +300,7 @@
+ def test_distribution_selects_capable_available_technology_when_bus_stock_is_exhausted():
+     result = plan_network_distribution(
+         capacity((120, 20, 20)), hardware(), {},
+-        parameters={"technology_defaults": {"can_fd": {"bitrate": 2_000_000, "data_bitrate": 2_000_000}}},
++        parameters={"technology_defaults": {"can_fd": {"bitrate": 500_000, "arbitration_bitrate": 500_000, "data_bitrate": 2_000_000, "can_fd_brs": True}}},
+         available_protocol_counts={"LIN": 1, "CAN_FD": 2},
+     )
+     network = result["networks"][0]
+@@ -474,17 +476,34 @@
+          "destinations": [{"node_id": "gateway"}], "timing": {"cycle_time_ms": 100}}
+         for index, network in enumerate(("lin-port-a", "lin-port-b", "lin-port-a"))
+     ]
+-    config = CommunicationConfigBuilder().build(routes, parameters={'technology': 'lin', 'bitrate': 19_200})["config"]
++    config = CommunicationConfigBuilder().build(routes, parameters={'technology': 'lin', **lin_design(), 'bitrate': 19_200})["config"]
+     assert {item["id"] for item in config["networks"]} == {"lin-port-a", "lin-port-b"}
+     assert all(item["bitrate"] == 19_200 for item in config["networks"])
++    assert all(item['lin_ldf_source'] == lin_design()['lin_ldf_source'] for item in config['networks'])
+     assert {item["network_id"] for item in config["communications"]} == {"lin-port-a", "lin-port-b"}
+     secondary = CommunicationConfigBuilder().build(routes, parameters={
+         'technology': 'ethernet', 'bitrate': 100_000_000,
++        'networks': [{'id': network, 'technology': 'lin', **lin_design(9600)}
++                     for network in ('lin-port-a', 'lin-port-b')],
+         'explicit_technology_bitrates': {'lin': 9_600}})['config']
+     assert all(item['bitrate'] == 9_600 and item['_rate_evidenced'] is True for item in secondary['networks'])
+     missing = CommunicationConfigBuilder().build(routes, parameters={
+         'technology': 'ethernet', 'bitrate': 100_000_000})['config']
+     assert all(item['bitrate'] is None and item['_rate_evidenced'] is False for item in missing['networks'])
++    # Snapshot identities must preserve every registered bus, including those
++    # without an executable model; no fixed short mapping may turn them generic.
++    from backend.communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY as registry
++    for profile in registry.profiles():
++        identity = profile['id']
++        route = {**routes[0], 'source': {'node_id': 'one', 'network_id': identity, 'protocol': identity},
++                 'destinations': [{'node_id': 'gateway', 'network_id': identity, 'protocol': identity}]}
++        exported = CommunicationConfigBuilder().build([route], parameters={'technology': identity})['config']
++        assert exported['networks'][0]['technology'] == identity
++        assert exported['communications'][0]['technology'] == identity
++    from backend.engineering.models import EngineeringValidationError
++    with pytest.raises(EngineeringValidationError, match='Unbekannte Netzwerktechnologie'):
++        CommunicationConfigBuilder().build([{**routes[0], 'source': {
++            'node_id': 'one', 'network_id': 'unregistered', 'protocol': 'unregistered'}}])
+ 
+ 
+ def test_simulator_export_updates_interface_technology_with_route_network(monkeypatch):

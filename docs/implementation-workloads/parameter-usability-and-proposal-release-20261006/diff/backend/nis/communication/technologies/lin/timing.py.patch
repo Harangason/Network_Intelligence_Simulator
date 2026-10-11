@@ -1,0 +1,35 @@
+--- before/backend/nis/communication/technologies/lin/timing.py
++++ after/backend/nis/communication/technologies/lin/timing.py
+@@ -5,6 +5,15 @@
+ from backend.nis.communication.core.timing import FrameEstimate, _positive
+ 
+ def estimate_frame(protocol, payload_bytes, parameters):
++    return _nominal_frame(protocol, payload_bytes, parameters, planning=False)
++
++
++def estimate_planning_frame(protocol, payload_bytes, parameters):
++    """Use the same nominal wire model for marked scenarios, never device proof."""
++    return _nominal_frame(protocol, payload_bytes, parameters, planning=True)
++
++
++def _nominal_frame(protocol, payload_bytes, parameters, *, planning):
+     normalized = str(protocol or "CUSTOM").upper().replace("-", "_").replace(" ", "_")
+     payload = max(0, int(payload_bytes))
+     bitrate = _positive(parameters.get("bitrate"), 0.0)
+@@ -13,7 +22,15 @@
+     from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY as registry
+     values = {key: value for key, value in parameters.items() if key in registry.parameter_keys('lin')}
+     checked = registry.validate_parameters('lin', values)
+-    available = available and checked['status'] == 'VALID' and (
++    usable = checked['status'] == 'VALID'
++    if planning and checked['status'] == 'UNVERIFIED':
++        references = {field['native_key'] for field in registry.parameter_fields('lin')
++                      if field['value_role'] in {'EVIDENCE', 'REFERENCE'}}
++        usable = bool(checked['findings']) and all(
++            finding['code'] == 'TECHNOLOGY_PARAMETER_MISSING'
++            and (finding.get('parameter') or finding['message'].split()[0]) in references
++            for finding in checked['findings'])
++    available = available and usable and (
+         parameters.get('lin_edition') == 'LIN_2_2A_2010' and
+         parameters.get('lin_physical_profile') == 'LIN_2_2A_SINGLE_WIRE' and
+         parameters.get('lin_frame_kind') not in {'WAKE_UP', 'REGISTERED_FRAME'} and 1 <= payload <= 8)

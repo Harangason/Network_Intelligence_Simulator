@@ -1,0 +1,38 @@
+--- before/backend/nis/agent/tools/validation.py
++++ after/backend/nis/agent/tools/validation.py
+@@ -254,12 +254,23 @@
+     return findings
+ 
+ 
+-def review_parameter_findings(workflow_state):
+-    """Read current canonical ports, never replay historical proposal deltas."""
++def review_parameter_findings(workflow_state, changes=None):
++    """Review canonical ports or an explicitly selected pending proposal overlay."""
+     from backend.nis.communication.catalog import PARAMETER_UI_ALIASES
+     graph = {kind: {str(row['id']): row for row in objects(kind)}
+              for kind in ('HardwareNode', 'HardwareNetworkInterface', 'Message')}
+     declared = {str(row['id']): row for row in workflow_state['parameters'].get('networks', [])}
++    if changes is not None:
++        for change in changes:
++            kind = change['object_type']
++            if kind == 'Network' and change['action'] == 'CREATE':
++                declared[str(change['data']['id'])] = change['data']
++            if kind in graph:
++                identifier = str(change.get('object_id') or '$' + change['local_ref'])
++                if change['action'] == 'DELETE':
++                    graph[kind].pop(identifier, None)
++                else:
++                    graph[kind][identifier] = {**graph[kind].get(identifier, {}), **change.get('data', {}), 'id': identifier}
+     findings = _capacity_findings(graph, set(graph['HardwareNetworkInterface']), declared, workflow_state, {})
+     for finding in findings:
+         port = graph['HardwareNetworkInterface'].get(str(finding.get('object_id')), {})
+@@ -278,6 +289,9 @@
+             ui = PARAMETER_UI_ALIASES.get(native, native)
+             if native in schema or ui in schema:
+                 fields.append(ui)
++            elif key == 'bitrate':
++                fields.extend(PARAMETER_UI_ALIASES.get(name, name) for name, spec in schema.items()
++                              if spec.get('unit') == 'bit/s' and spec.get('scope') == 'network')
+         if not fields and finding.get('missing_fields') == ['confirmed_rate_evidence_or_transmission_model']:
+             fields = [PARAMETER_UI_ALIASES.get(key, key) for key, spec in schema.items()
+                       if spec.get('unit') == 'bit/s' and spec.get('scope') == 'network']

@@ -1,0 +1,16 @@
+--- before/backend/engineering/capacity/service.py
++++ after/backend/engineering/capacity/service.py
+@@ -1666,6 +1666,13 @@
+                     technology_id=physical_result["technology_id"])
+ 
+         stored_parameters = state.get("parameters") or {}
++        from ...communication.technologies.licensing import assert_technology_clearance, declared_technology_ids
++        try:
++            selected = declared_technology_ids([stored_parameters, interfaces, edges, messages, routes], DEFAULT_TECHNOLOGY_REGISTRY)
++            assert_technology_clearance(self.project_id, selected, DEFAULT_TECHNOLOGY_REGISTRY)
++        except ValueError as error:
++            add('technology', 'BLOCKER', 'TECHNOLOGY_LICENSE_REQUIRED', str(error),
++                'Lizenznachweis im Quellenverzeichnis einreichen und durch den Betreiber prüfen lassen.')
+         parameters = {**DEFAULT_PARAMETER_VALUES, **stored_parameters}
+         # UI defaults are not a saved technology selection. In particular, an
+         # unconfigured project must not acquire a CAN-FD identity in preflight.

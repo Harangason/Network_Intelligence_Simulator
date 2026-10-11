@@ -1,0 +1,4234 @@
+{
+  "id": "sampled_values",
+  "label": "IEC 61850 Sampled Values",
+  "domain": "generic_networking",
+  "layer": "APPLICATION",
+  "transport_unit": "TOPIC_SAMPLE",
+  "payload_element_types": [
+    "ARRAY",
+    "QUALITY"
+  ],
+  "hardware_interface": "actual_sv_lower_link",
+  "hardware_capability_aliases": [
+    "ethernet_port"
+  ],
+  "default_stack": [
+    "sampled_values"
+  ],
+  "stack_variants": [
+    [
+      "sampled_values"
+    ],
+    [
+      "ethernet",
+      "sampled_values"
+    ]
+  ],
+  "default_bitrate": null,
+  "rate_model": {
+    "type": "SV_SAMPLE_RATE_AND_EXPLICIT_LOWER_LINK_DISTINCT",
+    "fields": []
+  },
+  "local_timing_schema": [],
+  "parameter_schema": {
+    "payload_bytes": {
+      "label": "Payload",
+      "category": "physical",
+      "scope": "message",
+      "type": "number",
+      "description": "Actual serialized dataset sample bytes, separate BERASDU/APDU length and physical Ethernet MTU/linkoccupation. No universal1500byte applicationcap or8byte frame.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "integer": true
+    },
+    "cycle_ms": {
+      "label": "Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "Standardperiode fuer zyklische Nachrichten.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "minimum_cycle_time_ms": {
+      "label": "Minimum Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "deadline_ms": {
+      "label": "Deadline",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "timeout_ms": {
+      "label": "Timeout",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_latency_ms": {
+      "label": "Maximum Latency",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "jitter_ms": {
+      "label": "Jitter Budget",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "freshness_ms": {
+      "label": "Data Freshness",
+      "category": "timing",
+      "scope": "signal",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "source_processing_delay_ms": {
+      "label": "Source Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_processing_delay_ms": {
+      "label": "Target Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "propagation_delay_ms": {
+      "label": "Propagation",
+      "category": "timing",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.01,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_bus_load_percent": {
+      "label": "Ziel-Buslast",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "Zielwert fuer die aus Routing, Payload, Zyklus und Bitrate berechnete Buslast.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "peak_factor": {
+      "label": "Peak Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.15,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_factor": {
+      "label": "Burst Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.5,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_window_ms": {
+      "label": "Burst Window",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "warning_threshold": {
+      "label": "Load Warning",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "critical_threshold": {
+      "label": "Load Critical",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 75,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "overload_threshold": {
+      "label": "Load Overload",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 90,
+      "unit": "%",
+      "min": 1,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "queue_size": {
+      "label": "Queue Size",
+      "category": "qos",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 256,
+      "unit": "Frames",
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "queue_policy": {
+      "label": "Queue Policy",
+      "category": "qos",
+      "scope": "network",
+      "type": "select",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": "FIFO",
+      "options": [
+        "FIFO",
+        "PRIORITY",
+        "STRICT_PRIORITY",
+        "WEIGHTED_PRIORITY",
+        "WRR",
+        "ROUND_ROBIN",
+        "TIME_TRIGGERED",
+        "TAS",
+        "CBS",
+        "CUSTOM"
+      ],
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "qos_priority": {
+      "label": "Default Priority",
+      "category": "qos",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 3,
+      "min": 0,
+      "max": 7,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "traffic_class": {
+      "label": "Traffic Class",
+      "category": "qos",
+      "scope": "route",
+      "type": "select",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": "BEST_EFFORT",
+      "options": [
+        "BEST_EFFORT",
+        "CONTROL",
+        "REALTIME",
+        "SAFETY_CRITICAL"
+      ],
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "packet_loss_probability": {
+      "label": "Packet Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "frame_loss_probability": {
+      "label": "Frame Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "bit_error_rate": {
+      "label": "Bit Error Rate",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "corruption_probability": {
+      "label": "Corruption",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duplicate_probability": {
+      "label": "Duplication",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "reordering_probability": {
+      "label": "Reordering",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "required_reliability": {
+      "label": "Required Reliability",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.999,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_offset_ms": {
+      "label": "Clock Offset",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_drift_ppm": {
+      "label": "Clock Drift",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 20,
+      "unit": "ppm",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_precision_ms": {
+      "label": "Sync Precision",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_interval_ms": {
+      "label": "Sync Interval",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1000,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_sync_error_ms": {
+      "label": "Maximum Sync Error",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_delay_ms": {
+      "label": "Gateway Processing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.2,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_queue_delay_ms": {
+      "label": "Gateway Queueing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "protocol_conversion_delay_ms": {
+      "label": "Protocol Conversion",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duration_s": {
+      "label": "Simulation Duration",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 1,
+      "unit": "s",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "seed": {
+      "label": "Random Seed",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 42,
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "max_events": {
+      "label": "Maximum Events",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 100000,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "dropout_probability": {
+      "label": "Failure Injection Dropout",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sv_profile": {
+      "type": "select",
+      "description": "Selected UCA9-2LE subset versus actual edition/application; no universal80samples default.",
+      "options": [
+        "UCA_9_2LE_2004",
+        "ACTUAL_DEVICE",
+        "REGISTERED_OTHER"
+      ],
+      "integer": false,
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "label": "profile",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "sv_edition": {
+      "type": "select",
+      "description": "Actual synchronization semantics and wire schema edition, independent from SCL or dataset profile.",
+      "options": [
+        "ED1",
+        "ED2_1",
+        "REGISTERED_OTHER"
+      ],
+      "integer": false,
+      "source": "https://library.e.abb.com/public/7d0e72aaacea4129a414f227327fcce9/REC615_iec61850eng_2NGA002470_ENa.pdf",
+      "source_revision": "ABB REC6152NGA002470A PCL1 actualpp50-55/59-61/63-64 selected device and edition compatibility, not allvendorlimits.",
+      "label": "edition",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "sv_profile": "UCA_9_2LE_2004",
+            "sv_proposal_mode": "SOURCE_PROPOSALS"
+          },
+          "value": "ED1",
+          "source": "https://library.e.abb.com/public/7d0e72aaacea4129a414f227327fcce9/REC615_iec61850eng_2NGA002470_ENa.pdf",
+          "source_revision": "ABB REC6152NGA002470A PCL1 actualpp50-55/59-61/63-64 selected device and edition compatibility, not allvendorlimits."
+        }
+      ]
+    },
+    "sv_implementation": {
+      "type": "select",
+      "description": "Actual firmware versus pinned publisher implementation.",
+      "options": [
+        "ACTUAL_DEVICE",
+        "LIBIEC61850_1_6"
+      ],
+      "integer": false,
+      "source": "https://raw.githubusercontent.com/mz-automation/libiec61850/v1.6/src/sampled_values/sv_publisher.c",
+      "source_revision": "libiec61850 pinnedv1.6 publisher constructor/serialization/ASDUcounter, not a verified NIS executor.",
+      "label": "implementation",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "sv_proposal_mode": {
+      "type": "select",
+      "description": "Actual configuration versus explicitly selected source-qualified factory/minimum-profile proposals.",
+      "options": [
+        "ACTUAL_CONFIG",
+        "SOURCE_PROPOSALS"
+      ],
+      "integer": false,
+      "source": "https://raw.githubusercontent.com/mz-automation/libiec61850/v1.6/src/sampled_values/sv_publisher.c",
+      "source_revision": "libiec61850 pinnedv1.6 publisher constructor/serialization/ASDUcounter, not a verified NIS executor.",
+      "label": "proposal mode",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "sv_mapping": {
+      "type": "select",
+      "description": "DirectL2SV9-2 versus independently registered routable90-5 path; no automaticUDP/R-SVfallback.",
+      "options": [
+        "RAW_L2_9_2",
+        "REGISTERED_ROUTABLE"
+      ],
+      "integer": false,
+      "source": "https://raw.githubusercontent.com/mz-automation/libiec61850/v1.6/src/sampled_values/sv_publisher.c",
+      "source_revision": "libiec61850 pinnedv1.6 publisher constructor/serialization/ASDUcounter, not a verified NIS executor.",
+      "label": "mapping",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "sv_profile": "UCA_9_2LE_2004",
+            "sv_proposal_mode": "SOURCE_PROPOSALS"
+          },
+          "value": "RAW_L2_9_2",
+          "source": "https://raw.githubusercontent.com/mz-automation/libiec61850/v1.6/src/sampled_values/sv_publisher.c",
+          "source_revision": "libiec61850 pinnedv1.6 publisher constructor/serialization/ASDUcounter, not a verified NIS executor."
+        }
+      ]
+    },
+    "sv_le_block": {
+      "type": "select",
+      "description": "9-2LE source-defined80samples/1ASDU versus256samples/8ASDU block.",
+      "options": [
+        "MSVCB01",
+        "MSVCB02"
+      ],
+      "integer": false,
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "label": "le block",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "sv_profile": "UCA_9_2LE_2004",
+            "sv_proposal_mode": "SOURCE_PROPOSALS"
+          },
+          "value": "MSVCB01",
+          "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+          "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions."
+        }
+      ]
+    },
+    "sv_phy": {
+      "type": "select",
+      "description": "Actual selected100BASE-FX/ST,FX/MT-RJ,TX/RJ45 LEprofile or independently registered actualPHY.",
+      "options": [
+        "100BASE_FX_ST",
+        "100BASE_FX_MT_RJ",
+        "100BASE_TX_RJ45",
+        "REGISTERED_ACTUAL"
+      ],
+      "integer": false,
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "label": "phy",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "sv_profile": "UCA_9_2LE_2004",
+            "sv_proposal_mode": "SOURCE_PROPOSALS"
+          },
+          "value": "100BASE_FX_ST",
+          "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+          "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions."
+        }
+      ]
+    },
+    "sv_duplex": {
+      "type": "select",
+      "description": "Actual bound lower interface duplex; LE requiresfull.",
+      "options": [
+        "FULL",
+        "HALF"
+      ],
+      "integer": false,
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "label": "duplex",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "sv_profile": "UCA_9_2LE_2004",
+            "sv_proposal_mode": "SOURCE_PROPOSALS"
+          },
+          "value": "FULL",
+          "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+          "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions."
+        }
+      ]
+    },
+    "sv_smp_mode": {
+      "type": "select",
+      "description": "Actual samples pernominalperiod/persecond/seconds persample; absentSmpModmeansnominalperiod only.",
+      "options": [
+        "PER_NOMINAL_PERIOD",
+        "SAMPLES_PER_SECOND",
+        "SECONDS_PER_SAMPLE"
+      ],
+      "integer": false,
+      "source": "https://raw.githubusercontent.com/mz-automation/libiec61850/v1.6/src/sampled_values/sv_publisher.h",
+      "source_revision": "libiec61850 v1.6 publisherAPI rate units/synchronization/configuration sequencing.",
+      "label": "smp mode",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "sv_profile": "UCA_9_2LE_2004",
+            "sv_proposal_mode": "SOURCE_PROPOSALS"
+          },
+          "value": "PER_NOMINAL_PERIOD",
+          "source": "https://raw.githubusercontent.com/mz-automation/libiec61850/v1.6/src/sampled_values/sv_publisher.h",
+          "source_revision": "libiec61850 v1.6 publisherAPI rate units/synchronization/configuration sequencing."
+        }
+      ]
+    },
+    "sv_sync_state": {
+      "type": "select",
+      "description": "Actual unsynchronized, locally synchronized or globally traceable clock, never default synchronizedTrue.",
+      "options": [
+        "NONE",
+        "LOCAL",
+        "GLOBAL"
+      ],
+      "integer": false,
+      "source": "https://library.e.abb.com/public/7d0e72aaacea4129a414f227327fcce9/REC615_iec61850eng_2NGA002470_ENa.pdf",
+      "source_revision": "ABB REC6152NGA002470A PCL1 actualpp50-55/59-61/63-64 selected device and edition compatibility, not allvendorlimits.",
+      "label": "sync state",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "sv_purpose": {
+      "type": "select",
+      "description": "Operational acceptance versus explicitly isolated commissioning data.",
+      "options": [
+        "OPERATIONAL",
+        "COMMISSIONING"
+      ],
+      "integer": false,
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "label": "purpose",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "sv_validity": {
+      "type": "select",
+      "description": "Worst-case actual channelquality validity; GOOD is not a defaultmeasurement.",
+      "options": [
+        "GOOD",
+        "INVALID",
+        "QUESTIONABLE",
+        "RESERVED"
+      ],
+      "integer": false,
+      "source": "https://raw.githubusercontent.com/mz-automation/libiec61850/v1.6/src/iec61850/inc/iec61850_common.h",
+      "source_revision": "libiec61850 v1.6 actualquality andsamplingmode definitions.",
+      "label": "validity",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "sv_outcome": {
+      "type": "select",
+      "description": "Actual downstream decoded sample application result.",
+      "options": [
+        "ACCEPTED",
+        "UNSYNCHRONIZED",
+        "CONFIG_MISMATCH",
+        "BAD_QUALITY",
+        "MISSING",
+        "STALE",
+        "UNKNOWN"
+      ],
+      "integer": false,
+      "source": "https://library.e.abb.com/public/7d0e72aaacea4129a414f227327fcce9/REC615_iec61850eng_2NGA002470_ENa.pdf",
+      "source_revision": "ABB REC6152NGA002470A PCL1 actualpp50-55/59-61/63-64 selected device and edition compatibility, not allvendorlimits.",
+      "label": "outcome",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "sv_line_hz": {
+      "type": "number",
+      "description": "Actual nominal electricalfrequency50/60Hz in chosenLE; not Ethernet linkrate.",
+      "min": 0,
+      "unit": "Hz",
+      "integer": false,
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "label": "line hz",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "sv_smp_rate": {
+      "type": "number",
+      "description": "Actual16bit SmpRate interpreted by selected units; not always samples/second.",
+      "min": 1,
+      "max": 65535,
+      "integer": true,
+      "source": "https://raw.githubusercontent.com/mz-automation/libiec61850/v1.6/src/sampled_values/sv_publisher.h",
+      "source_revision": "libiec61850 v1.6 publisherAPI rate units/synchronization/configuration sequencing.",
+      "label": "smp rate",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "sv_profile": "UCA_9_2LE_2004",
+            "sv_proposal_mode": "SOURCE_PROPOSALS",
+            "sv_le_block": "MSVCB01"
+          },
+          "value": 80,
+          "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+          "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions."
+        },
+        {
+          "when": {
+            "sv_profile": "UCA_9_2LE_2004",
+            "sv_proposal_mode": "SOURCE_PROPOSALS",
+            "sv_le_block": "MSVCB02"
+          },
+          "value": 256,
+          "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+          "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions."
+        }
+      ]
+    },
+    "sv_sample_hz": {
+      "type": "number",
+      "description": "Actual derived samples/second under declared SmpMod.",
+      "min": 0,
+      "unit": "sample/s",
+      "integer": false,
+      "source": "https://raw.githubusercontent.com/mz-automation/libiec61850/v1.6/src/sampled_values/sv_publisher.h",
+      "source_revision": "libiec61850 v1.6 publisherAPI rate units/synchronization/configuration sequencing.",
+      "label": "sample hz",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "sv_no_asdu": {
+      "type": "number",
+      "description": "Actual samples/ASDUs in each APDU; LE80->1/256->8.",
+      "min": 1,
+      "integer": true,
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "label": "no asdu",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "sv_profile": "UCA_9_2LE_2004",
+            "sv_proposal_mode": "SOURCE_PROPOSALS",
+            "sv_le_block": "MSVCB01"
+          },
+          "value": 1,
+          "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+          "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions."
+        },
+        {
+          "when": {
+            "sv_profile": "UCA_9_2LE_2004",
+            "sv_proposal_mode": "SOURCE_PROPOSALS",
+            "sv_le_block": "MSVCB02"
+          },
+          "value": 8,
+          "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+          "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions."
+        }
+      ]
+    },
+    "sv_frame_hz": {
+      "type": "number",
+      "description": "Actual transmitted APDUs/second=sampleHz/noASDU, not sampleHz when batching.",
+      "min": 0,
+      "unit": "frame/s",
+      "integer": false,
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "label": "frame hz",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "sv_sample_interval_us": {
+      "type": "number",
+      "description": "Actual1e6/sampleHz time between adjacent samples.",
+      "min": 0,
+      "unit": "us",
+      "integer": false,
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "label": "sample interval us",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "sv_link_bps": {
+      "type": "number",
+      "description": "Actual physical Ethernet link; LEfixed100M, othereditionactualPHYindependent.",
+      "min": 0,
+      "unit": "bit/s",
+      "integer": false,
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "label": "link bps",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "sv_profile": "UCA_9_2LE_2004",
+            "sv_proposal_mode": "SOURCE_PROPOSALS"
+          },
+          "value": 100000000,
+          "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+          "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions."
+        }
+      ]
+    },
+    "sv_ethertype": {
+      "type": "number",
+      "description": "Actual rawL2SV EtherType0x88BA, not IPv4UDP.",
+      "min": 0,
+      "max": 65535,
+      "integer": true,
+      "source": "https://raw.githubusercontent.com/mz-automation/libiec61850/v1.6/src/sampled_values/sv_publisher.c",
+      "source_revision": "libiec61850 pinnedv1.6 publisher constructor/serialization/ASDUcounter, not a verified NIS executor.",
+      "label": "ethertype",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "sv_mapping": "RAW_L2_9_2"
+          },
+          "value": 35002,
+          "source": "https://raw.githubusercontent.com/mz-automation/libiec61850/v1.6/src/sampled_values/sv_publisher.c",
+          "source_revision": "libiec61850 pinnedv1.6 publisher constructor/serialization/ASDUcounter, not a verified NIS executor."
+        }
+      ]
+    },
+    "sv_appid": {
+      "type": "number",
+      "description": "Actual configured stream APPID; strictLE0x4000, modernSVallocated0x4000..0x7FFF.",
+      "min": 0,
+      "max": 65535,
+      "integer": true,
+      "source": "https://library.e.abb.com/public/7d0e72aaacea4129a414f227327fcce9/REC615_iec61850eng_2NGA002470_ENa.pdf",
+      "source_revision": "ABB REC6152NGA002470A PCL1 actualpp50-55/59-61/63-64 selected device and edition compatibility, not allvendorlimits.",
+      "label": "appid",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "sv_profile": "UCA_9_2LE_2004",
+            "sv_proposal_mode": "SOURCE_PROPOSALS"
+          },
+          "value": 16384,
+          "source": "https://library.e.abb.com/public/7d0e72aaacea4129a414f227327fcce9/REC615_iec61850eng_2NGA002470_ENa.pdf",
+          "source_revision": "ABB REC6152NGA002470A PCL1 actualpp50-55/59-61/63-64 selected device and edition compatibility, not allvendorlimits."
+        },
+        {
+          "when": {
+            "sv_implementation": "LIBIEC61850_1_6",
+            "sv_proposal_mode": "SOURCE_PROPOSALS",
+            "sv_mapping": "RAW_L2_9_2"
+          },
+          "value": 16384,
+          "source": "https://raw.githubusercontent.com/mz-automation/libiec61850/v1.6/src/sampled_values/sv_publisher.c",
+          "source_revision": "libiec61850 pinnedv1.6 publisher constructor/serialization/ASDUcounter, not a verified NIS executor."
+        }
+      ]
+    },
+    "sv_priority": {
+      "type": "number",
+      "description": "ActualIEEE802.1QPCP0..7; source-selectedproposal4, distinct NISscenarioqueuepriority.",
+      "min": 0,
+      "max": 7,
+      "integer": true,
+      "source": "https://raw.githubusercontent.com/mz-automation/libiec61850/v1.6/src/sampled_values/sv_publisher.c",
+      "source_revision": "libiec61850 pinnedv1.6 publisher constructor/serialization/ASDUcounter, not a verified NIS executor.",
+      "label": "priority",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "sv_profile": "UCA_9_2LE_2004",
+            "sv_proposal_mode": "SOURCE_PROPOSALS"
+          },
+          "value": 4,
+          "source": "https://raw.githubusercontent.com/mz-automation/libiec61850/v1.6/src/sampled_values/sv_publisher.c",
+          "source_revision": "libiec61850 pinnedv1.6 publisher constructor/serialization/ASDUcounter, not a verified NIS executor."
+        },
+        {
+          "when": {
+            "sv_implementation": "LIBIEC61850_1_6",
+            "sv_proposal_mode": "SOURCE_PROPOSALS",
+            "sv_mapping": "RAW_L2_9_2"
+          },
+          "value": 4,
+          "source": "https://raw.githubusercontent.com/mz-automation/libiec61850/v1.6/src/sampled_values/sv_publisher.c",
+          "source_revision": "libiec61850 pinnedv1.6 publisher constructor/serialization/ASDUcounter, not a verified NIS executor."
+        }
+      ]
+    },
+    "sv_vlan_id": {
+      "type": "number",
+      "description": "Actual VID0priority-only,1..4094actualVLAN,4095reserved; vendorrecommended2..1001notuniversalrange.",
+      "min": 0,
+      "max": 4094,
+      "integer": true,
+      "source": "https://raw.githubusercontent.com/mz-automation/libiec61850/v1.6/src/sampled_values/sv_publisher.c",
+      "source_revision": "libiec61850 pinnedv1.6 publisher constructor/serialization/ASDUcounter, not a verified NIS executor.",
+      "label": "vlan id",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "sv_profile": "UCA_9_2LE_2004",
+            "sv_proposal_mode": "SOURCE_PROPOSALS"
+          },
+          "value": 0,
+          "source": "https://raw.githubusercontent.com/mz-automation/libiec61850/v1.6/src/sampled_values/sv_publisher.c",
+          "source_revision": "libiec61850 pinnedv1.6 publisher constructor/serialization/ASDUcounter, not a verified NIS executor."
+        },
+        {
+          "when": {
+            "sv_implementation": "LIBIEC61850_1_6",
+            "sv_proposal_mode": "SOURCE_PROPOSALS",
+            "sv_mapping": "RAW_L2_9_2"
+          },
+          "value": 0,
+          "source": "https://raw.githubusercontent.com/mz-automation/libiec61850/v1.6/src/sampled_values/sv_publisher.c",
+          "source_revision": "libiec61850 pinnedv1.6 publisher constructor/serialization/ASDUcounter, not a verified NIS executor."
+        }
+      ]
+    },
+    "sv_conf_rev": {
+      "type": "number",
+      "description": "Actual dataset configurationrevision32bit; strictLEfixed1 versus changedmodernSCLactualrevision.",
+      "min": 0,
+      "max": 4294967295,
+      "integer": true,
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "label": "conf rev",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "sv_profile": "UCA_9_2LE_2004",
+            "sv_proposal_mode": "SOURCE_PROPOSALS"
+          },
+          "value": 1,
+          "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+          "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions."
+        }
+      ]
+    },
+    "sv_peer_conf_rev": {
+      "type": "number",
+      "description": "Actual subscriberexpected configurationrevision, notautocopiedconfirmed.",
+      "min": 0,
+      "max": 4294967295,
+      "integer": true,
+      "source": "https://library.e.abb.com/public/7d0e72aaacea4129a414f227327fcce9/REC615_iec61850eng_2NGA002470_ENa.pdf",
+      "source_revision": "ABB REC6152NGA002470A PCL1 actualpp50-55/59-61/63-64 selected device and edition compatibility, not allvendorlimits.",
+      "label": "peer conf rev",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "sv_smp_cnt": {
+      "type": "number",
+      "description": "Actual16bit samplecounter; synchronization/wrap context required.",
+      "min": 0,
+      "max": 65535,
+      "integer": true,
+      "source": "https://raw.githubusercontent.com/mz-automation/libiec61850/v1.6/src/sampled_values/sv_publisher.h",
+      "source_revision": "libiec61850 v1.6 publisherAPI rate units/synchronization/configuration sequencing.",
+      "label": "smp cnt",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "sv_wrap_count": {
+      "type": "number",
+      "description": "Actual exclusive rolloverlimit; LE sampleHzpersecond. Libraryconstructor65535 is not an IEC65536guarantee.",
+      "min": 1,
+      "max": 65536,
+      "integer": true,
+      "source": "https://raw.githubusercontent.com/mz-automation/libiec61850/v1.6/src/sampled_values/sv_publisher.c",
+      "source_revision": "libiec61850 pinnedv1.6 publisher constructor/serialization/ASDUcounter, not a verified NIS executor.",
+      "label": "wrap count",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "sv_smp_synch": {
+      "type": "number",
+      "description": "Actual observedwire value under explicitedition:ED1boolean;ED2.1none0/local1/global2.",
+      "min": 0,
+      "max": 255,
+      "integer": true,
+      "source": "https://library.e.abb.com/public/7d0e72aaacea4129a414f227327fcce9/REC615_iec61850eng_2NGA002470_ENa.pdf",
+      "source_revision": "ABB REC6152NGA002470A PCL1 actualpp50-55/59-61/63-64 selected device and edition compatibility, not allvendorlimits.",
+      "label": "smp synch",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "sv_channel_count": {
+      "type": "number",
+      "description": "Actual approved channel count; LE4current+4voltage.",
+      "min": 1,
+      "integer": true,
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "label": "channel count",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "sv_profile": "UCA_9_2LE_2004",
+            "sv_proposal_mode": "SOURCE_PROPOSALS"
+          },
+          "value": 8,
+          "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+          "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions."
+        }
+      ]
+    },
+    "sv_data_bytes": {
+      "type": "number",
+      "description": "Actual ASDU rawdataset size; LE8*(INT32value+32bitquality)=64.",
+      "min": 0,
+      "unit": "byte",
+      "integer": true,
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "label": "data bytes",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "sv_profile": "UCA_9_2LE_2004",
+            "sv_proposal_mode": "SOURCE_PROPOSALS"
+          },
+          "value": 64,
+          "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+          "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions."
+        }
+      ]
+    },
+    "sv_raw_value": {
+      "type": "number",
+      "description": "Actual signed32bit LEinstantaneous sample before primaryunit scale.",
+      "min": -2147483648,
+      "max": 2147483647,
+      "integer": true,
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "label": "raw value",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "sv_current_scale": {
+      "type": "number",
+      "description": "LEcurrentunit scale0.001AperLSB, actualotherprofiledatascale separate.",
+      "min": 0,
+      "unit": "A/LSB",
+      "integer": false,
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "label": "current scale",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "sv_profile": "UCA_9_2LE_2004",
+            "sv_proposal_mode": "SOURCE_PROPOSALS"
+          },
+          "value": 0.001,
+          "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+          "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions."
+        }
+      ]
+    },
+    "sv_voltage_scale": {
+      "type": "number",
+      "description": "LEvoltageunit scale0.01VperLSB.",
+      "min": 0,
+      "unit": "V/LSB",
+      "integer": false,
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "label": "voltage scale",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "sv_profile": "UCA_9_2LE_2004",
+            "sv_proposal_mode": "SOURCE_PROPOSALS"
+          },
+          "value": 0.01,
+          "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+          "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions."
+        }
+      ]
+    },
+    "sv_offset": {
+      "type": "number",
+      "description": "LEfixed zero offset; not an assumed calibration forotherdevices.",
+      "integer": false,
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "label": "offset",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "sv_profile": "UCA_9_2LE_2004",
+            "sv_proposal_mode": "SOURCE_PROPOSALS"
+          },
+          "value": 0,
+          "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+          "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions."
+        }
+      ]
+    },
+    "sv_apdu_bytes": {
+      "type": "number",
+      "description": "Actual completeBERAPDU length including allASDUs/tags/lengths/optionalfields; not rawdataset64only.",
+      "min": 1,
+      "unit": "byte",
+      "integer": true,
+      "source": "https://raw.githubusercontent.com/mz-automation/libiec61850/v1.6/src/sampled_values/sv_publisher.c",
+      "source_revision": "libiec61850 pinnedv1.6 publisher constructor/serialization/ASDUcounter, not a verified NIS executor.",
+      "label": "apdu bytes",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "sv_mac_header_bytes": {
+      "type": "number",
+      "description": "Actual rawMACheader14/prioritytagged18, excludesSV8byteheader andFCS.",
+      "min": 0,
+      "unit": "byte",
+      "integer": true,
+      "source": "https://raw.githubusercontent.com/mz-automation/libiec61850/v1.6/src/sampled_values/sv_publisher.c",
+      "source_revision": "libiec61850 pinnedv1.6 publisher constructor/serialization/ASDUcounter, not a verified NIS executor.",
+      "label": "mac header bytes",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "sv_sv_header_bytes": {
+      "type": "number",
+      "description": "Actual rawSVAPPID/length/reserved fixed8byteheader.",
+      "min": 0,
+      "unit": "byte",
+      "integer": true,
+      "source": "https://raw.githubusercontent.com/mz-automation/libiec61850/v1.6/src/sampled_values/sv_publisher.c",
+      "source_revision": "libiec61850 pinnedv1.6 publisher constructor/serialization/ASDUcounter, not a verified NIS executor.",
+      "label": "sv header bytes",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "sv_software_frame_bytes": {
+      "type": "number",
+      "description": "Actual MAC+SVheader+BERAPDU bytes beforeFCS/padding/preamble/IFG.",
+      "min": 0,
+      "unit": "byte",
+      "integer": true,
+      "source": "https://raw.githubusercontent.com/mz-automation/libiec61850/v1.6/src/sampled_values/sv_publisher.c",
+      "source_revision": "libiec61850 pinnedv1.6 publisher constructor/serialization/ASDUcounter, not a verified NIS executor.",
+      "label": "software frame bytes",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "sv_frame_bytes": {
+      "type": "number",
+      "description": "Actual Ethernetframeincludingpadding/FCS, excludespreamble/IFG.",
+      "min": 0,
+      "unit": "byte",
+      "integer": true,
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "label": "frame bytes",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "sv_occupancy_bytes": {
+      "type": "number",
+      "description": "Actual linkoccupancy frame+8preamble/SFD+12IFG, not applicationpayload.",
+      "min": 0,
+      "unit": "byte",
+      "integer": true,
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "label": "occupancy bytes",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "sv_wire_time_us": {
+      "type": "number",
+      "description": "Actual serializedlinkoccupancy/rate, not switchingqueue or samplecollection time.",
+      "min": 0,
+      "unit": "us",
+      "integer": false,
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "label": "wire time us",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "sv_master_error_us": {
+      "type": "number",
+      "description": "Actual absolute1PPSsourceclockaccuracy underLE<=1us.",
+      "min": 0,
+      "unit": "us",
+      "integer": false,
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "label": "master error us",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "sv_mu_jitter_us": {
+      "type": "number",
+      "description": "Actual mergingunitclockinputjitter underLE<=2us.",
+      "min": 0,
+      "unit": "us",
+      "integer": false,
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "label": "mu jitter us",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "sv_sample_error_us": {
+      "type": "number",
+      "description": "Actual sampletimestampaccuracy underLEclass4<=4us.",
+      "min": 0,
+      "unit": "us",
+      "integer": false,
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "label": "sample error us",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "sv_pps_delay_us": {
+      "type": "number",
+      "description": "Actual1PPSsource-to-MU delay;>2us requirescompensation.",
+      "min": 0,
+      "unit": "us",
+      "integer": false,
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "label": "pps delay us",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "sv_holdover_elapsed_s": {
+      "type": "number",
+      "description": "Actual elapsedholdover since lostexternal synchronization.",
+      "min": 0,
+      "unit": "s",
+      "integer": false,
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "label": "holdover elapsed s",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "sv_holdover_limit_s": {
+      "type": "number",
+      "description": "Actual oscillator-qualifiedholdoverbound, no genericcouplesecondsdefault.",
+      "min": 0,
+      "unit": "s",
+      "integer": false,
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "label": "holdover limit s",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "sv_capture_bound_us": {
+      "type": "number",
+      "description": "Actual measurement/sampling/filter/publishprocessingbound.",
+      "min": 0,
+      "unit": "us",
+      "integer": false,
+      "source": "https://library.e.abb.com/public/7d0e72aaacea4129a414f227327fcce9/REC615_iec61850eng_2NGA002470_ENa.pdf",
+      "source_revision": "ABB REC6152NGA002470A PCL1 actualpp50-55/59-61/63-64 selected device and edition compatibility, not allvendorlimits.",
+      "label": "capture bound us",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "sv_network_bound_us": {
+      "type": "number",
+      "description": "Actual allhopqueue/serialization/propagation bound, not singleframewiretime.",
+      "min": 0,
+      "unit": "us",
+      "integer": false,
+      "source": "https://library.e.abb.com/public/7d0e72aaacea4129a414f227327fcce9/REC615_iec61850eng_2NGA002470_ENa.pdf",
+      "source_revision": "ABB REC6152NGA002470A PCL1 actualpp50-55/59-61/63-64 selected device and edition compatibility, not allvendorlimits.",
+      "label": "network bound us",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "sv_decode_bound_us": {
+      "type": "number",
+      "description": "Actual subscriberdecode/measurementconsumer bound.",
+      "min": 0,
+      "unit": "us",
+      "integer": false,
+      "source": "https://library.e.abb.com/public/7d0e72aaacea4129a414f227327fcce9/REC615_iec61850eng_2NGA002470_ENa.pdf",
+      "source_revision": "ABB REC6152NGA002470A PCL1 actualpp50-55/59-61/63-64 selected device and edition compatibility, not allvendorlimits.",
+      "label": "decode bound us",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "sv_e2e_bound_us": {
+      "type": "number",
+      "description": "Actual capture+network+decode worstcase chain.",
+      "min": 0,
+      "unit": "us",
+      "integer": false,
+      "source": "https://library.e.abb.com/public/7d0e72aaacea4129a414f227327fcce9/REC615_iec61850eng_2NGA002470_ENa.pdf",
+      "source_revision": "ABB REC6152NGA002470A PCL1 actualpp50-55/59-61/63-64 selected device and edition compatibility, not allvendorlimits.",
+      "label": "e2e bound us",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "sv_e2e_limit_us": {
+      "type": "number",
+      "description": "Actual independent applicationacceptance requirement; no universal3ms/4msguess.",
+      "min": 0,
+      "unit": "us",
+      "integer": false,
+      "source": "https://library.e.abb.com/public/7d0e72aaacea4129a414f227327fcce9/REC615_iec61850eng_2NGA002470_ENa.pdf",
+      "source_revision": "ABB REC6152NGA002470A PCL1 actualpp50-55/59-61/63-64 selected device and edition compatibility, not allvendorlimits.",
+      "label": "e2e limit us",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "sv_age_us": {
+      "type": "number",
+      "description": "Actual correlated sample age atconsumer.",
+      "min": 0,
+      "unit": "us",
+      "integer": false,
+      "source": "https://library.e.abb.com/public/7d0e72aaacea4129a414f227327fcce9/REC615_iec61850eng_2NGA002470_ENa.pdf",
+      "source_revision": "ABB REC6152NGA002470A PCL1 actualpp50-55/59-61/63-64 selected device and edition compatibility, not allvendorlimits.",
+      "label": "age us",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "sv_freshness_us": {
+      "type": "number",
+      "description": "Actual consumerfreshness requirement.",
+      "min": 0,
+      "unit": "us",
+      "integer": false,
+      "source": "https://library.e.abb.com/public/7d0e72aaacea4129a414f227327fcce9/REC615_iec61850eng_2NGA002470_ENa.pdf",
+      "source_revision": "ABB REC6152NGA002470A PCL1 actualpp50-55/59-61/63-64 selected device and edition compatibility, not allvendorlimits.",
+      "label": "freshness us",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "sv_tagged": {
+      "type": "boolean",
+      "description": "ActualIEEE802.1Qpriority/VLANtagpresence.",
+      "integer": false,
+      "source": "https://raw.githubusercontent.com/mz-automation/libiec61850/v1.6/src/sampled_values/sv_publisher.c",
+      "source_revision": "libiec61850 pinnedv1.6 publisher constructor/serialization/ASDUcounter, not a verified NIS executor.",
+      "label": "tagged",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "sv_profile": "UCA_9_2LE_2004",
+            "sv_proposal_mode": "SOURCE_PROPOSALS"
+          },
+          "value": true,
+          "source": "https://raw.githubusercontent.com/mz-automation/libiec61850/v1.6/src/sampled_values/sv_publisher.c",
+          "source_revision": "libiec61850 pinnedv1.6 publisher constructor/serialization/ASDUcounter, not a verified NIS executor."
+        },
+        {
+          "when": {
+            "sv_implementation": "LIBIEC61850_1_6",
+            "sv_proposal_mode": "SOURCE_PROPOSALS",
+            "sv_mapping": "RAW_L2_9_2"
+          },
+          "value": true,
+          "source": "https://raw.githubusercontent.com/mz-automation/libiec61850/v1.6/src/sampled_values/sv_publisher.c",
+          "source_revision": "libiec61850 pinnedv1.6 publisher constructor/serialization/ASDUcounter, not a verified NIS executor."
+        }
+      ]
+    },
+    "sv_has_smp_mode": {
+      "type": "boolean",
+      "description": "ActualSmpModoptionalwirefieldpresence, absentdoesnotmeanAPIzeroisobserved.",
+      "integer": false,
+      "source": "https://raw.githubusercontent.com/mz-automation/libiec61850/v1.6/src/sampled_values/sv_subscriber.h",
+      "source_revision": "libiec61850 v1.6 callbackASDU lifetime and dataset preknowledge API.",
+      "label": "has smp mode",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "sv_profile": "UCA_9_2LE_2004",
+            "sv_proposal_mode": "SOURCE_PROPOSALS"
+          },
+          "value": false,
+          "source": "https://raw.githubusercontent.com/mz-automation/libiec61850/v1.6/src/sampled_values/sv_subscriber.h",
+          "source_revision": "libiec61850 v1.6 callbackASDU lifetime and dataset preknowledge API."
+        }
+      ]
+    },
+    "sv_has_smp_rate": {
+      "type": "boolean",
+      "description": "ActualSmpRatewirefieldpresence; LEomitsit thoughSCLdefinesrate.",
+      "integer": false,
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "label": "has smp rate",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "sv_profile": "UCA_9_2LE_2004",
+            "sv_proposal_mode": "SOURCE_PROPOSALS"
+          },
+          "value": false,
+          "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+          "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions."
+        }
+      ]
+    },
+    "sv_has_dataset": {
+      "type": "boolean",
+      "description": "ActualoptionalDatSetwirepresence; LEomitsit but approvedSCLbindingremainsrequired.",
+      "integer": false,
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "label": "has dataset",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "sv_profile": "UCA_9_2LE_2004",
+            "sv_proposal_mode": "SOURCE_PROPOSALS"
+          },
+          "value": false,
+          "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+          "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions."
+        }
+      ]
+    },
+    "sv_has_refr_tm": {
+      "type": "boolean",
+      "description": "ActualoptionalRefrTmwirepresence; getter0aloneisnotknownepoch.",
+      "integer": false,
+      "source": "https://raw.githubusercontent.com/mz-automation/libiec61850/v1.6/src/sampled_values/sv_subscriber.h",
+      "source_revision": "libiec61850 v1.6 callbackASDU lifetime and dataset preknowledge API.",
+      "label": "has refr tm",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "sv_has_gm_identity": {
+      "type": "boolean",
+      "description": "Actual8bytegrandmasteridentity presence undercompatibleedition.",
+      "integer": false,
+      "source": "https://raw.githubusercontent.com/mz-automation/libiec61850/v1.6/src/sampled_values/sv_publisher.h",
+      "source_revision": "libiec61850 v1.6 publisherAPI rate units/synchronization/configuration sequencing.",
+      "label": "has gm identity",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "sv_synchronized": {
+      "type": "boolean",
+      "description": "Actual independentlyvalidated synchronization, notobservedbit alone.",
+      "integer": false,
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "label": "synchronized",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "sv_pps_compensated": {
+      "type": "boolean",
+      "description": "Actualdelaycompensationconfiguredandverified.",
+      "integer": false,
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "label": "pps compensated",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "sv_holdover": {
+      "type": "boolean",
+      "description": "Actualcurrentlyqualifiedholdover, notclocklossautogreen.",
+      "integer": false,
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "label": "holdover",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "sv_derived": {
+      "type": "boolean",
+      "description": "Actualvaluecalculatedfromothersensors, preservestrueforneutralderivedvalue.",
+      "integer": false,
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "label": "derived",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "sv_test": {
+      "type": "boolean",
+      "description": "Actualqualitytestflag, notsameasmodernframesimulationbit.",
+      "integer": false,
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "label": "test",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "sv_operator_blocked": {
+      "type": "boolean",
+      "description": "Actualqualityoperatorblockedflag.",
+      "integer": false,
+      "source": "https://raw.githubusercontent.com/mz-automation/libiec61850/v1.6/src/iec61850/inc/iec61850_common.h",
+      "source_revision": "libiec61850 v1.6 actualquality andsamplingmode definitions.",
+      "label": "operator blocked",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "sv_simulation": {
+      "type": "boolean",
+      "description": "Actualmodernframesimulationstatus, separatechanneltestflag.",
+      "integer": false,
+      "source": "https://raw.githubusercontent.com/mz-automation/libiec61850/v1.6/src/sampled_values/sv_publisher.c",
+      "source_revision": "libiec61850 pinnedv1.6 publisher constructor/serialization/ASDUcounter, not a verified NIS executor.",
+      "label": "simulation",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "sv_sample_accepted": {
+      "type": "boolean",
+      "description": "Actualdecodedmeasurementsacceptedforselectedpurpose.",
+      "integer": false,
+      "source": "https://library.e.abb.com/public/7d0e72aaacea4129a414f227327fcce9/REC615_iec61850eng_2NGA002470_ENa.pdf",
+      "source_revision": "ABB REC6152NGA002470A PCL1 actualpp50-55/59-61/63-64 selected device and edition compatibility, not allvendorlimits.",
+      "label": "sample accepted",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "sv_mapping_valid": {
+      "type": "boolean",
+      "description": "ActualSCL/dataorder/scale/offset/quality/revisionbindingvalidated.",
+      "integer": false,
+      "source": "https://raw.githubusercontent.com/mz-automation/libiec61850/v1.6/src/sampled_values/sv_subscriber.h",
+      "source_revision": "libiec61850 v1.6 callbackASDU lifetime and dataset preknowledge API.",
+      "label": "mapping valid",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "sv_frame_verified": {
+      "type": "boolean",
+      "description": "ActualcompleteBER/wireintegrityandallchanneldecodevalidated.",
+      "integer": false,
+      "source": "https://raw.githubusercontent.com/mz-automation/libiec61850/v1.6/src/sampled_values/sv_subscriber.c",
+      "source_revision": "libiec61850 v1.6 receiver parsing/filtering/fieldpresence/typed bounds.",
+      "label": "frame verified",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "sv_clock_verified": {
+      "type": "boolean",
+      "description": "Actualtimestampcorrelation/source/drift/holdoververified.",
+      "integer": false,
+      "source": "https://library.e.abb.com/public/7d0e72aaacea4129a414f227327fcce9/REC615_iec61850eng_2NGA002470_ENa.pdf",
+      "source_revision": "ABB REC6152NGA002470A PCL1 actualpp50-55/59-61/63-64 selected device and edition compatibility, not allvendorlimits.",
+      "label": "clock verified",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "sv_device_source": {
+      "type": "text",
+      "description": "ActualPICS/PIXIT/edition/firmwareprofile.",
+      "integer": false,
+      "source": "https://library.e.abb.com/public/7d0e72aaacea4129a414f227327fcce9/REC615_iec61850eng_2NGA002470_ENa.pdf",
+      "source_revision": "ABB REC6152NGA002470A PCL1 actualpp50-55/59-61/63-64 selected device and edition compatibility, not allvendorlimits.",
+      "label": "device source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "sv_scl_source": {
+      "type": "text",
+      "description": "ActualapprovedSCL/hash/SVCB/dataset/channelorder/configrevision.",
+      "integer": false,
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "label": "scl source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "sv_binding_source": {
+      "type": "text",
+      "description": "Actualstream/lowerpath/network/port/subscriber binding.",
+      "integer": false,
+      "source": "https://library.e.abb.com/public/7d0e72aaacea4129a414f227327fcce9/REC615_iec61850eng_2NGA002470_ENa.pdf",
+      "source_revision": "ABB REC6152NGA002470A PCL1 actualpp50-55/59-61/63-64 selected device and edition compatibility, not allvendorlimits.",
+      "label": "binding source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "sv_dataset_source": {
+      "type": "text",
+      "description": "Actualchannelindices/types/quality/primaryunitencoding.",
+      "integer": false,
+      "source": "https://raw.githubusercontent.com/mz-automation/libiec61850/v1.6/src/sampled_values/sv_subscriber.h",
+      "source_revision": "libiec61850 v1.6 callbackASDU lifetime and dataset preknowledge API.",
+      "label": "dataset source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "sv_clock_source": {
+      "type": "text",
+      "description": "Actualtimeorigin/correlation/uncertainty/holdover qualification.",
+      "integer": false,
+      "source": "https://library.e.abb.com/public/7d0e72aaacea4129a414f227327fcce9/REC615_iec61850eng_2NGA002470_ENa.pdf",
+      "source_revision": "ABB REC6152NGA002470A PCL1 actualpp50-55/59-61/63-64 selected device and edition compatibility, not allvendorlimits.",
+      "label": "clock source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "sv_schedule_source": {
+      "type": "text",
+      "description": "Actualallhopsserialization/queues/tracebounds.",
+      "integer": false,
+      "source": "https://library.e.abb.com/public/7d0e72aaacea4129a414f227327fcce9/REC615_iec61850eng_2NGA002470_ENa.pdf",
+      "source_revision": "ABB REC6152NGA002470A PCL1 actualpp50-55/59-61/63-64 selected device and edition compatibility, not allvendorlimits.",
+      "label": "schedule source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "sv_acceptance_source": {
+      "type": "text",
+      "description": "Actualindependentfunctionalconsumerrequirements.",
+      "integer": false,
+      "source": "https://library.e.abb.com/public/7d0e72aaacea4129a414f227327fcce9/REC615_iec61850eng_2NGA002470_ENa.pdf",
+      "source_revision": "ABB REC6152NGA002470A PCL1 actualpp50-55/59-61/63-64 selected device and edition compatibility, not allvendorlimits.",
+      "label": "acceptance source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "sv_registered_source": {
+      "type": "text",
+      "description": "Actualalternativeedition/mapping/PHY/profilequalification.",
+      "integer": false,
+      "source": "https://raw.githubusercontent.com/mz-automation/libiec61850/v1.6/src/sampled_values/sv_publisher.c",
+      "source_revision": "libiec61850 pinnedv1.6 publisher constructor/serialization/ASDUcounter, not a verified NIS executor.",
+      "label": "registered source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "sv_multicast_mac": {
+      "type": "text",
+      "description": "Actualconfiguredunique multicastMAC; not libraryGOOSEaliasdefaultdestination.",
+      "integer": false,
+      "source": "https://library.e.abb.com/public/7d0e72aaacea4129a414f227327fcce9/REC615_iec61850eng_2NGA002470_ENa.pdf",
+      "source_revision": "ABB REC6152NGA002470A PCL1 actualpp50-55/59-61/63-64 selected device and edition compatibility, not allvendorlimits.",
+      "label": "multicast mac",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "sv_sv_id": {
+      "type": "text",
+      "description": "Actualcase-sensitiveSVstreamidentifier boundwithAPPID/MAC/revision.",
+      "integer": false,
+      "source": "https://raw.githubusercontent.com/mz-automation/libiec61850/v1.6/src/sampled_values/sv_subscriber.h",
+      "source_revision": "libiec61850 v1.6 callbackASDU lifetime and dataset preknowledge API.",
+      "label": "sv id",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "sv_gm_identity": {
+      "type": "text",
+      "description": "Actual8octetgrandmasterid, unknownnotzeroidentity.",
+      "integer": false,
+      "source": "https://raw.githubusercontent.com/mz-automation/libiec61850/v1.6/src/sampled_values/sv_publisher.h",
+      "source_revision": "libiec61850 v1.6 publisherAPI rate units/synchronization/configuration sequencing.",
+      "label": "gm identity",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "sv_observation_source": {
+      "type": "text",
+      "description": "Actualcompletecorrelateddecodedframe/channel/wave/time observations.",
+      "integer": false,
+      "source": "https://raw.githubusercontent.com/mz-automation/libiec61850/v1.6/src/sampled_values/sv_subscriber.h",
+      "source_revision": "libiec61850 v1.6 callbackASDU lifetime and dataset preknowledge API.",
+      "label": "observation source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "sv_library_pair": {
+      "type": "select",
+      "description": "Actual pinned v1.6 publisher/subscriber pair versus separately verified peer; publisherSmpMod2octets conflicts with subscriberexpecting1octet.",
+      "options": [
+        "PINNED_PUBLISHER_AND_SUBSCRIBER",
+        "VERIFIED_OTHER_PEER"
+      ],
+      "integer": false,
+      "source": "https://raw.githubusercontent.com/mz-automation/libiec61850/v1.6/src/sampled_values/sv_subscriber.c",
+      "source_revision": "libiec61850 v1.6 receiver parsing/filtering/fieldpresence/typed bounds.",
+      "label": "library pair",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    }
+  },
+  "mechanisms": {
+    "sampling": [
+      "PROFILE_AND_EDITION_QUALIFIED",
+      "SMPMODE_UNITS_EXPLICIT",
+      "DATASET_QUALITY_AND_CONFREV_MATCH"
+    ],
+    "qualification": [
+      "L2_NOT_ROUTABLE_SV",
+      "BITRATE_NOT_SAMPLE_OR_FRAME_RATE",
+      "SYNC_BIT_NOT_FUNCTIONAL_OR_CAPACITY_ACCEPTANCE"
+    ]
+  },
+  "parameter_constraints": [
+    {
+      "parameter": "local_timing_evidence",
+      "when": {},
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "allowed": []
+    },
+    {
+      "parameter": "sv_registered_source",
+      "when": {
+        "sv_profile": "REGISTERED_OTHER"
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "required": true
+    },
+    {
+      "parameter": "sv_registered_source",
+      "when": {
+        "sv_edition": "REGISTERED_OTHER"
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "required": true
+    },
+    {
+      "parameter": "sv_registered_source",
+      "when": {
+        "sv_mapping": "REGISTERED_ROUTABLE"
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "required": true
+    },
+    {
+      "parameter": "sv_registered_source",
+      "when": {
+        "sv_phy": "REGISTERED_ACTUAL"
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "required": true
+    },
+    {
+      "parameter": "sv_line_hz",
+      "when": {},
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "exclusive_minimum": 0
+    },
+    {
+      "parameter": "sv_sample_hz",
+      "when": {},
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "exclusive_minimum": 0
+    },
+    {
+      "parameter": "sv_frame_hz",
+      "when": {},
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "exclusive_minimum": 0
+    },
+    {
+      "parameter": "sv_sample_interval_us",
+      "when": {},
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "exclusive_minimum": 0
+    },
+    {
+      "parameter": "sv_link_bps",
+      "when": {},
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "exclusive_minimum": 0
+    },
+    {
+      "parameter": "sv_edition",
+      "when": {
+        "sv_profile": "UCA_9_2LE_2004"
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "allowed": [
+        "ED1"
+      ]
+    },
+    {
+      "parameter": "sv_mapping",
+      "when": {
+        "sv_profile": "UCA_9_2LE_2004"
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "allowed": [
+        "RAW_L2_9_2"
+      ]
+    },
+    {
+      "parameter": "sv_line_hz",
+      "when": {
+        "sv_profile": "UCA_9_2LE_2004"
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "allowed": [
+        50,
+        60
+      ]
+    },
+    {
+      "parameter": "sv_phy",
+      "when": {
+        "sv_profile": "UCA_9_2LE_2004"
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "allowed": [
+        "100BASE_FX_ST",
+        "100BASE_FX_MT_RJ",
+        "100BASE_TX_RJ45"
+      ]
+    },
+    {
+      "parameter": "sv_duplex",
+      "when": {
+        "sv_profile": "UCA_9_2LE_2004"
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "allowed": [
+        "FULL"
+      ]
+    },
+    {
+      "parameter": "sv_link_bps",
+      "when": {
+        "sv_profile": "UCA_9_2LE_2004"
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "allowed": [
+        100000000
+      ]
+    },
+    {
+      "parameter": "sv_appid",
+      "when": {
+        "sv_profile": "UCA_9_2LE_2004"
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "allowed": [
+        16384
+      ]
+    },
+    {
+      "parameter": "sv_priority",
+      "when": {
+        "sv_profile": "UCA_9_2LE_2004"
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "allowed": [
+        4
+      ]
+    },
+    {
+      "parameter": "sv_vlan_id",
+      "when": {
+        "sv_profile": "UCA_9_2LE_2004"
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "sv_tagged",
+      "when": {
+        "sv_profile": "UCA_9_2LE_2004"
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "sv_conf_rev",
+      "when": {
+        "sv_profile": "UCA_9_2LE_2004"
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "allowed": [
+        1
+      ]
+    },
+    {
+      "parameter": "sv_channel_count",
+      "when": {
+        "sv_profile": "UCA_9_2LE_2004"
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "allowed": [
+        8
+      ]
+    },
+    {
+      "parameter": "sv_data_bytes",
+      "when": {
+        "sv_profile": "UCA_9_2LE_2004"
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "allowed": [
+        64
+      ]
+    },
+    {
+      "parameter": "sv_current_scale",
+      "when": {
+        "sv_profile": "UCA_9_2LE_2004"
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "allowed": [
+        0.001
+      ]
+    },
+    {
+      "parameter": "sv_voltage_scale",
+      "when": {
+        "sv_profile": "UCA_9_2LE_2004"
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "allowed": [
+        0.01
+      ]
+    },
+    {
+      "parameter": "sv_offset",
+      "when": {
+        "sv_profile": "UCA_9_2LE_2004"
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "sv_has_smp_mode",
+      "when": {
+        "sv_profile": "UCA_9_2LE_2004"
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "allowed": [
+        false
+      ]
+    },
+    {
+      "parameter": "sv_has_smp_rate",
+      "when": {
+        "sv_profile": "UCA_9_2LE_2004"
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "allowed": [
+        false
+      ]
+    },
+    {
+      "parameter": "sv_has_dataset",
+      "when": {
+        "sv_profile": "UCA_9_2LE_2004"
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "allowed": [
+        false
+      ]
+    },
+    {
+      "parameter": "sv_smp_mode",
+      "when": {
+        "sv_profile": "UCA_9_2LE_2004"
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "allowed": [
+        "PER_NOMINAL_PERIOD"
+      ]
+    },
+    {
+      "parameter": "sv_le_block",
+      "when": {
+        "sv_profile": "UCA_9_2LE_2004"
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "required": true
+    },
+    {
+      "parameter": "sv_line_hz",
+      "when": {
+        "sv_profile": "UCA_9_2LE_2004"
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "required": true
+    },
+    {
+      "parameter": "sv_smp_rate",
+      "when": {
+        "sv_profile": "UCA_9_2LE_2004",
+        "sv_le_block": "MSVCB01"
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "allowed": [
+        80
+      ]
+    },
+    {
+      "parameter": "sv_no_asdu",
+      "when": {
+        "sv_profile": "UCA_9_2LE_2004",
+        "sv_le_block": "MSVCB01"
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "allowed": [
+        1
+      ]
+    },
+    {
+      "parameter": "sv_smp_rate",
+      "when": {
+        "sv_profile": "UCA_9_2LE_2004",
+        "sv_le_block": "MSVCB02"
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "allowed": [
+        256
+      ]
+    },
+    {
+      "parameter": "sv_no_asdu",
+      "when": {
+        "sv_profile": "UCA_9_2LE_2004",
+        "sv_le_block": "MSVCB02"
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "allowed": [
+        8
+      ]
+    },
+    {
+      "parameter": "sv_ethertype",
+      "when": {
+        "sv_mapping": "RAW_L2_9_2"
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/libiec61850/v1.6/src/sampled_values/sv_publisher.c",
+      "source_revision": "libiec61850 pinnedv1.6 publisher constructor/serialization/ASDUcounter, not a verified NIS executor.",
+      "allowed": [
+        35002
+      ]
+    },
+    {
+      "parameter": "sv_appid",
+      "when": {
+        "sv_mapping": "RAW_L2_9_2"
+      },
+      "source": "https://library.e.abb.com/public/7d0e72aaacea4129a414f227327fcce9/REC615_iec61850eng_2NGA002470_ENa.pdf",
+      "source_revision": "ABB REC6152NGA002470A PCL1 actualpp50-55/59-61/63-64 selected device and edition compatibility, not allvendorlimits.",
+      "minimum": 16384,
+      "maximum": 32767
+    },
+    {
+      "parameter": "sv_multicast_mac",
+      "when": {
+        "sv_mapping": "RAW_L2_9_2"
+      },
+      "source": "https://library.e.abb.com/public/7d0e72aaacea4129a414f227327fcce9/REC615_iec61850eng_2NGA002470_ENa.pdf",
+      "source_revision": "ABB REC6152NGA002470A PCL1 actualpp50-55/59-61/63-64 selected device and edition compatibility, not allvendorlimits.",
+      "pattern": "(?i)01[-:]0c[-:]cd[-:]04[-:]0[01][-:][0-9a-f]{2}"
+    },
+    {
+      "parameter": "sv_gm_identity",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/mz-automation/libiec61850/v1.6/src/sampled_values/sv_publisher.h",
+      "source_revision": "libiec61850 v1.6 publisherAPI rate units/synchronization/configuration sequencing.",
+      "pattern": "(?i)[0-9a-f]{16}"
+    },
+    {
+      "parameter": "sv_gm_identity",
+      "when": {
+        "sv_has_gm_identity": true
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "required": true
+    },
+    {
+      "parameter": "sv_sv_id",
+      "when": {
+        "sv_edition": "ED2_1"
+      },
+      "source": "https://library.e.abb.com/public/7d0e72aaacea4129a414f227327fcce9/REC615_iec61850eng_2NGA002470_ENa.pdf",
+      "source_revision": "ABB REC6152NGA002470A PCL1 actualpp50-55/59-61/63-64 selected device and edition compatibility, not allvendorlimits.",
+      "pattern": ".{1,129}"
+    },
+    {
+      "parameter": "sv_sample_hz",
+      "when": {
+        "sv_smp_mode": "PER_NOMINAL_PERIOD"
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/libiec61850/v1.6/src/sampled_values/sv_publisher.h",
+      "source_revision": "libiec61850 v1.6 publisherAPI rate units/synchronization/configuration sequencing.",
+      "equal_expression": {
+        "product": [
+          "sv_smp_rate",
+          "sv_line_hz"
+        ]
+      }
+    },
+    {
+      "parameter": "sv_sample_hz",
+      "when": {
+        "sv_smp_mode": "SAMPLES_PER_SECOND"
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/libiec61850/v1.6/src/sampled_values/sv_publisher.h",
+      "source_revision": "libiec61850 v1.6 publisherAPI rate units/synchronization/configuration sequencing.",
+      "equal_expression": "sv_smp_rate"
+    },
+    {
+      "parameter": "sv_sample_hz",
+      "when": {
+        "sv_smp_mode": "SECONDS_PER_SAMPLE"
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/libiec61850/v1.6/src/sampled_values/sv_publisher.h",
+      "source_revision": "libiec61850 v1.6 publisherAPI rate units/synchronization/configuration sequencing.",
+      "equal_ratio": {
+        "numerator_offset": 1,
+        "denominator_product": [
+          "sv_smp_rate"
+        ],
+        "denominator_offset": 1
+      }
+    },
+    {
+      "parameter": "sv_smp_rate",
+      "when": {},
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "when_present": [
+        "sv_sample_hz"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "sv_smp_mode",
+      "when": {},
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "when_present": [
+        "sv_sample_hz"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "sv_line_hz",
+      "when": {
+        "sv_smp_mode": "PER_NOMINAL_PERIOD"
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "when_present": [
+        "sv_sample_hz"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "sv_frame_hz",
+      "when": {},
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "equal_ratio": {
+        "numerator_parameter": "sv_sample_hz",
+        "denominator_product": [
+          "sv_no_asdu"
+        ],
+        "denominator_offset": 1
+      }
+    },
+    {
+      "parameter": "sv_sample_hz",
+      "when": {},
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "when_present": [
+        "sv_frame_hz"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "sv_no_asdu",
+      "when": {},
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "when_present": [
+        "sv_frame_hz"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "sv_sample_interval_us",
+      "when": {},
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "equal_ratio": {
+        "numerator_offset": 1000000,
+        "denominator_product": [
+          "sv_sample_hz"
+        ],
+        "denominator_offset": 1
+      }
+    },
+    {
+      "parameter": "sv_sample_hz",
+      "when": {},
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "when_present": [
+        "sv_sample_interval_us"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "sv_smp_mode",
+      "when": {
+        "sv_has_smp_mode": false
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/libiec61850/v1.6/src/sampled_values/sv_publisher.h",
+      "source_revision": "libiec61850 v1.6 publisherAPI rate units/synchronization/configuration sequencing.",
+      "allowed": [
+        "PER_NOMINAL_PERIOD"
+      ]
+    },
+    {
+      "parameter": "sv_has_smp_mode",
+      "when": {
+        "sv_implementation": "LIBIEC61850_1_6",
+        "sv_library_pair": "PINNED_PUBLISHER_AND_SUBSCRIBER"
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/libiec61850/v1.6/src/sampled_values/sv_subscriber.c",
+      "source_revision": "libiec61850 v1.6 receiver parsing/filtering/fieldpresence/typed bounds.",
+      "allowed": [
+        false
+      ]
+    },
+    {
+      "parameter": "sv_library_pair",
+      "when": {
+        "sv_implementation": "LIBIEC61850_1_6",
+        "sv_has_smp_mode": true
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "required": true
+    },
+    {
+      "parameter": "sv_wrap_count",
+      "when": {
+        "sv_profile": "UCA_9_2LE_2004"
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "equal_expression": "sv_sample_hz"
+    },
+    {
+      "parameter": "sv_smp_cnt",
+      "when": {},
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "exclusive_maximum_expression": "sv_wrap_count"
+    },
+    {
+      "parameter": "sv_wrap_count",
+      "when": {},
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "when_present": [
+        "sv_smp_cnt"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "sv_wrap_count",
+      "when": {
+        "sv_implementation": "LIBIEC61850_1_6"
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/libiec61850/v1.6/src/sampled_values/sv_publisher.c",
+      "source_revision": "libiec61850 pinnedv1.6 publisher constructor/serialization/ASDUcounter, not a verified NIS executor.",
+      "maximum": 65535
+    },
+    {
+      "parameter": "sv_smp_synch",
+      "when": {
+        "sv_edition": "ED1"
+      },
+      "source": "https://library.e.abb.com/public/7d0e72aaacea4129a414f227327fcce9/REC615_iec61850eng_2NGA002470_ENa.pdf",
+      "source_revision": "ABB REC6152NGA002470A PCL1 actualpp50-55/59-61/63-64 selected device and edition compatibility, not allvendorlimits.",
+      "allowed": [
+        0,
+        1
+      ]
+    },
+    {
+      "parameter": "sv_smp_synch",
+      "when": {
+        "sv_edition": "ED2_1"
+      },
+      "source": "https://library.e.abb.com/public/7d0e72aaacea4129a414f227327fcce9/REC615_iec61850eng_2NGA002470_ENa.pdf",
+      "source_revision": "ABB REC6152NGA002470A PCL1 actualpp50-55/59-61/63-64 selected device and edition compatibility, not allvendorlimits.",
+      "allowed": [
+        0,
+        1,
+        2
+      ]
+    },
+    {
+      "parameter": "sv_smp_synch",
+      "when": {
+        "sv_edition": "REGISTERED_OTHER"
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/libiec61850/v1.6/src/sampled_values/sv_publisher.h",
+      "source_revision": "libiec61850 v1.6 publisherAPI rate units/synchronization/configuration sequencing.",
+      "forbidden": [
+        3,
+        4,
+        255
+      ]
+    },
+    {
+      "parameter": "sv_smp_synch",
+      "when": {
+        "sv_edition": "ED2_1",
+        "sv_sync_state": "NONE"
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "sv_smp_synch",
+      "when": {
+        "sv_edition": "ED2_1",
+        "sv_sync_state": "LOCAL"
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "allowed": [
+        1
+      ]
+    },
+    {
+      "parameter": "sv_smp_synch",
+      "when": {
+        "sv_edition": "ED2_1",
+        "sv_sync_state": "GLOBAL"
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "allowed": [
+        2
+      ]
+    },
+    {
+      "parameter": "sv_smp_synch",
+      "when": {
+        "sv_edition": "ED1",
+        "sv_sync_state": "NONE"
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "sv_smp_synch",
+      "when": {
+        "sv_edition": "ED1",
+        "sv_sync_state": "LOCAL"
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "allowed": [
+        1
+      ]
+    },
+    {
+      "parameter": "sv_smp_synch",
+      "when": {
+        "sv_edition": "ED1",
+        "sv_sync_state": "GLOBAL"
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "allowed": [
+        1
+      ]
+    },
+    {
+      "parameter": "sv_smp_synch",
+      "when": {
+        "sv_synchronized": false
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "sv_smp_synch",
+      "when": {
+        "sv_synchronized": true
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "exclusive_minimum": 0
+    },
+    {
+      "parameter": "sv_master_error_us",
+      "when": {
+        "sv_profile": "UCA_9_2LE_2004"
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "maximum": 1
+    },
+    {
+      "parameter": "sv_mu_jitter_us",
+      "when": {
+        "sv_profile": "UCA_9_2LE_2004"
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "maximum": 2
+    },
+    {
+      "parameter": "sv_sample_error_us",
+      "when": {
+        "sv_profile": "UCA_9_2LE_2004"
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "maximum": 4
+    },
+    {
+      "parameter": "sv_pps_compensated",
+      "when": {
+        "sv_profile": "UCA_9_2LE_2004"
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "when_greater_than": {
+        "sv_pps_delay_us": 2
+      },
+      "required": true,
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "sv_holdover_elapsed_s",
+      "when": {
+        "sv_holdover": true,
+        "sv_synchronized": true
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "maximum_parameter": "sv_holdover_limit_s"
+    },
+    {
+      "parameter": "sv_holdover_limit_s",
+      "when": {
+        "sv_holdover": true,
+        "sv_synchronized": true
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "required": true
+    },
+    {
+      "parameter": "sv_holdover_elapsed_s",
+      "when": {
+        "sv_holdover": true,
+        "sv_synchronized": true
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "required": true
+    },
+    {
+      "parameter": "sv_peer_conf_rev",
+      "when": {},
+      "source": "https://library.e.abb.com/public/7d0e72aaacea4129a414f227327fcce9/REC615_iec61850eng_2NGA002470_ENa.pdf",
+      "source_revision": "ABB REC6152NGA002470A PCL1 actualpp50-55/59-61/63-64 selected device and edition compatibility, not allvendorlimits.",
+      "equal_expression": "sv_conf_rev"
+    },
+    {
+      "parameter": "sv_mac_header_bytes",
+      "when": {
+        "sv_mapping": "RAW_L2_9_2",
+        "sv_tagged": true
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "allowed": [
+        18
+      ]
+    },
+    {
+      "parameter": "sv_mac_header_bytes",
+      "when": {
+        "sv_mapping": "RAW_L2_9_2",
+        "sv_tagged": false
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "allowed": [
+        14
+      ]
+    },
+    {
+      "parameter": "sv_sv_header_bytes",
+      "when": {
+        "sv_mapping": "RAW_L2_9_2"
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "allowed": [
+        8
+      ]
+    },
+    {
+      "parameter": "sv_apdu_bytes",
+      "when": {},
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "minimum_expression": {
+        "product": [
+          "sv_no_asdu",
+          "sv_data_bytes"
+        ]
+      }
+    },
+    {
+      "parameter": "sv_software_frame_bytes",
+      "when": {
+        "sv_mapping": "RAW_L2_9_2"
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "equal_expression": {
+        "sum": [
+          "sv_mac_header_bytes",
+          "sv_sv_header_bytes",
+          "sv_apdu_bytes"
+        ]
+      }
+    },
+    {
+      "parameter": "sv_mac_header_bytes",
+      "when": {
+        "sv_mapping": "RAW_L2_9_2"
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "when_present": [
+        "sv_software_frame_bytes"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "sv_sv_header_bytes",
+      "when": {
+        "sv_mapping": "RAW_L2_9_2"
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "when_present": [
+        "sv_software_frame_bytes"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "sv_apdu_bytes",
+      "when": {
+        "sv_mapping": "RAW_L2_9_2"
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "when_present": [
+        "sv_software_frame_bytes"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "sv_software_frame_bytes",
+      "when": {
+        "sv_implementation": "LIBIEC61850_1_6",
+        "sv_mapping": "RAW_L2_9_2"
+      },
+      "source": "https://raw.githubusercontent.com/mz-automation/libiec61850/v1.6/src/sampled_values/sv_publisher.c",
+      "source_revision": "libiec61850 pinnedv1.6 publisher constructor/serialization/ASDUcounter, not a verified NIS executor.",
+      "maximum": 1518
+    },
+    {
+      "parameter": "sv_frame_bytes",
+      "when": {
+        "sv_mapping": "RAW_L2_9_2"
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "equal_expression": {
+        "maximum": [
+          64,
+          {
+            "sum": [
+              "sv_software_frame_bytes",
+              4
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "parameter": "sv_software_frame_bytes",
+      "when": {
+        "sv_mapping": "RAW_L2_9_2"
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "when_present": [
+        "sv_frame_bytes"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "sv_occupancy_bytes",
+      "when": {
+        "sv_mapping": "RAW_L2_9_2"
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "equal_expression": {
+        "sum": [
+          "sv_frame_bytes",
+          20
+        ]
+      }
+    },
+    {
+      "parameter": "sv_frame_bytes",
+      "when": {
+        "sv_mapping": "RAW_L2_9_2"
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "when_present": [
+        "sv_occupancy_bytes"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "sv_wire_time_us",
+      "when": {
+        "sv_mapping": "RAW_L2_9_2"
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "equal_ratio": {
+        "numerator_parameter": "sv_occupancy_bytes",
+        "factor": 8000000,
+        "denominator_product": [
+          "sv_link_bps"
+        ],
+        "denominator_offset": 1
+      }
+    },
+    {
+      "parameter": "sv_occupancy_bytes",
+      "when": {
+        "sv_mapping": "RAW_L2_9_2"
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "when_present": [
+        "sv_wire_time_us"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "sv_link_bps",
+      "when": {
+        "sv_mapping": "RAW_L2_9_2"
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "when_present": [
+        "sv_wire_time_us"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "sv_e2e_bound_us",
+      "when": {},
+      "source": "https://library.e.abb.com/public/7d0e72aaacea4129a414f227327fcce9/REC615_iec61850eng_2NGA002470_ENa.pdf",
+      "source_revision": "ABB REC6152NGA002470A PCL1 actualpp50-55/59-61/63-64 selected device and edition compatibility, not allvendorlimits.",
+      "equal_expression": {
+        "sum": [
+          "sv_capture_bound_us",
+          "sv_network_bound_us",
+          "sv_decode_bound_us"
+        ]
+      }
+    },
+    {
+      "parameter": "sv_capture_bound_us",
+      "when": {},
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "when_present": [
+        "sv_e2e_bound_us"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "sv_network_bound_us",
+      "when": {},
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "when_present": [
+        "sv_e2e_bound_us"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "sv_decode_bound_us",
+      "when": {},
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "when_present": [
+        "sv_e2e_bound_us"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "sv_e2e_bound_us",
+      "when": {},
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "maximum_parameter": "sv_e2e_limit_us"
+    },
+    {
+      "parameter": "sv_age_us",
+      "when": {},
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "maximum_parameter": "sv_freshness_us"
+    },
+    {
+      "parameter": "sv_outcome",
+      "when": {
+        "sv_sample_accepted": true
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "required": true,
+      "allowed": [
+        "ACCEPTED"
+      ]
+    },
+    {
+      "parameter": "sv_mapping_valid",
+      "when": {
+        "sv_sample_accepted": true
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "required": true,
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "sv_frame_verified",
+      "when": {
+        "sv_sample_accepted": true
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "required": true,
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "sv_clock_verified",
+      "when": {
+        "sv_sample_accepted": true
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "required": true,
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "sv_smp_rate",
+      "when": {
+        "sv_sample_accepted": true
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "required": true
+    },
+    {
+      "parameter": "sv_smp_mode",
+      "when": {
+        "sv_sample_accepted": true
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "required": true
+    },
+    {
+      "parameter": "sv_sample_hz",
+      "when": {
+        "sv_sample_accepted": true
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "required": true
+    },
+    {
+      "parameter": "sv_no_asdu",
+      "when": {
+        "sv_sample_accepted": true
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "required": true
+    },
+    {
+      "parameter": "sv_frame_hz",
+      "when": {
+        "sv_sample_accepted": true
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "required": true
+    },
+    {
+      "parameter": "sv_conf_rev",
+      "when": {
+        "sv_sample_accepted": true
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "required": true
+    },
+    {
+      "parameter": "sv_peer_conf_rev",
+      "when": {
+        "sv_sample_accepted": true
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "required": true
+    },
+    {
+      "parameter": "sv_sv_id",
+      "when": {
+        "sv_sample_accepted": true
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "required": true
+    },
+    {
+      "parameter": "sv_channel_count",
+      "when": {
+        "sv_sample_accepted": true
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "required": true
+    },
+    {
+      "parameter": "sv_data_bytes",
+      "when": {
+        "sv_sample_accepted": true
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "required": true
+    },
+    {
+      "parameter": "sv_smp_cnt",
+      "when": {
+        "sv_sample_accepted": true
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "required": true
+    },
+    {
+      "parameter": "sv_wrap_count",
+      "when": {
+        "sv_sample_accepted": true
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "required": true
+    },
+    {
+      "parameter": "sv_smp_synch",
+      "when": {
+        "sv_sample_accepted": true
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "required": true
+    },
+    {
+      "parameter": "sv_sync_state",
+      "when": {
+        "sv_sample_accepted": true
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "required": true
+    },
+    {
+      "parameter": "sv_synchronized",
+      "when": {
+        "sv_sample_accepted": true
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "required": true
+    },
+    {
+      "parameter": "sv_purpose",
+      "when": {
+        "sv_sample_accepted": true
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "required": true
+    },
+    {
+      "parameter": "sv_validity",
+      "when": {
+        "sv_sample_accepted": true
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "required": true
+    },
+    {
+      "parameter": "sv_observation_source",
+      "when": {
+        "sv_sample_accepted": true
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "required": true
+    },
+    {
+      "parameter": "sv_e2e_bound_us",
+      "when": {
+        "sv_sample_accepted": true
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "required": true
+    },
+    {
+      "parameter": "sv_e2e_limit_us",
+      "when": {
+        "sv_sample_accepted": true
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "required": true
+    },
+    {
+      "parameter": "sv_age_us",
+      "when": {
+        "sv_sample_accepted": true
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "required": true
+    },
+    {
+      "parameter": "sv_freshness_us",
+      "when": {
+        "sv_sample_accepted": true
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "required": true
+    },
+    {
+      "parameter": "sv_validity",
+      "when": {
+        "sv_sample_accepted": true,
+        "sv_purpose": "OPERATIONAL"
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "required": true,
+      "allowed": [
+        "GOOD"
+      ]
+    },
+    {
+      "parameter": "sv_test",
+      "when": {
+        "sv_sample_accepted": true,
+        "sv_purpose": "OPERATIONAL"
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "required": true,
+      "allowed": [
+        false
+      ]
+    },
+    {
+      "parameter": "sv_operator_blocked",
+      "when": {
+        "sv_sample_accepted": true,
+        "sv_purpose": "OPERATIONAL"
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "required": true,
+      "allowed": [
+        false
+      ]
+    },
+    {
+      "parameter": "sv_simulation",
+      "when": {
+        "sv_sample_accepted": true,
+        "sv_purpose": "OPERATIONAL"
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "required": true,
+      "allowed": [
+        false
+      ]
+    },
+    {
+      "parameter": "sv_synchronized",
+      "when": {
+        "sv_sample_accepted": true,
+        "sv_purpose": "OPERATIONAL"
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "required": true,
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "sv_master_error_us",
+      "when": {
+        "sv_sample_accepted": true,
+        "sv_profile": "UCA_9_2LE_2004"
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "required": true
+    },
+    {
+      "parameter": "sv_mu_jitter_us",
+      "when": {
+        "sv_sample_accepted": true,
+        "sv_profile": "UCA_9_2LE_2004"
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "required": true
+    },
+    {
+      "parameter": "sv_sample_error_us",
+      "when": {
+        "sv_sample_accepted": true,
+        "sv_profile": "UCA_9_2LE_2004"
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "required": true
+    },
+    {
+      "parameter": "sv_phy",
+      "when": {
+        "sv_sample_accepted": true,
+        "sv_mapping": "RAW_L2_9_2"
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "required": true
+    },
+    {
+      "parameter": "sv_duplex",
+      "when": {
+        "sv_sample_accepted": true,
+        "sv_mapping": "RAW_L2_9_2"
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "required": true
+    },
+    {
+      "parameter": "sv_link_bps",
+      "when": {
+        "sv_sample_accepted": true,
+        "sv_mapping": "RAW_L2_9_2"
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "required": true
+    },
+    {
+      "parameter": "sv_appid",
+      "when": {
+        "sv_sample_accepted": true,
+        "sv_mapping": "RAW_L2_9_2"
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "required": true
+    },
+    {
+      "parameter": "sv_multicast_mac",
+      "when": {
+        "sv_sample_accepted": true,
+        "sv_mapping": "RAW_L2_9_2"
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "required": true
+    },
+    {
+      "parameter": "sv_tagged",
+      "when": {
+        "sv_sample_accepted": true,
+        "sv_mapping": "RAW_L2_9_2"
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "required": true
+    },
+    {
+      "parameter": "sv_priority",
+      "when": {
+        "sv_sample_accepted": true,
+        "sv_mapping": "RAW_L2_9_2"
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "required": true
+    },
+    {
+      "parameter": "sv_vlan_id",
+      "when": {
+        "sv_sample_accepted": true,
+        "sv_mapping": "RAW_L2_9_2"
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "required": true
+    },
+    {
+      "parameter": "sv_apdu_bytes",
+      "when": {
+        "sv_sample_accepted": true,
+        "sv_mapping": "RAW_L2_9_2"
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "required": true
+    },
+    {
+      "parameter": "sv_software_frame_bytes",
+      "when": {
+        "sv_sample_accepted": true,
+        "sv_mapping": "RAW_L2_9_2"
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "required": true
+    },
+    {
+      "parameter": "sv_frame_bytes",
+      "when": {
+        "sv_sample_accepted": true,
+        "sv_mapping": "RAW_L2_9_2"
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "required": true
+    },
+    {
+      "parameter": "sv_occupancy_bytes",
+      "when": {
+        "sv_sample_accepted": true,
+        "sv_mapping": "RAW_L2_9_2"
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "required": true
+    },
+    {
+      "parameter": "sv_wire_time_us",
+      "when": {
+        "sv_sample_accepted": true,
+        "sv_mapping": "RAW_L2_9_2"
+      },
+      "source": "https://gitlab.com/wireshark/wireshark/uploads/284e5e5a19549602b692b63e0ebf1f7d/digif_spec_9-2le_r2-1_040707-cb.pdf",
+      "source_revision": "UCAIug R2-1 July7 2004 pp5-12/14-17 original authored31page document via public Wireshark attachment; official HTTPS timedout/HTTP failed, mirror explicitly recorded. LE subset not allIEC61850 editions.",
+      "required": true
+    }
+  ],
+  "physical_layer_profile_id": null,
+  "medium_access_model": null,
+  "native_parameter_prefixes": [
+    "sv_"
+  ],
+  "parameter_aliases": {},
+  "parameter_alias_limits": {},
+  "parameter_evidence_scope": "EXPLICIT_LAYER",
+  "rate_source_profile_id": null,
+  "arbitration_model_id": null,
+  "max_payload_bytes": null,
+  "capabilities": {
+    "supports_signals": true,
+    "supports_data_objects": true,
+    "supports_streams": true,
+    "supports_multicast": true,
+    "supports_publish_subscribe": true,
+    "supports_request_response": false,
+    "supports_cyclic": true,
+    "supports_event": true,
+    "supports_redundancy": false,
+    "supports_time_sync": true,
+    "supports_safety_profile": false,
+    "supports_segmentation": false,
+    "supports_fragmentation": false,
+    "supports_qos": true
+  },
+  "deterministic": false,
+  "overhead_bytes": 8,
+  "implementation_status": "PARTIAL",
+  "connection_type": "COMMUNICATION_TECHNOLOGY",
+  "parameter_proposals": {
+    "kind": "DEVICE_DEPENDENT",
+    "status": "REVIEW_REQUIRED",
+    "required_fields": [],
+    "note": "No universal rate is available; inspect the selected hardware/profile."
+  },
+  "capacity_evidence": {
+    "status": "MODEL_MISSING",
+    "frame_model": null,
+    "schedule_model": null,
+    "requires_confirmed_device_parameters": true
+  },
+  "components": {
+    "binding": "sampled_values.binding",
+    "generator": "sampled_values.generator",
+    "validator": "sampled_values.validator",
+    "timing_model": null,
+    "load_model": null,
+    "encoder": "sampled_values.encoder",
+    "decoder": "sampled_values.decoder"
+  },
+  "known_limitations": "Technology-specific conformance details require a vendor/profile extension."
+}

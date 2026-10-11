@@ -1,0 +1,1 @@
+"""Canonical NIS responsibility package."""

@@ -1,0 +1,4080 @@
+{
+  "id": "rs485",
+  "label": "RS-485",
+  "domain": "generic_networking",
+  "layer": "PHYSICAL",
+  "transport_unit": "STREAM_CHUNK",
+  "payload_element_types": [
+    "RAW_DATA"
+  ],
+  "hardware_interface": "rs485_actual_electrical_multipoint",
+  "hardware_capability_aliases": [
+    "rs485_port"
+  ],
+  "default_stack": [
+    "rs485"
+  ],
+  "stack_variants": [
+    [
+      "rs485"
+    ]
+  ],
+  "default_bitrate": null,
+  "rate_model": {
+    "type": "RS485_ACTUAL_ELECTRICAL_BUS_AND_SELECTED_PROTOCOL",
+    "fields": []
+  },
+  "local_timing_schema": [],
+  "parameter_schema": {
+    "payload_bytes": {
+      "label": "Payload",
+      "category": "physical",
+      "scope": "message",
+      "type": "number",
+      "description": "Actual application byte count from separately selected higher wire protocol. Electrical RS485 defines no universal packet size,UART8N1 or65535byte payload.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "integer": true
+    },
+    "cycle_ms": {
+      "label": "Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "Standardperiode fuer zyklische Nachrichten.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "minimum_cycle_time_ms": {
+      "label": "Minimum Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "deadline_ms": {
+      "label": "Deadline",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "timeout_ms": {
+      "label": "Timeout",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_latency_ms": {
+      "label": "Maximum Latency",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "jitter_ms": {
+      "label": "Jitter Budget",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "freshness_ms": {
+      "label": "Data Freshness",
+      "category": "timing",
+      "scope": "signal",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "source_processing_delay_ms": {
+      "label": "Source Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_processing_delay_ms": {
+      "label": "Target Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "propagation_delay_ms": {
+      "label": "Propagation",
+      "category": "timing",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.01,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_bus_load_percent": {
+      "label": "Ziel-Buslast",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "Zielwert fuer die aus Routing, Payload, Zyklus und Bitrate berechnete Buslast.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "peak_factor": {
+      "label": "Peak Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.15,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_factor": {
+      "label": "Burst Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.5,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_window_ms": {
+      "label": "Burst Window",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "warning_threshold": {
+      "label": "Load Warning",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "critical_threshold": {
+      "label": "Load Critical",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 75,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "overload_threshold": {
+      "label": "Load Overload",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 90,
+      "unit": "%",
+      "min": 1,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "queue_size": {
+      "label": "Queue Size",
+      "category": "qos",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 256,
+      "unit": "Frames",
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "queue_policy": {
+      "label": "Queue Policy",
+      "category": "qos",
+      "scope": "network",
+      "type": "select",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": "FIFO",
+      "options": [
+        "FIFO",
+        "PRIORITY",
+        "STRICT_PRIORITY",
+        "WEIGHTED_PRIORITY",
+        "WRR",
+        "ROUND_ROBIN",
+        "TIME_TRIGGERED",
+        "TAS",
+        "CBS",
+        "CUSTOM"
+      ],
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "qos_priority": {
+      "label": "Default Priority",
+      "category": "qos",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 3,
+      "min": 0,
+      "max": 7,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "traffic_class": {
+      "label": "Traffic Class",
+      "category": "qos",
+      "scope": "route",
+      "type": "select",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": "BEST_EFFORT",
+      "options": [
+        "BEST_EFFORT",
+        "CONTROL",
+        "REALTIME",
+        "SAFETY_CRITICAL"
+      ],
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "packet_loss_probability": {
+      "label": "Packet Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "frame_loss_probability": {
+      "label": "Frame Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "bit_error_rate": {
+      "label": "Bit Error Rate",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "corruption_probability": {
+      "label": "Corruption",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duplicate_probability": {
+      "label": "Duplication",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "reordering_probability": {
+      "label": "Reordering",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "required_reliability": {
+      "label": "Required Reliability",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.999,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_offset_ms": {
+      "label": "Clock Offset",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_drift_ppm": {
+      "label": "Clock Drift",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 20,
+      "unit": "ppm",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_precision_ms": {
+      "label": "Sync Precision",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_interval_ms": {
+      "label": "Sync Interval",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1000,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_sync_error_ms": {
+      "label": "Maximum Sync Error",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_delay_ms": {
+      "label": "Gateway Processing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.2,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_queue_delay_ms": {
+      "label": "Gateway Queueing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "protocol_conversion_delay_ms": {
+      "label": "Protocol Conversion",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duration_s": {
+      "label": "Simulation Duration",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 1,
+      "unit": "s",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "seed": {
+      "label": "Random Seed",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 42,
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "max_events": {
+      "label": "Maximum Events",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 100000,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "dropout_probability": {
+      "label": "Failure Injection Dropout",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "rs485_profile": {
+      "type": "select",
+      "description": "Selected electrical test reference versus independently qualified actual devices.",
+      "options": [
+        "TIA_485_TI2010",
+        "DEVICE_QUALIFIED",
+        "REGISTERED_ACTUAL"
+      ],
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "label": "profile",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_topology": {
+      "type": "select",
+      "description": "Actual balanced bus with electrically short stubs, or independently qualified alternative.",
+      "options": [
+        "BUS_DAISY_CHAIN",
+        "REGISTERED_ACTUAL"
+      ],
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "label": "topology",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_direction": {
+      "type": "select",
+      "description": "Half duplex uses one pair; full duplex two independently controlled pairs, not simultaneous competing drivers per pair.",
+      "options": [
+        "HALF_DUPLEX_ONE_PAIR",
+        "FULL_DUPLEX_TWO_PAIRS"
+      ],
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "label": "direction",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_load_model": {
+      "type": "select",
+      "description": "Actual homogeneous identical UL contribution versus individually measured aggregate bus load.",
+      "options": [
+        "HOMOGENEOUS_ACTUAL",
+        "AGGREGATE_MEASURED"
+      ],
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "label": "load model",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_cable_profile": {
+      "type": "select",
+      "description": "Selected TI recommended120ohm UTP proposal versus actual independently selected cable.",
+      "options": [
+        "TI_RECOMMENDED_120_OHM_UTP",
+        "ACTUAL_OTHER"
+      ],
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "label": "cable profile",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_termination": {
+      "type": "select",
+      "description": "Actual two-end parallel or split termination, qualified unterminated/alternative implementation.",
+      "options": [
+        "PARALLEL_TWO_ENDS",
+        "SPLIT_TWO_ENDS",
+        "NONE_QUALIFIED",
+        "REGISTERED_ACTUAL"
+      ],
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "label": "termination",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_load_scope": {
+      "type": "select",
+      "description": "Actual electrical fixture: open,54ohm with50pF waveform,60ohm with375ohm commonmode loading, or application.",
+      "options": [
+        "OPEN_CIRCUIT",
+        "STANDARD_54_OHM",
+        "STANDARD_CM_60_375",
+        "APPLICATION"
+      ],
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "label": "load scope",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_activity": {
+      "type": "select",
+      "description": "Actual scheduled frame, idle, open, short, or contention state. Failsafe idle is not a new valid message.",
+      "options": [
+        "FRAME",
+        "IDLE",
+        "OPEN",
+        "SHORT",
+        "CONTENTION"
+      ],
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "label": "activity",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_logic_mapping": {
+      "type": "select",
+      "description": "Actual VA-VB device truth table; A/B letters alone do not prove logical polarity.",
+      "options": [
+        "POSITIVE_IS_1",
+        "POSITIVE_IS_0",
+        "REGISTERED_ACTUAL"
+      ],
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "label": "logic mapping",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_decoded_logic": {
+      "type": "select",
+      "description": "Actual observed resulting logical bit.",
+      "options": [
+        "ONE",
+        "ZERO"
+      ],
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "label": "decoded logic",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_failsafe": {
+      "type": "select",
+      "description": "Actual commissioned internal/external failsafe or no specified behavior.",
+      "options": [
+        "NOT_SPECIFIED",
+        "INTERNAL_PROVEN",
+        "EXTERNAL_PROVEN"
+      ],
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "label": "failsafe",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_ground_scheme": {
+      "type": "select",
+      "description": "Actual return path/ground potential and optional isolation commissioning, never automatic protective-earth return.",
+      "options": [
+        "QUALIFIED_COMMON_REFERENCE",
+        "SIGNAL_AND_SUPPLY_ISOLATED",
+        "REGISTERED_ACTUAL"
+      ],
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "label": "ground scheme",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_wire_protocol": {
+      "type": "select",
+      "description": "Actual codec and media scheduling separate from electrical RS485.",
+      "options": [
+        "REGISTERED_ACTUAL"
+      ],
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "label": "wire protocol",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_outcome": {
+      "type": "select",
+      "description": "Actual complete decoded transaction and functional acceptance status.",
+      "options": [
+        "ACCEPTED",
+        "ELECTRICAL_FAULT",
+        "CONTENTION",
+        "FRAMING_ERROR",
+        "STALE",
+        "UNKNOWN"
+      ],
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "label": "outcome",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_bitrate_bps": {
+      "type": "number",
+      "description": "Actual serialized rate under selected driver/receiver/cable; no normative minimum or default10Mbps.",
+      "min": 0,
+      "unit": "bit/s",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "label": "bitrate bps",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_device_max_bps": {
+      "type": "number",
+      "description": "Actual driver maximum under commissioned electrical conditions.",
+      "min": 0,
+      "unit": "bit/s",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "label": "device max bps",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_peer_max_bps": {
+      "type": "number",
+      "description": "Actual receiver maximum under same conditions.",
+      "min": 0,
+      "unit": "bit/s",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "label": "peer max bps",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_nodes": {
+      "type": "number",
+      "description": "Actual connected transceiver count;32UL is not automatically32devices.",
+      "min": 1,
+      "integer": true,
+      "source": "https://www.ti.com/lit/an/slla272d/slla272d.pdf",
+      "source_revision": "TI SLLA272D revisedMay2021 actualpp1-7; topology, UL, physical design formulas, actual recommendations not universal device guarantees.",
+      "label": "nodes",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_drivers": {
+      "type": "number",
+      "description": "Actual connected drivers per pair, many allowed but only one active.",
+      "min": 1,
+      "integer": true,
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "label": "drivers",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_active_drivers": {
+      "type": "number",
+      "description": "Actual simultaneously enabled drivers per pair;0idle/1frame, never2without contention.",
+      "min": 0,
+      "integer": true,
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "label": "active drivers",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_unit_load": {
+      "type": "number",
+      "description": "Actual receiver/poweroff driver UL per node, not universal1/8UL.",
+      "min": 0,
+      "unit": "UL",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla272d/slla272d.pdf",
+      "source_revision": "TI SLLA272D revisedMay2021 actualpp1-7; topology, UL, physical design formulas, actual recommendations not universal device guarantees.",
+      "label": "unit load",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_receiver_load_ul": {
+      "type": "number",
+      "description": "Actual aggregate receiver/poweroff driver bus load.",
+      "min": 0,
+      "unit": "UL",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla272d/slla272d.pdf",
+      "source_revision": "TI SLLA272D revisedMay2021 actualpp1-7; topology, UL, physical design formulas, actual recommendations not universal device guarantees.",
+      "label": "receiver load ul",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_bias_load_ul": {
+      "type": "number",
+      "description": "Actual externally applied failsafe loading, not universal20UL.",
+      "min": 0,
+      "unit": "UL",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla272d/slla272d.pdf",
+      "source_revision": "TI SLLA272D revisedMay2021 actualpp1-7; topology, UL, physical design formulas, actual recommendations not universal device guarantees.",
+      "label": "bias load ul",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_total_load_ul": {
+      "type": "number",
+      "description": "Actual receiver/poweroff driver plus bias total; selected standard driver supports32UL.",
+      "min": 0,
+      "unit": "UL",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla272d/slla272d.pdf",
+      "source_revision": "TI SLLA272D revisedMay2021 actualpp1-7; topology, UL, physical design formulas, actual recommendations not universal device guarantees.",
+      "label": "total load ul",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_driver_diff_abs_v": {
+      "type": "number",
+      "description": "Actual differential output magnitude under declared fixture.",
+      "min": 0,
+      "unit": "V",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "label": "driver diff abs v",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_driver_a_v": {
+      "type": "number",
+      "description": "Actual signed individual outputA under unloaded fixture.",
+      "unit": "V",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "label": "driver a v",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_driver_b_v": {
+      "type": "number",
+      "description": "Actual signed individual outputB under unloaded fixture.",
+      "unit": "V",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "label": "driver b v",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_driver_offset_v": {
+      "type": "number",
+      "description": "Actual signed offset -1..3V in selected loaded test, not absolute-value misreading.",
+      "unit": "V",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "label": "driver offset v",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_driver_diff_delta_abs_v": {
+      "type": "number",
+      "description": "Actual output polarity imbalance<=.2V.",
+      "min": 0,
+      "unit": "V",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "label": "driver diff delta abs v",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_driver_offset_delta_abs_v": {
+      "type": "number",
+      "description": "Actual offset imbalance<=.2V.",
+      "min": 0,
+      "unit": "V",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "label": "driver offset delta abs v",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_short_test_v": {
+      "type": "number",
+      "description": "Actual applied output short stress -7..12V, not normal bus differential voltage.",
+      "unit": "V",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "label": "short test v",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_short_current_abs_ma": {
+      "type": "number",
+      "description": "Actual short current<=250mA under stated stress and duration.",
+      "min": 0,
+      "unit": "mA",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "label": "short current abs ma",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_receiver_a_v": {
+      "type": "number",
+      "description": "Actual signed receiver pinA waveform.",
+      "unit": "V",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "label": "receiver a v",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_receiver_b_v": {
+      "type": "number",
+      "description": "Actual signed receiver pinB waveform.",
+      "unit": "V",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "label": "receiver b v",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_receiver_common_v": {
+      "type": "number",
+      "description": "Actual(VA+VB)/2, standard -7..12V differs RS422±7V.",
+      "unit": "V",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "label": "receiver common v",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_receiver_diff_v": {
+      "type": "number",
+      "description": "Actual VA-VB signed differential, conventional±200mV sensitivity.",
+      "unit": "V",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "label": "receiver diff v",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_receiver_diff_abs_v": {
+      "type": "number",
+      "description": "Actual differential magnitude, must also satisfy selected device absolute limits.",
+      "min": 0,
+      "unit": "V",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "label": "receiver diff abs v",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_fixture_ohm": {
+      "type": "number",
+      "description": "Actual54ohm waveform fixture only, not installed termination.",
+      "min": 0,
+      "unit": "ohm",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "label": "fixture ohm",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "rs485_profile": "TIA_485_TI2010",
+            "rs485_load_scope": "STANDARD_54_OHM"
+          },
+          "value": 54,
+          "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+          "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard."
+        }
+      ]
+    },
+    "rs485_fixture_pf": {
+      "type": "number",
+      "description": "Actual50pF waveform fixture only, not cable capacitance.",
+      "min": 0,
+      "unit": "pF",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "label": "fixture pf",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "rs485_profile": "TIA_485_TI2010",
+            "rs485_load_scope": "STANDARD_54_OHM"
+          },
+          "value": 50,
+          "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+          "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard."
+        }
+      ]
+    },
+    "rs485_rise_ns": {
+      "type": "number",
+      "description": "Actual monotonic10-90percent loaded rise, standard<=.3UI.",
+      "min": 0,
+      "unit": "ns",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "label": "rise ns",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_fall_ns": {
+      "type": "number",
+      "description": "Actual loaded fall under same fixture.",
+      "min": 0,
+      "unit": "ns",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "label": "fall ns",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_unit_interval_ns": {
+      "type": "number",
+      "description": "Actual1e9/bitrate bit interval.",
+      "min": 0,
+      "unit": "ns",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "label": "unit interval ns",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_overshoot_percent": {
+      "type": "number",
+      "description": "Actual overshoot/undershoot after transition<=10percent full differential swing.",
+      "min": 0,
+      "unit": "percent",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "label": "overshoot percent",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_cable_m": {
+      "type": "number",
+      "description": "Actual cable length;1200m/10Mbps examples not simultaneous guaranteed limits.",
+      "min": 0,
+      "unit": "m",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla272d/slla272d.pdf",
+      "source_revision": "TI SLLA272D revisedMay2021 actualpp1-7; topology, UL, physical design formulas, actual recommendations not universal device guarantees.",
+      "label": "cable m",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_cable_impedance_ohm": {
+      "type": "number",
+      "description": "Actual cable characteristic impedance;120ohm is source recommendation, not every installed cable.",
+      "min": 0,
+      "unit": "ohm",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla272d/slla272d.pdf",
+      "source_revision": "TI SLLA272D revisedMay2021 actualpp1-7; topology, UL, physical design formulas, actual recommendations not universal device guarantees.",
+      "label": "cable impedance ohm",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "rs485_cable_profile": "TI_RECOMMENDED_120_OHM_UTP"
+          },
+          "value": 120,
+          "source": "https://www.ti.com/lit/an/slla272d/slla272d.pdf",
+          "source_revision": "TI SLLA272D revisedMay2021 actualpp1-7; topology, UL, physical design formulas, actual recommendations not universal device guarantees."
+        }
+      ]
+    },
+    "rs485_termination_ohm": {
+      "type": "number",
+      "description": "Actual effective per-end termination matching line characteristic impedance.",
+      "min": 0,
+      "unit": "ohm",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla272d/slla272d.pdf",
+      "source_revision": "TI SLLA272D revisedMay2021 actualpp1-7; topology, UL, physical design formulas, actual recommendations not universal device guarantees.",
+      "label": "termination ohm",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_termination_count": {
+      "type": "number",
+      "description": "Actual per-pair termination count, two cable ends in parallel/split design.",
+      "min": 0,
+      "integer": true,
+      "source": "https://www.ti.com/lit/an/slla272d/slla272d.pdf",
+      "source_revision": "TI SLLA272D revisedMay2021 actualpp1-7; topology, UL, physical design formulas, actual recommendations not universal device guarantees.",
+      "label": "termination count",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_split_resistor_ohm": {
+      "type": "number",
+      "description": "Actual each split resistor, sum pair forms effective per-end termination.",
+      "min": 0,
+      "unit": "ohm",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla272d/slla272d.pdf",
+      "source_revision": "TI SLLA272D revisedMay2021 actualpp1-7; topology, UL, physical design formulas, actual recommendations not universal device guarantees.",
+      "label": "split resistor ohm",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_split_filter_pf": {
+      "type": "number",
+      "description": "Actual split commonmode filter capacitor,220pF sourceexample not a standard default.",
+      "min": 0,
+      "unit": "pF",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla272d/slla272d.pdf",
+      "source_revision": "TI SLLA272D revisedMay2021 actualpp1-7; topology, UL, physical design formulas, actual recommendations not universal device guarantees.",
+      "label": "split filter pf",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_stub_m": {
+      "type": "number",
+      "description": "Actual transceiver-to-trunk branch length.",
+      "min": 0,
+      "unit": "m",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla272d/slla272d.pdf",
+      "source_revision": "TI SLLA272D revisedMay2021 actualpp1-7; topology, UL, physical design formulas, actual recommendations not universal device guarantees.",
+      "label": "stub m",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_velocity_fraction": {
+      "type": "number",
+      "description": "Actual cable propagation speed as fraction of vacuum light speed, not generic78percent.",
+      "min": 0,
+      "max": 1,
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla272d/slla272d.pdf",
+      "source_revision": "TI SLLA272D revisedMay2021 actualpp1-7; topology, UL, physical design formulas, actual recommendations not universal device guarantees.",
+      "label": "velocity fraction",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_stub_delay_ns": {
+      "type": "number",
+      "description": "Actual one-way electrical stub delay; TIguideline<=rise/10.",
+      "min": 0,
+      "unit": "ns",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla272d/slla272d.pdf",
+      "source_revision": "TI SLLA272D revisedMay2021 actualpp1-7; topology, UL, physical design formulas, actual recommendations not universal device guarantees.",
+      "label": "stub delay ns",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_media_pf_m": {
+      "type": "number",
+      "description": "Actual distributed medium capacitance per metre.",
+      "min": 0,
+      "unit": "pF/m",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla272d/slla272d.pdf",
+      "source_revision": "TI SLLA272D revisedMay2021 actualpp1-7; topology, UL, physical design formulas, actual recommendations not universal device guarantees.",
+      "label": "media pf m",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_node_cap_pf": {
+      "type": "number",
+      "description": "Actual lumped node load including pins/connector/PCB/protection.",
+      "min": 0,
+      "unit": "pF",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla272d/slla272d.pdf",
+      "source_revision": "TI SLLA272D revisedMay2021 actualpp1-7; topology, UL, physical design formulas, actual recommendations not universal device guarantees.",
+      "label": "node cap pf",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_spacing_m": {
+      "type": "number",
+      "description": "Actual minimum node separation; TIguideline>5.25CL/Cmedia.",
+      "min": 0,
+      "unit": "m",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla272d/slla272d.pdf",
+      "source_revision": "TI SLLA272D revisedMay2021 actualpp1-7; topology, UL, physical design formulas, actual recommendations not universal device guarantees.",
+      "label": "spacing m",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_loaded_impedance_ohm": {
+      "type": "number",
+      "description": "Actual loaded distributed impedance, TIguideline>.4Z0.",
+      "min": 0,
+      "unit": "ohm",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla272d/slla272d.pdf",
+      "source_revision": "TI SLLA272D revisedMay2021 actualpp1-7; topology, UL, physical design formulas, actual recommendations not universal device guarantees.",
+      "label": "loaded impedance ohm",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_noise_abs_mv": {
+      "type": "number",
+      "description": "Actual maximum differential noise for commissioned failsafe margin.",
+      "min": 0,
+      "unit": "mV",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla272d/slla272d.pdf",
+      "source_revision": "TI SLLA272D revisedMay2021 actualpp1-7; topology, UL, physical design formulas, actual recommendations not universal device guarantees.",
+      "label": "noise abs mv",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_bias_diff_v": {
+      "type": "number",
+      "description": "Actual external failsafe differential including200mV threshold+noise.",
+      "min": 0,
+      "unit": "V",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla272d/slla272d.pdf",
+      "source_revision": "TI SLLA272D revisedMay2021 actualpp1-7; topology, UL, physical design formulas, actual recommendations not universal device guarantees.",
+      "label": "bias diff v",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_bias_supply_min_v": {
+      "type": "number",
+      "description": "Actual minimum bias supply used for resistor calculation.",
+      "min": 0,
+      "unit": "V",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla272d/slla272d.pdf",
+      "source_revision": "TI SLLA272D revisedMay2021 actualpp1-7; topology, UL, physical design formulas, actual recommendations not universal device guarantees.",
+      "label": "bias supply min v",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_bias_max_ohm": {
+      "type": "number",
+      "description": "Source guide maximum bias resistance Vmin*375*Z0/[VAB*(Z0+1500)], distinct selected resistor.",
+      "min": 0,
+      "unit": "ohm",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla272d/slla272d.pdf",
+      "source_revision": "TI SLLA272D revisedMay2021 actualpp1-7; topology, UL, physical design formulas, actual recommendations not universal device guarantees.",
+      "label": "bias max ohm",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_bias_selected_ohm": {
+      "type": "number",
+      "description": "Actual installed bias resistor each, not universal523ohm.",
+      "min": 0,
+      "unit": "ohm",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla272d/slla272d.pdf",
+      "source_revision": "TI SLLA272D revisedMay2021 actualpp1-7; topology, UL, physical design formulas, actual recommendations not universal device guarantees.",
+      "label": "bias selected ohm",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_ground_diff_v": {
+      "type": "number",
+      "description": "Actual installed ground potential difference and noise incorporated into receivercommonmode.",
+      "unit": "V",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla272d/slla272d.pdf",
+      "source_revision": "TI SLLA272D revisedMay2021 actualpp1-7; topology, UL, physical design formulas, actual recommendations not universal device guarantees.",
+      "label": "ground diff v",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_word_data_bits": {
+      "type": "number",
+      "description": "Actual higher codec data width; no mandatory UART8N1.",
+      "min": 1,
+      "unit": "bit",
+      "integer": true,
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "label": "word data bits",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_word_wire_bits": {
+      "type": "number",
+      "description": "Actual serialized positions including selected framing/encoding overhead.",
+      "min": 1,
+      "unit": "bit",
+      "integer": true,
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "label": "word wire bits",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_words": {
+      "type": "number",
+      "description": "Actual bounded word count.",
+      "min": 0,
+      "integer": true,
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "label": "words",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_wire_bits": {
+      "type": "number",
+      "description": "Actual total serial positions.",
+      "min": 0,
+      "unit": "bit",
+      "integer": true,
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "label": "wire bits",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_wire_time_ms": {
+      "type": "number",
+      "description": "Actual wire_bits/rate elapsed time, separate media-access wait and turnaround.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "label": "wire time ms",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_grant_wait_ms": {
+      "type": "number",
+      "description": "Actual higher protocol/scheduler grant wait bound; RS485 supplies no arbitration protocol.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "label": "grant wait ms",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_enable_delay_ms": {
+      "type": "number",
+      "description": "Actual enabledriver setup time before firstbit.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "label": "enable delay ms",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_turnaround_ms": {
+      "type": "number",
+      "description": "Actual driver disable/line release/peer switch bound.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "label": "turnaround ms",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_process_ms": {
+      "type": "number",
+      "description": "Actual complete receiver frame verification/decode/application bound.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "label": "process ms",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_transaction_bound_ms": {
+      "type": "number",
+      "description": "Actual grant+enable+wire+turnaround+processing chain.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "label": "transaction bound ms",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_transaction_limit_ms": {
+      "type": "number",
+      "description": "Actual independent application transaction acceptance requirement.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "label": "transaction limit ms",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_age_ms": {
+      "type": "number",
+      "description": "Actual correlated decoded data age.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "label": "age ms",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_freshness_ms": {
+      "type": "number",
+      "description": "Actual consumer freshness requirement.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "label": "freshness ms",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_value_accepted": {
+      "type": "boolean",
+      "description": "Actual complete transaction accepted by consumer.",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "label": "value accepted",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_de_control_verified": {
+      "type": "boolean",
+      "description": "Actual mutually exclusive per-pair driver-enable schedule verified.",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "label": "de control verified",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_electrical_valid": {
+      "type": "boolean",
+      "description": "Actual installed electrical/waveform/load test valid.",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "label": "electrical valid",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_mapping_valid": {
+      "type": "boolean",
+      "description": "Actual device identity/truth table/codec/value mapping valid.",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "label": "mapping valid",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_codec_verified": {
+      "type": "boolean",
+      "description": "Actual frame/codec integrity verified.",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "label": "codec verified",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_physical_verified": {
+      "type": "boolean",
+      "description": "Actual cable/termination/stubs/load/ground commissioning verified.",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "label": "physical verified",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_monotonic": {
+      "type": "boolean",
+      "description": "Actual standard waveform monotonic10-90percent transition.",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "label": "monotonic",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_short_indefinite_verified": {
+      "type": "boolean",
+      "description": "Actual device passes full-voltage indefinite short stress; current alone does not prove this.",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "label": "short indefinite verified",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_device_source": {
+      "type": "text",
+      "description": "Actual transmitter datasheet/edition/load conditions.",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "label": "device source",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_peer_source": {
+      "type": "text",
+      "description": "Actual receiver datasheet/edition/configuration.",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "label": "peer source",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_binding_source": {
+      "type": "text",
+      "description": "Actual per-pair pin/device/direction wiring.",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "label": "binding source",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_physical_source": {
+      "type": "text",
+      "description": "Actual cable/ground/termination/UL/waveform qualification.",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "label": "physical source",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_codec_source": {
+      "type": "text",
+      "description": "Actual independent wire protocol/serialization/CRC source.",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "label": "codec source",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_schedule_source": {
+      "type": "text",
+      "description": "Actual independent driver-enable arbitration/grant/turnaround bounds.",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "label": "schedule source",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_acceptance_source": {
+      "type": "text",
+      "description": "Actual independent application functional timing acceptance.",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "label": "acceptance source",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_registered_source": {
+      "type": "text",
+      "description": "Actual independently qualified alternative profile/topology/rate/protocol.",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "label": "registered source",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_polarity_source": {
+      "type": "text",
+      "description": "Actual device signed differential truth table and installed wiring.",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "label": "polarity source",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_termination_source": {
+      "type": "text",
+      "description": "Actual two-end/reflection/load qualification.",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "label": "termination source",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_failsafe_source": {
+      "type": "text",
+      "description": "Actual idle/open/short and noise-qualified failsafe proof.",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "label": "failsafe source",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_ground_source": {
+      "type": "text",
+      "description": "Actual return-current/ground potential/isolation commissioning.",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "label": "ground source",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_wave_source": {
+      "type": "text",
+      "description": "Actual correlated waveform and decoded frame observation.",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "label": "wave source",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_clock_source": {
+      "type": "text",
+      "description": "Actual timestamp origins/correlation/uncertainty.",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "label": "clock source",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "rs485_short_source": {
+      "type": "text",
+      "description": "Actual full applied stress/time/device compliance source.",
+      "integer": false,
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "label": "short source",
+      "category": "physical",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    }
+  },
+  "mechanisms": {
+    "qualification": [
+      "32_UNIT_LOADS_NOT32DEVICES",
+      "ONE_ACTIVE_DRIVER_PER_PAIR",
+      "NO_NORMATIVE_MINIMUM_OPERATING_RATE",
+      "ELECTRICAL_RATE_NOT_TRANSACTION_CAPACITY"
+    ],
+    "topology": [
+      "ACTUAL_1PAIR_HALF_OR2PAIR_FULL"
+    ]
+  },
+  "parameter_constraints": [
+    {
+      "parameter": "local_timing_evidence",
+      "when": {},
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "allowed": []
+    },
+    {
+      "parameter": "rs485_bitrate_bps",
+      "when": {},
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "exclusive_minimum": 0
+    },
+    {
+      "parameter": "rs485_device_max_bps",
+      "when": {},
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "exclusive_minimum": 0
+    },
+    {
+      "parameter": "rs485_peer_max_bps",
+      "when": {},
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "exclusive_minimum": 0
+    },
+    {
+      "parameter": "rs485_cable_impedance_ohm",
+      "when": {},
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "exclusive_minimum": 0
+    },
+    {
+      "parameter": "rs485_unit_load",
+      "when": {},
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "exclusive_minimum": 0
+    },
+    {
+      "parameter": "rs485_media_pf_m",
+      "when": {},
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "exclusive_minimum": 0
+    },
+    {
+      "parameter": "rs485_bias_diff_v",
+      "when": {},
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "exclusive_minimum": 0
+    },
+    {
+      "parameter": "rs485_bias_supply_min_v",
+      "when": {},
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "exclusive_minimum": 0
+    },
+    {
+      "parameter": "rs485_bias_max_ohm",
+      "when": {},
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "exclusive_minimum": 0
+    },
+    {
+      "parameter": "rs485_bias_selected_ohm",
+      "when": {},
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "exclusive_minimum": 0
+    },
+    {
+      "parameter": "rs485_velocity_fraction",
+      "when": {},
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "exclusive_minimum": 0
+    },
+    {
+      "parameter": "rs485_bitrate_bps",
+      "when": {},
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "maximum_parameter": "rs485_device_max_bps"
+    },
+    {
+      "parameter": "rs485_bitrate_bps",
+      "when": {},
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "maximum_parameter": "rs485_peer_max_bps"
+    },
+    {
+      "parameter": "rs485_device_max_bps",
+      "when": {
+        "rs485_profile": "DEVICE_QUALIFIED"
+      },
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "when_present": [
+        "rs485_bitrate_bps"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "rs485_peer_max_bps",
+      "when": {
+        "rs485_profile": "DEVICE_QUALIFIED"
+      },
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "when_present": [
+        "rs485_bitrate_bps"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "rs485_bitrate_bps",
+      "when": {
+        "rs485_profile": "TIA_485_TI2010"
+      },
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "maximum": 10000000
+    },
+    {
+      "parameter": "rs485_total_load_ul",
+      "when": {
+        "rs485_profile": "TIA_485_TI2010"
+      },
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "maximum": 32
+    },
+    {
+      "parameter": "rs485_active_drivers",
+      "when": {},
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "maximum": 1
+    },
+    {
+      "parameter": "rs485_active_drivers",
+      "when": {
+        "rs485_activity": "FRAME"
+      },
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "allowed": [
+        1
+      ]
+    },
+    {
+      "parameter": "rs485_active_drivers",
+      "when": {
+        "rs485_activity": "IDLE"
+      },
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "rs485_receiver_load_ul",
+      "when": {
+        "rs485_load_model": "HOMOGENEOUS_ACTUAL"
+      },
+      "source": "https://www.ti.com/lit/an/slla272d/slla272d.pdf",
+      "source_revision": "TI SLLA272D revisedMay2021 actualpp1-7; topology, UL, physical design formulas, actual recommendations not universal device guarantees.",
+      "equal_expression": {
+        "product": [
+          "rs485_unit_load",
+          "rs485_nodes"
+        ]
+      }
+    },
+    {
+      "parameter": "rs485_unit_load",
+      "when": {
+        "rs485_load_model": "HOMOGENEOUS_ACTUAL"
+      },
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "when_present": [
+        "rs485_receiver_load_ul"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "rs485_nodes",
+      "when": {
+        "rs485_load_model": "HOMOGENEOUS_ACTUAL"
+      },
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "when_present": [
+        "rs485_receiver_load_ul"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "rs485_total_load_ul",
+      "when": {},
+      "source": "https://www.ti.com/lit/an/slla272d/slla272d.pdf",
+      "source_revision": "TI SLLA272D revisedMay2021 actualpp1-7; topology, UL, physical design formulas, actual recommendations not universal device guarantees.",
+      "equal_expression": {
+        "sum": [
+          "rs485_receiver_load_ul",
+          "rs485_bias_load_ul"
+        ]
+      }
+    },
+    {
+      "parameter": "rs485_receiver_load_ul",
+      "when": {},
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "when_present": [
+        "rs485_total_load_ul"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "rs485_bias_load_ul",
+      "when": {},
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "when_present": [
+        "rs485_total_load_ul"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "rs485_driver_diff_abs_v",
+      "when": {
+        "rs485_profile": "TIA_485_TI2010",
+        "rs485_load_scope": "OPEN_CIRCUIT"
+      },
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "minimum": 1.5,
+      "maximum": 6
+    },
+    {
+      "parameter": "rs485_driver_a_v",
+      "when": {
+        "rs485_profile": "TIA_485_TI2010",
+        "rs485_load_scope": "OPEN_CIRCUIT"
+      },
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "minimum": -6,
+      "maximum": 6
+    },
+    {
+      "parameter": "rs485_driver_b_v",
+      "when": {
+        "rs485_profile": "TIA_485_TI2010",
+        "rs485_load_scope": "OPEN_CIRCUIT"
+      },
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "minimum": -6,
+      "maximum": 6
+    },
+    {
+      "parameter": "rs485_driver_diff_abs_v",
+      "when": {
+        "rs485_profile": "TIA_485_TI2010",
+        "rs485_load_scope": "STANDARD_54_OHM"
+      },
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "minimum": 1.5,
+      "maximum": 5
+    },
+    {
+      "parameter": "rs485_driver_diff_abs_v",
+      "when": {
+        "rs485_profile": "TIA_485_TI2010",
+        "rs485_load_scope": "STANDARD_CM_60_375"
+      },
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "minimum": 1.5,
+      "maximum": 5
+    },
+    {
+      "parameter": "rs485_driver_offset_v",
+      "when": {
+        "rs485_profile": "TIA_485_TI2010"
+      },
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "minimum": -1,
+      "maximum": 3
+    },
+    {
+      "parameter": "rs485_driver_diff_delta_abs_v",
+      "when": {
+        "rs485_profile": "TIA_485_TI2010"
+      },
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "maximum": 0.2
+    },
+    {
+      "parameter": "rs485_driver_offset_delta_abs_v",
+      "when": {
+        "rs485_profile": "TIA_485_TI2010"
+      },
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "maximum": 0.2
+    },
+    {
+      "parameter": "rs485_short_test_v",
+      "when": {
+        "rs485_profile": "TIA_485_TI2010"
+      },
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "minimum": -7,
+      "maximum": 12
+    },
+    {
+      "parameter": "rs485_short_current_abs_ma",
+      "when": {
+        "rs485_profile": "TIA_485_TI2010"
+      },
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "maximum": 250
+    },
+    {
+      "parameter": "rs485_short_test_v",
+      "when": {},
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "when_present": [
+        "rs485_short_current_abs_ma"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "rs485_short_source",
+      "when": {
+        "rs485_short_indefinite_verified": true
+      },
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "required": true
+    },
+    {
+      "parameter": "rs485_receiver_common_v",
+      "when": {
+        "rs485_profile": "TIA_485_TI2010"
+      },
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "minimum": -7,
+      "maximum": 12
+    },
+    {
+      "parameter": "rs485_receiver_common_v",
+      "when": {},
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "equal_expression": {
+        "product": [
+          0.5,
+          {
+            "sum": [
+              "rs485_receiver_a_v",
+              "rs485_receiver_b_v"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "parameter": "rs485_receiver_diff_v",
+      "when": {},
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "equal_expression": {
+        "subtract": [
+          "rs485_receiver_a_v",
+          "rs485_receiver_b_v"
+        ]
+      }
+    },
+    {
+      "parameter": "rs485_receiver_a_v",
+      "when": {},
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "when_present": [
+        "rs485_receiver_common_v"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "rs485_receiver_b_v",
+      "when": {},
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "when_present": [
+        "rs485_receiver_common_v"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "rs485_receiver_a_v",
+      "when": {},
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "when_present": [
+        "rs485_receiver_diff_v"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "rs485_receiver_b_v",
+      "when": {},
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "when_present": [
+        "rs485_receiver_diff_v"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "rs485_receiver_diff_abs_v",
+      "when": {},
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "equal_expression": {
+        "maximum": [
+          "rs485_receiver_diff_v",
+          {
+            "product": [
+              -1,
+              "rs485_receiver_diff_v"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "parameter": "rs485_receiver_diff_v",
+      "when": {},
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "when_present": [
+        "rs485_receiver_diff_abs_v"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "rs485_receiver_diff_v",
+      "when": {
+        "rs485_logic_mapping": "POSITIVE_IS_1",
+        "rs485_decoded_logic": "ONE"
+      },
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "minimum": 0.2
+    },
+    {
+      "parameter": "rs485_receiver_diff_v",
+      "when": {
+        "rs485_logic_mapping": "POSITIVE_IS_1",
+        "rs485_decoded_logic": "ZERO"
+      },
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "maximum": -0.2
+    },
+    {
+      "parameter": "rs485_receiver_diff_v",
+      "when": {
+        "rs485_logic_mapping": "POSITIVE_IS_0",
+        "rs485_decoded_logic": "ZERO"
+      },
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "minimum": 0.2
+    },
+    {
+      "parameter": "rs485_receiver_diff_v",
+      "when": {
+        "rs485_logic_mapping": "POSITIVE_IS_0",
+        "rs485_decoded_logic": "ONE"
+      },
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "maximum": -0.2
+    },
+    {
+      "parameter": "rs485_polarity_source",
+      "when": {},
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "when_present": [
+        "rs485_logic_mapping"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "rs485_unit_interval_ns",
+      "when": {},
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "equal_ratio": {
+        "numerator_offset": 1000000000,
+        "denominator_product": [
+          "rs485_bitrate_bps"
+        ],
+        "denominator_offset": 1
+      }
+    },
+    {
+      "parameter": "rs485_bitrate_bps",
+      "when": {},
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "when_present": [
+        "rs485_unit_interval_ns"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "rs485_rise_ns",
+      "when": {
+        "rs485_profile": "TIA_485_TI2010",
+        "rs485_load_scope": "STANDARD_54_OHM"
+      },
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "when_present": [
+        "rs485_unit_interval_ns"
+      ],
+      "maximum_expression": {
+        "product": [
+          0.3,
+          "rs485_unit_interval_ns"
+        ]
+      }
+    },
+    {
+      "parameter": "rs485_fall_ns",
+      "when": {
+        "rs485_profile": "TIA_485_TI2010",
+        "rs485_load_scope": "STANDARD_54_OHM"
+      },
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "when_present": [
+        "rs485_unit_interval_ns"
+      ],
+      "maximum_expression": {
+        "product": [
+          0.3,
+          "rs485_unit_interval_ns"
+        ]
+      }
+    },
+    {
+      "parameter": "rs485_overshoot_percent",
+      "when": {
+        "rs485_profile": "TIA_485_TI2010",
+        "rs485_load_scope": "STANDARD_54_OHM"
+      },
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "maximum": 10
+    },
+    {
+      "parameter": "rs485_fixture_ohm",
+      "when": {
+        "rs485_profile": "TIA_485_TI2010",
+        "rs485_load_scope": "STANDARD_54_OHM"
+      },
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "allowed": [
+        54
+      ]
+    },
+    {
+      "parameter": "rs485_fixture_pf",
+      "when": {
+        "rs485_profile": "TIA_485_TI2010",
+        "rs485_load_scope": "STANDARD_54_OHM"
+      },
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "allowed": [
+        50
+      ]
+    },
+    {
+      "parameter": "rs485_termination_count",
+      "when": {
+        "rs485_termination": "NONE_QUALIFIED"
+      },
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "rs485_termination_count",
+      "when": {
+        "rs485_termination": "PARALLEL_TWO_ENDS"
+      },
+      "source": "https://www.ti.com/lit/an/slla272d/slla272d.pdf",
+      "source_revision": "TI SLLA272D revisedMay2021 actualpp1-7; topology, UL, physical design formulas, actual recommendations not universal device guarantees.",
+      "required": true,
+      "allowed": [
+        2
+      ]
+    },
+    {
+      "parameter": "rs485_termination_ohm",
+      "when": {
+        "rs485_termination": "PARALLEL_TWO_ENDS"
+      },
+      "source": "https://www.ti.com/lit/an/slla272d/slla272d.pdf",
+      "source_revision": "TI SLLA272D revisedMay2021 actualpp1-7; topology, UL, physical design formulas, actual recommendations not universal device guarantees.",
+      "equal_expression": "rs485_cable_impedance_ohm"
+    },
+    {
+      "parameter": "rs485_cable_impedance_ohm",
+      "when": {
+        "rs485_termination": "PARALLEL_TWO_ENDS"
+      },
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "when_present": [
+        "rs485_termination_ohm"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "rs485_termination_count",
+      "when": {
+        "rs485_termination": "SPLIT_TWO_ENDS"
+      },
+      "source": "https://www.ti.com/lit/an/slla272d/slla272d.pdf",
+      "source_revision": "TI SLLA272D revisedMay2021 actualpp1-7; topology, UL, physical design formulas, actual recommendations not universal device guarantees.",
+      "required": true,
+      "allowed": [
+        2
+      ]
+    },
+    {
+      "parameter": "rs485_termination_ohm",
+      "when": {
+        "rs485_termination": "SPLIT_TWO_ENDS"
+      },
+      "source": "https://www.ti.com/lit/an/slla272d/slla272d.pdf",
+      "source_revision": "TI SLLA272D revisedMay2021 actualpp1-7; topology, UL, physical design formulas, actual recommendations not universal device guarantees.",
+      "equal_expression": "rs485_cable_impedance_ohm"
+    },
+    {
+      "parameter": "rs485_cable_impedance_ohm",
+      "when": {
+        "rs485_termination": "SPLIT_TWO_ENDS"
+      },
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "when_present": [
+        "rs485_termination_ohm"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "rs485_termination_ohm",
+      "when": {
+        "rs485_termination": "SPLIT_TWO_ENDS"
+      },
+      "source": "https://www.ti.com/lit/an/slla272d/slla272d.pdf",
+      "source_revision": "TI SLLA272D revisedMay2021 actualpp1-7; topology, UL, physical design formulas, actual recommendations not universal device guarantees.",
+      "equal_expression": {
+        "product": [
+          2,
+          "rs485_split_resistor_ohm"
+        ]
+      }
+    },
+    {
+      "parameter": "rs485_split_resistor_ohm",
+      "when": {
+        "rs485_termination": "SPLIT_TWO_ENDS"
+      },
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "required": true,
+      "exclusive_minimum": 0
+    },
+    {
+      "parameter": "rs485_split_filter_pf",
+      "when": {
+        "rs485_termination": "SPLIT_TWO_ENDS"
+      },
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "required": true,
+      "exclusive_minimum": 0
+    },
+    {
+      "parameter": "rs485_termination_source",
+      "when": {
+        "rs485_termination": "NONE_QUALIFIED"
+      },
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "required": true
+    },
+    {
+      "parameter": "rs485_termination_source",
+      "when": {
+        "rs485_termination": "REGISTERED_ACTUAL"
+      },
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "required": true
+    },
+    {
+      "parameter": "rs485_stub_delay_ns",
+      "when": {},
+      "source": "https://www.ti.com/lit/an/slla272d/slla272d.pdf",
+      "source_revision": "TI SLLA272D revisedMay2021 actualpp1-7; topology, UL, physical design formulas, actual recommendations not universal device guarantees.",
+      "maximum_expression": {
+        "product": [
+          0.1,
+          "rs485_rise_ns"
+        ]
+      }
+    },
+    {
+      "parameter": "rs485_rise_ns",
+      "when": {},
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "when_present": [
+        "rs485_stub_delay_ns"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "rs485_stub_m",
+      "when": {},
+      "source": "https://www.ti.com/lit/an/slla272d/slla272d.pdf",
+      "source_revision": "TI SLLA272D revisedMay2021 actualpp1-7; topology, UL, physical design formulas, actual recommendations not universal device guarantees.",
+      "maximum_expression": {
+        "product": [
+          0.0299792458,
+          "rs485_rise_ns",
+          "rs485_velocity_fraction"
+        ]
+      }
+    },
+    {
+      "parameter": "rs485_rise_ns",
+      "when": {},
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "when_present": [
+        "rs485_stub_m"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "rs485_velocity_fraction",
+      "when": {},
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "when_present": [
+        "rs485_stub_m"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "rs485_spacing_m",
+      "when": {},
+      "source": "https://www.ti.com/lit/an/slla272d/slla272d.pdf",
+      "source_revision": "TI SLLA272D revisedMay2021 actualpp1-7; topology, UL, physical design formulas, actual recommendations not universal device guarantees.",
+      "exclusive_minimum_expression": {
+        "product": [
+          5.25,
+          "rs485_node_cap_pf",
+          {
+            "power": [
+              "rs485_media_pf_m",
+              -1
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "parameter": "rs485_node_cap_pf",
+      "when": {},
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "when_present": [
+        "rs485_spacing_m"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "rs485_media_pf_m",
+      "when": {},
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "when_present": [
+        "rs485_spacing_m"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "rs485_loaded_impedance_ohm",
+      "when": {},
+      "source": "https://www.ti.com/lit/an/slla272d/slla272d.pdf",
+      "source_revision": "TI SLLA272D revisedMay2021 actualpp1-7; topology, UL, physical design formulas, actual recommendations not universal device guarantees.",
+      "exclusive_minimum_expression": {
+        "product": [
+          0.4,
+          "rs485_cable_impedance_ohm"
+        ]
+      }
+    },
+    {
+      "parameter": "rs485_cable_impedance_ohm",
+      "when": {},
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "when_present": [
+        "rs485_loaded_impedance_ohm"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "rs485_failsafe_source",
+      "when": {
+        "rs485_failsafe": "INTERNAL_PROVEN"
+      },
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "required": true
+    },
+    {
+      "parameter": "rs485_failsafe_source",
+      "when": {
+        "rs485_failsafe": "EXTERNAL_PROVEN"
+      },
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "required": true
+    },
+    {
+      "parameter": "rs485_bias_diff_v",
+      "when": {
+        "rs485_failsafe": "EXTERNAL_PROVEN"
+      },
+      "source": "https://www.ti.com/lit/an/slla272d/slla272d.pdf",
+      "source_revision": "TI SLLA272D revisedMay2021 actualpp1-7; topology, UL, physical design formulas, actual recommendations not universal device guarantees.",
+      "minimum_expression": {
+        "sum": [
+          0.2,
+          {
+            "product": [
+              0.001,
+              "rs485_noise_abs_mv"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "parameter": "rs485_bias_diff_v",
+      "when": {
+        "rs485_failsafe": "EXTERNAL_PROVEN"
+      },
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "required": true
+    },
+    {
+      "parameter": "rs485_noise_abs_mv",
+      "when": {
+        "rs485_failsafe": "EXTERNAL_PROVEN"
+      },
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "required": true
+    },
+    {
+      "parameter": "rs485_bias_supply_min_v",
+      "when": {
+        "rs485_failsafe": "EXTERNAL_PROVEN"
+      },
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "required": true
+    },
+    {
+      "parameter": "rs485_bias_selected_ohm",
+      "when": {
+        "rs485_failsafe": "EXTERNAL_PROVEN"
+      },
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "required": true
+    },
+    {
+      "parameter": "rs485_bias_load_ul",
+      "when": {
+        "rs485_failsafe": "EXTERNAL_PROVEN"
+      },
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "required": true
+    },
+    {
+      "parameter": "rs485_bias_max_ohm",
+      "when": {},
+      "source": "https://www.ti.com/lit/an/slla272d/slla272d.pdf",
+      "source_revision": "TI SLLA272D revisedMay2021 actualpp1-7; topology, UL, physical design formulas, actual recommendations not universal device guarantees.",
+      "equal_ratio": {
+        "numerator_offset": 1,
+        "numerator_product": [
+          "rs485_bias_supply_min_v",
+          "rs485_cable_impedance_ohm"
+        ],
+        "factor": 375,
+        "denominator_sum": [
+          "rs485_cable_impedance_ohm"
+        ],
+        "denominator_offset": 1500,
+        "denominator_product": [
+          "rs485_bias_diff_v"
+        ]
+      }
+    },
+    {
+      "parameter": "rs485_bias_supply_min_v",
+      "when": {},
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "when_present": [
+        "rs485_bias_max_ohm"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "rs485_cable_impedance_ohm",
+      "when": {},
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "when_present": [
+        "rs485_bias_max_ohm"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "rs485_bias_diff_v",
+      "when": {},
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "when_present": [
+        "rs485_bias_max_ohm"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "rs485_bias_selected_ohm",
+      "when": {},
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "maximum_parameter": "rs485_bias_max_ohm"
+    },
+    {
+      "parameter": "rs485_word_wire_bits",
+      "when": {},
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "minimum_parameter": "rs485_word_data_bits"
+    },
+    {
+      "parameter": "rs485_wire_bits",
+      "when": {},
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "equal_expression": {
+        "product": [
+          "rs485_words",
+          "rs485_word_wire_bits"
+        ]
+      }
+    },
+    {
+      "parameter": "rs485_words",
+      "when": {},
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "when_present": [
+        "rs485_wire_bits"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "rs485_word_wire_bits",
+      "when": {},
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "when_present": [
+        "rs485_wire_bits"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "rs485_wire_time_ms",
+      "when": {},
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "equal_ratio": {
+        "numerator_parameter": "rs485_wire_bits",
+        "factor": 1000,
+        "denominator_product": [
+          "rs485_bitrate_bps"
+        ],
+        "denominator_offset": 1
+      }
+    },
+    {
+      "parameter": "rs485_wire_time_ms",
+      "when": {
+        "rs485_wire_bits": 0
+      },
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "rs485_wire_bits",
+      "when": {},
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "when_present": [
+        "rs485_wire_time_ms"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "rs485_bitrate_bps",
+      "when": {},
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "when_present": [
+        "rs485_wire_time_ms"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "rs485_transaction_bound_ms",
+      "when": {},
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "equal_expression": {
+        "sum": [
+          "rs485_grant_wait_ms",
+          "rs485_enable_delay_ms",
+          "rs485_wire_time_ms",
+          "rs485_turnaround_ms",
+          "rs485_process_ms"
+        ]
+      }
+    },
+    {
+      "parameter": "rs485_grant_wait_ms",
+      "when": {},
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "when_present": [
+        "rs485_transaction_bound_ms"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "rs485_enable_delay_ms",
+      "when": {},
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "when_present": [
+        "rs485_transaction_bound_ms"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "rs485_wire_time_ms",
+      "when": {},
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "when_present": [
+        "rs485_transaction_bound_ms"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "rs485_turnaround_ms",
+      "when": {},
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "when_present": [
+        "rs485_transaction_bound_ms"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "rs485_process_ms",
+      "when": {},
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "when_present": [
+        "rs485_transaction_bound_ms"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "rs485_transaction_bound_ms",
+      "when": {},
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "maximum_parameter": "rs485_transaction_limit_ms"
+    },
+    {
+      "parameter": "rs485_age_ms",
+      "when": {},
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "maximum_parameter": "rs485_freshness_ms"
+    },
+    {
+      "parameter": "rs485_outcome",
+      "when": {
+        "rs485_value_accepted": true
+      },
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "required": true,
+      "allowed": [
+        "ACCEPTED"
+      ]
+    },
+    {
+      "parameter": "rs485_activity",
+      "when": {
+        "rs485_value_accepted": true
+      },
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "required": true,
+      "allowed": [
+        "FRAME"
+      ]
+    },
+    {
+      "parameter": "rs485_active_drivers",
+      "when": {
+        "rs485_value_accepted": true
+      },
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "required": true,
+      "allowed": [
+        1
+      ]
+    },
+    {
+      "parameter": "rs485_de_control_verified",
+      "when": {
+        "rs485_value_accepted": true
+      },
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "required": true,
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "rs485_electrical_valid",
+      "when": {
+        "rs485_value_accepted": true
+      },
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "required": true,
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "rs485_mapping_valid",
+      "when": {
+        "rs485_value_accepted": true
+      },
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "required": true,
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "rs485_codec_verified",
+      "when": {
+        "rs485_value_accepted": true
+      },
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "required": true,
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "rs485_physical_verified",
+      "when": {
+        "rs485_value_accepted": true
+      },
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "required": true,
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "rs485_bitrate_bps",
+      "when": {
+        "rs485_value_accepted": true
+      },
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "required": true
+    },
+    {
+      "parameter": "rs485_nodes",
+      "when": {
+        "rs485_value_accepted": true
+      },
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "required": true
+    },
+    {
+      "parameter": "rs485_drivers",
+      "when": {
+        "rs485_value_accepted": true
+      },
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "required": true
+    },
+    {
+      "parameter": "rs485_total_load_ul",
+      "when": {
+        "rs485_value_accepted": true
+      },
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "required": true
+    },
+    {
+      "parameter": "rs485_load_model",
+      "when": {
+        "rs485_value_accepted": true
+      },
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "required": true
+    },
+    {
+      "parameter": "rs485_ground_scheme",
+      "when": {
+        "rs485_value_accepted": true
+      },
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "required": true
+    },
+    {
+      "parameter": "rs485_ground_source",
+      "when": {
+        "rs485_value_accepted": true
+      },
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "required": true
+    },
+    {
+      "parameter": "rs485_ground_diff_v",
+      "when": {
+        "rs485_value_accepted": true
+      },
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "required": true
+    },
+    {
+      "parameter": "rs485_termination",
+      "when": {
+        "rs485_value_accepted": true
+      },
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "required": true
+    },
+    {
+      "parameter": "rs485_termination_source",
+      "when": {
+        "rs485_value_accepted": true
+      },
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "required": true
+    },
+    {
+      "parameter": "rs485_receiver_common_v",
+      "when": {
+        "rs485_value_accepted": true
+      },
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "required": true
+    },
+    {
+      "parameter": "rs485_receiver_diff_abs_v",
+      "when": {
+        "rs485_value_accepted": true
+      },
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "required": true
+    },
+    {
+      "parameter": "rs485_logic_mapping",
+      "when": {
+        "rs485_value_accepted": true
+      },
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "required": true
+    },
+    {
+      "parameter": "rs485_decoded_logic",
+      "when": {
+        "rs485_value_accepted": true
+      },
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "required": true
+    },
+    {
+      "parameter": "rs485_polarity_source",
+      "when": {
+        "rs485_value_accepted": true
+      },
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "required": true
+    },
+    {
+      "parameter": "rs485_wave_source",
+      "when": {
+        "rs485_value_accepted": true
+      },
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "required": true
+    },
+    {
+      "parameter": "rs485_clock_source",
+      "when": {
+        "rs485_value_accepted": true
+      },
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "required": true
+    },
+    {
+      "parameter": "rs485_transaction_bound_ms",
+      "when": {
+        "rs485_value_accepted": true
+      },
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "required": true
+    },
+    {
+      "parameter": "rs485_transaction_limit_ms",
+      "when": {
+        "rs485_value_accepted": true
+      },
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "required": true
+    },
+    {
+      "parameter": "rs485_age_ms",
+      "when": {
+        "rs485_value_accepted": true
+      },
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "required": true
+    },
+    {
+      "parameter": "rs485_freshness_ms",
+      "when": {
+        "rs485_value_accepted": true
+      },
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "required": true
+    },
+    {
+      "parameter": "rs485_monotonic",
+      "when": {
+        "rs485_value_accepted": true,
+        "rs485_profile": "TIA_485_TI2010",
+        "rs485_load_scope": "STANDARD_54_OHM"
+      },
+      "source": "https://www.ti.com/lit/an/slla070d/slla070d.pdf",
+      "source_revision": "TI SLLA070D revisedMay2010 actualpp9-13/17-18/20-23; selected electrical test conditions, not full licensed ANSI standard.",
+      "required": true,
+      "allowed": [
+        true
+      ]
+    }
+  ],
+  "physical_layer_profile_id": "RS485_DIFFERENTIAL",
+  "medium_access_model": "MASTER_SLAVE",
+  "native_parameter_prefixes": [
+    "rs485_"
+  ],
+  "parameter_aliases": {},
+  "parameter_alias_limits": {},
+  "parameter_evidence_scope": "EXPLICIT_LAYER",
+  "rate_source_profile_id": null,
+  "arbitration_model_id": null,
+  "max_payload_bytes": null,
+  "capabilities": {
+    "supports_signals": true,
+    "supports_data_objects": false,
+    "supports_streams": true,
+    "supports_multicast": false,
+    "supports_publish_subscribe": false,
+    "supports_request_response": false,
+    "supports_cyclic": true,
+    "supports_event": true,
+    "supports_redundancy": false,
+    "supports_time_sync": false,
+    "supports_safety_profile": false,
+    "supports_segmentation": false,
+    "supports_fragmentation": false,
+    "supports_qos": false
+  },
+  "deterministic": false,
+  "overhead_bytes": 8,
+  "implementation_status": "PARTIAL",
+  "connection_type": "COMMUNICATION_TECHNOLOGY",
+  "parameter_proposals": {
+    "kind": "DEVICE_DEPENDENT",
+    "status": "REVIEW_REQUIRED",
+    "required_fields": [],
+    "note": "No universal rate is available; inspect the selected hardware/profile."
+  },
+  "capacity_evidence": {
+    "status": "MODEL_MISSING",
+    "frame_model": null,
+    "schedule_model": null,
+    "requires_confirmed_device_parameters": true
+  },
+  "components": {
+    "binding": "rs485.binding",
+    "generator": "rs485.generator",
+    "validator": "rs485.validator",
+    "timing_model": null,
+    "load_model": null,
+    "encoder": "rs485.encoder",
+    "decoder": "rs485.decoder"
+  },
+  "known_limitations": "Technology-specific conformance details require a vendor/profile extension."
+}

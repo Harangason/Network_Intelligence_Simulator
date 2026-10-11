@@ -1,0 +1,25 @@
+{
+  "technology": "uds",
+  "source_manifest": "work/uds-primary/manifest.json",
+  "source_read_scopes": {
+    "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_DiagnosticCommunicationManager.pdf": "Original802-page AUTOSAR CP R25-11 selected7.2.4/7.3.4/8.8.1 and explicit ECUC session/P2/P2star/S3/adjust/task/pending/transport parameter rows read. S3=5000ms only no override; override>=5s; P2min/P2starmin0; session1..126; security0..63. P2s0..1/P2stars0..100, internaladjust tasktime multiple and ranges, pending0disallows78 and255finite. Functional NRC11/12/31/7E/7F suppression; positive suppression service-subfunction only. Not all service-specific800page requirements or full ISO14229 normative text.",
+    "https://www.autosar.org/fileadmin/standards/R25-11/CP/AUTOSAR_CP_SWS_CANTransportLayer.pdf": "Original126-page AUTOSAR CP R25-11 CanTp selected7.3/8.5 and10.2 addressing/flow/timer/BS/STmin rows read. BS0..255, configuredSTmin seconds no default; separate real CAN addressing/timeout/transport from UDSsession. Full DoIP/LIN/FlexRay TP clauses not asserted via CanTp.",
+    "https://raw.githubusercontent.com/pylessard/python-udsoncan/v1.25.1/udsoncan/services/DiagnosticSessionControl.py": "Original pinned v1.25.1 complete selected DiagnosticSessionControl source read: service10, sessionecho,2006 manufacturer-specific records versus2013+ >HH P2 ms andP2star10ms, five response-data bytes. Library implementation not full ISO conformance.",
+    "https://raw.githubusercontent.com/pylessard/python-udsoncan/v1.25.1/udsoncan/Response.py": "Original pinned v1.25.1 selected Response get_payload/from_payload read: positiveSID versus7F/requestSID/NRC with actual full octets and minimumnegative3. Libraryallows additional response data, so no inventedglobalstrict3byte cap.",
+    "https://raw.githubusercontent.com/pylessard/python-udsoncan/v1.25.1/udsoncan/BaseService.py": "Original pinned v1.25.1 selected BaseService request_id/response_id methods read; positiveSID+40h and explicit actual registered service definitions.",
+    "https://raw.githubusercontent.com/pylessard/python-udsoncan/v1.25.1/udsoncan/Request.py": "Original pinned v1.25.1 selected complete Request framing/get_payload/from_payload sections read: actual subfunction availability, low7bits plus suppress bit7, requestheader1or2 and actualdata. No automatic suppression of everynegative."
+  },
+  "additional_field_meanings": {
+    "payload_bytes": "Actual selected diagnostic service data bytes. Separate complete request/subfunction/negative headers, bound TP N-SDU/peer/buffer sizes. No4095 universal application cap."
+  },
+  "scope": [
+    "All exported UDS fields individually reviewed with original edition hashes. Own industry-neutral selected diagnostic transport; no default CAN path, genericbitrate/retry/gateway or4095cap.",
+    "Independent CAN/CANFD ISO-TP versusDoIP/FlexRay/LIN evidence and foreign CANfields rejected fornonCAN. Whole request/response/peer/buffer limits actual, P2/P2star/S3 separate network/TPtimeouts.",
+    "DCM P2/P2star minima, seconds/ranges, taskmultiple initiation offsets, S3 nooverride/default versus>=5sconfigured and boundedNRC78count verified. No fake50msP2/5sP2star or default infinitepending.",
+    "Actual SID/subfunction/positivebit7/negativeheader, exactfunctionalNRCsuppression and selected2013+sessionrecord P2ms/P2star10ms versus2006codec tested. Finaltransport/service/use/freshness/deadline acceptance independent ofpositive/pendingPDU."
+  ],
+  "not_certified": [
+    "Selected DCM/CanTp parameter rules and pinned public codec review, not complete ISO14229 service/security/authentication standards, all AUTOSAR ECUC/service clauses or full transport executor. Runtime capacity MODEL_MISSING.",
+    "Global cumulative native/service/UI/wizard checks, release gate and exact tested-image production delivery pending."
+  ]
+}

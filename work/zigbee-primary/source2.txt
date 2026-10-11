@@ -1,0 +1,592 @@
+
+PAGE 1
+ Application Note   AN114 
+ 
+ 
+ SWRA396 Page 1 of 11  
+Z-Stack Duty Cycle Analysis 
+By Chester Kim and Peder Rand 
+ 
+ 
+Keywords 
+ 
+• Z-Stack 
+• ZigBee, IEEE 802.15.4 
+• FCC 
+• ETSI, ARIB 
+• TransmitApp 
+• Duty Cycle 
+• CC2530, CC2520 
+• CC2590, CC2591
+ 
+ 
+1 Introduction
+Z-Stack is a fully ZigBee- compliant stack 
+running on top of IEEE 802.15.4- compliant 
+TI LPRF SoC/Transceiver and TIMAC. 
+ 
+ZigBee-supporting TI LPRF devices like 
+CC2530 and CC2520 provide wide 
+communication range with their excellent 
+102-dB link budget and robustness with 
+their best-in-class selectivity performance.  
+However, depending on the condition and 
+the purpose of the application , there can 
+be some necessity  to extend the range or  
+improve the robustness by increasing TX 
+power adding RF frontend like CC2590  
+and CC2591  that provide  up to 14 dBm 
+and 22 dBm respectively.  In thi s case, 
+concern about TX power and spur ious 
+emissions exceeding limits defined by 
+regulatory standards may arise from peak 
+value point of view. 
+ 
+ZigBee standard based on IEEE 802.15.4 
+was developed basically considering  
+intermittent data transmission and ZigBee 
+applications are typically designed as such. 
+Therefore, the average values of TX 
+power and spurious emissions, which are 
+calculated from the duty cycle, in ZigBee 
+applications are likely to be significantly 
+lower than the peak values.
+This application note describes duty cycle 
+requirements, as defined by the FCC  Title 
+47 CFR Part 15 [1]. However, this 
+document is applicable to ARIB STD T -66 
+as mean power measurement is used in 
+its specification. Also, the concept of duty 
+cycle described in this document is helpful 
+to prepare for ETSI EN 300 328  even 
+though how to apply duty cycle to the 
+measurement is defined in different way in 
+its specification. 
+ 
+We present  theoretical and empiri cal 
+analysis of the ZigBee- compliant Z -Stack 
+running the TransmitApp application. 
+ 
+TransmitApp is an application utility for 
+establishing a connection between a 
+sender and receiver and transmitting 
+application payloads at the fastest rate 
+allowable by the system  [7]. We utilize 
+TransmitApp in our duty cycle analysis to 
+maximize communication and therefore 
+maximize on- air ( TX) time in which the 
+sender has control of the channel in order 
+to understand the maximum affect on duty 
+cycle an application can have. 
+ 
+
+PAGE 2
+ Application Note   AN114 
+ 
+ 
+ SWRA396 Page 2 of 11  
+Table of Contents 
+ 
+KEYWORDS .............................................................................................................................. 1 
+1 INTRODUCTION ............................................................................................................. 1 
+2 ABBREVIATIONS ........................................................................................................... 2 
+3 REGULATORY REQUIREMENTS ................................................................................. 3 
+3.1 FCC STANDARD OVERVIEW ....................................................................................... 3 
+3.2 DUTY CYCLE.............................................................................................................. 3 
+4 ANALYZING DUTY CYCLE ........................................................................................... 3 
+5 WORST CASE APPLICATION DUTY CYCLE SCENARIO .......................................... 5 
+5.1 CASE 1: MAXIMUM LENGTH FRAME WITH ACK RECEIVED ............................................ 5 
+5.1.1 Theoretical Analysis ......................................................................................................... 5 
+5.1.2 Empirical Analysis ............................................................................................................ 7 
+5.2 CASE 2: MAXIMUM LENGTH FRAME WITH ACK MISSED ................................................ 7 
+5.2.1 Theoretical Analysis ......................................................................................................... 7 
+5.2.2 Empirical Analysis ............................................................................................................ 8 
+6 USING THIS APPLICATION NOTE ............................................................................... 9 
+REFERENCES ........................................................................................................................ 10 
+7 GENERAL INFORMATION .......................................................................................... 11 
+7.1 DOCUMENT HISTORY ............................................................................................... 11 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+2 Abbreviations 
+ 
+ACK   Acknowledgement 
+APS   Application Support Sublayer 
+ARIB   Association of Radio Industries and Businesses 
+CFR   Code of Federal Regulations 
+CSMA/CA  Carrier Sense Multiple Access with Collision Avoidance 
+ETSI   European Telecommunications Standards Institute 
+FCC   Federal Communications Commission 
+IEEE   Institute of Electrical and Electronics Engineers 
+ISM   Industrial, Scientific, Medical 
+LPRF   Low Power RF 
+MAC   Media Access Control 
+NWK   Network 
+PHR   PHY Header 
+PIB   PHY Information Base 
+PSDU   PHY Service Data Unit 
+RF   Radio Frequency 
+RSSI   Received Signal Strength Indicator 
+RX   Reception 
+SFD   Start-of-Frame Delimiter 
+SHR   Synchronization Header 
+SoC   System on Chip 
+TX   Transmission 
+ZDO   ZigBee Device Object 
+
+PAGE 3
+ Application Note   AN114 
+ 
+ 
+ SWRA396 Page 3 of 11  
+3 Regulatory Requirements 
+3.1 FCC Standard Overview 
+In the United States, FCC  is responsible for the regulation of all RF devices. Since CF R 47 
+Part 15 [1] regulates RF products intended for unlicensed operation, products in that category 
+are subject to compliance testing.  If a product is approved, FCC will issue an identification 
+number. 
+ 
+Unlicensed radio equipment s for 2.4GHz band are regulated by sections  15.247 and 15.249. 
+General rules for certification measurements are found in section 15.35. Restricted bands and 
+general limits for spurious emissions are found in sections 15.205 and 15.209 [5]. 
+ 
+For frequencies above 1 GHz, the radiated emission limits are based on average 
+measurement by FCC section 15.35.  However, there also is a limit on the peak level of the 
+radio frequency emissions. The peak limit is 20 dB above the specified average limit [1]. 
+3.2 Duty Cycle 
+Duty cycle is u sed to reduce the value measured with an average detector. ZigBee devices  
+typically have low duty-cycle TX operations. This makes average radiated emission lower and 
+consequently enables the device to use higher output power with respect to regulations. 
+ 
+The average value is determined by averaging absolute voltage of the pulse train for any  100 
+ms interval during which the fi eld strength is at its maximum  [1]. The duty cycle  is defined as 
+the total “TX time” divided by the 100 ms period. The duty cycle correction factor or the pulse 
+desensitization factor δ can be expressed, in terms of dB, as: 
+ 
+δ = 20 log10 (Duty Cycle) 
+ 
+Therefore a 50 % duty cycle will allow 6  dB higher peak emission than without duty cycling 
+and 10 % duty cycle will allow 20 dB higher for example. 
+ 
+4 Analyzing Duty Cycle 
+For a ZigBee device,  the TX duty cycle, is a result of over -the-air transmissions that can be 
+triggered by one or more applications residing on the device, in addition to general 
+communication that is the result of ZigBee management, routing, MAC layer communication, 
+or other components of the ZigBee stack. Becau se there are many levels of complexity to a 
+device operating within a ZigBee ad- hoc mesh network , it is impractical to analyze all 
+scenarios, traffic conditions, and ca uses of communication that determine the duty cycle of a 
+member of the network ecosystem. Fortunately when looking at the vario us contributors to 
+duty cycle for any given device it is apparent that application throughput is the dominant 
+determinant of duty cycle and therefore can be analyzed independently of these other 
+contributors.  This assumption can be made safely since: 
+- Broadcast traffic initiated by the application or network layers contributes significantly 
+less to duty cycle than application unicast traffic since rebroadcasting and artificial 
+delays imposed by the stack require a large percentage of time for a device spent i n 
+idle or receive mode.  The delays specified in ZigBee specification [3], where 
+nwkMaxBroadcastRetries, nwkPassiveAcktimeout, and nwkcMaxBroadcastJitter  are 
+defined, are applied as following. 
+o The broadcast origina tor typically retransmit s the same frame up to 
+nwkMaxBroadcastRetries times and there is a delay up to 
+nwkPassiveAcktimeout depending on conditions, between retransmissions. 
+o The repeaters also shall have some delay up to nwkcMaxBroadcastJitter  
+before relaying the received broadcast frame. 
+
+PAGE 4
+ Application Note   AN114 
+ 
+ 
+ SWRA396 Page 4 of 11  
+- Routing of network wide communication in general will contribute significantly less to 
+duty cycle than application throughput can since routing activity involves the receiving 
+and forwarding of messages, with surrounding nodes continuing the forwarding effort 
+and therefore any node participating in routing will spend significant time with the 
+transceiver off or in RX mode that do not contribute to duty cyc le while packet  
+forwarding occurs at surrounding nodes. In general for routing: 
+o When forwarding a routing packet there is approximately 5 ms processing 
+delay per packet. This could be more if security is considered, but for the 
+purposes of this disc ussion we will leave security out as it would add to 
+processing delay and therefore reduce duty cycle. When considering the 
+process of receiving a maximum size packet (4.256  ms), aTurnaroundTime 
+(192 us) [3], 352 us ACK transmission time, a MAC CSMA/CA  delay of 1.12 
+ms before re-transmission, and a 4.25 6 ms packet transmission time, we are 
+looking at a duty cycle of around 30 %. 
+Duty Cycle = 4.256 + 0.352
+4.256 + 0.192 + 0.352 + 5 + 1.12 + 4.256 = 30.4 % 
+ 
+ δ = 20 log10 0.304 =  −10.34 dB 
+o When performing route establishment or route maintenance,  the contribution 
+to duty cycle will be significantly less. When a device m ust route a packet to 
+another node in the network and no up- to-date route exists, t he device will 
+transmit a route request packet. This route request packet is retransmitted by 
+each device in the network and is accompanied by large (20- 50 ms) delays to 
+buffer time for neighbou ring devices to retransmit without interference. As a 
+result, there will be significant time spent by a given node in RX mode while 
+neighbouring nodes transmit and retransmit this broadcast. Any specific node 
+will therefore spend a significant majority of its time during this operation in 
+RX and woul d communicate at most two route  request packets in a 100 ms 
+window. During this operation a node may also send a route response packet 
+as part of the route establishment procedure, contributing a total of 3 packets 
+in any given 100 ms window. With packet size around 50 bytes taking less 
+than 4 ms to transmit, assuming the contribution of route maintenance to duty 
+cycle would be less than 10-15 %. 
+o Overall we can therefore assume that when routing operation dominates the 
+utilization of a device’s transceiver, assuming the worst case duty cycle will 
+still remain less than 30 %. 
+- Additional messaging and communication to and from a device that will affect duty 
+cycle include network management such as startup, network formation and discovery, 
+joining and address assignment, binding, security management, network 
+management, ZDO management, and inter -pan communication are all relatively 
+infrequent low duty cycle operations, and can be  ignored for the purposes of this 
+application note.    
+- Application throughput, defined as communication initiated by the application layer of  
+a device, often results in one- way communication that can take plac e without delay 
+and under worst -case conditions will serve to maximize utilization of the transceiver 
+and, therefore, will be the dominant contributor to duty cy cle. Therefore, consider the 
+effects of application throughput independent of broadcast or network layer (routing) 
+communication in the next section to fully understand the wor st case duty cycle of  a 
+device. 
+  
+
+PAGE 5
+ Application Note   AN114 
+ 
+ 
+ SWRA396 Page 5 of 11  
+ 
+5 Worst Case Application Duty Cycle Scenario 
+For this applic ation note, analyze and test empirically and theoretically the worst case 
+scenarios for packet transmission as it pertains to maximizing duty cycle within the constraints 
+of the ZigBee protocol specification [2]. Use maximum packet / payload length in the analysis 
+to maximize the on-air (TX) time during operation. 
+ 
+The maximum payload size for an application is based on several factors. The MAC layer 
+provides a maximum payload length of 116 (can be changed in f8wConfig.cfg – 
+MAC_MAX_FRAME_SIZE [6]). The NWK layer requires a fixed header size, one size with 
+security and one without. The APS layer has a variable header size based on a variety of 
+settings, including the ZigBee Protocol Version, APS frame control settings, etc… The overall 
+maximum message sent by a device is 133 bytes  including 4-byte Preamble, 1-byte SFD, 1 -
+byte Length, and maximum 127-byte PSDU fields as shown in Figure 1. 
+ 
+ 
+Figure 1. Schematic View of the IEEE 802.15.4 Frame Format [4] 
+ 
+Measure on-air (TX) duty cycle for two cases: 
+ 
+Case 1: Sending a maximum length data frame with ACK requested and ACK received 
+Consider the case where the ACK is received successfully for ev ery communication 
+as this reflects the quickest response turnaround that will result in a minimum delay 
+before a subsequent communication takes place. This does not necessarily reflect 
+the highest duty cycle scenario, and in fact results in a lower duty cy cle than case 2. 
+However, include both cases for completeness to cover the boundary scenarios.  
+ 
+Case 2: Sending a maximum length data frame with ACK requested and ACK missed 
+Consider the case where the ACK is completely missed for every communication as 
+this reflects the alternate extreme, where ACK wait time is followed by a subsequent 
+packet transmission attempt. This case (case 2) results in the higher duty cycle 
+scenario. 
+ 
+Only consider acknowledged communication cases since unacknowledged communication 
+which is likely to be broadcast transmission has considerably low duty cycle as we reviewed 
+in Chapter 4. Both cases are presented in detail with analysis below.      
+ 
+5.1 Case 1: Maximum Length Frame with ACK Received 
+Calculate the theoretical and empirical duty cycle for a maximum length frame  sent with 
+acknowledgement requested and acknowledgement received 100% of the time.  
+ 
+5.1.1 Theoretical Analysis 
+ 
+TLong Data Frame is the total on -air (TX) time for sending the data frame (referred to below as the 
+long data frame). The long data frame consists of 6 bytes of SHR/PHR and 127 bytes of 
+
+
+PAGE 6
+ Application Note   AN114 
+ 
+ 
+ SWRA396 Page 6 of 11  
+PSDU (or 133 bytes total packet size). It takes 4.256 ms (or 133 bytes x  32 μs/byte) to 
+transmit the maximum length data frame.  
+TACK is the time to wait for the ACK response to the long data frame. T ACK  is defined by IEEE 
+802.15.4 specification [2] as: 
+ 
+aTurnaroundTime ≤ TACK ≤ (aTurnaroundTime + aUnitBackoffPeriod), or 
+192 μs ≤ TACK ≤ 512 μs 
+ 
+However, the sender CC253X generally needs to wait only 192 μs for an ACK because the 
+receiver CC253X running TIMAC / Z-Stack has exactly an aTurnaroundTime of 192 μs before 
+sending the ACK response.  TACK in this case is 192 μs. 
+TRX A CK is the time spent receiving the ACK frame. The ACK frame consists of 6 bytes of 
+SHR/PHR and 5 bytes of PSDU (or 11 total bytes). It takes 352 μs  (or 11 bytes x 32 μs/byte) 
+to receive the ACK frame. 
+TProcess is the processing time from the point of receiving the ACK to restarting the process of 
+transmitting another data frame. For the CC 253X, the processing time from the point of 
+receiving an ACK frame to readying the stack to transmit another data frame is empirically 
+determined to average 2.2 ms. This time period includes the RX to TX  turnaround 
+time(aTurnaroundTime) of 192 μs  and RSSI sampling time for CSMA/CA of 128 μs. This 
+assumes that there is no other traffic in the channel that causes CSMA/CA to fail.  
+TAve Backoff, as defined by the IEEE 802.15.4 protocol specification, is a randomized backoff 
+period required prior to the transmission of any data frame to ensure fair channel access in 
+such a distributed network. The backoff period is a random number from 0 to 7 applied on the 
+first TX attempt of a data frame. The average backoff period across many  packet 
+transmission is therefore 1.12 ms (or 3.5 backoffs x 320 μs / backoff). 
+TOn Time is the time to transmit the long data frame or 4.256 ms. This is the on- air TX time that 
+contributes directly to duty cycle.  
+TOff Time  is the time between t wo long data frame and represents the time that does not 
+contribute to the duty  cycle. TOff Time is the sum of T ACK, TRX ACK, TProcess, and T Ave Backoff which 
+calculates to 3.864 ms.  
+TTotal is the total cycle time from the beginning of one long data frame to the beginning of the 
+subsequent data frame. TTotal is TOn Time + TOff Time = 8.12 ms. 
+ 
+Long Data Frame ACK
+TLong Data Frame TACK TProcessTRX ACK TAve Backoff
+Long Data Frame
+TLong Data Frame
+TLong Data Frame = 4.256 ms
+TACK = 0.192 ms
+TRX ACK = 0.352 ms
+TProcess = 2.2 ms
+TAve Backoff = 1.12 ms
+TOn Time = 4.256 ms
+TOff Time = 3.864 ms
+TTotal = 8.12 ms
+TTotal
+Figure 2. Sending Max Data Frame with ACK Received 
+ 
+Within a 100 ms period as many as 12 long data frames can be transmitted (100 / 8.12 = 
+12.3). In accordance with FCC , we calculate duty cycle as the percentage of time the radio is 
+in TX mode per 100 ms period during maximum (continual) packet transmission.    
+The maximum duty cycle can therefore be calculated as: 
+ 
+Duty Cycle = TOn  Time /TTotal = 4.256/8.12 = 52.41 % 
+ 
+ δ = 20 log10 0.5241 =  −5.61 dB 
+
+PAGE 7
+ Application Note   AN114 
+ 
+ 
+ SWRA396 Page 7 of 11  
+ 
+5.1.2 Empirical Analysis 
+ 
+The Z -Stack TransmitApp is designed to transmit data as fast as possible, therefore 
+maximizing duty cycle by maximizing utilization of the channel. Measure duty cycle by 
+sending maximum length packets between two devices running Z -Stack TransmitApp without 
+any other network participants or interference sources. For TransmitApp the data payload 
+length is provided by the function afDataReqMTU () so that t he total length of the frame 
+including APS, NWK, and MAC overheads can be the maximum possible length.  
+The T Measured O n Time  is measured 4 .424 ms. 1 2 TX/ACK pairs are measured in a 100 ms 
+interval. The measured duty cycle can therefore be calculated as: 
+ 
+Duty Cycle = 12 × TMeasured On Time / 100 = 53.08 % 
+ 
+ δ = 20 log10 0.5308 = –5.50 dB 
+5.2 Case 2: Maximum Length Frame with ACK Missed 
+Calculate the theoretical and empirical duty cycle for a maximum length frame  sent with 
+acknowledgement requested but no acknowledgement received. For the empirical analysis , 
+this is accomplished by establishing a link between a sender and receiver running 
+TransmitApp, and then turning off the receiver so no packet is received and no 
+acknowledgement is sent.  
+ 
+5.2.1 Theoretical Analysis 
+ 
+TLong Data Frame is 4.256 ms as explained in 5.1.1.  
+TACK Wait is the timeout period when an ACK is not received  in response to the long data 
+frame. This corresponds to the macAckWaitDuration as defined by the IEEE 802.15.4- 2006 
+specification [2] section 7.4.2 MAC PIB attributes and is 54 symbol periods or 864 μs.  
+TProcess is the processing time from the point of failing to receive the ACK to the point of 
+starting the process of transmitting another data frame. For CC253X , this processing time is 
+0.6ms.  
+TAve Backoff is 1.12 ms as explained in 5.1.1. 
+TOn Time is 4.256 ms as explained in 5.1.1. This is the on -air TX time that contributes directly to 
+duty cycle.  
+TOff Time  is the time between two long data frame and represents the time that does not 
+contribute to the duty cycle. TOff Time is the sum of T ACK Wait, TProcess, and TAve Backoff calculates to 
+2.584 ms.  
+TTotal is the total cycle time from the beginning of one long data frame to the beginning of the 
+subsequent data frame. TTotal is TOn Time + TOff Time = 6.84 ms. 
+ 
+Long Data Frame
+TLong Data Frame TACK Wait TProcess TAve Backoff
+Long Data Frame
+TLong Data Frame
+TLong Data Frame = 4.256 ms
+TACK Wait = 0.864 ms
+TProcess = 0.6 ms
+TAve Backoff = 1.12 ms
+TOn Time = 4.256 ms
+TOff Time = 2.584 ms
+TTotal = 6.84 ms
+TTotal
+Figure 3. Sending Max Data Frame with ACK Missed 
+ 
+
+PAGE 8
+ Application Note   AN114 
+ 
+ 
+ SWRA396 Page 8 of 11  
+When an acknowledgement is not received by the sender , the long data frame is retried four 
+times by the MAC layer before a send failure is reported to the application. After this it is left 
+to the application to initiate a new transaction. When maximizing duty cycle, consider the case 
+where the application, upon receiving the send failure, retries indefinitely as fast as possible. 
+Because it takes time for the application to handle the failure and retry sending the packet, we 
+must include an application processing time TApp Process to our calculation.  
+TApp Process  is the application processing time, from the point of receiving the transmission 
+failure to the point of retrying a new application data transmission. This value has been 
+empirically calculated as 1.54 ms for Z -Stack TransmitApp, but should be empirically  
+determined or controlled for the specific application. 
+TMAC is the total time spent during a data transmission in the MAC layer. T MAC is TTotal * 4 MAC 
+retries = 27.36 ms.  
+TApp On Time  is the portion of the T MAC time when the transceiver is in TX mode. T App On Time  is 
+calculated as TOn Time * 4 = 17.024 ms.   
+TApp Off Time  is remaining time when the transceiver is not in TX mode during T MAC, plus the 
+additional application processing time (T App Process ) where the transceiver is also not 
+transmitting. TApp Off Time = TOff Time * 4 + TApp Process = 11.876 ms.  
+TApp Total is the total cycle time from the beginning of one long data frame to the beginning of 
+the subsequent application data frame retry. TApp Total is TApp On Time + TApp Off Time = 28.9 ms. 
+  
+Long Data 
+Frame
+Long Data 
+Frame
+Long Data 
+Frame
+Long Data 
+Frame
+TMAC TApp Process
+Long Data 
+Frame
+TMAC = 6.84 x 4 = 27.36 ms
+TApp Process = 1.54 ms
+TApp On Time = 4.256 x 4 = 17.024 ms
+TApp Off Time = 2.584 x 4 + 1.54 = 11.876 ms
+TApp Total = 28.9 ms
+TTotal TTotal TTotal TTotal
+ Figure 4. Sending and Retransmitting Max Data Frame with ACK Missed 
+ 
+Within 100 ms, as many as 3 application retries can be attempted (100 / 28.9 = 3.46).  
+The maximum duty cycle can be calculated as: 
+ 
+Duty Cycle = TApp  On  Time /TApp  Total = 17.024/28.9 = 58.91 % 
+ 
+ δ = 20 log10 0.5891 =  −5.00 dB 
+ 
+5.2.2 Empirical Analysis 
+ 
+Here the Z-Stack TransmitApp is used for the reasons described in 5.1.2. 
+The TMeasured On Time is measured as 4 .224 ms and 14 TX frames are measured in a 100 ms 
+interval. The measured duty cycle can therefore be calculated as: 
+ 
+Duty Cycle = 14 × TMeasured On Time / 100 = 59.14 % 
+ 
+ δ = 20 log10 0.5914 = –4.56 dB 
+  
+
+PAGE 9
+ Application Note   AN114 
+ 
+ 
+ SWRA396 Page 9 of 11  
+ 
+6 Using This Application Note 
+This application note serves to help Z -Stack users through a basic analysis for calculating 
+duty cycle both theoretically and empirically for the maximum throughput application, 
+TransmitApp. We run our example with only two nodes, a sender and receiver, and no 
+additional communication interference, routed packets, or data throughput in the system. One 
+can expect that any additional communication, routing, administrative packets or  additional 
+interference in the system would only serve to delay communication, limit on- air (T X) time, 
+and therefore lower duty cycle. By performing the analysis within the constraints of a simple 
+network one can determine the worst case duty cycle create d by the application to ensure 
+that under “perfect” conditions a device will be within the FCC, ETSI, or ARIB requirements as 
+stated. A designer seeking to limit the TX duty cycle of a ZigBee node can manipulate T App 
+Process or  MAC parameters to achieve t he desired δ. This will of course impact on the 
+throughput of the node.  
+
+PAGE 10
+ Application Note   AN114 
+ 
+ 
+ SWRA396 Page 10 of 11  
+References 
+[1] FCC Title 47 CFR Part 15 Specification 
+[2] IEEE Std 802.15.4-2006 Specification 
+[3] ZigBee Specification 
+[4] CC253X User’s Guide (swru191b.pdf) 
+[5] Using CC2591 Front End with CC2530 and CC2531 (swra308a.pdf) 
+[6] Z-Stack Deveoper’s Guide (xxxx.pdf) 
+[7] Z-Stack Sample Applications (swra201.pdf) 
+
+PAGE 11
+ Application Note   AN114 
+ 
+ 
+ SWRA396 Page 11 of 11  
+7 General Information 
+7.1 Document History 
+Revision Date Description/Changes 
+SWRA396 January 2012 Initial release. 
+ 
+  
+
+PAGE 12
+IMPORTANT NOTICE
+Texas Instruments Incorporated and its subsidiaries (TI) reserve the right to make corrections, modifications, enhancements, improvements,
+and other changes to its products and services at any time and to discontinue any product or service without notice. Customers should
+obtain the latest relevant information before placing orders and should verify that such information is current and complete. All products are
+sold subject to TI’s terms and conditions of sale supplied at the time of order acknowledgment.
+TI warrants performance of its hardware products to the specifications applicable at the time of sale in accordance with TI’s standard
+warranty. Testing and other quality control techniques are used to the extent TI deems necessary to support this warranty. Except where
+mandated by government requirements, testing of all parameters of each product is not necessarily performed.
+TI assumes no liability for applications assistance or customer product design. Customers are responsible for their products and
+applications using TI components. To minimize the risks associated with customer products and applications, customers should provide
+adequate design and operating safeguards.
+TI does not warrant or represent that any license, either express or implied, is granted under any TI patent right, copyright, mask work right,
+or other TI intellectual property right relating to any combination, machine, or process in which TI products or services are used. Information
+published by TI regarding third-party products or services does not constitute a license from TI to use such products or services or a
+warranty or endorsement thereof. Use of such information may require a license from a third party under the patents or other intellectual
+property of the third party, or a license from TI under the patents or other intellectual property of TI.
+Reproduction of TI information in TI data books or data sheets is permissible only if reproduction is without alteration and is accompanied
+by all associated warranties, conditions, limitations, and notices. Reproduction of this information with alteration is an unfair and deceptive
+business practice. TI is not responsible or liable for such altered documentation. Information of third parties may be subject to additional
+restrictions.
+Resale of TI products or services with statements different from or beyond the parameters stated by TI for that product or service voids all
+express and any implied warranties for the associated TI product or service and is an unfair and deceptive business practice. TI is not
+responsible or liable for any such statements.
+TI products are not authorized for use in safety-critical applications (such as life support) where a failure of the TI product would reasonably
+be expected to cause severe personal injury or death, unless officers of the parties have executed an agreement specifically governing
+such use. Buyers represent that they have all necessary expertise in the safety and regulatory ramifications of their applications, and
+acknowledge and agree that they are solely responsible for all legal, regulatory and safety-related requirements concerning their products
+and any use of TI products in such safety-critical applications, notwithstanding any applications-related information or support that may be
+provided by TI. Further, Buyers must fully indemnify TI and its representatives against any damages arising out of the use of TI products in
+such safety-critical applications.
+TI products are neither designed nor intended for use in military/aerospace applications or environments unless the TI products are
+specifically designated by TI as military-grade or "enhanced plastic." Only products designated by TI as military-grade meet military
+specifications. Buyers acknowledge and agree that any such use of TI products which TI has not designated as military-grade is solely at
+the Buyer's risk, and that they are solely responsible for compliance with all legal and regulatory requirements in connection with such use.
+TI products are neither designed nor intended for use in automotive applications or environments unless the specific TI products are
+designated by TI as compliant with ISO/TS 16949 requirements. Buyers acknowledge and agree that, if they use any non-designated
+products in automotive applications, TI will not be responsible for any failure to meet such requirements.
+Following are URLs where you can obtain information on other Texas Instruments products and application solutions:
+Products Applications
+Audio www.ti.com/audio Automotive and Transportation www.ti.com/automotive
+Amplifiers amplifier.ti.com Communications and Telecom www.ti.com/communications
+Data Converters dataconverter.ti.com Computers and Peripherals www.ti.com/computers
+DLP® Products www.dlp.com Consumer Electronics www.ti.com/consumer-apps
+DSP dsp.ti.com Energy and Lighting www.ti.com/energy
+Clocks and Timers www.ti.com/clocks Industrial www.ti.com/industrial
+Interface interface.ti.com Medical www.ti.com/medical
+Logic logic.ti.com Security www.ti.com/security
+Power Mgmt power.ti.com Space, Avionics and Defense www.ti.com/space-avionics-defense
+Microcontrollers microcontroller.ti.com Video and Imaging www.ti.com/video
+RFID www.ti-rfid.com
+OMAP Mobile Processors www.ti.com/omap
+Wireless Connectivity www.ti.com/wirelessconnectivity
+TI E2E Community Home Page e2e.ti.com
+Mailing Address: Texas Instruments, Post Office Box 655303, Dallas, Texas 75265
+Copyright © 2012, Texas Instruments Incorporated

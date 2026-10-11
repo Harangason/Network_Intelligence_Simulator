@@ -1,0 +1,153 @@
+--- before/backend/nis/engineering/network/physical_ports.py
++++ after/backend/nis/engineering/network/physical_ports.py
+@@ -123,6 +123,25 @@
+     connected = {str(e.get(side + 'Port') or '') for e in (previous or {}).get('edges') or [] for side in ('source', 'target')}
+     now_connected = {str(e.get(side + 'Port') or '') for e in current.get('edges') or [] for side in ('source', 'target')}
+     allowed = set()
++    # A complete same-technology move (including a capacity-split drawing clone)
++    # reuses the actual connector. Parallel networks still need separate channels.
++    before_channels = {}
++    current_channels = {}
++    for identifier, (owner, port) in old.items():
++        if identifier in connected and port.get('hardwareInterfaceId'):
++            key = (owner, str(port['hardwareInterfaceId']), technology_id(port.get('bus')))
++            before_channels.setdefault(key, set()).add(str(port.get('physicalNetworkId') or ''))
++    for node in current.get('nodes') or []:
++        for port in node.get('ports') or []:
++            if str(port['id']) not in now_connected or not port.get('hardwareInterfaceId'):
++                continue
++            key = (str(node.get('engineeringId') or ''), str(port['hardwareInterfaceId']), technology_id(port.get('bus')))
++            current_channels.setdefault(key, []).append(port)
++    for key, ports in current_channels.items():
++        old_networks = before_channels.get(key, set())
++        new_networks = {str(port.get('physicalNetworkId') or '') for port in ports}
++        if len(old_networks) == len(new_networks) == 1 and '' not in old_networks | new_networks and old_networks != new_networks:
++            allowed.update((str(port['id']), key[1]) for port in ports)
+     for node in current.get('nodes') or []:
+         for port in node.get('ports') or []:
+             identifier = str(port['id'])
+@@ -323,11 +342,15 @@
+         if all(identifier == primary for identifier, _ in bindings) and not configuration.get('physical_transmit_bindings'):
+             continue
+         expected = [{'hardware_interface_id': identifier, 'network_id': network, 'source': 'approved-topology'} for identifier, network in sorted(bindings)]
+-        if configuration.get('physical_transmit_bindings') == expected:
++        primary_id = primary if any(identifier == primary for identifier, _ in bindings) else min(bindings)[0]
++        if configuration.get('physical_transmit_bindings') == expected and primary == primary_id:
+             continue
+         configuration['physical_transmit_bindings'] = expected
++        data = {'configuration': configuration}
++        if primary != primary_id:
++            data['hardware_interface_id'] = primary_id
+         changes.append({'action': 'UPDATE', 'object_type': 'Message', 'object_id': str(message['id']),
+-            'local_ref': 'physical-message-' + str(message['id']), 'data': {'configuration': configuration}})
++            'local_ref': 'physical-message-' + str(message['id']), 'data': data})
+     return changes
+ 
+ 
+--- before/backend/nis/agent/tools/wizard_generation.py
++++ after/backend/nis/agent/tools/wizard_generation.py
+@@ -2053,7 +2053,8 @@
+     if changed_edges <= 0:
+         raise ValueError('Der Capacity-Plan konnte keiner physischen Route des überlasteten Zweigs zugeordnet werden.')
+     topology, physical_changes = materialize_physical_ports(topology, model.objects('HardwareNode'),
+-        model.objects('HardwareNetworkInterface'), model.networks(), routes=model.routes(), messages=model.objects('Message'))
++        model.objects('HardwareNetworkInterface'), model.networks(), routes=model.routes(), messages=model.objects('Message'),
++        previous_topology=state.get('topology'))
+     policy = planning_policy(state)
+     resource_receipt = resource_decision(state.get('topology') or {}, topology,
+         planning_inventory(state, prompt), policy)
+--- before/backend/tests/test_physical_ports.py
++++ after/backend/tests/test_physical_ports.py
+@@ -182,7 +182,71 @@
+     assert configuration['user_setting'] is True
+     assert len(configuration['physical_transmit_bindings']) == 2
+     assert {row['network_id'] for row in configuration['physical_transmit_bindings']} == {'CAN1', 'CAN2'}
+-    assert not physical_transmit_changes(topology, routes, [{**message, 'configuration': configuration}])
++    assert changes[0]['data']['hardware_interface_id'] in {row['hardware_interface_id'] for row in configuration['physical_transmit_bindings']}
++    assert not physical_transmit_changes(topology, routes, [{**message, **changes[0]['data']}])
++
++
++@pytest.mark.parametrize('bus,technology', [('can_fd', 'CAN_FD'), ('lin', 'LIN'), ('ethernet', 'Ethernet'), ('modbus_rtu', 'MODBUS_RTU')])
++def test_complete_split_move_reuses_reviewed_connector_and_keeps_message_sender(bus, technology):
++    from backend.nis.intelligence.engineering.intelligence.network_planning import split_topology_by_distribution
++    hardware = [{'id': key, 'name': key, 'device_type': 'ECU'} for key in ('source', 'receiver')]
++    interfaces = [{'id': key + '-channel', 'name': key, 'hardware_node_id': key, 'technology': technology,
++                   'channel_index': 1, 'physical_port_ref': key + '-connector', 'network_ref': 'old-bus'} for key in ('source', 'receiver')]
++    before = {'nodes': [{'id': key, 'engineeringId': key, 'ports': [{'id': key + '-port', 'hardwareInterfaceId': key + '-channel',
++                'bus': bus, 'physicalNetworkId': 'old-bus'}]} for key in ('source', 'receiver')],
++              'edges': [{'id': 'wire', 'source': 'source', 'target': 'receiver', 'sourcePort': 'source-port',
++                        'targetPort': 'receiver-port', 'bus': bus, 'physicalNetworkId': 'old-bus', 'routingEntryIds': ['route']}]}
++    routes = [{'id': 'route', 'approval_state': 'APPROVED', 'source': {'node_id': 'source'}, 'payload': {'message_id': 'message'}}]
++    message = {'id': 'message', 'hardware_interface_id': 'source-channel', 'configuration': {'encoding': 'authored'}}
++    plan = {'networks': [{'network_id': 'old-bus', 'decision': 'SPLIT_CURRENT_TECHNOLOGY',
++                         'segments': [{'name': 'new-bus', 'route_ids': ['route']}]}]}
++    topology, count = split_topology_by_distribution(before, plan)
++    assert count == 1
++    original = deepcopy((before, topology, interfaces, message))
++    repaired, changes = materialize_physical_ports(topology, hardware, interfaces,
++        [{'id': 'old-bus', 'technology': technology}], previous_topology=before, routes=routes, messages=[message])
++    canonical = effective(interfaces, changes)
++    assert len(canonical) == 2, 'Moving one complete branch does not create spare hardware channels.'
++    assert {p['hardwareInterfaceId'] for n in repaired['nodes'] for p in n['ports']} == {'source-channel', 'receiver-channel'}
++    assert all(p['network_ref'] == 'new-bus' and p['channel_index'] == 1 for p in canonical)
++    assert not topology_port_findings(repaired, hardware, canonical)
++    assert (before, topology, interfaces, message) == original
++
++
++def test_multichannel_rebind_preserves_active_primary_and_does_not_adopt_unapproved_sources():
++    from backend.nis.engineering.network.physical_ports import physical_transmit_changes
++    topology, hardware, interfaces = sample()
++    topology, _ = materialize_physical_ports(topology, hardware, interfaces, [])
++    for index, edge in enumerate(topology['edges']):
++        edge['routingEntryIds'] = [f'route-{index}']
++    primary = topology['nodes'][1]['ports'][1]['hardwareInterfaceId']
++    routes = [{'id': f'route-{index}', 'approval_state': 'APPROVED', 'source': {'node_id': 'g'},
++               'payload': {'message_id': 'm'}} for index in range(2)]
++    message = {'id': 'm', 'hardware_interface_id': primary, 'configuration': {'user_setting': True}}
++    change = physical_transmit_changes(topology, routes, [message])[0]
++    assert change['data'].get('hardware_interface_id', primary) == primary
++    assert len(change['data']['configuration']['physical_transmit_bindings']) == 2
++    assert physical_transmit_changes(topology, [{**r, 'approval_state': 'PENDING'} for r in routes], [message]) == []
++
++
++def test_split_keeps_parallel_old_bus_instead_of_stealing_its_channel():
++    topology, hardware, interfaces = sample()
++    before, changes = materialize_physical_ports(topology, hardware, interfaces, [])
++    interfaces = effective(interfaces, changes)
++    updated = deepcopy(before)
++    source = updated['nodes'][0]['ports'][0]
++    primary = source['hardwareInterfaceId']
++    updated['nodes'][0]['ports'].append({**source, 'id': 'parallel-source', 'physicalNetworkId': 'parallel'})
++    gateway = updated['nodes'][1]['ports'][0]
++    updated['nodes'][1]['ports'].append({**gateway, 'id': 'parallel-gateway', 'physicalNetworkId': 'parallel'})
++    updated['edges'].append({**updated['edges'][0], 'id': 'parallel-edge', 'sourcePort': 'parallel-source',
++                             'targetPort': 'parallel-gateway', 'physicalNetworkId': 'parallel'})
++    repaired, changes = materialize_physical_ports(updated, hardware, interfaces,
++        [{'id': 'CAN1', 'technology': 'CAN_FD'}, {'id': 'CAN2', 'technology': 'CAN_FD'}], previous_topology=before)
++    canonical = effective(interfaces, changes)
++    assert next(p for p in canonical if p['id'] == primary)['network_ref'] == 'CAN1'
++    assert repaired['nodes'][0]['ports'][1]['hardwareInterfaceId'] != primary
++    assert not topology_port_findings(repaired, hardware, canonical)
+ 
+ 
+ def test_topology_refresh_reuses_reviewed_networks_ports_and_layout_without_wizard_prompt(monkeypatch):
+--- before/backend/tests/test_wizard_large_routing.py
++++ after/backend/tests/test_wizard_large_routing.py
+@@ -120,6 +120,17 @@
+         assert not topology_port_findings(state['topology'], model.objects('HardwareNode'), model.objects('HardwareNetworkInterface'))
+         assert all(not port['hardwareInterfaceId'].startswith('$')
+                    for node in state['topology']['nodes'] for port in node['ports'])
++        actual_sources = {}
++        for route in model.routes():
++            if route.get('approval_state') != 'APPROVED':
++                continue
++            payload = route.get('payload') or {}
++            for message_id in [payload.get('message_id'), *(payload.get('message_ids') or [])]:
++                if message_id:
++                    actual_sources.setdefault(str(message_id), set()).add(str(route['source']['port_id']))
++        for message in model.objects('Message'):
++            if str(message['id']) in actual_sources:
++                assert str(message['hardware_interface_id']) in actual_sources[str(message['id'])], message['name']
+         assert model.objects('Signal') == signal_encoding, 'Adding channels must not change any signal encoding.'
+         assert {item['id']: {key: item.get(key) for key in ('dlc', 'cycle_ms', 'message_id_hex', 'direction')}
+                 for item in model.objects('Message')} == message_frames

@@ -1,0 +1,70 @@
+{
+  "goal_id": "studio-toolbar-trace-defaults-20261009",
+  "kind": "repair",
+  "modify_code": true,
+  "allow_repair": true,
+  "repository": "I:\\PycharmProjects\\My_first_Network_Simulator",
+  "project_scope": "20261009072206008-4bb505f1",
+  "required_outcomes": [
+    "responsive_toolbar",
+    "native_trace_defaults",
+    "canonical_blf_dbc",
+    "light_explanation",
+    "production_delivery"
+  ],
+  "validation_requirements": [
+    "targeted_regression",
+    "typecheck",
+    "release_gate",
+    "live_verification"
+  ],
+  "revision_before": {
+    "docs/migrations/structure_mapping.csv": "d931b378490bec171eb89db1b828c5117d00c5390d96006aba21934069728e49"
+  },
+  "files_changed": [
+    "frontend/src/features/network/ui/network-editor.tsx",
+    "frontend/src/app/globals.css",
+    "frontend/src/features/simulation/lib/simulation-formats.ts",
+    "frontend/src/features/simulation/lib/simulation-formats.test.mjs",
+    "frontend/src/features/simulation/ui/model-simulation-runner.tsx",
+    "backend/nis/simulation/communication_simulator.py",
+    "backend/nis/communication/technologies/can/formats/can_format_writers.py",
+    "backend/nis/communication/technologies/can/profile.json",
+    "backend/nis/communication/technologies/can_fd/profile.json",
+    "backend/nis/communication/technologies/ethernet/profile.json",
+    "backend/requirements.txt",
+    "backend/pyproject.toml",
+    "backend/tests/test_project_can_exports.py",
+    "frontend/e2e/studio-export-controls.spec.ts",
+    "backend/nis/simulation/model_based_simulation.py",
+    "backend/requirements.lock",
+    "backend/uv.lock",
+    "frontend/src/features/communication/lib/technology-projection.json",
+    "docs/migrations/structure_mapping.csv"
+  ],
+  "unresolved_decisions": [],
+  "repair": {
+    "root_cause": "New backend CAN export regression file lacks required structure inventory entry.",
+    "owner": "PROJECT_PRODUCT",
+    "first_failing_layer": "Structure inventory documentation",
+    "reproduction": "Full gate: test_mapping_covers_current_application_and_every_transition; missing backend/tests/test_project_can_exports.py",
+    "evidence": [
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\studio-toolbar-full\\0b2f8398dd73\\backend-tests.log",
+        "sha256": "8e7fbe7d826a46acc5aa8987045b65fb9f3c2893e711a0f9abd48bccdc74493f"
+      }
+    ],
+    "affected_files": [
+      "docs/migrations/structure_mapping.csv"
+    ],
+    "acceptance_criteria": "Clear responsive toolbar; native project defaults; real CAN events and exact canonical encodings in valid DBC; explain warnings without changing project; tested image deployed",
+    "targeted_tests": "BLFReader and cantools decode roundtrip, rejection of invalid encoding/ID; responsive browser controls and format selection",
+    "weaken_assertions_to_pass": false
+  },
+  "delivery": {
+    "decision": "YES",
+    "authorization": "User AGENTS.md standing authorization for verified production delivery",
+    "target": "Canonical NIS 13500/15050"
+  },
+  "completion_status": "IMPLEMENTING"
+}

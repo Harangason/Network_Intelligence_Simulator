@@ -1,0 +1,69 @@
+--- before/backend/tests/test_workflow.py
++++ after/backend/tests/test_workflow.py
+@@ -1,3 +1,4 @@
++from backend.tests.native_transport_fixtures import lin_design, ethernet_mac
+ from contextlib import nullcontext
+ import json
+ import pytest
+@@ -158,6 +159,8 @@
+         "technology": "can_fd",
+         "formats": ["universal-jsonl"],
+         "bitrate": 2_000_000,
++        "arbitration_bitrate": 500_000,
++        "data_bitrate": 2_000_000,
+         "cycle_ms": 10,
+         "payload_bytes": 64,
+         "queue_size": 256,
+@@ -287,7 +290,7 @@
+ 
+ 
+ def test_ethernet_applies_minimum_wire_footprint():
+-    estimate = estimate_frame("ETHERNET", 1, {"bitrate": 100_000_000})
++    estimate = estimate_frame("ETHERNET", 1, {**ethernet_mac(), "bitrate": 100_000_000})
+ 
+     assert estimate.frame_bits == 84 * 8
+     assert estimate.calculation_model == "ETHERNET_WIRE_ESTIMATE"
+@@ -311,7 +314,7 @@
+     assert estimate_frame("LIN", 8, lin).to_dict()["transmission_time_s"] is None
+     assert parameters_for_protocol("ETHERNET", parameters, {"bitrate": 1_000_000_000})["bitrate"] == 1_000_000_000
+     assert parameters_for_protocol("ETHERNET", {"technology": "automotive_ethernet", "bitrate": 1_000_000_000})["bitrate"] == 1_000_000_000
+-    assert parameters_for_protocol("LIN", {"bitrate": 9_600})["bitrate"] == 9_600
++    assert parameters_for_protocol("LIN", {**lin_design(9600), "bitrate": 9_600})["bitrate"] == 9_600
+ 
+ 
+ def test_utilization_queueing_and_thresholds_are_monotonic():
+@@ -714,7 +717,7 @@
+     state = {
+         "versions": default_versions(),
+         "statuses": {step: "COMPLETE" for step in default_statuses()},
+-        "parameters": {"technology": "lin", "bitrate": 2_000_000},
++        "parameters": {"technology": "lin", **lin_design(2_000_000), "bitrate": 2_000_000},
+         "topology": {"nodes": [], "edges": []},
+     }
+     service = PreflightService("analysis-project")
+@@ -748,7 +751,7 @@
+     result = service.run()
+ 
+     findings = result["category_checks"]["technology"]
+-    assert any(item["code"] == "TECHNOLOGY_PARAMETER_INVALID" for item in findings)
++    assert any(item["code"] in {"TECHNOLOGY_PARAMETER_INVALID", "TECHNOLOGY_PARAMETER_MISSING"} for item in findings)
+     assert result["preflight_status"] == "BLOCKED"
+     assert result["ready_for_simulation"] is False
+ 
+@@ -864,7 +867,7 @@
+             "gateway_queue_delay_ms": 0.5,
+             "protocol_conversion_delay_ms": 0.25,
+             "gateway_maximum_throughput": 100,
+-            "queue_policy": "STRICT_PRIORITY",
++            "queue_policy": "PRIORITY",
+             "packet_loss_probability": 0.1,
+             "required_reliability": 0.99,
+             "clock_drift_ppm": 200,
+@@ -932,6 +935,7 @@
+         "parameters": {
+             "technology": "lin",
+             "bitrate": 19_200,
++            **lin_design(),
+             "cycle_ms": 10,
+             "payload_bytes": 8,
+             "peak_factor": 1.15,

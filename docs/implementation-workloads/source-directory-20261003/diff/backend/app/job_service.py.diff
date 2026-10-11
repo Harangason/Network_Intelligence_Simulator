@@ -1,0 +1,14 @@
+--- before/backend/app/job_service.py
++++ after/backend/app/job_service.py
+@@ -220,6 +220,11 @@
+         return self._storage or TraceStorage()
+ 
+     def submit(self, payload: dict[str, Any], *, validate_only: bool = False) -> dict[str, Any]:
++        if not validate_only:
++            from ..communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY
++            from ..communication.technologies.licensing import assert_technology_clearance, declared_technology_ids
++            assert_technology_clearance(str(payload.get('project_id') or 'default'),
++                declared_technology_ids(payload, DEFAULT_TECHNOLOGY_REGISTRY), DEFAULT_TECHNOLOGY_REGISTRY)
+         job_id = uuid.uuid4().hex
+         output_dir = self.storage.output_for(payload.get("project_id") or "default", job_id)
+         job = {

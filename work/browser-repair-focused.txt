@@ -1,0 +1,116 @@
+
+Running 12 tests using 1 worker
+
+(node:43864) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x   1 e2e\technology-parameter-review.spec.ts:5:1 › unconfirmed project can select every registered bus without an Automotive fallback @technology-review (34.0s)
+(node:47880) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok  2 e2e\technology-parameter-review.spec.ts:61:1 › saved confirmed wizard context proposes its bus without inventing parameter confirmation @technology-review (1.7s)
+  ok  3 e2e\technology-parameter-review.spec.ts:78:1 › mixed project shows exact LIN profile, rejects 2M and preserves CAN-FD while saving LIN @technology-review (3.3s)
+  ok  4 e2e\technology-parameter-review.spec.ts:125:1 › stale parameter revision rejects the real write and preserves confirmed rates @technology-review (391ms)
+  ok  5 e2e\technology-parameter-review.spec.ts:138:1 › every bus exposes its own server defaults in the actual parameter form @technology-review (11.3s)
+  x   6 e2e\technology-parameter-review.spec.ts:165:1 › hardware editor uses the selected profile and saves proposals without inventing device confirmation @technology-review (32.9s)
+(node:37164) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok  7 e2e\technology-parameter-review.spec.ts:219:1 › actual uint64 protocol value survives legacy numeric JSON, form edit, SQL persistence and reload @technology-review (3.6s)
+  ok  8 e2e\wizard.spec.ts:362:1 › wizard refuses an unavailable catalog and recovers using the real registry @catalog-recovery (3.3s)
+
+  ok  9 e2e\wizard.spec.ts:421:3 › Raspberry Pi I2C project retains model and requests missing capacity evidence @nonautomotive (31.1s)
+
+  ok 10 e2e\wizard.spec.ts:421:3 › Raspberry Pi Modbus RTU project retains model and requests missing capacity evidence @nonautomotive (30.8s)
+
+  ok 11 e2e\wizard.spec.ts:482:1 › exact confirmed 50/250/250 request completes through real wizard review @large (14.9m)
+  ok 12 e2e\wizard.spec.ts:517:1 › a real AMEND after model approval adds the requested sensor and reuses its networks @amend (42.3s)
+
+
+  1) e2e\technology-parameter-review.spec.ts:5:1 › unconfirmed project can select every registered bus without an Automotive fallback @technology-review 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByText('Technologie- und Timing-Parameter gespeichert.')
+    Expected: visible
+    Timeout: 30000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByText('Technologie- und Timing-Parameter gespeichert.') with timeout 30000ms
+      - waiting for getByText('Technologie- und Timing-Parameter gespeichert.')
+
+
+      49 |   expect(invalid).toEqual([]);
+      50 |   await page.getByRole('button', { name: 'Parameter speichern →', exact: true }).click();
+    > 51 |   await expect(page.getByText('Technologie- und Timing-Parameter gespeichert.')).toBeVisible();
+         |                                                                                  ^
+      52 |   const saved = await (await page.request.get('/api/engineering/workflow/parameters', { headers })).json();
+      53 |   expect(saved.parameters.industry).toBe('custom');
+      54 |   expect(saved.parameters.technology).toBe('i2c');
+        at I:\PycharmProjects\My_first_Network_Simulator\frontend\e2e\technology-parameter-review.spec.ts:51:82
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\backend\test-output\parameter-browser-repairs\ca7a3f4cc284\focused-browser\technology-parameter-revie-7a132--fallback-technology-review\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ..\backend\test-output\parameter-browser-repairs\ca7a3f4cc284\focused-browser\technology-parameter-revie-7a132--fallback-technology-review\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\backend\test-output\parameter-browser-repairs\ca7a3f4cc284\focused-browser\technology-parameter-revie-7a132--fallback-technology-review\error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    ..\backend\test-output\parameter-browser-repairs\ca7a3f4cc284\focused-browser\technology-parameter-revie-7a132--fallback-technology-review\trace.zip
+    Usage:
+
+        npx playwright show-trace ..\backend\test-output\parameter-browser-repairs\ca7a3f4cc284\focused-browser\technology-parameter-revie-7a132--fallback-technology-review\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) e2e\technology-parameter-review.spec.ts:165:1 › hardware editor uses the selected profile and saves proposals without inventing device confirmation @technology-review 
+
+    Error: expect(locator).toHaveValue(expected) failed
+
+    Locator:  locator('#edit_data_bitrate')
+    Expected: "2000000"
+    Received: ""
+    Timeout:  30000ms
+
+    Call log:
+      - Expect "toHaveValue" locator('#edit_data_bitrate') with timeout 30000ms
+      - waiting for locator('#edit_data_bitrate')
+        63 × locator resolved to <input min="1" step="1" value="" type="number" id="edit_data_bitrate" name="edit_data_bitrate"/>
+           - unexpected value ""
+
+
+      183 |   await page.locator('#edit_technology').selectOption('CAN_FD');
+      184 |   await expect(page.locator('#edit_local_chip_select')).toHaveCount(0);
+    > 185 |   await expect(page.locator('#edit_data_bitrate')).toHaveValue('2000000');
+          |                                                    ^
+      186 |   await page.locator('#edit_technology').selectOption('I2C');
+      187 |   await page.getByRole('button', {name:'Änderungen speichern',exact:true}).click();
+      188 |   await expect(page.locator('#edit_technology')).toHaveCount(0);
+        at I:\PycharmProjects\My_first_Network_Simulator\frontend\e2e\technology-parameter-review.spec.ts:185:52
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\backend\test-output\parameter-browser-repairs\ca7a3f4cc284\focused-browser\technology-parameter-revie-985dd-firmation-technology-review\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ..\backend\test-output\parameter-browser-repairs\ca7a3f4cc284\focused-browser\technology-parameter-revie-985dd-firmation-technology-review\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\backend\test-output\parameter-browser-repairs\ca7a3f4cc284\focused-browser\technology-parameter-revie-985dd-firmation-technology-review\error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    ..\backend\test-output\parameter-browser-repairs\ca7a3f4cc284\focused-browser\technology-parameter-revie-985dd-firmation-technology-review\trace.zip
+    Usage:
+
+        npx playwright show-trace ..\backend\test-output\parameter-browser-repairs\ca7a3f4cc284\focused-browser\technology-parameter-revie-985dd-firmation-technology-review\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  Slow test file: e2e\wizard.spec.ts (16.7m)
+  Consider running tests from slow files in parallel. See: https://playwright.dev/docs/test-parallel
+  2 failed
+    e2e\technology-parameter-review.spec.ts:5:1 › unconfirmed project can select every registered bus without an Automotive fallback @technology-review 
+    e2e\technology-parameter-review.spec.ts:165:1 › hardware editor uses the selected profile and saves proposals without inventing device confirmation @technology-review 
+  10 passed (18.3m)

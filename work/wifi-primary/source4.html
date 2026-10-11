@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <link rel="stylesheet" type="text/css" media="screen" href="/stylesheets/stylesheet.css">
+
+    <title>Radiotap - HE</title>
+  </head>
+
+  <body>
+
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <a id="forkme_banner" href="https://github.com/radiotap/radiotap.github.io">View on GitHub</a>
+          <h1 id="project_title">Radiotap</h1>
+          <a href="/">Introduction</a> |
+          <a href="/fields/defined">defined fields</a> |
+          <a href="/fields/suggested">suggested fields</a> |
+          <a href="/fields/rejected">rejected fields</a> |
+          <a href="/fields/unofficial">unofficially used fields</a>
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+        <h1>HE</h1>
+
+<p><dl>
+  <dt>Bit Number</dt>
+  <dd>23</dd>
+</dl>
+
+<p>Structure</p>
+<ul>
+  <li>u16 data1, data2, data3, data4, data5, data6</li>
+</ul>
+
+<dl>
+  <dt>Required Alignment</dt>
+  <dd>2</dd>
+  <dt>Unit(s)</dt>
+  <dd>none</dd>
+</dl>
+
+<p>The presence of this field indicates that the frame was received or
+transmitted using the HE PHY.</p>
+
+<p>This field contains data mostly from the HE-SIG-A part that is common
+to all HE transmissions, but some of the data might also be calculated
+(e.g. when included in the transmission of an HE_TRIG type frame, some
+parameters are not included in the HE-SIG-A but were determined by the
+trigger frame).</p>
+
+<p>However, for PPDUs of HE_MU format, it contains the data that applies
+to the encoding of the PSDU, with more detailed information about the
+MU transmission contained in the <a href="HE-MU">HE-MU</a> field if needed, in
+many cases that field will not be needed as all the data about the
+single user that was captured is already encoded here.</p>
+
+<p>In the case of MU transmissions, the <a href="HE-MU-other-user">HE-MU-other-user</a>
+field may also be present one or more times in that case to capture extra
+users for which the data couldn’t be captured; if the data was captured
+for more than one user then multiple packets must be written into the
+radiotap capture.</p>
+
+<h2 id="data1">data1</h2>
+
+<table>
+  <tbody>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x0003</code></strong></td>
+      <td>HE PPDU Format: 0=HE_SU, 1=HE_EXT_SU, 2=HE_MU, 3=HE_TRIG</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x0004</code></strong></td>
+      <td>BSS Color known</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x0008</code></strong></td>
+      <td>Beam Change known</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x0010</code></strong></td>
+      <td>UL/DL known</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x0020</code></strong></td>
+      <td>data MCS known</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x0040</code></strong></td>
+      <td>data DCM known</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x0080</code></strong></td>
+      <td>Coding known</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x0100</code></strong></td>
+      <td>LDPC extra symbol segment known</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x0200</code></strong></td>
+      <td>STBC known</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x0400</code></strong></td>
+      <td>Spatial Reuse known (Spatial Reuse 1 for HE_TRIG format)</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x0800</code></strong></td>
+      <td>Spatial Reuse 2 known (HE_TRIG format), STA-ID known (HE_MU format)</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x1000</code></strong></td>
+      <td>Spatial Reuse 3 known (HE_TRIG format)</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x2000</code></strong></td>
+      <td>Spatial Reuse 4 known (HE_TRIG format)</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x4000</code></strong></td>
+      <td>data BW/RU allocation known</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x8000</code></strong></td>
+      <td>Doppler known</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="data2">data2</h2>
+
+<table>
+  <tbody>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x0001</code></strong></td>
+      <td>pri/sec 80 MHz known</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x0002</code></strong></td>
+      <td>GI known</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x0004</code></strong></td>
+      <td>number of LTF symbols known</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x0008</code></strong></td>
+      <td>Pre-FEC Padding Factor known</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x0010</code></strong></td>
+      <td>TxBF known</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x0020</code></strong></td>
+      <td>PE Disambiguity known</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x0040</code></strong></td>
+      <td>TXOP known</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x0080</code></strong></td>
+      <td>midamble periodicity known</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x3f00</code></strong></td>
+      <td>RU allocation offset</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x4000</code></strong></td>
+      <td>RU allocation offset known</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x8000</code></strong></td>
+      <td>pri/sec 80 MHz (primary=0, secondary=1)</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3 id="ru-allocation-offset">RU allocation offset</h3>
+
+<p>The RU allocation offset is encoded as the offset (within the 80 MHz
+pri/sec channel) of the location in the correct tone column.</p>
+
+<table>
+<tr>
+<th>26-tone</th>
+<th>52-tone</th>
+<th>106-tone</th>
+<th>242-tone</th>
+<th>484-tone</th>
+<th>996-tone</th>
+<th>2x996-tone</th>
+</tr>
+<tr>
+<td>0</td>
+<td rowspan="2">0</td>
+<td rowspan="4">0</td>
+<td rowspan="9">0</td>
+<td rowspan="18">0</td>
+<td rowspan="37">0</td>
+<td rowspan="37">0</td>
+</tr>
+<tr>
+<td>1</td>
+</tr>
+<tr>
+<td>2</td>
+<td rowspan="2">1</td>
+</tr>
+<tr>
+<td>3</td>
+</tr>
+<tr>
+<td>4</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>5</td>
+<td rowspan="2">2</td>
+<td rowspan="4">1</td>
+</tr>
+<tr>
+<td>6</td>
+</tr>
+<tr>
+<td>7</td>
+<td rowspan="2">3</td>
+</tr>
+<tr>
+<td>8</td>
+</tr>
+<tr>
+<td>9</td>
+<td rowspan="2">4</td>
+<td rowspan="4">2</td>
+<td rowspan="9">1</td>
+</tr>
+<tr>
+<td>10</td>
+</tr>
+<tr>
+<td>11</td>
+<td rowspan="2">5</td>
+</tr>
+<tr>
+<td>12</td>
+</tr>
+<tr>
+<td>13</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>14</td>
+<td rowspan="2">6</td>
+<td rowspan="4">3</td>
+</tr>
+<tr>
+<td>15</td>
+</tr>
+<tr>
+<td>16</td>
+<td rowspan="2">7</td>
+</tr>
+<tr>
+<td>17</td>
+</tr>
+<tr>
+<td>18</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>19</td>
+<td rowspan="2">8</td>
+<td rowspan="4">4</td>
+<td rowspan="9">2</td>
+<td rowspan="18">1</td>
+</tr>
+<tr>
+<td>20</td>
+</tr>
+<tr>
+<td>21</td>
+<td rowspan="2">9</td>
+</tr>
+<tr>
+<td>22</td>
+</tr>
+<tr>
+<td>23</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>24</td>
+<td rowspan="2">10</td>
+<td rowspan="4">5</td>
+</tr>
+<tr>
+<td>25</td>
+</tr>
+<tr>
+<td>26</td>
+<td rowspan="2">11</td>
+</tr>
+<tr>
+<td>27</td>
+</tr>
+<tr>
+<td>28</td>
+<td rowspan="2">12</td>
+<td rowspan="4">6</td>
+<td rowspan="9">3</td>
+</tr>
+<tr>
+<td>29</td>
+</tr>
+<tr>
+<td>30</td>
+<td rowspan="2">13</td>
+</tr>
+<tr>
+<td>31</td>
+</tr>
+<tr>
+<td>32</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>33</td>
+<td rowspan="2">14</td>
+<td rowspan="4">7</td>
+</tr>
+<tr>
+<td>34</td>
+</tr>
+<tr>
+<td>35</td>
+<td rowspan="2">15</td>
+</tr>
+<tr>
+<td>36</td>
+</tr>
+</table>
+
+<p>Note that while this table lists all possible <em>positions</em>, it doesn’t list
+all possible <em>combinations</em>, i.e. with an HE-MU transmission the RU
+allocation may be mixed into different bandwidths for different users.</p>
+
+<h2 id="data3">data3</h2>
+
+<table>
+  <tbody>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x003f</code></strong></td>
+      <td>BSS Color</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x0040</code></strong></td>
+      <td>Beam Change</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x0080</code></strong></td>
+      <td>UL/DL</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x0f00</code></strong></td>
+      <td>data MCS (not SIG-B MCS from HE-SIG-A for HE_MU format)</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x1000</code></strong></td>
+      <td>data DCM (cf. data MCS)</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x2000</code></strong></td>
+      <td>Coding (0=BCC, 1=LDPC)</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x4000</code></strong></td>
+      <td>LDPC extra symbol segment</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x8000</code></strong></td>
+      <td>STBC</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="data4">data4</h2>
+
+<table>
+  <tbody>
+    <tr>
+      <td><strong>bits</strong></td>
+      <td><strong>HE_SU and HE_EXT_SU format PPDU</strong></td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x000f</code></strong></td>
+      <td>Spatial Reuse</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0xfff0</code></strong></td>
+      <td>(reserved)</td>
+    </tr>
+  </tbody>
+</table>
+
+<table>
+  <tbody>
+    <tr>
+      <td><strong>bits</strong></td>
+      <td><strong>HE_TRIG format PPDU</strong></td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x000f</code></strong></td>
+      <td>Spatial Reuse 1</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x00f0</code></strong></td>
+      <td>Spatial Reuse 2</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x0f00</code></strong></td>
+      <td>Spatial Reuse 3</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0xf000</code></strong></td>
+      <td>Spatial Reuse 4</td>
+    </tr>
+  </tbody>
+</table>
+
+<table>
+  <tbody>
+    <tr>
+      <td><strong>bits</strong></td>
+      <td><strong>HE_MU format PPDU</strong></td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x000f</code></strong></td>
+      <td>Spatial Reuse</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x7ff0</code></strong></td>
+      <td>STA-ID of the user for which the data was captured</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x8000</code></strong></td>
+      <td>(reserved)</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="data5">data5</h2>
+
+<table>
+  <tbody>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x000f</code></strong></td>
+      <td>data Bandwidth/RU allocation (0=20, 1=40, 2=80, 3=160/80+80, 4=26-tone RU, 5=52-tone RU, 6=106-tone RU, 7=242-tone RU, 8=484-tone RU, 9=996-tone RU, 10=2x996-tone RU)</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x0030</code></strong></td>
+      <td>GI (0=0.8us, 1=1.6us, 2=3.2us, 3=reserved)</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x00c0</code></strong></td>
+      <td>LTF symbol size (0=unknown, 1=1x, 2=2x, 3=4x)</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x0700</code></strong></td>
+      <td>number of LTF symbols (0=1x, 1=2x, 2=4x, 3=6x, 4=8x, 5-7=reserved)</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x0800</code></strong></td>
+      <td>(reserved)</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x3000</code></strong></td>
+      <td>Pre-FEC Padding Factor</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x4000</code></strong></td>
+      <td>TxBF</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x8000</code></strong></td>
+      <td>PE Disambiguity</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="data-6">data 6</h2>
+
+<table>
+  <tbody>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x000f</code></strong></td>
+      <td>NSTS (actual number of space-time streams, 0=unknown, 1=1, etc.)</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x0010</code></strong></td>
+      <td>Doppler value</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x00e0</code></strong></td>
+      <td>(reserved)</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x7f00</code></strong></td>
+      <td>TXOP value</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x8000</code></strong></td>
+      <td>midamble periodicity (0=10, 1=20)</td>
+    </tr>
+  </tbody>
+</table>
+</p>
+      </section>
+    </div>
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p>Published with <a href="https://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
+  </body>
+</html>
+

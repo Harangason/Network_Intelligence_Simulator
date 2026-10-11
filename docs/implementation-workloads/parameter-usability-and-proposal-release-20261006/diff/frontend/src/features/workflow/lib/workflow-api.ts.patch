@@ -1,0 +1,17 @@
+--- before/frontend/src/features/workflow/lib/workflow-api.ts
++++ after/frontend/src/features/workflow/lib/workflow-api.ts
+@@ -860,10 +860,11 @@
+   selected_values:Record<string,unknown>;load_percent?:number;reason:string;hardware_evidence:false;
+   candidates:Array<{values:Record<string,unknown>;load_percent:number;fits:boolean}>;
+   alternatives:Array<{technology:string;values:Record<string,unknown>;load_percent:number;industry:string;hardware_change_required:true}>};
+-export type ParameterReview = WorkflowResourceRevision & {source:'CURRENT_CANONICAL_MODEL';bus_rate_plans?:BusRatePlan[];
++export type ParameterReview = WorkflowResourceRevision & {source:'CURRENT_CANONICAL_MODEL' | 'PENDING_PROPOSAL';bus_rate_plans?:BusRatePlan[];
++  proposal?: {proposal_id:string;revision:string;status:string} | null;
+   findings: import('@/features/communication/lib/technology-parameters').ParameterFinding[]};
+-export const getParameterReview = (projectId = readActiveProjectId()) => request<ParameterReview>(
+-  '/workflow/parameters/review', {headers:{'X-Project-ID':projectId}, signal:AbortSignal.timeout(180000)});
++export const getParameterReview = (projectId = readActiveProjectId(), proposalId?:string | null) => request<ParameterReview>(
++  '/workflow/parameters/review' + (proposalId ? '?proposal=' + encodeURIComponent(proposalId) : ''), {headers:{'X-Project-ID':projectId}, signal:AbortSignal.timeout(180000)});
+ export const loadProjectSimulationDefaults = (projectId:string, expectedToken:string, technologies:string[]) => request<WorkflowState>(
+   '/workflow/parameters/defaults', {method:'POST',headers:{'X-Project-ID':projectId},
+     body:JSON.stringify({expected_token:expectedToken,technologies}),signal:AbortSignal.timeout(180000)}).then(normalizeWorkflowState);

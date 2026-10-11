@@ -1,0 +1,16 @@
+--- before/backend/tests/test_routing_enabled.py
++++ after/backend/tests/test_routing_enabled.py
+@@ -1,3 +1,4 @@
++from backend.tests.native_transport_fixtures import lin_design, ethernet_mac
+ """Forwarding switches preserve local wire traffic and complete physical frames."""
+ from copy import deepcopy
+ 
+@@ -173,7 +174,7 @@
+     monkeypatch.setattr(capacity, 'list_routes', lambda **kwargs: deepcopy(rows))
+     service = capacity.CapacityTimingService('routing-off-test')
+     monkeypatch.setattr(service.workflow, 'get', lambda: {'project_id': 'routing-off-test', 'versions': default_versions(),
+-        'statuses': {key: 'COMPLETE' for key in default_statuses()}, 'parameters': {'technology': 'can_fd', 'bitrate': 500_000, 'data_bitrate': 2_000_000, 'networks': [{'id': 'motor-lin', 'technology': 'LIN', 'bitrate': 19_200}, {'id': 'system-can', 'technology': 'CAN_FD', 'bitrate': 500_000, 'data_bitrate': 2_000_000}]}, 'topology': {}})
++        'statuses': {key: 'COMPLETE' for key in default_statuses()}, 'parameters': {'technology': 'can_fd', 'bitrate': 500_000, 'data_bitrate': 2_000_000, 'networks': [{'id': 'motor-lin', 'technology': 'LIN', **lin_design(), 'bitrate': 19_200}, {'id': 'system-can', 'technology': 'CAN_FD', 'bitrate': 500_000, 'data_bitrate': 2_000_000}]}, 'topology': {}})
+     monkeypatch.setattr(service, 'latest', lambda: None)
+     before = service.calculate(persist=False)
+     rows.append(capacity_route('forbidden', 'frame', 'display', 'system-can', 'CAN_FD'))

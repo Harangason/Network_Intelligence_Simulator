@@ -120,6 +120,17 @@ def test_full_captured_model_and_all_routing_validate_without_rewriting_inputs(t
         assert not topology_port_findings(state['topology'], model.objects('HardwareNode'), model.objects('HardwareNetworkInterface'))
         assert all(not port['hardwareInterfaceId'].startswith('$')
                    for node in state['topology']['nodes'] for port in node['ports'])
+        actual_sources = {}
+        for route in model.routes():
+            if route.get('approval_state') != 'APPROVED':
+                continue
+            payload = route.get('payload') or {}
+            for message_id in [payload.get('message_id'), *(payload.get('message_ids') or [])]:
+                if message_id:
+                    actual_sources.setdefault(str(message_id), set()).add(str(route['source']['port_id']))
+        for message in model.objects('Message'):
+            if str(message['id']) in actual_sources:
+                assert str(message['hardware_interface_id']) in actual_sources[str(message['id'])], message['name']
         assert model.objects('Signal') == signal_encoding, 'Adding channels must not change any signal encoding.'
         assert {item['id']: {key: item.get(key) for key in ('dlc', 'cycle_ms', 'message_id_hex', 'direction')}
                 for item in model.objects('Message')} == message_frames

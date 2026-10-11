@@ -1,0 +1,28 @@
+--- before/backend/nis/agent/tools/proposal_service.py
++++ after/backend/nis/agent/tools/proposal_service.py
+@@ -321,10 +321,14 @@
+             # reviewable structural project model. The missing controller
+             # status remains explicit and still blocks communication release
+             # and preflight. Only this narrow structural proposal may defer it.
+-            if finding.get('code') == 'CAPACITY_UNVERIFIED':
++            if finding.get('code') in {'CAPACITY_UNVERIFIED', 'CAPACITY_DEVICE_EVIDENCE_MISSING',
++                                       'SIMULATION_CAPACITY_OVERLOAD'}:
+                 # A draft may preserve missing rate evidence for review. This
+                 # validates its structure, never its communication capacity;
+                 # capacity/preflight retain their independent evidence gate.
++                # The initial graph must remain reviewable so the subsequent
++                # topology/capacity repair can split overloaded shared buses.
++                # Preserve the measured overload as OPEN, never as a PASS.
+                 open_findings.append({**finding, 'severity': 'OPEN'})
+             elif (proposal_type == 'SIMPLE_PROJECT_STRUCTURE'
+                     and finding.get('code') == 'DEVICE_STATUS_MISSING'
+@@ -341,7 +345,8 @@
+     invalid_count = len({item['index'] for item in findings}) if findings and all('index' in item for item in findings) else len(findings)
+     return {"valid": not findings, "requested": len(changes), "valid_count": max(0, len(changes)-invalid_count),
+             "validation_scope": "MODEL_STRUCTURE",
+-            "capacity_status": "UNVERIFIED" if any(item.get('code') == 'CAPACITY_UNVERIFIED'
++            "capacity_status": "UNVERIFIED" if any(item.get('code') in {'CAPACITY_UNVERIFIED', 'CAPACITY_DEVICE_EVIDENCE_MISSING',
++                'SIMULATION_CAPACITY_OVERLOAD'}
+                 for item in open_findings) else "NOT_ASSESSED",
+             "findings": [*findings, *open_findings]}
+ 

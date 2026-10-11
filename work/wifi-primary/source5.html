@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <link rel="stylesheet" type="text/css" media="screen" href="/stylesheets/stylesheet.css">
+
+    <title>Radiotap - EHT</title>
+  </head>
+
+  <body>
+
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <a id="forkme_banner" href="https://github.com/radiotap/radiotap.github.io">View on GitHub</a>
+          <h1 id="project_title">Radiotap</h1>
+          <a href="/">Introduction</a> |
+          <a href="/fields/defined">defined fields</a> |
+          <a href="/fields/suggested">suggested fields</a> |
+          <a href="/fields/rejected">rejected fields</a> |
+          <a href="/fields/unofficial">unofficially used fields</a>
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+        <h1>EHT</h1>
+
+<p><dl>
+  <dt>Type</dt>
+  <dd>34</dd>
+  <dt>Structure</dt>
+  <dd>
+    <ul>
+      <li>u32 known</li>
+      <li>u32 data[9]</li>
+      <li>u32 user_info[] (Note this is variable length)</li>
+    </ul>
+  </dd>
+  <dt>Required Alignment</dt>
+  <dd>4</dd>
+  <dt>Unit(s)</dt>
+  <dd>none</dd>
+</dl>
+
+<h2 id="known">known</h2>
+
+<p>Note that for trigger-based (TB) PPDUs, the EHT-SIG isn’t present over the
+air as all the information for each station is provided in the trigger
+frame. Sniffer should - where possible - provide a subset of the OFDMA
+related fields to simplify understanding of the resulting capture (i.e. to
+be able to read it without having to go back to the prior trigger frame.)</p>
+
+<table>
+  <tbody>
+    <tr>
+      <td><strong>bits</strong></td>
+      <td><strong>OFDMA (including TB)</strong></td>
+      <td><strong>MU-MIMO</strong></td>
+      <td><strong>EHT sounding</strong></td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x00000001</code></strong></td>
+      <td>(reserved)</td>
+      <td>(reserved)</td>
+      <td>(reserved)</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x00000002</code></strong></td>
+      <td>Spatial Reuse Known</td>
+      <td>(same)</td>
+      <td>(same)</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x00000004</code></strong></td>
+      <td>GI (Guard Interval) Known</td>
+      <td>(same)</td>
+      <td>(same)</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x00000008</code></strong></td>
+      <td>(reserved)</td>
+      <td>(reserved)</td>
+      <td>(reserved)</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x00000010</code></strong></td>
+      <td>number of LTF symbols Known</td>
+      <td>(same)</td>
+      <td>(same)</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x00000020</code></strong></td>
+      <td>LDPC Extra Symbol Segment Known</td>
+      <td>(same)</td>
+      <td>(reserved)</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x00000040</code></strong></td>
+      <td>Pre-FEC Padding Factor Known</td>
+      <td>(same)</td>
+      <td>(reserved)</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x00000080</code></strong></td>
+      <td>PE Disambiguity Known</td>
+      <td>(same)</td>
+      <td>(reserved)</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x00000100</code></strong></td>
+      <td>Disregard Known</td>
+      <td>(same)</td>
+      <td>(reserved)</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x00000200</code></strong></td>
+      <td>(reserved)</td>
+      <td>(reserved)</td>
+      <td>Disregard Known</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x00001c00</code></strong></td>
+      <td>(reserved)</td>
+      <td>(reserved)</td>
+      <td>(reserved)</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x00002000</code></strong></td>
+      <td>CRC1 Known</td>
+      <td>(same)</td>
+      <td>(same)</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x00004000</code></strong></td>
+      <td>Tail1 Known</td>
+      <td>(same)</td>
+      <td>(same)</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x00008000</code></strong></td>
+      <td>CRC2 Known</td>
+      <td>(reserved)</td>
+      <td>(reserved)</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x00010000</code></strong></td>
+      <td>Tail2 Known</td>
+      <td>(reserved)</td>
+      <td>(reserved)</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x00020000</code></strong></td>
+      <td>(reserved)</td>
+      <td>(reserved)</td>
+      <td>NSS Known</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x00040000</code></strong></td>
+      <td>(reserved)</td>
+      <td>(reserved)</td>
+      <td>Beamformed Known</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x00080000</code></strong></td>
+      <td>(reserved)</td>
+      <td>Number Of Non-OFDMA Users Known</td>
+      <td>(reserved)</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x00100000</code></strong></td>
+      <td>(reserved)</td>
+      <td>User Encoding Block CRC Known</td>
+      <td>(reserved)</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x00200000</code></strong></td>
+      <td>(reserved)</td>
+      <td>User Encoding Block Tail Known</td>
+      <td>(reserved)</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x00400000</code></strong></td>
+      <td>RU/MRU Size Known</td>
+      <td>(same)</td>
+      <td>(reserved)</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x00800000</code></strong></td>
+      <td>RU/MRU Index Known</td>
+      <td>(same)</td>
+      <td>(reserved)</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x01000000</code></strong></td>
+      <td>RU Allocation (TB format) Known</td>
+      <td>(same)</td>
+      <td>(reserved)</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x02000000</code></strong></td>
+      <td>Primary 80 MHz Channel Position known</td>
+      <td>(same)</td>
+      <td>(same)</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0xfc000000</code></strong></td>
+      <td>(reserved)</td>
+      <td>(reserved)</td>
+      <td>(reserved)</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Note: The “RU/MRU Size” and “RU/MRU Index” fields are provided for sniffers
+that cannot provide the entirety of the RU allocations and user information
+fields (which would allow knowing exactly which AID got which RU allocation),
+but can only provide a subset of the information. They apply only to the
+captured AID. It’s advantageous to provide this even when all the RU
+Allocaction and User Information fields are known, so the display tool need
+not parse all of them.</p>
+
+<p>Some values here could also appear for non-OFDMA PPDUs.</p>
+
+<h2 id="data0">data[0]</h2>
+
+<table>
+  <tbody>
+    <tr>
+      <td><strong>bits</strong></td>
+      <td><strong>meaning</strong></td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x00000007</code></strong></td>
+      <td>(reserved)</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x00000078</code></strong></td>
+      <td>Spatial Reuse</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x00000180</code></strong></td>
+      <td>GI (0=0.8us, 1=1.6us, 2=3.2us, 3=reserved)</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x00000600</code></strong></td>
+      <td>LTF symbol size (0=unknown, 1=1x, 2=2x, 3=4x)</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x00003800</code></strong></td>
+      <td>number of LTF symbols (0=1x, 1=2x, 2=4x, 3=6x, 4=8x, 5-7=reserved)</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x00004000</code></strong></td>
+      <td>LDPC extra symbol segment</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x00018000</code></strong></td>
+      <td>Pre-FEC padding factor</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x00020000</code></strong></td>
+      <td>PE Disambiguity</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x000c0000</code></strong></td>
+      <td>Disregard (EHT sounding)</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x00300000</code></strong></td>
+      <td>(reserved) (EHT sounding)</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x003c0000</code></strong></td>
+      <td>Disregard (non EHT sounding)</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x03c00000</code></strong></td>
+      <td>CRC1 (OFDMA: B0-16+9N, EHT sounding: B0-15, non-OFDMA: B0-41)</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0xfc000000</code></strong></td>
+      <td>Tail1</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="data1">data[1]</h2>
+
+<table>
+  <tbody>
+    <tr>
+      <td><strong>bits</strong></td>
+      <td><strong>meaning</strong></td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x0000001f</code></strong></td>
+      <td>RU/MRU Size (0: 26, 1: 52, 2: 106, 3: 242, 4: 484, 5: 996, 6: 2x996, 7: 4x996, 8: 52+26, 9: 106+26, 10: 484+242, 11: 996+484, 12: 996+484+242, 13: 2x996+484, 14: 3x996, 15: 3x996+484)</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x00001fe0</code></strong></td>
+      <td>RU/MRU Index (see IEEE 802.11be Draft 1.3 section 36.3.2 “Subcarrier and resource allocation”)</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x003fe000</code></strong></td>
+      <td>RU Allocation 1</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x00400000</code></strong></td>
+      <td>RU Allocation 1 known</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x3f800000</code></strong></td>
+      <td>(reserved)</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0xc0000000</code></strong></td>
+      <td>Primary 80 MHz Channel Position (0: lowest, 3: highest in frequency)</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Note: The RU/MRU Size and RU/MRU Index are calculated fields, ideally the
+sniffer should provide them for all OFDMA and punctured non-OFDMA PPDUs to
+simplify filtering and other data uses.</p>
+
+<p>Note: The Primary 80 MHz channel position is numbered from low frequency to
+high frequency. Also note that it is required in order to decode the “RU
+Allocation (TB format)” field, since the decoding thereof requires doing the
+table lookup from 802.11be Table 9-53b (Lookup table for X1 and N) to have
+the correct values for interpretation of 802.11be Table 9-53a (Encoding of
+PS160 and RU Allocation subfields in an EHT variant User Info field).</p>
+
+<h2 id="data2-data6">data[2]-data[6]</h2>
+
+<table>
+  <tbody>
+    <tr>
+      <td><strong>bits</strong></td>
+      <td><strong>meaning</strong></td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x000001ff</code></strong></td>
+      <td>RU Allocation X</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x00000200</code></strong></td>
+      <td>RU Allocation X known</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x0007fc00</code></strong></td>
+      <td>RU Allocation (X + 1)</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x00080000</code></strong></td>
+      <td>RU Allocation (X + 1) known</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x1ff00000</code></strong></td>
+      <td>RU Allocation (X + 2)</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x20000000</code></strong></td>
+      <td>RU Allocation (X + 2) known</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0xc0000000</code></strong></td>
+      <td>(reserved)</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3 id="ru-allocation-field-order">RU Allocation field order</h3>
+
+<p>Together with the “RU Allocation 1” field from data[1], the RU Allocation
+fields shall be in the following order:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th style="text-align: left">RU Allocation</th>
+      <th style="text-align: center">20MHz</th>
+      <th style="text-align: center">40MHz</th>
+      <th style="text-align: center">80MHz</th>
+      <th style="text-align: center">160MHz</th>
+      <th style="text-align: center">320MHz</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="text-align: left">Content Channel 1 RU Allocation 1::1</td>
+      <td style="text-align: center">X</td>
+      <td style="text-align: center">X</td>
+      <td style="text-align: center">X</td>
+      <td style="text-align: center">X</td>
+      <td style="text-align: center">X</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">Content Channel 2 RU Allocation 1::1</td>
+      <td style="text-align: center">-</td>
+      <td style="text-align: center">X</td>
+      <td style="text-align: center">X</td>
+      <td style="text-align: center">X</td>
+      <td style="text-align: center">X</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">Content Channel 1 RU Allocation 1::2</td>
+      <td style="text-align: center">-</td>
+      <td style="text-align: center">-</td>
+      <td style="text-align: center">X</td>
+      <td style="text-align: center">X</td>
+      <td style="text-align: center">X</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">Content Channel 2 RU Allocation 1::2</td>
+      <td style="text-align: center">-</td>
+      <td style="text-align: center">-</td>
+      <td style="text-align: center">X</td>
+      <td style="text-align: center">X</td>
+      <td style="text-align: center">X</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">Content Channel 1 RU Allocation 2::1</td>
+      <td style="text-align: center">-</td>
+      <td style="text-align: center">-</td>
+      <td style="text-align: center">-</td>
+      <td style="text-align: center">X</td>
+      <td style="text-align: center">X</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">Content Channel 2 RU Allocation 2::1</td>
+      <td style="text-align: center">-</td>
+      <td style="text-align: center">-</td>
+      <td style="text-align: center">-</td>
+      <td style="text-align: center">X</td>
+      <td style="text-align: center">X</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">Content Channel 1 RU Allocation 2::2</td>
+      <td style="text-align: center">-</td>
+      <td style="text-align: center">-</td>
+      <td style="text-align: center">-</td>
+      <td style="text-align: center">X</td>
+      <td style="text-align: center">X</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">Content Channel 2 RU Allocation 2::2</td>
+      <td style="text-align: center">-</td>
+      <td style="text-align: center">-</td>
+      <td style="text-align: center">-</td>
+      <td style="text-align: center">X</td>
+      <td style="text-align: center">X</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">Content Channel 1 RU Allocation 2::3</td>
+      <td style="text-align: center">-</td>
+      <td style="text-align: center">-</td>
+      <td style="text-align: center">-</td>
+      <td style="text-align: center">-</td>
+      <td style="text-align: center">X</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">Content Channel 2 RU Allocation 2::3</td>
+      <td style="text-align: center">-</td>
+      <td style="text-align: center">-</td>
+      <td style="text-align: center">-</td>
+      <td style="text-align: center">-</td>
+      <td style="text-align: center">X</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">Content Channel 1 RU Allocation 2::4</td>
+      <td style="text-align: center">-</td>
+      <td style="text-align: center">-</td>
+      <td style="text-align: center">-</td>
+      <td style="text-align: center">-</td>
+      <td style="text-align: center">X</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">Content Channel 2 RU Allocation 2::4</td>
+      <td style="text-align: center">-</td>
+      <td style="text-align: center">-</td>
+      <td style="text-align: center">-</td>
+      <td style="text-align: center">-</td>
+      <td style="text-align: center">X</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">Content Channel 1 RU Allocation 2::5</td>
+      <td style="text-align: center">-</td>
+      <td style="text-align: center">-</td>
+      <td style="text-align: center">-</td>
+      <td style="text-align: center">-</td>
+      <td style="text-align: center">X</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">Content Channel 2 RU Allocation 2::5</td>
+      <td style="text-align: center">-</td>
+      <td style="text-align: center">-</td>
+      <td style="text-align: center">-</td>
+      <td style="text-align: center">-</td>
+      <td style="text-align: center">X</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">Content Channel 1 RU Allocation 2::6</td>
+      <td style="text-align: center">-</td>
+      <td style="text-align: center">-</td>
+      <td style="text-align: center">-</td>
+      <td style="text-align: center">-</td>
+      <td style="text-align: center">X</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">Content Channel 2 RU Allocation 2::6</td>
+      <td style="text-align: center">-</td>
+      <td style="text-align: center">-</td>
+      <td style="text-align: center">-</td>
+      <td style="text-align: center">-</td>
+      <td style="text-align: center">X</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="data7">data[7]</h2>
+
+<table>
+  <tbody>
+    <tr>
+      <td><strong>bits</strong></td>
+      <td><strong>meaning</strong></td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x0000000f</code></strong></td>
+      <td>CRC2 (OFDMA only: for RU Allocation-2)</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x000003f0</code></strong></td>
+      <td>Tail2 (OFDMA only: after RU Allocation-2)</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x00000c00</code></strong></td>
+      <td>(reserved)</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x0000f000</code></strong></td>
+      <td>NSS (EHT sounding)</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x00010000</code></strong></td>
+      <td>Beamformed (EHT sounding)</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x000e0000</code></strong></td>
+      <td>Number Of Non-OFDMA Users</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x00f00000</code></strong></td>
+      <td>User Encoding Block CRC</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x3f000000</code></strong></td>
+      <td>User Encoding Block Tail</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0xc0000000</code></strong></td>
+      <td>(reserved)</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="data8">data[8]</h2>
+
+<table>
+  <tbody>
+    <tr>
+      <td><strong>bits</strong></td>
+      <td><strong>meaning</strong></td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x00000001</code></strong></td>
+      <td>RU Allocation (TB format): PS 160</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x00000002</code></strong></td>
+      <td>RU Allocation (TB format): B0</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x000001fc</code></strong></td>
+      <td>RU Allocation (TB format): B7–B1</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0xfffffe00</code></strong></td>
+      <td>(reserved)</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Note: the <code class="language-plaintext highlighter-rouge">0x1ff</code> bits here indicate the RU Allocation for the captured
+station (AID) in the trigger-based (TB) format, per Table 9-53a “Encoding of
+PS160 and RU Allocation subfields in an EHT variant User Info field”. This
+may be given by the sniffer even for downlink OFDMA PPDUs if calculated from
+the RU Allocation from EHT-SIG for the given station. Note the bit split to
+ease cross-referencing Table 9-53a.</p>
+
+<h2 id="user_info-entry"><code class="language-plaintext highlighter-rouge">user_info</code> entry</h2>
+
+<p>Each <code class="language-plaintext highlighter-rouge">user_info</code> entry carries information for a given user entry
+in the EHT preamble. If multiple user fields are captured, ideally
+all of them are, and they should be given in the same order as they
+were ordered in the frame.</p>
+
+<p>Note that to simplify parsing we indicate non-MU-MIMO (e.g. OFDMA) and
+MU-MIMO information via separate known bits, so that parsers can show
+these fields without consulting other information to know the PPDU type.</p>
+
+<p>The “Data captured for this user” bit indicates which user the data was
+captured for that this radiotap header is attached to. It should be set
+for exactly one <code class="language-plaintext highlighter-rouge">user_info</code> entry in the entire radiotap header, even if
+potentially the entire EHT field is given multiple times.</p>
+
+<table>
+  <tbody>
+    <tr>
+      <td><strong>bits</strong></td>
+      <td><strong>non-MU-MIMO</strong></td>
+      <td><strong>MU-MIMO</strong></td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x00000001</code></strong></td>
+      <td>STA-ID known</td>
+      <td>(same)</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x00000002</code></strong></td>
+      <td>MCS known</td>
+      <td>(same)</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x00000004</code></strong></td>
+      <td>Coding known</td>
+      <td>(same)</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x00000008</code></strong></td>
+      <td>Reserved known</td>
+      <td>(reserved)</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x00000010</code></strong></td>
+      <td>NSS known</td>
+      <td>(reserved)</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x00000020</code></strong></td>
+      <td>Beamforming known</td>
+      <td>(reserved)</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x00000040</code></strong></td>
+      <td>(reserved)</td>
+      <td>Spatial Configuration known</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x00000080</code></strong></td>
+      <td>Data captured for this user</td>
+      <td>(same)</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x0007ff00</code></strong></td>
+      <td>STA-ID</td>
+      <td>(same)</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x00080000</code></strong></td>
+      <td>Coding</td>
+      <td>(same)</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x00f00000</code></strong></td>
+      <td>MCS</td>
+      <td>(same)</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x0f000000</code></strong></td>
+      <td>NSS (0=1 spatial stream, 1=2 spatial streams, …)</td>
+      <td>(overlap)</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x10000000</code></strong></td>
+      <td>Reserved</td>
+      <td>(overlap)</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x20000000</code></strong></td>
+      <td>Beamforming</td>
+      <td>(overlap)</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0x3f000000</code></strong></td>
+      <td>(overlap)</td>
+      <td>Spatial Configuration</td>
+    </tr>
+    <tr>
+      <td><strong><code class="language-plaintext highlighter-rouge">0xc0000000</code></strong></td>
+      <td>(reserved)</td>
+      <td>(reserved)</td>
+    </tr>
+  </tbody>
+</table>
+</p>
+      </section>
+    </div>
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p>Published with <a href="https://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
+  </body>
+</html>
+

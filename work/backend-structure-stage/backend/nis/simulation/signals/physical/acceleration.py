@@ -1,0 +1,14 @@
+from __future__ import annotations
+
+from typing import Any
+
+from backend.nis.simulation.signals.physical.common import clamp
+from backend.nis.simulation.signals.physical.common import number
+
+
+def acceleration(signal: Any, _time_s: float, context: Any, _state: Any) -> float:
+    target = number(
+        getattr(context, "commands", {}).get(signal.id),
+        number(signal.parameters.get("target_acceleration"), number(getattr(context, "system_state", {}).get("acceleration_mps2"), 0.0)),
+    )
+    return clamp(target, signal.minimum, signal.maximum)

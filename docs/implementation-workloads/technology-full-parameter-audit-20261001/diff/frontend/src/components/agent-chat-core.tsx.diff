@@ -1,0 +1,69 @@
+--- before/frontend/src/components/agent-chat-core.tsx
++++ after/frontend/src/components/agent-chat-core.tsx
+@@ -1114,6 +1114,9 @@
+   title: string;
+ }) {
+   const [domains, setDomains] = useState<TechnologyDomain[]>(STATIC_INDUSTRY_DOMAINS);
++  const [catalogLoaded, setCatalogLoaded] = useState(false);
++  const [catalogError, setCatalogError] = useState('');
++  const [catalogReload, setCatalogReload] = useState(0);
+   const [step, setStep] = useState(0);
+   const [projectName, setProjectName] = useState("");
+   const [selectedIndustry, setSelectedIndustry] = useState("custom");
+@@ -1359,19 +1362,24 @@
+ 
+   useEffect(() => {
+     let active = true;
+-    getCatalog()
++    setCatalogLoaded(false); setCatalogError('');
++    getCatalog({ strict: true })
+       .then((catalog) => {
+         if (!active) return;
+-        const nextDomains = catalog.domains.length ? catalog.domains : STATIC_INDUSTRY_DOMAINS;
++        if (!catalog.domains.length) throw new Error('Der vollständige Technologiekatalog enthält keine Profile.');
++        const nextDomains = catalog.domains;
+         setDomains(nextDomains);
++        setCatalogLoaded(true);
+         setSelectedIndustry((current) => nextDomains.some((domain) => domain.id === current)
+           ? current : nextDomains.find((domain) => domain.id === 'custom')?.id ?? nextDomains[0]?.id ?? 'custom');
+       })
+-      .catch(() => undefined);
++      .catch(error => {
++        if (active) { setDomains([]); setCatalogError(error instanceof Error ? error.message : 'Technologiekatalog konnte nicht geladen werden.'); }
++      });
+     return () => {
+       active = false;
+     };
+-  }, []);
++  }, [catalogReload]);
+ 
+   useEffect(() => {
+     let active = true;
+@@ -2733,6 +2741,7 @@
+     ...(domainMismatch && !domainMismatchAccepted ? [{ step: 'equipment', text: 'Industrieangabe und Geräte passen noch nicht zusammen.' }] : []),
+   ];
+   const primaryDisabled = effectiveBusy
++    || (phase === 'questionnaire' && !catalogLoaded)
+     || ((atLastStep || activeStepId === 'status') && startBlockers.length > 0)
+     || (activeStepId === "project" && (!projectReady || !taskReady))
+     || (activeStepId === "architecture" && !architectureReady);
+@@ -2967,7 +2976,8 @@
+         onChange={() => setScope(current => current.includes(option.id) ? current.filter(id => id !== option.id) : [...current, option.id])} />{option.label}</label>)}
+     </fieldset>
+     {statusError && <p role="alert">{statusError}</p>}
+-    <button type="button" className="button primary" disabled={effectiveBusy || !linkedDraftStatus?.ready || !projectName.trim() || !scope.length}
++    {catalogError && <p role="alert">{catalogError} <button type="button" onClick={() => setCatalogReload(value => value + 1)}>Technologiekatalog erneut laden</button></p>}
++    <button type="button" className="button primary" disabled={effectiveBusy || !catalogLoaded || !linkedDraftStatus?.ready || !projectName.trim() || !scope.length}
+       onClick={() => void submitLinkedDraft()}>{submitting ? 'Wird übernommen …' : 'Auftrag starten'}</button>
+   </section>;
+ 
+@@ -2986,6 +2996,9 @@
+           </button>
+         )}
+       </div>
++      {phase === 'questionnaire' && (catalogError
++        ? <p role="alert">{catalogError} <button type="button" onClick={() => setCatalogReload(value => value + 1)}>Technologiekatalog erneut laden</button></p>
++        : !catalogLoaded && <p role="status">Vollständiger Technologiekatalog wird geladen …</p>)}
+       <div className="agent-questionnaire-steps" aria-label="Rückfrage-Schritte">
+         {visibleSteps.map((item, index) => (
+           <button

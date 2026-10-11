@@ -1,0 +1,19 @@
+--- before/backend/tests/test_capacity_reserve_split.py
++++ after/backend/tests/test_capacity_reserve_split.py
+@@ -8,6 +8,7 @@
+ from backend.engineering.capacity.dimensioning import unique_streams, bus_schedule, policy_for
+ from backend.engineering.capacity.calculators import estimate_frame, utilization_percent
+ from backend.engineering.intelligence.network_planning import plan_network_distribution
++from backend.tests.native_transport_fixtures import lin_design
+ 
+ 
+ def fixture():
+@@ -71,7 +72,7 @@
+ def test_slot_reserve_is_distinct_from_a_met_stress_target(requirement):
+     data = fixture()
+     data['parameters']['communication_sizing']['reserve_requirement'] = requirement
+-    frame = estimate_frame('LIN', 3, {'bitrate': 19200})
++    frame = estimate_frame('LIN', 3, {'bitrate': 19200, **lin_design()})
+     nominal = utilization_percent(frame.transmission_time_s, 10)
+     rows = []
+     for index in range(2):

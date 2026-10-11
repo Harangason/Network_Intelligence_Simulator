@@ -1,0 +1,1034 @@
+from contextlib import nullcontext
+import json
+import pytest
+
+from backend.engineering.capacity.calculators import (
+    clock_drift_ms,
+    classify_load,
+    estimate_frame,
+    queueing_delay_ms,
+    scheduled_queueing_delay_ms,
+    utilization_percent,
+)
+from backend.engineering.capacity import service as capacity_service_module
+from backend.engineering.capacity.service import CapacityTimingService, PreflightService, parameters_for_protocol, preflight_warning_signature
+from backend.engineering.workflow.models import default_statuses, default_versions, set_step_status, transition_state
+from backend.engineering.workflow import service as workflow_service_module
+from backend.engineering.workflow.service import (
+    WorkflowStatusService,
+    WorkflowConflictError,
+    is_topology_layout_only_change,
+    normalize_engineering_wizard_settings,
+)
+
+
+def test_topology_artifact_accepts_canonical_hardware_interface_ports():
+    topology = {
+        "nodes": [
+            {
+                "id": "source",
+                "name": "Source",
+                "kind": "sensor",
+                "engineeringId": "hardware-source",
+                "ports": [{"id": "source-port", "hardwareInterfaceId": "hwi-source"}],
+            },
+            {
+                "id": "target",
+                "name": "Target",
+                "kind": "ecu",
+                "engineeringId": "hardware-target",
+                "ports": [{"id": "target-port", "hardwareInterfaceId": "hwi-target"}],
+            },
+        ],
+        "edges": [{
+            "id": "edge",
+            "source": "source",
+            "sourcePort": "source-port",
+            "target": "target",
+            "targetPort": "target-port",
+            "engineeringRelationId": "relation",
+        }],
+    }
+
+    result = WorkflowStatusService._topology_artifact_check(topology)
+
+    assert result["complete"] is True
+    assert result["status"] == "COMPLETE"
+    assert result["invalid"] == {"nodes": 0, "edges": 0}
+
+
+def test_topology_artifact_accepts_unsynchronized_generated_segment_identity():
+    topology = {
+        "nodes": [
+            {"id": "source", "name": "Source", "kind": "sensor", "engineeringId": "hardware-source",
+             "ports": [{"id": "source-port", "hardwareInterfaceId": "hwi-source"}]},
+            {"id": "target", "name": "Target", "kind": "ecu", "engineeringId": "hardware-target",
+             "ports": [{"id": "target-port", "hardwareInterfaceId": "hwi-target"}]},
+        ],
+        "edges": [{
+            "id": "edge", "source": "source", "sourcePort": "source-port",
+            "target": "target", "targetPort": "target-port",
+            "engineeringSegmentId": "73245dae-0684-4b27-bf56-2701890fd886:segment:0",
+            "origin": "ROUTING_TABLE",
+        }],
+    }
+
+    result = WorkflowStatusService._topology_artifact_check(topology)
+
+    assert result["complete"] is True
+    assert result["invalid"] == {"nodes": 0, "edges": 0}
+
+
+def test_topology_artifact_keeps_explicitly_isolated_hardware_valid():
+    topology = {
+        "nodes": [
+            {"id": "source", "name": "Source", "kind": "sensor", "engineeringId": "hardware-source",
+             "ports": [{"id": "source-port", "hardwareInterfaceId": "hwi-source"}]},
+            {"id": "target", "name": "Target", "kind": "ecu", "engineeringId": "hardware-target",
+             "ports": [{"id": "target-port", "hardwareInterfaceId": "hwi-target"}]},
+            {"id": "unbound", "name": "Unbound Controller", "kind": "ecu", "engineeringId": "hardware-unbound",
+             "ports": []},
+        ],
+        "edges": [{
+            "id": "edge", "source": "source", "sourcePort": "source-port",
+            "target": "target", "targetPort": "target-port",
+            "engineeringSegmentId": "confirmed-segment", "origin": "ROUTING_TABLE",
+        }],
+    }
+
+    result = WorkflowStatusService._topology_artifact_check(topology)
+
+    assert result["complete"] is True
+    assert result["invalid"] == {"nodes": 0, "edges": 0}
+    assert topology["nodes"][2]["ports"] == []
+
+
+def test_engineering_change_marks_existing_dependent_results_outdated():
+    state = {
+        "versions": default_versions(),
+        "statuses": {step: "COMPLETE" for step in default_statuses()},
+        "stale_reasons": {},
+    }
+
+    changed = transition_state(state, "engineering_model", "Model changed")
+
+    assert changed["versions"]["engineering_model"] == 1
+    assert changed["statuses"]["engineering_model"] == "COMPLETE"
+    assert changed["statuses"]["routing"] == "OUTDATED"
+    assert changed["statuses"]["results_analysis"] == "OUTDATED"
+    assert changed["stale_reasons"]["simulation"] == "Model changed"
+    assert state["versions"]["engineering_model"] == 0
+
+
+def test_parameter_change_only_invalidates_calculation_and_later_steps():
+    state = {
+        "versions": default_versions(),
+        "statuses": {step: "COMPLETE" for step in default_statuses()},
+        "stale_reasons": {},
+    }
+
+    changed = transition_state(state, "parameters", "Parameters changed")
+
+    assert changed["statuses"]["engineering_model"] == "COMPLETE"
+    assert changed["statuses"]["network_editor"] == "COMPLETE"
+    assert changed["statuses"]["capacity_timing"] == "OUTDATED"
+    assert changed["statuses"]["validation"] == "OUTDATED"
+    assert changed["statuses"]["simulation"] == "OUTDATED"
+
+
+@pytest.mark.parametrize("parameter_status", ["EMPTY", "APPROVED"])
+def test_parameters_require_an_artifact_and_ignore_unrelated_upstream_changes(parameter_status):
+    state = {
+        "versions": default_versions(),
+        "statuses": {**default_statuses(), "parameters": parameter_status},
+        "stale_reasons": {},
+    }
+
+    changed = transition_state(state, "engineering_model", "Model changed")
+
+    assert default_statuses()["parameters"] == "EMPTY"
+    assert changed["statuses"]["parameters"] == parameter_status
+    assert "parameters" not in changed["stale_reasons"]
+
+
+def test_parameter_artifact_requires_saved_values_before_approval():
+    defaults = WorkflowStatusService._parameter_artifact_check({})
+    complete = WorkflowStatusService._parameter_artifact_check({
+        "industry": "automotive",
+        "technology": "can_fd",
+        "formats": ["universal-jsonl"],
+        "bitrate": 2_000_000,
+        "cycle_ms": 10,
+        "payload_bytes": 64,
+        "queue_size": 256,
+        "warning_threshold": 45,
+        "critical_threshold": 60,
+        "overload_threshold": 75,
+        "target_bus_load_percent": 45,
+    })
+
+    assert defaults == {
+        "status": "EMPTY",
+        "complete": False,
+        "uses_defaults": False,
+        "required": {},
+        "invalid_numeric": [],
+    }
+    assert complete["status"] == "APPROVED"
+    assert complete["complete"] is True
+    assert complete["uses_defaults"] is False
+
+
+def test_legacy_empty_parameter_approval_is_reconciled_and_dependents_invalidated(monkeypatch):
+    service = WorkflowStatusService("legacy-empty-parameters")
+    state = {
+        "statuses": {step: "APPROVED" for step in default_statuses()},
+        "parameters": {},
+        "stale_reasons": {},
+    }
+    # Keep unrelated source artifacts complete so only the real parameter check
+    # can cause invalidation. A held row lock prevents opportunistic persistence.
+    monkeypatch.setattr(service, "_source_artifact_check", lambda connection, step, current:
+        service._parameter_artifact_check(current["parameters"]) if step == "parameters"
+        else {"status": "APPROVED", "complete": True})
+
+    class LockedConnection:
+        def execute(self, query, params):
+            assert "FOR UPDATE SKIP LOCKED" in query
+            return self
+
+        def fetchone(self):
+            return None
+
+    checks = service._bootstrap_statuses(LockedConnection(), state)
+    assert checks["parameters"]["complete"] is False
+    assert state["statuses"]["parameters"] == "EMPTY"
+    assert state["statuses"]["routing"] == "APPROVED"
+    for step in ("capacity_timing", "validation", "simulation", "results_analysis", "data_science_intelligence"):
+        assert state["statuses"][step] == "OUTDATED"
+        assert "Artefakt" in state["stale_reasons"][step]
+
+
+def test_empty_future_steps_stay_empty_until_a_result_exists():
+    state = {
+        "versions": default_versions(),
+        "statuses": default_statuses(),
+        "stale_reasons": {},
+    }
+
+    changed = transition_state(state, "routing", "Route changed")
+
+    assert changed["statuses"]["routing"] == "COMPLETE"
+    assert changed["statuses"]["capacity_timing"] == "EMPTY"
+    assert "capacity_timing" not in changed["stale_reasons"]
+
+
+def test_routing_artifact_check_rejects_gateway_fanout_interfaces():
+    class Result:
+        def __init__(self, row):
+            self.row = row
+
+        def fetchone(self):
+            return self.row
+
+        def fetchall(self):
+            return []
+
+    class Connection:
+        def __init__(self):
+            self.calls = 0
+
+        def execute(self, query, values):
+            self.calls += 1
+            if self.calls == 1:
+                return Result({
+                    "total": 250,
+                    "approved": 0,
+                    "valid": 0,
+                    "invalid": 0,
+                    "conflicts": 0,
+                })
+            return Result({"routes": 247, "interfaces": 247})
+
+    service = WorkflowStatusService("analysis-project")
+
+    result = service._routing_artifact_check(Connection())
+
+    assert result["status"] == "ERROR"
+    assert result["complete"] is False
+    assert result["counts"]["gateway_fanout_routes"] == 247
+    assert result["counts"]["gateway_fanout_interfaces"] == 247
+
+
+def test_completed_simulation_drops_previous_recalculation_reason():
+    state = {
+        "versions": default_versions(),
+        "statuses": {**default_statuses(), "simulation": "OUTDATED"},
+        "stale_reasons": {"simulation": "Validation / Preflight wurde neu ausgefuehrt."},
+    }
+
+    completed = set_step_status(state, "simulation", "COMPLETE")
+
+    assert completed["statuses"]["simulation"] == "COMPLETE"
+    assert "simulation" not in completed["stale_reasons"]
+
+
+def test_can_fd_uses_separate_arbitration_and_data_phases():
+    estimate = estimate_frame(
+        "CAN_FD",
+        64,
+        {"bitrate": 2_000_000, "arbitration_bitrate": 500_000, "data_bitrate": 2_000_000},
+    )
+
+    assert estimate.calculation_model == "CAN_FD_PHASE_ESTIMATE"
+    assert estimate.frame_bits > 64 * 8
+    assert estimate.transmission_time_s > 0
+    assert estimate.is_generic_estimate is False
+
+
+def test_ethernet_applies_minimum_wire_footprint():
+    estimate = estimate_frame("ETHERNET", 1, {"bitrate": 100_000_000})
+
+    assert estimate.frame_bits == 84 * 8
+    assert estimate.calculation_model == "ETHERNET_WIRE_ESTIMATE"
+
+
+def test_unknown_protocol_is_explicitly_generic():
+    estimate = estimate_frame("CUSTOM_RADIO", 20, {"bitrate": 1_000_000})
+
+    assert estimate.is_generic_estimate is True
+    assert estimate.calculation_model == "GENERIC_ESTIMATE"
+
+
+def test_mixed_network_bitrates_do_not_inherit_the_primary_can_speed():
+    parameters = {"technology": "can_fd", "bitrate": 2_000_000, "arbitration_bitrate": 500_000, "data_bitrate": 8_000_000}
+    assert parameters_for_protocol("CAN_FD", parameters) == parameters
+    ethernet = parameters_for_protocol("Ethernet", parameters)
+    lin = parameters_for_protocol("LIN", parameters)
+    assert "bitrate" not in ethernet
+    assert "bitrate" not in lin
+    assert "data_bitrate" not in ethernet
+    assert estimate_frame("LIN", 8, lin).to_dict()["transmission_time_s"] is None
+    assert parameters_for_protocol("ETHERNET", parameters, {"bitrate": 1_000_000_000})["bitrate"] == 1_000_000_000
+    assert parameters_for_protocol("ETHERNET", {"technology": "automotive_ethernet", "bitrate": 1_000_000_000})["bitrate"] == 1_000_000_000
+    assert parameters_for_protocol("LIN", {"bitrate": 9_600})["bitrate"] == 9_600
+
+
+def test_utilization_queueing_and_thresholds_are_monotonic():
+    load = utilization_percent(0.001, 10)
+
+    assert load == 10
+    assert queueing_delay_ms(0.001, 70) > queueing_delay_ms(0.001, 20)
+    assert classify_load(59.9, {"warning": 60, "critical": 80, "overload": 100}) == "NORMAL"
+    assert classify_load(85, {"warning": 60, "critical": 80, "overload": 100}) == "CRITICAL"
+    assert classify_load(105, {"warning": 60, "critical": 80, "overload": 100}) == "OVERLOAD"
+
+
+def test_scheduling_policy_and_priority_change_queueing_estimate():
+    fifo = scheduled_queueing_delay_ms(0.001, 70, "FIFO", 50)
+    strict_high = scheduled_queueing_delay_ms(0.001, 70, "STRICT_PRIORITY", 100)
+    strict_low = scheduled_queueing_delay_ms(0.001, 70, "STRICT_PRIORITY", 0)
+
+    assert strict_high < fifo < strict_low
+
+
+def test_clock_drift_is_reported_in_milliseconds():
+    assert clock_drift_ms(20, 10) == 0.2
+
+
+def test_workflow_state_always_exposes_complete_agent_context():
+    row = {
+        "project_id": "project-a",
+        "active_step": "capacity_timing",
+        "versions": {},
+        "statuses": {},
+        "stale_reasons": {},
+        "context": {"selected_network": "can-a"},
+        "parameters": {},
+        "topology": {},
+        "updated_at": None,
+    }
+
+    state = WorkflowStatusService._state(row)
+
+    assert state["context"] == {
+        "active_project": "project-a",
+        "active_workflow_step": "capacity_timing",
+        "selected_object": None,
+        "selected_route": None,
+        "selected_network": "can-a",
+        "selected_signal": None,
+        "selected_simulation": None,
+    }
+
+
+def test_workflow_context_persists_agent_execution_without_losing_wizard(monkeypatch):
+    state = {"active_step": "engineering_model", "context": {
+        "agent_wizard_status": {"run_id": "run-a", "network_architecture": {"approved": True}},
+        "engineering_scope_rules": {"hardware_counts": {"gateways": 1}},
+    }}
+    run = {"run_id": "run-a", "state": "BLOCKED", "step": "routing",
+           "completed": 36, "total": 150, "message": "Routing validation failed.",
+           "updated_at": "2026-08-30T19:00:00Z"}
+
+    class Connection:
+        def execute(self, query, parameters):
+            state["context"] = json.loads(parameters[1])
+            assert parameters[2] == "project-a"
+
+    service = WorkflowStatusService("project-a")
+    monkeypatch.setattr(workflow_service_module, "get_connection", lambda: nullcontext(Connection()))
+    monkeypatch.setattr(service, "_get_locked", lambda connection: state)
+    monkeypatch.setattr(service, "get", lambda **kwargs: state)
+    request = {"version": 1, "prompt": "confirmed wizard request", "sha256": "request-hash"}
+    saved = service.set_context({"agent_execution": run, "wizard_request": request,
+                                 "unknown_context_key": "ignored"})
+
+    assert saved["context"]["agent_execution"] == run
+    assert saved["context"]["wizard_request"] == request
+    assert saved["context"]["agent_wizard_status"]["network_architecture"]["approved"] is True
+    assert saved["context"]["engineering_scope_rules"]["hardware_counts"]["gateways"] == 1
+    assert saved["context"]["active_project"] == "project-a"
+    assert "unknown_context_key" not in saved["context"]
+
+
+def test_engineering_wizard_settings_are_normalized_and_project_persistent(monkeypatch):
+    state = {"active_step": "engineering_model", "context": {
+        "agent_wizard_status": {"run_id": "run-a"},
+    }}
+
+    class Connection:
+        def execute(self, query, parameters):
+            state["context"] = json.loads(parameters[1])
+
+    service = WorkflowStatusService("project-a")
+    monkeypatch.setattr(workflow_service_module, "get_connection", lambda: nullcontext(Connection()))
+    monkeypatch.setattr(service, "_get_locked", lambda connection: state)
+    monkeypatch.setattr(service, "get", lambda **kwargs: state)
+    saved = service.set_context({
+        "engineering_wizard_settings": {
+            "project_name": "  NIS Restbussimulation  ",
+            "model_type": "automotive",
+            "scope_ids": ["routing", "routing", "invalid", "simulation"],
+            "process_ids": ["review_gate", "invalid"],
+            "unknown": "ignored",
+        },
+    })
+
+    assert saved["context"]["engineering_wizard_settings"] == {
+        "project_name": "NIS Restbussimulation",
+        "model_type": "automotive",
+        "scope_ids": ["routing", "simulation"],
+        "process_ids": ["review_gate", "approve_after_allow"],
+        "bus_participant_limits": {"can":64,"can_fd":64,"can_xl":64,"lin":64,"automotive_ethernet":256,"flexray":64},
+    }
+    assert saved["context"]["agent_wizard_status"]["run_id"] == "run-a"
+    assert saved["context"]["active_project"] == "project-a"
+
+
+def test_engineering_wizard_settings_fall_back_to_safe_complete_defaults():
+    normalized = normalize_engineering_wizard_settings({
+        "project_name": 17,
+        "model_type": "not valid!",
+        "scope_ids": [],
+        "process_ids": ["unknown"],
+    })
+
+    assert normalized["project_name"] == ""
+    assert normalized["model_type"] == "automotive"
+    assert normalized["scope_ids"] == list(workflow_service_module.WIZARD_SCOPE_IDS)
+    assert normalized["process_ids"] == list(workflow_service_module.WIZARD_PROCESS_IDS)
+
+
+def test_engineering_wizard_settings_keep_one_click_approval_mandatory():
+    normalized = normalize_engineering_wizard_settings({
+        "process_ids": ["defaults"],
+    })
+
+    assert normalized["process_ids"] == ["defaults", "approve_after_allow"]
+
+
+def test_canceled_wizard_run_is_terminal_for_late_status_writes(monkeypatch):
+    state = {"active_step": "engineering_model", "context": {
+        "agent_execution": {"run_id": "run-a", "state": "CANCELED"},
+        "agent_wizard_status": {"run_id": "run-a", "status": "CANCELED"},
+    }}
+
+    class Connection:
+        def execute(self, query, parameters):
+            state["context"] = json.loads(parameters[1])
+
+    service = WorkflowStatusService("project-a")
+    monkeypatch.setattr(workflow_service_module, "get_connection", lambda: nullcontext(Connection()))
+    monkeypatch.setattr(service, "_get_locked", lambda connection: state)
+    monkeypatch.setattr(service, "get", lambda **kwargs: state)
+
+    saved = service.set_context({
+        "agent_execution": {"run_id": "run-a", "state": "RUNNING"},
+        "agent_wizard_status": {"run_id": "run-a", "status": "RUNNING"},
+    })
+
+    assert saved["context"]["agent_execution"]["state"] == "CANCELED"
+    assert saved["context"]["agent_wizard_status"]["status"] == "CANCELED"
+
+
+def test_workflow_state_hides_stale_reason_after_step_is_complete():
+    row = {
+        "project_id": "project-a",
+        "active_step": "simulation",
+        "versions": {},
+        "statuses": {"simulation": "COMPLETE", "results_analysis": "ERROR"},
+        "stale_reasons": {
+            "simulation": "Validation / Preflight wurde neu ausgefuehrt.",
+            "results_analysis": "Kein Ergebnisartefakt vorhanden.",
+        },
+        "context": {},
+        "parameters": {},
+        "topology": {},
+        "updated_at": None,
+    }
+
+    state = WorkflowStatusService._state(row)
+
+    assert "simulation" not in state["stale_reasons"]
+    assert state["stale_reasons"]["results_analysis"] == "Kein Ergebnisartefakt vorhanden."
+
+
+def test_workflow_summary_omits_heavy_simulation_and_model_payloads(monkeypatch):
+    row = {
+        "project_id": "project-summary",
+        "active_step": "data_science_intelligence",
+        "versions": {},
+        "statuses": {},
+        "stale_reasons": {},
+        "context": {},
+        "parameters": {"bitrate": 2_000_000},
+        "topology": {"nodes": [{"id": "node-1"}], "edges": []},
+        "updated_at": None,
+    }
+
+    class Result:
+        def __init__(self, value):
+            self.value = value
+
+        def fetchone(self):
+            return self.value
+
+        def fetchall(self):
+            return self.value
+
+    class Connection:
+        def execute(self, query, _params=None):
+            statement = str(query)
+            if "INSERT INTO engineering_workflow_projects" in statement:
+                return Result(None)
+            if "SELECT * FROM engineering_workflow_projects" in statement:
+                return Result(row)
+            if "FROM engineering_analysis_snapshots" in statement:
+                return Result([])
+            if "FROM engineering_simulation_snapshots" in statement:
+                raise AssertionError("Summary must not load simulation details.")
+            raise AssertionError(statement)
+
+    monkeypatch.setattr(workflow_service_module, "get_connection", lambda: nullcontext(Connection()))
+    monkeypatch.setattr(WorkflowStatusService, "_bootstrap_statuses", lambda *_args: {})
+
+    state = WorkflowStatusService("project-summary").get(summary=True)
+
+    assert state["project_id"] == "project-summary"
+    assert len(state["steps"]) == 9
+    assert state["parameters"] == {}
+    assert state["topology"] == {}
+    assert state["simulation_snapshots"] == []
+
+
+def test_topology_layout_change_ignores_only_visual_fields():
+    current = {
+        "nodes": [
+            {
+                "id": "gateway",
+                "kind": "gateway",
+                "name": "Gateway",
+                "x": 10,
+                "y": 20,
+                "ports": [
+                    {"id": "port-a", "name": "CAN", "bus": "can_fd", "side": "left", "offset": 0.5}
+                ],
+            }
+        ],
+        "edges": [],
+    }
+    rearranged = {
+        "nodes": [
+            {
+                **current["nodes"][0],
+                "x": 500,
+                "y": 160,
+                "width": 190,
+                "height": 100,
+                "ports": [{**current["nodes"][0]["ports"][0], "side": "right", "offset": 0.75}],
+            }
+        ],
+        "edges": [],
+    }
+    renamed = {
+        **rearranged,
+        "nodes": [{**rearranged["nodes"][0], "name": "Changed Gateway"}],
+    }
+
+    assert is_topology_layout_only_change(current, rearranged) is True
+    assert is_topology_layout_only_change(current, current) is False
+    assert is_topology_layout_only_change(current, renamed) is False
+
+
+def test_topology_layout_is_stored_as_project_scoped_node_rows(monkeypatch):
+    rows = []
+
+    class Result:
+        def __init__(self, value=None):
+            self.value = value
+
+        def fetchall(self):
+            return self.value or []
+
+        def fetchone(self):
+            return self.value
+
+    class Connection:
+        def execute(self, query, parameters=None):
+            statement = " ".join(str(query).split())
+            if statement.startswith("SELECT 1 FROM engineering_deleted_projects"):
+                return Result()
+            if statement.startswith("INSERT INTO engineering_workflow_projects"):
+                return Result()
+            if statement.startswith("DELETE FROM engineering_topology_layouts"):
+                rows.clear()
+                return Result()
+            if statement.startswith("INSERT INTO engineering_topology_layouts"):
+                rows.append({
+                    "node_id": parameters[3],
+                    "x": parameters[4],
+                    "y": parameters[5],
+                    "width": parameters[6],
+                    "height": parameters[7],
+                    "ports": json.loads(parameters[8]),
+                    "updated_at": None,
+                })
+                return Result()
+            if "FROM engineering_topology_layouts" in statement:
+                return Result(list(rows))
+            raise AssertionError(statement)
+
+    monkeypatch.setattr(workflow_service_module, "get_connection", lambda: nullcontext(Connection()))
+    service = WorkflowStatusService("project-layout")
+    saved = service.save_topology_layout("topology-a", 16, [{
+        "node_id": "motor",
+        "x": 120,
+        "y": 240,
+        "width": 168,
+        "ports": {"motor-lin": {"side": "bottom", "offset": 1.5}},
+    }])
+
+    assert saved["project_id"] == "project-layout"
+    assert saved["topology_key"] == "topology-a"
+    assert saved["nodes"] == [{
+        "node_id": "motor",
+        "x": 120.0,
+        "y": 240.0,
+        "width": 168.0,
+        "height": None,
+        "ports": {"motor-lin": {"side": "bottom", "offset": 1.0}},
+        "updated_at": None,
+    }]
+
+
+def test_preflight_maps_network_editor_status_to_network_category(monkeypatch):
+    state = {
+        "versions": default_versions(),
+        "statuses": {
+            **default_statuses(),
+            "engineering_model": "COMPLETE",
+            "routing": "COMPLETE",
+            "network_editor": "IN_PROGRESS",
+            "parameters": "COMPLETE",
+            "capacity_timing": "COMPLETE",
+        },
+        "parameters": {},
+        "topology": {"nodes": [], "edges": []},
+    }
+    service = PreflightService("analysis-project")
+    monkeypatch.setattr(service.workflow, "get", lambda: state)
+    monkeypatch.setattr(service.workflow, "latest_analysis", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(
+        service.workflow,
+        "create_analysis_snapshot",
+        lambda *_args, **_kwargs: {"id": "preflight-snapshot"},
+    )
+    monkeypatch.setattr(capacity_service_module, "list_objects", lambda *_args, **_kwargs: [])
+    monkeypatch.setattr(capacity_service_module, "list_routes", lambda **_kwargs: [])
+
+    response = service.run()
+
+    network_codes = {item["code"] for item in response["category_checks"]["network"]}
+    assert "WORKFLOW_STEP_NOT_READY" in network_codes
+    assert response["preflight_status"] == "BLOCKED"
+    assert response["ready_for_simulation"] is False
+
+
+def test_preflight_accepts_bound_direct_io_without_network_parent_or_route(monkeypatch):
+    state = {
+        "versions": default_versions(),
+        "statuses": {step: "COMPLETE" for step in default_statuses()},
+        "parameters": {},
+        "topology": {"nodes": [
+            {"id": "source", "engineeringId": "sensor", "name": "sensor", "ports": []},
+            {"id": "destination", "engineeringId": "controller", "name": "controller", "ports": []},
+            {"id": "orphan", "engineeringId": "orphan", "name": "orphan", "ports": []},
+        ], "edges": []},
+    }
+    binding = {"signal_type": "GPIO", "physical_port_ref": "port",
+               "source_hardware_node_ref": "sensor", "destination_hardware_node_ref": "controller",
+               "validation_status": "REVIEW_REQUIRED"}
+    signal = {"id": "direct", "name": "direct", "message_id": None,
+              "configuration": {"direct_signal_binding": binding}}
+    service = PreflightService("analysis-project")
+    monkeypatch.setattr(service.workflow, "get", lambda: state)
+    monkeypatch.setattr(service.workflow, "latest_analysis", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(service.workflow, "create_analysis_snapshot", lambda *_args, **_kwargs: {"id": "snapshot"})
+    monkeypatch.setattr(capacity_service_module, "list_objects",
+                        lambda kind, **_kwargs: [signal] if kind == "Signal" else [])
+    monkeypatch.setattr(capacity_service_module, "list_routes", lambda **_kwargs: [])
+
+    result = service.run()
+
+    codes = {finding["code"] for finding in result["findings"]}
+    assert "SIGNAL_PARENT_MISSING" not in codes
+    assert "SIMULATION_SCOPE_UNCOVERED" not in codes
+    assert result["scope_coverage"]["transport_exclusions"][0]["reason_code"] == "DIRECT_IO_NOT_NETWORK_TRANSPORT"
+    assert [finding["message"] for finding in result["findings"] if finding["code"] == "NETWORK_NODE_DISCONNECTED"] == [
+        "Node orphan ist nicht verbunden."]
+    assert result["ready_for_simulation"] is False
+
+
+def test_preflight_rejects_rate_outside_technology_profile(monkeypatch):
+    state = {
+        "versions": default_versions(),
+        "statuses": {step: "COMPLETE" for step in default_statuses()},
+        "parameters": {"technology": "lin", "bitrate": 2_000_000},
+        "topology": {"nodes": [], "edges": []},
+    }
+    service = PreflightService("analysis-project")
+    monkeypatch.setattr(service.workflow, "get", lambda: state)
+    monkeypatch.setattr(service.workflow, "latest_analysis", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(service.workflow, "create_analysis_snapshot", lambda *_args, **_kwargs: {"id": "snapshot"})
+    monkeypatch.setattr(capacity_service_module, "list_objects", lambda *_args, **_kwargs: [])
+    monkeypatch.setattr(capacity_service_module, "list_routes", lambda **_kwargs: [])
+
+    result = service.run()
+
+    assert any(item["code"] == "TECHNOLOGY_PARAMETER_OUT_OF_RANGE" for item in result["category_checks"]["technology"])
+    assert result["preflight_status"] == "BLOCKED"
+
+
+@pytest.mark.parametrize("technology", ["lin", "can_fd", "ethernet"])
+def test_preflight_does_not_treat_default_rates_as_configured(monkeypatch, technology):
+    state = {
+        "versions": default_versions(),
+        "statuses": {step: "COMPLETE" for step in default_statuses()},
+        "parameters": {"technology": technology},
+        "topology": {"nodes": [], "edges": []},
+    }
+    service = PreflightService("analysis-project")
+    monkeypatch.setattr(service.workflow, "get", lambda: state)
+    monkeypatch.setattr(service.workflow, "latest_analysis", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(service.workflow, "create_analysis_snapshot", lambda *_args, **_kwargs: {"id": "snapshot"})
+    monkeypatch.setattr(capacity_service_module, "list_objects", lambda *_args, **_kwargs: [])
+    monkeypatch.setattr(capacity_service_module, "list_routes", lambda **_kwargs: [])
+
+    result = service.run()
+
+    findings = result["category_checks"]["technology"]
+    assert any(item["code"] == "TECHNOLOGY_PARAMETER_INVALID" for item in findings)
+    assert result["preflight_status"] == "BLOCKED"
+    assert result["ready_for_simulation"] is False
+
+
+@pytest.mark.parametrize("selection", [{}, {"technology": None}, {"technology": ""}, {"technology": "  "}])
+def test_preflight_missing_selection_does_not_inherit_default_technology(monkeypatch, selection):
+    state = {
+        "versions": default_versions(),
+        "statuses": {step: "COMPLETE" for step in default_statuses()},
+        "parameters": selection,
+        "topology": {"nodes": [], "edges": []},
+    }
+    service = PreflightService("unassigned-project")
+    monkeypatch.setattr(service.workflow, "get", lambda: state)
+    monkeypatch.setattr(service.workflow, "latest_analysis", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(service.workflow, "create_analysis_snapshot", lambda *_args, **_kwargs: {"id": "snapshot"})
+    monkeypatch.setattr(capacity_service_module, "list_objects", lambda *_args, **_kwargs: [])
+    monkeypatch.setattr(capacity_service_module, "list_routes", lambda **_kwargs: [])
+
+    result = service.run()
+    findings = result["category_checks"]["technology"]
+    assert len(findings) == 1
+    assert findings[0]["code"] == "TECHNOLOGY_UNASSIGNED"
+    assert findings[0]["data_status"] == "UNKNOWN"
+    assert findings[0]["object_type"] == "WorkflowParameters"
+    assert findings[0]["object_id"] == "unassigned-project"
+    assert findings[0]["step"] == "parameters"
+    assert "technology_id" not in findings[0]
+    assert state["parameters"] == selection
+    assert result["preflight_status"] == "BLOCKED"
+    assert result["ready_for_simulation"] is False
+
+
+def test_simulation_snapshot_rejects_unapproved_preflight_warnings(monkeypatch):
+    service = WorkflowStatusService("analysis-project")
+    monkeypatch.setattr(service, "latest_analysis", lambda *_args, **_kwargs: {
+        "status": "WARNING", "results": {"preflight_status": "READY_WITH_WARNINGS", "ready_for_simulation": False},
+    })
+
+    with pytest.raises(WorkflowConflictError, match="Preflight erlaubt keine Simulation"):
+        service.create_simulation_snapshot({})
+
+
+def test_preflight_warning_approval_signature_is_order_independent_and_content_bound():
+    first = {'severity': 'WARNING', 'category': 'capacity', 'code': 'COMMUNICATION_UNVERIFIED',
+             'message': 'Clock stretching missing', 'object_type': 'Network', 'object_id': 'i2c-1'}
+    second = {'severity': 'WARNING', 'category': 'routing', 'code': 'CUSTOM_PROTOCOL',
+              'message': 'PWM sizing missing', 'object_type': 'Network', 'object_id': 'pwm-1'}
+    signature = preflight_warning_signature([first, second])
+    assert signature == preflight_warning_signature([second, first])
+    assert signature != preflight_warning_signature([{**first, 'message': 'Clock stretching verified'}, second])
+    assert signature == preflight_warning_signature([second, {'severity': 'INFO', 'code': 'OTHER'}, first])
+
+
+def test_preflight_accepts_interface_owned_directly_by_hardware(monkeypatch):
+    state = {
+        "versions": default_versions(),
+        "statuses": {
+            **default_statuses(),
+            "engineering_model": "COMPLETE",
+            "routing": "COMPLETE",
+            "network_editor": "COMPLETE",
+            "parameters": "COMPLETE",
+            "capacity_timing": "COMPLETE",
+        },
+        "parameters": {},
+        "topology": {"nodes": [], "edges": []},
+    }
+    objects = {
+        "HardwareNode": [{"id": "hardware", "name": "Basic sensor"}],
+        "Function": [],
+        "Interface": [{"id": "interface", "name": "Basic sensor interface", "hardware_node_id": "hardware", "function_id": None}],
+        "Message": [],
+        "Signal": [],
+    }
+    service = PreflightService("analysis-project")
+    monkeypatch.setattr(service.workflow, "get", lambda: state)
+    monkeypatch.setattr(service.workflow, "latest_analysis", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(
+        service.workflow,
+        "create_analysis_snapshot",
+        lambda *_args, **_kwargs: {"id": "preflight-snapshot"},
+    )
+    monkeypatch.setattr(
+        capacity_service_module,
+        "list_objects",
+        lambda object_type, **_kwargs: objects[object_type],
+    )
+    monkeypatch.setattr(capacity_service_module, "list_routes", lambda **_kwargs: [])
+
+    response = service.run()
+
+    model_codes = {item["code"] for item in response["category_checks"]["engineering_model"]}
+    assert "INTERFACE_PARENT_MISSING" not in model_codes
+
+
+def test_capacity_timing_analysis_covers_load_requirements_gateway_reliability_and_sync(monkeypatch):
+    state = {
+        "project_id": "analysis-project",
+        "versions": default_versions(),
+        "statuses": {step: "COMPLETE" for step in default_statuses()},
+        "parameters": {
+            "technology": "can_fd",
+            "bitrate": 500_000,
+            "arbitration_bitrate": 500_000,
+            "data_bitrate": 500_000,
+            "payload_bytes": 64,
+            "cycle_ms": 10,
+            "peak_factor": 1.2,
+            "burst_factor": 1.5,
+            "target_bus_load_percent": 1,
+            "gateway_delay_ms": 1.0,
+            "gateway_queue_delay_ms": 0.5,
+            "protocol_conversion_delay_ms": 0.25,
+            "gateway_maximum_throughput": 100,
+            "queue_policy": "STRICT_PRIORITY",
+            "packet_loss_probability": 0.1,
+            "required_reliability": 0.99,
+            "clock_drift_ppm": 200,
+            "sync_precision_ms": 0.2,
+            "maximum_sync_error_ms": 0.1,
+            "duration_s": 10,
+        },
+        "topology": {"nodes": [], "edges": []},
+    }
+    route = {
+        "id": "route-1",
+        "route_code": "RT-1",
+        "name": "Critical route",
+        "status": "APPROVED",
+        "approval_state": "APPROVED",
+        "validation": {"valid": True, "errors": [], "warnings": []},
+        "source": {"node_id": "producer", "protocol": "can_fd", "network_id": "can-a"},
+        "payload": {"message_id": "message-1", "signal_ids": ["signal-1"], "payload_bytes": 64},
+        "destinations": [{"node_id": "consumer"}],
+        "route": {"gateways": ["gateway-1"]},
+        "timing": {"cycle_time_ms": 10, "max_latency_ms": 0.1, "jitter_limit_ms": 0.01, "timeout_ms": 0.1, "freshness_ms": 5},
+        "routing_policy": {"priority": "SAFETY_CRITICAL"},
+    }
+    objects = {
+        "Message": [{"id": "message-1", "name": "Critical message", "interface_id": "interface-1", "dlc": 64, "cycle_ms": 10, "configuration": {}}],
+        "Signal": [{"id": "signal-1", "name": "EmergencyStop", "message_id": "message-1", "communication": {"priority": "SAFETY_CRITICAL"}}],
+        "Interface": [{"id": "interface-1", "interface_type": "can_fd", "configuration": {"network_id": "can-a"}}],
+        "HardwareNode": [{"id": "gateway-1", "name": "Gateway 1", "hardware_information": {"maximum_throughput": 100}}],
+    }
+    service = CapacityTimingService("analysis-project")
+    monkeypatch.setattr(service.workflow, "get", lambda: state)
+    monkeypatch.setattr(service, "latest", lambda: None)
+    monkeypatch.setattr(capacity_service_module, "list_routes", lambda limit=500, offset=0: [route])
+    monkeypatch.setattr(
+        capacity_service_module,
+        "list_objects",
+        lambda object_type, limit=500, offset=0: objects.get(object_type, []),
+    )
+
+    response = service.calculate(persist=False)
+    results = response["results"]
+    network = results["networks"][0]
+    analyzed_route = results["routes"][0]
+    codes = {item["code"] for item in response["findings"]}
+
+    assert network["average_load_percent"] < network["peak_load_percent"] < network["burst_load_percent"]
+    assert network["capacity_reserve_percent"] == round(100 - network["average_load_percent"], 4)
+    assert network["target_status"] == "EXCEEDED"
+    assert analyzed_route["gateway_latency_ms"] == 1.75
+    assert analyzed_route["requirement_status"] == "FAIL"
+    assert results["gateways"][0]["status"] == "OVERLOAD"
+    assert results["reliability"]["status"] == "FAIL"
+    assert results["synchronization"]["status"] == "FAIL"
+    assert results["critical_paths"][0]["route_id"] == "route-1"
+    assert results["bottlenecks"]
+    assert {"CAPACITY_TARGET_LOAD_EXCEEDED", "TIMING_DEADLINE_MISS", "TIMING_JITTER_EXCEEDED", "TIMING_TIMEOUT_RISK", "TIMING_FRESHNESS_RISK", "GATEWAY_OVERLOAD", "RELIABILITY_REQUIREMENT_MISS", "SYNCHRONIZATION_REQUIREMENT_MISS"} <= codes
+    assert response["provenance"]["calculation_model"] == "TECHNOLOGY_AWARE_CAPACITY_TIMING"
+
+
+def test_capacity_load_is_counted_once_per_physical_network_segment(monkeypatch):
+    state = {
+        "project_id": "analysis-project",
+        "versions": default_versions(),
+        "statuses": {step: "COMPLETE" for step in default_statuses()},
+        "parameters": {
+            "technology": "lin",
+            "bitrate": 19_200,
+            "cycle_ms": 10,
+            "payload_bytes": 8,
+            "peak_factor": 1.15,
+            "burst_factor": 1.5,
+            "target_bus_load_percent": 90,
+        },
+        "topology": {"nodes": [], "edges": []},
+    }
+    shared_route = {
+        "id": "route-shared",
+        "route_code": "RT-SHARED",
+        "name": "Shared LIN route",
+        "status": "APPROVED",
+        "approval_state": "APPROVED",
+        "source": {"node_id": "producer", "protocol": "LIN", "network_id": "lin-shared"},
+        "payload": {"payload_bytes": 8},
+        "destinations": [
+            {"node_id": "consumer-a", "network_id": "lin-shared"},
+            {"node_id": "consumer-b", "network_id": "lin-shared"},
+        ],
+        "route": {"gateways": []},
+        "timing": {"cycle_time_ms": 10},
+        "routing_policy": {"priority": "NORMAL"},
+    }
+    split_route = {
+        **shared_route,
+        "id": "route-split",
+        "route_code": "RT-SPLIT",
+        "name": "Gateway split route",
+        "source": {"node_id": "producer", "protocol": "LIN", "network_id": "lin-a"},
+        "destinations": [{"node_id": "gateway", "network_id": "lin-b"}],
+    }
+    service = CapacityTimingService("analysis-project")
+    monkeypatch.setattr(service.workflow, "get", lambda: state)
+    monkeypatch.setattr(service, "latest", lambda: None)
+    monkeypatch.setattr(capacity_service_module, "list_routes", lambda limit=500, offset=0: [shared_route, split_route])
+    monkeypatch.setattr(capacity_service_module, "list_objects", lambda object_type, limit=500, offset=0: [])
+
+    response = service.calculate(persist=False)
+    results = response["results"]
+    networks = {item["network_id"]: item for item in results["networks"]}
+    route_segments = {(item["route_id"], item["network_id"]) for item in results["routes"]}
+
+    assert networks["lin-shared"]["average_load_percent"] == 64.5833
+    assert networks["lin-a"]["average_load_percent"] == 64.5833
+    assert networks["lin-b"]["average_load_percent"] == 64.5833
+    assert networks["lin-shared"]["route_count"] == 1
+    assert route_segments == {
+        ("route-shared", "lin-shared"),
+        ("route-split", "lin-a"),
+        ("route-split", "lin-b"),
+    }
+    assert results["overview"]["route_count"] == 2
+    assert results["overview"]["route_segment_count"] == 3
+
+
+def test_capacity_prefers_reviewed_topology_segment_over_logical_network(monkeypatch):
+    state = {
+        "project_id": "physical-capacity-project",
+        "versions": default_versions(),
+        "statuses": {step: "COMPLETE" for step in default_statuses()},
+        "parameters": {
+            "technology": "can_fd",
+            "bitrate": 500_000,
+            "data_bitrate": 2_000_000,
+            "cycle_ms": 10,
+            "payload_bytes": 8,
+            "target_bus_load_percent": 90,
+        },
+        "topology": {"nodes": [], "edges": [{
+            "id": "physical-edge",
+            "physicalNetworkId": "Fahrwerk_Fahrdynamik_03-S02",
+            "routingEntryIds": ["route-physical"],
+        }]},
+    }
+    route = {
+        "id": "route-physical",
+        "route_code": "RT-PHYSICAL",
+        "name": "Physical route",
+        "status": "APPROVED",
+        "approval_state": "APPROVED",
+        "source": {"node_id": "producer", "protocol": "CAN_FD", "network_id": "logical-chassis"},
+        "payload": {"payload_bytes": 8},
+        "destinations": [{"node_id": "consumer", "network_id": "logical-chassis"}],
+        "route": {"gateways": []},
+        "timing": {"cycle_time_ms": 10},
+        "routing_policy": {"priority": "NORMAL"},
+    }
+    service = CapacityTimingService("physical-capacity-project")
+    monkeypatch.setattr(service.workflow, "get", lambda: state)
+    monkeypatch.setattr(service, "latest", lambda: None)
+    monkeypatch.setattr(capacity_service_module, "list_routes", lambda limit=500, offset=0: [route])
+    monkeypatch.setattr(capacity_service_module, "list_objects", lambda object_type, limit=500, offset=0: [])
+
+    response = service.calculate(persist=False)
+
+    assert [item["network_id"] for item in response["results"]["networks"]] == [
+        "Fahrwerk_Fahrdynamik_03-S02"
+    ]
+    assert response["results"]["routes"][0]["network_id"] == "Fahrwerk_Fahrdynamik_03-S02"

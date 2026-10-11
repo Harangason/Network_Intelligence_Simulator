@@ -1,6 +1,30 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mergeSimulationResult, mergeSimulationSnapshots, selectSimulationSnapshot } from "./simulation-result.ts";
+import { canStartSimulation, simulationJobActive, mergeSimulationResult, mergeSimulationSnapshots, selectSimulationSnapshot } from "./simulation-result.ts";
+
+const startState = { validation: "APPROVED", projectId: "project-a", restoredProjectId: "project-a",
+  job: null, busy: false, formatCount: 3, scopeValid: true };
+test("current preflight allows a new run after restoring terminal historical jobs", () => {
+  for (const status of ["completed", "failed", "canceled"]) {
+    const job = { status, result: { trace: { events: 23138 } } };
+    const original = structuredClone(job);
+    assert.equal(canStartSimulation({ ...startState, job }), true);
+    assert.equal(simulationJobActive(job), false);
+    assert.deepEqual(job, original);
+  }
+  assert.equal(canStartSimulation(startState), true);
+  assert.equal(canStartSimulation({ ...startState, validation: "WARNING" }), true);
+});
+test("starting preserves approval, active job, project restoration, format and scope gates", () => {
+  for (const status of ["queued", "running", "canceling", "unknown"]) {
+    assert.equal(canStartSimulation({ ...startState, job: { status } }), false);
+  }
+  for (const override of [{ validation: "OUTDATED" }, { validation: "BLOCKED" }, { validation: undefined },
+    { busy: true }, { restoredProjectId: "project-b" }, { projectId: undefined },
+    { restoredProjectId: "" }, { formatCount: 0 }, { scopeValid: false }]) {
+    assert.equal(canStartSimulation({ ...startState, ...override }), false, JSON.stringify(override));
+  }
+});
 
 test("compact registry data cannot hide a snapshot's measured results", () => {
   const full = { status: "completed", trace: { events: 101 }, runtime_metrics: { available: true } };

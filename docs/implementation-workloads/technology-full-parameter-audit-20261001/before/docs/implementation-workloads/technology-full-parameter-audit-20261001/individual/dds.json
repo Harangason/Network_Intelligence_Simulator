@@ -1,0 +1,4019 @@
+{
+  "technology": "dds",
+  "status": "SOURCE_AND_LOCAL_RULES_REVIEWED",
+  "scope": "Each original DDS parameter and all22 core QoS policy groups, explicit entity conditional defaults/applicability/infinite duration/unlimited resources/actual type and transport references. Scalar and intra-entity dependency validation with SQL retention.",
+  "sources": [
+    "https://www.omg.org/spec/DDS/1.4/PDF",
+    "https://www.omg.org/spec/DDS/20140501/dds_dcps.idl",
+    "https://opendds.readthedocs.io/en/master/devguide/quality_of_service.html",
+    "docs/COMMUNICATION_DESIGN_CONTRACT.md"
+  ],
+  "source_revisions": [
+    "OMG DDS1.4 formal/2015-04-10 and normative20140501IDL; OpenDDS3.35.0-dev QoS documentation accessed2026-10-01; vendor overrides kept separate",
+    "NIS_SCENARIO_POLICY_V1"
+  ],
+  "parameter_reviews": [
+    {
+      "key": "bit_error_rate",
+      "before": {
+        "key": "bit_error_rate",
+        "label": "Bit Error Rate",
+        "category": "reliability",
+        "scope": "reliability",
+        "type": "number",
+        "description": "",
+        "required": true,
+        "editable": true,
+        "simulation_relevant": true,
+        "validation_relevant": true,
+        "default": 0,
+        "min": 0,
+        "max": 1
+      },
+      "after": {
+        "label": "Bit Error Rate",
+        "category": "reliability",
+        "scope": "reliability",
+        "type": "number",
+        "description": "",
+        "required": false,
+        "editable": true,
+        "simulation_relevant": true,
+        "validation_relevant": true,
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "parameter_origin": "NIS_SCENARIO",
+        "default_status": "PROPOSED",
+        "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+        "source_revision": "NIS_SCENARIO_POLICY_V1",
+        "key": "bit_error_rate"
+      },
+      "meaning_and_applicability_review": "NIS-Bitfehlerrate 0–1 als Szenarioeingabe; reviewed explicit NIS scenario/application requirement, not a dds standard or equipment guarantee.",
+      "decision": "EXPLICIT_NIS_SCENARIO",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "bitrate",
+      "before": {
+        "key": "bitrate",
+        "label": "Ethernet Link Speed",
+        "category": "physical",
+        "scope": "network",
+        "type": "number",
+        "description": "Inherited physical link rate from the declared technology stack.",
+        "required": true,
+        "editable": true,
+        "simulation_relevant": true,
+        "validation_relevant": true,
+        "default": 10000000,
+        "unit": "bit/s",
+        "min": 1,
+        "default_review": {
+          "technology": "dds",
+          "rate_profile": "ethernet",
+          "values": {
+            "bitrate_bps": 10000000
+          },
+          "basis": "LOWEST_PROFILE_MODE",
+          "status": "REVIEW_REQUIRED",
+          "source": "NIS built-in catalog",
+          "source_revision": null
+        },
+        "allowed_bps": [
+          10000000,
+          100000000,
+          1000000000,
+          10000000000
+        ]
+      },
+      "after": null,
+      "meaning_and_applicability_review": "DDS has no own physical link rate; retire inherited Ethernet assumption. Actual selected lower TechnologyProfile owns rate.",
+      "decision": "REMOVED_NOT_APPLICABLE",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "burst_factor",
+      "before": {
+        "key": "burst_factor",
+        "label": "Burst Factor",
+        "category": "capacity",
+        "scope": "analysis",
+        "type": "number",
+        "description": "",
+        "required": true,
+        "editable": true,
+        "simulation_relevant": false,
+        "validation_relevant": true,
+        "default": 1.5,
+        "min": 1
+      },
+      "after": {
+        "label": "Burst Factor",
+        "category": "capacity",
+        "scope": "analysis",
+        "type": "number",
+        "description": "",
+        "required": false,
+        "editable": true,
+        "simulation_relevant": false,
+        "validation_relevant": true,
+        "default": 1.5,
+        "min": 1,
+        "parameter_origin": "NIS_SCENARIO",
+        "default_status": "PROPOSED",
+        "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+        "source_revision": "NIS_SCENARIO_POLICY_V1",
+        "key": "burst_factor"
+      },
+      "meaning_and_applicability_review": "Dimensionsloser NIS-Burstfaktor; reviewed explicit NIS scenario/application requirement, not a dds standard or equipment guarantee.",
+      "decision": "EXPLICIT_NIS_SCENARIO",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "burst_window_ms",
+      "before": {
+        "key": "burst_window_ms",
+        "label": "Burst Window",
+        "category": "capacity",
+        "scope": "analysis",
+        "type": "number",
+        "description": "",
+        "required": true,
+        "editable": true,
+        "simulation_relevant": false,
+        "validation_relevant": true,
+        "default": 100,
+        "unit": "ms",
+        "min": 0.1
+      },
+      "after": {
+        "label": "Burst Window",
+        "category": "capacity",
+        "scope": "analysis",
+        "type": "number",
+        "description": "",
+        "required": false,
+        "editable": true,
+        "simulation_relevant": false,
+        "validation_relevant": true,
+        "default": 100,
+        "unit": "ms",
+        "min": 0.1,
+        "parameter_origin": "NIS_SCENARIO",
+        "default_status": "PROPOSED",
+        "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+        "source_revision": "NIS_SCENARIO_POLICY_V1",
+        "key": "burst_window_ms"
+      },
+      "meaning_and_applicability_review": "Beobachtungsfenster für NIS-Bursts; reviewed explicit NIS scenario/application requirement, not a dds standard or equipment guarantee.",
+      "decision": "EXPLICIT_NIS_SCENARIO",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "clock_drift_ppm",
+      "before": {
+        "key": "clock_drift_ppm",
+        "label": "Clock Drift",
+        "category": "synchronization",
+        "scope": "network",
+        "type": "number",
+        "description": "",
+        "required": true,
+        "editable": true,
+        "simulation_relevant": true,
+        "validation_relevant": true,
+        "default": 20,
+        "unit": "ppm",
+        "min": 0
+      },
+      "after": {
+        "label": "Clock Drift",
+        "category": "synchronization",
+        "scope": "network",
+        "type": "number",
+        "description": "",
+        "required": false,
+        "editable": true,
+        "simulation_relevant": true,
+        "validation_relevant": true,
+        "default": 20,
+        "unit": "ppm",
+        "min": 0,
+        "parameter_origin": "NIS_SCENARIO",
+        "default_status": "PROPOSED",
+        "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+        "source_revision": "NIS_SCENARIO_POLICY_V1",
+        "key": "clock_drift_ppm"
+      },
+      "meaning_and_applicability_review": "NIS-Uhrenannahme; reviewed explicit NIS scenario/application requirement, not a dds standard or equipment guarantee.",
+      "decision": "EXPLICIT_NIS_SCENARIO",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "clock_offset_ms",
+      "before": {
+        "key": "clock_offset_ms",
+        "label": "Clock Offset",
+        "category": "synchronization",
+        "scope": "network",
+        "type": "number",
+        "description": "",
+        "required": true,
+        "editable": true,
+        "simulation_relevant": true,
+        "validation_relevant": true,
+        "default": 0,
+        "unit": "ms"
+      },
+      "after": {
+        "label": "Clock Offset",
+        "category": "synchronization",
+        "scope": "network",
+        "type": "number",
+        "description": "",
+        "required": false,
+        "editable": true,
+        "simulation_relevant": true,
+        "validation_relevant": true,
+        "default": 0,
+        "unit": "ms",
+        "parameter_origin": "NIS_SCENARIO",
+        "default_status": "PROPOSED",
+        "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+        "source_revision": "NIS_SCENARIO_POLICY_V1",
+        "key": "clock_offset_ms"
+      },
+      "meaning_and_applicability_review": "NIS-Uhrenannahme in ms; reviewed explicit NIS scenario/application requirement, not a dds standard or equipment guarantee.",
+      "decision": "EXPLICIT_NIS_SCENARIO",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "corruption_probability",
+      "before": {
+        "key": "corruption_probability",
+        "label": "Corruption",
+        "category": "reliability",
+        "scope": "reliability",
+        "type": "number",
+        "description": "",
+        "required": true,
+        "editable": true,
+        "simulation_relevant": true,
+        "validation_relevant": true,
+        "default": 0,
+        "min": 0,
+        "max": 1
+      },
+      "after": {
+        "label": "Corruption",
+        "category": "reliability",
+        "scope": "reliability",
+        "type": "number",
+        "description": "",
+        "required": false,
+        "editable": true,
+        "simulation_relevant": true,
+        "validation_relevant": true,
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "parameter_origin": "NIS_SCENARIO",
+        "default_status": "PROPOSED",
+        "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+        "source_revision": "NIS_SCENARIO_POLICY_V1",
+        "key": "corruption_probability"
+      },
+      "meaning_and_applicability_review": "NIS-Fehlerinjektion 0–1.; reviewed explicit NIS scenario/application requirement, not a dds standard or equipment guarantee.",
+      "decision": "EXPLICIT_NIS_SCENARIO",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "critical_threshold",
+      "before": {
+        "key": "critical_threshold",
+        "label": "Load Critical",
+        "category": "capacity",
+        "scope": "analysis",
+        "type": "number",
+        "description": "",
+        "required": true,
+        "editable": true,
+        "simulation_relevant": false,
+        "validation_relevant": true,
+        "default": 75,
+        "unit": "%",
+        "min": 0,
+        "max": 100
+      },
+      "after": {
+        "label": "Load Critical",
+        "category": "capacity",
+        "scope": "analysis",
+        "type": "number",
+        "description": "",
+        "required": false,
+        "editable": true,
+        "simulation_relevant": false,
+        "validation_relevant": true,
+        "default": 75,
+        "unit": "%",
+        "min": 0,
+        "max": 100,
+        "parameter_origin": "NIS_SCENARIO",
+        "default_status": "PROPOSED",
+        "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+        "source_revision": "NIS_SCENARIO_POLICY_V1",
+        "key": "critical_threshold"
+      },
+      "meaning_and_applicability_review": "NIS-Kritischschwelle in Prozent; reviewed explicit NIS scenario/application requirement, not a dds standard or equipment guarantee.",
+      "decision": "EXPLICIT_NIS_SCENARIO",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "cycle_ms",
+      "before": {
+        "key": "cycle_ms",
+        "label": "Cycle Time",
+        "category": "timing",
+        "scope": "message",
+        "type": "number",
+        "description": "Standardperiode fuer zyklische Nachrichten.",
+        "required": true,
+        "editable": true,
+        "simulation_relevant": true,
+        "validation_relevant": true,
+        "default": 100,
+        "unit": "ms",
+        "min": 0.001
+      },
+      "after": {
+        "label": "Cycle Time",
+        "category": "timing",
+        "scope": "message",
+        "type": "number",
+        "description": "Standardperiode fuer zyklische Nachrichten.",
+        "required": false,
+        "editable": true,
+        "simulation_relevant": true,
+        "validation_relevant": true,
+        "default": 100,
+        "unit": "ms",
+        "min": 0.001,
+        "parameter_origin": "NIS_SCENARIO",
+        "default_status": "PROPOSED",
+        "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+        "source_revision": "NIS_SCENARIO_POLICY_V1",
+        "key": "cycle_ms"
+      },
+      "meaning_and_applicability_review": "Anwendungsperiode in ms; reviewed explicit NIS scenario/application requirement, not a dds standard or equipment guarantee.",
+      "decision": "EXPLICIT_NIS_SCENARIO",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "dds_autodispose_unregistered",
+      "before": null,
+      "after": {
+        "label": "DDS writer automatically disposes unregistered instances",
+        "category": "qos",
+        "scope": "route",
+        "type": "boolean",
+        "description": "OMG DDS1.4 entity-specific QoS declaration. Standard proposals apply only to the stated entity; actual middleware, wire protocol, peer compatibility and capacity remain unverified.",
+        "required": false,
+        "editable": true,
+        "simulation_relevant": false,
+        "validation_relevant": true,
+        "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+        "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+        "parameter_origin": "TRANSPORT_PROFILE",
+        "default_status": "PROPOSED_CONDITIONAL",
+        "conditional_defaults": [
+          {
+            "when": {
+              "dds_entity": "DATAWRITER"
+            },
+            "value": true
+          }
+        ],
+        "integer": false,
+        "key": "dds_autodispose_unregistered"
+      },
+      "meaning_and_applicability_review": "Conditional Writer True proposal; actual unregister/dispose state execution remains unverified.",
+      "decision": "NATIVE_OR_DECLARED_CONFIGURATION",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "dds_autoenable_created_entities",
+      "before": null,
+      "after": {
+        "label": "DDS factory automatically enables entities",
+        "category": "qos",
+        "scope": "route",
+        "type": "boolean",
+        "description": "OMG DDS1.4 entity-specific QoS declaration. Standard proposals apply only to the stated entity; actual middleware, wire protocol, peer compatibility and capacity remain unverified.",
+        "required": false,
+        "editable": true,
+        "simulation_relevant": false,
+        "validation_relevant": true,
+        "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+        "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+        "parameter_origin": "TRANSPORT_PROFILE",
+        "default_status": "PROPOSED_CONDITIONAL",
+        "conditional_defaults": [
+          {
+            "when": {
+              "dds_entity": "PUBLISHER"
+            },
+            "value": true
+          },
+          {
+            "when": {
+              "dds_entity": "SUBSCRIBER"
+            },
+            "value": true
+          },
+          {
+            "when": {
+              "dds_entity": "PARTICIPANT"
+            },
+            "value": true
+          },
+          {
+            "when": {
+              "dds_entity": "PARTICIPANT_FACTORY"
+            },
+            "value": true
+          }
+        ],
+        "integer": false,
+        "key": "dds_autoenable_created_entities"
+      },
+      "meaning_and_applicability_review": "Conditional container/factory True proposal; requires actual entity factory behavior. Not automatic engineering-model release approval.",
+      "decision": "NATIVE_OR_DECLARED_CONFIGURATION",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "dds_coherent_access",
+      "before": null,
+      "after": {
+        "label": "DDS coherent presentation",
+        "category": "qos",
+        "scope": "route",
+        "type": "boolean",
+        "description": "OMG DDS1.4 entity-specific QoS declaration. Standard proposals apply only to the stated entity; actual middleware, wire protocol, peer compatibility and capacity remain unverified.",
+        "required": false,
+        "editable": true,
+        "simulation_relevant": false,
+        "validation_relevant": true,
+        "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+        "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+        "parameter_origin": "TRANSPORT_PROFILE",
+        "default_status": "PROPOSED_CONDITIONAL",
+        "conditional_defaults": [
+          {
+            "when": {
+              "dds_entity": "PUBLISHER"
+            },
+            "value": false
+          },
+          {
+            "when": {
+              "dds_entity": "SUBSCRIBER"
+            },
+            "value": false
+          }
+        ],
+        "integer": false,
+        "key": "dds_coherent_access"
+      },
+      "meaning_and_applicability_review": "Conditional Publisher/Subscriber False proposal; actual transaction/read logic and matching coherence unverified.",
+      "decision": "NATIVE_OR_DECLARED_CONFIGURATION",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "dds_deadline_kind",
+      "before": null,
+      "after": {
+        "label": "Deadline period mode",
+        "category": "qos",
+        "scope": "route",
+        "type": "select",
+        "description": "OMG DDS1.4 entity-specific QoS declaration. Standard proposals apply only to the stated entity; actual middleware, wire protocol, peer compatibility and capacity remain unverified.",
+        "required": false,
+        "editable": true,
+        "simulation_relevant": false,
+        "validation_relevant": true,
+        "options": [
+          "INFINITE",
+          "FINITE"
+        ],
+        "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+        "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+        "parameter_origin": "TRANSPORT_PROFILE",
+        "default_status": "PROPOSED_CONDITIONAL",
+        "conditional_defaults": [
+          {
+            "when": {
+              "dds_entity": "TOPIC"
+            },
+            "value": "INFINITE"
+          },
+          {
+            "when": {
+              "dds_entity": "DATAWRITER"
+            },
+            "value": "INFINITE"
+          },
+          {
+            "when": {
+              "dds_entity": "DATAREADER"
+            },
+            "value": "INFINITE"
+          }
+        ],
+        "integer": false,
+        "key": "dds_deadline_kind"
+      },
+      "meaning_and_applicability_review": "Conditional endpoint INFINITE deadline proposal. DDS per-instance publication/request period differs from NIS functional deadline.",
+      "decision": "NATIVE_OR_DECLARED_CONFIGURATION",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "dds_deadline_ms",
+      "before": null,
+      "after": {
+        "label": "Actual finite DDS deadline period",
+        "category": "qos",
+        "scope": "route",
+        "type": "number",
+        "description": "OMG DDS1.4 entity-specific QoS declaration. Standard proposals apply only to the stated entity; actual middleware, wire protocol, peer compatibility and capacity remain unverified.",
+        "required": false,
+        "editable": true,
+        "simulation_relevant": false,
+        "validation_relevant": true,
+        "unit": "ms",
+        "min": 0,
+        "max": 2147483647999.999,
+        "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+        "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+        "parameter_origin": "DEVICE_CONFIGURATION",
+        "default_status": "UNKNOWN",
+        "integer": false,
+        "key": "dds_deadline_ms"
+      },
+      "meaning_and_applicability_review": "Actual finite DDS deadline unknown nonnegative finite milliseconds within Duration_t seconds/nanoseconds representation; reader filter must not exceed it.",
+      "decision": "NATIVE_OR_DECLARED_CONFIGURATION",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "dds_destination_order",
+      "before": null,
+      "after": {
+        "label": "DDS sample ordering",
+        "category": "qos",
+        "scope": "route",
+        "type": "select",
+        "description": "OMG DDS1.4 entity-specific QoS declaration. Standard proposals apply only to the stated entity; actual middleware, wire protocol, peer compatibility and capacity remain unverified.",
+        "required": false,
+        "editable": true,
+        "simulation_relevant": false,
+        "validation_relevant": true,
+        "options": [
+          "BY_RECEPTION_TIMESTAMP",
+          "BY_SOURCE_TIMESTAMP"
+        ],
+        "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+        "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+        "parameter_origin": "TRANSPORT_PROFILE",
+        "default_status": "PROPOSED_CONDITIONAL",
+        "conditional_defaults": [
+          {
+            "when": {
+              "dds_entity": "TOPIC"
+            },
+            "value": "BY_RECEPTION_TIMESTAMP"
+          },
+          {
+            "when": {
+              "dds_entity": "DATAWRITER"
+            },
+            "value": "BY_RECEPTION_TIMESTAMP"
+          },
+          {
+            "when": {
+              "dds_entity": "DATAREADER"
+            },
+            "value": "BY_RECEPTION_TIMESTAMP"
+          }
+        ],
+        "integer": false,
+        "key": "dds_destination_order"
+      },
+      "meaning_and_applicability_review": "Conditional endpoint BY_RECEPTION_TIMESTAMP proposal; BY_SOURCE_TIMESTAMP requires actual timestamp semantics. Not Ethernet frame order.",
+      "decision": "NATIVE_OR_DECLARED_CONFIGURATION",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "dds_disposed_purge_kind",
+      "before": null,
+      "after": {
+        "label": "Reader purge delay after dispose",
+        "category": "qos",
+        "scope": "route",
+        "type": "select",
+        "description": "OMG DDS1.4 entity-specific QoS declaration. Standard proposals apply only to the stated entity; actual middleware, wire protocol, peer compatibility and capacity remain unverified.",
+        "required": false,
+        "editable": true,
+        "simulation_relevant": false,
+        "validation_relevant": true,
+        "options": [
+          "INFINITE",
+          "FINITE"
+        ],
+        "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+        "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+        "parameter_origin": "TRANSPORT_PROFILE",
+        "default_status": "PROPOSED_CONDITIONAL",
+        "conditional_defaults": [
+          {
+            "when": {
+              "dds_entity": "DATAREADER"
+            },
+            "value": "INFINITE"
+          }
+        ],
+        "integer": false,
+        "key": "dds_disposed_purge_kind"
+      },
+      "meaning_and_applicability_review": "Conditional Reader INFINITE disposed purge proposal; not same as no-writer delay.",
+      "decision": "NATIVE_OR_DECLARED_CONFIGURATION",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "dds_disposed_purge_ms",
+      "before": null,
+      "after": {
+        "label": "Actual finite disposed purge delay",
+        "category": "qos",
+        "scope": "route",
+        "type": "number",
+        "description": "OMG DDS1.4 entity-specific QoS declaration. Standard proposals apply only to the stated entity; actual middleware, wire protocol, peer compatibility and capacity remain unverified.",
+        "required": false,
+        "editable": true,
+        "simulation_relevant": false,
+        "validation_relevant": true,
+        "unit": "ms",
+        "min": 0,
+        "max": 2147483647999.999,
+        "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+        "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+        "parameter_origin": "DEVICE_CONFIGURATION",
+        "default_status": "UNKNOWN",
+        "integer": false,
+        "key": "dds_disposed_purge_ms"
+      },
+      "meaning_and_applicability_review": "Actual finite Reader disposed purge delay unknown nonnegative milliseconds; rejected with INFINITE mode.",
+      "decision": "NATIVE_OR_DECLARED_CONFIGURATION",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "dds_domain_id",
+      "before": null,
+      "after": {
+        "label": "Actual implementation-supported DDS domain",
+        "category": "qos",
+        "scope": "route",
+        "type": "number",
+        "description": "OMG DDS1.4 entity-specific QoS declaration. Standard proposals apply only to the stated entity; actual middleware, wire protocol, peer compatibility and capacity remain unverified.",
+        "required": false,
+        "editable": true,
+        "simulation_relevant": false,
+        "validation_relevant": true,
+        "min": -2147483648,
+        "max": 2147483647,
+        "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+        "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+        "parameter_origin": "DEVICE_CONFIGURATION",
+        "default_status": "UNKNOWN",
+        "integer": true,
+        "key": "dds_domain_id"
+      },
+      "meaning_and_applicability_review": "Actual domain identifier unknown signed32 IDL long; accepted range only checks declared scalar. Vendor/reserved/transport-port restrictions require actual implementation, no universal0..232 assumption.",
+      "decision": "NATIVE_OR_DECLARED_CONFIGURATION",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "dds_entity",
+      "before": null,
+      "after": {
+        "label": "Actual DDS entity",
+        "category": "qos",
+        "scope": "route",
+        "type": "select",
+        "description": "OMG DDS1.4 entity-specific QoS declaration. Standard proposals apply only to the stated entity; actual middleware, wire protocol, peer compatibility and capacity remain unverified.",
+        "required": true,
+        "editable": true,
+        "simulation_relevant": false,
+        "validation_relevant": true,
+        "options": [
+          "TOPIC",
+          "DATAWRITER",
+          "DATAREADER",
+          "PUBLISHER",
+          "SUBSCRIBER",
+          "PARTICIPANT",
+          "PARTICIPANT_FACTORY"
+        ],
+        "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+        "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+        "parameter_origin": "DEVICE_CONFIGURATION",
+        "default_status": "UNKNOWN",
+        "integer": false,
+        "key": "dds_entity"
+      },
+      "meaning_and_applicability_review": "Required actual DDS entity unknown; selects independent endpoint/container/factory QoS applicability. No automatic Writer/Reader selection.",
+      "decision": "NATIVE_OR_DECLARED_CONFIGURATION",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "dds_group_data_source",
+      "before": null,
+      "after": {
+        "label": "Actual publisher/subscriber group-data octet sequence",
+        "category": "qos",
+        "scope": "route",
+        "type": "text",
+        "description": "OMG DDS1.4 entity-specific QoS declaration. Standard proposals apply only to the stated entity; actual middleware, wire protocol, peer compatibility and capacity remain unverified.",
+        "required": false,
+        "editable": true,
+        "simulation_relevant": false,
+        "validation_relevant": true,
+        "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+        "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+        "parameter_origin": "DEVICE_CONFIGURATION",
+        "default_status": "UNKNOWN",
+        "integer": false,
+        "key": "dds_group_data_source"
+      },
+      "meaning_and_applicability_review": "Actual reference to Publisher/Subscriber group-data octet sequence unknown; empty standard initial value, not device grouping or partition identity.",
+      "decision": "NATIVE_OR_DECLARED_CONFIGURATION",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "dds_implementation_source",
+      "before": null,
+      "after": {
+        "label": "Actual DDS implementation/revision/QoS source",
+        "category": "qos",
+        "scope": "route",
+        "type": "text",
+        "description": "OMG DDS1.4 entity-specific QoS declaration. Standard proposals apply only to the stated entity; actual middleware, wire protocol, peer compatibility and capacity remain unverified.",
+        "required": true,
+        "editable": true,
+        "simulation_relevant": false,
+        "validation_relevant": true,
+        "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+        "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+        "parameter_origin": "DEVICE_CONFIGURATION",
+        "default_status": "UNKNOWN",
+        "integer": false,
+        "key": "dds_implementation_source"
+      },
+      "meaning_and_applicability_review": "Required actual middleware vendor/version/configuration reference unknown. A source string is not verified installed hardware or conformance.",
+      "decision": "NATIVE_OR_DECLARED_CONFIGURATION",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "dds_latency_budget_ms",
+      "before": null,
+      "after": {
+        "label": "DDS latency-budget hint",
+        "category": "qos",
+        "scope": "route",
+        "type": "number",
+        "description": "OMG DDS1.4 entity-specific QoS declaration. Standard proposals apply only to the stated entity; actual middleware, wire protocol, peer compatibility and capacity remain unverified.",
+        "required": false,
+        "editable": true,
+        "simulation_relevant": false,
+        "validation_relevant": true,
+        "unit": "ms",
+        "min": 0,
+        "max": 2147483647999.999,
+        "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+        "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+        "parameter_origin": "TRANSPORT_PROFILE",
+        "default_status": "PROPOSED_CONDITIONAL",
+        "conditional_defaults": [
+          {
+            "when": {
+              "dds_entity": "TOPIC"
+            },
+            "value": 0
+          },
+          {
+            "when": {
+              "dds_entity": "DATAWRITER"
+            },
+            "value": 0
+          },
+          {
+            "when": {
+              "dds_entity": "DATAREADER"
+            },
+            "value": 0
+          }
+        ],
+        "integer": false,
+        "key": "dds_latency_budget_ms"
+      },
+      "meaning_and_applicability_review": "Conditional endpoint zero-millisecond proposal, a middleware hint. It does not prove zero latency or acceptance of functional timing.",
+      "decision": "NATIVE_OR_DECLARED_CONFIGURATION",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "dds_lease_kind",
+      "before": null,
+      "after": {
+        "label": "Liveliness lease mode",
+        "category": "qos",
+        "scope": "route",
+        "type": "select",
+        "description": "OMG DDS1.4 entity-specific QoS declaration. Standard proposals apply only to the stated entity; actual middleware, wire protocol, peer compatibility and capacity remain unverified.",
+        "required": false,
+        "editable": true,
+        "simulation_relevant": false,
+        "validation_relevant": true,
+        "options": [
+          "INFINITE",
+          "FINITE"
+        ],
+        "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+        "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+        "parameter_origin": "TRANSPORT_PROFILE",
+        "default_status": "PROPOSED_CONDITIONAL",
+        "conditional_defaults": [
+          {
+            "when": {
+              "dds_entity": "TOPIC"
+            },
+            "value": "INFINITE"
+          },
+          {
+            "when": {
+              "dds_entity": "DATAWRITER"
+            },
+            "value": "INFINITE"
+          },
+          {
+            "when": {
+              "dds_entity": "DATAREADER"
+            },
+            "value": "INFINITE"
+          }
+        ],
+        "integer": false,
+        "key": "dds_lease_kind"
+      },
+      "meaning_and_applicability_review": "Conditional endpoint INFINITE liveliness lease proposal; no failure detection timeout inferred.",
+      "decision": "NATIVE_OR_DECLARED_CONFIGURATION",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "dds_lease_ms",
+      "before": null,
+      "after": {
+        "label": "Actual finite liveliness lease",
+        "category": "qos",
+        "scope": "route",
+        "type": "number",
+        "description": "OMG DDS1.4 entity-specific QoS declaration. Standard proposals apply only to the stated entity; actual middleware, wire protocol, peer compatibility and capacity remain unverified.",
+        "required": false,
+        "editable": true,
+        "simulation_relevant": false,
+        "validation_relevant": true,
+        "unit": "ms",
+        "min": 0,
+        "max": 2147483647999.999,
+        "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+        "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+        "parameter_origin": "DEVICE_CONFIGURATION",
+        "default_status": "UNKNOWN",
+        "integer": false,
+        "key": "dds_lease_ms"
+      },
+      "meaning_and_applicability_review": "Actual finite liveliness lease unknown nonnegative finite milliseconds; offered/requested lease matching and assertion schedule remain unverified.",
+      "decision": "NATIVE_OR_DECLARED_CONFIGURATION",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "dds_lifespan_kind",
+      "before": null,
+      "after": {
+        "label": "Lifespan duration mode",
+        "category": "qos",
+        "scope": "route",
+        "type": "select",
+        "description": "OMG DDS1.4 entity-specific QoS declaration. Standard proposals apply only to the stated entity; actual middleware, wire protocol, peer compatibility and capacity remain unverified.",
+        "required": false,
+        "editable": true,
+        "simulation_relevant": false,
+        "validation_relevant": true,
+        "options": [
+          "INFINITE",
+          "FINITE"
+        ],
+        "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+        "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+        "parameter_origin": "TRANSPORT_PROFILE",
+        "default_status": "PROPOSED_CONDITIONAL",
+        "conditional_defaults": [
+          {
+            "when": {
+              "dds_entity": "TOPIC"
+            },
+            "value": "INFINITE"
+          },
+          {
+            "when": {
+              "dds_entity": "DATAWRITER"
+            },
+            "value": "INFINITE"
+          }
+        ],
+        "integer": false,
+        "key": "dds_lifespan_kind"
+      },
+      "meaning_and_applicability_review": "Conditional Writer/Topic INFINITE proposal, finite duration separate. Infinite is explicit symbolic mode, not zero milliseconds.",
+      "decision": "NATIVE_OR_DECLARED_CONFIGURATION",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "dds_max_blocking_ms",
+      "before": null,
+      "after": {
+        "label": "DDS reliable-write maximum blocking",
+        "category": "qos",
+        "scope": "route",
+        "type": "number",
+        "description": "OMG DDS1.4 entity-specific QoS declaration. Standard proposals apply only to the stated entity; actual middleware, wire protocol, peer compatibility and capacity remain unverified.",
+        "required": false,
+        "editable": true,
+        "simulation_relevant": false,
+        "validation_relevant": true,
+        "unit": "ms",
+        "min": 0,
+        "max": 2147483647999.999,
+        "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+        "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+        "parameter_origin": "TRANSPORT_PROFILE",
+        "default_status": "PROPOSED_CONDITIONAL",
+        "conditional_defaults": [
+          {
+            "when": {
+              "dds_entity": "DATAWRITER",
+              "reliability_mode": "RELIABLE"
+            },
+            "value": 100
+          }
+        ],
+        "integer": false,
+        "key": "dds_max_blocking_ms"
+      },
+      "meaning_and_applicability_review": "Conditional reliable Writer100ms standard proposal. Write blocking is not ACK round trip or actuation response. Reader implementation timers are separate.",
+      "decision": "NATIVE_OR_DECLARED_CONFIGURATION",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "dds_max_instances",
+      "before": null,
+      "after": {
+        "label": "DDS maximum managed instances (-1 unlimited)",
+        "category": "qos",
+        "scope": "route",
+        "type": "number",
+        "description": "OMG DDS1.4 entity-specific QoS declaration. Standard proposals apply only to the stated entity; actual middleware, wire protocol, peer compatibility and capacity remain unverified.",
+        "required": false,
+        "editable": true,
+        "simulation_relevant": false,
+        "validation_relevant": true,
+        "min": -1,
+        "max": 2147483647,
+        "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+        "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+        "parameter_origin": "TRANSPORT_PROFILE",
+        "default_status": "PROPOSED_CONDITIONAL",
+        "conditional_defaults": [
+          {
+            "when": {
+              "dds_entity": "TOPIC"
+            },
+            "value": -1
+          },
+          {
+            "when": {
+              "dds_entity": "DATAWRITER"
+            },
+            "value": -1
+          },
+          {
+            "when": {
+              "dds_entity": "DATAREADER"
+            },
+            "value": -1
+          }
+        ],
+        "integer": true,
+        "forbidden_values": [
+          0
+        ],
+        "key": "dds_max_instances"
+      },
+      "meaning_and_applicability_review": "Conditional endpoint -1 unlimited proposal; otherwise positive signed32 instance count. Not physical device count.",
+      "decision": "NATIVE_OR_DECLARED_CONFIGURATION",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "dds_max_samples",
+      "before": null,
+      "after": {
+        "label": "DDS maximum retained samples (-1 unlimited)",
+        "category": "qos",
+        "scope": "route",
+        "type": "number",
+        "description": "OMG DDS1.4 entity-specific QoS declaration. Standard proposals apply only to the stated entity; actual middleware, wire protocol, peer compatibility and capacity remain unverified.",
+        "required": false,
+        "editable": true,
+        "simulation_relevant": false,
+        "validation_relevant": true,
+        "min": -1,
+        "max": 2147483647,
+        "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+        "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+        "parameter_origin": "TRANSPORT_PROFILE",
+        "default_status": "PROPOSED_CONDITIONAL",
+        "conditional_defaults": [
+          {
+            "when": {
+              "dds_entity": "TOPIC"
+            },
+            "value": -1
+          },
+          {
+            "when": {
+              "dds_entity": "DATAWRITER"
+            },
+            "value": -1
+          },
+          {
+            "when": {
+              "dds_entity": "DATAREADER"
+            },
+            "value": -1
+          }
+        ],
+        "integer": true,
+        "forbidden_values": [
+          0
+        ],
+        "key": "dds_max_samples"
+      },
+      "meaning_and_applicability_review": "Conditional endpoint -1 LENGTH_UNLIMITED proposal; otherwise positive signed32 count. Finite count>=known per-instance count; unlimited does not confirm actual memory.",
+      "decision": "NATIVE_OR_DECLARED_CONFIGURATION",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "dds_max_samples_per_instance",
+      "before": null,
+      "after": {
+        "label": "DDS samples per instance (-1 unlimited)",
+        "category": "qos",
+        "scope": "route",
+        "type": "number",
+        "description": "OMG DDS1.4 entity-specific QoS declaration. Standard proposals apply only to the stated entity; actual middleware, wire protocol, peer compatibility and capacity remain unverified.",
+        "required": false,
+        "editable": true,
+        "simulation_relevant": false,
+        "validation_relevant": true,
+        "min": -1,
+        "max": 2147483647,
+        "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+        "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+        "parameter_origin": "TRANSPORT_PROFILE",
+        "default_status": "PROPOSED_CONDITIONAL",
+        "conditional_defaults": [
+          {
+            "when": {
+              "dds_entity": "TOPIC"
+            },
+            "value": -1
+          },
+          {
+            "when": {
+              "dds_entity": "DATAWRITER"
+            },
+            "value": -1
+          },
+          {
+            "when": {
+              "dds_entity": "DATAREADER"
+            },
+            "value": -1
+          }
+        ],
+        "integer": true,
+        "forbidden_values": [
+          0
+        ],
+        "key": "dds_max_samples_per_instance"
+      },
+      "meaning_and_applicability_review": "Conditional endpoint -1 unlimited proposal; otherwise positive signed32 count, <=known finite total and >=KEEP_LAST depth.",
+      "decision": "NATIVE_OR_DECLARED_CONFIGURATION",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "dds_nowriter_purge_kind",
+      "before": null,
+      "after": {
+        "label": "Reader purge delay without writers",
+        "category": "qos",
+        "scope": "route",
+        "type": "select",
+        "description": "OMG DDS1.4 entity-specific QoS declaration. Standard proposals apply only to the stated entity; actual middleware, wire protocol, peer compatibility and capacity remain unverified.",
+        "required": false,
+        "editable": true,
+        "simulation_relevant": false,
+        "validation_relevant": true,
+        "options": [
+          "INFINITE",
+          "FINITE"
+        ],
+        "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+        "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+        "parameter_origin": "TRANSPORT_PROFILE",
+        "default_status": "PROPOSED_CONDITIONAL",
+        "conditional_defaults": [
+          {
+            "when": {
+              "dds_entity": "DATAREADER"
+            },
+            "value": "INFINITE"
+          }
+        ],
+        "integer": false,
+        "key": "dds_nowriter_purge_kind"
+      },
+      "meaning_and_applicability_review": "Conditional Reader INFINITE no-writer purge proposal; actual lifecycle state is separate.",
+      "decision": "NATIVE_OR_DECLARED_CONFIGURATION",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "dds_nowriter_purge_ms",
+      "before": null,
+      "after": {
+        "label": "Actual finite no-writer purge delay",
+        "category": "qos",
+        "scope": "route",
+        "type": "number",
+        "description": "OMG DDS1.4 entity-specific QoS declaration. Standard proposals apply only to the stated entity; actual middleware, wire protocol, peer compatibility and capacity remain unverified.",
+        "required": false,
+        "editable": true,
+        "simulation_relevant": false,
+        "validation_relevant": true,
+        "unit": "ms",
+        "min": 0,
+        "max": 2147483647999.999,
+        "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+        "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+        "parameter_origin": "DEVICE_CONFIGURATION",
+        "default_status": "UNKNOWN",
+        "integer": false,
+        "key": "dds_nowriter_purge_ms"
+      },
+      "meaning_and_applicability_review": "Actual finite Reader no-writer purge delay unknown nonnegative milliseconds; rejected with INFINITE mode.",
+      "decision": "NATIVE_OR_DECLARED_CONFIGURATION",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "dds_ordered_access",
+      "before": null,
+      "after": {
+        "label": "DDS ordered presentation",
+        "category": "qos",
+        "scope": "route",
+        "type": "boolean",
+        "description": "OMG DDS1.4 entity-specific QoS declaration. Standard proposals apply only to the stated entity; actual middleware, wire protocol, peer compatibility and capacity remain unverified.",
+        "required": false,
+        "editable": true,
+        "simulation_relevant": false,
+        "validation_relevant": true,
+        "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+        "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+        "parameter_origin": "TRANSPORT_PROFILE",
+        "default_status": "PROPOSED_CONDITIONAL",
+        "conditional_defaults": [
+          {
+            "when": {
+              "dds_entity": "PUBLISHER"
+            },
+            "value": false
+          },
+          {
+            "when": {
+              "dds_entity": "SUBSCRIBER"
+            },
+            "value": false
+          }
+        ],
+        "integer": false,
+        "key": "dds_ordered_access"
+      },
+      "meaning_and_applicability_review": "Conditional Publisher/Subscriber False proposal; independent of destination ordering and transport sequence.",
+      "decision": "NATIVE_OR_DECLARED_CONFIGURATION",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "dds_ownership",
+      "before": null,
+      "after": {
+        "label": "DDS instance ownership",
+        "category": "qos",
+        "scope": "route",
+        "type": "select",
+        "description": "OMG DDS1.4 entity-specific QoS declaration. Standard proposals apply only to the stated entity; actual middleware, wire protocol, peer compatibility and capacity remain unverified.",
+        "required": false,
+        "editable": true,
+        "simulation_relevant": false,
+        "validation_relevant": true,
+        "options": [
+          "SHARED",
+          "EXCLUSIVE"
+        ],
+        "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+        "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+        "parameter_origin": "TRANSPORT_PROFILE",
+        "default_status": "PROPOSED_CONDITIONAL",
+        "conditional_defaults": [
+          {
+            "when": {
+              "dds_entity": "TOPIC"
+            },
+            "value": "SHARED"
+          },
+          {
+            "when": {
+              "dds_entity": "DATAWRITER"
+            },
+            "value": "SHARED"
+          },
+          {
+            "when": {
+              "dds_entity": "DATAREADER"
+            },
+            "value": "SHARED"
+          }
+        ],
+        "integer": false,
+        "key": "dds_ownership"
+      },
+      "meaning_and_applicability_review": "Conditional endpoint SHARED proposal; EXCLUSIVE is optional feature needing implementation and compatible peers.",
+      "decision": "NATIVE_OR_DECLARED_CONFIGURATION",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "dds_ownership_strength",
+      "before": null,
+      "after": {
+        "label": "DDS exclusive writer ownership strength",
+        "category": "qos",
+        "scope": "route",
+        "type": "number",
+        "description": "OMG DDS1.4 entity-specific QoS declaration. Standard proposals apply only to the stated entity; actual middleware, wire protocol, peer compatibility and capacity remain unverified.",
+        "required": false,
+        "editable": true,
+        "simulation_relevant": false,
+        "validation_relevant": true,
+        "min": -2147483648,
+        "max": 2147483647,
+        "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+        "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+        "parameter_origin": "TRANSPORT_PROFILE",
+        "default_status": "PROPOSED_CONDITIONAL",
+        "conditional_defaults": [
+          {
+            "when": {
+              "dds_entity": "DATAWRITER",
+              "dds_ownership": "EXCLUSIVE"
+            },
+            "value": 0
+          }
+        ],
+        "integer": true,
+        "key": "dds_ownership_strength"
+      },
+      "meaning_and_applicability_review": "Conditional exclusive Writer zero proposal, signed32 strength; actual ownership resolution/liveliness remains unverified.",
+      "decision": "NATIVE_OR_DECLARED_CONFIGURATION",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "dds_partition_source",
+      "before": null,
+      "after": {
+        "label": "Actual partition string sequence",
+        "category": "qos",
+        "scope": "route",
+        "type": "text",
+        "description": "Actual source for ordered string sequence including wildcard syntax; default sequence is empty, matching default partition. This text reference is not the partition sequence or a validated compatibility proof.",
+        "required": false,
+        "editable": true,
+        "simulation_relevant": false,
+        "validation_relevant": true,
+        "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+        "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+        "parameter_origin": "DEVICE_CONFIGURATION",
+        "default_status": "UNKNOWN",
+        "integer": false,
+        "key": "dds_partition_source"
+      },
+      "meaning_and_applicability_review": "Actual reference to partition string sequence unknown. Standard empty sequence matches default partition; sequence/wildcard encoding and matching not implemented by this source field.",
+      "decision": "NATIVE_OR_DECLARED_CONFIGURATION",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "dds_presentation_scope",
+      "before": null,
+      "after": {
+        "label": "DDS publisher/subscriber presentation scope",
+        "category": "qos",
+        "scope": "route",
+        "type": "select",
+        "description": "OMG DDS1.4 entity-specific QoS declaration. Standard proposals apply only to the stated entity; actual middleware, wire protocol, peer compatibility and capacity remain unverified.",
+        "required": false,
+        "editable": true,
+        "simulation_relevant": false,
+        "validation_relevant": true,
+        "options": [
+          "INSTANCE",
+          "TOPIC",
+          "GROUP"
+        ],
+        "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+        "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+        "parameter_origin": "TRANSPORT_PROFILE",
+        "default_status": "PROPOSED_CONDITIONAL",
+        "conditional_defaults": [
+          {
+            "when": {
+              "dds_entity": "PUBLISHER"
+            },
+            "value": "INSTANCE"
+          },
+          {
+            "when": {
+              "dds_entity": "SUBSCRIBER"
+            },
+            "value": "INSTANCE"
+          }
+        ],
+        "integer": false,
+        "key": "dds_presentation_scope"
+      },
+      "meaning_and_applicability_review": "Conditional Publisher/Subscriber INSTANCE proposal, TOPIC/GROUP optional capability. Not endpoint History kind.",
+      "decision": "NATIVE_OR_DECLARED_CONFIGURATION",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "dds_service_cleanup_kind",
+      "before": null,
+      "after": {
+        "label": "Durability-service cleanup mode",
+        "category": "qos",
+        "scope": "route",
+        "type": "select",
+        "description": "OMG DDS1.4 entity-specific QoS declaration. Standard proposals apply only to the stated entity; actual middleware, wire protocol, peer compatibility and capacity remain unverified.",
+        "required": false,
+        "editable": true,
+        "simulation_relevant": false,
+        "validation_relevant": true,
+        "options": [
+          "INFINITE",
+          "FINITE"
+        ],
+        "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+        "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+        "parameter_origin": "TRANSPORT_PROFILE",
+        "default_status": "PROPOSED_CONDITIONAL",
+        "conditional_defaults": [
+          {
+            "when": {
+              "dds_entity": "TOPIC"
+            },
+            "value": "FINITE"
+          },
+          {
+            "when": {
+              "dds_entity": "DATAWRITER"
+            },
+            "value": "FINITE"
+          }
+        ],
+        "integer": false,
+        "key": "dds_service_cleanup_kind"
+      },
+      "meaning_and_applicability_review": "Conditional Writer/Topic FINITE duration representation proposal for standard zero cleanup delay. Zero cleanup means never clean cached samples; explicit infinite duration also possible.",
+      "decision": "NATIVE_OR_DECLARED_CONFIGURATION",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "dds_service_cleanup_ms",
+      "before": null,
+      "after": {
+        "label": "Durability-service cleanup delay",
+        "category": "qos",
+        "scope": "route",
+        "type": "number",
+        "description": "DDS1.4 default durability-service cleanup delay zero means never clean up cached samples. It is not zero lifespan, nor an immediate purge deadline.",
+        "required": false,
+        "editable": true,
+        "simulation_relevant": false,
+        "validation_relevant": true,
+        "unit": "ms",
+        "min": 0,
+        "max": 2147483647999.999,
+        "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+        "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+        "parameter_origin": "TRANSPORT_PROFILE",
+        "default_status": "PROPOSED_CONDITIONAL",
+        "conditional_defaults": [
+          {
+            "when": {
+              "dds_entity": "TOPIC"
+            },
+            "value": 0
+          },
+          {
+            "when": {
+              "dds_entity": "DATAWRITER"
+            },
+            "value": 0
+          }
+        ],
+        "integer": false,
+        "key": "dds_service_cleanup_ms"
+      },
+      "meaning_and_applicability_review": "Conditional Writer/Topic zero cleanup proposal with standard never-clean semantics. It is not finite zero lifespan or immediate reader purge.",
+      "decision": "NATIVE_OR_DECLARED_CONFIGURATION",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "dds_service_history_depth",
+      "before": null,
+      "after": {
+        "label": "Durability-service retained depth",
+        "category": "qos",
+        "scope": "route",
+        "type": "number",
+        "description": "OMG DDS1.4 entity-specific QoS declaration. Standard proposals apply only to the stated entity; actual middleware, wire protocol, peer compatibility and capacity remain unverified.",
+        "required": false,
+        "editable": true,
+        "simulation_relevant": false,
+        "validation_relevant": true,
+        "min": 1,
+        "max": 2147483647,
+        "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+        "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+        "parameter_origin": "TRANSPORT_PROFILE",
+        "default_status": "PROPOSED_CONDITIONAL",
+        "conditional_defaults": [
+          {
+            "when": {
+              "dds_entity": "TOPIC",
+              "dds_service_history_kind": "KEEP_LAST"
+            },
+            "value": 1
+          },
+          {
+            "when": {
+              "dds_entity": "DATAWRITER",
+              "dds_service_history_kind": "KEEP_LAST"
+            },
+            "value": 1
+          }
+        ],
+        "integer": true,
+        "key": "dds_service_history_depth"
+      },
+      "meaning_and_applicability_review": "Conditional Writer/Topic KEEP_LAST cache-depth1 proposal; positive signed32 count fitting known finite service per-instance resources.",
+      "decision": "NATIVE_OR_DECLARED_CONFIGURATION",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "dds_service_history_kind",
+      "before": null,
+      "after": {
+        "label": "Durability-service history",
+        "category": "qos",
+        "scope": "route",
+        "type": "select",
+        "description": "OMG DDS1.4 entity-specific QoS declaration. Standard proposals apply only to the stated entity; actual middleware, wire protocol, peer compatibility and capacity remain unverified.",
+        "required": false,
+        "editable": true,
+        "simulation_relevant": false,
+        "validation_relevant": true,
+        "options": [
+          "KEEP_LAST",
+          "KEEP_ALL"
+        ],
+        "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+        "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+        "parameter_origin": "TRANSPORT_PROFILE",
+        "default_status": "PROPOSED_CONDITIONAL",
+        "conditional_defaults": [
+          {
+            "when": {
+              "dds_entity": "TOPIC"
+            },
+            "value": "KEEP_LAST"
+          },
+          {
+            "when": {
+              "dds_entity": "DATAWRITER"
+            },
+            "value": "KEEP_LAST"
+          }
+        ],
+        "integer": false,
+        "key": "dds_service_history_kind"
+      },
+      "meaning_and_applicability_review": "Conditional Writer/Topic KEEP_LAST durability-cache proposal; independent of endpoint History.",
+      "decision": "NATIVE_OR_DECLARED_CONFIGURATION",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "dds_service_max_instances",
+      "before": null,
+      "after": {
+        "label": "Durability-service instance limit (-1 unlimited)",
+        "category": "qos",
+        "scope": "route",
+        "type": "number",
+        "description": "OMG DDS1.4 entity-specific QoS declaration. Standard proposals apply only to the stated entity; actual middleware, wire protocol, peer compatibility and capacity remain unverified.",
+        "required": false,
+        "editable": true,
+        "simulation_relevant": false,
+        "validation_relevant": true,
+        "min": -1,
+        "max": 2147483647,
+        "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+        "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+        "parameter_origin": "TRANSPORT_PROFILE",
+        "default_status": "PROPOSED_CONDITIONAL",
+        "conditional_defaults": [
+          {
+            "when": {
+              "dds_entity": "TOPIC"
+            },
+            "value": -1
+          },
+          {
+            "when": {
+              "dds_entity": "DATAWRITER"
+            },
+            "value": -1
+          }
+        ],
+        "integer": true,
+        "forbidden_values": [
+          0
+        ],
+        "key": "dds_service_max_instances"
+      },
+      "meaning_and_applicability_review": "Conditional Writer/Topic -1 unlimited durability-cache instances proposal; finite positive signed32 count.",
+      "decision": "NATIVE_OR_DECLARED_CONFIGURATION",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "dds_service_max_samples",
+      "before": null,
+      "after": {
+        "label": "Durability-service sample limit (-1 unlimited)",
+        "category": "qos",
+        "scope": "route",
+        "type": "number",
+        "description": "OMG DDS1.4 entity-specific QoS declaration. Standard proposals apply only to the stated entity; actual middleware, wire protocol, peer compatibility and capacity remain unverified.",
+        "required": false,
+        "editable": true,
+        "simulation_relevant": false,
+        "validation_relevant": true,
+        "min": -1,
+        "max": 2147483647,
+        "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+        "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+        "parameter_origin": "TRANSPORT_PROFILE",
+        "default_status": "PROPOSED_CONDITIONAL",
+        "conditional_defaults": [
+          {
+            "when": {
+              "dds_entity": "TOPIC"
+            },
+            "value": -1
+          },
+          {
+            "when": {
+              "dds_entity": "DATAWRITER"
+            },
+            "value": -1
+          }
+        ],
+        "integer": true,
+        "forbidden_values": [
+          0
+        ],
+        "key": "dds_service_max_samples"
+      },
+      "meaning_and_applicability_review": "Conditional Writer/Topic -1 unlimited durability-cache samples proposal; finite positive signed32 total>=known per-instance limit.",
+      "decision": "NATIVE_OR_DECLARED_CONFIGURATION",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "dds_service_max_samples_per_instance",
+      "before": null,
+      "after": {
+        "label": "Durability-service per-instance sample limit (-1 unlimited)",
+        "category": "qos",
+        "scope": "route",
+        "type": "number",
+        "description": "OMG DDS1.4 entity-specific QoS declaration. Standard proposals apply only to the stated entity; actual middleware, wire protocol, peer compatibility and capacity remain unverified.",
+        "required": false,
+        "editable": true,
+        "simulation_relevant": false,
+        "validation_relevant": true,
+        "min": -1,
+        "max": 2147483647,
+        "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+        "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+        "parameter_origin": "TRANSPORT_PROFILE",
+        "default_status": "PROPOSED_CONDITIONAL",
+        "conditional_defaults": [
+          {
+            "when": {
+              "dds_entity": "TOPIC"
+            },
+            "value": -1
+          },
+          {
+            "when": {
+              "dds_entity": "DATAWRITER"
+            },
+            "value": -1
+          }
+        ],
+        "integer": true,
+        "forbidden_values": [
+          0
+        ],
+        "key": "dds_service_max_samples_per_instance"
+      },
+      "meaning_and_applicability_review": "Conditional Writer/Topic -1 unlimited per-instance durability-cache proposal; independent of endpoint resource limits.",
+      "decision": "NATIVE_OR_DECLARED_CONFIGURATION",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "dds_time_based_filter_ms",
+      "before": null,
+      "after": {
+        "label": "DDS reader minimum separation",
+        "category": "qos",
+        "scope": "route",
+        "type": "number",
+        "description": "OMG DDS1.4 entity-specific QoS declaration. Standard proposals apply only to the stated entity; actual middleware, wire protocol, peer compatibility and capacity remain unverified.",
+        "required": false,
+        "editable": true,
+        "simulation_relevant": false,
+        "validation_relevant": true,
+        "unit": "ms",
+        "min": 0,
+        "max": 2147483647999.999,
+        "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+        "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+        "parameter_origin": "TRANSPORT_PROFILE",
+        "default_status": "PROPOSED_CONDITIONAL",
+        "conditional_defaults": [
+          {
+            "when": {
+              "dds_entity": "DATAREADER"
+            },
+            "value": 0
+          }
+        ],
+        "integer": false,
+        "key": "dds_time_based_filter_ms"
+      },
+      "meaning_and_applicability_review": "Conditional Reader zero minimum-separation proposal; finite>=0ms <=known finite reader deadline. Filters application delivery, not wire bandwidth.",
+      "decision": "NATIVE_OR_DECLARED_CONFIGURATION",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "dds_topic_data_source",
+      "before": null,
+      "after": {
+        "label": "Actual topic-data octet sequence",
+        "category": "qos",
+        "scope": "route",
+        "type": "text",
+        "description": "OMG DDS1.4 entity-specific QoS declaration. Standard proposals apply only to the stated entity; actual middleware, wire protocol, peer compatibility and capacity remain unverified.",
+        "required": false,
+        "editable": true,
+        "simulation_relevant": false,
+        "validation_relevant": true,
+        "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+        "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+        "parameter_origin": "DEVICE_CONFIGURATION",
+        "default_status": "UNKNOWN",
+        "integer": false,
+        "key": "dds_topic_data_source"
+      },
+      "meaning_and_applicability_review": "Actual reference to Topic data octet sequence unknown. Empty initial sequence does not imply topic sample body or authentication.",
+      "decision": "NATIVE_OR_DECLARED_CONFIGURATION",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "dds_topic_name",
+      "before": null,
+      "after": {
+        "label": "Actual topic name",
+        "category": "qos",
+        "scope": "route",
+        "type": "text",
+        "description": "OMG DDS1.4 entity-specific QoS declaration. Standard proposals apply only to the stated entity; actual middleware, wire protocol, peer compatibility and capacity remain unverified.",
+        "required": false,
+        "editable": true,
+        "simulation_relevant": false,
+        "validation_relevant": true,
+        "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+        "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+        "parameter_origin": "DEVICE_CONFIGURATION",
+        "default_status": "UNKNOWN",
+        "integer": false,
+        "key": "dds_topic_name"
+      },
+      "meaning_and_applicability_review": "Actual topic name unknown text for Topic/Writer/Reader. No default topic or verified name/type matching.",
+      "decision": "NATIVE_OR_DECLARED_CONFIGURATION",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "dds_transport_binding",
+      "before": null,
+      "after": {
+        "label": "Actual DDS transport/wire profile reference",
+        "category": "qos",
+        "scope": "route",
+        "type": "text",
+        "description": "OMG DDS1.4 entity-specific QoS declaration. Standard proposals apply only to the stated entity; actual middleware, wire protocol, peer compatibility and capacity remain unverified.",
+        "required": true,
+        "editable": true,
+        "simulation_relevant": false,
+        "validation_relevant": true,
+        "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+        "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+        "parameter_origin": "DEVICE_CONFIGURATION",
+        "default_status": "UNKNOWN",
+        "integer": false,
+        "key": "dds_transport_binding"
+      },
+      "meaning_and_applicability_review": "Required actual transport and wire profile reference unknown; DDS middleware does not imply RTPS UDP IPv4 Ethernet. No own rate or capacity proof.",
+      "decision": "NATIVE_OR_DECLARED_CONFIGURATION",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "dds_transport_priority",
+      "before": null,
+      "after": {
+        "label": "DDS transport-priority hint",
+        "category": "qos",
+        "scope": "route",
+        "type": "number",
+        "description": "OMG DDS1.4 entity-specific QoS declaration. Standard proposals apply only to the stated entity; actual middleware, wire protocol, peer compatibility and capacity remain unverified.",
+        "required": false,
+        "editable": true,
+        "simulation_relevant": false,
+        "validation_relevant": true,
+        "min": -2147483648,
+        "max": 2147483647,
+        "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+        "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+        "parameter_origin": "TRANSPORT_PROFILE",
+        "default_status": "PROPOSED_CONDITIONAL",
+        "conditional_defaults": [
+          {
+            "when": {
+              "dds_entity": "TOPIC"
+            },
+            "value": 0
+          },
+          {
+            "when": {
+              "dds_entity": "DATAWRITER"
+            },
+            "value": 0
+          }
+        ],
+        "integer": true,
+        "key": "dds_transport_priority"
+      },
+      "meaning_and_applicability_review": "Conditional Topic/Writer zero hint proposal; signed32 integer, no Ethernet PCP0..7 mapping or CAN arbitration ID.",
+      "decision": "NATIVE_OR_DECLARED_CONFIGURATION",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "dds_type_source",
+      "before": null,
+      "after": {
+        "label": "Actual topic type/encoding/key definition",
+        "category": "qos",
+        "scope": "route",
+        "type": "text",
+        "description": "OMG DDS1.4 entity-specific QoS declaration. Standard proposals apply only to the stated entity; actual middleware, wire protocol, peer compatibility and capacity remain unverified.",
+        "required": false,
+        "editable": true,
+        "simulation_relevant": false,
+        "validation_relevant": true,
+        "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+        "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+        "parameter_origin": "DEVICE_CONFIGURATION",
+        "default_status": "UNKNOWN",
+        "integer": false,
+        "key": "dds_type_source"
+      },
+      "meaning_and_applicability_review": "Actual topic type/key/encoding definition reference unknown; Reader/Writer/Topic only. No fabricated CDR or field layout.",
+      "decision": "NATIVE_OR_DECLARED_CONFIGURATION",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "dds_user_data_source",
+      "before": null,
+      "after": {
+        "label": "Actual user-data octet sequence",
+        "category": "qos",
+        "scope": "route",
+        "type": "text",
+        "description": "OMG DDS1.4 entity-specific QoS declaration. Standard proposals apply only to the stated entity; actual middleware, wire protocol, peer compatibility and capacity remain unverified.",
+        "required": false,
+        "editable": true,
+        "simulation_relevant": false,
+        "validation_relevant": true,
+        "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+        "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+        "parameter_origin": "DEVICE_CONFIGURATION",
+        "default_status": "UNKNOWN",
+        "integer": false,
+        "key": "dds_user_data_source"
+      },
+      "meaning_and_applicability_review": "Actual reference to user-data octet sequence unknown for Participant/Writer/Reader. Empty sequence is standard initial value; security credentials are not inferred.",
+      "decision": "NATIVE_OR_DECLARED_CONFIGURATION",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "deadline_ms",
+      "before": {
+        "key": "deadline_ms",
+        "label": "Deadline",
+        "category": "timing",
+        "scope": "message",
+        "type": "number",
+        "description": "",
+        "required": true,
+        "editable": true,
+        "simulation_relevant": true,
+        "validation_relevant": true,
+        "default": 100,
+        "unit": "ms",
+        "min": 0.001
+      },
+      "after": {
+        "label": "Deadline",
+        "category": "timing",
+        "scope": "message",
+        "type": "number",
+        "description": "",
+        "required": false,
+        "editable": true,
+        "simulation_relevant": true,
+        "validation_relevant": true,
+        "default": 100,
+        "unit": "ms",
+        "min": 0.001,
+        "parameter_origin": "NIS_SCENARIO",
+        "default_status": "PROPOSED",
+        "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+        "source_revision": "NIS_SCENARIO_POLICY_V1",
+        "key": "deadline_ms"
+      },
+      "meaning_and_applicability_review": "Projektfrist der Nachricht; reviewed explicit NIS scenario/application requirement, not a dds standard or equipment guarantee.",
+      "decision": "EXPLICIT_NIS_SCENARIO",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "dropout_probability",
+      "before": {
+        "key": "dropout_probability",
+        "label": "Failure Injection Dropout",
+        "category": "simulation",
+        "scope": "simulation",
+        "type": "number",
+        "description": "",
+        "required": true,
+        "editable": true,
+        "simulation_relevant": true,
+        "validation_relevant": false,
+        "default": 0,
+        "min": 0,
+        "max": 1
+      },
+      "after": {
+        "label": "Failure Injection Dropout",
+        "category": "simulation",
+        "scope": "simulation",
+        "type": "number",
+        "description": "",
+        "required": false,
+        "editable": true,
+        "simulation_relevant": true,
+        "validation_relevant": false,
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "parameter_origin": "NIS_SCENARIO",
+        "default_status": "PROPOSED",
+        "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+        "source_revision": "NIS_SCENARIO_POLICY_V1",
+        "key": "dropout_probability"
+      },
+      "meaning_and_applicability_review": "NIS-Fehlerinjektion 0–1.; reviewed explicit NIS scenario/application requirement, not a dds standard or equipment guarantee.",
+      "decision": "EXPLICIT_NIS_SCENARIO",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "duplex",
+      "before": {
+        "key": "duplex",
+        "label": "Duplex",
+        "category": "physical",
+        "scope": "network",
+        "type": "select",
+        "description": "",
+        "required": true,
+        "editable": true,
+        "simulation_relevant": true,
+        "validation_relevant": true,
+        "default": "FULL",
+        "options": [
+          "FULL",
+          "HALF"
+        ]
+      },
+      "after": null,
+      "meaning_and_applicability_review": "Physical duplex belongs actual lower transport; DDS publish/subscribe is not Ethernet full duplex.",
+      "decision": "REMOVED_NOT_APPLICABLE",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "duplicate_probability",
+      "before": {
+        "key": "duplicate_probability",
+        "label": "Duplication",
+        "category": "reliability",
+        "scope": "reliability",
+        "type": "number",
+        "description": "",
+        "required": true,
+        "editable": true,
+        "simulation_relevant": true,
+        "validation_relevant": true,
+        "default": 0,
+        "min": 0,
+        "max": 1
+      },
+      "after": {
+        "label": "Duplication",
+        "category": "reliability",
+        "scope": "reliability",
+        "type": "number",
+        "description": "",
+        "required": false,
+        "editable": true,
+        "simulation_relevant": true,
+        "validation_relevant": true,
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "parameter_origin": "NIS_SCENARIO",
+        "default_status": "PROPOSED",
+        "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+        "source_revision": "NIS_SCENARIO_POLICY_V1",
+        "key": "duplicate_probability"
+      },
+      "meaning_and_applicability_review": "NIS-Duplikatinjektion 0–1; reviewed explicit NIS scenario/application requirement, not a dds standard or equipment guarantee.",
+      "decision": "EXPLICIT_NIS_SCENARIO",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "durability",
+      "before": {
+        "key": "durability",
+        "label": "Durability",
+        "category": "qos",
+        "scope": "route",
+        "type": "select",
+        "description": "",
+        "required": true,
+        "editable": true,
+        "simulation_relevant": true,
+        "validation_relevant": true,
+        "default": "VOLATILE",
+        "options": [
+          "VOLATILE",
+          "TRANSIENT_LOCAL",
+          "TRANSIENT",
+          "PERSISTENT"
+        ]
+      },
+      "after": {
+        "label": "Durability",
+        "category": "qos",
+        "scope": "route",
+        "type": "select",
+        "description": "OMG DDS1.4 entity-specific QoS declaration. Standard proposals apply only to the stated entity; actual middleware, wire protocol, peer compatibility and capacity remain unverified.",
+        "required": false,
+        "editable": true,
+        "simulation_relevant": false,
+        "validation_relevant": true,
+        "options": [
+          "VOLATILE",
+          "TRANSIENT_LOCAL",
+          "TRANSIENT",
+          "PERSISTENT"
+        ],
+        "parameter_origin": "TRANSPORT_PROFILE",
+        "default_status": "PROPOSED_CONDITIONAL",
+        "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+        "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+        "conditional_defaults": [
+          {
+            "when": {
+              "dds_entity": "TOPIC"
+            },
+            "value": "VOLATILE"
+          },
+          {
+            "when": {
+              "dds_entity": "DATAWRITER"
+            },
+            "value": "VOLATILE"
+          },
+          {
+            "when": {
+              "dds_entity": "DATAREADER"
+            },
+            "value": "VOLATILE"
+          }
+        ],
+        "key": "durability"
+      },
+      "meaning_and_applicability_review": "Entity-dependent VOLATILE proposal, with TRANSIENT_LOCAL/TRANSIENT/PERSISTENT requiring matching implementation support and peer contract.",
+      "decision": "NATIVE_OR_DECLARED_CONFIGURATION",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "duration_s",
+      "before": {
+        "key": "duration_s",
+        "label": "Simulation Duration",
+        "category": "simulation",
+        "scope": "simulation",
+        "type": "number",
+        "description": "",
+        "required": true,
+        "editable": true,
+        "simulation_relevant": true,
+        "validation_relevant": false,
+        "default": 1,
+        "unit": "s",
+        "min": 0.001
+      },
+      "after": {
+        "label": "Simulation Duration",
+        "category": "simulation",
+        "scope": "simulation",
+        "type": "number",
+        "description": "",
+        "required": false,
+        "editable": true,
+        "simulation_relevant": true,
+        "validation_relevant": false,
+        "default": 1,
+        "unit": "s",
+        "min": 0.001,
+        "parameter_origin": "NIS_SCENARIO",
+        "default_status": "PROPOSED",
+        "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+        "source_revision": "NIS_SCENARIO_POLICY_V1",
+        "key": "duration_s"
+      },
+      "meaning_and_applicability_review": "Positive NIS-Simulationsdauer in s; reviewed explicit NIS scenario/application requirement, not a dds standard or equipment guarantee.",
+      "decision": "EXPLICIT_NIS_SCENARIO",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "frame_loss_probability",
+      "before": {
+        "key": "frame_loss_probability",
+        "label": "Frame Loss",
+        "category": "reliability",
+        "scope": "reliability",
+        "type": "number",
+        "description": "",
+        "required": true,
+        "editable": true,
+        "simulation_relevant": true,
+        "validation_relevant": true,
+        "default": 0,
+        "min": 0,
+        "max": 1
+      },
+      "after": {
+        "label": "Frame Loss",
+        "category": "reliability",
+        "scope": "reliability",
+        "type": "number",
+        "description": "",
+        "required": false,
+        "editable": true,
+        "simulation_relevant": true,
+        "validation_relevant": true,
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "parameter_origin": "NIS_SCENARIO",
+        "default_status": "PROPOSED",
+        "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+        "source_revision": "NIS_SCENARIO_POLICY_V1",
+        "key": "frame_loss_probability"
+      },
+      "meaning_and_applicability_review": "NIS-Fehlerinjektion 0–1; reviewed explicit NIS scenario/application requirement, not a dds standard or equipment guarantee.",
+      "decision": "EXPLICIT_NIS_SCENARIO",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "freshness_ms",
+      "before": {
+        "key": "freshness_ms",
+        "label": "Data Freshness",
+        "category": "timing",
+        "scope": "signal",
+        "type": "number",
+        "description": "",
+        "required": true,
+        "editable": true,
+        "simulation_relevant": true,
+        "validation_relevant": true,
+        "default": 500,
+        "unit": "ms",
+        "min": 0
+      },
+      "after": {
+        "label": "Data Freshness",
+        "category": "timing",
+        "scope": "signal",
+        "type": "number",
+        "description": "",
+        "required": false,
+        "editable": true,
+        "simulation_relevant": true,
+        "validation_relevant": true,
+        "default": 500,
+        "unit": "ms",
+        "min": 0,
+        "parameter_origin": "NIS_SCENARIO",
+        "default_status": "PROPOSED",
+        "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+        "source_revision": "NIS_SCENARIO_POLICY_V1",
+        "key": "freshness_ms"
+      },
+      "meaning_and_applicability_review": "Projektbudget für Datenalter; reviewed explicit NIS scenario/application requirement, not a dds standard or equipment guarantee.",
+      "decision": "EXPLICIT_NIS_SCENARIO",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "gateway_delay_ms",
+      "before": {
+        "key": "gateway_delay_ms",
+        "label": "Gateway Processing",
+        "category": "gateway",
+        "scope": "gateway",
+        "type": "number",
+        "description": "",
+        "required": true,
+        "editable": true,
+        "simulation_relevant": true,
+        "validation_relevant": true,
+        "default": 0.2,
+        "unit": "ms",
+        "min": 0
+      },
+      "after": {
+        "label": "Gateway Processing",
+        "category": "gateway",
+        "scope": "gateway",
+        "type": "number",
+        "description": "",
+        "required": false,
+        "editable": true,
+        "simulation_relevant": true,
+        "validation_relevant": true,
+        "default": 0.2,
+        "unit": "ms",
+        "min": 0,
+        "parameter_origin": "NIS_SCENARIO",
+        "default_status": "PROPOSED",
+        "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+        "source_revision": "NIS_SCENARIO_POLICY_V1",
+        "key": "gateway_delay_ms"
+      },
+      "meaning_and_applicability_review": "NIS-Annahme für eine tatsächliche Gatewayressource; reviewed explicit NIS scenario/application requirement, not a dds standard or equipment guarantee.",
+      "decision": "EXPLICIT_NIS_SCENARIO",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "gateway_input_buffer",
+      "before": {
+        "key": "gateway_input_buffer",
+        "label": "Gateway Input Buffer",
+        "category": "gateway",
+        "scope": "gateway",
+        "type": "number",
+        "description": "",
+        "required": true,
+        "editable": true,
+        "simulation_relevant": true,
+        "validation_relevant": true,
+        "default": 256,
+        "unit": "Frames",
+        "min": 1
+      },
+      "after": null,
+      "meaning_and_applicability_review": "DDS History/ResourceLimits are not a fixed256-frame gateway buffer.",
+      "decision": "REMOVED_NOT_APPLICABLE",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "gateway_maximum_messages_s",
+      "before": {
+        "key": "gateway_maximum_messages_s",
+        "label": "Gateway Messages per Second",
+        "category": "gateway",
+        "scope": "gateway",
+        "type": "number",
+        "description": "",
+        "required": true,
+        "editable": true,
+        "simulation_relevant": true,
+        "validation_relevant": true,
+        "default": 100000,
+        "unit": "msg/s",
+        "min": 1
+      },
+      "after": null,
+      "meaning_and_applicability_review": "No universal DDS100000/s processing throughput.",
+      "decision": "REMOVED_NOT_APPLICABLE",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "gateway_maximum_routes",
+      "before": {
+        "key": "gateway_maximum_routes",
+        "label": "Gateway Maximum Routes",
+        "category": "gateway",
+        "scope": "gateway",
+        "type": "number",
+        "description": "",
+        "required": true,
+        "editable": true,
+        "simulation_relevant": true,
+        "validation_relevant": true,
+        "default": 10000,
+        "min": 1
+      },
+      "after": null,
+      "meaning_and_applicability_review": "No universal DDS10000-route gateway table.",
+      "decision": "REMOVED_NOT_APPLICABLE",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "gateway_maximum_throughput",
+      "before": {
+        "key": "gateway_maximum_throughput",
+        "label": "Gateway Throughput",
+        "category": "gateway",
+        "scope": "gateway",
+        "type": "number",
+        "description": "",
+        "required": true,
+        "editable": true,
+        "simulation_relevant": true,
+        "validation_relevant": true,
+        "default": 100000000,
+        "unit": "bit/s",
+        "min": 1
+      },
+      "after": null,
+      "meaning_and_applicability_review": "No universal100Mbit/s DDS gateway capacity.",
+      "decision": "REMOVED_NOT_APPLICABLE",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "gateway_output_buffer",
+      "before": {
+        "key": "gateway_output_buffer",
+        "label": "Gateway Output Buffer",
+        "category": "gateway",
+        "scope": "gateway",
+        "type": "number",
+        "description": "",
+        "required": true,
+        "editable": true,
+        "simulation_relevant": true,
+        "validation_relevant": true,
+        "default": 256,
+        "unit": "Frames",
+        "min": 1
+      },
+      "after": null,
+      "meaning_and_applicability_review": "No universal DDS256-frame gateway output buffer.",
+      "decision": "REMOVED_NOT_APPLICABLE",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "gateway_queue_delay_ms",
+      "before": {
+        "key": "gateway_queue_delay_ms",
+        "label": "Gateway Queueing",
+        "category": "gateway",
+        "scope": "gateway",
+        "type": "number",
+        "description": "",
+        "required": true,
+        "editable": true,
+        "simulation_relevant": true,
+        "validation_relevant": true,
+        "default": 0,
+        "unit": "ms",
+        "min": 0
+      },
+      "after": {
+        "label": "Gateway Queueing",
+        "category": "gateway",
+        "scope": "gateway",
+        "type": "number",
+        "description": "",
+        "required": false,
+        "editable": true,
+        "simulation_relevant": true,
+        "validation_relevant": true,
+        "default": 0,
+        "unit": "ms",
+        "min": 0,
+        "parameter_origin": "NIS_SCENARIO",
+        "default_status": "PROPOSED",
+        "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+        "source_revision": "NIS_SCENARIO_POLICY_V1",
+        "key": "gateway_queue_delay_ms"
+      },
+      "meaning_and_applicability_review": "NIS-Gatewayannahme; reviewed explicit NIS scenario/application requirement, not a dds standard or equipment guarantee.",
+      "decision": "EXPLICIT_NIS_SCENARIO",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "history_depth",
+      "before": {
+        "key": "history_depth",
+        "label": "History Depth",
+        "category": "qos",
+        "scope": "route",
+        "type": "number",
+        "description": "",
+        "required": true,
+        "editable": true,
+        "simulation_relevant": true,
+        "validation_relevant": true,
+        "default": 10,
+        "min": 1
+      },
+      "after": {
+        "label": "History Depth",
+        "category": "qos",
+        "scope": "route",
+        "type": "number",
+        "description": "OMG DDS1.4 entity-specific QoS declaration. Standard proposals apply only to the stated entity; actual middleware, wire protocol, peer compatibility and capacity remain unverified.",
+        "required": false,
+        "editable": true,
+        "simulation_relevant": false,
+        "validation_relevant": true,
+        "min": 1,
+        "parameter_origin": "TRANSPORT_PROFILE",
+        "default_status": "PROPOSED_CONDITIONAL",
+        "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+        "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+        "conditional_defaults": [
+          {
+            "when": {
+              "dds_entity": "TOPIC",
+              "history_kind": "KEEP_LAST"
+            },
+            "value": 1
+          },
+          {
+            "when": {
+              "dds_entity": "DATAWRITER",
+              "history_kind": "KEEP_LAST"
+            },
+            "value": 1
+          },
+          {
+            "when": {
+              "dds_entity": "DATAREADER",
+              "history_kind": "KEEP_LAST"
+            },
+            "value": 1
+          }
+        ],
+        "integer": true,
+        "max": 2147483647,
+        "key": "history_depth"
+      },
+      "meaning_and_applicability_review": "KEEP_LAST entity-dependent standard proposal1, replacing10; positive signed32 integer. Ignored by KEEP_ALL; must fit known finite per-instance resource limit.",
+      "decision": "NATIVE_OR_DECLARED_CONFIGURATION",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "history_kind",
+      "before": {
+        "key": "history_kind",
+        "label": "History",
+        "category": "qos",
+        "scope": "route",
+        "type": "select",
+        "description": "",
+        "required": true,
+        "editable": true,
+        "simulation_relevant": true,
+        "validation_relevant": true,
+        "default": "KEEP_LAST",
+        "options": [
+          "KEEP_LAST",
+          "KEEP_ALL"
+        ]
+      },
+      "after": {
+        "label": "History",
+        "category": "qos",
+        "scope": "route",
+        "type": "select",
+        "description": "OMG DDS1.4 entity-specific QoS declaration. Standard proposals apply only to the stated entity; actual middleware, wire protocol, peer compatibility and capacity remain unverified.",
+        "required": false,
+        "editable": true,
+        "simulation_relevant": false,
+        "validation_relevant": true,
+        "options": [
+          "KEEP_LAST",
+          "KEEP_ALL"
+        ],
+        "parameter_origin": "TRANSPORT_PROFILE",
+        "default_status": "PROPOSED_CONDITIONAL",
+        "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+        "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+        "conditional_defaults": [
+          {
+            "when": {
+              "dds_entity": "TOPIC"
+            },
+            "value": "KEEP_LAST"
+          },
+          {
+            "when": {
+              "dds_entity": "DATAWRITER"
+            },
+            "value": "KEEP_LAST"
+          },
+          {
+            "when": {
+              "dds_entity": "DATAREADER"
+            },
+            "value": "KEEP_LAST"
+          }
+        ],
+        "key": "history_kind"
+      },
+      "meaning_and_applicability_review": "Entity-dependent KEEP_LAST proposal for Topic/Writer/Reader; KEEP_ALL is a separate cache policy, not unlimited physical memory.",
+      "decision": "NATIVE_OR_DECLARED_CONFIGURATION",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "jitter_ms",
+      "before": {
+        "key": "jitter_ms",
+        "label": "Jitter Budget",
+        "category": "timing",
+        "scope": "route",
+        "type": "number",
+        "description": "",
+        "required": true,
+        "editable": true,
+        "simulation_relevant": true,
+        "validation_relevant": true,
+        "default": 1,
+        "unit": "ms",
+        "min": 0
+      },
+      "after": {
+        "label": "Jitter Budget",
+        "category": "timing",
+        "scope": "route",
+        "type": "number",
+        "description": "",
+        "required": false,
+        "editable": true,
+        "simulation_relevant": true,
+        "validation_relevant": true,
+        "default": 1,
+        "unit": "ms",
+        "min": 0,
+        "parameter_origin": "NIS_SCENARIO",
+        "default_status": "PROPOSED",
+        "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+        "source_revision": "NIS_SCENARIO_POLICY_V1",
+        "key": "jitter_ms"
+      },
+      "meaning_and_applicability_review": "Projektbudget für Zeitabweichung; reviewed explicit NIS scenario/application requirement, not a dds standard or equipment guarantee.",
+      "decision": "EXPLICIT_NIS_SCENARIO",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "lifespan_ms",
+      "before": {
+        "key": "lifespan_ms",
+        "label": "Lifespan",
+        "category": "timing",
+        "scope": "message",
+        "type": "number",
+        "description": "",
+        "required": true,
+        "editable": true,
+        "simulation_relevant": true,
+        "validation_relevant": true,
+        "default": 0,
+        "unit": "ms",
+        "min": 0
+      },
+      "after": {
+        "label": "Lifespan",
+        "category": "timing",
+        "scope": "message",
+        "type": "number",
+        "description": "OMG DDS1.4 entity-specific QoS declaration. Standard proposals apply only to the stated entity; actual middleware, wire protocol, peer compatibility and capacity remain unverified.",
+        "required": false,
+        "editable": true,
+        "simulation_relevant": false,
+        "validation_relevant": true,
+        "unit": "ms",
+        "min": 0,
+        "parameter_origin": "DEVICE_CONFIGURATION",
+        "default_status": "UNKNOWN",
+        "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+        "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+        "key": "lifespan_ms"
+      },
+      "meaning_and_applicability_review": "Actual finite sample validity, milliseconds>=0, unknown; zero expires immediately, not infinite. Rejected with explicit INFINITE mode. Writer/Topic only.",
+      "decision": "NATIVE_OR_DECLARED_CONFIGURATION",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "liveliness",
+      "before": {
+        "key": "liveliness",
+        "label": "Liveliness",
+        "category": "qos",
+        "scope": "route",
+        "type": "select",
+        "description": "",
+        "required": true,
+        "editable": true,
+        "simulation_relevant": true,
+        "validation_relevant": true,
+        "default": "AUTOMATIC",
+        "options": [
+          "AUTOMATIC",
+          "MANUAL_BY_PARTICIPANT",
+          "MANUAL_BY_TOPIC"
+        ]
+      },
+      "after": {
+        "label": "Liveliness",
+        "category": "qos",
+        "scope": "route",
+        "type": "select",
+        "description": "OMG DDS1.4 entity-specific QoS declaration. Standard proposals apply only to the stated entity; actual middleware, wire protocol, peer compatibility and capacity remain unverified.",
+        "required": false,
+        "editable": true,
+        "simulation_relevant": false,
+        "validation_relevant": true,
+        "options": [
+          "AUTOMATIC",
+          "MANUAL_BY_PARTICIPANT",
+          "MANUAL_BY_TOPIC"
+        ],
+        "parameter_origin": "TRANSPORT_PROFILE",
+        "default_status": "PROPOSED_CONDITIONAL",
+        "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+        "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+        "conditional_defaults": [
+          {
+            "when": {
+              "dds_entity": "TOPIC"
+            },
+            "value": "AUTOMATIC"
+          },
+          {
+            "when": {
+              "dds_entity": "DATAWRITER"
+            },
+            "value": "AUTOMATIC"
+          },
+          {
+            "when": {
+              "dds_entity": "DATAREADER"
+            },
+            "value": "AUTOMATIC"
+          }
+        ],
+        "key": "liveliness"
+      },
+      "meaning_and_applicability_review": "Entity-dependent AUTOMATIC proposal; manual modes require actual assertion behavior. Lease duration is separately explicit, not NIS clock synchronization.",
+      "decision": "NATIVE_OR_DECLARED_CONFIGURATION",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "max_events",
+      "before": {
+        "key": "max_events",
+        "label": "Maximum Events",
+        "category": "simulation",
+        "scope": "simulation",
+        "type": "number",
+        "description": "",
+        "required": true,
+        "editable": true,
+        "simulation_relevant": true,
+        "validation_relevant": false,
+        "default": 100000,
+        "min": 1
+      },
+      "after": {
+        "label": "Maximum Events",
+        "category": "simulation",
+        "scope": "simulation",
+        "type": "number",
+        "description": "",
+        "required": false,
+        "editable": true,
+        "simulation_relevant": true,
+        "validation_relevant": false,
+        "default": 100000,
+        "min": 1,
+        "parameter_origin": "NIS_SCENARIO",
+        "default_status": "PROPOSED",
+        "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+        "source_revision": "NIS_SCENARIO_POLICY_V1",
+        "integer": true,
+        "key": "max_events"
+      },
+      "meaning_and_applicability_review": "NIS-Laufbudget; reviewed explicit NIS scenario/application requirement, not a dds standard or equipment guarantee.",
+      "decision": "EXPLICIT_NIS_SCENARIO",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "maximum_latency_ms",
+      "before": {
+        "key": "maximum_latency_ms",
+        "label": "Maximum Latency",
+        "category": "timing",
+        "scope": "route",
+        "type": "number",
+        "description": "",
+        "required": true,
+        "editable": true,
+        "simulation_relevant": true,
+        "validation_relevant": true,
+        "default": 100,
+        "unit": "ms",
+        "min": 0
+      },
+      "after": {
+        "label": "Maximum Latency",
+        "category": "timing",
+        "scope": "route",
+        "type": "number",
+        "description": "",
+        "required": false,
+        "editable": true,
+        "simulation_relevant": true,
+        "validation_relevant": true,
+        "default": 100,
+        "unit": "ms",
+        "min": 0,
+        "parameter_origin": "NIS_SCENARIO",
+        "default_status": "PROPOSED",
+        "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+        "source_revision": "NIS_SCENARIO_POLICY_V1",
+        "key": "maximum_latency_ms"
+      },
+      "meaning_and_applicability_review": "Zulässige funktionale Latenz; reviewed explicit NIS scenario/application requirement, not a dds standard or equipment guarantee.",
+      "decision": "EXPLICIT_NIS_SCENARIO",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "maximum_sync_error_ms",
+      "before": {
+        "key": "maximum_sync_error_ms",
+        "label": "Maximum Sync Error",
+        "category": "synchronization",
+        "scope": "network",
+        "type": "number",
+        "description": "",
+        "required": true,
+        "editable": true,
+        "simulation_relevant": true,
+        "validation_relevant": true,
+        "default": 1,
+        "unit": "ms",
+        "min": 0
+      },
+      "after": {
+        "label": "Maximum Sync Error",
+        "category": "synchronization",
+        "scope": "network",
+        "type": "number",
+        "description": "",
+        "required": false,
+        "editable": true,
+        "simulation_relevant": true,
+        "validation_relevant": true,
+        "default": 1,
+        "unit": "ms",
+        "min": 0,
+        "parameter_origin": "NIS_SCENARIO",
+        "default_status": "PROPOSED",
+        "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+        "source_revision": "NIS_SCENARIO_POLICY_V1",
+        "key": "maximum_sync_error_ms"
+      },
+      "meaning_and_applicability_review": "NIS-E2E-Annahme für Uhrfehler; reviewed explicit NIS scenario/application requirement, not a dds standard or equipment guarantee.",
+      "decision": "EXPLICIT_NIS_SCENARIO",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "minimum_cycle_time_ms",
+      "before": {
+        "key": "minimum_cycle_time_ms",
+        "label": "Minimum Cycle Time",
+        "category": "timing",
+        "scope": "message",
+        "type": "number",
+        "description": "",
+        "required": true,
+        "editable": true,
+        "simulation_relevant": true,
+        "validation_relevant": true,
+        "default": 1,
+        "unit": "ms",
+        "min": 0.001
+      },
+      "after": {
+        "label": "Minimum Cycle Time",
+        "category": "timing",
+        "scope": "message",
+        "type": "number",
+        "description": "",
+        "required": false,
+        "editable": true,
+        "simulation_relevant": true,
+        "validation_relevant": true,
+        "default": 1,
+        "unit": "ms",
+        "min": 0.001,
+        "parameter_origin": "NIS_SCENARIO",
+        "default_status": "PROPOSED",
+        "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+        "source_revision": "NIS_SCENARIO_POLICY_V1",
+        "key": "minimum_cycle_time_ms"
+      },
+      "meaning_and_applicability_review": "Angeforderte minimale Nachrichtenperiode; reviewed explicit NIS scenario/application requirement, not a dds standard or equipment guarantee.",
+      "decision": "EXPLICIT_NIS_SCENARIO",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "mtu_bytes",
+      "before": {
+        "key": "mtu_bytes",
+        "label": "MTU",
+        "category": "physical",
+        "scope": "network",
+        "type": "number",
+        "description": "",
+        "required": true,
+        "editable": true,
+        "simulation_relevant": true,
+        "validation_relevant": true,
+        "default": 1500,
+        "unit": "Byte",
+        "min": 64,
+        "max": 65535
+      },
+      "after": null,
+      "meaning_and_applicability_review": "Link/IP MTU belongs actual lower binding, not DDS serialized sample size.",
+      "decision": "REMOVED_NOT_APPLICABLE",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "overload_threshold",
+      "before": {
+        "key": "overload_threshold",
+        "label": "Load Overload",
+        "category": "capacity",
+        "scope": "analysis",
+        "type": "number",
+        "description": "",
+        "required": true,
+        "editable": true,
+        "simulation_relevant": false,
+        "validation_relevant": true,
+        "default": 90,
+        "unit": "%",
+        "min": 1,
+        "max": 100
+      },
+      "after": {
+        "label": "Load Overload",
+        "category": "capacity",
+        "scope": "analysis",
+        "type": "number",
+        "description": "",
+        "required": false,
+        "editable": true,
+        "simulation_relevant": false,
+        "validation_relevant": true,
+        "default": 90,
+        "unit": "%",
+        "min": 1,
+        "max": 100,
+        "parameter_origin": "NIS_SCENARIO",
+        "default_status": "PROPOSED",
+        "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+        "source_revision": "NIS_SCENARIO_POLICY_V1",
+        "key": "overload_threshold"
+      },
+      "meaning_and_applicability_review": "NIS-Überlastschwelle in Prozent; reviewed explicit NIS scenario/application requirement, not a dds standard or equipment guarantee.",
+      "decision": "EXPLICIT_NIS_SCENARIO",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "packet_loss_probability",
+      "before": {
+        "key": "packet_loss_probability",
+        "label": "Packet Loss",
+        "category": "reliability",
+        "scope": "reliability",
+        "type": "number",
+        "description": "",
+        "required": true,
+        "editable": true,
+        "simulation_relevant": true,
+        "validation_relevant": true,
+        "default": 0,
+        "min": 0,
+        "max": 1
+      },
+      "after": {
+        "label": "Packet Loss",
+        "category": "reliability",
+        "scope": "reliability",
+        "type": "number",
+        "description": "",
+        "required": false,
+        "editable": true,
+        "simulation_relevant": true,
+        "validation_relevant": true,
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "parameter_origin": "NIS_SCENARIO",
+        "default_status": "PROPOSED",
+        "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+        "source_revision": "NIS_SCENARIO_POLICY_V1",
+        "key": "packet_loss_probability"
+      },
+      "meaning_and_applicability_review": "Injizierte NIS-Paketverlustwahrscheinlichkeit 0–1; reviewed explicit NIS scenario/application requirement, not a dds standard or equipment guarantee.",
+      "decision": "EXPLICIT_NIS_SCENARIO",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "payload_bytes",
+      "before": {
+        "key": "payload_bytes",
+        "label": "Payload",
+        "category": "physical",
+        "scope": "message",
+        "type": "number",
+        "description": "Nutzdaten pro Nachricht.",
+        "required": true,
+        "editable": true,
+        "simulation_relevant": true,
+        "validation_relevant": true,
+        "default": 8,
+        "unit": "Byte",
+        "min": 0,
+        "max": 65507
+      },
+      "after": {
+        "label": "Payload",
+        "category": "physical",
+        "scope": "message",
+        "type": "number",
+        "description": "Actual serialized topic sample body octets, separate from selected XTypes/CDR/RTPS/transport framing and fragmentation. No universal65507/1500-byte body limit.",
+        "required": false,
+        "editable": true,
+        "simulation_relevant": true,
+        "validation_relevant": true,
+        "unit": "Byte",
+        "min": 0,
+        "parameter_origin": "DEVICE_CONFIGURATION",
+        "default_status": "UNKNOWN",
+        "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+        "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+        "integer": true,
+        "key": "payload_bytes"
+      },
+      "meaning_and_applicability_review": "Actual serialized sample octets unknown, nonnegative integer; no Ethernet MTU or IPv4 UDP limit as complete DDS sample size. Encoding and fragmentation need explicit profiles.",
+      "decision": "NATIVE_OR_DECLARED_CONFIGURATION",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "peak_factor",
+      "before": {
+        "key": "peak_factor",
+        "label": "Peak Factor",
+        "category": "capacity",
+        "scope": "analysis",
+        "type": "number",
+        "description": "",
+        "required": true,
+        "editable": true,
+        "simulation_relevant": false,
+        "validation_relevant": true,
+        "default": 1.15,
+        "min": 1
+      },
+      "after": {
+        "label": "Peak Factor",
+        "category": "capacity",
+        "scope": "analysis",
+        "type": "number",
+        "description": "",
+        "required": false,
+        "editable": true,
+        "simulation_relevant": false,
+        "validation_relevant": true,
+        "default": 1.15,
+        "min": 1,
+        "parameter_origin": "NIS_SCENARIO",
+        "default_status": "PROPOSED",
+        "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+        "source_revision": "NIS_SCENARIO_POLICY_V1",
+        "key": "peak_factor"
+      },
+      "meaning_and_applicability_review": "Dimensionsloser NIS-Spitzenfaktor; reviewed explicit NIS scenario/application requirement, not a dds standard or equipment guarantee.",
+      "decision": "EXPLICIT_NIS_SCENARIO",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "propagation_delay_ms",
+      "before": {
+        "key": "propagation_delay_ms",
+        "label": "Propagation",
+        "category": "timing",
+        "scope": "network",
+        "type": "number",
+        "description": "",
+        "required": true,
+        "editable": true,
+        "simulation_relevant": true,
+        "validation_relevant": true,
+        "default": 0.01,
+        "unit": "ms",
+        "min": 0
+      },
+      "after": {
+        "label": "Propagation",
+        "category": "timing",
+        "scope": "network",
+        "type": "number",
+        "description": "",
+        "required": false,
+        "editable": true,
+        "simulation_relevant": true,
+        "validation_relevant": true,
+        "default": 0.01,
+        "unit": "ms",
+        "min": 0,
+        "parameter_origin": "NIS_SCENARIO",
+        "default_status": "PROPOSED",
+        "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+        "source_revision": "NIS_SCENARIO_POLICY_V1",
+        "key": "propagation_delay_ms"
+      },
+      "meaning_and_applicability_review": "Szenarioannahme für Laufzeit; reviewed explicit NIS scenario/application requirement, not a dds standard or equipment guarantee.",
+      "decision": "EXPLICIT_NIS_SCENARIO",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "protocol_conversion_delay_ms",
+      "before": {
+        "key": "protocol_conversion_delay_ms",
+        "label": "Protocol Conversion",
+        "category": "gateway",
+        "scope": "gateway",
+        "type": "number",
+        "description": "",
+        "required": true,
+        "editable": true,
+        "simulation_relevant": true,
+        "validation_relevant": true,
+        "default": 0,
+        "unit": "ms",
+        "min": 0
+      },
+      "after": {
+        "label": "Protocol Conversion",
+        "category": "gateway",
+        "scope": "gateway",
+        "type": "number",
+        "description": "",
+        "required": false,
+        "editable": true,
+        "simulation_relevant": true,
+        "validation_relevant": true,
+        "default": 0,
+        "unit": "ms",
+        "min": 0,
+        "parameter_origin": "NIS_SCENARIO",
+        "default_status": "PROPOSED",
+        "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+        "source_revision": "NIS_SCENARIO_POLICY_V1",
+        "key": "protocol_conversion_delay_ms"
+      },
+      "meaning_and_applicability_review": "NIS-Annahme an einem tatsächlich verwendeten Konverter; reviewed explicit NIS scenario/application requirement, not a dds standard or equipment guarantee.",
+      "decision": "EXPLICIT_NIS_SCENARIO",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "qos_priority",
+      "before": {
+        "key": "qos_priority",
+        "label": "Default Priority",
+        "category": "qos",
+        "scope": "route",
+        "type": "number",
+        "description": "",
+        "required": true,
+        "editable": true,
+        "simulation_relevant": true,
+        "validation_relevant": true,
+        "default": 3,
+        "min": 0,
+        "max": 7
+      },
+      "after": null,
+      "meaning_and_applicability_review": "Ethernet PCP3 is not DDS signed transport-priority hint.",
+      "decision": "REMOVED_NOT_APPLICABLE",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "queue_policy",
+      "before": {
+        "key": "queue_policy",
+        "label": "Queue Policy",
+        "category": "qos",
+        "scope": "network",
+        "type": "select",
+        "description": "",
+        "required": true,
+        "editable": true,
+        "simulation_relevant": true,
+        "validation_relevant": true,
+        "default": "FIFO",
+        "options": [
+          "FIFO",
+          "PRIORITY",
+          "STRICT_PRIORITY",
+          "WEIGHTED_PRIORITY",
+          "WRR",
+          "ROUND_ROBIN",
+          "TIME_TRIGGERED",
+          "TAS",
+          "CBS",
+          "CUSTOM"
+        ]
+      },
+      "after": {
+        "label": "Queue Policy",
+        "category": "qos",
+        "scope": "network",
+        "type": "select",
+        "description": "",
+        "required": false,
+        "editable": true,
+        "simulation_relevant": true,
+        "validation_relevant": true,
+        "default": "FIFO",
+        "options": [
+          "FIFO",
+          "PRIORITY",
+          "CUSTOM"
+        ],
+        "parameter_origin": "NIS_SCENARIO",
+        "default_status": "PROPOSED",
+        "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+        "source_revision": "NIS_SCENARIO_POLICY_V1",
+        "key": "queue_policy"
+      },
+      "meaning_and_applicability_review": "NIS-Queueverfahren; reviewed explicit NIS scenario/application requirement, not a dds standard or equipment guarantee.",
+      "decision": "EXPLICIT_NIS_SCENARIO",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "queue_size",
+      "before": {
+        "key": "queue_size",
+        "label": "Queue Size",
+        "category": "qos",
+        "scope": "network",
+        "type": "number",
+        "description": "",
+        "required": true,
+        "editable": true,
+        "simulation_relevant": true,
+        "validation_relevant": true,
+        "default": 256,
+        "unit": "Frames",
+        "min": 1
+      },
+      "after": {
+        "label": "Queue Size",
+        "category": "qos",
+        "scope": "network",
+        "type": "number",
+        "description": "",
+        "required": false,
+        "editable": true,
+        "simulation_relevant": true,
+        "validation_relevant": true,
+        "default": 256,
+        "unit": "Frames",
+        "min": 1,
+        "parameter_origin": "NIS_SCENARIO",
+        "default_status": "PROPOSED",
+        "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+        "source_revision": "NIS_SCENARIO_POLICY_V1",
+        "integer": true,
+        "key": "queue_size"
+      },
+      "meaning_and_applicability_review": "Anzahl Einträge einer abstrakten NIS-Queue; reviewed explicit NIS scenario/application requirement, not a dds standard or equipment guarantee.",
+      "decision": "EXPLICIT_NIS_SCENARIO",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "rate_limit_bit_s",
+      "before": {
+        "key": "rate_limit_bit_s",
+        "label": "Rate Limit",
+        "category": "qos",
+        "scope": "route",
+        "type": "number",
+        "description": "",
+        "required": true,
+        "editable": true,
+        "simulation_relevant": true,
+        "validation_relevant": true,
+        "default": 0,
+        "unit": "bit/s",
+        "min": 0
+      },
+      "after": null,
+      "meaning_and_applicability_review": "Lower link shaper differs from DDS resource/history/time-filter policies.",
+      "decision": "REMOVED_NOT_APPLICABLE",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "reliability_mode",
+      "before": {
+        "key": "reliability_mode",
+        "label": "Reliability Mode",
+        "category": "reliability",
+        "scope": "route",
+        "type": "select",
+        "description": "",
+        "required": true,
+        "editable": true,
+        "simulation_relevant": true,
+        "validation_relevant": true,
+        "default": "RELIABLE",
+        "options": [
+          "BEST_EFFORT",
+          "RELIABLE"
+        ]
+      },
+      "after": {
+        "label": "Reliability Mode",
+        "category": "reliability",
+        "scope": "route",
+        "type": "select",
+        "description": "OMG DDS1.4 entity-specific QoS declaration. Standard proposals apply only to the stated entity; actual middleware, wire protocol, peer compatibility and capacity remain unverified.",
+        "required": false,
+        "editable": true,
+        "simulation_relevant": false,
+        "validation_relevant": true,
+        "options": [
+          "BEST_EFFORT",
+          "RELIABLE"
+        ],
+        "parameter_origin": "DEVICE_CONFIGURATION",
+        "default_status": "PROPOSED_CONDITIONAL",
+        "source": "https://www.omg.org/spec/DDS/1.4/PDF",
+        "source_revision": "OMG DDS1.4 formal/2015-04-10, QoS table2.2.3 and sections2.2.3.1..22; normative20140501IDL",
+        "conditional_defaults": [
+          {
+            "when": {
+              "dds_entity": "TOPIC"
+            },
+            "value": "BEST_EFFORT"
+          },
+          {
+            "when": {
+              "dds_entity": "DATAWRITER"
+            },
+            "value": "RELIABLE"
+          },
+          {
+            "when": {
+              "dds_entity": "DATAREADER"
+            },
+            "value": "BEST_EFFORT"
+          }
+        ],
+        "key": "reliability_mode"
+      },
+      "meaning_and_applicability_review": "Standard conditional Writer RELIABLE; Reader/Topic BEST_EFFORT. No global RELIABLE default. History/resource/peer behavior determines delivery; no physical timing guarantee.",
+      "decision": "NATIVE_OR_DECLARED_CONFIGURATION",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "reordering_probability",
+      "before": {
+        "key": "reordering_probability",
+        "label": "Reordering",
+        "category": "reliability",
+        "scope": "reliability",
+        "type": "number",
+        "description": "",
+        "required": true,
+        "editable": true,
+        "simulation_relevant": true,
+        "validation_relevant": true,
+        "default": 0,
+        "min": 0,
+        "max": 1
+      },
+      "after": {
+        "label": "Reordering",
+        "category": "reliability",
+        "scope": "reliability",
+        "type": "number",
+        "description": "",
+        "required": false,
+        "editable": true,
+        "simulation_relevant": true,
+        "validation_relevant": true,
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "parameter_origin": "NIS_SCENARIO",
+        "default_status": "PROPOSED",
+        "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+        "source_revision": "NIS_SCENARIO_POLICY_V1",
+        "key": "reordering_probability"
+      },
+      "meaning_and_applicability_review": "NIS-Reihenfolgeinjektion 0–1; reviewed explicit NIS scenario/application requirement, not a dds standard or equipment guarantee.",
+      "decision": "EXPLICIT_NIS_SCENARIO",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "required_reliability",
+      "before": {
+        "key": "required_reliability",
+        "label": "Required Reliability",
+        "category": "reliability",
+        "scope": "reliability",
+        "type": "number",
+        "description": "",
+        "required": true,
+        "editable": true,
+        "simulation_relevant": true,
+        "validation_relevant": true,
+        "default": 0.999,
+        "min": 0,
+        "max": 1
+      },
+      "after": {
+        "label": "Required Reliability",
+        "category": "reliability",
+        "scope": "reliability",
+        "type": "number",
+        "description": "",
+        "required": false,
+        "editable": true,
+        "simulation_relevant": true,
+        "validation_relevant": true,
+        "default": 0.999,
+        "min": 0,
+        "max": 1,
+        "parameter_origin": "NIS_SCENARIO",
+        "default_status": "PROPOSED",
+        "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+        "source_revision": "NIS_SCENARIO_POLICY_V1",
+        "key": "required_reliability"
+      },
+      "meaning_and_applicability_review": "Zuverlässigkeitsanforderung des Szenarios; reviewed explicit NIS scenario/application requirement, not a dds standard or equipment guarantee.",
+      "decision": "EXPLICIT_NIS_SCENARIO",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "reserved_bandwidth_percent",
+      "before": {
+        "key": "reserved_bandwidth_percent",
+        "label": "Reserved Bandwidth",
+        "category": "qos",
+        "scope": "network",
+        "type": "number",
+        "description": "",
+        "required": true,
+        "editable": true,
+        "simulation_relevant": true,
+        "validation_relevant": true,
+        "default": 0,
+        "unit": "%",
+        "min": 0,
+        "max": 100
+      },
+      "after": null,
+      "meaning_and_applicability_review": "No universal DDS bandwidth reservation percentage.",
+      "decision": "REMOVED_NOT_APPLICABLE",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "retransmission_delay_ms",
+      "before": {
+        "key": "retransmission_delay_ms",
+        "label": "Retry Delay",
+        "category": "reliability",
+        "scope": "reliability",
+        "type": "number",
+        "description": "",
+        "required": true,
+        "editable": true,
+        "simulation_relevant": true,
+        "validation_relevant": true,
+        "default": 0,
+        "unit": "ms",
+        "min": 0
+      },
+      "after": null,
+      "meaning_and_applicability_review": "No universal DDS retry timer0ms; max blocking is a distinct API policy.",
+      "decision": "REMOVED_NOT_APPLICABLE",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "retransmission_enabled",
+      "before": {
+        "key": "retransmission_enabled",
+        "label": "Retransmission",
+        "category": "reliability",
+        "scope": "reliability",
+        "type": "boolean",
+        "description": "",
+        "required": true,
+        "editable": true,
+        "simulation_relevant": true,
+        "validation_relevant": true,
+        "default": false
+      },
+      "after": null,
+      "meaning_and_applicability_review": "DDS entity Reliability and selected wire implementation own retransmission behavior.",
+      "decision": "REMOVED_NOT_APPLICABLE",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "retransmission_rate",
+      "before": {
+        "key": "retransmission_rate",
+        "label": "Retransmission Rate",
+        "category": "reliability",
+        "scope": "reliability",
+        "type": "number",
+        "description": "",
+        "required": true,
+        "editable": true,
+        "simulation_relevant": true,
+        "validation_relevant": true,
+        "default": 0,
+        "min": 0,
+        "max": 1
+      },
+      "after": null,
+      "meaning_and_applicability_review": "No universal DDS probabilistic retry rate.",
+      "decision": "REMOVED_NOT_APPLICABLE",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "retry_limit",
+      "before": {
+        "key": "retry_limit",
+        "label": "Retry Limit",
+        "category": "reliability",
+        "scope": "reliability",
+        "type": "number",
+        "description": "",
+        "required": true,
+        "editable": true,
+        "simulation_relevant": true,
+        "validation_relevant": true,
+        "default": 0,
+        "min": 0
+      },
+      "after": null,
+      "meaning_and_applicability_review": "DDS does not define generic retry count0/3; actual RTPS/transport state belongs selected profile.",
+      "decision": "REMOVED_NOT_APPLICABLE",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "seed",
+      "before": {
+        "key": "seed",
+        "label": "Random Seed",
+        "category": "simulation",
+        "scope": "simulation",
+        "type": "number",
+        "description": "",
+        "required": true,
+        "editable": true,
+        "simulation_relevant": true,
+        "validation_relevant": false,
+        "default": 42,
+        "min": 0
+      },
+      "after": {
+        "label": "Random Seed",
+        "category": "simulation",
+        "scope": "simulation",
+        "type": "number",
+        "description": "",
+        "required": false,
+        "editable": true,
+        "simulation_relevant": true,
+        "validation_relevant": false,
+        "default": 42,
+        "min": 0,
+        "parameter_origin": "NIS_SCENARIO",
+        "default_status": "PROPOSED",
+        "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+        "source_revision": "NIS_SCENARIO_POLICY_V1",
+        "integer": true,
+        "key": "seed"
+      },
+      "meaning_and_applicability_review": "NIS-Zufallsinitialisierung; reviewed explicit NIS scenario/application requirement, not a dds standard or equipment guarantee.",
+      "decision": "EXPLICIT_NIS_SCENARIO",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "source_processing_delay_ms",
+      "before": {
+        "key": "source_processing_delay_ms",
+        "label": "Source Processing",
+        "category": "timing",
+        "scope": "route",
+        "type": "number",
+        "description": "",
+        "required": true,
+        "editable": true,
+        "simulation_relevant": true,
+        "validation_relevant": true,
+        "default": 0.1,
+        "unit": "ms",
+        "min": 0
+      },
+      "after": {
+        "label": "Source Processing",
+        "category": "timing",
+        "scope": "route",
+        "type": "number",
+        "description": "",
+        "required": false,
+        "editable": true,
+        "simulation_relevant": true,
+        "validation_relevant": true,
+        "default": 0.1,
+        "unit": "ms",
+        "min": 0,
+        "parameter_origin": "NIS_SCENARIO",
+        "default_status": "PROPOSED",
+        "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+        "source_revision": "NIS_SCENARIO_POLICY_V1",
+        "key": "source_processing_delay_ms"
+      },
+      "meaning_and_applicability_review": "NIS-Verarbeitungsannahme an der Quelle, nicht garantierte Gerätezeit.; reviewed explicit NIS scenario/application requirement, not a dds standard or equipment guarantee.",
+      "decision": "EXPLICIT_NIS_SCENARIO",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "sync_interval_ms",
+      "before": {
+        "key": "sync_interval_ms",
+        "label": "Sync Interval",
+        "category": "synchronization",
+        "scope": "network",
+        "type": "number",
+        "description": "",
+        "required": true,
+        "editable": true,
+        "simulation_relevant": true,
+        "validation_relevant": true,
+        "default": 1000,
+        "unit": "ms",
+        "min": 0.001
+      },
+      "after": {
+        "label": "Sync Interval",
+        "category": "synchronization",
+        "scope": "network",
+        "type": "number",
+        "description": "",
+        "required": false,
+        "editable": true,
+        "simulation_relevant": true,
+        "validation_relevant": true,
+        "default": 1000,
+        "unit": "ms",
+        "min": 0.001,
+        "parameter_origin": "NIS_SCENARIO",
+        "default_status": "PROPOSED",
+        "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+        "source_revision": "NIS_SCENARIO_POLICY_V1",
+        "key": "sync_interval_ms"
+      },
+      "meaning_and_applicability_review": "NIS-E2E-Uhrenannahme; reviewed explicit NIS scenario/application requirement, not a dds standard or equipment guarantee.",
+      "decision": "EXPLICIT_NIS_SCENARIO",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "sync_method",
+      "before": {
+        "key": "sync_method",
+        "label": "Sync Method",
+        "category": "synchronization",
+        "scope": "network",
+        "type": "select",
+        "description": "",
+        "required": true,
+        "editable": true,
+        "simulation_relevant": true,
+        "validation_relevant": true,
+        "default": "NONE",
+        "options": [
+          "NONE",
+          "NTP",
+          "PTP",
+          "GPTP",
+          "BUS_NATIVE"
+        ]
+      },
+      "after": null,
+      "meaning_and_applicability_review": "DDS liveliness/deadline do not impose PTP/NTP/gPTP or confirm clock synchronization.",
+      "decision": "REMOVED_NOT_APPLICABLE",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "sync_precision_ms",
+      "before": {
+        "key": "sync_precision_ms",
+        "label": "Sync Precision",
+        "category": "synchronization",
+        "scope": "network",
+        "type": "number",
+        "description": "",
+        "required": true,
+        "editable": true,
+        "simulation_relevant": true,
+        "validation_relevant": true,
+        "default": 0.1,
+        "unit": "ms",
+        "min": 0
+      },
+      "after": {
+        "label": "Sync Precision",
+        "category": "synchronization",
+        "scope": "network",
+        "type": "number",
+        "description": "",
+        "required": false,
+        "editable": true,
+        "simulation_relevant": true,
+        "validation_relevant": true,
+        "default": 0.1,
+        "unit": "ms",
+        "min": 0,
+        "parameter_origin": "NIS_SCENARIO",
+        "default_status": "PROPOSED",
+        "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+        "source_revision": "NIS_SCENARIO_POLICY_V1",
+        "key": "sync_precision_ms"
+      },
+      "meaning_and_applicability_review": "NIS-E2E-Uhrenannahme; reviewed explicit NIS scenario/application requirement, not a dds standard or equipment guarantee.",
+      "decision": "EXPLICIT_NIS_SCENARIO",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "target_bus_load_percent",
+      "before": {
+        "key": "target_bus_load_percent",
+        "label": "Ziel-Buslast",
+        "category": "capacity",
+        "scope": "analysis",
+        "type": "number",
+        "description": "Zielwert fuer die aus Routing, Payload, Zyklus und Bitrate berechnete Buslast.",
+        "required": true,
+        "editable": true,
+        "simulation_relevant": false,
+        "validation_relevant": true,
+        "default": 60,
+        "unit": "%",
+        "min": 0,
+        "max": 100
+      },
+      "after": {
+        "label": "Ziel-Buslast",
+        "category": "capacity",
+        "scope": "analysis",
+        "type": "number",
+        "description": "Zielwert fuer die aus Routing, Payload, Zyklus und Bitrate berechnete Buslast.",
+        "required": false,
+        "editable": true,
+        "simulation_relevant": false,
+        "validation_relevant": true,
+        "default": 60,
+        "unit": "%",
+        "min": 0,
+        "max": 100,
+        "parameter_origin": "NIS_SCENARIO",
+        "default_status": "PROPOSED",
+        "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+        "source_revision": "NIS_SCENARIO_POLICY_V1",
+        "key": "target_bus_load_percent"
+      },
+      "meaning_and_applicability_review": "NIS-Auslegungsziel in Prozent; reviewed explicit NIS scenario/application requirement, not a dds standard or equipment guarantee.",
+      "decision": "EXPLICIT_NIS_SCENARIO",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "target_processing_delay_ms",
+      "before": {
+        "key": "target_processing_delay_ms",
+        "label": "Target Processing",
+        "category": "timing",
+        "scope": "route",
+        "type": "number",
+        "description": "",
+        "required": true,
+        "editable": true,
+        "simulation_relevant": true,
+        "validation_relevant": true,
+        "default": 0.1,
+        "unit": "ms",
+        "min": 0
+      },
+      "after": {
+        "label": "Target Processing",
+        "category": "timing",
+        "scope": "route",
+        "type": "number",
+        "description": "",
+        "required": false,
+        "editable": true,
+        "simulation_relevant": true,
+        "validation_relevant": true,
+        "default": 0.1,
+        "unit": "ms",
+        "min": 0,
+        "parameter_origin": "NIS_SCENARIO",
+        "default_status": "PROPOSED",
+        "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+        "source_revision": "NIS_SCENARIO_POLICY_V1",
+        "key": "target_processing_delay_ms"
+      },
+      "meaning_and_applicability_review": "NIS-Verarbeitungsannahme am Ziel, nicht garantierte Gerätezeit.; reviewed explicit NIS scenario/application requirement, not a dds standard or equipment guarantee.",
+      "decision": "EXPLICIT_NIS_SCENARIO",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "timeout_ms",
+      "before": {
+        "key": "timeout_ms",
+        "label": "Timeout",
+        "category": "timing",
+        "scope": "route",
+        "type": "number",
+        "description": "",
+        "required": true,
+        "editable": true,
+        "simulation_relevant": true,
+        "validation_relevant": true,
+        "default": 500,
+        "unit": "ms",
+        "min": 0.001
+      },
+      "after": {
+        "label": "Timeout",
+        "category": "timing",
+        "scope": "route",
+        "type": "number",
+        "description": "",
+        "required": false,
+        "editable": true,
+        "simulation_relevant": true,
+        "validation_relevant": true,
+        "default": 500,
+        "unit": "ms",
+        "min": 0.001,
+        "parameter_origin": "NIS_SCENARIO",
+        "default_status": "PROPOSED",
+        "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+        "source_revision": "NIS_SCENARIO_POLICY_V1",
+        "key": "timeout_ms"
+      },
+      "meaning_and_applicability_review": "Anwendungsüberwachung in ms; reviewed explicit NIS scenario/application requirement, not a dds standard or equipment guarantee.",
+      "decision": "EXPLICIT_NIS_SCENARIO",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "traffic_class",
+      "before": {
+        "key": "traffic_class",
+        "label": "Traffic Class",
+        "category": "qos",
+        "scope": "route",
+        "type": "select",
+        "description": "",
+        "required": true,
+        "editable": true,
+        "simulation_relevant": true,
+        "validation_relevant": true,
+        "default": "BEST_EFFORT",
+        "options": [
+          "BEST_EFFORT",
+          "CONTROL",
+          "REALTIME",
+          "SAFETY_CRITICAL"
+        ]
+      },
+      "after": {
+        "label": "Traffic Class",
+        "category": "qos",
+        "scope": "route",
+        "type": "select",
+        "description": "",
+        "required": false,
+        "editable": true,
+        "simulation_relevant": true,
+        "validation_relevant": true,
+        "default": "BEST_EFFORT",
+        "options": [
+          "BEST_EFFORT",
+          "CONTROL",
+          "REALTIME",
+          "SAFETY_CRITICAL"
+        ],
+        "parameter_origin": "NIS_SCENARIO",
+        "default_status": "PROPOSED",
+        "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+        "source_revision": "NIS_SCENARIO_POLICY_V1",
+        "key": "traffic_class"
+      },
+      "meaning_and_applicability_review": "NIS-Verkehrskategorie; reviewed explicit NIS scenario/application requirement, not a dds standard or equipment guarantee.",
+      "decision": "EXPLICIT_NIS_SCENARIO",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "vlan_id",
+      "before": {
+        "key": "vlan_id",
+        "label": "VLAN ID",
+        "category": "qos",
+        "scope": "network",
+        "type": "number",
+        "description": "",
+        "required": true,
+        "editable": true,
+        "simulation_relevant": true,
+        "validation_relevant": true,
+        "default": 0,
+        "min": 0,
+        "max": 4094
+      },
+      "after": null,
+      "meaning_and_applicability_review": "No implicit DDS Ethernet VLAN; lower binding must supply it when actually used.",
+      "decision": "REMOVED_NOT_APPLICABLE",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    },
+    {
+      "key": "warning_threshold",
+      "before": {
+        "key": "warning_threshold",
+        "label": "Load Warning",
+        "category": "capacity",
+        "scope": "analysis",
+        "type": "number",
+        "description": "",
+        "required": true,
+        "editable": true,
+        "simulation_relevant": false,
+        "validation_relevant": true,
+        "default": 60,
+        "unit": "%",
+        "min": 0,
+        "max": 100
+      },
+      "after": {
+        "label": "Load Warning",
+        "category": "capacity",
+        "scope": "analysis",
+        "type": "number",
+        "description": "",
+        "required": false,
+        "editable": true,
+        "simulation_relevant": false,
+        "validation_relevant": true,
+        "default": 60,
+        "unit": "%",
+        "min": 0,
+        "max": 100,
+        "parameter_origin": "NIS_SCENARIO",
+        "default_status": "PROPOSED",
+        "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+        "source_revision": "NIS_SCENARIO_POLICY_V1",
+        "key": "warning_threshold"
+      },
+      "meaning_and_applicability_review": "NIS-Warnschwelle in Prozent; reviewed explicit NIS scenario/application requirement, not a dds standard or equipment guarantee.",
+      "decision": "EXPLICIT_NIS_SCENARIO",
+      "parameter_source_verified": true,
+      "runtime_capacity_verified": false
+    }
+  ],
+  "remaining_runtime_status": "MODEL_MISSING",
+  "not_certified": [
+    "Requested/offered endpoint pairing, partition sequences/wildcards and full DDS entity state/QoS immutability/association execution remain unverified",
+    "Actual middleware optional features/vendor duration/default overrides and QoS profiles require implementation evidence",
+    "Executed discovery/RTPS or selected alternative transport, XTypes/CDR encoding/key/sample fragmentation/security and peer mappings remain unverified",
+    "Capacity model remains MODEL_MISSING; resource/scalar validity is not transport scheduling, delivery timing, installed memory or functional acceptance",
+    "Duration milliseconds are NIS display declarations, not a bit-exact nanosecond Duration_t serializer",
+    "Production delivery"
+  ],
+  "validation": {
+    "isolated_sql": true,
+    "suite": "full_parameter_audit + standard_defaults + profile_semantics + capacity_can_schedule + parameter_review + required_parameters",
+    "passed": 2132,
+    "evidence": {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\technology-full-parameter-audit-20261001\\individual\\dds-tests.xml",
+      "sha256": "e0519bfc211a94189c2a73dd835419abc900024da454c99898a7647973bf211f"
+    }
+  }
+}

@@ -27,7 +27,7 @@ export async function proxyBackend(path: string, init?: RequestInit): Promise<Re
       ...init,
       headers: { "Content-Type": "application/json", ...init?.headers },
       cache: "no-store",
-      signal: AbortSignal.timeout(8000),
+      signal: init?.signal ?? AbortSignal.timeout(8000),
     });
     const headers = new Headers({
       "Content-Type": response.headers.get("Content-Type") ?? "application/json",

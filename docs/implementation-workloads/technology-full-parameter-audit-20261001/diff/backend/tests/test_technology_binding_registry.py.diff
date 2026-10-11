@@ -1,0 +1,10 @@
+--- before/backend/tests/test_technology_binding_registry.py
++++ after/backend/tests/test_technology_binding_registry.py
+@@ -125,5 +125,6 @@
+     plc = next(item for item in catalog["domains"] if item["id"] == "industrial_automation")
+     plc_technologies = {item["id"]: item for item in plc["technologies"]}
+     assert plc["device_types"][0] == "PLC"
+-    assert plc_technologies["profinet"]["default_stack"] == ["ethernet", "profinet"]
++    assert ["ethernet", "profinet"] in plc_technologies["profinet"]["stack_variants"]
++    assert plc_technologies["profinet"]["default_stack"] == ["profinet"]
+     assert plc_technologies["profinet"]["implementation_status"] == "IMPLEMENTED"

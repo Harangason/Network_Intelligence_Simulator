@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   cancelSimulation,
   createSimulation,
@@ -18,11 +18,12 @@ import {
   describeSimulationFormat,
   groupSimulationFormats,
   mergeSimulationFormats,
+  projectSimulationFormats,
   simulationFormatDefinitions,
 } from "@/features/simulation/lib/simulation-formats";
 import { topologyToConfig, type NetworkTopology } from "@/features/network/lib/topology";
 import { createSimulationSnapshot, getWorkflow, getWorkflowSimulationSnapshot, setWorkflowContext, type SimulationSnapshot, type WorkflowState } from "@/features/workflow/lib/workflow-api";
-import { mergeSimulationResult, selectSimulationSnapshot } from "@/features/simulation/lib/simulation-result";
+import { canStartSimulation, simulationJobActive, mergeSimulationResult, selectSimulationSnapshot } from "@/features/simulation/lib/simulation-result";
 import type { Catalog, ModelSignalSeries, ModelSimulationTrace, RuntimeNetworkMetric, SimulationJob } from "@/shared/api/types";
 import { SimulationResult } from "./simulation-result";
 import { notifyWorkflowChanged } from "../../workflow/ui/workflow-header";
@@ -40,6 +41,8 @@ import {
 import { formatParticipants, runtimeNetworkPresentation, runtimeRoutePresentation, technologyLabel } from "@/features/simulation/lib/simulation-network-view";
 import { sequenceModelForEventIds, type SequenceDiagramModel } from "@/features/simulation/lib/e2e-sequence";
 import { E2ESequenceDiagram } from "./e2e-sequence-diagram";
+import { simulationPage } from "../lib/simulation-pagination";
+import { SimulationPageControls } from "./simulation-page-controls";
 
 type SimulationView = "network" | "sequence" | "signals" | "load" | "events";
 type ScenarioFault = {
@@ -73,13 +76,17 @@ export function ModelSimulationRunner({ initialProjectId = "", initialSnapshotId
   const [snapshot, setSnapshot] = useState<SimulationSnapshot | null>(null);
   const [job, setJob] = useState<SimulationJob | null>(null);
   const [busy, setBusy] = useState(false);
+  const startInFlight = useRef(false);
   const [error, setError] = useState("");
   const [savedScenarioNotice, setSavedScenarioNotice] = useState("");
   const [mode, setMode] = useState("GOLDEN");
   const [duration, setDuration] = useState(2);
   const [speed, setSpeed] = useState(1);
   const [seed, setSeed] = useState(42);
-  const [formats, setFormats] = useState(defaultSimulationFormats);
+  // No speculative JSON/CSV selection while the project's native profiles load.
+  const [formats, setFormats] = useState<string[]>([]);
+  const [formatsEdited, setFormatsEdited] = useState(false);
+  const [formatProject, setFormatProject] = useState("");
   const [formatPickerOpen, setFormatPickerOpen] = useState(false);
   const [faults, setFaults] = useState<ScenarioFault[]>([]);
   const [faultScope, setFaultScope] = useState<keyof typeof FAULT_TYPES>("SIGNAL");
@@ -203,7 +210,7 @@ export function ModelSimulationRunner({ initialProjectId = "", initialSnapshotId
   const valid = workflow?.statuses.validation === "APPROVED" || workflow?.statuses.validation === "WARNING";
   const projectIdForLinks = workflow?.project_id ?? initialProjectId;
   const simulationOutdated = snapshot?.is_outdated || workflow?.statuses.simulation === "OUTDATED";
-  const running = Boolean(job && !["completed", "failed", "canceled"].includes(job.status));
+  const running = simulationJobActive(job);
   const selectedTechnology = useMemo(() => {
     const industry = String(workflow?.parameters.industry ?? "");
     const technology = String(workflow?.parameters.technology ?? "");
@@ -221,13 +228,35 @@ export function ModelSimulationRunner({ initialProjectId = "", initialSnapshotId
     ),
     [catalog?.formats, formats, selectedTechnology?.native_formats],
   );
+  useEffect(() => {
+    if (!catalog || !workflow) return;
+    const changedProject = formatProject !== workflow.project_id;
+    if (changedProject) {
+      setFormatProject(workflow.project_id);
+      setFormatsEdited(false);
+      setFormatPickerOpen(false);
+    }
+    if (formatsEdited && !changedProject) return;
+    const networks = Array.isArray(workflow.parameters.networks) ? workflow.parameters.networks : [];
+    const technologies = networks.length
+      ? networks.map((network: { technology?: string }) => String(network.technology ?? "").toLowerCase())
+      : [String(workflow.parameters.technology ?? "").toLowerCase()];
+    const profiles = catalog.domains.flatMap((domain) => domain.technologies)
+      .filter((profile) => technologies.includes(profile.id.toLowerCase()));
+    // Unresolved technologies must not silently fall back to universal formats.
+    setFormats(technologies.every((technology) => profiles.some((profile) => profile.id.toLowerCase() === technology))
+      ? projectSimulationFormats(profiles) : []);
+  }, [catalog, workflow?.project_id, workflow?.parameters.networks, workflow?.parameters.technology, formatsEdited, formatProject]);
   const formatGroups = useMemo(() => groupSimulationFormats(availableFormats), [availableFormats]);
   const selectedFormatLabels = useMemo(
     () => formats.map((format) => describeSimulationFormat(format).label),
     [formats],
   );
+  const formatsResolved = Boolean(catalog && workflow && formatProject === workflow.project_id);
   const simulationScope = simulationScopeFrom(workflow?.parameters.simulation_scope);
   const scopeValid = simulationScopeValid(simulationScope);
+  const startAllowed = canStartSimulation({ validation: workflow?.statuses.validation,
+    projectId: workflow?.project_id, restoredProjectId, job, busy, formatCount: formatsResolved ? formats.length : 0, scopeValid });
 
   function buildScenario(name?: string) {
     const scenarioMode = mode === "GOLDEN" ? "NORMAL" : mode;
@@ -257,10 +286,10 @@ export function ModelSimulationRunner({ initialProjectId = "", initialSnapshotId
 
   async function start(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!workflow || !valid || restoredProjectId !== workflow.project_id) return;
+    if (!workflow || !startAllowed || startInFlight.current) return;
+    startInFlight.current = true;
     setBusy(true);
     setError("");
-    setPlayhead(0);
     try {
       const topology = workflow.topology as NetworkTopology;
       const hasTopology = Array.isArray(topology.nodes) && topology.nodes.length >= 2 && Array.isArray(topology.edges) && topology.edges.length > 0;
@@ -303,7 +332,6 @@ export function ModelSimulationRunner({ initialProjectId = "", initialSnapshotId
         scenario: { ...scenario, scenario_id: storedScenario.scenario_id },
       };
       const nextSnapshot = await createSimulationSnapshot(config);
-      setSnapshot(nextSnapshot);
       const nextJob = await createSimulation({
         workflow_managed: true,
         workflow_snapshot_id: nextSnapshot.id,
@@ -314,17 +342,23 @@ export function ModelSimulationRunner({ initialProjectId = "", initialSnapshotId
         formats,
         ...(hasTopology ? { config } : config),
       }, false);
+      setPlaying(false);
+      setPlayhead(0);
+      setSnapshot(nextSnapshot);
       setJob(nextJob);
+      window.sessionStorage.setItem(simulationSessionKey(workflow.project_id), nextJob.id);
+      window.history.replaceState(window.history.state, "", withProjectParam(`/studio/simulation?snapshot=${encodeURIComponent(nextSnapshot.id)}`, workflow.project_id));
       notifyWorkflowChanged();
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Simulation konnte nicht gestartet werden.");
     } finally {
+      startInFlight.current = false;
       setBusy(false);
     }
   }
 
   async function saveScenarioAs() {
-    if (!workflow || !valid || formats.length === 0 || !scopeValid) return;
+    if (!workflow || !valid || !formatsResolved || formats.length === 0 || !scopeValid) return;
     const defaultName = `${mode === "GOLDEN" ? "Golden / Ideal" : mode === "NORMAL" ? "Normalbetrieb" : mode === "STRESS" ? "Stresstest" : "Fehlerszenario"} ${new Date().toLocaleString("de-DE")}`;
     const name = window.prompt("Szenario speichern unter", defaultName)?.trim();
     if (!name) return;
@@ -376,6 +410,7 @@ export function ModelSimulationRunner({ initialProjectId = "", initialSnapshotId
   }
 
   function toggleFormat(format: string, checked: boolean) {
+    setFormatsEdited(true);
     setFormats((current) => checked
       ? mergeSimulationFormats(current, [format])
       : current.filter((item) => item !== format));
@@ -464,13 +499,16 @@ export function ModelSimulationRunner({ initialProjectId = "", initialSnapshotId
             aria-expanded={formatPickerOpen}
             aria-haspopup="dialog"
             className="trace-format-trigger"
+            disabled={!formatsResolved}
             onClick={() => setFormatPickerOpen((current) => !current)}
             type="button"
           >
-            <strong>{formats.length}</strong>
-            <small>{selectedFormatLabels.slice(0, 3).join(", ")}{formats.length > 3 ? ` +${formats.length - 3}` : ""}</small>
+            <strong>{formatsResolved ? formats.length : "…"}</strong>
+            <small>{!formatsResolved ? "Projektformate werden geladen …" : formats.length
+              ? selectedFormatLabels.slice(0, 3).join(", ") + (formats.length > 3 ? ` +${formats.length - 3}` : "")
+              : "Formate auswählen"}</small>
           </button>
-          {formatPickerOpen && (
+          {formatPickerOpen && formatsResolved && (
             <div className="trace-format-popover" role="dialog" aria-label="Trace-Formate auswählen">
               {formatGroups.map((group) => (
                 <section key={group.id}>
@@ -498,8 +536,8 @@ export function ModelSimulationRunner({ initialProjectId = "", initialSnapshotId
           )}
         </div>
         <div className="simulation-transport-controls">
-          <button className="button secondary" disabled={!valid || busy || formats.length === 0 || !scopeValid || !workflow} onClick={() => void saveScenarioAs()} type="button">Speichern unter</button>
-          <button className="button primary" disabled={!valid || busy || Boolean(job) || restoredProjectId !== workflow?.project_id || formats.length === 0 || !scopeValid} type="submit">Start</button>
+          <button className="button secondary" disabled={!valid || busy || !formatsResolved || formats.length === 0 || !scopeValid || !workflow} onClick={() => void saveScenarioAs()} type="button">Speichern unter</button>
+          <button className="button primary" disabled={!startAllowed} title={job && !running ? "Neuen Lauf mit der aktuellen Preflight-Freigabe starten. Der gespeicherte Lauf bleibt erhalten." : undefined} type="submit">Start</button>
           <button className="button secondary" disabled={!job?.result?.model_simulation} onClick={() => setPlaying((current) => !current)} type="button">{playing ? "Pause" : "Weiter"}</button>
           <button className="button secondary" disabled={!running} onClick={() => void stop()} type="button">Stop</button>
           <button className="button secondary" disabled={!job || running || busy} onClick={reset} type="button">Reset</button>
@@ -619,16 +657,22 @@ function SequenceView({ trace, model: sourceModel, playhead }: { trace: ModelSim
 function SignalsView({ trace, playhead }: { trace: ModelSimulationTrace; playhead: number }) {
   const [selected, setSelected] = useState(() => initialSignalSelection(trace.signals));
   const [search, setSearch] = useState("");
-  const [behavior, setBehavior] = useState<SignalBehaviorFilter>("DYNAMIC");
+  const [behavior, setBehavior] = useState<SignalBehaviorFilter>("ALL");
   const [kind, setKind] = useState<SignalKindFilter>("ALL");
   const [selectorOpen, setSelectorOpen] = useState(false);
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState(0);
+  const [page, setPage] = useState(0);
+  const lanesRef = useRef<HTMLDivElement>(null);
   const signalIds = useMemo(() => trace.signals.map((series) => series.signal_id), [trace.signals]);
   const filtered = useMemo(() => filterSignalSeries(trace.signals, { search, behavior, kind }), [behavior, kind, search, trace.signals]);
-  const visibleSelected = filtered.filter((series) => selected.includes(series.signal_id));
+  const selectedIds = useMemo(() => new Set(selected), [selected]);
+  const visibleSelected = useMemo(() => filtered.filter((series) => selectedIds.has(series.signal_id)), [filtered, selectedIds]);
+  const displayed = simulationPage(visibleSelected, page, 60);
+  const changePage = (next: number) => { setPage(next); lanesRef.current?.scrollTo({ top: 0 }); };
   useEffect(() => {
     setSelected(initialSignalSelection(trace.signals));
+    changePage(0);
   }, [signalIds, trace.signals]);
   const windowDuration = trace.scenario.duration_s / zoom;
   const windowStart = Math.min(Math.max(0, pan), Math.max(0, trace.scenario.duration_s - windowDuration));
@@ -641,15 +685,15 @@ function SignalsView({ trace, playhead }: { trace: ModelSimulationTrace; playhea
       <div className="signal-filter-primary">
         <label className="signal-filter-field signal-filter-search">
           <span>Suche</span>
-          <input aria-label="Signale durchsuchen" placeholder="Signal, Einheit oder Modell suchen …" value={search} onChange={(event) => setSearch(event.target.value)} />
+          <input aria-label="Signale durchsuchen" placeholder="Signal, Einheit oder Modell suchen …" value={search} onChange={(event) => { setSearch(event.target.value); changePage(0); }} />
         </label>
         <label className="signal-filter-field">
           <span>Verlauf</span>
-          <select aria-label="Dynamik filtern" value={behavior} onChange={(event) => setBehavior(event.target.value as SignalBehaviorFilter)}><option value="ALL">Alle Verläufe</option><option value="DYNAMIC">Nur dynamisch</option><option value="STATIC">Nur statisch</option></select>
+          <select aria-label="Dynamik filtern" value={behavior} onChange={(event) => { setBehavior(event.target.value as SignalBehaviorFilter); changePage(0); }}><option value="ALL">Alle Verläufe</option><option value="DYNAMIC">Nur dynamisch</option><option value="STATIC">Nur statisch</option></select>
         </label>
         <label className="signal-filter-field">
           <span>Signaltyp</span>
-          <select aria-label="Signaltyp filtern" value={kind} onChange={(event) => setKind(event.target.value as SignalKindFilter)}><option value="ALL">Alle Typen</option><option value="STATE">Zustände</option><option value="PHYSICAL">Physikalisch</option><option value="OTHER">Weitere</option></select>
+          <select aria-label="Signaltyp filtern" value={kind} onChange={(event) => { setKind(event.target.value as SignalKindFilter); changePage(0); }}><option value="ALL">Alle Typen</option><option value="STATE">Zustände</option><option value="PHYSICAL">Physikalisch</option><option value="OTHER">Weitere</option></select>
         </label>
         <button className="button secondary tiny signal-selector-toggle" onClick={() => setSelectorOpen((current) => !current)} type="button">{selectorOpen ? "Auswahl schließen" : "Signale auswählen"}</button>
       </div>
@@ -658,7 +702,7 @@ function SignalsView({ trace, playhead }: { trace: ModelSimulationTrace; playhea
           <button className="button secondary tiny" onClick={selectFiltered} type="button">Treffer wählen</button>
           <button className="button secondary tiny" onClick={clearFiltered} type="button">Treffer abwählen</button>
         </div>
-        <output className="signal-filter-summary">{visibleSelected.length} sichtbar <i /> {selected.length} gewählt <i /> {filtered.length} Treffer</output>
+        <output className="signal-filter-summary">{displayed.items.length} dargestellt <i /> {visibleSelected.length} im Filter gewählt <i /> {trace.signals.length} gesamt</output>
         <div className="signal-time-controls">
           <label><span>Zoom {zoom.toFixed(1)}x</span><input max="8" min="1" step="0.5" type="range" value={zoom} onChange={(event) => { setZoom(Number(event.target.value)); setPan(0); }} /></label>
           <label><span>Pan</span><input disabled={zoom === 1} max={Math.max(0, trace.scenario.duration_s - windowDuration)} min="0" step="0.01" type="range" value={windowStart} onChange={(event) => setPan(Number(event.target.value))} /></label>
@@ -666,7 +710,8 @@ function SignalsView({ trace, playhead }: { trace: ModelSimulationTrace; playhea
       </div>
       {selectorOpen && <div className="signal-selector">{filtered.map((series) => <label key={series.signal_id}><input checked={selected.includes(series.signal_id)} type="checkbox" onChange={(event) => setSelected((current) => event.target.checked ? [...new Set([...current, series.signal_id])] : current.filter((id) => id !== series.signal_id))} /><span>{series.signal}<small>{series.semantic_type ?? series.behavior_type} · {series.unit || "ohne Einheit"}</small></span></label>)}{!filtered.length && <p>Keine Signale für diesen Filter.</p>}</div>}
     </div>
-    <div className="signal-lanes">{visibleSelected.slice(0, 60).map((series) => <SignalLane key={series.signal_id} series={series} windowStart={windowStart} windowEnd={windowEnd} playhead={playhead} />)}{visibleSelected.length > 60 && <div className="simulation-result-note">60 von {visibleSelected.length} Treffern dargestellt. Filter weiter eingrenzen.</div>}{!trace.signals.length && <div className="simulation-empty-state"><strong>Keine Signalzuordnung gefunden</strong><span>Die Frames wurden simuliert, aber kein Engineering-Signal ist dem Kommunikationspfad zugeordnet.</span></div>}{trace.signals.length > 0 && visibleSelected.length === 0 && <div className="simulation-empty-state"><strong>Keine ausgewählten Treffer</strong><span>Filter ändern oder „Treffer wählen“ verwenden.</span></div>}</div>
+    <SimulationPageControls label="Signale" {...displayed} onPage={changePage} />
+    <div className="signal-lanes" ref={lanesRef}>{displayed.items.map((series) => <SignalLane key={series.signal_id} series={series} windowStart={windowStart} windowEnd={windowEnd} playhead={playhead} />)}{!trace.signals.length && <div className="simulation-empty-state"><strong>Keine Signalzuordnung gefunden</strong><span>Die Frames wurden simuliert, aber kein Engineering-Signal ist dem Kommunikationspfad zugeordnet.</span></div>}{trace.signals.length > 0 && visibleSelected.length === 0 && <div className="simulation-empty-state"><strong>Keine ausgewählten Treffer</strong><span>Filter ändern oder „Treffer wählen“ verwenden.</span></div>}</div>
   </div>;
 }
 

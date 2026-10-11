@@ -1,0 +1,3251 @@
+{
+  "id": "websocket",
+  "label": "WebSocket",
+  "domain": "generic_networking",
+  "layer": "APPLICATION",
+  "transport_unit": "STREAM_CHUNK",
+  "payload_element_types": [
+    "DATA_OBJECT",
+    "RAW_DATA"
+  ],
+  "hardware_interface": "websocket_actual_negotiated_stream",
+  "hardware_capability_aliases": [
+    "ethernet_or_wireless_interface"
+  ],
+  "default_stack": [
+    "websocket"
+  ],
+  "stack_variants": [
+    [
+      "websocket"
+    ],
+    [
+      "ethernet",
+      "ip",
+      "tcp",
+      "websocket"
+    ]
+  ],
+  "default_bitrate": null,
+  "rate_model": {
+    "type": "EXPLICIT_WEBSOCKET_TRANSPORT",
+    "fields": []
+  },
+  "local_timing_schema": [],
+  "parameter_schema": {
+    "payload_bytes": {
+      "label": "Payload",
+      "category": "physical",
+      "scope": "message",
+      "type": "number",
+      "description": "Actual decoded application message, independent WSframe extension/mask/reassembly/transport and operationalmemorylimit. No65535byte universalcap.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "source_revision": "RFC6455 Dec2011 sections3-5/7-10; base framing, clientmask, minimal63bitlength, fragmentation, handshake version13, closecode and implementationlimits.",
+      "integer": true
+    },
+    "cycle_ms": {
+      "label": "Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "Standardperiode fuer zyklische Nachrichten.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "minimum_cycle_time_ms": {
+      "label": "Minimum Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "deadline_ms": {
+      "label": "Deadline",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "timeout_ms": {
+      "label": "Timeout",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_latency_ms": {
+      "label": "Maximum Latency",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "jitter_ms": {
+      "label": "Jitter Budget",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "freshness_ms": {
+      "label": "Data Freshness",
+      "category": "timing",
+      "scope": "signal",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "source_processing_delay_ms": {
+      "label": "Source Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_processing_delay_ms": {
+      "label": "Target Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "propagation_delay_ms": {
+      "label": "Propagation",
+      "category": "timing",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.01,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_bus_load_percent": {
+      "label": "Ziel-Buslast",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "Zielwert fuer die aus Routing, Payload, Zyklus und Bitrate berechnete Buslast.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "peak_factor": {
+      "label": "Peak Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.15,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_factor": {
+      "label": "Burst Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.5,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_window_ms": {
+      "label": "Burst Window",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "warning_threshold": {
+      "label": "Load Warning",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "critical_threshold": {
+      "label": "Load Critical",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 75,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "overload_threshold": {
+      "label": "Load Overload",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 90,
+      "unit": "%",
+      "min": 1,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "queue_size": {
+      "label": "Queue Size",
+      "category": "qos",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 256,
+      "unit": "Frames",
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "queue_policy": {
+      "label": "Queue Policy",
+      "category": "qos",
+      "scope": "network",
+      "type": "select",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": "FIFO",
+      "options": [
+        "FIFO",
+        "PRIORITY",
+        "STRICT_PRIORITY",
+        "WEIGHTED_PRIORITY",
+        "WRR",
+        "ROUND_ROBIN",
+        "TIME_TRIGGERED",
+        "TAS",
+        "CBS",
+        "CUSTOM"
+      ],
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "qos_priority": {
+      "label": "Default Priority",
+      "category": "qos",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 3,
+      "min": 0,
+      "max": 7,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "traffic_class": {
+      "label": "Traffic Class",
+      "category": "qos",
+      "scope": "route",
+      "type": "select",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": "BEST_EFFORT",
+      "options": [
+        "BEST_EFFORT",
+        "CONTROL",
+        "REALTIME",
+        "SAFETY_CRITICAL"
+      ],
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "packet_loss_probability": {
+      "label": "Packet Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "frame_loss_probability": {
+      "label": "Frame Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "bit_error_rate": {
+      "label": "Bit Error Rate",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "corruption_probability": {
+      "label": "Corruption",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duplicate_probability": {
+      "label": "Duplication",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "reordering_probability": {
+      "label": "Reordering",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "required_reliability": {
+      "label": "Required Reliability",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.999,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_offset_ms": {
+      "label": "Clock Offset",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_drift_ppm": {
+      "label": "Clock Drift",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 20,
+      "unit": "ppm",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_precision_ms": {
+      "label": "Sync Precision",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_interval_ms": {
+      "label": "Sync Interval",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1000,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_sync_error_ms": {
+      "label": "Maximum Sync Error",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_delay_ms": {
+      "label": "Gateway Processing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.2,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_queue_delay_ms": {
+      "label": "Gateway Queueing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "protocol_conversion_delay_ms": {
+      "label": "Protocol Conversion",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duration_s": {
+      "label": "Simulation Duration",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 1,
+      "unit": "s",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "seed": {
+      "label": "Random Seed",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 42,
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "max_events": {
+      "label": "Maximum Events",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 100000,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "dropout_probability": {
+      "label": "Failure Injection Dropout",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "ws_transport": {
+      "type": "select",
+      "description": "Actual handshake and underlying negotiated stream, independent physical link.",
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "source_revision": "RFC6455 Dec2011 sections3-5/7-10; base framing, clientmask, minimal63bitlength, fragmentation, handshake version13, closecode and implementationlimits.",
+      "options": [
+        "HTTP1_TCP",
+        "HTTP2_STREAM",
+        "HTTP3_QUIC_STREAM",
+        "REGISTERED_ACTUAL"
+      ],
+      "label": "ws transport",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ws_scheme": {
+      "type": "select",
+      "description": "Actual URI security scheme.",
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "source_revision": "RFC6455 Dec2011 sections3-5/7-10; base framing, clientmask, minimal63bitlength, fragmentation, handshake version13, closecode and implementationlimits.",
+      "options": [
+        "ws",
+        "wss"
+      ],
+      "label": "ws scheme",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ws_direction": {
+      "type": "select",
+      "description": "Actual frame sender; all client frames masked, serverframes unmasked.",
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "source_revision": "RFC6455 Dec2011 sections3-5/7-10; base framing, clientmask, minimal63bitlength, fragmentation, handshake version13, closecode and implementationlimits.",
+      "options": [
+        "CLIENT_TO_SERVER",
+        "SERVER_TO_CLIENT"
+      ],
+      "label": "ws direction",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ws_method": {
+      "type": "select",
+      "description": "Actual opening handshake request.",
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "source_revision": "RFC6455 Dec2011 sections3-5/7-10; base framing, clientmask, minimal63bitlength, fragmentation, handshake version13, closecode and implementationlimits.",
+      "options": [
+        "GET",
+        "CONNECT"
+      ],
+      "label": "ws method",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ws_extension": {
+      "type": "select",
+      "description": "Actual negotiated extensions; compression never implicit.",
+      "source": "https://www.rfc-editor.org/rfc/rfc7692.html",
+      "source_revision": "RFC7692 Dec2015 sections6-7; permessage-deflate negotiated direction-specificcontext/window limits and RSV1firstdataframe only.",
+      "options": [
+        "NONE",
+        "PERMESSAGE_DEFLATE",
+        "REGISTERED_ACTUAL"
+      ],
+      "label": "ws extension",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ws_fragment": {
+      "type": "select",
+      "description": "Actual dataframe role in message; controls may interleave.",
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "source_revision": "RFC6455 Dec2011 sections3-5/7-10; base framing, clientmask, minimal63bitlength, fragmentation, handshake version13, closecode and implementationlimits.",
+      "options": [
+        "SINGLE",
+        "FIRST",
+        "CONTINUATION",
+        "LAST"
+      ],
+      "label": "ws fragment",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ws_outcome": {
+      "type": "select",
+      "description": "Actual independent consumingfunction result.",
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "source_revision": "RFC6455 Dec2011 sections3-5/7-10; base framing, clientmask, minimal63bitlength, fragmentation, handshake version13, closecode and implementationlimits.",
+      "options": [
+        "ACCEPTED",
+        "FRAME_ONLY",
+        "PONG_ONLY",
+        "CLOSED",
+        "ERROR",
+        "UNKNOWN"
+      ],
+      "label": "ws outcome",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ws_version": {
+      "type": "number",
+      "description": "Handshake protocolversion, not HTTPversion.",
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "source_revision": "RFC6455 Dec2011 sections3-5/7-10; base framing, clientmask, minimal63bitlength, fragmentation, handshake version13, closecode and implementationlimits.",
+      "min": 0,
+      "max": 255,
+      "integer": true,
+      "label": "ws version",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {},
+          "value": 13,
+          "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+          "source_revision": "RFC6455 Dec2011 sections3-5/7-10; base framing, clientmask, minimal63bitlength, fragmentation, handshake version13, closecode and implementationlimits."
+        }
+      ]
+    },
+    "ws_port": {
+      "type": "number",
+      "description": "Actual endpointport; URI default conditional only.",
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "source_revision": "RFC6455 Dec2011 sections3-5/7-10; base framing, clientmask, minimal63bitlength, fragmentation, handshake version13, closecode and implementationlimits.",
+      "min": 1,
+      "max": 65535,
+      "integer": true,
+      "label": "ws port",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "ws_scheme": "ws"
+          },
+          "value": 80,
+          "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+          "source_revision": "RFC6455 Dec2011 sections3-5/7-10; base framing, clientmask, minimal63bitlength, fragmentation, handshake version13, closecode and implementationlimits."
+        },
+        {
+          "when": {
+            "ws_scheme": "wss"
+          },
+          "value": 443,
+          "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+          "source_revision": "RFC6455 Dec2011 sections3-5/7-10; base framing, clientmask, minimal63bitlength, fragmentation, handshake version13, closecode and implementationlimits."
+        }
+      ]
+    },
+    "ws_http_status": {
+      "type": "number",
+      "description": "Actual opening response101 or successful extendedCONNECT2xx.",
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "source_revision": "RFC6455 Dec2011 sections3-5/7-10; base framing, clientmask, minimal63bitlength, fragmentation, handshake version13, closecode and implementationlimits.",
+      "min": 100,
+      "max": 599,
+      "integer": true,
+      "label": "ws http status",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ws_opcode": {
+      "type": "number",
+      "description": "Actual4bitopcode; continuation0/text1/binary2/close8/ping9/pong10.",
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "source_revision": "RFC6455 Dec2011 sections3-5/7-10; base framing, clientmask, minimal63bitlength, fragmentation, handshake version13, closecode and implementationlimits.",
+      "min": 0,
+      "max": 15,
+      "integer": true,
+      "label": "ws opcode",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ws_rsv": {
+      "type": "number",
+      "description": "Actual3reservedbits; RSV1 is numeric4 and negotiated compressedfirstdataonly.",
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "source_revision": "RFC6455 Dec2011 sections3-5/7-10; base framing, clientmask, minimal63bitlength, fragmentation, handshake version13, closecode and implementationlimits.",
+      "min": 0,
+      "max": 7,
+      "integer": true,
+      "label": "ws rsv",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ws_length_code": {
+      "type": "number",
+      "description": "Actual7bitlength discriminator requiring shortestencoding.",
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "source_revision": "RFC6455 Dec2011 sections3-5/7-10; base framing, clientmask, minimal63bitlength, fragmentation, handshake version13, closecode and implementationlimits.",
+      "min": 0,
+      "max": 127,
+      "integer": true,
+      "label": "ws length code",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ws_frame_payload_bytes": {
+      "type": "number",
+      "description": "Actual extension plusapplication bytes,63bits upperbound; independent operationalbuffer.",
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "source_revision": "RFC6455 Dec2011 sections3-5/7-10; base framing, clientmask, minimal63bitlength, fragmentation, handshake version13, closecode and implementationlimits.",
+      "min": 0,
+      "max": 9223372036854775807,
+      "integer": true,
+      "label": "ws frame payload bytes",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ws_extension_bytes": {
+      "type": "number",
+      "description": "Actual negotiated extension data length.",
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "source_revision": "RFC6455 Dec2011 sections3-5/7-10; base framing, clientmask, minimal63bitlength, fragmentation, handshake version13, closecode and implementationlimits.",
+      "min": 0,
+      "max": 9223372036854775807,
+      "integer": true,
+      "label": "ws extension bytes",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ws_application_bytes": {
+      "type": "number",
+      "description": "Actual currentframe applicationwire bytes; compressed differslogicalmessage.",
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "source_revision": "RFC6455 Dec2011 sections3-5/7-10; base framing, clientmask, minimal63bitlength, fragmentation, handshake version13, closecode and implementationlimits.",
+      "min": 0,
+      "max": 9223372036854775807,
+      "integer": true,
+      "label": "ws application bytes",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ws_extended_length_bytes": {
+      "type": "number",
+      "description": "Actual0/2/8byte network-orderlength field.",
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "source_revision": "RFC6455 Dec2011 sections3-5/7-10; base framing, clientmask, minimal63bitlength, fragmentation, handshake version13, closecode and implementationlimits.",
+      "min": 0,
+      "max": 8,
+      "integer": true,
+      "label": "ws extended length bytes",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ws_mask_bytes": {
+      "type": "number",
+      "description": "Actual4byte maskingkey present iffmaskbitset.",
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "source_revision": "RFC6455 Dec2011 sections3-5/7-10; base framing, clientmask, minimal63bitlength, fragmentation, handshake version13, closecode and implementationlimits.",
+      "min": 0,
+      "max": 4,
+      "integer": true,
+      "label": "ws mask bytes",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ws_header_bytes": {
+      "type": "number",
+      "description": "Actual2bytebase+extendedlength+maskkey, excludesHTTP/TLS/QUIC.",
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "source_revision": "RFC6455 Dec2011 sections3-5/7-10; base framing, clientmask, minimal63bitlength, fragmentation, handshake version13, closecode and implementationlimits.",
+      "min": 2,
+      "max": 14,
+      "integer": true,
+      "label": "ws header bytes",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ws_wire_bytes": {
+      "type": "number",
+      "description": "Actual completeWSframe header plus extension+application.",
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "source_revision": "RFC6455 Dec2011 sections3-5/7-10; base framing, clientmask, minimal63bitlength, fragmentation, handshake version13, closecode and implementationlimits.",
+      "min": 2,
+      "integer": true,
+      "label": "ws wire bytes",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ws_message_bytes": {
+      "type": "number",
+      "description": "Actual reassembled decodedmessage bytes, not oneframe or maximum65535.",
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "source_revision": "RFC6455 Dec2011 sections3-5/7-10; base framing, clientmask, minimal63bitlength, fragmentation, handshake version13, closecode and implementationlimits.",
+      "min": 0,
+      "integer": true,
+      "label": "ws message bytes",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ws_max_frame_bytes": {
+      "type": "number",
+      "description": "Actual negotiated implementationmemory/policylimit; not protocoldefault.",
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "source_revision": "RFC6455 Dec2011 sections3-5/7-10; base framing, clientmask, minimal63bitlength, fragmentation, handshake version13, closecode and implementationlimits.",
+      "min": 0,
+      "integer": true,
+      "label": "ws max frame bytes",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ws_max_message_bytes": {
+      "type": "number",
+      "description": "Actual decompressed/reassembled implementationbound.",
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "source_revision": "RFC6455 Dec2011 sections3-5/7-10; base framing, clientmask, minimal63bitlength, fragmentation, handshake version13, closecode and implementationlimits.",
+      "min": 0,
+      "integer": true,
+      "label": "ws max message bytes",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ws_close_code": {
+      "type": "number",
+      "description": "Actual transmitted2byte closecode; reserved not sent.",
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "source_revision": "RFC6455 Dec2011 sections3-5/7-10; base framing, clientmask, minimal63bitlength, fragmentation, handshake version13, closecode and implementationlimits.",
+      "min": 1000,
+      "max": 4999,
+      "integer": true,
+      "label": "ws close code",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ws_close_reason_bytes": {
+      "type": "number",
+      "description": "Actual validUTF8 close reason excludingcode2bytes.",
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "source_revision": "RFC6455 Dec2011 sections3-5/7-10; base framing, clientmask, minimal63bitlength, fragmentation, handshake version13, closecode and implementationlimits.",
+      "min": 0,
+      "max": 123,
+      "integer": true,
+      "label": "ws close reason bytes",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ws_server_window_bits": {
+      "type": "number",
+      "description": "Actual negotiated response serverwindow8..15.",
+      "source": "https://www.rfc-editor.org/rfc/rfc7692.html",
+      "source_revision": "RFC7692 Dec2015 sections6-7; permessage-deflate negotiated direction-specificcontext/window limits and RSV1firstdataframe only.",
+      "min": 8,
+      "max": 15,
+      "integer": true,
+      "label": "ws server window bits",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "ws_extension": "PERMESSAGE_DEFLATE",
+            "ws_server_window_absent": true
+          },
+          "value": 15,
+          "source": "https://www.rfc-editor.org/rfc/rfc7692.html",
+          "source_revision": "RFC7692 Dec2015 sections6-7; permessage-deflate negotiated direction-specificcontext/window limits and RSV1firstdataframe only."
+        }
+      ]
+    },
+    "ws_client_window_bits": {
+      "type": "number",
+      "description": "Actual negotiated response clientwindow8..15.",
+      "source": "https://www.rfc-editor.org/rfc/rfc7692.html",
+      "source_revision": "RFC7692 Dec2015 sections6-7; permessage-deflate negotiated direction-specificcontext/window limits and RSV1firstdataframe only.",
+      "min": 8,
+      "max": 15,
+      "integer": true,
+      "label": "ws client window bits",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "ws_extension": "PERMESSAGE_DEFLATE",
+            "ws_client_window_absent": true
+          },
+          "value": 15,
+          "source": "https://www.rfc-editor.org/rfc/rfc7692.html",
+          "source_revision": "RFC7692 Dec2015 sections6-7; permessage-deflate negotiated direction-specificcontext/window limits and RSV1firstdataframe only."
+        }
+      ]
+    },
+    "ws_server_window_offer": {
+      "type": "number",
+      "description": "Actual offeredserverwindow upperbound8..15.",
+      "source": "https://www.rfc-editor.org/rfc/rfc7692.html",
+      "source_revision": "RFC7692 Dec2015 sections6-7; permessage-deflate negotiated direction-specificcontext/window limits and RSV1firstdataframe only.",
+      "min": 8,
+      "max": 15,
+      "integer": true,
+      "label": "ws server window offer",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ws_client_window_offer": {
+      "type": "number",
+      "description": "Actual offeredclientwindowhint; not universalserver responsebound.",
+      "source": "https://www.rfc-editor.org/rfc/rfc7692.html",
+      "source_revision": "RFC7692 Dec2015 sections6-7; permessage-deflate negotiated direction-specificcontext/window limits and RSV1firstdataframe only.",
+      "min": 8,
+      "max": 15,
+      "integer": true,
+      "label": "ws client window offer",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ws_server_window_bytes": {
+      "type": "number",
+      "description": "Actual2^serverwindow memory size.",
+      "source": "https://www.rfc-editor.org/rfc/rfc7692.html",
+      "source_revision": "RFC7692 Dec2015 sections6-7; permessage-deflate negotiated direction-specificcontext/window limits and RSV1firstdataframe only.",
+      "min": 256,
+      "max": 32768,
+      "integer": true,
+      "label": "ws server window bytes",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ws_client_window_bytes": {
+      "type": "number",
+      "description": "Actual2^clientwindow memorysize.",
+      "source": "https://www.rfc-editor.org/rfc/rfc7692.html",
+      "source_revision": "RFC7692 Dec2015 sections6-7; permessage-deflate negotiated direction-specificcontext/window limits and RSV1firstdataframe only.",
+      "min": 256,
+      "max": 32768,
+      "integer": true,
+      "label": "ws client window bytes",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ws_source_ms": {
+      "type": "number",
+      "description": "Actual producing/codec/compressiondelay.",
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "source_revision": "RFC6455 Dec2011 sections3-5/7-10; base framing, clientmask, minimal63bitlength, fragmentation, handshake version13, closecode and implementationlimits.",
+      "min": 0,
+      "integer": false,
+      "unit": "ms",
+      "label": "ws source ms",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ws_transport_ms": {
+      "type": "number",
+      "description": "Actual underlyingstream/masking/reassembly/retry bound.",
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "source_revision": "RFC6455 Dec2011 sections3-5/7-10; base framing, clientmask, minimal63bitlength, fragmentation, handshake version13, closecode and implementationlimits.",
+      "min": 0,
+      "integer": false,
+      "unit": "ms",
+      "label": "ws transport ms",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ws_use_ms": {
+      "type": "number",
+      "description": "Actual independent consumer executiondelay.",
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "source_revision": "RFC6455 Dec2011 sections3-5/7-10; base framing, clientmask, minimal63bitlength, fragmentation, handshake version13, closecode and implementationlimits.",
+      "min": 0,
+      "integer": false,
+      "unit": "ms",
+      "label": "ws use ms",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ws_e2e_ms": {
+      "type": "number",
+      "description": "Actual source-to-usebound independentPong/TCPACK.",
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "source_revision": "RFC6455 Dec2011 sections3-5/7-10; base framing, clientmask, minimal63bitlength, fragmentation, handshake version13, closecode and implementationlimits.",
+      "min": 0,
+      "integer": false,
+      "unit": "ms",
+      "label": "ws e2e ms",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ws_deadline_ms": {
+      "type": "number",
+      "description": "Independent applicationdeadline.",
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "source_revision": "RFC6455 Dec2011 sections3-5/7-10; base framing, clientmask, minimal63bitlength, fragmentation, handshake version13, closecode and implementationlimits.",
+      "min": 0,
+      "integer": false,
+      "unit": "ms",
+      "label": "ws deadline ms",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ws_age_ms": {
+      "type": "number",
+      "description": "Actual consumedmessageage.",
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "source_revision": "RFC6455 Dec2011 sections3-5/7-10; base framing, clientmask, minimal63bitlength, fragmentation, handshake version13, closecode and implementationlimits.",
+      "min": 0,
+      "integer": false,
+      "unit": "ms",
+      "label": "ws age ms",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ws_freshness_ms": {
+      "type": "number",
+      "description": "Independent allowabledataage.",
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "source_revision": "RFC6455 Dec2011 sections3-5/7-10; base framing, clientmask, minimal63bitlength, fragmentation, handshake version13, closecode and implementationlimits.",
+      "min": 0,
+      "integer": false,
+      "unit": "ms",
+      "label": "ws freshness ms",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ws_mask": {
+      "type": "boolean",
+      "description": "ActualMASKbit, not confidentiality.",
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "source_revision": "RFC6455 Dec2011 sections3-5/7-10; base framing, clientmask, minimal63bitlength, fragmentation, handshake version13, closecode and implementationlimits.",
+      "label": "ws mask",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ws_fin": {
+      "type": "boolean",
+      "description": "Actualfinalfragmentbit; controls alwaysfinal.",
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "source_revision": "RFC6455 Dec2011 sections3-5/7-10; base framing, clientmask, minimal63bitlength, fragmentation, handshake version13, closecode and implementationlimits.",
+      "label": "ws fin",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ws_compressed": {
+      "type": "boolean",
+      "description": "Actual negotiatedmessagecompression flag, notall frames.",
+      "source": "https://www.rfc-editor.org/rfc/rfc7692.html",
+      "source_revision": "RFC7692 Dec2015 sections6-7; permessage-deflate negotiated direction-specificcontext/window limits and RSV1firstdataframe only.",
+      "label": "ws compressed",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ws_client_window_offered": {
+      "type": "boolean",
+      "description": "Actual extensionoffer includes client_max_window_bits evenwithoutvalue.",
+      "source": "https://www.rfc-editor.org/rfc/rfc7692.html",
+      "source_revision": "RFC7692 Dec2015 sections6-7; permessage-deflate negotiated direction-specificcontext/window limits and RSV1firstdataframe only.",
+      "label": "ws client window offered",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ws_server_window_absent": {
+      "type": "boolean",
+      "description": "Actual acceptedextension omits serverwindowparameter.",
+      "source": "https://www.rfc-editor.org/rfc/rfc7692.html",
+      "source_revision": "RFC7692 Dec2015 sections6-7; permessage-deflate negotiated direction-specificcontext/window limits and RSV1firstdataframe only.",
+      "label": "ws server window absent",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ws_client_window_absent": {
+      "type": "boolean",
+      "description": "Actual acceptedextension omitsclientwindowparameter.",
+      "source": "https://www.rfc-editor.org/rfc/rfc7692.html",
+      "source_revision": "RFC7692 Dec2015 sections6-7; permessage-deflate negotiated direction-specificcontext/window limits and RSV1firstdataframe only.",
+      "label": "ws client window absent",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ws_server_no_context_takeover": {
+      "type": "boolean",
+      "description": "Actual negotiatedresetservercompressioncontext permessage.",
+      "source": "https://www.rfc-editor.org/rfc/rfc7692.html",
+      "source_revision": "RFC7692 Dec2015 sections6-7; permessage-deflate negotiated direction-specificcontext/window limits and RSV1firstdataframe only.",
+      "label": "ws server no context takeover",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ws_client_no_context_takeover": {
+      "type": "boolean",
+      "description": "Actual negotiatedresetclientcompressioncontext permessage.",
+      "source": "https://www.rfc-editor.org/rfc/rfc7692.html",
+      "source_revision": "RFC7692 Dec2015 sections6-7; permessage-deflate negotiated direction-specificcontext/window limits and RSV1firstdataframe only.",
+      "label": "ws client no context takeover",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ws_connect_enabled": {
+      "type": "boolean",
+      "description": "Actualserver ENABLE_CONNECT_PROTOCOL=1 received.",
+      "source": "https://www.rfc-editor.org/rfc/rfc8441.html",
+      "source_revision": "RFC8441 Sep2018 sections3-5; explicit ENABLE_CONNECT_PROTOCOL and extendedCONNECT, noHTTP1Upgrade/Key/Accept.",
+      "label": "ws connect enabled",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ws_upgrade_header": {
+      "type": "boolean",
+      "description": "ActualHTTP1 Upgradeheader; forbiddenextendedCONNECT.",
+      "source": "https://www.rfc-editor.org/rfc/rfc8441.html",
+      "source_revision": "RFC8441 Sep2018 sections3-5; explicit ENABLE_CONNECT_PROTOCOL and extendedCONNECT, noHTTP1Upgrade/Key/Accept.",
+      "label": "ws upgrade header",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ws_connection_header": {
+      "type": "boolean",
+      "description": "ActualHTTP1 Connectionheader; forbiddenextendedCONNECT.",
+      "source": "https://www.rfc-editor.org/rfc/rfc8441.html",
+      "source_revision": "RFC8441 Sep2018 sections3-5; explicit ENABLE_CONNECT_PROTOCOL and extendedCONNECT, noHTTP1Upgrade/Key/Accept.",
+      "label": "ws connection header",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ws_key_header": {
+      "type": "boolean",
+      "description": "ActualSecWebSocketKey presence; not usedextendedCONNECT.",
+      "source": "https://www.rfc-editor.org/rfc/rfc8441.html",
+      "source_revision": "RFC8441 Sep2018 sections3-5; explicit ENABLE_CONNECT_PROTOCOL and extendedCONNECT, noHTTP1Upgrade/Key/Accept.",
+      "label": "ws key header",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ws_accept_header": {
+      "type": "boolean",
+      "description": "ActualSecWebSocketAccept presence; not usedextendedCONNECT.",
+      "source": "https://www.rfc-editor.org/rfc/rfc8441.html",
+      "source_revision": "RFC8441 Sep2018 sections3-5; explicit ENABLE_CONNECT_PROTOCOL and extendedCONNECT, noHTTP1Upgrade/Key/Accept.",
+      "label": "ws accept header",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ws_utf8_verified": {
+      "type": "boolean",
+      "description": "Actual reconstructedtext/closeUTF8checked; fragmentedframe neednotindividuallyvalid.",
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "source_revision": "RFC6455 Dec2011 sections3-5/7-10; base framing, clientmask, minimal63bitlength, fragmentation, handshake version13, closecode and implementationlimits.",
+      "label": "ws utf8 verified",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ws_mask_entropy_verified": {
+      "type": "boolean",
+      "description": "Actualfreshunpredictablemaskkeygenerator assessment.",
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "source_revision": "RFC6455 Dec2011 sections3-5/7-10; base framing, clientmask, minimal63bitlength, fragmentation, handshake version13, closecode and implementationlimits.",
+      "label": "ws mask entropy verified",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ws_path_verified": {
+      "type": "boolean",
+      "description": "Actualwholetransport/applicationpathevidence.",
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "source_revision": "RFC6455 Dec2011 sections3-5/7-10; base framing, clientmask, minimal63bitlength, fragmentation, handshake version13, closecode and implementationlimits.",
+      "label": "ws path verified",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ws_data_accepted": {
+      "type": "boolean",
+      "description": "Actualfreshconsumingfunction succeeds, notjustsocketOPEN.",
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "source_revision": "RFC6455 Dec2011 sections3-5/7-10; base framing, clientmask, minimal63bitlength, fragmentation, handshake version13, closecode and implementationlimits.",
+      "label": "ws data accepted",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ws_revision": {
+      "type": "text",
+      "description": "ActualRFC/extensions/libraryedition.",
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "source_revision": "RFC6455 Dec2011 sections3-5/7-10; base framing, clientmask, minimal63bitlength, fragmentation, handshake version13, closecode and implementationlimits.",
+      "label": "ws revision",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ws_device_source": {
+      "type": "text",
+      "description": "Actualpeer/runtime/bufferlimits.",
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "source_revision": "RFC6455 Dec2011 sections3-5/7-10; base framing, clientmask, minimal63bitlength, fragmentation, handshake version13, closecode and implementationlimits.",
+      "label": "ws device source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ws_transport_source": {
+      "type": "text",
+      "description": "ActualHTTP/TCP/TLS orQUICstream andpath parameters.",
+      "source": "https://www.rfc-editor.org/rfc/rfc9220.html",
+      "source_revision": "RFC9220 June2022 sections3-4; HTTP3 independentsetting08 and singleQUICstream usingextendedCONNECT.",
+      "label": "ws transport source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ws_acceptance_source": {
+      "type": "text",
+      "description": "Actual independentdeadline/age/errorcontract.",
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "source_revision": "RFC6455 Dec2011 sections3-5/7-10; base framing, clientmask, minimal63bitlength, fragmentation, handshake version13, closecode and implementationlimits.",
+      "label": "ws acceptance source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ws_registered_source": {
+      "type": "text",
+      "description": "Actualregisteredextension/transport/closecodeedition.",
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "source_revision": "RFC6455 Dec2011 sections3-5/7-10; base framing, clientmask, minimal63bitlength, fragmentation, handshake version13, closecode and implementationlimits.",
+      "label": "ws registered source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ws_protocol": {
+      "type": "text",
+      "description": "ActualextendedCONNECT :protocol token websocket.",
+      "source": "https://www.rfc-editor.org/rfc/rfc8441.html",
+      "source_revision": "RFC8441 Sep2018 sections3-5; explicit ENABLE_CONNECT_PROTOCOL and extendedCONNECT, noHTTP1Upgrade/Key/Accept.",
+      "label": "ws protocol",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ws_path": {
+      "type": "text",
+      "description": "ActualnonemptyURIpath / ifnone; nofragmentURI.",
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "source_revision": "RFC6455 Dec2011 sections3-5/7-10; base framing, clientmask, minimal63bitlength, fragmentation, handshake version13, closecode and implementationlimits.",
+      "label": "ws path",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {},
+          "value": "/",
+          "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+          "source_revision": "RFC6455 Dec2011 sections3-5/7-10; base framing, clientmask, minimal63bitlength, fragmentation, handshake version13, closecode and implementationlimits."
+        }
+      ]
+    },
+    "ws_authority": {
+      "type": "text",
+      "description": "Actualhost/portauthority, required H2/H3.",
+      "source": "https://www.rfc-editor.org/rfc/rfc8441.html",
+      "source_revision": "RFC8441 Sep2018 sections3-5; explicit ENABLE_CONNECT_PROTOCOL and extendedCONNECT, noHTTP1Upgrade/Key/Accept.",
+      "label": "ws authority",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ws_http_scheme": {
+      "type": "text",
+      "description": "Actualhttp forws/https forwss.",
+      "source": "https://www.rfc-editor.org/rfc/rfc8441.html",
+      "source_revision": "RFC8441 Sep2018 sections3-5; explicit ENABLE_CONNECT_PROTOCOL and extendedCONNECT, noHTTP1Upgrade/Key/Accept.",
+      "label": "ws http scheme",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ws_subprotocol": {
+      "type": "text",
+      "description": "Actualsingle mutuallynegotiated applicationtoken, notcomma-list.",
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "source_revision": "RFC6455 Dec2011 sections3-5/7-10; base framing, clientmask, minimal63bitlength, fragmentation, handshake version13, closecode and implementationlimits.",
+      "label": "ws subprotocol",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ws_extension_source": {
+      "type": "text",
+      "description": "Actualoffered/acceptedextension anddirection/source.",
+      "source": "https://www.rfc-editor.org/rfc/rfc7692.html",
+      "source_revision": "RFC7692 Dec2015 sections6-7; permessage-deflate negotiated direction-specificcontext/window limits and RSV1firstdataframe only.",
+      "label": "ws extension source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ws_mask_source": {
+      "type": "text",
+      "description": "Actualfreshmaskkey entropy/source (no secretkey retained).",
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "source_revision": "RFC6455 Dec2011 sections3-5/7-10; base framing, clientmask, minimal63bitlength, fragmentation, handshake version13, closecode and implementationlimits.",
+      "label": "ws mask source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ws_utf8_source": {
+      "type": "text",
+      "description": "Actual reassembled/decodedmessage orclosereason verification.",
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "source_revision": "RFC6455 Dec2011 sections3-5/7-10; base framing, clientmask, minimal63bitlength, fragmentation, handshake version13, closecode and implementationlimits.",
+      "label": "ws utf8 source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "ws_observation_source": {
+      "type": "text",
+      "description": "Actualcorrelatedproducer/frame/path/consumptiontrace.",
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "source_revision": "RFC6455 Dec2011 sections3-5/7-10; base framing, clientmask, minimal63bitlength, fragmentation, handshake version13, closecode and implementationlimits.",
+      "label": "ws observation source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    }
+  },
+  "mechanisms": {
+    "network": [
+      "MINIMAL_LENGTH_MASK_EXTENSION_FRAME",
+      "REASSEMBLED_MESSAGE_NOT_ETHERNET_PAYLOAD"
+    ],
+    "timing": [
+      "ACTUAL_TRANSPORT_AND_APPLICATION_PATH"
+    ]
+  },
+  "parameter_constraints": [
+    {
+      "parameter": "bitrate",
+      "when": {},
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html"
+    },
+    {
+      "parameter": "reserved_bandwidth_percent",
+      "when": {},
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html"
+    },
+    {
+      "parameter": "sync_method",
+      "when": {},
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html"
+    },
+    {
+      "parameter": "retransmission_enabled",
+      "when": {},
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html"
+    },
+    {
+      "parameter": "retransmission_rate",
+      "when": {},
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html"
+    },
+    {
+      "parameter": "retry_limit",
+      "when": {},
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html"
+    },
+    {
+      "parameter": "retransmission_delay_ms",
+      "when": {},
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html"
+    },
+    {
+      "parameter": "gateway_maximum_throughput",
+      "when": {},
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html"
+    },
+    {
+      "parameter": "gateway_input_buffer",
+      "when": {},
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html"
+    },
+    {
+      "parameter": "gateway_output_buffer",
+      "when": {},
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html"
+    },
+    {
+      "parameter": "gateway_maximum_routes",
+      "when": {},
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html"
+    },
+    {
+      "parameter": "gateway_maximum_messages_s",
+      "when": {},
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html"
+    },
+    {
+      "parameter": "mtu_bytes",
+      "when": {},
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html"
+    },
+    {
+      "parameter": "duplex",
+      "when": {},
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html"
+    },
+    {
+      "parameter": "vlan_id",
+      "when": {},
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html"
+    },
+    {
+      "parameter": "rate_limit_bit_s",
+      "when": {},
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html"
+    },
+    {
+      "parameter": "ws_registered_source",
+      "when": {
+        "ws_transport": "REGISTERED_ACTUAL"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "required": true
+    },
+    {
+      "parameter": "ws_version",
+      "when": {},
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "allowed": [
+        13
+      ]
+    },
+    {
+      "parameter": "ws_mask",
+      "when": {
+        "ws_direction": "CLIENT_TO_SERVER"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "ws_mask",
+      "when": {
+        "ws_direction": "SERVER_TO_CLIENT"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "allowed": [
+        false
+      ]
+    },
+    {
+      "parameter": "ws_direction",
+      "when": {},
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "when_present": [
+        "ws_frame_payload_bytes"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "ws_mask",
+      "when": {},
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "when_present": [
+        "ws_frame_payload_bytes"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "ws_opcode",
+      "when": {},
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "when_present": [
+        "ws_frame_payload_bytes"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "ws_fin",
+      "when": {},
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "when_present": [
+        "ws_frame_payload_bytes"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "ws_rsv",
+      "when": {},
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "when_present": [
+        "ws_frame_payload_bytes"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "ws_length_code",
+      "when": {},
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "when_present": [
+        "ws_frame_payload_bytes"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "ws_extended_length_bytes",
+      "when": {},
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "when_present": [
+        "ws_frame_payload_bytes"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "ws_header_bytes",
+      "when": {},
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "when_present": [
+        "ws_frame_payload_bytes"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "ws_length_code",
+      "when": {},
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "when_ranges": {
+        "ws_frame_payload_bytes": [
+          0,
+          125
+        ]
+      },
+      "equal_parameter": "ws_frame_payload_bytes"
+    },
+    {
+      "parameter": "ws_extended_length_bytes",
+      "when": {},
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "when_ranges": {
+        "ws_frame_payload_bytes": [
+          0,
+          125
+        ]
+      },
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "ws_length_code",
+      "when": {},
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "when_ranges": {
+        "ws_frame_payload_bytes": [
+          126,
+          65535
+        ]
+      },
+      "allowed": [
+        126
+      ]
+    },
+    {
+      "parameter": "ws_extended_length_bytes",
+      "when": {},
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "when_ranges": {
+        "ws_frame_payload_bytes": [
+          126,
+          65535
+        ]
+      },
+      "allowed": [
+        2
+      ]
+    },
+    {
+      "parameter": "ws_length_code",
+      "when": {},
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "when_ranges": {
+        "ws_frame_payload_bytes": [
+          65536,
+          9223372036854775807
+        ]
+      },
+      "allowed": [
+        127
+      ]
+    },
+    {
+      "parameter": "ws_extended_length_bytes",
+      "when": {},
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "when_ranges": {
+        "ws_frame_payload_bytes": [
+          65536,
+          9223372036854775807
+        ]
+      },
+      "allowed": [
+        8
+      ]
+    },
+    {
+      "parameter": "ws_mask_bytes",
+      "when": {
+        "ws_mask": true
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "allowed": [
+        4
+      ]
+    },
+    {
+      "parameter": "ws_header_bytes",
+      "when": {
+        "ws_mask": true
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "equal_expression": {
+        "sum": [
+          2,
+          4,
+          "ws_extended_length_bytes"
+        ]
+      }
+    },
+    {
+      "parameter": "ws_mask_bytes",
+      "when": {
+        "ws_mask": false
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "ws_header_bytes",
+      "when": {
+        "ws_mask": false
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "equal_expression": {
+        "sum": [
+          2,
+          0,
+          "ws_extended_length_bytes"
+        ]
+      }
+    },
+    {
+      "parameter": "ws_wire_bytes",
+      "when": {},
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "equal_expression": {
+        "sum": [
+          "ws_header_bytes",
+          "ws_frame_payload_bytes"
+        ]
+      }
+    },
+    {
+      "parameter": "ws_frame_payload_bytes",
+      "when": {},
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "equal_expression": {
+        "sum": [
+          "ws_extension_bytes",
+          "ws_application_bytes"
+        ]
+      },
+      "maximum_parameter": "ws_max_frame_bytes"
+    },
+    {
+      "parameter": "ws_message_bytes",
+      "when": {},
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "maximum_parameter": "ws_max_message_bytes"
+    },
+    {
+      "parameter": "ws_fin",
+      "when": {
+        "ws_opcode": 8
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "ws_frame_payload_bytes",
+      "when": {
+        "ws_opcode": 8
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "maximum": 125
+    },
+    {
+      "parameter": "ws_rsv",
+      "when": {
+        "ws_opcode": 8
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "ws_compressed",
+      "when": {
+        "ws_opcode": 8
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "allowed": [
+        false
+      ]
+    },
+    {
+      "parameter": "ws_fin",
+      "when": {
+        "ws_opcode": 9
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "ws_frame_payload_bytes",
+      "when": {
+        "ws_opcode": 9
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "maximum": 125
+    },
+    {
+      "parameter": "ws_rsv",
+      "when": {
+        "ws_opcode": 9
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "ws_compressed",
+      "when": {
+        "ws_opcode": 9
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "allowed": [
+        false
+      ]
+    },
+    {
+      "parameter": "ws_fin",
+      "when": {
+        "ws_opcode": 10
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "ws_frame_payload_bytes",
+      "when": {
+        "ws_opcode": 10
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "maximum": 125
+    },
+    {
+      "parameter": "ws_rsv",
+      "when": {
+        "ws_opcode": 10
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "ws_compressed",
+      "when": {
+        "ws_opcode": 10
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "allowed": [
+        false
+      ]
+    },
+    {
+      "parameter": "ws_opcode",
+      "when": {
+        "ws_extension": "NONE"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "allowed": [
+        0,
+        1,
+        2,
+        8,
+        9,
+        10
+      ]
+    },
+    {
+      "parameter": "ws_rsv",
+      "when": {
+        "ws_extension": "NONE"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "ws_compressed",
+      "when": {
+        "ws_extension": "NONE"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "allowed": [
+        false
+      ]
+    },
+    {
+      "parameter": "ws_extension_bytes",
+      "when": {
+        "ws_extension": "NONE"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "ws_fin",
+      "when": {
+        "ws_fragment": "SINGLE"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "ws_opcode",
+      "when": {
+        "ws_fragment": "SINGLE"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "allowed": [
+        1,
+        2
+      ]
+    },
+    {
+      "parameter": "ws_fin",
+      "when": {
+        "ws_fragment": "FIRST"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "allowed": [
+        false
+      ]
+    },
+    {
+      "parameter": "ws_opcode",
+      "when": {
+        "ws_fragment": "FIRST"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "allowed": [
+        1,
+        2
+      ]
+    },
+    {
+      "parameter": "ws_fin",
+      "when": {
+        "ws_fragment": "CONTINUATION"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "allowed": [
+        false
+      ]
+    },
+    {
+      "parameter": "ws_opcode",
+      "when": {
+        "ws_fragment": "CONTINUATION"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "ws_fin",
+      "when": {
+        "ws_fragment": "LAST"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "ws_opcode",
+      "when": {
+        "ws_fragment": "LAST"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "ws_close_code",
+      "when": {},
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "forbidden": [
+        1004,
+        1005,
+        1006,
+        1015
+      ]
+    },
+    {
+      "parameter": "ws_frame_payload_bytes",
+      "when": {
+        "ws_opcode": 8
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "forbidden": [
+        1
+      ]
+    },
+    {
+      "parameter": "ws_frame_payload_bytes",
+      "when": {
+        "ws_opcode": 8
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "when_present": [
+        "ws_close_code",
+        "ws_close_reason_bytes"
+      ],
+      "equal_expression": {
+        "sum": [
+          2,
+          "ws_close_reason_bytes"
+        ]
+      }
+    },
+    {
+      "parameter": "ws_mask_source",
+      "when": {
+        "ws_mask_entropy_verified": true
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "required": true
+    },
+    {
+      "parameter": "ws_utf8_source",
+      "when": {
+        "ws_utf8_verified": true
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "required": true
+    },
+    {
+      "parameter": "ws_extension_source",
+      "when": {
+        "ws_extension": "PERMESSAGE_DEFLATE"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc7692.html",
+      "required": true
+    },
+    {
+      "parameter": "ws_extension_source",
+      "when": {
+        "ws_extension": "REGISTERED_ACTUAL"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "required": true
+    },
+    {
+      "parameter": "ws_rsv",
+      "when": {
+        "ws_extension": "PERMESSAGE_DEFLATE",
+        "ws_fragment": "CONTINUATION"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc7692.html",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "ws_rsv",
+      "when": {
+        "ws_extension": "PERMESSAGE_DEFLATE",
+        "ws_fragment": "LAST"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc7692.html",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "ws_rsv",
+      "when": {
+        "ws_extension": "PERMESSAGE_DEFLATE",
+        "ws_fragment": "SINGLE",
+        "ws_compressed": true
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc7692.html",
+      "allowed": [
+        4
+      ]
+    },
+    {
+      "parameter": "ws_rsv",
+      "when": {
+        "ws_extension": "PERMESSAGE_DEFLATE",
+        "ws_fragment": "SINGLE",
+        "ws_compressed": false
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc7692.html",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "ws_rsv",
+      "when": {
+        "ws_extension": "PERMESSAGE_DEFLATE",
+        "ws_fragment": "FIRST",
+        "ws_compressed": true
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc7692.html",
+      "allowed": [
+        4
+      ]
+    },
+    {
+      "parameter": "ws_rsv",
+      "when": {
+        "ws_extension": "PERMESSAGE_DEFLATE",
+        "ws_fragment": "FIRST",
+        "ws_compressed": false
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc7692.html",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "ws_server_window_bits",
+      "when": {},
+      "source": "https://www.rfc-editor.org/rfc/rfc7692.html",
+      "maximum_parameter": "ws_server_window_offer"
+    },
+    {
+      "parameter": "ws_client_window_offered",
+      "when": {},
+      "source": "https://www.rfc-editor.org/rfc/rfc7692.html",
+      "when_present": [
+        "ws_client_window_bits"
+      ],
+      "required": true,
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "ws_server_window_bytes",
+      "when": {},
+      "source": "https://www.rfc-editor.org/rfc/rfc7692.html",
+      "equal_expression": {
+        "power": [
+          2,
+          "ws_server_window_bits"
+        ]
+      }
+    },
+    {
+      "parameter": "ws_client_window_bytes",
+      "when": {},
+      "source": "https://www.rfc-editor.org/rfc/rfc7692.html",
+      "equal_expression": {
+        "power": [
+          2,
+          "ws_client_window_bits"
+        ]
+      }
+    },
+    {
+      "parameter": "ws_method",
+      "when": {
+        "ws_transport": "HTTP1_TCP"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "allowed": [
+        "GET"
+      ]
+    },
+    {
+      "parameter": "ws_http_status",
+      "when": {
+        "ws_transport": "HTTP1_TCP"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "allowed": [
+        101
+      ]
+    },
+    {
+      "parameter": "ws_upgrade_header",
+      "when": {
+        "ws_transport": "HTTP1_TCP"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "ws_connection_header",
+      "when": {
+        "ws_transport": "HTTP1_TCP"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "ws_key_header",
+      "when": {
+        "ws_transport": "HTTP1_TCP"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "ws_accept_header",
+      "when": {
+        "ws_transport": "HTTP1_TCP"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "ws_method",
+      "when": {
+        "ws_transport": "HTTP2_STREAM"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc8441.html",
+      "allowed": [
+        "CONNECT"
+      ]
+    },
+    {
+      "parameter": "ws_http_status",
+      "when": {
+        "ws_transport": "HTTP2_STREAM"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc8441.html",
+      "minimum": 200,
+      "maximum": 299
+    },
+    {
+      "parameter": "ws_connect_enabled",
+      "when": {
+        "ws_transport": "HTTP2_STREAM"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc8441.html",
+      "required": true,
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "ws_protocol",
+      "when": {
+        "ws_transport": "HTTP2_STREAM"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc8441.html",
+      "required": true,
+      "allowed": [
+        "websocket"
+      ]
+    },
+    {
+      "parameter": "ws_path",
+      "when": {
+        "ws_transport": "HTTP2_STREAM"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc8441.html",
+      "required": true
+    },
+    {
+      "parameter": "ws_authority",
+      "when": {
+        "ws_transport": "HTTP2_STREAM"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc8441.html",
+      "required": true
+    },
+    {
+      "parameter": "ws_http_scheme",
+      "when": {
+        "ws_transport": "HTTP2_STREAM"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc8441.html",
+      "required": true
+    },
+    {
+      "parameter": "ws_upgrade_header",
+      "when": {
+        "ws_transport": "HTTP2_STREAM"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc8441.html",
+      "allowed": [
+        false
+      ]
+    },
+    {
+      "parameter": "ws_connection_header",
+      "when": {
+        "ws_transport": "HTTP2_STREAM"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc8441.html",
+      "allowed": [
+        false
+      ]
+    },
+    {
+      "parameter": "ws_key_header",
+      "when": {
+        "ws_transport": "HTTP2_STREAM"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc8441.html",
+      "allowed": [
+        false
+      ]
+    },
+    {
+      "parameter": "ws_accept_header",
+      "when": {
+        "ws_transport": "HTTP2_STREAM"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc8441.html",
+      "allowed": [
+        false
+      ]
+    },
+    {
+      "parameter": "ws_method",
+      "when": {
+        "ws_transport": "HTTP3_QUIC_STREAM"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc9220.html",
+      "allowed": [
+        "CONNECT"
+      ]
+    },
+    {
+      "parameter": "ws_http_status",
+      "when": {
+        "ws_transport": "HTTP3_QUIC_STREAM"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc9220.html",
+      "minimum": 200,
+      "maximum": 299
+    },
+    {
+      "parameter": "ws_connect_enabled",
+      "when": {
+        "ws_transport": "HTTP3_QUIC_STREAM"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc9220.html",
+      "required": true,
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "ws_protocol",
+      "when": {
+        "ws_transport": "HTTP3_QUIC_STREAM"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc9220.html",
+      "required": true,
+      "allowed": [
+        "websocket"
+      ]
+    },
+    {
+      "parameter": "ws_path",
+      "when": {
+        "ws_transport": "HTTP3_QUIC_STREAM"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc9220.html",
+      "required": true
+    },
+    {
+      "parameter": "ws_authority",
+      "when": {
+        "ws_transport": "HTTP3_QUIC_STREAM"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc9220.html",
+      "required": true
+    },
+    {
+      "parameter": "ws_http_scheme",
+      "when": {
+        "ws_transport": "HTTP3_QUIC_STREAM"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc9220.html",
+      "required": true
+    },
+    {
+      "parameter": "ws_upgrade_header",
+      "when": {
+        "ws_transport": "HTTP3_QUIC_STREAM"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc9220.html",
+      "allowed": [
+        false
+      ]
+    },
+    {
+      "parameter": "ws_connection_header",
+      "when": {
+        "ws_transport": "HTTP3_QUIC_STREAM"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc9220.html",
+      "allowed": [
+        false
+      ]
+    },
+    {
+      "parameter": "ws_key_header",
+      "when": {
+        "ws_transport": "HTTP3_QUIC_STREAM"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc9220.html",
+      "allowed": [
+        false
+      ]
+    },
+    {
+      "parameter": "ws_accept_header",
+      "when": {
+        "ws_transport": "HTTP3_QUIC_STREAM"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc9220.html",
+      "allowed": [
+        false
+      ]
+    },
+    {
+      "parameter": "ws_http_scheme",
+      "when": {
+        "ws_scheme": "ws"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc8441.html",
+      "allowed": [
+        "http"
+      ]
+    },
+    {
+      "parameter": "ws_http_scheme",
+      "when": {
+        "ws_scheme": "wss"
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc8441.html",
+      "allowed": [
+        "https"
+      ]
+    },
+    {
+      "parameter": "ws_e2e_ms",
+      "when": {},
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "equal_expression": {
+        "sum": [
+          "ws_source_ms",
+          "ws_transport_ms",
+          "ws_use_ms"
+        ]
+      },
+      "maximum_parameter": "ws_deadline_ms"
+    },
+    {
+      "parameter": "ws_age_ms",
+      "when": {},
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "maximum_parameter": "ws_freshness_ms"
+    },
+    {
+      "parameter": "ws_source_ms",
+      "when": {},
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "when_present": [
+        "ws_e2e_ms"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "ws_transport_ms",
+      "when": {},
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "when_present": [
+        "ws_e2e_ms"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "ws_use_ms",
+      "when": {},
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "when_present": [
+        "ws_e2e_ms"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "ws_e2e_ms",
+      "when": {
+        "ws_data_accepted": true
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "required": true
+    },
+    {
+      "parameter": "ws_deadline_ms",
+      "when": {
+        "ws_data_accepted": true
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "required": true
+    },
+    {
+      "parameter": "ws_age_ms",
+      "when": {
+        "ws_data_accepted": true
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "required": true
+    },
+    {
+      "parameter": "ws_freshness_ms",
+      "when": {
+        "ws_data_accepted": true
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "required": true
+    },
+    {
+      "parameter": "ws_observation_source",
+      "when": {
+        "ws_data_accepted": true
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "required": true
+    },
+    {
+      "parameter": "ws_path_verified",
+      "when": {
+        "ws_data_accepted": true
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "required": true,
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "ws_outcome",
+      "when": {
+        "ws_data_accepted": true
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "required": true,
+      "allowed": [
+        "ACCEPTED"
+      ]
+    }
+  ],
+  "physical_layer_profile_id": null,
+  "medium_access_model": null,
+  "native_parameter_prefixes": [
+    "ws_"
+  ],
+  "parameter_aliases": {},
+  "parameter_alias_limits": {},
+  "parameter_evidence_scope": "EXPLICIT_LAYER",
+  "rate_source_profile_id": null,
+  "arbitration_model_id": null,
+  "max_payload_bytes": null,
+  "capabilities": {
+    "supports_signals": true,
+    "supports_data_objects": true,
+    "supports_streams": true,
+    "supports_multicast": false,
+    "supports_publish_subscribe": true,
+    "supports_request_response": false,
+    "supports_cyclic": true,
+    "supports_event": true,
+    "supports_redundancy": false,
+    "supports_time_sync": false,
+    "supports_safety_profile": false,
+    "supports_segmentation": true,
+    "supports_fragmentation": false,
+    "supports_qos": false
+  },
+  "deterministic": false,
+  "overhead_bytes": 8,
+  "implementation_status": "EXPERIMENTAL",
+  "connection_type": "COMMUNICATION_TECHNOLOGY",
+  "parameter_proposals": {
+    "kind": "DEVICE_DEPENDENT",
+    "status": "REVIEW_REQUIRED",
+    "required_fields": [],
+    "note": "No universal rate is available; inspect the selected hardware/profile."
+  },
+  "capacity_evidence": {
+    "status": "MODEL_MISSING",
+    "frame_model": null,
+    "schedule_model": null,
+    "requires_confirmed_device_parameters": true
+  },
+  "components": {
+    "binding": "websocket.binding",
+    "generator": "websocket.generator",
+    "validator": "websocket.validator",
+    "timing_model": null,
+    "load_model": null,
+    "encoder": "websocket.encoder",
+    "decoder": "websocket.decoder"
+  },
+  "known_limitations": "Technology-specific conformance details require a vendor/profile extension."
+}

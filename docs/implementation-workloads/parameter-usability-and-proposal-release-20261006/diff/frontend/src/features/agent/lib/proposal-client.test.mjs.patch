@@ -1,0 +1,15 @@
+--- before/frontend/src/features/agent/lib/proposal-client.test.mjs
++++ after/frontend/src/features/agent/lib/proposal-client.test.mjs
+@@ -77,6 +77,12 @@
+   assert.deepEqual(methods, ['POST', 'GET', 'GET']);
+ });
+ 
++test('a successful HTTP response with OUTDATED is never reported as applied', async t => {
++  t.mock.method(globalThis, 'fetch', async () => response({...proposal,status:'OUTDATED'}));
++  await assert.rejects(approveAndApplyWizardProposal(proposal,'test','csrf'), /nicht bestätigt.*nicht übernommen/);
++  await assert.rejects(applyReviewedProposal(proposal,'test','csrf'), /nicht bestätigt.*nicht übernommen/);
++});
++
+ import { proposalFindingGroups } from './proposal-client.ts';
+ test('all 301 historical capacity findings retain identities in compact technology groups', () => {
+   const changes = Array.from({ length: 301 }, (_, i) => ({ local_ref: `port-${i}`, object_type: 'HardwareNetworkInterface', data: { name: `ECU${i}_LIN`, technology: 'LIN', network_ref: 'local-lin' } }));

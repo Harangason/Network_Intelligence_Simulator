@@ -1872,15 +1872,21 @@ export function EngineeringAgentWizard({
   }, [plannedEquipment.chains, previewDomain, projectId, assignmentLearningRevision]);
   const [functionalHistory, setFunctionalHistory] = useState<FunctionalPartnerSuggestion[]>([]);
   const [functionalExperience, setFunctionalExperience] = useState<Record<string, boolean>>({});
+  // Array identities change while typing; only the semantic query scope should
+  // dispatch server work. Aborting a fetch cannot cancel work already received.
+  const functionalExperienceScope = JSON.stringify({ industry: previewDomain, bus_types: selectedTechnologies,
+    candidate_controllers: plannedEquipment.chains.filter(chain => isEngineeringControllerDevice(chain.device_type)).map(chain => chain.hardware_name) });
   useEffect(() => {
     const controller = new AbortController();
     setFunctionalExperience({}); setFunctionalHistory([]);
-    void retrieveGenerationExperience({ industry: previewDomain, bus_types: selectedTechnologies, candidate_controllers: plannedEquipment.chains.filter(chain => isEngineeringControllerDevice(chain.device_type)).map(chain => chain.hardware_name) }, controller.signal, projectId).then(result => {
-      if (!controller.signal.aborted) { setFunctionalHistory(result.experience.functional_partner_suggestions ?? []); setFunctionalExperience(Object.fromEntries((result.experience.functional_partner_suggestions ?? []).map(choice =>
-        [hmiSignalKey({ source: choice.source, target: choice.target, signals: [], path: [] }, choice.signal), choice.accepted > choice.rejected]))); }
-    }).catch(() => undefined);
-    return () => controller.abort();
-  }, [previewDomain, projectId, selectedTechnologies.join('|'), plannedEquipment.chains]);
+    const timer = window.setTimeout(() => {
+      void retrieveGenerationExperience(JSON.parse(functionalExperienceScope), controller.signal, projectId).then(result => {
+        if (!controller.signal.aborted) { setFunctionalHistory(result.experience.functional_partner_suggestions ?? []); setFunctionalExperience(Object.fromEntries((result.experience.functional_partner_suggestions ?? []).map(choice =>
+          [hmiSignalKey({ source: choice.source, target: choice.target, signals: [], path: [] }, choice.signal), choice.accepted > choice.rejected]))); }
+      }).catch(() => undefined);
+    }, 250);
+    return () => { window.clearTimeout(timer); controller.abort(); };
+  }, [functionalExperienceScope, projectId]);
   const equipmentClusters = useMemo(() => buildEquipmentClusters(
     plannedEquipment.chains,
     communicationSystemCounts.map((item) => ({ id: item.id, label: item.label, count: item.count })),
@@ -3074,13 +3080,15 @@ export function EngineeringAgentWizard({
           <label className="agent-questionnaire-note">
             <span>Projektbeschreibung</span>
             <textarea aria-label="Projektbeschreibung" disabled={effectiveBusy} rows={5}
-              value={taskText.replace(/^\s*- (?:Sensor-Messgrößen|Aktor-Befehle|Geräteanschlüsse|Gerätezuordnungen|Geräte-Spezifikationen):[^\r\n]*(?:\r?\n|$)/gm, '').trim()}
+              // Preserve the editable text, including trailing spaces and blank
+              // lines. Remove only reviewed metadata and its joining newline.
+              value={taskText.replace(/(?:\r?\n)?^[ \t]*- (?:Sensor-Messgrößen|Aktor-Befehle|Geräteanschlüsse|Gerätezuordnungen|Geräte-Spezifikationen):[^\r\n]*/gm, '')}
               maxLength={intakeRequirement !== null ? 16000 : undefined}
               placeholder="Was soll dieses Projekt leisten?"
               onChange={(event) => {
                 const requirement = event.target.value;
-                const reviewedChoices = taskText.split(/\r?\n/).filter(line => /^- (?:Sensor-Messgrößen|Aktor-Befehle|Geräteanschlüsse|Gerätezuordnungen|Geräte-Spezifikationen):/.test(line));
-                const nextTaskText = [requirement.trim(), ...reviewedChoices].filter(Boolean).join('\n');
+                const reviewedChoices = taskText.split(/\r?\n/).filter(line => /^[ \t]*- (?:Sensor-Messgrößen|Aktor-Befehle|Geräteanschlüsse|Gerätezuordnungen|Geräte-Spezifikationen):/.test(line));
+                const nextTaskText = [requirement, ...reviewedChoices].filter(Boolean).join('\n');
                 setTaskText(nextTaskText);
                 if (nextTaskText) window.sessionStorage.setItem(projectIntakeKey(projectId), JSON.stringify({ projectId, requirement: nextTaskText }));
                 else window.sessionStorage.removeItem(projectIntakeKey(projectId));

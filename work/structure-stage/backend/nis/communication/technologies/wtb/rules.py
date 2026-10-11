@@ -1,0 +1,36 @@
+"""Wire Train Bus parameters: own framing, inauguration and periodic schedule."""
+from backend.nis.communication.services.native_review_support import declaration, fields as build_fields, WIRE_KEYS
+PAPER='https://www.researchgate.net/publication/224342060_Modeling_Wire_Train_Bus_communication_using_timed_Colored_Petri_Nets'
+EKE='https://www.eke-electronics.com/wp-content/uploads/2025/05/Technical-Specifications.pdf'
+UNI='https://unicontrols.cz/eng/products/tcn/tcn.asp'
+SOURCES={PAPER:'Bago/Peric/Marijan SICE2008 DOI10.1109/SICE.2008.4655160 selected2.2/3 andFig4:128bytes/frame, pre16..32, DD/LC/SD/SZ4bytes, FCS16, flags16, ED2, stuffing afterfiveones, BP25±1ms, periodic<=60%,2^N*25ms,N0..7, master1, up to32nodes. Primary publication web extract retained; original PDF not verified locally. No full IEC61375-2-1 conformance.',EKE:'Original manufacturer EKE technicalspecifications2025 selectedWireTrainBusmodule: IEC61375-1 1Mbit/s,500kbit/s onlyonrequest, actualmodule/wiring/diagnostics/fritting evidence distinctotherinterfaces.',UNI:'OriginalUnicontrolsTCN2002 selectedWTBbasics:1Mbit/s shieldedtwistedpair,860m/32nodes, galvanictransformerisolation, duplicatedmedium andoptionalcontactfritting. Historicaledition notallinstalledcapability.'}
+DECLARATIONS=[]
+def d(k,t,m,s=PAPER,**kw):DECLARATIONS.append(declaration('wt_',k,t,m,s,SOURCES[s],**kw))
+d('profile','select','Actual standard edition/binding or independently ordered half-speed implementation.',EKE,options=['STANDARD_1M','EKE_ORDERED_HALF','REGISTERED_ACTUAL'])
+d('role','select','Actual inaugurated ownership; master address1, other nodes by topology.',options=['MASTER','SLAVE','UNINAUGURATED'])
+d('outcome','select','Independent consuming function result, not frame/FCS receipt.',options=['ACCEPTED','FRAME_ONLY','ERROR','UNKNOWN'])
+for k,m,lo,hi,u,integer,s in [('rate_bps','Actual WTB data clock; Manchester transitions are not double data rate.',1,None,'bit/s',False,EKE),('nodes','Actual whole segment node count including master.',1,32,None,True,UNI),('length_m','Actual installed cable length within qualified historical no-repeater baseline.',0,860,'m',False,UNI),('address','Actual inaugurated node address, not fixed guessed slave address.',1,63,None,True,PAPER),('basic_ms','Actual basic schedule period.',24,26,'ms',False,PAPER),('period_exponent','Actual process-data period exponent chosen by inauguration.',0,7,None,True,PAPER),('process_ms','Nominal declared process period2^N*25ms; not applicationdeadline.',25,3200,'ms',False,PAPER),('periodic_ms','Actual periodic phase bound no more than60% of basicperiod.',0,None,'ms',False,PAPER),('sporadic_ms','Actual remaining supervisory/message phase.',0,None,'ms',False,PAPER),('preamble_bits','Actual framepreamble.',16,32,'bit',True,PAPER),('frame_data_bytes','Actual complete useful data in this frame, not segmentedwholemessage.',0,128,'byte',True,PAPER),('stuffed_bits','Actual extra bits afterfiveones betweenflags includingheader/FCS.',0,None,'bit',True,PAPER),('frame_bits','Actualpreamble+flags+DD/LC/SD/SZ+data+FCS+ED+stuffing.',0,None,'bit',True,PAPER),('air_us','Nominal frameclock airtime, not complete request/response/schedule.',0,None,'us',False,PAPER),('source_ms','Actual producer/gateway processing bound.',0,None,'ms',False,PAPER),('transport_ms','Actual inaugurated request/response/queue/retry/pathbound.',0,None,'ms',False,PAPER),('use_ms','Actual consumingfunctionprocessingbound.',0,None,'ms',False,PAPER),('e2e_ms','Actual source-to-use bound independent frameCRC.',0,None,'ms',False,PAPER),('deadline_ms','Independent applicationdeadline.',0,None,'ms',False,PAPER),('age_ms','Actual consumeddataage.',0,None,'ms',False,PAPER),('freshness_ms','Independent allowabledataage.',0,None,'ms',False,PAPER)]:d(k,'number',m,s,min=lo,max=hi,unit=u,integer=integer)
+for k,m in [('inaugurated','Actual complete topology/master/orientation/address evidence.'),('schedule_verified','Actual periodic/sporadic/masterownershipandbufferbound.'),('data_accepted','Actual independent consuming function succeeds.')]:d(k,'boolean',m)
+for k,m in [('revision','Actual device/standardedition.'),('device_source','Actual frame/decoder/buffer capabilities.'),('physical_source','Actual installed redundancy/terminations/isolation/fritting/length.'),('schedule_source','Actual inauguration, requests, responses andallocation.'),('acceptance_source','Independent application deadline/freshness/errorcontract.'),('observation_source','Actual correlated producer/bus/consumer observations.')]:d(k,'text',m)
+REQUIRED=('revision','device_source','physical_source','schedule_source','acceptance_source')
+REMOVED={k:'WTB has own inauguration/master schedule/frame/stuffing evidence; foreign CAN/gateway defaults removed.'for k in WIRE_KEYS}
+def semantics():
+ rules=[]
+ def r(k,w=None,s=PAPER,**kw):rules.append(dict(parameter='wt_'+k,when={'wt_'+a:b for a,b in(w or {}).items()},source=s,**kw))
+ rules.extend(dict(parameter=k,when={},allowed=[],source=PAPER)for k in REMOVED)
+ r('rate_bps',{'profile':'STANDARD_1M'},allowed=[1000000],s=EKE);r('rate_bps',{'profile':'EKE_ORDERED_HALF'},allowed=[500000],s=EKE)
+ r('address',{'role':'MASTER'},allowed=[1]);r('address',{'role':'SLAVE'},forbidden=[1]);r('process_ms',equal_expression={'product':[25,{'power':[2,'wt_period_exponent']}]})
+ r('periodic_ms',maximum_expression={'product':['wt_basic_ms',.6]});r('sporadic_ms',equal_expression={'subtract':['wt_basic_ms','wt_periodic_ms']})
+ r('frame_data_bytes',equal_parameter='payload_bytes');r('stuffed_bits',maximum_expression={'floor':[{'product':[{'sum':[48,{'product':['wt_frame_data_bytes',8]}]},.2]}]})
+ r('frame_bits',equal_expression={'sum':['wt_preamble_bits',66,{'product':['wt_frame_data_bytes',8]},'wt_stuffed_bits']})
+ r('air_us',equal_ratio={'numerator_parameter':'wt_frame_bits','denominator_parameter':'wt_rate_bps','factor':1000000})
+ r('e2e_ms',equal_expression={'sum':['wt_source_ms','wt_transport_ms','wt_use_ms']},maximum_parameter='wt_deadline_ms');r('age_ms',maximum_parameter='wt_freshness_ms')
+ for k in('source_ms','transport_ms','use_ms'):r(k,when_present=['wt_e2e_ms'],required=True)
+ for k in('e2e_ms','deadline_ms','age_ms','freshness_ms','observation_source'):r(k,{'data_accepted':True},required=True)
+ for k in('inaugurated','schedule_verified'):r(k,{'data_accepted':True},required=True,allowed=[True])
+ r('outcome',{'data_accepted':True},required=True,allowed=['ACCEPTED'])
+ return dict(rate_model={'type':'WTB_EDITION_OWN_MASTER_SCHEDULE','fields':[]},parameter_evidence_scope='EXPLICIT_LAYER',required_parameters=['wt_'+k for k in REQUIRED],native_parameter_prefixes=['wt_'],parameter_constraints=rules,medium_access_model='WTB_PERIODIC_SPORADIC_MASTER',arbitration_model_id='INAUGURATION_TOPOLOGY_MASTER',mechanisms={'network':['WTB_NOT_MVB_OR_ETB'],'timing':['ACTUAL_MASTER_REQUEST_REPLY_AND_STUFFING']})
+def fields():
+ p={}
+ for k,v,w,s in [('rate_bps',1000000,{'profile':'STANDARD_1M'},EKE),('basic_ms',25,{'profile':'STANDARD_1M'},PAPER),('process_ms',25,{'profile':'STANDARD_1M','period_exponent':0},PAPER),('preamble_bits',16,{'profile':'STANDARD_1M'},PAPER)]:p['wt_'+k]=[dict(when={'wt_'+a:b for a,b in w.items()},value=v,source=s,source_revision=SOURCES[s])]
+ return build_fields(DECLARATIONS,['wt_'+k for k in REQUIRED],p)

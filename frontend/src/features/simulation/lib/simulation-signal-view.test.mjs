@@ -20,10 +20,12 @@ test("alive counters remain numeric instead of pretending to be unnamed states",
   assert.equal(formatSignalValue(counter, counter.points[0]), "7 count");
 });
 
-test("dynamic filtering and bounded initial selection reduce rendered work", () => {
+test("dynamic filtering is optional and initial selection retains the complete signal inventory", () => {
   const dynamic = series({ signal_id: "dynamic", signal: "DamperPosition", behavior_type: "PHYSICS_MODEL", model_label: "PHYSICS_BASED", semantic_type: "POSITION", points: [{ time_s: 0, value: 50, golden_value: 50, faults: [] }, { time_s: 1, value: 54, golden_value: 54, faults: [] }] });
   const staticSignal = series({ signal_id: "static", signal: "Static", points: [{ time_s: 0, value: 1, golden_value: 1, faults: [] }, { time_s: 1, value: 1, golden_value: 1, faults: [] }] });
   assert.equal(signalIsDynamic(dynamic), true);
   assert.deepEqual(filterSignalSeries([dynamic, staticSignal], { search: "", behavior: "DYNAMIC", kind: "ALL" }).map((item) => item.signal_id), ["dynamic"]);
-  assert.equal(initialSignalSelection(Array.from({ length: 50 }, (_, index) => ({ ...dynamic, signal_id: String(index) }))).length, 18);
+  const inventory = [staticSignal, ...Array.from({ length: 1404 }, (_, index) => ({ ...dynamic, signal_id: String(index) }))];
+  assert.deepEqual(initialSignalSelection(inventory), inventory.map(item => item.signal_id));
+  assert.deepEqual(filterSignalSeries(inventory, { search: "", behavior: "ALL", kind: "ALL" }), inventory);
 });

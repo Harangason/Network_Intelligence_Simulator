@@ -1,0 +1,565 @@
+--- before/frontend/src/features/simulation/ui/simulation-wizard.tsx
++++ after/frontend/src/features/simulation/ui/simulation-wizard.tsx
+@@ -2,7 +2,7 @@
+ 
+ import { parseLosslessJson } from "../../../shared/api/lossless-json.ts";
+ 
+-import { formatBitrate, parseBitrate, commonTechnologyParameters, booleanParameterValue, numericParameterValue, conditionalParameterDefault, confirmTechnologyParameters, technologyParameterApplicable, technologyParameterUnverified as parameterIsUnverified, technologyParameterValues, parameterValueStatus, findingsForParameter, technologyKey, type DeclaredNetwork } from "@/features/communication/lib/technology-parameters";
++import { formatBitrate, parseBitrate, commonTechnologyParameters, booleanParameterValue, numericParameterValue, conditionalParameterDefault, confirmTechnologyParameters, technologyParameterApplicable, technologyParameterUnverified as parameterIsUnverified, technologyParameterValues, parameterValueStatus, findingsForParameter, simulationParameterFindings, networkRateReviewTargets, technologyKey } from "@/features/communication/lib/technology-parameters";
+ 
+ import Link from "next/link";
+ import { requestEngineeringAgentWizard } from '@/features/agent/lib/agent-task-events';
+@@ -972,6 +972,11 @@
+   function chooseTechnology(value: string) {
+     editedDurationFieldsRef.current.clear();
+     setTechnologyId(value);
++    if (mode === "parameters") {
++      const url = new URL(window.location.href);
++      url.searchParams.set("technology", value);
++      window.history.replaceState(window.history.state, "", url);
++    }
+   }
+ 
+   async function applyRoutingSuggestion(suggestion: RoutingNetworkSuggestion) {
+@@ -1092,16 +1097,13 @@
+ 
+   const currentFindings = parameterReview?.findings ?? [];
+   const selectedFindings = currentFindings.filter(item => technologyKey(item.technology) === technologyKey(technologyId));
+-  const simulationFindings = selectedFindings.filter(item => item.code !== 'CAPACITY_DEVICE_EVIDENCE_MISSING');
++  const allSimulationFindings = simulationParameterFindings(currentFindings);
++  const simulationFindings = simulationParameterFindings(selectedFindings);
+   const deviceFindings = selectedFindings.filter(item => item.code === 'CAPACITY_DEVICE_EVIDENCE_MISSING');
+   const simulationChecks = (parameterReview?.simulation_capacity ?? []).filter(item => technologyKey(item.technology) === technologyKey(technologyId));
+   const networkRateKeys = (technology?.parameter_schema ?? []).filter(field => field.scope === 'network' && field.unit === 'bit/s').map(field => field.key);
+-  const affectedNetworks = ((storedParameters.networks ?? []) as DeclaredNetwork[]).filter(network =>
+-    technologyKey(network.technology) === technologyKey(technologyId)
+-    && selectedFindings.some(finding => finding.network_id === network.id && (
+-      finding.code === 'CAPACITY_UNVERIFIED' && finding.parameter_fields?.some(key => networkRateKeys.includes(key))
+-      || finding.code === 'CAPACITY_DEVICE_EVIDENCE_MISSING' && finding.missing_fields?.includes('hardware_rate_evidence'))));
+-  const affectedFieldKeys = [...new Set(selectedFindings.flatMap(finding => finding.parameter_fields ?? []))];
++  const affectedNetworks = technology ? networkRateReviewTargets(storedParameters, technology, selectedFindings) : [];
++  const affectedFieldKeys = [...new Set(simulationFindings.flatMap(finding => finding.parameter_fields ?? []))];
+   const findingTechnologies = [...new Set(currentFindings.map(item => technologyKey(item.technology)))];
+   const proposedFieldCount = (technology?.parameter_schema ?? []).filter(field => field.simulation_default != null && parameterValueStatus(storedParameters, field.key, technologyId) === 'PROPOSAL').length;
+   const assumptionFieldCount = (technology?.parameter_schema ?? []).filter(field => parameterValueStatus(storedParameters, field.key, technologyId) === 'SAVED_ASSUMPTION').length;
+@@ -1160,8 +1162,13 @@
+         {!parameterReview && !parameterReviewError && <p role="status">Aktuelle Befunde werden geprüft …</p>}
+         {parameterReviewError && <p className="notice error" role="alert">{parameterReviewError}</p>}
+         {parameterReview && <>
+-          <p role="status">{currentFindings.length ? `${currentFindings.length} offene Anschlussbefunde · ${selectedFindings.length} für ${technology.label}` : 'Keine offenen Anschlussbefunde in dieser Parameterprüfung.'} Diese Prüfung ersetzt keine vollständige Preflight- oder Timing-Freigabe.</p>
+-          <nav aria-label="Technologien mit Parameterbefunden">{findingTechnologies.map(id => <button type="button" className="button secondary tiny" key={id} onClick={() => chooseTechnology(id)}>{allTechnologies.find(item => item.id === id)?.label ?? id} · {currentFindings.filter(item => technologyKey(item.technology) === id).length}</button>)}</nav>
++          <p role="status">{allSimulationFindings.length ? `${allSimulationFindings.length} offene Simulationsbefunde · ${simulationFindings.length} für ${technology.label}.` : 'Keine offenen Simulationsbefunde in dieser Parameterprüfung.'} Diese Prüfung ersetzt keine vollständige Preflight- oder Timing-Freigabe.</p>
++          <nav aria-label="Technologien mit Parameterbefunden">{findingTechnologies.map(id => {
++            const findings = currentFindings.filter(item => technologyKey(item.technology) === id);
++            const open = simulationParameterFindings(findings).length;
++            const notices = findings.length - open;
++            return <button type="button" className="button secondary tiny" key={id} onClick={() => chooseTechnology(id)}>{allTechnologies.find(item => item.id === id)?.label ?? id} · {[open ? `${open} offen` : '', notices ? `${notices} Gerätehinweise` : ''].filter(Boolean).join(' · ')}</button>;
++          })}</nav>
+           {simulationChecks.length > 0 && <section aria-label="Auslegung mit gespeicherten Simulationswerten">
+             <h4>Auslegung mit gespeicherten Simulationswerten</h4>
+             <p role="status">{simulationChecks.filter(item => item.status === 'FEASIBLE_UNDER_ASSUMPTIONS').length} von {simulationChecks.length} Bus-/Portgruppen erfüllen die nominale Zielauslastung. Geräte-, Schedule- und funktionaler Timingnachweis bleiben getrennt.</p>
+@@ -1178,7 +1185,7 @@
+             try { await loadProjectSimulationDefaults(initialProjectId, parameterReview.edit_token!, [technologyId]); await afterNetworkConfirmation(); notifyWorkflowChanged(); }
+             catch (cause) { setParameterReviewError(cause instanceof Error ? cause.message : 'Simulationsvorgaben konnten nicht geladen werden.'); }
+             finally { setNetworkConfirming(false); }
+-          }}>Fehlende Simulationsvorgaben im Projekt speichern</button>
++          }}>Simulationsvorgaben im Projekt ergänzen</button>
+           <details><summary>Busgeschwindigkeit und Kapazitätsvorschläge</summary>
+             {(parameterReview.bus_rate_plans ?? []).filter(plan => technologyKey(plan.technology) === technologyKey(technologyId)).map((plan, index) => <article key={`${plan.network_id}:${plan.port_id ?? index}`}>
+               <strong>{plan.network_name} · {plan.status === 'CAPACITY_CANDIDATE' ? 'Passende Simulationsrate' : 'Weitere Auslegung erforderlich'}</strong>
+@@ -1202,7 +1209,6 @@
+             <p>Die gespeicherten Simulationswerte sind verwendbar. Fehlende Gerätebelege blockieren die Simulation nicht. Reale Geräte, Transceiver, Verkabelung und Implementierung sind damit noch nicht bestätigt. Parameter-, Modell- und Sendeplanfehler werden weiterhin geprüft.</p>
+             <ul>{deviceFindings.map((finding,index) => <li key={index}><strong>{finding.node_name} · {finding.network_name}</strong>: {finding.message}</li>)}</ul>
+           </details>}
+-          {!!affectedNetworks.length && deviceFindings.length > 0 && <p>Optionaler nächster Schritt für den Gerätenachweis: bestätigte Netzwerte zuordnen. Die Simulationsauslegung verwendet bereits deine gespeicherten Werte.</p>}
+           {!!affectedNetworks.length && <NetworkRateReview key={`${parameterReview.edit_token}:${technologyId}`} technology={technology} networks={affectedNetworks}
+             snapshot={{project_id:parameterReview.project_id,parameters:storedParameters,edit_token:parameterReview.edit_token}}
+             projectId={initialProjectId} disabled={submitting || parameterDraftDirty} fieldKeys={affectedFieldKeys} onContinue={afterNetworkConfirmation} onBusyChange={setNetworkConfirming} />}
+@@ -1497,14 +1503,14 @@
+             )}
+             <div className="parameter-groups">
+               {parameterGroups.map(([category, fields]) => {
+-                const findings = fields.filter(field => findingsForParameter(currentFindings, technologyId, field.key).length > 0).length;
++                const findings = fields.filter(field => findingsForParameter(allSimulationFindings, technologyId, field.key).length > 0).length;
+                 const contents = (
+                 <fieldset className={`parameter-group parameter-group-${category}`} key={`${technology.id}:${category}`}>
+                   <legend>{category === 'common' ? 'Wichtige Simulationsparameter' : category === 'evidence' ? 'Nachweise und Gerätezuordnung' : parameterCategoryLabels[category as TechnologyParameterField['category']]}</legend>
+                   <div className="form-grid three">
+                     {fields.map((field) => (
+-                      <div key={field.key} id={`parameter-field-${field.key}`} className={findingsForParameter(currentFindings, technologyId, field.key).length ? 'parameter-field-finding' : undefined}>
+-                      {findingsForParameter(currentFindings, technologyId, field.key).length > 0 && <p className="parameter-field-finding-message" role="status">Prüfbefund · {new Set(findingsForParameter(currentFindings, technologyId, field.key).map(item => item.network_id)).size} betroffene Netze: {findingsForParameter(currentFindings, technologyId, field.key).every(item => item.code === 'CAPACITY_DEVICE_EVIDENCE_MISSING') ? 'Geräte-/Implementierungsnachweis offen; die Simulationswerte werden verwendet.' : 'Gespeicherte Konfiguration oder Auslegung prüfen. Einzelheiten stehen in der aktuellen Parameterprüfung.'}</p>}
++                      <div key={field.key} id={`parameter-field-${field.key}`} className={findingsForParameter(allSimulationFindings, technologyId, field.key).length ? 'parameter-field-finding' : undefined}>
++                      {findingsForParameter(allSimulationFindings, technologyId, field.key).length > 0 && <p className="parameter-field-finding-message" role="status">Prüfbefund · {new Set(findingsForParameter(allSimulationFindings, technologyId, field.key).map(item => item.network_id)).size} betroffene Netze: {findingsForParameter(allSimulationFindings, technologyId, field.key).every(item => item.code === 'CAPACITY_DEVICE_EVIDENCE_MISSING') ? 'Geräte-/Implementierungsnachweis offen; die Simulationswerte werden verwendet.' : 'Gespeicherte Konfiguration oder Auslegung prüfen. Einzelheiten stehen in der aktuellen Parameterprüfung.'}</p>}
+                       <ParameterControl
+                         field={field}
+                         key={field.key}
+--- before/frontend/src/features/communication/lib/technology-parameters.ts
++++ after/frontend/src/features/communication/lib/technology-parameters.ts
+@@ -292,6 +292,21 @@
+   network_name?: string; node_name?: string; object_name?: string; missing_fields?: string[]; parameter_fields?: string[];
+   parameter_findings?: Array<{parameter?: string; code?: string; message?: string}> };
+ 
++/** Device qualification is separate from deficiencies in an executable scenario. */
++export function simulationParameterFindings(findings: ParameterFinding[]): ParameterFinding[] {
++  return findings.filter(finding => finding.code !== 'CAPACITY_DEVICE_EVIDENCE_MISSING');
++}
++
++/** Reconfirmation can repair a missing native rate, never missing device evidence. */
++export function networkRateReviewTargets(parameters: Parameters, technology: Technology, findings: ParameterFinding[]): DeclaredNetwork[] {
++  const rates = new Set((technology.parameter_schema ?? []).filter(field => field.scope === 'network' && field.unit === 'bit/s').map(field => field.key));
++  const ids = new Set(simulationParameterFindings(findings).filter(finding =>
++    technologyKey(finding.technology) === technologyKey(technology.id) && finding.code === 'CAPACITY_UNVERIFIED'
++    && finding.parameter_fields?.some(key => rates.has(key))).map(finding => finding.network_id));
++  return ((parameters.networks ?? []) as DeclaredNetwork[]).filter(network =>
++    technologyKey(network.technology) === technologyKey(technology.id) && ids.has(network.id));
++}
++
+ /** A saved scenario is still not hardware evidence, but it is no longer an unsaved draft. */
+ export function parameterValueStatus(parameters: Parameters, key: string, technologyId: string) {
+   if (!technologyParameterUnverified(parameters, key, technologyId)) return 'CONFIRMED';
+--- before/frontend/src/features/communication/lib/technology-parameters.test.mjs
++++ after/frontend/src/features/communication/lib/technology-parameters.test.mjs
+@@ -47,7 +47,29 @@
+   assert.equal(technologyParameterUnverified(p,'lin_bitrate_bps','lin'),false);
+   assert.equal('data_bitrate' in technologyParameterValues(p,lin),false);
+ });
+-import { commonTechnologyParameters, localEvidenceFieldRequired, booleanParameterValue, numericParameterValue, conditionalParameterDefault, technologyParameterValues, technologyParameterApplicable, technologyParameterUnverified, technologyRateParameters, confirmTechnologyParameters, confirmNetworkParameters, groupPreflightFindings } from './technology-parameters.ts';
++import { commonTechnologyParameters, localEvidenceFieldRequired, booleanParameterValue, numericParameterValue, conditionalParameterDefault, technologyParameterValues, technologyParameterApplicable, technologyParameterUnverified, technologyRateParameters, confirmTechnologyParameters, confirmNetworkParameters, groupPreflightFindings, simulationParameterFindings, networkRateReviewTargets } from './technology-parameters.ts';
++
++test('saved simulation and confirmed network rates do not reopen for device evidence', () => {
++  const profile = {id:'ethernet',parameter_schema:[{key:'bitrate',scope:'network',unit:'bit/s',default:100000000}]};
++  const initial = {networks:[{id:'e',technology:'ETHERNET'}]};
++  const saved = JSON.parse(JSON.stringify(confirmNetworkParameters(initial,profile,['e'],{bitrate:1000000000})));
++  const notice = {technology:'ethernet',network_id:'e',code:'CAPACITY_DEVICE_EVIDENCE_MISSING',severity:'INFO',
++    missing_fields:['hardware_rate_evidence'],parameter_fields:['bitrate'],simulation_parameters_usable:true};
++  assert.deepEqual(networkRateReviewTargets(saved,profile,[notice]),[]);
++  assert.deepEqual(simulationParameterFindings([notice]),[]);
++  assert.equal(technologyParameterValues(saved,profile).bitrate,1000000000);
++  assert.equal(technologyParameterUnverified(saved,'bitrate','ethernet'),false);
++  const reloaded = JSON.parse(JSON.stringify(confirmTechnologyParameters(saved,profile,{bitrate:1000000000})));
++  assert.deepEqual(reloaded.networks,saved.networks);
++  assert.equal(technologyParameterValues(reloaded,profile).bitrate,1000000000);
++  assert.deepEqual(networkRateReviewTargets(reloaded,profile,[notice]),[]);
++  const actualMissing = {...notice,code:'CAPACITY_UNVERIFIED',severity:'ERROR',simulation_parameters_usable:false};
++  assert.deepEqual(networkRateReviewTargets(initial,profile,[actualMissing]),initial.networks);
++  assert.deepEqual(simulationParameterFindings([notice,actualMissing]),[actualMissing]);
++  assert.deepEqual(networkRateReviewTargets(initial,profile,[{...actualMissing,technology:'lin'}]),[]);
++  assert.deepEqual(networkRateReviewTargets(initial,profile,[{...actualMissing,network_id:'other-project'}]),[]);
++  assert.deepEqual(networkRateReviewTargets(initial,profile,[{...actualMissing,parameter_fields:['eth_payload_layer']}]),[]);
++});
+ 
+ test('common controls use native rate order and exclude evidence and identities', () => {
+   const profile = {id:'lin',simulation_defaults:{rate_fields:['lin_bitrate_bps']},parameter_schema:[
+--- before/frontend/e2e/wizard.spec.ts
++++ after/frontend/e2e/wizard.spec.ts
+@@ -295,7 +295,30 @@
+         const stale = await readProject(page, project, `/api/engineering/agent/proposals/${proposalId}?view=status`);
+         expect(stale.data.status).toBe('OUTDATED');
+         const canonicalIds = stale.data.canonical_ids;
+-        await page.reload();
++        // Observe only the new document's real UI review: an old review can
++        // finish during reload, after its response body has been discarded.
++        let reloadedDocumentAt = Infinity;
++        const markReloadedDocument = (frame: import('playwright/test').Frame) => {
++          if (frame === page.mainFrame()) reloadedDocumentAt = Date.now();
++        };
++        page.on('framenavigated', markReloadedDocument);
++        const reviewResponse = page.waitForResponse(response => {
++          const url = new URL(response.url());
++          return url.pathname === '/api/engineering/workflow/parameters/review'
++            && url.searchParams.get('proposal') === proposalId
++            && response.request().method() === 'GET'
++            && response.request().headers()['x-project-id'] === project
++            && response.request().timing().startTime >= reloadedDocumentAt;
++        }, {timeout: 60_000});
++        try {
++          await page.reload();
++        } finally {
++          page.off('framenavigated', markReloadedDocument);
++        }
++        const actualReviewResponse = await reviewResponse;
++        expect(actualReviewResponse.ok(), await actualReviewResponse.text()).toBe(true);
++        const review = await actualReviewResponse.json();
++        expect(review.edit_token).toBe(saved.edit_token);
+         await expect(common.locator('#seed')).toHaveValue(String(seed));
+         for (const [field, value] of Object.entries(scenario.fields)) {
+           const input = page.locator(`#${field}`);
+@@ -303,6 +326,12 @@
+           if (await details.count() && await details.getAttribute('open') === null)
+             await details.locator(':scope > summary').click();
+           await expect(input).toHaveValue(value);
++        }
++        const selectedFindings = review.findings.filter((finding: {technology:string}) => finding.technology === scenario.technology);
++        if (selectedFindings.length && selectedFindings.every((finding: {code:string}) => finding.code === 'CAPACITY_DEVICE_EVIDENCE_MISSING')) {
++          await expect(page.locator('#parameter-findings form')).toHaveCount(0);
++          await expect(page.locator('#parameter-findings [role="alert"]')).toHaveCount(0);
++          await expect(page.locator('#parameter-findings')).toContainText('kein Simulationsblocker');
+         }
+         // Keep the existing delayed-restore regression, using real responses.
+         let resumeRestore!: () => void;
+@@ -699,6 +728,27 @@
+     await expect(evidenceReview).toContainText(technology === 'I2C' ? 'i2c_pullup_ohms' : 'mr_pdu_bytes');
+     await expect(evidenceReview.getByRole('link', {name: 'Betroffene Angaben bearbeiten'}).first())
+       .toHaveAttribute('href', new RegExp(`mode=parameters.*project=${project}`));
++    // Rechecking persisted findings must use the existing request, and must
++    // never release unchanged invalid native values or invent device evidence.
++    const continued = page.waitForRequest(request => new URL(request.url()).pathname === '/api/agent/chat'
++      && request.method() === 'POST' && request.postDataJSON()?.wizard_command?.action === 'CONTINUE');
++    await evidenceReview.getByRole('button', {name: 'Gespeicherte Angaben erneut prüfen & fortsetzen', exact: true}).click();
++    const command = (await continued).postDataJSON().wizard_command;
++    expect(command.run_id).toBe(workflow.context.agent_execution.run_id);
++    expect(command.request_revision).toBe(workflow.context.agent_execution.request_revision);
++    await expect.poll(async () => {
++      const next = await readProject(page, project, '/api/engineering/workflow?view=summary');
++      return next.context.agent_execution.state === 'BLOCKED'
++        && next.context.agent_execution.updated_at !== workflow.context.agent_execution.updated_at;
++    }, {timeout: 60_000}).toBe(true);
++    const rechecked = await readProject(page, project, '/api/engineering/workflow');
++    expect(rechecked.context.agent_execution.run_id).toBe(command.run_id);
++    expect(rechecked.context.agent_execution.request_revision).toBe(command.request_revision);
++    expect(rechecked.context.agent_execution.blocking_findings.map((item: {code: string}) => item.code))
++      .toContain('TECHNOLOGY_PARAMETER_DEPENDENCY_MISMATCH');
++    expect(rechecked.parameters).toEqual(workflow.parameters);
++    expect(rechecked.statuses.parameters).toBe('IN_PROGRESS');
++    await expect(dialog.getByRole('button', {name: 'Fertig stellen', exact: true})).toBeDisabled();
+     expect(workflow.statuses.simulation).toBe('EMPTY');
+     if (technology === 'I2C') {
+       expect(workflow.parameters.rate_review_proposals.i2c.status).toBe('REVIEW_REQUIRED');
+--- before/frontend/e2e/technology-parameter-review.spec.ts
++++ after/frontend/e2e/technology-parameter-review.spec.ts
+@@ -74,7 +74,7 @@
+   await expect(page.getByRole('region',{name:'Aktuelle Parameterbefunde'})).toBeVisible();
+   const defaultSave = page.waitForResponse(response => response.url().endsWith('/api/engineering/workflow/parameters/defaults')
+     && response.request().method() === 'POST');
+-  await page.getByRole('button',{name:'Fehlende Simulationsvorgaben im Projekt speichern',exact:true}).click();
++  await page.getByRole('button',{name:'Simulationsvorgaben im Projekt ergänzen',exact:true}).click();
+   const defaultResponse = await defaultSave;
+   expect(defaultResponse.ok(), await defaultResponse.text()).toBe(true);
+   await expect(page.getByText(/Parameterherkunft · [1-9]\d* gespeicherte Simulationsannahmen/)).toBeVisible();
+@@ -301,8 +301,8 @@
+   await page.getByRole('button',{name:'Parameter speichern →',exact:true}).click();
+   await expect(page.getByText('Technologie- und Timing-Parameter gespeichert.')).toBeVisible();
+   await page.reload();
+-  await expect(page.locator('#technology')).toHaveValue('can_fd');
+-  await page.locator('#technology').selectOption('lin');
++  await expect(page).toHaveURL(new RegExp(`project=${project}&technology=lin`));
++  await expect(page.locator('#technology')).toHaveValue('lin');
+   await expect(page.locator('#lin_registered_source')).toHaveValue('project:reviewed-lin-profile');
+   await expect(page.locator('.parameter-details[open]')).toHaveCount(0);
+   await revealParameter(page,'lin_edition');
+@@ -330,8 +330,8 @@
+   expect(saved.parameters.simulation_parameter_assumptions.lin.values.lin_bitrate_bps).toBe(9600);
+   expect(saved.parameters.simulation_parameter_assumptions.lin.provenance.lin_bitrate_bps).toMatchObject({status:'ASSUMED',hardware_evidence:false});
+   await page.reload();
+-  await expect(page.locator('#technology')).toHaveValue('can_fd');
+-  await page.locator('#technology').selectOption('lin');
++  await expect(page).toHaveURL(new RegExp(`project=${project}&technology=lin`));
++  await expect(page.locator('#technology')).toHaveValue('lin');
+   await expect(page.locator('input[name="lin_bitrate_bps"]')).toHaveValue('9,6 kbit/s');
+   await page.locator('#technology').selectOption('can_fd');
+   await expect(page.locator('input[name="data_bitrate"]')).toHaveValue('2 Mbit/s');
+@@ -546,7 +546,7 @@
+ test('proposal parameter link selects its technology and live findings highlight only affected fields @technology-review', async ({page}) => {
+   const project='nis-e2e-current-parameter-review-'+randomUUID();
+   const headers={'X-Project-ID':project};
+-  const networks=[{id:'can-local',name:'CAN Local',technology:'CAN_FD'},{id:'lin-local',name:'LIN Local',technology:'LIN'}];
++  const networks=[{id:'can-local',name:'CAN Local',technology:'CAN_FD'},{id:'lin-local',name:'LIN Local',technology:'LIN'},{id:'eth-local',name:'Ethernet Local',technology:'Ethernet'}];
+   const seed=await page.request.patch('/api/engineering/workflow/parameters',{headers,data:{parameters:{industry:'custom',technology:'can_fd',defaults_source:'technology-registry',networks,formats:['universal-jsonl']}}});
+   expect(seed.ok(),await seed.text()).toBe(true);
+   async function create(resource:string,data:Record<string,unknown>) {
+@@ -578,7 +578,7 @@
+   await expect(confirm.getByRole('button',{name:'Für 1 Netze bestätigen & erneut prüfen',exact:true})).toBeDisabled();
+   await expect(page.getByRole('region',{name:'Aktuelle Parameterbefunde'})).toContainText('Speichere zuerst die Änderungen');
+   await page.getByRole('button',{name:'Parameter speichern →',exact:true}).click();
+-  await expect(confirm.getByRole('button',{name:'Für 1 Netze bestätigen & erneut prüfen',exact:true})).toBeEnabled();
++  await expect(confirm).toHaveCount(0);
+   // Saving a marked scenario must remove false missing-rate highlights without
+   // inventing a device qualification or requiring a separate rate confirmation.
+   await expect(page.locator('#parameter-field-arbitration_bitrate')).not.toHaveClass(/parameter-field-finding/);
+@@ -597,18 +597,33 @@
+   await expect(page.getByRole('region',{name:'Auslegung mit gespeicherten Simulationswerten'})).toContainText('1 von 1');
+   const repeated=await (await page.request.get('/api/engineering/workflow/parameters/review',{headers})).json();
+   expect(repeated.simulation_capacity).toEqual(scenarioReview.simulation_capacity);
+-  await confirm.getByRole('spinbutton',{name:/Nominal Bitrate/}).fill('500000');
+-  await confirm.getByRole('spinbutton',{name:/Data Bitrate/}).fill('2000000');
+-  await confirm.getByRole('button',{name:'Für 1 Netze bestätigen & erneut prüfen',exact:true}).click();
++  await expect(confirm).toHaveCount(0);
+   await expect(page.getByRole('region',{name:'Aktuelle Parameterbefunde'})).toContainText('0 für CAN-FD');
+   await expect(page.locator('#parameter-field-arbitration_bitrate')).not.toHaveClass(/parameter-field-finding/);
+   const after=await (await page.request.get('/api/engineering/workflow/parameters/review',{headers})).json();
+-  expect(after.findings.some((f:{technology:string})=>f.technology==='can_fd')).toBe(false);
++  expect(after.findings.find((f:{technology:string})=>f.technology==='can_fd')).toMatchObject({code:'CAPACITY_DEVICE_EVIDENCE_MISSING',severity:'INFO'});
+   expect(after.findings.some((f:{technology:string})=>f.technology==='lin')).toBe(true);
+   const saved=await (await page.request.get('/api/engineering/workflow/parameters',{headers})).json();
+   expect(saved.parameters.networks.find((n:{id:string})=>n.id==='lin-local')).toEqual(networks[1]);
+   expect(saved.parameters.simulation_parameter_assumptions.can_fd.values.can_clock_hz).toBe(80000000);
++  for (const seed of [41,43,42]) {
++    await page.locator('#seed').fill(String(seed));
++    await page.getByRole('button',{name:'Parameter speichern →',exact:true}).click();
++    await expect(page.getByText('Technologie- und Timing-Parameter gespeichert.')).toBeVisible();
++    const persisted=await (await page.request.get('/api/engineering/workflow/parameters',{headers})).json();
++    const file=await (await page.request.get('/api/engineering/workflow/parameters/user-defined-values',{headers})).json();
++    expect(file.parameters.networks).toEqual(persisted.parameters.networks);
++    expect(file.parameters.simulation_parameter_assumptions).toEqual(persisted.parameters.simulation_parameter_assumptions);
++    expect(persisted.parameters.simulation_parameter_assumptions.can_fd).toEqual(saved.parameters.simulation_parameter_assumptions.can_fd);
++    expect(persisted.parameters.technology_parameters.can_fd.values.seed).toBe(seed);
++    await page.reload();
++    await expect(page.locator('#seed')).toHaveValue(String(seed));
++    await expect(confirm).toHaveCount(0);
++    await expect(page.locator('#parameter-field-arbitration_bitrate')).not.toHaveClass(/parameter-field-finding/);
++    await expect(page.getByRole('navigation',{name:'Technologien mit Parameterbefunden'})).toContainText('CAN-FD · 1 Gerätehinweise');
++  }
+   await page.getByRole('navigation',{name:'Technologien mit Parameterbefunden'}).getByRole('button',{name:/LIN/}).click();
++  await expect(page).toHaveURL(new RegExp(`project=${project}&technology=lin#parameter-findings`));
+   const linConfirm=page.getByRole('form',{name:'LIN-Netze bestätigen'});
+   await linConfirm.getByRole('spinbutton',{name:/bit.*rate/i}).fill('19200');
+   await linConfirm.getByRole('button',{name:'Für 1 Netze bestätigen & erneut prüfen',exact:true}).click();
+@@ -616,7 +631,42 @@
+   await expect(page.locator('#parameter-field-lin_device_source')).toHaveClass(/parameter-field-finding/);
+   await expect(page.getByRole('region',{name:'Aktuelle Parameterbefunde'})).toContainText('1 für LIN');
+   await expect(linConfirm).toHaveCount(0);
++  const linSaved=await (await page.request.get('/api/engineering/workflow/parameters',{headers})).json();
++  const linFile=await (await page.request.get('/api/engineering/workflow/parameters/user-defined-values',{headers})).json();
++  const confirmedLin=linSaved.parameters.networks.find((n:{id:string})=>n.id==='lin-local');
++  expect(confirmedLin).toMatchObject({lin_bitrate_bps:19200,parameter_provenance:{lin_bitrate_bps:{source:'USER_CONFIRMED',status:'CONFIRMED',value:19200}}});
++  expect(linFile.parameters.networks).toEqual(linSaved.parameters.networks);
++  await page.reload();
++  await expect(linConfirm).toHaveCount(0);
++  await expect(page.locator('#lin_bitrate_bps')).toHaveValue('19,2 kbit/s');
++  await expect(page.locator('#parameter-field-lin_device_source')).toHaveClass(/parameter-field-finding/);
+   await expect(page.getByText('Die Rate fehlt als bestätigter Projektwert.',{exact:false})).toHaveCount(0);
++  await page.getByRole('navigation',{name:'Technologien mit Parameterbefunden'}).getByRole('button',{name:/Ethernet/}).click();
++  await expect(page).toHaveURL(new RegExp(`project=${project}&technology=ethernet#parameter-findings`));
++  await page.getByRole('button',{name:'Simulationsvorgaben im Projekt ergänzen',exact:true}).click();
++  await expect(page.getByRole('region',{name:'Aktuelle Parameterbefunde'})).toContainText('Keine offenen Simulationsbefunde');
++  await expect(page.getByRole('form',{name:'Ethernet-Netze bestätigen'})).toHaveCount(0);
++  await expect(page.locator('#bitrate')).toHaveValue('1 Gbit/s');
++  await revealParameter(page,'eth_link_up');
++  await expect(page.locator('#eth_link_up')).toHaveValue('true');
++  await page.locator('#eth_link_up').selectOption('false');
++  await page.getByRole('button',{name:'Parameter speichern →',exact:true}).click();
++  await expect(page.getByText('Technologie- und Timing-Parameter gespeichert.')).toBeVisible();
++  await expect(page.locator('#parameter-field-eth_link_up')).toHaveClass(/parameter-field-finding/);
++  await expect(page.locator('#parameter-field-bitrate')).not.toHaveClass(/parameter-field-finding/);
++  await expect(page.getByRole('form',{name:'Ethernet-Netze bestätigen'})).toHaveCount(0);
++  await page.reload();
++  await expect(page.locator('#parameter-field-eth_link_up')).toHaveClass(/parameter-field-finding/);
++  await revealParameter(page,'eth_link_up');
++  await expect(page.locator('#eth_link_up')).toHaveValue('false');
++  await page.locator('#eth_link_up').selectOption('true');
++  await page.getByRole('button',{name:'Parameter speichern →',exact:true}).click();
++  await expect(page.getByText('Technologie- und Timing-Parameter gespeichert.')).toBeVisible();
++  await expect(page.locator('#parameter-field-eth_link_up')).not.toHaveClass(/parameter-field-finding/);
++  await expect(page.getByRole('form',{name:'Ethernet-Netze bestätigen'})).toHaveCount(0);
++  const ethernetReview=await (await page.request.get('/api/engineering/workflow/parameters/review',{headers})).json();
++  expect(ethernetReview.findings.every((finding:{code:string})=>finding.code==='CAPACITY_DEVICE_EVIDENCE_MISSING')).toBe(true);
++  expect(ethernetReview.simulation_capacity.every((check:{status:string})=>check.status==='FEASIBLE_UNDER_ASSUMPTIONS')).toBe(true);
+   const foreign=await (await page.request.get('/api/engineering/workflow/parameters/review',{headers:{'X-Project-ID':'nis-e2e-other-'+randomUUID()}})).json();
+   expect(foreign.findings).toEqual([]);
+ });
+--- before/backend/nis/communication/technologies/ethernet/profile.json
++++ after/backend/nis/communication/technologies/ethernet/profile.json
+@@ -2548,18 +2548,22 @@
+   },
+   "known_limitations": "Technology-specific conformance details require a vendor/profile extension.",
+   "simulation_defaults": {
+-    "id": "ETHERNET_SIMULATION_STARTER_V1",
+-    "source": "Registered Ethernet1G full-duplex MAC-client simulation scenario; no negotiated/installed hardware evidence",
++    "id": "ETHERNET_SIMULATION_STARTER_V2",
++    "source": "Registered Ethernet1G full-duplex IPv4/UDP upper-layer simulation scenario; exact 20-byte IPv4 and 8-byte UDP serializer headers; no negotiated/installed hardware evidence",
+     "hardware_evidence": false,
+     "values": {
+       "bitrate_bps": 1000000000,
+       "eth_phy": "1000BASE_T",
+       "duplex": "FULL",
++      "eth_link_up": true,
++      "eth_pause_rx": false,
++      "eth_pause_tx": false,
++      "eth_eee_enabled": false,
+       "eth_peer_rate_bps": 1000000000,
+       "eth_peer_duplex": "FULL",
+       "eth_frame_profile": "BASIC_MAC",
+-      "eth_payload_layer": "MAC_CLIENT",
+-      "eth_upper_header_bytes": 0,
++      "eth_payload_layer": "UPPER_LAYER",
++      "eth_upper_header_bytes": 28,
+       "eth_vlan_tags": 0,
+       "mtu_bytes": 1500,
+       "eth_ifg_bits": 96
+--- before/backend/nis/communication/technologies/ethernet/scheduling.py
++++ after/backend/nis/communication/technologies/ethernet/scheduling.py
+@@ -3,6 +3,17 @@
+ from backend.nis.communication.core.scheduling import number, _constraints
+ 
+ from collections import defaultdict
++
++def parameter_readiness(parameters):
++    """Shared native prerequisites for parameter review and FIFO scheduling."""
++    findings = []
++    for key, expected in (('duplex', 'FULL'), ('eth_link_up', True)):
++        if parameters.get(key) != expected or key == 'eth_link_up' and parameters.get(key) is not True:
++            findings.append({'parameter': key, 'message': 'Ethernet benötigt einen aktiven Vollduplex-Link; unbekannter Zustand oder CSMA/CD liefert keinen FIFO-Nachweis.'})
++    for key in ('eth_pause_rx', 'eth_pause_tx', 'eth_eee_enabled'):
++        if parameters.get(key) is not False:
++            findings.append({'parameter': key, 'message': 'PAUSE/PFC oder EEE sind aktiv oder unbekannt; ihre Blockierzeiten sind im FIFO-Modell nicht nachgewiesen.'})
++    return findings
+ 
+ def schedule(rows, result):
+     """Bound Ethernet serialization independently for each confirmed TX port."""
+@@ -18,10 +29,9 @@
+     maximum_payload = number(technology.get("max_payload_bytes"))
+     ports = defaultdict(list)
+     for row in rows:
+-        if row.get('duplex')!='FULL' or row.get('eth_link_up') is not True:
+-            return {**result,'status':'PROFILE_INCOMPLETE','reasons':['Ethernet benötigt bestätigten Vollduplex-Link; unbekannter Zustand oder CSMA/CD liefert keinen FIFO-Nachweis.']}
+-        if any(row.get(key) is not False for key in ('eth_pause_rx','eth_pause_tx','eth_eee_enabled')):
+-            return {**result,'status':'PROFILE_INCOMPLETE','reasons':['PAUSE/PFC oder EEE sind aktiv oder unbekannt; ihre Blockierzeiten sind im FIFO-Modell nicht nachgewiesen.']}
++        readiness = parameter_readiness(row)
++        if readiness:
++            return {**result,'status':'PROFILE_INCOMPLETE','reasons':list(dict.fromkeys(item['message'] for item in readiness))}
+         source = row.get("physical_source") or {}
+         node_id = str(source.get("node_id") or "").strip()
+         port_id = str(source.get("hardware_interface_id") or source.get("physical_port_ref") or source.get("port_id") or "").strip()
+--- before/backend/nis/agent/tools/validation.py
++++ after/backend/nis/agent/tools/validation.py
+@@ -486,6 +486,10 @@
+                 resolved_scopes[scope_key] = simulation_parameters_for_protocol(technology, parameters, scoped, network_id, parameters)
+             scenario = resolved_scopes[scope_key]
+             rates_seen.append({field['key']: scenario.get(field['key'], scenario.get(field['native_key'])) for field in rate_fields})
++            readiness = getattr(DEFAULT_TECHNOLOGY_REGISTRY.scheduling_implementation(technology), 'parameter_readiness', None)
++            for finding in readiness(scenario) if readiness else []:
++                fields.append(PARAMETER_UI_ALIASES.get(finding['parameter'], finding['parameter']))
++                reasons.append(finding['message'])
+             for finding in scenario.get('_simulation_parameter_findings', []):
+                 fields.append(PARAMETER_UI_ALIASES.get(finding.get('parameter') or finding['message'].split()[0], finding.get('parameter') or finding['message'].split()[0]))
+                 reasons.append(finding['message'])
+--- before/backend/tests/test_proposal_capacity.py
++++ after/backend/tests/test_proposal_capacity.py
+@@ -51,6 +51,33 @@
+     assert check['message_count'] == 3
+     assert check['load_percent'] == pytest.approx((54 / .1 + 124 / .05 + 124 / .2) / 19200 * 100)
+     assert check['status'] == 'FEASIBLE_UNDER_ASSUMPTIONS'
++
++
++def test_inactive_saved_ethernet_link_is_highlighted_without_reconfirming_its_rate(monkeypatch):
++    from backend.nis.agent.tools import validation
++    from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY as registry
++    parameters = registry.simulation_defaults_for_project({'technology': 'ethernet',
++        'networks': [{'id': 'bus', 'technology': 'ethernet', 'bitrate': 1_000_000_000,
++            'parameter_provenance': {'bitrate': {'source': 'USER_CONFIRMED', 'status': 'CONFIRMED', 'value': 1_000_000_000}}}]}, ['ethernet'])
++    rows = {'HardwareNode': [], 'HardwareNetworkInterface': [{'id': 'port', 'technology': 'ethernet', 'network_ref': 'bus'}],
++            'Message': [{'id': 'message', 'hardware_interface_id': 'port', 'dlc': 4, 'cycle_ms': 100}]}
++    monkeypatch.setattr(validation, 'objects', lambda kind: rows[kind])
++    state = {'parameters': parameters}
++    assert validation.review_simulation_capacity(state)[0]['status'] == 'FEASIBLE_UNDER_ASSUMPTIONS'
++    assumed = parameters['simulation_parameter_assumptions']['ethernet']
++    assumed['values']['eth_link_up'] = assumed['provenance']['eth_link_up']['value'] = False
++    for _ in range(3):
++        check = validation.review_simulation_capacity(state)[0]
++        assert check['status'] == 'INVALID'
++        assert check['parameter_fields'] == ['eth_link_up']
++        assert check['rates']['bitrate'] == 1_000_000_000
++        finding = next(row for row in validation.review_parameter_findings(state) if row['code'] == 'SIMULATION_CAPACITY_INVALID')
++        assert finding['parameter_fields'] == ['eth_link_up']
++        assert finding['severity'] == 'ERROR'
++        assert assumed['values']['eth_link_up'] is False
++    assumed['values']['eth_link_up'] = assumed['provenance']['eth_link_up']['value'] = True
++    assert validation.review_simulation_capacity(state)[0]['status'] == 'FEASIBLE_UNDER_ASSUMPTIONS'
++    assert all(row['code'] == 'CAPACITY_DEVICE_EVIDENCE_MISSING' for row in validation.review_parameter_findings(state))
+ 
+ 
+ def test_saved_rates_are_used_for_pending_and_canonical_bus_review_without_rate_confirmation_loop(monkeypatch):
+--- before/backend/tests/test_simulation_parameter_defaults.py
++++ after/backend/tests/test_simulation_parameter_defaults.py
+@@ -183,6 +183,24 @@
+     assert resolved['eth_link_up'] is False
+     assert 'eth_link_up' not in resolved['_simulation_assumption_fields']
+     assert not resolved['_simulation_hardware_evidence']
++    from backend.nis.communication.technologies.ethernet.scheduling import parameter_readiness
++    assert [row['parameter'] for row in parameter_readiness(resolved)] == ['eth_link_up']
++
++
++def test_ethernet_starter_has_a_schedulable_active_link_without_hardware_confirmation():
++    from backend.nis.engineering.capacity.service import simulation_parameters_for_protocol
++    from backend.nis.communication.technologies.ethernet.scheduling import parameter_readiness
++    parameters = registry.simulation_defaults_for_project({'technology': 'ethernet'}, ['ethernet'])
++    resolved = simulation_parameters_for_protocol('ethernet', parameters, confirmed_parameters=parameters)
++    assert resolved['eth_link_up'] is True
++    assert resolved['_simulation_parameters_usable']
++    assert not resolved['_simulation_hardware_evidence']
++    assert parameter_readiness(resolved) == []
++    # A user's persisted inactive scenario must not be silently overwritten by a new preset.
++    group = parameters['simulation_parameter_assumptions']['ethernet']
++    group['values']['eth_link_up'] = group['provenance']['eth_link_up']['value'] = False
++    refreshed = registry.simulation_defaults_for_project(parameters, ['ethernet'])
++    assert refreshed['simulation_parameter_assumptions']['ethernet']['values']['eth_link_up'] is False
+ 
+ 
+ def test_assumed_ethernet_configuration_follows_confirmed_network_rate_and_payload():
+--- before/frontend/src/features/communication/lib/technology-projection.json
++++ after/frontend/src/features/communication/lib/technology-projection.json
+@@ -1,6 +1,6 @@
+ {
+   "schema_version": 1,
+-  "source_sha256": "d395efd0ac23a476daecc07bec95fa3f7a04dadbd9b7a4885dd4c9f5e81c6b17",
++  "source_sha256": "4d30b0171a47b69ff972d5697215077215d299f0b62f3ab2d559939de23b2dfc",
+   "technologies": [
+     {
+       "id": "5g",
+--- before/frontend/src/features/agent/ui/wizard-preflight-review.tsx
++++ after/frontend/src/features/agent/ui/wizard-preflight-review.tsx
+@@ -101,6 +101,7 @@
+     </article>)}
+     <details><summary>Alle technischen Befunde ({findings.length})</summary><ul>{findings.map((finding, index) => <li key={index}>{finding.code}: {finding.message}</li>)}</ul></details>
+     <button className="button secondary tiny" type="button" disabled={disabled} onClick={() => setReload(value => value + 1)}>Rückfragen neu laden</button>
++    <button className="button primary tiny" type="button" disabled={disabled || !snapshot || Boolean(error)} onClick={() => void onContinue()}>Gespeicherte Angaben erneut prüfen & fortsetzen</button>
+     {error && <p role="alert">{error}</p>}
+   </section>;
+ }
+--- before/backend/tests/test_project_ip_transport.py
++++ after/backend/tests/test_project_ip_transport.py
+@@ -39,6 +39,44 @@
+     assert first['ethernet']['transport_protocol'] == 'udp'
+     config['networks'][0].update(eth_payload_layer='MAC_CLIENT',eth_upper_header_bytes=0)
+     with pytest.raises(ValueError, match='serializer geometry contradicts'):
++        events(config)
++
++
++def test_saved_native_ethernet_starter_executes_exact_ip_serializer_without_manual_geometry(tmp_path):
++    from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY as registry
++    from backend.nis.engineering.capacity.service import simulation_parameters_for_protocol
++    parameters = registry.simulation_defaults_for_project({'technology': 'ethernet'}, ['ethernet'])
++    resolved = simulation_parameters_for_protocol('ethernet', parameters, confirmed_parameters=parameters)
++    before = deepcopy(parameters)
++    config = ip_config(tmp_path)
++    config['parameters'] = parameters
++    config['networks'][0].update({key: value for key, value in resolved.items()
++                                if key in registry.parameter_keys('ethernet')})
++    config['networks'][0].update(bitrate=resolved['bitrate'],
++        _rate_evidenced=False, _simulation_assumption_fields=resolved['_simulation_assumption_fields'],
++        simulation_parameter_assumptions=resolved['_simulation_parameter_assumptions'])
++    rows = events(config)
++    assert rows and all(row['timing_basis'] == 'SAVED_SIMULATION_ASSUMPTIONS'
++                        and row['hardware_evidence'] is False for row in rows)
++    packet = packet_bytes(rows[0])
++    assert packet[14] >> 4 == 4
++    assert packet[23] == 17  # IPv4 UDP protocol, independently decoded.
++    ip_length = struct.unpack('!H', packet[16:18])[0]
++    assert ip_length == 28 + len(bytes.fromhex(rows[0]['payload_hex']))
++    assert packet[42:14 + ip_length] == bytes.fromhex(rows[0]['payload_hex'])
++    assert packet[14 + ip_length:] == bytes(max(0, 60 - 14 - ip_length))
++    assert resolved['eth_payload_layer'] == 'UPPER_LAYER'
++    assert resolved['eth_upper_header_bytes'] == 28
++    assert parameters == before
++    # Preserve an explicit old measurement boundary instead of silently fixing it.
++    values = {'eth_payload_layer': 'MAC_CLIENT', 'eth_upper_header_bytes': 0}
++    explicit = {'technology': 'ethernet', 'technology_parameters': {'ethernet': {
++        'values': values, 'provenance': {key: {'source': 'USER_CONFIRMED', 'status': 'CONFIRMED',
++            'technology': 'ethernet', 'value': value} for key, value in values.items()}}}}
++    refreshed = registry.simulation_defaults_for_project(explicit, ['ethernet'])
++    assert refreshed['technology_parameters']['ethernet']['values'] == values
++    config['parameters'] = refreshed
++    with pytest.raises(ValueError, match='serializer geometry contradicts eth_payload_layer'):
+         events(config)
+ 
+ 

@@ -1,0 +1,195 @@
+{
+  "goal_id": "wizard-capacity-performance-20261010",
+  "kind": "repair",
+  "repository": "I:\\PycharmProjects\\My_first_Network_Simulator",
+  "modify_code": true,
+  "allow_repair": true,
+  "revision_before": {
+    "backend/nis/communication/registry.py": "606c319d227870ad91dc27e0c18ff7e3a6325925d41f97ffb7d4c830a8d9d5c4",
+    "backend/nis/engineering/capacity/service.py": "eba0a4f7fb44146e476678fd6689c3272c87316c29a352c3a7f049c00fdf8c94",
+    "backend/tests/test_technology_registry_metadata.py": "b9128e537809d234912d40c7d220c5c4cf85566c8e384b77eaccb49d7ca1e75a",
+    "backend/tests/test_simulation_parameter_defaults.py": "683f471c15529f75e85fc03d43d3e255b65496fe216885301c75d85f714f30a6"
+  },
+  "files_changed": [
+    "backend/nis/communication/registry.py",
+    "backend/nis/engineering/capacity/service.py",
+    "backend/tests/test_technology_registry_metadata.py",
+    "backend/tests/test_simulation_parameter_defaults.py"
+  ],
+  "before": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-capacity-performance-20261010\\before\\backend\\nis\\communication\\registry.py",
+      "sha256": "606c319d227870ad91dc27e0c18ff7e3a6325925d41f97ffb7d4c830a8d9d5c4"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-capacity-performance-20261010\\before\\backend\\nis\\engineering\\capacity\\service.py",
+      "sha256": "eba0a4f7fb44146e476678fd6689c3272c87316c29a352c3a7f049c00fdf8c94"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-capacity-performance-20261010\\before\\backend\\tests\\test_technology_registry_metadata.py",
+      "sha256": "b9128e537809d234912d40c7d220c5c4cf85566c8e384b77eaccb49d7ca1e75a"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-capacity-performance-20261010\\before\\backend\\tests\\test_simulation_parameter_defaults.py",
+      "sha256": "683f471c15529f75e85fc03d43d3e255b65496fe216885301c75d85f714f30a6"
+    }
+  ],
+  "unresolved_decisions": [
+    {
+      "decision": "EXACT_ARCHIVED_FAILED_CANDIDATE_RETENTION_EXCEPTION",
+      "image_id": "sha256:5191ed7ffff4ff97e550487b6ab74d366f56cdc1961eb5bb757ea6a7483b99a0",
+      "requested_delete_count": 1,
+      "review": {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-capacity-performance-20261010\\failed-candidate-storage-review.json",
+        "sha256": "9b6d2bfb80b0b97ffb223a10348622b9207f9edea4d3b478665d825c7e150771"
+      },
+      "reason": "NetworkIS image retention budget reached (100 immutable images). Review and accept a feature audit before exact scoped cleanup; no automatic image prune is performed."
+    }
+  ],
+  "required_outcomes": [
+    "native_validation_reuse",
+    "scope_revision_input_isolation",
+    "full_wizard",
+    "release_and_deploy"
+  ],
+  "validation_requirements": [
+    "isolated_regression",
+    "release_gate",
+    "production_verification"
+  ],
+  "repair": {
+    "owner": "PROJECT_PRODUCT",
+    "root_cause": "Large calculation repeats pure native profile parameter validation thousands of times: 43/57 profiled seconds in resolution and 21 seconds inside validation.",
+    "first_failing_layer": "Capacity technology parameter validation",
+    "reproduction": "Real captured 50/250/250 nine-stage browser wizard exceeds 1200000ms; unchanged 20-minute boundary.",
+    "evidence": [
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\simulation-visibility-20261010\\isolated-capacity-profile.log",
+        "sha256": "1a045ecd20b5d316c86b55176582999dac35ebb8c24f62bd3d745bf09912fc4b"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\simulation-visibility-20261010\\large-timeout-attachments.json",
+        "sha256": "881eca25f1d56473a424fd8351d41498254c150f192c9cd9c9c7b46e96a480e4"
+      }
+    ],
+    "affected_files": [
+      "backend/nis/communication/registry.py",
+      "backend/nis/engineering/capacity/service.py",
+      "backend/tests/test_technology_registry_metadata.py",
+      "backend/tests/test_simulation_parameter_defaults.py"
+    ],
+    "acceptance_criteria": [
+      "Reuse only exact JSON inputs for pure built-in validators during one calculation.",
+      "Preserve technology, registry revision, strict evidence and mutable-result isolation; no sharing with another calculation or custom validator.",
+      "Full unchanged release gate passes and the exact tested image is delivered."
+    ],
+    "targeted_tests": [
+      "Registry metadata regression, capacity scenario defaults and native technology parameter isolation."
+    ],
+    "weaken_assertions_to_pass": false
+  },
+  "action_scope": "Implement the measured performance repair; preserve every validation rule and test timeout. The already-failed immutable candidate continues its remaining browser cases unchanged.",
+  "completion_status": "IN_PROGRESS",
+  "delivery": {
+    "decision": "YES",
+    "authorization": "Standing verified NIS production authorization and current Freigabe",
+    "target": "canonical production stack on port 13500",
+    "status": "BLOCKED_IMAGE_RETENTION_BUDGET",
+    "latest_attempt": {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\delivery-41b324e91fee\\84b9599a0e5a\\receipt.json",
+      "sha256": "71696e70106b4290389058db1f06e95d5cdbb35fb527650ab9b008de3423a3cf"
+    },
+    "delivery_blocker": {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-capacity-performance-20261010\\delivery-blocker.json",
+      "sha256": "219bbfccc7a83a95189185a81485507a9e77784a47b93b504fe1d31348afe58d"
+    }
+  },
+  "after": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-capacity-performance-20261010\\after\\backend\\nis\\communication\\registry.py",
+      "sha256": "504b49c406d05ee75c837840616156f27423277fa5bb8f2ec2ed9c56517570ee"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-capacity-performance-20261010\\after\\backend\\nis\\engineering\\capacity\\service.py",
+      "sha256": "d8545ae46589c9954601903083bcde304fce26bdd26e68d6cda7a5b4ae4a04a8"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-capacity-performance-20261010\\after\\backend\\tests\\test_technology_registry_metadata.py",
+      "sha256": "96925fcdb19babeaaf4f108cb8eabc8d74115dc4ac4f5e759012c754200c0132"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-capacity-performance-20261010\\after\\backend\\tests\\test_simulation_parameter_defaults.py",
+      "sha256": "dfdd5e5f6732987aff5a9d6f2a65e6ac5fbc8089e3ba7e83f297791c40b3da41"
+    }
+  ],
+  "diff": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-capacity-performance-20261010\\changes.patch",
+      "sha256": "829c701c286e1e679c256158b8eff01074490d7605e5f8632fe5be9fb6315c92"
+    }
+  ],
+  "outcomes": {
+    "native_validation_reuse": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-capacity-performance-20261010\\isolated-regression-complete.log",
+          "sha256": "bdba7125a5c2c1d5ba6d6692f5ed7b1515623b61506c8f41677aea78cb8cfd0a"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-capacity-performance-20261010\\capacity-comparison.json",
+          "sha256": "35bd2a2d27bda678a2b4f4bc436416f4d3745aa29dafabe787f3fdd53a576f29"
+        }
+      ]
+    },
+    "scope_revision_input_isolation": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-capacity-performance-20261010\\isolated-regression-complete.log",
+          "sha256": "bdba7125a5c2c1d5ba6d6692f5ed7b1515623b61506c8f41677aea78cb8cfd0a"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-capacity-performance-20261010\\capacity-comparison.json",
+          "sha256": "35bd2a2d27bda678a2b4f4bc436416f4d3745aa29dafabe787f3fdd53a576f29"
+        }
+      ]
+    },
+    "full_wizard": {
+      "status": "PENDING",
+      "evidence": []
+    },
+    "release_and_deploy": {
+      "status": "PENDING",
+      "evidence": []
+    }
+  },
+  "validations": {
+    "isolated_regression": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-capacity-performance-20261010\\isolated-regression-complete.log",
+          "sha256": "bdba7125a5c2c1d5ba6d6692f5ed7b1515623b61506c8f41677aea78cb8cfd0a"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\wizard-capacity-performance-20261010\\capacity-comparison.json",
+          "sha256": "35bd2a2d27bda678a2b4f4bc436416f4d3745aa29dafabe787f3fdd53a576f29"
+        }
+      ]
+    },
+    "release_gate": {
+      "status": "PENDING",
+      "evidence": []
+    },
+    "production_verification": {
+      "status": "PENDING",
+      "evidence": []
+    }
+  },
+  "remaining_findings": [
+    "Fresh scoped recoverable retention exception required before a new complete release gate.",
+    "Current source still needs a complete PASS receipt and exact tested-image production delivery.",
+    "Prepared canonical 86-change binding reconciliation and affected production verification remain pending."
+  ]
+}

@@ -1,0 +1,18 @@
+--- before/scripts/write-build-info.py
++++ after/scripts/write-build-info.py
+@@ -32,6 +32,7 @@
+ 
+ def build_manifest(root=ROOT):
+     paths = (set(root.joinpath("backend").rglob("*.py"))
++             | set(root.joinpath("backend/communication/technologies").rglob("*.json"))
+              | set(root.joinpath("frontend/src").rglob("*"))
+              | set(root.joinpath("frontend/scripts").rglob("*"))
+              | set(root.joinpath("config").rglob("*.json")))
+@@ -40,6 +41,7 @@
+         "Dockerfile", ".dockerignore", "generate_realistic_communication_tool.py", "scripts/write-build-info.py",
+         "scripts/verify-runtime-lock.py",
+         "scripts/release_storage.py",
++        "scripts/manage-technology-license.py",
+         "backend/requirements.txt", "backend/requirements.lock", "backend/pyproject.toml", "backend/uv.lock",
+         "frontend/package.json", "frontend/package-lock.json",
+     ))

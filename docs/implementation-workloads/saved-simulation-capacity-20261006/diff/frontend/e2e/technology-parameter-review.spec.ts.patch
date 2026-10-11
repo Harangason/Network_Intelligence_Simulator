@@ -1,0 +1,25 @@
+--- before/frontend/e2e/technology-parameter-review.spec.ts
++++ after/frontend/e2e/technology-parameter-review.spec.ts
+@@ -534,6 +534,22 @@
+   await expect(page.getByRole('region',{name:'Aktuelle Parameterbefunde'})).toContainText('Speichere zuerst die Änderungen');
+   await page.getByRole('button',{name:'Parameter speichern →',exact:true}).click();
+   await expect(confirm.getByRole('button',{name:'Für 1 Netze bestätigen & erneut prüfen',exact:true})).toBeEnabled();
++  // Saving a marked scenario must remove false missing-rate highlights without
++  // inventing a device qualification or requiring a separate rate confirmation.
++  await expect(page.locator('#parameter-field-arbitration_bitrate')).not.toHaveClass(/parameter-field-finding/);
++  await expect(page.locator('#parameter-field-data_bitrate')).not.toHaveClass(/parameter-field-finding/);
++  await expect(page.getByRole('region',{name:'Auslegung mit gespeicherten Simulationswerten'})).toContainText('1 von 1');
++  const scenarioReview=await (await page.request.get('/api/engineering/workflow/parameters/review',{headers})).json();
++  const canScenario=scenarioReview.simulation_capacity.find((row:{technology:string})=>row.technology==='can_fd');
++  expect(canScenario).toMatchObject({status:'FEASIBLE_UNDER_ASSUMPTIONS',hardware_evidence:false,functional_timing_accepted:false,
++    rates:{arbitration_bitrate:500000,data_bitrate:2000000}});
++  expect(canScenario.load_percent).toBeGreaterThan(0);
++  expect(scenarioReview.findings.find((row:{technology:string})=>row.technology==='can_fd').code).toBe('CAPACITY_DEVICE_EVIDENCE_MISSING');
++  await page.goto(`/studio?mode=parameters&project=${project}&technology=can_fd#parameter-findings`);
++  await expect(page.locator('#parameter-field-arbitration_bitrate')).not.toHaveClass(/parameter-field-finding/);
++  await expect(page.getByRole('region',{name:'Auslegung mit gespeicherten Simulationswerten'})).toContainText('1 von 1');
++  const repeated=await (await page.request.get('/api/engineering/workflow/parameters/review',{headers})).json();
++  expect(repeated.simulation_capacity).toEqual(scenarioReview.simulation_capacity);
+   await confirm.getByRole('spinbutton',{name:/Nominal Bitrate/}).fill('500000');
+   await confirm.getByRole('spinbutton',{name:/Data Bitrate/}).fill('2000000');
+   await confirm.getByRole('button',{name:'Für 1 Netze bestätigen & erneut prüfen',exact:true}).click();

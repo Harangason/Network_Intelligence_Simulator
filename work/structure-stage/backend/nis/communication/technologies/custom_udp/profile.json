@@ -1,0 +1,1763 @@
+{
+  "id": "custom_udp",
+  "label": "Custom UDP",
+  "domain": "generic_networking",
+  "layer": "APPLICATION",
+  "transport_unit": "DATAGRAM",
+  "payload_element_types": [
+    "RAW_DATA",
+    "DATA_OBJECT"
+  ],
+  "hardware_interface": "explicit_udp_ip_link_interface",
+  "hardware_capability_aliases": [
+    "ethernet_or_wireless_interface"
+  ],
+  "default_stack": [
+    "custom_udp"
+  ],
+  "stack_variants": [
+    [
+      "custom_udp"
+    ],
+    [
+      "ethernet",
+      "ip",
+      "udp",
+      "custom_udp"
+    ]
+  ],
+  "default_bitrate": null,
+  "rate_model": {
+    "type": "INHERITED_OR_NOT_APPLICABLE",
+    "fields": []
+  },
+  "local_timing_schema": [],
+  "parameter_schema": {
+    "payload_bytes": {
+      "label": "Payload",
+      "category": "physical",
+      "scope": "message",
+      "type": "number",
+      "description": "Actual application data octets in one UDP datagram, separate from application headers/trailers, complete multi-datagram body and UDP/IP headers. Actual IPv4/IPv6/header/Jumbo/peer/path bounds apply.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc8085.html",
+      "source_revision": "RFC768 August1980; RFC791 September1981; RFC8200 July2017; RFC2675 August1999; RFC8085 March2017",
+      "integer": true
+    },
+    "cycle_ms": {
+      "label": "Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "Standardperiode fuer zyklische Nachrichten.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "minimum_cycle_time_ms": {
+      "label": "Minimum Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "deadline_ms": {
+      "label": "Deadline",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "timeout_ms": {
+      "label": "Timeout",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_latency_ms": {
+      "label": "Maximum Latency",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "jitter_ms": {
+      "label": "Jitter Budget",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "freshness_ms": {
+      "label": "Data Freshness",
+      "category": "timing",
+      "scope": "signal",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "source_processing_delay_ms": {
+      "label": "Source Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_processing_delay_ms": {
+      "label": "Target Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "propagation_delay_ms": {
+      "label": "Propagation",
+      "category": "timing",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.01,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_bus_load_percent": {
+      "label": "Ziel-Buslast",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "Zielwert fuer die aus Routing, Payload, Zyklus und Bitrate berechnete Buslast.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "peak_factor": {
+      "label": "Peak Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.15,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_factor": {
+      "label": "Burst Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.5,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_window_ms": {
+      "label": "Burst Window",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "warning_threshold": {
+      "label": "Load Warning",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "critical_threshold": {
+      "label": "Load Critical",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 75,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "overload_threshold": {
+      "label": "Load Overload",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 90,
+      "unit": "%",
+      "min": 1,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "queue_size": {
+      "label": "Queue Size",
+      "category": "qos",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 256,
+      "unit": "Frames",
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1",
+      "integer": true
+    },
+    "queue_policy": {
+      "label": "Queue Policy",
+      "category": "qos",
+      "scope": "network",
+      "type": "select",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": "FIFO",
+      "options": [
+        "FIFO",
+        "PRIORITY",
+        "CUSTOM"
+      ],
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "traffic_class": {
+      "label": "Traffic Class",
+      "category": "qos",
+      "scope": "route",
+      "type": "select",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": "BEST_EFFORT",
+      "options": [
+        "BEST_EFFORT",
+        "CONTROL",
+        "REALTIME",
+        "SAFETY_CRITICAL"
+      ],
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "packet_loss_probability": {
+      "label": "Packet Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "frame_loss_probability": {
+      "label": "Frame Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "bit_error_rate": {
+      "label": "Bit Error Rate",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "corruption_probability": {
+      "label": "Corruption",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duplicate_probability": {
+      "label": "Duplication",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "reordering_probability": {
+      "label": "Reordering",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "required_reliability": {
+      "label": "Required Reliability",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.999,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_offset_ms": {
+      "label": "Clock Offset",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_drift_ppm": {
+      "label": "Clock Drift",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 20,
+      "unit": "ppm",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_precision_ms": {
+      "label": "Sync Precision",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_interval_ms": {
+      "label": "Sync Interval",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1000,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_sync_error_ms": {
+      "label": "Maximum Sync Error",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_delay_ms": {
+      "label": "Gateway Processing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.2,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_queue_delay_ms": {
+      "label": "Gateway Queueing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "protocol_conversion_delay_ms": {
+      "label": "Protocol Conversion",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duration_s": {
+      "label": "Simulation Duration",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 1,
+      "unit": "s",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "seed": {
+      "label": "Random Seed",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 42,
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1",
+      "integer": true
+    },
+    "max_events": {
+      "label": "Maximum Events",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 100000,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1",
+      "integer": true
+    },
+    "dropout_probability": {
+      "label": "Failure Injection Dropout",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "cudp_specification_source": {
+      "label": "Actual UDP application specification",
+      "category": "communication",
+      "scope": "message",
+      "type": "text",
+      "description": "Registered UDP/IP baseline proposal or actual custom application/path fact. UDP does not supply application reliability/order/deduplication. Path/peer/framing and checksum execution remain separate evidence.",
+      "required": true,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc8085.html",
+      "source_revision": "RFC768 August1980; RFC791 September1981; RFC8200 July2017; RFC2675 August1999; RFC8085 March2017"
+    },
+    "cudp_specification_revision": {
+      "label": "Actual UDP application revision",
+      "category": "communication",
+      "scope": "message",
+      "type": "text",
+      "description": "Registered UDP/IP baseline proposal or actual custom application/path fact. UDP does not supply application reliability/order/deduplication. Path/peer/framing and checksum execution remain separate evidence.",
+      "required": true,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc8085.html",
+      "source_revision": "RFC768 August1980; RFC791 September1981; RFC8200 July2017; RFC2675 August1999; RFC8085 March2017"
+    },
+    "cudp_transport_binding": {
+      "label": "Actual UDP/IP/link profile reference",
+      "category": "communication",
+      "scope": "message",
+      "type": "text",
+      "description": "Registered UDP/IP baseline proposal or actual custom application/path fact. UDP does not supply application reliability/order/deduplication. Path/peer/framing and checksum execution remain separate evidence.",
+      "required": true,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc8085.html",
+      "source_revision": "RFC768 August1980; RFC791 September1981; RFC8200 July2017; RFC2675 August1999; RFC8085 March2017"
+    },
+    "cudp_ip_version": {
+      "label": "Actual IP family",
+      "category": "communication",
+      "scope": "message",
+      "type": "select",
+      "description": "Registered UDP/IP baseline proposal or actual custom application/path fact. UDP does not supply application reliability/order/deduplication. Path/peer/framing and checksum execution remain separate evidence.",
+      "required": true,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "IPV4",
+        "IPV6"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc8085.html",
+      "source_revision": "RFC768 August1980; RFC791 September1981; RFC8200 July2017; RFC2675 August1999; RFC8085 March2017"
+    },
+    "cudp_size_mode": {
+      "label": "UDP/IP datagram size mode",
+      "category": "communication",
+      "scope": "message",
+      "type": "select",
+      "description": "Registered UDP/IP baseline proposal or actual custom application/path fact. UDP does not supply application reliability/order/deduplication. Path/peer/framing and checksum execution remain separate evidence.",
+      "required": true,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": "NORMAL",
+      "options": [
+        "NORMAL",
+        "JUMBO"
+      ],
+      "integer": false,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED",
+      "source": "https://www.rfc-editor.org/rfc/rfc8085.html",
+      "source_revision": "RFC768 August1980; RFC791 September1981; RFC8200 July2017; RFC2675 August1999; RFC8085 March2017"
+    },
+    "cudp_udp_header_bytes": {
+      "label": "UDP fixed header",
+      "category": "communication",
+      "scope": "message",
+      "type": "number",
+      "description": "Registered UDP/IP baseline proposal or actual custom application/path fact. UDP does not supply application reliability/order/deduplication. Path/peer/framing and checksum execution remain separate evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 8,
+      "unit": "Byte",
+      "min": 8,
+      "max": 8,
+      "integer": true,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED",
+      "source": "https://www.rfc-editor.org/rfc/rfc8085.html",
+      "source_revision": "RFC768 August1980; RFC791 September1981; RFC8200 July2017; RFC2675 August1999; RFC8085 March2017"
+    },
+    "cudp_application_header_bytes": {
+      "label": "Actual custom application header",
+      "category": "communication",
+      "scope": "message",
+      "type": "number",
+      "description": "Registered UDP/IP baseline proposal or actual custom application/path fact. UDP does not supply application reliability/order/deduplication. Path/peer/framing and checksum execution remain separate evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc8085.html",
+      "source_revision": "RFC768 August1980; RFC791 September1981; RFC8200 July2017; RFC2675 August1999; RFC8085 March2017"
+    },
+    "cudp_application_trailer_bytes": {
+      "label": "Actual custom application trailer",
+      "category": "communication",
+      "scope": "message",
+      "type": "number",
+      "description": "Registered UDP/IP baseline proposal or actual custom application/path fact. UDP does not supply application reliability/order/deduplication. Path/peer/framing and checksum execution remain separate evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc8085.html",
+      "source_revision": "RFC768 August1980; RFC791 September1981; RFC8200 July2017; RFC2675 August1999; RFC8085 March2017"
+    },
+    "cudp_message_bytes": {
+      "label": "Actual complete UDP application PDU",
+      "category": "communication",
+      "scope": "message",
+      "type": "number",
+      "description": "Registered UDP/IP baseline proposal or actual custom application/path fact. UDP does not supply application reliability/order/deduplication. Path/peer/framing and checksum execution remain separate evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc8085.html",
+      "source_revision": "RFC768 August1980; RFC791 September1981; RFC8200 July2017; RFC2675 August1999; RFC8085 March2017"
+    },
+    "cudp_datagram_bytes": {
+      "label": "Actual UDP header plus PDU",
+      "category": "communication",
+      "scope": "message",
+      "type": "number",
+      "description": "Registered UDP/IP baseline proposal or actual custom application/path fact. UDP does not supply application reliability/order/deduplication. Path/peer/framing and checksum execution remain separate evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 8,
+      "max": 4294967295,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc8085.html",
+      "source_revision": "RFC768 August1980; RFC791 September1981; RFC8200 July2017; RFC2675 August1999; RFC8085 March2017"
+    },
+    "cudp_udp_length_field": {
+      "label": "Actual UDP Length field",
+      "category": "communication",
+      "scope": "message",
+      "type": "number",
+      "description": "Registered UDP/IP baseline proposal or actual custom application/path fact. UDP does not supply application reliability/order/deduplication. Path/peer/framing and checksum execution remain separate evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "max": 65535,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc8085.html",
+      "source_revision": "RFC768 August1980; RFC791 September1981; RFC8200 July2017; RFC2675 August1999; RFC8085 March2017"
+    },
+    "cudp_ipv4_header_bytes": {
+      "label": "Actual IPv4 header including options",
+      "category": "communication",
+      "scope": "message",
+      "type": "number",
+      "description": "Registered UDP/IP baseline proposal or actual custom application/path fact. UDP does not supply application reliability/order/deduplication. Path/peer/framing and checksum execution remain separate evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 20,
+      "max": 60,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc8085.html",
+      "source_revision": "RFC768 August1980; RFC791 September1981; RFC8200 July2017; RFC2675 August1999; RFC8085 March2017",
+      "multiple_of": 4
+    },
+    "cudp_ipv6_extension_bytes": {
+      "label": "Actual IPv6 extension headers before UDP",
+      "category": "communication",
+      "scope": "message",
+      "type": "number",
+      "description": "Registered UDP/IP baseline proposal or actual custom application/path fact. UDP does not supply application reliability/order/deduplication. Path/peer/framing and checksum execution remain separate evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "max": 4294967295,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc8085.html",
+      "source_revision": "RFC768 August1980; RFC791 September1981; RFC8200 July2017; RFC2675 August1999; RFC8085 March2017"
+    },
+    "cudp_ipv6_payload_length": {
+      "label": "Actual IPv6 Payload Length field",
+      "category": "communication",
+      "scope": "message",
+      "type": "number",
+      "description": "Registered UDP/IP baseline proposal or actual custom application/path fact. UDP does not supply application reliability/order/deduplication. Path/peer/framing and checksum execution remain separate evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "max": 65535,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc8085.html",
+      "source_revision": "RFC768 August1980; RFC791 September1981; RFC8200 July2017; RFC2675 August1999; RFC8085 March2017"
+    },
+    "cudp_jumbo_payload_length": {
+      "label": "Actual IPv6 Jumbo Payload option value",
+      "category": "communication",
+      "scope": "message",
+      "type": "number",
+      "description": "Registered UDP/IP baseline proposal or actual custom application/path fact. UDP does not supply application reliability/order/deduplication. Path/peer/framing and checksum execution remain separate evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 65536,
+      "max": 4294967295,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc8085.html",
+      "source_revision": "RFC768 August1980; RFC791 September1981; RFC8200 July2017; RFC2675 August1999; RFC8085 March2017"
+    },
+    "cudp_ip_packet_bytes": {
+      "label": "Actual complete unfragmented IP packet",
+      "category": "communication",
+      "scope": "message",
+      "type": "number",
+      "description": "Registered UDP/IP baseline proposal or actual custom application/path fact. UDP does not supply application reliability/order/deduplication. Path/peer/framing and checksum execution remain separate evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 28,
+      "max": 4294967335,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc8085.html",
+      "source_revision": "RFC768 August1980; RFC791 September1981; RFC8200 July2017; RFC2675 August1999; RFC8085 March2017"
+    },
+    "cudp_peer_message_limit_bytes": {
+      "label": "Actual peer accepted application PDU",
+      "category": "communication",
+      "scope": "message",
+      "type": "number",
+      "description": "Registered UDP/IP baseline proposal or actual custom application/path fact. UDP does not supply application reliability/order/deduplication. Path/peer/framing and checksum execution remain separate evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc8085.html",
+      "source_revision": "RFC768 August1980; RFC791 September1981; RFC8200 July2017; RFC2675 August1999; RFC8085 March2017"
+    },
+    "cudp_path_mtu_bytes": {
+      "label": "Actual confirmed path MTU",
+      "category": "communication",
+      "scope": "message",
+      "type": "number",
+      "description": "Registered UDP/IP baseline proposal or actual custom application/path fact. UDP does not supply application reliability/order/deduplication. Path/peer/framing and checksum execution remain separate evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 1,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc8085.html",
+      "source_revision": "RFC768 August1980; RFC791 September1981; RFC8200 July2017; RFC2675 August1999; RFC8085 March2017"
+    },
+    "cudp_fragmentation_policy": {
+      "label": "IP fragmentation policy",
+      "category": "communication",
+      "scope": "message",
+      "type": "select",
+      "description": "Registered UDP/IP baseline proposal or actual custom application/path fact. UDP does not supply application reliability/order/deduplication. Path/peer/framing and checksum execution remain separate evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": "NO_IP_FRAGMENTATION",
+      "options": [
+        "NO_IP_FRAGMENTATION",
+        "EXPLICIT_IP_FRAGMENTATION"
+      ],
+      "integer": false,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED",
+      "source": "https://www.rfc-editor.org/rfc/rfc8085.html",
+      "source_revision": "RFC768 August1980; RFC791 September1981; RFC8200 July2017; RFC2675 August1999; RFC8085 March2017"
+    },
+    "cudp_checksum_policy": {
+      "label": "UDP checksum policy",
+      "category": "communication",
+      "scope": "message",
+      "type": "select",
+      "description": "Registered UDP/IP baseline proposal or actual custom application/path fact. UDP does not supply application reliability/order/deduplication. Path/peer/framing and checksum execution remain separate evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": "ENABLED",
+      "options": [
+        "ENABLED",
+        "IPV4_DISABLED"
+      ],
+      "integer": false,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED",
+      "source": "https://www.rfc-editor.org/rfc/rfc8085.html",
+      "source_revision": "RFC768 August1980; RFC791 September1981; RFC8200 July2017; RFC2675 August1999; RFC8085 March2017"
+    },
+    "cudp_udp_checksum_value": {
+      "label": "Actual serialized UDP checksum",
+      "category": "communication",
+      "scope": "message",
+      "type": "number",
+      "description": "Registered UDP/IP baseline proposal or actual custom application/path fact. UDP does not supply application reliability/order/deduplication. Path/peer/framing and checksum execution remain separate evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "max": 65535,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc8085.html",
+      "source_revision": "RFC768 August1980; RFC791 September1981; RFC8200 July2017; RFC2675 August1999; RFC8085 March2017"
+    },
+    "cudp_jumbo_supported": {
+      "label": "Actual complete path/peer Jumbo support",
+      "category": "communication",
+      "scope": "message",
+      "type": "boolean",
+      "description": "Registered UDP/IP baseline proposal or actual custom application/path fact. UDP does not supply application reliability/order/deduplication. Path/peer/framing and checksum execution remain separate evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc8085.html",
+      "source_revision": "RFC768 August1980; RFC791 September1981; RFC8200 July2017; RFC2675 August1999; RFC8085 March2017"
+    },
+    "cudp_application_ack": {
+      "label": "Actual application acknowledgement",
+      "category": "communication",
+      "scope": "message",
+      "type": "boolean",
+      "description": "Registered UDP/IP baseline proposal or actual custom application/path fact. UDP does not supply application reliability/order/deduplication. Path/peer/framing and checksum execution remain separate evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc8085.html",
+      "source_revision": "RFC768 August1980; RFC791 September1981; RFC8200 July2017; RFC2675 August1999; RFC8085 March2017"
+    },
+    "cudp_ack_timeout_ms": {
+      "label": "Actual application acknowledgement timeout",
+      "category": "communication",
+      "scope": "message",
+      "type": "number",
+      "description": "Registered UDP/IP baseline proposal or actual custom application/path fact. UDP does not supply application reliability/order/deduplication. Path/peer/framing and checksum execution remain separate evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "ms",
+      "min": 0,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc8085.html",
+      "source_revision": "RFC768 August1980; RFC791 September1981; RFC8200 July2017; RFC2675 August1999; RFC8085 March2017"
+    },
+    "cudp_ack_retry_limit": {
+      "label": "Actual application acknowledgement retries",
+      "category": "communication",
+      "scope": "message",
+      "type": "number",
+      "description": "Registered UDP/IP baseline proposal or actual custom application/path fact. UDP does not supply application reliability/order/deduplication. Path/peer/framing and checksum execution remain separate evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "retries",
+      "min": 0,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc8085.html",
+      "source_revision": "RFC768 August1980; RFC791 September1981; RFC8200 July2017; RFC2675 August1999; RFC8085 March2017"
+    },
+    "cudp_retry_control_source": {
+      "label": "Actual retry/deduplication/order contract",
+      "category": "communication",
+      "scope": "message",
+      "type": "text",
+      "description": "Registered UDP/IP baseline proposal or actual custom application/path fact. UDP does not supply application reliability/order/deduplication. Path/peer/framing and checksum execution remain separate evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc8085.html",
+      "source_revision": "RFC768 August1980; RFC791 September1981; RFC8200 July2017; RFC2675 August1999; RFC8085 March2017"
+    },
+    "cudp_congestion_control_source": {
+      "label": "Actual congestion-control contract",
+      "category": "communication",
+      "scope": "message",
+      "type": "text",
+      "description": "Registered UDP/IP baseline proposal or actual custom application/path fact. UDP does not supply application reliability/order/deduplication. Path/peer/framing and checksum execution remain separate evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc8085.html",
+      "source_revision": "RFC768 August1980; RFC791 September1981; RFC8200 July2017; RFC2675 August1999; RFC8085 March2017"
+    },
+    "cudp_application_integrity_source": {
+      "label": "Actual application integrity/security contract",
+      "category": "communication",
+      "scope": "message",
+      "type": "text",
+      "description": "Registered UDP/IP baseline proposal or actual custom application/path fact. UDP does not supply application reliability/order/deduplication. Path/peer/framing and checksum execution remain separate evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc8085.html",
+      "source_revision": "RFC768 August1980; RFC791 September1981; RFC8200 July2017; RFC2675 August1999; RFC8085 March2017"
+    },
+    "cudp_fragmentation_source": {
+      "label": "Actual fragmentation/reassembly contract",
+      "category": "communication",
+      "scope": "message",
+      "type": "text",
+      "description": "Registered UDP/IP baseline proposal or actual custom application/path fact. UDP does not supply application reliability/order/deduplication. Path/peer/framing and checksum execution remain separate evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc8085.html",
+      "source_revision": "RFC768 August1980; RFC791 September1981; RFC8200 July2017; RFC2675 August1999; RFC8085 March2017"
+    },
+    "cudp_full_body_bytes": {
+      "label": "Actual complete multi-datagram application body",
+      "category": "communication",
+      "scope": "message",
+      "type": "number",
+      "description": "Registered UDP/IP baseline proposal or actual custom application/path fact. UDP does not supply application reliability/order/deduplication. Path/peer/framing and checksum execution remain separate evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc8085.html",
+      "source_revision": "RFC768 August1980; RFC791 September1981; RFC8200 July2017; RFC2675 August1999; RFC8085 March2017"
+    },
+    "cudp_device_evidence": {
+      "label": "Actual endpoint/path/timing evidence",
+      "category": "communication",
+      "scope": "message",
+      "type": "text",
+      "description": "Registered UDP/IP baseline proposal or actual custom application/path fact. UDP does not supply application reliability/order/deduplication. Path/peer/framing and checksum execution remain separate evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc8085.html",
+      "source_revision": "RFC768 August1980; RFC791 September1981; RFC8200 July2017; RFC2675 August1999; RFC8085 March2017"
+    }
+  },
+  "mechanisms": {
+    "transport": [
+      "EXPLICIT_UDP_IP_LINK_BINDING"
+    ],
+    "framing": [
+      "APPLICATION_PDU_IN_UDP_DATAGRAM"
+    ],
+    "reliability": [
+      "NO_UDP_ACK_ORDER_OR_DEDUP_GUARANTEE"
+    ],
+    "integrity": [
+      "UDP_PSEUDOHEADER_CHECKSUM_NOT_AUTHENTICATION"
+    ]
+  },
+  "parameter_constraints": [
+    {
+      "when": {},
+      "parameter": "cudp_message_bytes",
+      "equal_expression": {
+        "sum": [
+          "payload_bytes",
+          "cudp_application_header_bytes",
+          "cudp_application_trailer_bytes"
+        ]
+      }
+    },
+    {
+      "when": {},
+      "parameter": "cudp_datagram_bytes",
+      "equal_expression": {
+        "sum": [
+          "cudp_message_bytes",
+          8
+        ]
+      }
+    },
+    {
+      "when": {},
+      "parameter": "cudp_message_bytes",
+      "maximum_parameter": "cudp_peer_message_limit_bytes"
+    },
+    {
+      "when": {},
+      "parameter": "cudp_full_body_bytes",
+      "minimum_parameter": "payload_bytes"
+    },
+    {
+      "when": {
+        "cudp_ip_version": "IPV4"
+      },
+      "parameter": "cudp_size_mode",
+      "allowed": [
+        "NORMAL"
+      ]
+    },
+    {
+      "when": {
+        "cudp_ip_version": "IPV4"
+      },
+      "parameter": "payload_bytes",
+      "maximum": 65507
+    },
+    {
+      "when": {
+        "cudp_ip_version": "IPV4"
+      },
+      "parameter": "cudp_message_bytes",
+      "maximum": 65507,
+      "maximum_expression": {
+        "subtract": [
+          65527,
+          "cudp_ipv4_header_bytes"
+        ]
+      }
+    },
+    {
+      "when": {
+        "cudp_ip_version": "IPV4"
+      },
+      "parameter": "cudp_datagram_bytes",
+      "maximum_expression": {
+        "subtract": [
+          65535,
+          "cudp_ipv4_header_bytes"
+        ]
+      }
+    },
+    {
+      "when": {
+        "cudp_ip_version": "IPV4"
+      },
+      "parameter": "cudp_ip_packet_bytes",
+      "equal_expression": {
+        "sum": [
+          "cudp_datagram_bytes",
+          "cudp_ipv4_header_bytes"
+        ]
+      },
+      "maximum": 65535
+    },
+    {
+      "when": {
+        "cudp_ip_version": "IPV6",
+        "cudp_size_mode": "NORMAL"
+      },
+      "parameter": "payload_bytes",
+      "maximum": 65527
+    },
+    {
+      "when": {
+        "cudp_ip_version": "IPV6",
+        "cudp_size_mode": "NORMAL"
+      },
+      "parameter": "cudp_message_bytes",
+      "maximum": 65527,
+      "maximum_expression": {
+        "subtract": [
+          65527,
+          "cudp_ipv6_extension_bytes"
+        ]
+      }
+    },
+    {
+      "when": {
+        "cudp_ip_version": "IPV6",
+        "cudp_size_mode": "NORMAL"
+      },
+      "parameter": "cudp_datagram_bytes",
+      "maximum_expression": {
+        "subtract": [
+          65535,
+          "cudp_ipv6_extension_bytes"
+        ]
+      }
+    },
+    {
+      "when": {
+        "cudp_ip_version": "IPV6"
+      },
+      "parameter": "cudp_ip_packet_bytes",
+      "equal_expression": {
+        "sum": [
+          40,
+          "cudp_datagram_bytes",
+          "cudp_ipv6_extension_bytes"
+        ]
+      },
+      "minimum": 48
+    },
+    {
+      "when": {
+        "cudp_size_mode": "NORMAL"
+      },
+      "parameter": "cudp_datagram_bytes",
+      "maximum": 65535
+    },
+    {
+      "when": {
+        "cudp_size_mode": "NORMAL"
+      },
+      "parameter": "cudp_udp_length_field",
+      "equal_parameter": "cudp_datagram_bytes",
+      "minimum": 8
+    },
+    {
+      "when": {
+        "cudp_ip_version": "IPV6",
+        "cudp_size_mode": "NORMAL"
+      },
+      "parameter": "cudp_ipv6_payload_length",
+      "equal_expression": {
+        "sum": [
+          "cudp_datagram_bytes",
+          "cudp_ipv6_extension_bytes"
+        ]
+      },
+      "minimum": 8
+    },
+    {
+      "when": {
+        "cudp_size_mode": "JUMBO"
+      },
+      "parameter": "cudp_ip_version",
+      "allowed": [
+        "IPV6"
+      ]
+    },
+    {
+      "when": {
+        "cudp_size_mode": "JUMBO"
+      },
+      "parameter": "cudp_ipv6_payload_length",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "when": {
+        "cudp_size_mode": "JUMBO"
+      },
+      "parameter": "cudp_jumbo_payload_length",
+      "equal_expression": {
+        "sum": [
+          "cudp_datagram_bytes",
+          "cudp_ipv6_extension_bytes"
+        ]
+      }
+    },
+    {
+      "when": {
+        "cudp_size_mode": "JUMBO"
+      },
+      "parameter": "cudp_ipv6_extension_bytes",
+      "minimum": 8
+    },
+    {
+      "when": {
+        "cudp_size_mode": "JUMBO"
+      },
+      "parameter": "cudp_datagram_bytes",
+      "maximum_expression": {
+        "subtract": [
+          4294967295,
+          "cudp_ipv6_extension_bytes"
+        ]
+      }
+    },
+    {
+      "when": {
+        "cudp_size_mode": "JUMBO"
+      },
+      "parameter": "payload_bytes",
+      "maximum": 4294967279,
+      "maximum_expression": {
+        "subtract": [
+          4294967287,
+          "cudp_ipv6_extension_bytes"
+        ]
+      }
+    },
+    {
+      "when": {
+        "cudp_size_mode": "JUMBO"
+      },
+      "parameter": "cudp_message_bytes",
+      "maximum": 4294967279,
+      "maximum_expression": {
+        "subtract": [
+          4294967287,
+          "cudp_ipv6_extension_bytes"
+        ]
+      }
+    },
+    {
+      "when": {
+        "cudp_size_mode": "JUMBO"
+      },
+      "when_half_open_ranges": {
+        "cudp_datagram_bytes": [
+          65536,
+          null
+        ]
+      },
+      "parameter": "cudp_udp_length_field",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "when": {
+        "cudp_size_mode": "JUMBO"
+      },
+      "when_half_open_ranges": {
+        "cudp_datagram_bytes": [
+          8,
+          65536
+        ]
+      },
+      "parameter": "cudp_udp_length_field",
+      "equal_parameter": "cudp_datagram_bytes"
+    },
+    {
+      "when": {
+        "cudp_size_mode": "JUMBO"
+      },
+      "parameter": "cudp_fragmentation_policy",
+      "allowed": [
+        "NO_IP_FRAGMENTATION"
+      ]
+    },
+    {
+      "when": {
+        "cudp_jumbo_supported": false
+      },
+      "parameter": "cudp_size_mode",
+      "allowed": [
+        "NORMAL"
+      ]
+    },
+    {
+      "when": {
+        "cudp_size_mode": "NORMAL"
+      },
+      "parameter": "cudp_jumbo_payload_length",
+      "allowed": []
+    },
+    {
+      "when": {
+        "cudp_ip_version": "IPV4"
+      },
+      "parameter": "cudp_ipv6_extension_bytes",
+      "allowed": []
+    },
+    {
+      "when": {
+        "cudp_ip_version": "IPV4"
+      },
+      "parameter": "cudp_ipv6_payload_length",
+      "allowed": []
+    },
+    {
+      "when": {
+        "cudp_ip_version": "IPV4"
+      },
+      "parameter": "cudp_jumbo_payload_length",
+      "allowed": []
+    },
+    {
+      "when": {
+        "cudp_ip_version": "IPV6"
+      },
+      "parameter": "cudp_ipv4_header_bytes",
+      "allowed": []
+    },
+    {
+      "when": {
+        "cudp_ip_version": "IPV6"
+      },
+      "parameter": "cudp_checksum_policy",
+      "allowed": [
+        "ENABLED"
+      ]
+    },
+    {
+      "when": {
+        "cudp_checksum_policy": "IPV4_DISABLED"
+      },
+      "parameter": "cudp_udp_checksum_value",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "when": {
+        "cudp_checksum_policy": "ENABLED"
+      },
+      "parameter": "cudp_udp_checksum_value",
+      "minimum": 1
+    },
+    {
+      "when": {
+        "cudp_fragmentation_policy": "NO_IP_FRAGMENTATION"
+      },
+      "parameter": "cudp_ip_packet_bytes",
+      "maximum_parameter": "cudp_path_mtu_bytes"
+    },
+    {
+      "when": {
+        "cudp_application_ack": false
+      },
+      "parameter": "cudp_ack_timeout_ms",
+      "allowed": []
+    },
+    {
+      "when": {
+        "cudp_application_ack": false
+      },
+      "parameter": "cudp_ack_retry_limit",
+      "allowed": []
+    },
+    {
+      "when": {},
+      "parameter": "cudp_ack_timeout_ms",
+      "exclusive_minimum": 0
+    }
+  ],
+  "physical_layer_profile_id": null,
+  "medium_access_model": null,
+  "native_parameter_prefixes": [],
+  "parameter_aliases": {},
+  "parameter_alias_limits": {},
+  "parameter_evidence_scope": null,
+  "rate_source_profile_id": null,
+  "arbitration_model_id": null,
+  "max_payload_bytes": null,
+  "capabilities": {
+    "supports_signals": true,
+    "supports_data_objects": true,
+    "supports_streams": true,
+    "supports_multicast": true,
+    "supports_publish_subscribe": false,
+    "supports_request_response": false,
+    "supports_cyclic": true,
+    "supports_event": true,
+    "supports_redundancy": false,
+    "supports_time_sync": false,
+    "supports_safety_profile": false,
+    "supports_segmentation": false,
+    "supports_fragmentation": false,
+    "supports_qos": false
+  },
+  "deterministic": false,
+  "overhead_bytes": 8,
+  "implementation_status": "EXPERIMENTAL",
+  "connection_type": "COMMUNICATION_TECHNOLOGY",
+  "parameter_proposals": {
+    "kind": "NO_OWN_PHYSICAL_RATE",
+    "status": "REVIEW_REQUIRED",
+    "source": "https://www.rfc-editor.org/rfc/rfc8085.html",
+    "source_revision": "RFC768 August1980; RFC791 September1981; RFC8200 July2017; RFC2675 August1999; RFC8085 March2017",
+    "note": "Actual UDP/IP/link binding and custom application contract required. No Ethernet rate, universal65507 payload for IPv6, implicit fragmentation or UDP application acknowledgement."
+  },
+  "capacity_evidence": {
+    "status": "MODEL_MISSING",
+    "frame_model": null,
+    "schedule_model": null,
+    "requires_confirmed_device_parameters": true
+  },
+  "components": {
+    "binding": "custom_udp.binding",
+    "generator": "custom_udp.generator",
+    "validator": "custom_udp.validator",
+    "timing_model": null,
+    "load_model": null,
+    "encoder": "custom_udp.encoder",
+    "decoder": "custom_udp.decoder"
+  },
+  "known_limitations": "Technology-specific conformance details require a vendor/profile extension."
+}

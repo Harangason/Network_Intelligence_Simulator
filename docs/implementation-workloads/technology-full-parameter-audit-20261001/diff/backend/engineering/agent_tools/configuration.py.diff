@@ -1,0 +1,27 @@
+--- before/backend/engineering/agent_tools/configuration.py
++++ after/backend/engineering/agent_tools/configuration.py
+@@ -21,10 +21,6 @@
+         return {'supported': False}
+     multiplier = {'': 1, 'k': 1000, 'm': 1_000_000}[match.group(2).lower()]
+     bitrate = round(float(match.group(1).replace(',', '.')) * multiplier)
+-    validation = DEFAULT_TECHNOLOGY_REGISTRY.validate_parameters('LIN', {'bitrate_bps': bitrate})
+-    if validation['status'] != 'VALID':
+-        return {'supported': True, 'status': 'BLOCKED', 'reason': 'Die angeforderte LIN-Bitrate ist laut TechnologyProfile unzulässig.',
+-                'findings': validation['findings']}
+     parameters = WorkflowStatusService(current_project_id()).get()['parameters']
+     declared = [item for item in parameters.get('networks', [])
+                 if DEFAULT_TECHNOLOGY_REGISTRY.normalize_id(str(item.get('technology') or '')) == 'lin']
+@@ -35,7 +31,12 @@
+                 'candidates': [{'id': str(item['id']), 'name': str(item.get('name') or item['id'])}
+                                for item in declared]}
+     network = declared[0]
+-    if network.get('bitrate') == bitrate:
++    native_values = {key: value for key, value in network.items() if key in DEFAULT_TECHNOLOGY_REGISTRY.parameter_keys('lin')}
++    native_values.update(bitrate=bitrate, lin_bitrate_bps=bitrate)
++    validation = DEFAULT_TECHNOLOGY_REGISTRY.validate_parameters('lin', native_values)
++    if validation['status'] in {'INVALID', 'UNKNOWN'}:
++        return {'supported': True, 'status': 'BLOCKED', 'reason': 'Die angeforderte LIN-Bitrate ist laut TechnologyProfile unzulässig.', 'findings': validation['findings']}
++    if network.get('lin_bitrate_bps', network.get('bitrate')) == bitrate:
+         return {'supported': True, 'status': 'ALREADY_CONFIGURED', 'network_id': str(network['id']),
+                 'bitrate_bps': bitrate}
+     proposal = proposals.create('NETWORK_BITRATE_UPDATE', [{

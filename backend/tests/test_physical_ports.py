@@ -182,7 +182,134 @@ def test_message_on_two_independent_channels_requires_explicit_transmit_bindings
     assert configuration['user_setting'] is True
     assert len(configuration['physical_transmit_bindings']) == 2
     assert {row['network_id'] for row in configuration['physical_transmit_bindings']} == {'CAN1', 'CAN2'}
-    assert not physical_transmit_changes(topology, routes, [{**message, 'configuration': configuration}])
+    assert changes[0]['data']['hardware_interface_id'] in {row['hardware_interface_id'] for row in configuration['physical_transmit_bindings']}
+    assert not physical_transmit_changes(topology, routes, [{**message, **changes[0]['data']}])
+
+
+@pytest.mark.parametrize('bus,technology', [('can_fd', 'CAN_FD'), ('lin', 'LIN'), ('ethernet', 'Ethernet'), ('modbus_rtu', 'MODBUS_RTU')])
+def test_complete_split_move_reuses_reviewed_connector_and_keeps_message_sender(bus, technology):
+    from backend.nis.intelligence.engineering.intelligence.network_planning import split_topology_by_distribution
+    hardware = [{'id': key, 'name': key, 'device_type': 'ECU'} for key in ('source', 'receiver')]
+    interfaces = [{'id': key + '-channel', 'name': key, 'hardware_node_id': key, 'technology': technology,
+                   'channel_index': 1, 'physical_port_ref': key + '-connector', 'network_ref': 'old-bus'} for key in ('source', 'receiver')]
+    before = {'nodes': [{'id': key, 'engineeringId': key, 'ports': [{'id': key + '-port', 'hardwareInterfaceId': key + '-channel',
+                'bus': bus, 'physicalNetworkId': 'old-bus'}]} for key in ('source', 'receiver')],
+              'edges': [{'id': 'wire', 'source': 'source', 'target': 'receiver', 'sourcePort': 'source-port',
+                        'targetPort': 'receiver-port', 'bus': bus, 'physicalNetworkId': 'old-bus', 'routingEntryIds': ['route']}]}
+    routes = [{'id': 'route', 'approval_state': 'APPROVED', 'source': {'node_id': 'source'}, 'payload': {'message_id': 'message'}}]
+    message = {'id': 'message', 'hardware_interface_id': 'source-channel', 'configuration': {'encoding': 'authored'}}
+    plan = {'networks': [{'network_id': 'old-bus', 'decision': 'SPLIT_CURRENT_TECHNOLOGY',
+                         'segments': [{'name': 'new-bus', 'route_ids': ['route']}]}]}
+    topology, count = split_topology_by_distribution(before, plan)
+    assert count == 1
+    original = deepcopy((before, topology, interfaces, message))
+    repaired, changes = materialize_physical_ports(topology, hardware, interfaces,
+        [{'id': 'old-bus', 'technology': technology}], previous_topology=before, routes=routes, messages=[message])
+    canonical = effective(interfaces, changes)
+    assert len(canonical) == 2, 'Moving one complete branch does not create spare hardware channels.'
+    assert {p['hardwareInterfaceId'] for n in repaired['nodes'] for p in n['ports']} == {'source-channel', 'receiver-channel'}
+    assert all(p['network_ref'] == 'new-bus' and p['channel_index'] == 1 for p in canonical)
+    assert not topology_port_findings(repaired, hardware, canonical)
+    assert (before, topology, interfaces, message) == original
+
+
+def test_multichannel_rebind_preserves_active_primary_and_does_not_adopt_unapproved_sources():
+    from backend.nis.engineering.network.physical_ports import physical_transmit_changes
+    topology, hardware, interfaces = sample()
+    topology, _ = materialize_physical_ports(topology, hardware, interfaces, [])
+    for index, edge in enumerate(topology['edges']):
+        edge['routingEntryIds'] = [f'route-{index}']
+    primary = topology['nodes'][1]['ports'][1]['hardwareInterfaceId']
+    routes = [{'id': f'route-{index}', 'approval_state': 'APPROVED', 'source': {'node_id': 'g'},
+               'payload': {'message_id': 'm'}} for index in range(2)]
+    message = {'id': 'm', 'hardware_interface_id': primary, 'configuration': {'user_setting': True}}
+    change = physical_transmit_changes(topology, routes, [message])[0]
+    assert change['data'].get('hardware_interface_id', primary) == primary
+    assert len(change['data']['configuration']['physical_transmit_bindings']) == 2
+    assert physical_transmit_changes(topology, [{**r, 'approval_state': 'PENDING'} for r in routes], [message]) == []
+
+
+def test_complete_multibranch_split_reuses_one_original_channel_without_unused_inventory():
+    from backend.nis.intelligence.engineering.intelligence.network_planning import split_topology_by_distribution
+    topology, hardware, interfaces = sample()
+    interfaces[1].update(technology='CAN_FD', network_ref='')
+    topology['nodes'][1]['ports'] = [topology['nodes'][1]['ports'][0]]
+    for node in topology['nodes']:
+        for port in node['ports']:
+            port['physicalNetworkId'] = 'shared'
+    for index, edge in enumerate(topology['edges']):
+        edge.update(physicalNetworkId='shared', routingEntryIds=[f'route-{index}'])
+    topology['edges'][1]['sourcePort'] = topology['nodes'][1]['ports'][0]['id']
+    before, changes = materialize_physical_ports(topology, hardware, interfaces, [])
+    interfaces = effective(interfaces, changes)
+    original = before['nodes'][1]['ports'][0]['hardwareInterfaceId']
+    split, _ = split_topology_by_distribution(before, {'networks': [{'network_id': 'shared',
+        'decision': 'SPLIT_CURRENT_TECHNOLOGY', 'segments': [
+            {'name': 'split-2', 'route_ids': ['route-0']}, {'name': 'split-1', 'route_ids': ['route-1']}]}]})
+    repaired, changes = materialize_physical_ports(split, hardware, interfaces,
+        [{'id': 'shared', 'technology': 'CAN_FD'}], previous_topology=before)
+    canonical = effective(interfaces, changes)
+    active = {p['hardwareInterfaceId'] for n in repaired['nodes'] for p in n['ports']}
+    assert active == {p['id'] for p in canonical}, 'A complete split must not leave phantom hardware behind.'
+    assert len(canonical) == 4, 'Two independent gateway branches need two channels, not three.'
+    assert next(p for p in canonical if p['id'] == original)['network_ref'] == 'split-1'
+
+
+def test_logical_interface_reconciles_reviewed_multichannel_senders_and_preserves_unrelated_configuration():
+    from backend.nis.engineering.network.physical_ports import physical_transmit_changes
+    topology, hardware, interfaces = sample()
+    topology, _ = materialize_physical_ports(topology, hardware, interfaces, [])
+    for index, edge in enumerate(topology['edges']):
+        edge['routingEntryIds'] = [f'route-{index}']
+    routes = [{'id': f'route-{index}', 'approval_state': 'APPROVED', 'source': {'node_id': 'g'},
+               'payload': {'message_id': 'm'}} for index in range(2)]
+    message = {'id': 'm', 'interface_id': 'logical', 'hardware_interface_id': 'old-disconnected', 'configuration': {}}
+    logical = {'id': 'logical', 'configuration': {'physical_interface_ids': ['old-disconnected'], 'endpoint_role': 'SYSTEM_CONTROLLER'}}
+    before = deepcopy((topology, message, logical))
+    changes = physical_transmit_changes(topology, routes, [message], logical_interfaces=[logical])
+    update = next(c for c in changes if c['object_type'] == 'Interface')
+    expected = sorted(p['hardwareInterfaceId'] for p in topology['nodes'][1]['ports'])
+    assert update['data']['configuration'] == {'physical_interface_ids': expected, 'endpoint_role': 'SYSTEM_CONTROLLER'}
+    assert physical_transmit_changes(topology, [{**r, 'approval_state': 'PENDING'} for r in routes],
+                                     [message], logical_interfaces=[logical]) == []
+    assert (topology, message, logical) == before
+    applied_message = {**message, **next(c['data'] for c in changes if c['object_type'] == 'Message')}
+    applied_logical = {**logical, **update['data']}
+    assert physical_transmit_changes(topology, routes, [applied_message], logical_interfaces=[applied_logical]) == []
+    pending = {**message, 'id': 'unreviewed-sibling'}
+    sibling_changes = physical_transmit_changes(topology, routes, [message, pending], logical_interfaces=[logical])
+    sibling_update = next(c for c in sibling_changes if c['object_type'] == 'Interface')
+    assert sibling_update['data']['configuration']['physical_interface_ids'] == sorted([*expected, 'old-disconnected'])
+    assert not any(c.get('object_id') == pending['id'] for c in sibling_changes)
+
+
+def test_retired_physical_channel_cannot_be_reused_or_connected():
+    topology, hardware, interfaces = sample()
+    interfaces[0]['lifecycle_state'] = 'superseded'
+    assert 'PHYSICAL_CHANNEL_RETIRED' in {f['code'] for f in topology_port_findings(topology, hardware, interfaces)}
+    repaired, changes = materialize_physical_ports(topology, hardware, interfaces, [])
+    assert repaired['nodes'][0]['ports'][0]['hardwareInterfaceId'] != interfaces[0]['id']
+    assert interfaces[0]['id'] not in {c.get('object_id') for c in changes}
+
+
+def test_split_keeps_parallel_old_bus_instead_of_stealing_its_channel():
+    topology, hardware, interfaces = sample()
+    before, changes = materialize_physical_ports(topology, hardware, interfaces, [])
+    interfaces = effective(interfaces, changes)
+    updated = deepcopy(before)
+    source = updated['nodes'][0]['ports'][0]
+    primary = source['hardwareInterfaceId']
+    updated['nodes'][0]['ports'].append({**source, 'id': 'parallel-source', 'physicalNetworkId': 'parallel'})
+    gateway = updated['nodes'][1]['ports'][0]
+    updated['nodes'][1]['ports'].append({**gateway, 'id': 'parallel-gateway', 'physicalNetworkId': 'parallel'})
+    updated['edges'].append({**updated['edges'][0], 'id': 'parallel-edge', 'sourcePort': 'parallel-source',
+                             'targetPort': 'parallel-gateway', 'physicalNetworkId': 'parallel'})
+    repaired, changes = materialize_physical_ports(updated, hardware, interfaces,
+        [{'id': 'CAN1', 'technology': 'CAN_FD'}, {'id': 'CAN2', 'technology': 'CAN_FD'}], previous_topology=before)
+    canonical = effective(interfaces, changes)
+    assert next(p for p in canonical if p['id'] == primary)['network_ref'] == 'CAN1'
+    assert repaired['nodes'][0]['ports'][1]['hardwareInterfaceId'] != primary
+    assert not topology_port_findings(repaired, hardware, canonical)
 
 
 def test_topology_refresh_reuses_reviewed_networks_ports_and_layout_without_wizard_prompt(monkeypatch):

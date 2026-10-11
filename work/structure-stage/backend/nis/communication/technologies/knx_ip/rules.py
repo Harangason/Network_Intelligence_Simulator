@@ -1,0 +1,282 @@
+"""KNXnet/IP service, selected transport and qualified implementation parameters."""
+SHA='61360088c59fd5f593608c971059437b37e0a836'
+RAW=f'https://raw.githubusercontent.com/calimero-project/calimero-core/{SHA}/src/tuwien/auto/calimero/'
+KNXIP=RAW+'knxnetip/'
+HEADER=KNXIP+'servicetype/KNXnetIPHeader.java'
+HPAI=KNXIP+'util/HPAI.java'
+TUNNEL=KNXIP+'KNXnetIPTunnel.java'
+ROUTING=KNXIP+'KNXnetIPRouting.java'
+CLIENT=KNXIP+'ClientConnection.java'
+BASE=KNXIP+'ConnectionBase.java'
+SECURE=KNXIP+'SecureConnection.java'
+TCP=KNXIP+'TcpConnection.java'
+SECROUTE=KNXIP+'SecureRouting.java'
+REQUEST=KNXIP+'servicetype/ServiceRequest.java'
+ACK=KNXIP+'servicetype/ServiceAck.java'
+BUSY=KNXIP+'servicetype/RoutingBusy.java'
+LOST=KNXIP+'servicetype/RoutingLostMessage.java'
+CEMI=RAW+'cemi/CEMILData.java'
+EXT=RAW+'cemi/CEMILDataEx.java'
+IA=RAW+'IndividualAddress.java'
+GA=RAW+'GroupAddress.java'
+ASSOC='https://support.knx.org/hc/en-us/articles/4402353231762-Connection-Manager-Detailed'
+CHECK='https://support.knx.org/hc/en-us/articles/360012630199-KNX-Security-overview'
+SOURCES={u:'Calimero v2.6 exactcommit '+SHA+' publisher source/hash manifest; relevant parameter/service/API code read; actual unmodified version required, not normative product certification'for u in
+ (HEADER,HPAI,TUNNEL,ROUTING,CLIENT,BASE,SECURE,TCP,SECROUTE,REQUEST,ACK,BUSY,LOST,CEMI,EXT,IA,GA)}
+SOURCES.update({ASSOC:'KNX Association connection manager, default3671/224.0.23.12 and distinct selected tunnelling/routing endpoints; accessed2026-10-02',
+ CHECK:'KNX Association security overview, updated2026-09-23; IP transport protection and independent device/application Data Secure reviewed; accessed2026-10-02'})
+DECLARATIONS=[]
+
+def d(key,kind,meaning,source=HEADER,unit=None,options=None,minimum=None,maximum=None,**extra):
+    DECLARATIONS.append(dict(key='kip_'+key,type=kind,description=meaning,source=source,source_revision=SOURCES[source],
+        unit=unit,options=options,min=minimum,max=maximum,**extra))
+
+d('mode','select','Actual multicast routing versus point-to-point tunnel versus device-management/discovery.',source=ASSOC,options=['ROUTING','TUNNELLING','DEVICE_MANAGEMENT','DISCOVERY'])
+d('transport','select','Actual UDP/TCP transport, not a100M Ethernet PHY setting.',source=TUNNEL,options=['UDP','TCP'])
+d('security','select','Actual KNX IP Secure versus plain IP, distinct from independent end-device KNX Data Secure.',source=SECURE,options=['PLAIN','IP_SECURE'])
+d('profile','select','Actual device-qualified implementation versus exact unchanged Calimero v2.6 build.',source=BASE,options=['QUALIFIED_DEVICE','CALIMERO_V2_6_FACTORY'])
+d('direction','select','Actual transmit versus receive; busy/lost fields are observations on receiver, not default loss.',source=ROUTING,options=['TRANSMITTER','RECEIVER'])
+d('message_kind','select','Actual current inner-service data/ACK/flow/control/secure setup; distinct wire bodies apply.',options=['CEMI_DATA','IP_ACK','ROUTING_BUSY','ROUTING_LOST','CORE_CONTROL','FEATURE','OBJECT_SERVER','SECURE_HANDSHAKE','GROUP_SYNC'])
+d('cemi_format','select','Actual standardLDataTPDU16 versus extended255 or separately registered busmonitor/management cEMI.',source=EXT,
+ options=['L_DATA_STANDARD','L_DATA_EXTENDED','BUS_MONITOR','DEVICE_MANAGEMENT','OTHER_REGISTERED_CEMI'])
+d('tunnel_layer','select','Actual KNX link/raw/busmonitor tunnelling layer, not inferred from default Ethernet path.',source=TUNNEL,options=['LINK','RAW','BUS_MONITOR'])
+d('destination_kind','select','Actual KNX individual/group destination, separate from IP unicast/multicast.',source=CEMI,options=['INDIVIDUAL','GROUP'])
+d('group_style','select','Actual display convention of the same16-bit group address;2-level and3-level ranges differ.',source=GA,options=['TWO_LEVEL','THREE_LEVEL','FREE_STYLE'])
+d('hpai_kind','select','Actual explicitly advertised IPv4 endpoint versus UDP NAT route-back or mandatory TCP route-back marker.',source=HPAI,options=['EXPLICIT_IPV4','UDP_NAT_ROUTE_BACK','TCP_ROUTE_BACK'])
+for key,meaning,source in [
+ ('revision','Actual selected KNXnet/IP/secure specification revision and application function evidence.',ASSOC),
+ ('build_commit','Actual exact implementation commit/version, not floating main or newer milestone.',BASE),
+ ('build_source','Actual binary/settings and unchanged versus modified library build.',BASE),
+ ('device_source','Actual KNXnet/IP router/interface/server firmware and supported secure/tunnel/cEMI functions.',ASSOC),
+ ('binding_source','Actual canonical logicalKNX port, IP interface, selectedUDP/TCP and independently registered lower PHY.',ASSOC),
+ ('ip_source','Actual validated IP addresses/routing/multicast/NAT/PMTU/queues and lower path; not inheritedEthernet100M.',ASSOC),
+ ('application_source','Actual selected KNX DPT/APCI/application encoding, commissioning, object/group assignments.',GA),
+ ('encoding_source','Actual service/header/HPAI/cEMI/additional-info/secure wrapper byte layout.',HEADER),
+ ('schedule_source','Actual datagrams/ACKs/control/secure overhead, traffic and per-hop queueing.',ROUTING),
+ ('acceptance_source','Actual functional E2E/freshness/safety acceptance; IPACK/positiveLData.con is not application completion.',ACK),
+ ('capacity_source','Actual selected IP path and anyTP/RF/etc bridge capacity, each bus independently evaluated.',ROUTING),
+ ('endpoint_source','Actual allocated server/control/data endpoints, tunnelling channels and KNX address assignment.',HPAI),
+ ('multicast_address','Actual routing multicast group, association default is a proposal and may be changed per KNX domain.',ASSOC),
+ ('hpai_address','Actual advertised IPv4 endpoint;0.0.0.0 is a route-back marker, not the device IP.',HPAI),
+ ('local_address','Actual selected local IPv4 interface address, not a192.168 example.',HPAI),
+ ('remote_address','Actual selected remote IPv4 server/control endpoint, not local HPAI NAT marker.',HPAI),
+ ('security_source','Actual IP Secure keys/session/authentication/replay/timer commissioning and independent Data Secure behavior.',SECURE),
+ ('group_key_ref','Actual protected backbone/group key reference, never auto-generated/zero key.',SECURE),
+ ('user_key_ref','Actual protected user key reference and server grants, not assumed administrator credential.',TCP),
+ ('device_auth_ref','Actual commissioned server/device-authentication evidence or explicitly supported authentication policy.',SECURE),
+ ('serial_hex','Actual6-byte secure sender serial in12 hex digits; no default MAC or zero identity.',SECURE),
+ ('dpt_source','Actual commissioned DPT, unit/scale/encoding and group object semantics.',GA),
+ ('additional_info_source','Actual cEMI information TLV list/types/lengths; aggregate length alone does not decode RF/busmonitor evidence.',EXT),
+ ('bridge_source','Actual independently registered KNX TP/RF/other gateway and its frame/hardware/timing proof.',CEMI)]:d(key,'text',meaning,source=source)
+for key,meaning,lo,hi,unit,source in [
+ ('port','Actual KNXnet/IP server/routing/discovery service port,3671 standard proposal; negotiated data endpoint separate.',1,65535,None,ASSOC),
+ ('data_port','Actual negotiated remoteUDP data port, not automatically3671.',1,65535,None,HPAI),
+ ('local_port','Actual bound local client port or0 request for OS ephemeral allocation.',0,65535,None,HPAI),
+ ('hpai_port','Actual advertised HPAI port;0 is explicit route-back/NAT indicator, not missingclock.',0,65535,None,HPAI),
+ ('hpai_protocol','Actual IPv4UDP code1 versus IPv4TCP code2.',1,2,None,HPAI),
+ ('hpai_octets','Actual HPAI length8, independent of IPv4 packet header.',8,8,'Byte',HPAI),
+ ('version','Actual encoded KNXnet/IP version, standardservices0x10 versusObjectServer0x20 in reviewed library.',16,255,None,HEADER),
+ ('header_octets','Actual KNXnet/IP header6bytes, not IP/UDP/TCP frame overhead.',6,6,'Byte',HEADER),
+ ('service_type','Actual16-bit inner KNXnet/IP service type.',0,65535,None,HEADER),
+ ('outer_service_type','Actual current outer header service; secure wrapper0x0950 is distinct from inner service.',0,65535,None,HEADER),
+ ('service_body_octets','Actual inner service body octets, including service connection/cEMI data.',0,65529,'Byte',HEADER),
+ ('inner_packet_octets','Actual inner total6+body, represented by16-bit KNXnet/IP length.',6,65535,'Byte',HEADER),
+ ('packet_octets','Actual current complete plain or secured KNXnet/IP packet, not an EthernetMTU/application payload.',6,65535,'Byte',HEADER),
+ ('cemi_octets','Actual cEMI structure bytes, standardLData9+TPDU+additional-info, other cEMI has selected layout.',1,None,'Byte',CEMI),
+ ('tpdu_octets','Actual TPCI/APCI-inclusive transport payload; not same as DPT application bytes.',1,255,'Byte',EXT),
+ ('npdu_length','Actual encoded TPDUlength-minus1,255ESC reserved in reviewed LDataEx.',0,254,'Byte',EXT),
+ ('additional_info_octets','Actual aggregate cEMI TLVs including each2-byte type/length header, one-byte aggregate bound.',0,255,'Byte',EXT),
+ ('channel_id','Actual server-allocated tunnel channel8bits; not universalchannel1.',0,255,None,REQUEST),
+ ('sequence','Actual8-bit tunnel/management service sequence, modulo256 and retransmission semantics.',0,255,None,REQUEST),
+ ('connection_header_octets','Actual service request/ACK connection header4bytes.',4,4,'Byte',REQUEST),
+ ('ack_status','Actual8-bit service ACK status,0 indicates reception only, not application completion.',0,255,None,ACK),
+ ('tunnel_layer_code','Actual layer LINK2/RAW4/BUSMON128.',0,255,None,TUNNEL),
+ ('cemi_message_code','Actual LData.req17/con46/ind41, not all cEMI codes.',0,255,None,CEMI),
+ ('knx_hop_count','Actual3-bit KNX router hop count, distinct from IPv4 multicastTTL.',0,7,None,CEMI),
+ ('ip_multicast_ttl','Actual IP multicast scope0..255, not cEMI hop counter; pinnedCalimero64 only proposal.',0,255,None,ROUTING),
+ ('individual_address','Actual16-bit commissioned individual address, not automatic0.0.0 host assignment.',0,65535,None,IA),
+ ('area','Actual4-bit KNX area component.',0,15,None,IA),
+ ('line','Actual4-bit KNX line component.',0,15,None,IA),
+ ('device','Actual8-bit KNX individual device component.',0,255,None,IA),
+ ('group_address','Actual16-bit KNX group address.',0,65535,None,GA),
+ ('main_group','Actual5-bit KNX main group.',0,31,None,GA),
+ ('middle_group','Actual3-bit middle group in3-level style only.',0,7,None,GA),
+ ('sub_group','Actual8-bit3-level or11-bit2-level group component.',0,2047,None,GA),
+ ('routing_datagrams_s','Actual routing datagram cap; pinnedCalimero50/s is not an Ethernet bit/s clock.',1,None,'datagram/s',ROUTING),
+ ('routing_loopback_queue','Actual pinnedCalimero20-entry loopback duplicate-tracking queue, not globaltransmit buffer.',0,None,None,ROUTING),
+ ('routing_busy_wait_ms','Actual observed/advertised queue clearing wait; transmitter20..100ms, receive16bitwire.',0,65535,'ms',BUSY),
+ ('routing_busy_control','Actual16-bit busy control,0 standardinterpretable proposal.',0,65535,None,BUSY),
+ ('routing_busy_counter','Actual adaptive routing busy counterN, not an always0 congestion assumption.',0,None,None,BUSY),
+ ('routing_random_ms','Actual bounded random flow wait[0,N*50ms], no fixed random default.',0,None,'ms',BUSY),
+ ('routing_pause_ms','Actual busy_wait+random wait, not KNX application deadline.',0,None,'ms',BUSY),
+ ('routing_slow_ms','Actual N*100ms adaptive throttle duration.',0,None,'ms',BUSY),
+ ('routing_device_state','Actual8-bit router state/PID69, not a defaulthealthy flag.',0,255,None,BUSY),
+ ('routing_lost_count','Actual16-bit observed loss count, not defaultzero loss probability.',0,65535,None,LOST),
+ ('connect_ms','Actual KNXnet/IP connect-response timeout; pinnedCalimero10000ms.',0,None,'ms',BASE),
+ ('ack_ms','Actual UDP tunnel ACK timeout; pinnedCalimero1000ms, separate from KNX/LData.con.',0,None,'ms',TUNNEL),
+ ('tunnel_attempts','Actual full send attempt count, pinnedUDP2 versusTCP1, not retransmission percentage.',1,None,None,TUNNEL),
+ ('confirmation_ms','Actual pinnedCalimero LData.con timeout3000ms, not application completion.',0,None,'ms',CLIENT),
+ ('heartbeat_interval_ms','Actual connected-client heartbeat interval; pinnedCalimero60000ms.',0,None,'ms',CLIENT),
+ ('heartbeat_response_ms','Actual connectionstate-response timeout; pinnedCalimero10000ms.',0,None,'ms',CLIENT),
+ ('heartbeat_attempts','Actual connectionstate request attempt cap; pinnedCalimero4.',1,None,None,CLIENT),
+ ('heartbeat_repeat_ms','Actual pinnedCalimero delay1000ms after received unsuccessfulstate response, not every timeout.',0,None,'ms',CLIENT),
+ ('tcp_connect_ms','Actual TCP socket connect timeout; pinnedCalimero5000ms, separate from KNXconnect10000.',0,None,'ms',TCP),
+ ('secure_setup_ms','Actual secure session setup/authentication stage timeout; pinnedCalimero10000ms.',0,None,'ms',TCP),
+ ('secure_keepalive_ms','Actual secureTCP session keepalive30000ms, separate from tunnelheartbeat60000.',0,None,'ms',TCP),
+ ('user_id','Actual commissioned secureTCP user1..127, not presumedadministrator1.',1,127,None,TCP),
+ ('secure_session_id','Actual16-bit assigned unicast session versus routing0.',0,65535,None,SECURE),
+ ('secure_sequence','Actual48-bit increasing unicast counter or routing timer inms, not randomdefaultcounter0.',0,281474976710655,None,SECURE),
+ ('secure_tag','Actual16-bit message tag; unicastwrapper0, routing actualtag.',0,65535,None,SECURE),
+ ('secure_mac_octets','Actual secure authentication code16bytes, not32-byte X25519publickey.',16,16,'Byte',SECURE),
+ ('secure_key_octets','Actual commissioned AES128key16bytes; no secretkey value default.',16,16,'Byte',SECURE),
+ ('exchange_key_octets','Actual X25519publickey32bytes, separate from AESkey16.',32,32,'Byte',TCP),
+ ('password_iterations','Actual pinnedCalimero PBKDF2-HMACSHA256 iteration65536, not timeout/capacity.',1,None,None,SECURE),
+ ('routing_latency_ms','Actual secure routing multicast acceptance window1..8000ms, no example2s default.',1,8000,'ms',SECROUTE),
+ ('sync_query_ms','Actual pinned secure routing group sync query10000ms.',0,None,'ms',SECROUTE),
+ ('sync_notify_ms','Actual pinned secure routing minimum notification delay100ms.',0,None,'ms',SECROUTE),
+ ('functional_bound_ms','Actual complete application functional E2E bound, separate from protocol timers.',0,None,'ms',ACK)]:d(key,'number',meaning,source=source,unit=unit,minimum=lo,maximum=hi)
+for key,meaning,source in [('unmodified_build','Actual pinnedsource/configuration unchanged.',BASE),
+ ('loopback','Actual multicast socket loopback setting, not assumed from unspecified hostdefault.',ROUTING),
+ ('data_secure','Actual end-device KNX Data Secure independently commissioned; IP Secure does not prove it.',CHECK),
+ ('security_confirmed','Actual independently verified IP session/authentication/replay commissioning.',SECURE),
+ ('schedule_confirmed','Actual full selected path schedule verified.',ROUTING),
+ ('capacity_confirmed','Actual whole selected path capacity verified.',ROUTING)]:d(key,'boolean',meaning,source=source)
+REMOVED={k:'Removed inherited '+k+': KNXnet/IP selects routing/tunnelling/security and registeredIP/UDP/TCP/lower path separately; no automaticEthernet100M/MTU/VLAN/CAN queue/retransmission/gateway settings.'for k in
+ ('bitrate','duplex','mtu_bytes','vlan_id','queue_size','queue_policy','qos_priority','reserved_bandwidth_percent','sync_method','rate_limit_bit_s',
+ 'retransmission_enabled','retransmission_rate','retry_limit','retransmission_delay_ms','gateway_maximum_throughput','gateway_input_buffer',
+ 'gateway_output_buffer','gateway_maximum_routes','gateway_maximum_messages_s')}
+REQUIRED=['mode','transport','security','profile','direction','message_kind','revision','device_source','binding_source','ip_source',
+ 'application_source','encoding_source','schedule_source','acceptance_source','capacity_source','endpoint_source']
+
+def semantics():
+    rules=[dict(parameter='local_timing_evidence',allowed=[],source='docs/GENERATION_RULE_MANAGER.md',
+        source_revision='KNXnet/IP uses its own endpoint/service/IP path evidence; undeclared I2C/local-bus transaction dictionaries are not KNXnet/IP parameters')]
+    def r(key,when=None,source=HEADER,**kw):rules.append(dict(parameter='kip_'+key,when={'kip_'+k:v for k,v in(when or {}).items()},source=source,source_revision=SOURCES[source],**kw))
+    r('transport',{'mode':'ROUTING'},allowed=['UDP'],source=ROUTING)
+    r('transport',{'mode':'DISCOVERY'},allowed=['UDP'],source=HPAI)
+    r('port',{'mode':'ROUTING'},allowed=[3671],source=ROUTING)
+    r('port',{'mode':'DISCOVERY'},allowed=[3671],source=ASSOC)
+    r('multicast_address',{'mode':'ROUTING'},required=True,source=ROUTING,ip_address_version=4,ip_address_min='224.0.23.12',ip_address_max='239.255.255.255')
+    for key in ('local_address','remote_address','hpai_address'):r(key,ip_address_version=4,source=HPAI)
+    r('hpai_kind',{'transport':'TCP'},allowed=['TCP_ROUTE_BACK'],source=HPAI)
+    r('hpai_protocol',{'transport':'UDP'},allowed=[1],source=HPAI)
+    r('hpai_protocol',{'transport':'TCP'},allowed=[2],source=HPAI)
+    for kind in ('UDP_NAT_ROUTE_BACK','TCP_ROUTE_BACK'):
+        r('hpai_address',{'hpai_kind':kind},allowed=['0.0.0.0'],source=HPAI)
+        r('hpai_port',{'hpai_kind':kind},allowed=[0],source=HPAI)
+    r('hpai_kind',{'transport':'UDP'},allowed=['EXPLICIT_IPV4','UDP_NAT_ROUTE_BACK'],source=HPAI)
+    r('hpai_port',{'hpai_address':'0.0.0.0'},allowed=[0],source=HPAI)
+    r('version',{'message_kind':'OBJECT_SERVER'},allowed=[32],source=HEADER)
+    r('version',when_not={'kip_message_kind':'OBJECT_SERVER'},when_present=['kip_message_kind'],allowed=[16])
+    r('inner_packet_octets',equal_expression={'sum':[6,'kip_service_body_octets']})
+    for kind in ('CEMI_DATA','IP_ACK','ROUTING_BUSY','ROUTING_LOST','CORE_CONTROL','FEATURE','OBJECT_SERVER'):
+        r('packet_octets',{'security':'PLAIN','message_kind':kind},equal_parameter='kip_inner_packet_octets')
+        r('outer_service_type',{'security':'PLAIN','message_kind':kind},equal_parameter='kip_service_type')
+        r('packet_octets',{'security':'IP_SECURE','message_kind':kind},equal_expression={'sum':[38,'kip_inner_packet_octets']},source=SECURE)
+        r('outer_service_type',{'security':'IP_SECURE','message_kind':kind},allowed=[2384],source=SECURE)
+    r('service_type',{'mode':'TUNNELLING','message_kind':'CEMI_DATA'},allowed=[1056],source=TUNNEL)
+    r('service_type',{'mode':'TUNNELLING','message_kind':'IP_ACK'},allowed=[1057],source=TUNNEL)
+    r('service_type',{'mode':'ROUTING','message_kind':'CEMI_DATA'},allowed=[1328],source=ROUTING)
+    r('service_type',{'mode':'ROUTING','message_kind':'ROUTING_BUSY'},allowed=[1330],source=BUSY)
+    r('service_type',{'mode':'ROUTING','message_kind':'ROUTING_LOST'},allowed=[1329],source=LOST)
+    r('service_body_octets',{'mode':'TUNNELLING','message_kind':'CEMI_DATA'},equal_expression={'sum':[4,'kip_cemi_octets']},source=REQUEST)
+    r('service_body_octets',{'mode':'ROUTING','message_kind':'CEMI_DATA'},equal_parameter='kip_cemi_octets',source=ROUTING)
+    r('service_body_octets',{'message_kind':'IP_ACK'},allowed=[4],source=ACK)
+    r('service_body_octets',{'message_kind':'ROUTING_BUSY'},allowed=[6],source=BUSY)
+    r('service_body_octets',{'message_kind':'ROUTING_LOST'},allowed=[4],source=LOST)
+    for fmt in ('L_DATA_STANDARD','L_DATA_EXTENDED'):
+        r('cemi_octets',{'cemi_format':fmt},equal_expression={'sum':[9,'kip_tpdu_octets','kip_additional_info_octets']},source=EXT)
+        r('npdu_length',{'cemi_format':fmt},equal_expression={'subtract':['kip_tpdu_octets',1]},source=EXT)
+        r('cemi_message_code',{'cemi_format':fmt},allowed=[17,41,46],source=CEMI)
+    r('tpdu_octets',{'cemi_format':'L_DATA_STANDARD'},maximum=16,source=CEMI)
+    r('additional_info_octets',{'cemi_format':'L_DATA_STANDARD'},allowed=[0],source=CEMI)
+    r('additional_info_source',when_positive=['kip_additional_info_octets'],required=True,source=EXT)
+    for layer,code in [('LINK',2),('RAW',4),('BUS_MONITOR',128)]:r('tunnel_layer_code',{'tunnel_layer':layer},allowed=[code],source=TUNNEL)
+    r('individual_address',equal_expression={'sum':[{'product':['kip_area',4096]},{'product':['kip_line',256]},'kip_device']},source=IA)
+    r('group_address',{'group_style':'THREE_LEVEL'},equal_expression={'sum':[{'product':['kip_main_group',2048]},{'product':['kip_middle_group',256]},'kip_sub_group']},source=GA)
+    r('group_address',{'group_style':'TWO_LEVEL'},equal_expression={'sum':[{'product':['kip_main_group',2048]},'kip_sub_group']},source=GA)
+    r('sub_group',{'group_style':'THREE_LEVEL'},maximum=255,source=GA)
+    r('middle_group',{'group_style':'TWO_LEVEL'},allowed=[],source=GA)
+    for key in ('channel_id','sequence','tunnel_layer','tunnel_layer_code','connection_header_octets','ack_ms','tunnel_attempts'):
+        r(key,{'mode':'ROUTING'},allowed=[],source=ROUTING)
+    r('message_kind',{'mode':'ROUTING'},forbidden=['IP_ACK'],source=ACK)
+    r('message_kind',{'transport':'TCP'},forbidden=['IP_ACK'],source=BASE)
+    r('ack_ms',{'transport':'TCP'},allowed=[],source=BASE)
+    for mode in ('ROUTING','DISCOVERY'):
+        for key in ('connect_ms','confirmation_ms','heartbeat_interval_ms','heartbeat_response_ms','heartbeat_attempts','heartbeat_repeat_ms'):
+            r(key,{'mode':mode},allowed=[],source=CLIENT)
+    for key in ('tcp_connect_ms','secure_setup_ms','secure_keepalive_ms'):
+        r(key,{'transport':'UDP'},allowed=[],source=TCP)
+    for key in ('routing_datagrams_s','routing_loopback_queue','ip_multicast_ttl','loopback','group_key_ref','routing_latency_ms','sync_query_ms','sync_notify_ms'):
+        r(key,when_not={'kip_mode':'ROUTING'},when_present=['kip_mode'],allowed=[],source=ROUTING)
+    for key in ('user_key_ref','device_auth_ref','user_id','exchange_key_octets','password_iterations'):
+        for mode in ('ROUTING','DISCOVERY'):r(key,{'mode':mode},allowed=[],source=SECURE)
+    for key in ('routing_busy_wait_ms','routing_busy_control','routing_busy_counter','routing_random_ms','routing_pause_ms','routing_slow_ms','routing_lost_count'):
+        r(key,{'mode':'TUNNELLING'},allowed=[],source=ROUTING)
+    r('routing_busy_wait_ms',{'direction':'TRANSMITTER','message_kind':'ROUTING_BUSY'},minimum=20,maximum=100,source=BUSY)
+    r('routing_random_ms',maximum_expression={'product':['kip_routing_busy_counter',50]},source=BUSY)
+    r('routing_pause_ms',equal_expression={'sum':['kip_routing_busy_wait_ms','kip_routing_random_ms']},source=BUSY)
+    r('routing_slow_ms',equal_expression={'product':['kip_routing_busy_counter',100]},source=BUSY)
+    r('serial_hex',pattern=r'[0-9a-fA-F]{12}',source=SECURE)
+    for key in ('security_source','secure_key_octets'):r(key,{'security':'IP_SECURE'},required=True,source=SECURE)
+    for key in ('group_key_ref','routing_latency_ms'):r(key,{'security':'IP_SECURE','mode':'ROUTING'},required=True,source=SECROUTE)
+    r('secure_session_id',{'security':'IP_SECURE','mode':'ROUTING'},allowed=[0],source=SECURE)
+    r('secure_tag',{'security':'IP_SECURE','mode':'TUNNELLING'},allowed=[0],source=SECURE)
+    for key in ('user_key_ref','device_auth_ref','user_id'):r(key,{'security':'IP_SECURE','mode':'TUNNELLING'},required=True,source=TCP)
+    for key in ('secure_session_id','secure_sequence','secure_tag','secure_mac_octets','secure_key_octets','exchange_key_octets',
+                'serial_hex','user_key_ref','group_key_ref','device_auth_ref','user_id','routing_latency_ms','secure_setup_ms','secure_keepalive_ms',
+                'security_source','security_confirmed','password_iterations','sync_query_ms','sync_notify_ms'):
+        r(key,{'security':'PLAIN'},allowed=[],source=SECURE)
+    for key in ('build_commit','build_source','unmodified_build'):r(key,{'profile':'CALIMERO_V2_6_FACTORY'},required=True,source=BASE)
+    r('build_commit',{'profile':'CALIMERO_V2_6_FACTORY'},allowed=[SHA],source=BASE)
+    r('unmodified_build',{'profile':'CALIMERO_V2_6_FACTORY'},allowed=[True],source=BASE)
+    for key,value in [('connect_ms',10000),('confirmation_ms',3000),('heartbeat_interval_ms',60000),('heartbeat_response_ms',10000),
+                     ('heartbeat_attempts',4),('heartbeat_repeat_ms',1000),('tcp_connect_ms',5000),('secure_setup_ms',10000),
+                     ('secure_keepalive_ms',30000),('password_iterations',65536),('sync_query_ms',10000),('sync_notify_ms',100),
+                     ('routing_datagrams_s',50),('routing_loopback_queue',20)]:r(key,{'profile':'CALIMERO_V2_6_FACTORY'},allowed=[value],source=BASE if key=='connect_ms'else SECURE if key=='password_iterations'else CLIENT if key.startswith('heartbeat')or key=='confirmation_ms'else TCP if key.startswith('secure')or key=='tcp_connect_ms'else SECROUTE if key.startswith('sync')else ROUTING)
+    r('ack_ms',{'profile':'CALIMERO_V2_6_FACTORY','mode':'TUNNELLING','transport':'UDP'},allowed=[1000],source=TUNNEL)
+    r('tunnel_attempts',{'profile':'CALIMERO_V2_6_FACTORY','mode':'TUNNELLING','transport':'UDP'},allowed=[2],source=TUNNEL)
+    r('tunnel_attempts',{'profile':'CALIMERO_V2_6_FACTORY','mode':'TUNNELLING','transport':'TCP'},allowed=[1],source=TUNNEL)
+    return {'rate_model':{'type':'EXPLICIT_KNX_IP_TRANSPORT_AND_LOWER_PATH','fields':[]},'required_parameters':['kip_'+k for k in REQUIRED],
+        'native_parameter_prefixes':['kip_'],'parameter_constraints':rules,'mechanisms':{'framing':['SERVICE_CEMI_AND_SECURE_WRAPPER_SEPARATE'],
+        'addressing':['IP_ENDPOINTS_AND_COMMISSIONED_KNX_IA_GROUPS'],'flow_control':['UDP_TUNNEL_ACK_OR_TCP_OR_ROUTING_BUSY_SEPARATE'],
+        'security':['ACTUAL_KNX_IP_SECURE_AND_INDEPENDENT_DATA_SECURE'],
+        'acceptance':['IP_ACK_CEMI_CON_AND_FUNCTIONAL_E2E_DISTINCT']}}
+
+def fields():
+    result=[];required=set(semantics()['required_parameters'])
+    for spec in DECLARATIONS:
+        item={k:v for k,v in spec.items()if v is not None};key=item['key'].removeprefix('kip_')
+        item.update(label=key.replace('_',' '),category='communication',scope='network',required=item['key']in required,
+            editable=True,integer=spec['type']=='number',parameter_origin='DEVICE_CONFIGURATION',default_status='UNKNOWN',validation_relevant=True,simulation_relevant=False)
+        if key in('multicast_address','hpai_address','local_address','remote_address'):item['format']='IP_ADDRESS'
+        proposals=[];factory={'kip_profile':'CALIMERO_V2_6_FACTORY','kip_build_commit':SHA,'kip_unmodified_build':True}
+        if key=='port':item.update(default=3671,default_status='PROPOSED_STANDARD')
+        if key=='header_octets':item.update(default=6,default_status='PROPOSED_STANDARD')
+        if key=='multicast_address':proposals=[{'when':{'kip_mode':'ROUTING'},'value':'224.0.23.12'}]
+        if key=='version':proposals=[{'when':{'kip_message_kind':kind},'value':32 if kind=='OBJECT_SERVER'else 16}for kind in
+            ('CEMI_DATA','IP_ACK','ROUTING_BUSY','ROUTING_LOST','CORE_CONTROL','FEATURE','OBJECT_SERVER','SECURE_HANDSHAKE','GROUP_SYNC')]
+        if key=='transport':proposals=[{'when':{'kip_mode':mode},'value':'UDP'}for mode in('ROUTING','DISCOVERY')]
+        if key=='hpai_protocol':proposals=[{'when':{'kip_transport':proto},'value':code}for proto,code in [('UDP',1),('TCP',2)]]
+        if key=='hpai_octets':proposals=[{'when':{'kip_transport':proto},'value':8}for proto in('UDP','TCP')]
+        if key=='hpai_kind':proposals=[{'when':{'kip_transport':'TCP'},'value':'TCP_ROUTE_BACK'}]
+        if key=='connection_header_octets':proposals=[{'when':{'kip_mode':mode},'value':4}for mode in('TUNNELLING','DEVICE_MANAGEMENT')]
+        if key=='tunnel_layer_code':proposals=[{'when':{'kip_tunnel_layer':layer},'value':code}for layer,code in [('LINK',2),('RAW',4),('BUS_MONITOR',128)]]
+        if key=='routing_busy_control':proposals=[{'when':{'kip_message_kind':'ROUTING_BUSY','kip_direction':'TRANSMITTER'},'value':0}]
+        if key=='ip_multicast_ttl':proposals=[{'when':{**factory,'kip_mode':'ROUTING'},'value':64}]
+        if key=='knx_hop_count':proposals=[{'when':{**factory,'kip_cemi_format':fmt},'value':6}for fmt in('L_DATA_STANDARD','L_DATA_EXTENDED')]
+        tunnelling={'connect_ms':10000,'confirmation_ms':3000,'heartbeat_interval_ms':60000,'heartbeat_response_ms':10000,
+            'heartbeat_attempts':4,'heartbeat_repeat_ms':1000}
+        if key in tunnelling:proposals=[{'when':{**factory,'kip_mode':mode},'value':tunnelling[key]}for mode in('TUNNELLING','DEVICE_MANAGEMENT')]
+        if key=='ack_ms':proposals=[{'when':{**factory,'kip_mode':'TUNNELLING','kip_transport':'UDP'},'value':1000}]
+        if key=='tunnel_attempts':proposals=[{'when':{**factory,'kip_mode':'TUNNELLING','kip_transport':proto},'value':value}for proto,value in [('UDP',2),('TCP',1)]]
+        if key in ('routing_datagrams_s','routing_loopback_queue'):proposals=[{'when':{**factory,'kip_mode':'ROUTING'},'value':50 if key=='routing_datagrams_s'else 20}]
+        if key=='tcp_connect_ms':proposals=[{'when':{**factory,'kip_transport':'TCP'},'value':5000}]
+        if key in ('secure_mac_octets','secure_key_octets'):proposals=[{'when':{'kip_security':'IP_SECURE'},'value':16}]
+        if key=='exchange_key_octets':proposals=[{'when':{'kip_security':'IP_SECURE','kip_mode':'TUNNELLING'},'value':32}]
+        if key=='password_iterations':proposals=[{'when':{**factory,'kip_security':'IP_SECURE','kip_mode':'TUNNELLING'},'value':65536}]
+        if key in('secure_setup_ms','secure_keepalive_ms'):proposals=[{'when':{**factory,'kip_security':'IP_SECURE','kip_transport':'TCP'},'value':10000 if key=='secure_setup_ms'else 30000}]
+        if key in('sync_query_ms','sync_notify_ms'):proposals=[{'when':{**factory,'kip_security':'IP_SECURE','kip_mode':'ROUTING'},'value':10000 if key=='sync_query_ms'else 100}]
+        if proposals:item.update(conditional_defaults=[{**v,'source':item['source'],'source_revision':item['source_revision']}for v in proposals],default_status='PROPOSED_CONDITIONAL')
+        result.append(item)
+    return result

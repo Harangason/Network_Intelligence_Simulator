@@ -1,0 +1,418 @@
+{
+  "goal_id": "parameter-review-loop-20261008",
+  "kind": "repair",
+  "goal_type": "repair",
+  "repository": "I:\\PycharmProjects\\My_first_Network_Simulator",
+  "project_scope": "network-project-20261008081418964-a20cd840",
+  "requested_change": "Saved simulation values and confirmed network rates must not require repeated confirmation for missing hardware evidence; preserve actual invalid/missing parameter findings and project persistence",
+  "modify_code": true,
+  "allow_repair": true,
+  "unresolved_decisions": [],
+  "revision_before": {
+    "frontend/src/features/simulation/ui/simulation-wizard.tsx": "5620137580b7c2819d12d767f10c002944274ac5224a35df3d7b4e735ae8df5b",
+    "frontend/src/features/communication/lib/technology-parameters.ts": "d1fd8a69c30c64b7ec0708a20af4632fd317fe5e730d35b20444dc3de86aca18",
+    "frontend/src/features/communication/lib/technology-parameters.test.mjs": "6252445e48154699d2ce960c7232a362940b902adffb98b402e16f3add6cee98",
+    "frontend/e2e/wizard.spec.ts": "f73f569125dd3b50594121986065e888ee69ab69dca05b90a7122efce60813b8",
+    "frontend/e2e/technology-parameter-review.spec.ts": "c893caecd86cc99d441d4405cf907597b18a6031a52d318a03da4507358c0633",
+    "backend/nis/communication/technologies/ethernet/profile.json": "f969f351dcffed8eb2444db275e596f1e0d6575bc1ebaa21207f0d5f9e814b55",
+    "backend/nis/communication/technologies/ethernet/scheduling.py": "1693b5ea5d2856e25b4b7f61daa93c81eec69af4aaf31cd1dcee25be5d4b539a",
+    "backend/nis/agent/tools/validation.py": "b77db61bc0183776431b948a3bce4932aacf050c56f8e9e62bb7f5ad159d0143",
+    "backend/tests/test_proposal_capacity.py": "993edc1e05ba7afc5a9e7ed0d6a0d228cceadaf03316a0636d9296ec44958c47",
+    "backend/tests/test_simulation_parameter_defaults.py": "683f471c15529f75e85fc03d43d3e255b65496fe216885301c75d85f714f30a6",
+    "frontend/src/features/communication/lib/technology-projection.json": "3ab4d5f6b34b486966cbc0c8dd38058163b439db23cfded1357f130efdd66c66",
+    "frontend/src/features/agent/lib/inventory-vocabulary.json": "989ce86a3a3ae8876e1c94e29fea4c44e0984cfd6849f3b084dd382e1006ad89",
+    "frontend/src/features/agent/ui/wizard-preflight-review.tsx": "9ece7e8a10221939b11ef906a853e787a5c21ab11cc38ebaff3e1577698a2670"
+  },
+  "repair": {
+    "owner": "PROJECT_PRODUCT",
+    "root_cause": "Frontend selects INFO CAPACITY_DEVICE_EVIDENCE_MISSING hardware_rate_evidence as a mandatory rate review; NetworkRateReview labels persisted network confirmations as catalog proposals. Backend and project file already contain the confirmations. Ethernet starter lacks eth_link_up=True; schema fallback proposes false. Parameter review checks frame serialization only and fails to identify this known schedule prerequisite, while preflight rejects the saved inactive link. Technology selection only changes React state and leaves the old technology in the URL, so reload returns to another bus. Native profile edit also requires rebuilding the generated frontend technology projection source hash using the existing generator. Final production return also exposes persisted obsolete blocking_findings after the corrected parameters are saved. The existing blocked review offers no CONTINUE action except after native rate confirmation; Reload only refreshes parameters and cannot re-run preflight. Add an explicit existing onContinue recheck action, preserving server gates. Real canonical simulation then rejects Ethernet starter MAC_CLIENT/0 because the existing selected IPv4/UDP serializer encodes upper-layer payload plus exactly 20+8 bytes. Register this already implemented serializer geometry as the native simulation starter, preserving explicit conflicting choices and strict rejection.",
+    "first_failing_layer": "Frontend finding selection and presentation",
+    "reproduction": "Production project has seven confirmed Ethernet network rate pairs in API and user_defined_values.json, and only usable simulation INFO findings; UI still shows seven red rate reconfirmations.",
+    "evidence": [
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\parameter-review-loop-20261008\\diagnosis.json",
+        "sha256": "15ff56f3953fd3d4b89958629f550ffcc8743b8042fe8a68702fdafadd733aec"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\parameter-review-loop-20261008\\schedule-diagnosis.json",
+        "sha256": "4560a9e9a1628e2faac8db751351d8e9791f2bc0af817480250b43596c36873d"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\parameter-review-loop-20261008\\stale-wizard-findings.json",
+        "sha256": "0c5c22ff1bc50d6742f62c5fb4cc5fed337cc7f3b1377bbc14a1641540cb26bf"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\parameter-review-loop-20261008\\serializer-live-failure.json",
+        "sha256": "e17336039c369d9ab85073595be1d914f2a112aa1dc8ce5c5d0e174ed0dfe053"
+      }
+    ],
+    "affected_files": [
+      "frontend/src/features/simulation/ui/simulation-wizard.tsx",
+      "frontend/src/features/communication/lib/technology-parameters.ts",
+      "frontend/src/features/communication/lib/technology-parameters.test.mjs",
+      "frontend/e2e/wizard.spec.ts",
+      "frontend/e2e/technology-parameter-review.spec.ts",
+      "backend/nis/communication/technologies/ethernet/profile.json",
+      "backend/nis/communication/technologies/ethernet/scheduling.py",
+      "backend/nis/agent/tools/validation.py",
+      "backend/tests/test_proposal_capacity.py",
+      "backend/tests/test_simulation_parameter_defaults.py",
+      "frontend/src/features/communication/lib/technology-projection.json",
+      "frontend/src/features/agent/ui/wizard-preflight-review.tsx",
+      "backend/tests/test_project_ip_transport.py"
+    ],
+    "acceptance_criteria": [
+      "No mandatory rate review or red field for device-evidence-only findings",
+      "Real native rate deficiencies retain review",
+      "Saved rates/file/provenance persist across saves/reloads/wizard returns",
+      "Deploy exact tested image",
+      "Coherent Ethernet startup uses active simulated link without hardware evidence",
+      "Explicit saved inactive links remain preserved and highlighted against the actual link field",
+      "Technology selection persists in URL and reload retains the same bus without changing project/proposal context",
+      "Explicit recheck of persisted blockers uses CONTINUE for same saved run and revision; unchanged invalid native parameters remain BLOCKED, corrected project parameters may advance",
+      "Saved native Ethernet starter executes the real IPv4/UDP packet serializer with 28 exact header bytes without fabricated hardware evidence; explicit conflicting MAC-client declaration remains rejected"
+    ],
+    "targeted_tests": [
+      "Existing technology-parameters regression suite",
+      "Existing repeatParameterReturn browser flow"
+    ],
+    "weaken_assertions_to_pass": false
+  },
+  "required_outcomes": [
+    "consistent_parameter_review",
+    "preserved_project_persistence",
+    "production_delivery"
+  ],
+  "validation_requirements": [
+    "targeted_regression",
+    "complete_release",
+    "production_verification"
+  ],
+  "implementation_plan": [
+    "Select mandatory native rate reviews only from simulation deficiencies",
+    "Separate device notices and simulation finding counts/field highlights",
+    "Extend existing tests through repeated persistence and wizard return",
+    "Full release and production verification"
+  ],
+  "files_changed": [
+    "frontend/src/features/simulation/ui/simulation-wizard.tsx",
+    "frontend/src/features/communication/lib/technology-parameters.ts",
+    "frontend/src/features/communication/lib/technology-parameters.test.mjs",
+    "frontend/e2e/wizard.spec.ts",
+    "frontend/e2e/technology-parameter-review.spec.ts",
+    "backend/nis/communication/technologies/ethernet/profile.json",
+    "backend/nis/communication/technologies/ethernet/scheduling.py",
+    "backend/nis/agent/tools/validation.py",
+    "backend/tests/test_proposal_capacity.py",
+    "backend/tests/test_simulation_parameter_defaults.py",
+    "frontend/src/features/communication/lib/technology-projection.json",
+    "frontend/src/features/agent/ui/wizard-preflight-review.tsx",
+    "backend/tests/test_project_ip_transport.py"
+  ],
+  "completion_status": "COMPLETED",
+  "delivery": {
+    "decision": "YES",
+    "authorization": "Standing production authorization in AGENTS.md",
+    "target": "canonical NetworkIS stack localhost:13500",
+    "tested_version": "sha256:a89ab08a892cd99f743aebf27d344ffc4dfdfa058c5fb3f159617837b6c39207",
+    "running_version": "sha256:a89ab08a892cd99f743aebf27d344ffc4dfdfa058c5fb3f159617837b6c39207",
+    "checks": {
+      "release": {
+        "status": "PASSED",
+        "evidence": [
+          {
+            "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\serializer-final-resume-20261008\\61f79865e325\\receipt.json",
+            "sha256": "d6f008f3637995562d52b8edac96b14d10e032401d6769086ab7a6a8c880fa60"
+          }
+        ]
+      },
+      "deployment": {
+        "status": "PASSED",
+        "evidence": [
+          {
+            "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\parameter-review-loop-20261008\\serializer-final-production-delivery.log",
+            "sha256": "d2c24e782b7a62e009b3867bd3efaa050d7e0fb97be66e0ade40fed282010db8"
+          },
+          {
+            "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\parameter-review-loop-20261008\\final-production-verification.json",
+            "sha256": "41b07e14fc8bd42f61455011d1fc60dee36f0fa2053a64eb1fc574b508cf3ae5"
+          }
+        ]
+      },
+      "health": {
+        "status": "PASSED",
+        "evidence": [
+          {
+            "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\parameter-review-loop-20261008\\final-production-verification.json",
+            "sha256": "41b07e14fc8bd42f61455011d1fc60dee36f0fa2053a64eb1fc574b508cf3ae5"
+          }
+        ]
+      },
+      "functional": {
+        "status": "PASSED",
+        "evidence": [
+          {
+            "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\parameter-review-loop-20261008\\final-production-verification.json",
+            "sha256": "41b07e14fc8bd42f61455011d1fc60dee36f0fa2053a64eb1fc574b508cf3ae5"
+          },
+          {
+            "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\parameter-review-loop-20261008\\final-live-parameters.json",
+            "sha256": "9fedbeb4b74b5a766cbf7021a49a978067140c9a691b2f1dfd08df26b89d9d69"
+          },
+          {
+            "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\parameter-review-loop-20261008\\final-live-results.json",
+            "sha256": "4356ec13e4a57efe43d284416065a5bb0ecf069f8764f148287317486ba49e01"
+          }
+        ]
+      }
+    }
+  },
+  "before": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\parameter-review-loop-20261008\\before\\frontend\\src\\features\\simulation\\ui\\simulation-wizard.tsx",
+      "sha256": "c4b7216be667b6cdfa9f0a4239a9a2ab603f29d0c1ca41da96259b9af47318b2"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\parameter-review-loop-20261008\\before\\frontend\\src\\features\\communication\\lib\\technology-parameters.ts",
+      "sha256": "8ae7adc1e0670d1e04c0c1ffeabf95e0d61113768e376789dc7611a2a0f0a74a"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\parameter-review-loop-20261008\\before\\frontend\\src\\features\\communication\\lib\\technology-parameters.test.mjs",
+      "sha256": "9531debe82b127467ecc64e92868e3c9b9290c4b246e3c52a61eff7dd9fa9df5"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\parameter-review-loop-20261008\\before\\frontend\\e2e\\wizard.spec.ts",
+      "sha256": "df830a3256f74140bf03231c5da7f68e872a3b51b3f3c6256307d5bb408e43c6"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\parameter-review-loop-20261008\\before\\frontend\\e2e\\technology-parameter-review.spec.ts",
+      "sha256": "c67b75dd4369da82b09c9067ba8b897dbf989e555260c04645bc2171240fd643"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\parameter-review-loop-20261008\\before\\backend\\nis\\communication\\technologies\\ethernet\\profile.json",
+      "sha256": "84417217d4da39d7f8276f48aa30b918ecac630490e4ba8a0994f81f01216aa4"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\parameter-review-loop-20261008\\before\\backend\\nis\\communication\\technologies\\ethernet\\scheduling.py",
+      "sha256": "568ddcce1a84ab0ab5decf4e7da96469ad70c3ae08ac8c2a704b89357b6fed37"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\parameter-review-loop-20261008\\before\\backend\\nis\\agent\\tools\\validation.py",
+      "sha256": "ea2e9724fa812a301b062c5eb0dd1a8241b9355794381d5c8135bca268e1dbdb"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\parameter-review-loop-20261008\\before\\backend\\tests\\test_proposal_capacity.py",
+      "sha256": "f4d728211ecf3b620258d0072113a7c3ac860eddcf217e4e28a0c45b5de81740"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\parameter-review-loop-20261008\\before\\backend\\tests\\test_simulation_parameter_defaults.py",
+      "sha256": "f60652f2378ee95d27cb57879cf317248188d948dc855e62246d38de4b8201c2"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\parameter-review-loop-20261008\\before\\frontend\\src\\features\\communication\\lib\\technology-projection.json",
+      "sha256": "4c6626e966a1116a7e2a5715e0b4a38fa5226d73d51e6d9a07a1b8296431fb62"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\parameter-review-loop-20261008\\before\\frontend\\src\\features\\agent\\ui\\wizard-preflight-review.tsx",
+      "sha256": "8cb2f909380edfb0123f974a1e4794759f57a125d3ac84a52ea30f6e4a6074b1"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\parameter-review-loop-20261008\\before\\backend\\tests\\test_project_ip_transport.py",
+      "sha256": "063cd017eea23f4b435c165feedd2d7adf2034968e3ab3b7d9d56ca0a0f8e31b"
+    }
+  ],
+  "after": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\parameter-review-loop-20261008\\after\\frontend\\src\\features\\simulation\\ui\\simulation-wizard.tsx",
+      "sha256": "5620137580b7c2819d12d767f10c002944274ac5224a35df3d7b4e735ae8df5b"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\parameter-review-loop-20261008\\after\\frontend\\src\\features\\communication\\lib\\technology-parameters.ts",
+      "sha256": "d1fd8a69c30c64b7ec0708a20af4632fd317fe5e730d35b20444dc3de86aca18"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\parameter-review-loop-20261008\\after\\frontend\\src\\features\\communication\\lib\\technology-parameters.test.mjs",
+      "sha256": "6252445e48154699d2ce960c7232a362940b902adffb98b402e16f3add6cee98"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\parameter-review-loop-20261008\\after\\frontend\\e2e\\wizard.spec.ts",
+      "sha256": "f73f569125dd3b50594121986065e888ee69ab69dca05b90a7122efce60813b8"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\parameter-review-loop-20261008\\after\\frontend\\e2e\\technology-parameter-review.spec.ts",
+      "sha256": "c893caecd86cc99d441d4405cf907597b18a6031a52d318a03da4507358c0633"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\parameter-review-loop-20261008\\after\\backend\\nis\\communication\\technologies\\ethernet\\profile.json",
+      "sha256": "f969f351dcffed8eb2444db275e596f1e0d6575bc1ebaa21207f0d5f9e814b55"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\parameter-review-loop-20261008\\after\\backend\\nis\\communication\\technologies\\ethernet\\scheduling.py",
+      "sha256": "1693b5ea5d2856e25b4b7f61daa93c81eec69af4aaf31cd1dcee25be5d4b539a"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\parameter-review-loop-20261008\\after\\backend\\nis\\agent\\tools\\validation.py",
+      "sha256": "b77db61bc0183776431b948a3bce4932aacf050c56f8e9e62bb7f5ad159d0143"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\parameter-review-loop-20261008\\after\\backend\\tests\\test_proposal_capacity.py",
+      "sha256": "993edc1e05ba7afc5a9e7ed0d6a0d228cceadaf03316a0636d9296ec44958c47"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\parameter-review-loop-20261008\\after\\backend\\tests\\test_simulation_parameter_defaults.py",
+      "sha256": "683f471c15529f75e85fc03d43d3e255b65496fe216885301c75d85f714f30a6"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\parameter-review-loop-20261008\\after\\frontend\\src\\features\\communication\\lib\\technology-projection.json",
+      "sha256": "3ab4d5f6b34b486966cbc0c8dd38058163b439db23cfded1357f130efdd66c66"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\parameter-review-loop-20261008\\after\\frontend\\src\\features\\agent\\ui\\wizard-preflight-review.tsx",
+      "sha256": "9ece7e8a10221939b11ef906a853e787a5c21ab11cc38ebaff3e1577698a2670"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\parameter-review-loop-20261008\\after\\backend\\tests\\test_project_ip_transport.py",
+      "sha256": "6e9603ac92b93e5bae57c97408c2fe3d2797390dcb89ab07e1acf00bdda7c8ec"
+    }
+  ],
+  "diff": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\parameter-review-loop-20261008\\change.diff",
+      "sha256": "a5d84c79fd49c8f1b71b858a2294f79187e153edf9d0d7d286bc9ecd1baadffd"
+    }
+  ],
+  "remaining_findings": [],
+  "outcomes": {
+    "consistent_parameter_review": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\parameter-review-loop-20261008\\final-live-parameters.json",
+          "sha256": "9fedbeb4b74b5a766cbf7021a49a978067140c9a691b2f1dfd08df26b89d9d69"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\parameter-review-loop-20261008\\final-production-verification.json",
+          "sha256": "41b07e14fc8bd42f61455011d1fc60dee36f0fa2053a64eb1fc574b508cf3ae5"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\serializer-final-resume-20261008\\61f79865e325\\receipt.json",
+          "sha256": "d6f008f3637995562d52b8edac96b14d10e032401d6769086ab7a6a8c880fa60"
+        }
+      ]
+    },
+    "preserved_project_persistence": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\parameter-review-loop-20261008\\final-production-verification.json",
+          "sha256": "41b07e14fc8bd42f61455011d1fc60dee36f0fa2053a64eb1fc574b508cf3ae5"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\parameter-review-loop-20261008\\human-finished-persistence.json",
+          "sha256": "3d419329e5842f2e1b519416a428301021d8ef7ede63bc955d50af4f5decca59"
+        }
+      ]
+    },
+    "production_delivery": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\serializer-final-resume-20261008\\61f79865e325\\receipt.json",
+          "sha256": "d6f008f3637995562d52b8edac96b14d10e032401d6769086ab7a6a8c880fa60"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\parameter-review-loop-20261008\\serializer-final-production-delivery.log",
+          "sha256": "d2c24e782b7a62e009b3867bd3efaa050d7e0fb97be66e0ade40fed282010db8"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\parameter-review-loop-20261008\\final-production-verification.json",
+          "sha256": "41b07e14fc8bd42f61455011d1fc60dee36f0fa2053a64eb1fc574b508cf3ae5"
+        }
+      ]
+    }
+  },
+  "validations": {
+    "targeted_regression": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\parameter-review-loop-20261008\\serializer-targeted-final.log",
+          "sha256": "29897a36bf9a345c3f64d046263a86c73cd7d22211866ac05c70d42134b01291"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\parameter-review-loop-20261008\\blocked-recheck-targeted.json",
+          "sha256": "da49a4b2206550be14737d044f69f57573b945ade0d6a0466b59824a335d448f"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\parameter-review-loop-20261008\\targeted-checks.json",
+          "sha256": "55607a4e3c47286b4a983457c53b35232e6996bc193edafd8793ef25e18dcdd1"
+        }
+      ]
+    },
+    "complete_release": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\serializer-final-resume-20261008\\61f79865e325\\receipt.json",
+          "sha256": "d6f008f3637995562d52b8edac96b14d10e032401d6769086ab7a6a8c880fa60"
+        }
+      ]
+    },
+    "production_verification": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\parameter-review-loop-20261008\\final-production-verification.json",
+          "sha256": "41b07e14fc8bd42f61455011d1fc60dee36f0fa2053a64eb1fc574b508cf3ae5"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\parameter-review-loop-20261008\\final-live-parameters.json",
+          "sha256": "9fedbeb4b74b5a766cbf7021a49a978067140c9a691b2f1dfd08df26b89d9d69"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\parameter-review-loop-20261008\\final-live-results.json",
+          "sha256": "4356ec13e4a57efe43d284416065a5bb0ecf069f8764f148287317486ba49e01"
+        }
+      ]
+    }
+  },
+  "tests": {
+    "release_receipt": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\serializer-final-resume-20261008\\61f79865e325\\receipt.json",
+    "frontend_passed": 594,
+    "backend_passed": 21729,
+    "backend_subtests_passed": 56,
+    "backend_skipped": 2,
+    "browser_e2e_passed": 96,
+    "small_http": "PASSED",
+    "large_http": "PASSED"
+  },
+  "validation": "Complete required release PASS; exact tested image deployed and functional persistence verified.",
+  "preflight": "Original canonical wizard completed; original real simulation PASS retained. Current project topology changed by two added networks and that result is correctly OUTDATED; no current-topology simulation success claimed.",
+  "post_completion_project_change": {
+    "added_networks": [
+      {
+        "assignment_target": "family:energy",
+        "cluster_id": "family:energy",
+        "id": "assigned-family:energy-automotive_ethernet-1",
+        "name": "ETH_Energieversorgung_01",
+        "name_context": "Energieversorgung",
+        "name_source": "generated",
+        "protocol": "ETHERNET",
+        "technology": "automotive_ethernet"
+      },
+      {
+        "assignment_target": "family:chassis",
+        "cluster_id": "family:chassis",
+        "id": "assigned-family:chassis-automotive_ethernet-1",
+        "name": "ETH_Fahrwerk_Fahrdynamik_01",
+        "name_context": "Fahrwerk / Fahrdynamik",
+        "name_source": "generated",
+        "protocol": "ETHERNET",
+        "technology": "automotive_ethernet"
+      }
+    ],
+    "historical_result_current": false,
+    "original_parameter_values_preserved": true,
+    "new_topology_simulation": "Not performed; separate scope question pending, latest restart request completed."
+  }
+}

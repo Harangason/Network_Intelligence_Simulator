@@ -1,0 +1,108 @@
+"""Classic POWERLINK cycle/grants and device-specific limits are not generic Ethernet."""
+from copy import deepcopy
+import pytest
+from backend.communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY as registry
+from backend.communication.technologies import powerlink as P
+def actual():
+ x={'epl_'+k:'synthetic-'+k for k in P.REQUIRED}
+ x.update(bitrate_bps=100000000,epl_edition=P.EDITION,epl_extension='NONE',epl_mode='POWERLINK',epl_role='CN',
+  epl_phy='100BASE_TX',epl_duplex='HALF')
+ return x
+def status(x):return registry.validate_parameters('powerlink',x)['status']
+def test_powerlink_classic_own_profile_not_generic_ethernet_or_can():
+ p=registry.profile('powerlink');assert p['default_stack']==['powerlink']and p['max_payload_bytes']is None
+ assert p['capacity_evidence']['status']=='MODEL_MISSING' and status(actual())=='VALID'
+ fields=registry.parameter_fields('powerlink');keys=[v['key']for v in fields]
+ assert len(keys)==len(set(keys))and not set(keys)&set(P.REMOVED)
+ for bad in ({'bitrate_bps':10000000},{'bitrate_bps':1000000000},{'epl_duplex':'FULL'},{'mtu_bytes':1500},{'nominal_bitrate_bps':500000}):
+  assert status({**actual(),**bad})=='INVALID'
+ assert status({**actual(),'payload_bytes':100000})=='VALID'
+@pytest.mark.parametrize('field',registry.parameter_fields('powerlink'),ids=lambda f:f['key'])
+def test_powerlink_every_declared_field_type_and_outer_limit(field):
+ key='bitrate_bps'if field['key']=='bitrate'else field['key']
+ assert status({**actual(),key:'wrong'if field['type']=='number'else 1})=='INVALID'
+ for edge,offset in [('min',-1),('max',1)]:
+  if field.get(edge)is not None:assert status({**actual(),key:field[edge]+offset})=='INVALID'
+def test_powerlink_literature_proposals_distinct_unknown_equipment_and_cycle():
+ f={v['key']:v for v in registry.parameter_fields('powerlink')}
+ for k,val in P.DEFAULTS.items():assert f['epl_'+k]['default']==val and f['epl_'+k]['default_status']=='PROPOSED'
+ assert f['bitrate']['default']==100000000
+ for k in('cycle_us','node_id','iso_tx_max','iso_rx_max','pres_max_latency_ns','asnd_max_latency_ns','pdo_ready'):
+  assert 'default'not in f['epl_'+k]
+ assert f['epl_node_id']['conditional_defaults'][0]['value']==240
+@pytest.mark.parametrize('role,node',[('MN',240),('CN',1),('CN',239),('DIAGNOSTIC',253),('ROUTER1',254)])
+def test_powerlink_role_scoped_node_identifiers(role,node):
+ x={**actual(),'epl_role':role,'epl_node_id':node,'epl_active_mn_count':1}
+ assert status(x)=='VALID'
+ for bad in ({'epl_node_id':252},{'epl_node_id':255},{'epl_active_mn_count':2}):assert status({**x,**bad})=='INVALID'
+def test_powerlink_message_address_and_dummy_not_existing_node():
+ x={**actual(),'epl_frame':'SOC','epl_source_node':240,'epl_destination_node':255,'epl_destination_mac':'01111E000001'}
+ assert status(x)=='VALID';assert status({**x,'epl_destination_mac':'01111E000002'})=='INVALID'
+ x.update(epl_frame='PREQ',epl_destination_node=252,epl_destination_mac='021234567890',epl_wait_method='DUMMY_REQUEST')
+ assert status(x)=='VALID';assert status({**x,'epl_wait_method':'DELAY'})=='INVALID'
+def test_powerlink_cycle_device_limits_granularity_and_peer_agreement():
+ x={**actual(),'epl_cycle_us':1000,'epl_peer_cycle_us':1000,'epl_cycle_min_us':100,'epl_cycle_max_us':10000,'epl_granularity_us':100}
+ assert status(x)=='VALID'
+ for bad in ({'epl_cycle_us':1050},{'epl_peer_cycle_us':900},{'epl_cycle_min_us':101},{'epl_cycle_max_us':9999}):
+  assert status({**x,**bad})=='INVALID'
+ assert status({'bitrate_bps':100000000})=='UNVERIFIED'
+def test_powerlink_padded_slot_not_actual_pdo_size_and_peer_mapping():
+ x={**actual(),'epl_frame':'PREQ','epl_preq_slot':36,'epl_cn_preq_slot':36,'epl_iso_tx_max':1490,'epl_iso_rx_max':36,
+  'epl_pdo_bytes':8,'epl_mapped_bytes':8,'epl_pdo_version':1,'epl_expected_pdo_version':1,'epl_preq_ns':5760}
+ assert status(x)=='VALID'
+ for bad in ({'epl_preq_ns':3520},{'epl_cn_preq_slot':64},{'epl_pdo_bytes':37},{'epl_mapped_bytes':9},{'epl_expected_pdo_version':2}):
+  assert status({**x,**bad})=='INVALID'
+def test_powerlink_pres_list_sentinel_not65535_wire_payload():
+ x={**actual(),'epl_pres_rx_limit':65535,'epl_iso_rx_max':64,'epl_pres_slot':64,'epl_iso_tx_max':64,'epl_pres_ns':8000}
+ assert status(x)=='VALID'
+ for bad in ({'epl_pres_slot':65},{'epl_pres_rx_limit':35},{'epl_pres_rx_limit':1500}):assert status({**x,**bad})=='INVALID'
+ assert status({**x,'epl_pres_rx_limit':0})=='VALID'
+def test_powerlink_async_mtu_includes_protocol_headers_and_segment_cap():
+ x={**actual(),'epl_async_mtu':300,'epl_segment_interface_mtu':318,'epl_async_bytes':10,'epl_async_frame_ns':5760}
+ assert status(x)=='VALID'
+ assert status({**x,'epl_async_bytes':301})=='INVALID'
+ assert status({**x,'epl_segment_interface_mtu':317})=='INVALID'
+ x.update(epl_async_bytes=300,epl_async_frame_ns=26080);assert status(x)=='VALID'
+ assert status({**x,'epl_async_frame_ns':24000})=='INVALID'
+def test_powerlink_response_ns_and_whole_cycle_budget_not_application_deadline():
+ x={**actual(),'epl_wait_method':'DELAY','epl_mn_soc_min_ns':960,'epl_cn_soc_min_ns':2000,'epl_wait_soc_ns':2000,
+  'epl_pres_max_latency_ns':1000,'epl_propagation_ns':500,'epl_pres_timeout_ns':25000,'epl_pres_measured_latency_ns':2000,
+  'epl_soc_ns':5760,'epl_soa_ns':5760,'epl_isophase_ns':10000,'epl_asyncphase_ns':26080,'epl_idle_ns':50400,
+  'epl_cycle_total_ns':100000,'epl_cycle_us':100}
+ assert status(x)=='VALID'
+ for bad in ({'epl_wait_soc_ns':1000},{'epl_pres_timeout_ns':1999},{'epl_pres_measured_latency_ns':25001},
+  {'epl_cycle_us':99},{'epl_idle_ns':50000}):assert status({**x,**bad})=='INVALID'
+def test_powerlink_multiplex_and_basic_fallback_not_same_timeout_unit():
+ x={**actual(),'epl_access':'MULTIPLEXED','epl_cycle_us':1000,'epl_multipl_count':4,'epl_mn_multipl_max':8,
+  'epl_slot_index':3,'epl_poll_interval_us':4000,'epl_basic_timeout_us':5000000}
+ assert status(x)=='VALID'
+ for bad in ({'epl_slot_index':4},{'epl_multipl_count':9},{'epl_poll_interval_us':1000},{'epl_basic_timeout_us':1000}):
+  assert status({**x,**bad})=='INVALID'
+ assert status({**x,'epl_basic_timeout_us':0})=='VALID'
+ assert status({**x,'epl_access':'ASYNC_ONLY'})=='INVALID'
+def test_powerlink_multiple_asnd_requires_extension_peers_and_time_to_next_cycle():
+ x={**actual(),'epl_extension':'MULTIPLE_ASND_1_1_1','epl_multiple_asnd_supported':True,'epl_peer_multiple_asnd_supported':True,
+  'epl_asnd_max_number':3,'epl_mn_asnd_capacity':3,'epl_asnd_sent':2,'epl_ainv_sent':True,
+  'epl_async_mtu':300,'epl_async_timeout_ns':100000,'epl_ainv_timeout_ns':130400,'epl_remaining_ns':130401}
+ assert status(x)=='VALID'
+ for bad in ({'epl_extension':'NONE'},{'epl_peer_multiple_asnd_supported':False},{'epl_asnd_sent':3},
+  {'epl_remaining_ns':130400},{'epl_ainv_timeout_ns':130000}):assert status({**x,**bad})=='INVALID'
+ x.pop('epl_peer_multiple_asnd_supported');assert status(x)=='UNVERIFIED'
+def test_powerlink_uint64_time_and_sdo_history_are_not_float_or_can():
+ x={**actual(),'epl_relative_time_us':'18446744073709551615','epl_relative_time_supported':True,
+  'epl_sdo_binding':'ASND','epl_sdo_binding_supported':True,'epl_sdo_history_size':31}
+ assert status(x)=='VALID'
+ for bad in ({'epl_relative_time_us':'18446744073709551616'},{'epl_relative_time_us':18446744073709551615},
+  {'epl_sdo_history_size':32},{'epl_sdo_binding_supported':False}):assert status({**x,**bad})=='INVALID'
+def test_powerlink_valid_frame_does_not_establish_functional_pdo_acceptance():
+ x={**actual(),'epl_frame':'PRES','epl_data_accepted':True,'epl_outcome':'ACCEPTED','epl_frame_valid':True,
+  'epl_pdo_ready':True,'epl_mapping_valid':True,'epl_nmt_state':'OPERATIONAL','epl_pres_rx_limit':36,
+  'epl_age_us':500,'epl_freshness_limit_us':1000}
+ assert status(x)=='VALID'
+ for bad in ({'epl_pdo_ready':False},{'epl_mapping_valid':False},{'epl_pres_rx_limit':0},
+  {'epl_nmt_state':'READY_TO_OPERATE'},{'epl_mode':'BASIC_ETHERNET'},{'epl_age_us':1001}):assert status({**x,**bad})=='INVALID'
+ x.pop('epl_pdo_ready');assert status(x)=='UNVERIFIED'
+def test_powerlink_explicit_settings_preserved_when_foreign_defaults_rejected():
+ x={**actual(),'epl_cycle_us':2000,'epl_async_mtu':600,'epl_pres_timeout_ns':30000,'epl_node_id':17}
+ before=deepcopy(x);assert status({**x,'duplex':'FULL','nominal_bitrate_bps':500000})=='INVALID'
+ assert before==x and status(x)=='VALID'

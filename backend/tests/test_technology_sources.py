@@ -10,7 +10,7 @@ def test_same_document_deduplicates_across_buses_and_fragments_without_merging_e
     profiles = [{'id': 'can', 'label': 'CAN', 'refs': [{'source': raw + '#one'}, {'source': blob}]},
                 {'id': 'i2c', 'label': 'I2C', 'refs': [{'source': blob + '#two'},
                      {'source': blob.replace('abcdef', 'fedcba')}] }]
-    data = directory_from_profiles(profiles)
+    data = directory_from_profiles(profiles, include_assurance=False)
     assert data['source_count'] == 2
     shared = next(row for row in data['sources'] if row['url'] == blob)
     assert {row['id'] for row in shared['technologies']} == {'can', 'i2c'}
@@ -30,7 +30,7 @@ def test_rfc_landing_html_text_and_pdf_keep_one_document_and_all_bus_assignments
     base = 'https://www.rfc-editor.org/rfc/rfc8200'
     profiles = [{'id': identity, 'label': identity, 'refs': [{'source': base + suffix}]}
                 for identity, suffix in [('ip', ''), ('udp', '.html'), ('tcp', '.txt'), ('ethernet', '.pdf#page=3')]]
-    rows = directory_from_profiles(profiles)['sources']
+    rows = directory_from_profiles(profiles, include_assurance=False)['sources']
     assert len(rows) == 1
     assert rows[0]['url'] == base + '.html'
     assert len(rows[0]['aliases']) == 4
@@ -56,7 +56,7 @@ def test_complete_source_view_does_not_mutate_profile_parameters_and_tracks_unkn
     assert data['source_count'] >= 450
     assert len({row['url'] for row in data['sources']}) == data['source_count']
     assert any(row['accessed_at'] is None for row in data['sources'])
-    assert all(row['rights']['explanation'] and row['technologies'] for row in data['sources'])
+    assert all(row['rights']['explanation'] and (row['technologies'] or row.get('categories')) for row in data['sources'])
     assert service.catalog_json() == before
 
 

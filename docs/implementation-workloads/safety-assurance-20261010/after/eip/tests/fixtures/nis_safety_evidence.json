@@ -1,0 +1,129 @@
+{
+  "payload": {
+    "schema": "nis.safety-evidence.v1",
+    "rule_version": "1.0",
+    "project_id": "nis-1",
+    "snapshot_id": "snapshot-1",
+    "job_id": "job-1",
+    "source_versions": {
+      "engineering_model": 1
+    },
+    "requirement_revisions": {
+      "safety-1": 1
+    },
+    "execution_status": "COMPLETED",
+    "freshness": "CURRENT",
+    "assessment": {
+      "schema": "nis.safety-evidence.v1",
+      "rule_version": "1.0",
+      "requirements": [
+        {
+          "id": "safety-1",
+          "name": "Lenkung sicher abschalten",
+          "revision": 1,
+          "function_id": "fn-1",
+          "configuration": {
+            "profile": {
+              "standard": "ISO 26262",
+              "edition": "2018",
+              "domain": "road_vehicle",
+              "applicability": "APPLICABLE",
+              "reason": "Approved item scope"
+            },
+            "hazard_ref": "H-1",
+            "safety_goal_ref": "SG-1",
+            "route_ids": [
+              "route-1"
+            ],
+            "eip": {
+              "project_id": "eip-1",
+              "requirement_ref": "SR-1",
+              "source_revisions": {
+                "SR-1": 2
+              }
+            },
+            "criteria": {
+              "deadline_ms": 20,
+              "freshness_ms": 30,
+              "required_protections": [
+                "CRC"
+              ],
+              "fault_cases": [
+                {
+                  "id": "loss-test",
+                  "type": "LOSS",
+                  "detection_ms": 10,
+                  "ftti_ms": 20,
+                  "safe_state": "torque_zero",
+                  "receiver_id": "rx"
+                }
+              ]
+            }
+          },
+          "technical_status": "PASS",
+          "checks": [
+            {
+              "id": "route-1",
+              "kind": "COMMUNICATION",
+              "status": "PASS",
+              "sample_count": 1,
+              "transaction_ids": [
+                "transaction-1"
+              ],
+              "deadline_ms": 20,
+              "freshness_ms": 30,
+              "observed_max_latency_ms": 2.0,
+              "observed_max_data_age_ms": 2.0
+            },
+            {
+              "id": "loss-test",
+              "kind": "FAULT_REACTION",
+              "status": "PASS",
+              "sample_count": 1,
+              "detection_limit_ms": 10,
+              "ftti_ms": 20,
+              "safe_state": "torque_zero",
+              "observations": [
+                {
+                  "fault_event_id": "fault",
+                  "detection_event_id": "detect",
+                  "reaction_event_id": "react",
+                  "receiver_id": "rx",
+                  "detection_ms": 5.0,
+                  "reaction_ms": 10.0,
+                  "observed_state": "torque_zero",
+                  "status": "PASS"
+                }
+              ]
+            }
+          ],
+          "evidence_event_ids": [
+            "accept",
+            "detect",
+            "fault",
+            "react",
+            "tx"
+          ],
+          "gaps": [
+            "normative_clause_scope_missing",
+            "normative_work_products_missing",
+            "integrity_decision_missing"
+          ],
+          "normative_status": "NOT_EVALUATED",
+          "review_status": "REVIEW_REQUIRED"
+        }
+      ],
+      "technical_status": "PASS",
+      "normative_status": "NOT_EVALUATED",
+      "release_approved": false,
+      "time_basis": "SIMULATION_CLOCK",
+      "limitations": [
+        "Project-defined technical criteria only; no ASIL assignment or normative conformity.",
+        "Physical safe-state reaction requires explicit causal measurement evidence.",
+        "Independent human approval and complete lifecycle/regulatory evidence remain separate."
+      ]
+    },
+    "release_approved": false
+  },
+  "sha256": "5c6364916d0521f868f3f19cb3cfea3d7fdc13be66c4e17aae256c56e4a9e9dd"
+}

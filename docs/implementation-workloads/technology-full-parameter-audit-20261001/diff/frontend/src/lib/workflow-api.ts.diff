@@ -1,0 +1,16 @@
+--- before/frontend/src/lib/workflow-api.ts
++++ after/frontend/src/lib/workflow-api.ts
+@@ -1,3 +1,4 @@
++import { readLosslessJson } from './lossless-json.ts';
+ import type { NetworkTopology } from "./topology";
+ import type { SimulationResultPayload } from "./types";
+ import { compactProjectId, readActiveProjectId } from "./user-settings.ts";
+@@ -323,7 +324,7 @@
+   } catch (error) {
+     throw new Error("Der Workflow-Dienst ist nicht erreichbar.", { cause: error });
+   }
+-  const payload = await response.json().catch(() => ({}));
++  const payload = await readLosslessJson(response).catch(() => ({}));
+   if (!response.ok) {
+     throw Object.assign(new Error((payload as { error?: string }).error ?? `Workflow-Fehler ${response.status}`), { status: response.status });
+   }

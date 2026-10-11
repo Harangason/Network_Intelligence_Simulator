@@ -1,0 +1,52 @@
+import { test, expect } from 'playwright/test';
+import { randomUUID } from 'node:crypto';
+
+for (const scenario of [
+  { name: 'no selection', parameters: {} },
+  { name: 'industry only', parameters: { industry: 'custom' } },
+  { name: 'technology only', parameters: { technology: 'can_fd' } },
+  { name: 'complete selection', parameters: { industry: 'custom', technology: 'can_fd' } },
+]) test(`network editor loads canonical topology with ${scenario.name} @network-editor-mode`, async ({ page }) => {
+  const project = 'nis-e2e-network-mode-' + randomUUID();
+  const headers = { 'X-Project-ID': project };
+  const initial = await (await page.request.get('/api/engineering/workflow/parameters', { headers })).json();
+  const setup = await page.request.patch('/api/engineering/workflow/parameters', {
+    headers, data: { expected_token: initial.edit_token, parameters: scenario.parameters },
+  });
+  expect(setup.ok(), await setup.text()).toBe(true);
+  const controllerName = 'Controller ' + scenario.name;
+  const created = await page.request.post('/api/engineering/hardware-nodes', {
+    headers, data: { name: controllerName, device_type: 'EmbeddedController' },
+  });
+  expect(created.ok(), await created.text()).toBe(true);
+  const controller = await created.json();
+  const before = await (await page.request.get('/api/engineering/workflow/parameters', { headers })).json();
+
+  await page.goto(`/studio?mode=network&project=${project}`);
+  await expect(page.getByRole('heading', { name: 'ECU-Netzwerk', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Branche und Technologie auswählen' })).toHaveCount(0);
+  await expect(page.locator('.net-node-name').filter({ hasText: controllerName })).toBeVisible();
+  const topology = await (await page.request.get('/api/engineering/workflow/network-view', { headers })).json();
+  expect(topology.topology.nodes.some((node: { engineeringId: string }) => node.engineeringId === controller.id)).toBe(true);
+
+  const saved = page.waitForResponse(response => response.url().endsWith('/api/engineering/workflow/topology')
+    && response.request().method() === 'PUT');
+  await page.getByRole('button', { name: 'Netzwerk speichern →', exact: true }).click();
+  expect((await saved).ok()).toBe(true);
+  await expect(page.getByText('Netzwerktopologie gespeichert. Capacity & Timing ist jetzt gegebenenfalls veraltet.')).toBeVisible();
+  await page.reload();
+  await expect(page.locator('.net-node-name').filter({ hasText: controllerName })).toBeVisible();
+  await page.getByRole('tab', { name: 'Hardware-Topologie', exact: true }).click();
+  await expect(page.getByRole('tab', { name: 'Hardware-Topologie', exact: true })).toHaveAttribute('aria-selected', 'true');
+  await expect(page.getByRole('heading', { name: 'Branche und Technologie auswählen' })).toHaveCount(0);
+
+  await page.getByRole('link', { name: 'Weiter zu Parametern', exact: true }).click();
+  await expect(page).toHaveURL(new RegExp(`/studio\\?mode=parameters&project=${project}$`));
+  if (scenario.parameters.industry && scenario.parameters.technology) {
+    await expect(page.getByRole('heading', { name: 'Konfiguration', exact: true })).toBeVisible();
+  } else {
+    await expect(page.getByRole('heading', { name: 'Branche und Technologie auswählen' })).toBeVisible();
+  }
+  const after = await (await page.request.get('/api/engineering/workflow/parameters', { headers })).json();
+  expect(after.parameters).toEqual(before.parameters);
+});

@@ -3380,7 +3380,8 @@ export function NetworkEditor({
 
   const editor = (
     <div className={`net-editor ${scene ? "persisted-scene" : ""} ${largeTopology ? "large-topology" : ""} ${fullscreen ? "fullscreen" : ""}`}>
-      <div className="net-toolbar">
+      <div className="net-toolbar" aria-label="Netzwerk-Werkzeuge">
+        <div className="net-toolbar-primary">
         <div className="net-palette" role="group" aria-label="Geräte hinzufügen">
           {(Object.keys(kindLabels) as NodeKind[]).map((kind) => {
             const available = modelHardware.filter(
@@ -3424,13 +3425,19 @@ export function NetworkEditor({
           })}
         </div>
         <NetworkEditorSearch entries={searchEntries} query={searchQuery} onQueryChange={setSearchQuery} onSelect={focusSearchResult} />
+        </div>
         <div className="net-toolbar-actions">
+          <div className="net-toolbar-group" role="group" aria-label="Netzwerk anordnen">
+          <span className="net-toolbar-label">Anordnen</span>
           {scene && onLayoutChange && <button type="button" className="net-add" disabled={layoutSaving || deleting || portSaving || relationshipSaving || Boolean(drag)}
             title="Buslinien und verbundene Anschlusspositionen automatisch führen. Gerätepositionen beibehalten."
             onClick={() => {setLayoutSaving(true); setLayoutError(''); failedLayoutRef.current = null;
               void onLayoutChange(topology, false, true).catch(error => setLayoutError(error instanceof Error ? error.message : 'Linienführung fehlgeschlagen.')).finally(() => setLayoutSaving(false));}}>Linien automatisch</button>}
           {scene && onAssignmentChange && <button type="button" className="net-add" aria-pressed={lasso} onClick={()=>{setLasso(!lasso);setAssignmentSelection([]);setLayoutError('');}} title="Rechteck um Geräte oder Systemrahmen ziehen">{lasso?'Markieren beenden':'Lasso · Zuordnen'}</button>}
           {selectedNode && onAssignmentChange && <button type="button" className="net-add" onClick={()=>setAssignmentSelection([selectedNode])}>Gerät zuordnen</button>}
+          </div>
+          <div className="net-toolbar-group net-toolbar-view" role="group" aria-label="Netzwerkansicht">
+          <span className="net-toolbar-label">Ansicht</span>
           <div aria-label="Zoom" className="net-zoom-controls" role="group">
             <button aria-label="Verkleinern" disabled={zoom <= MIN_ZOOM} onClick={() => changeZoom(zoom - ZOOM_STEP)} title="Verkleinern" type="button">−</button>
             <button aria-label="Zoom auf 100 Prozent zurücksetzen" className="net-zoom-value" onClick={() => changeZoom(1)} title="Zoom zurücksetzen" type="button">{Math.round(zoom * 100)} %</button>
@@ -3446,6 +3453,9 @@ export function NetworkEditor({
           >
             {fullscreen ? "Vollbild schließen" : "Vollbild"}
           </button>
+          </div>
+          <div className="net-toolbar-group net-toolbar-selection" role="group" aria-label="Auswahl bearbeiten">
+          <span className="net-toolbar-label">Auswahl</span>
           <span
             className={`net-eva-status ${layoutStatus.className}`}
             data-layout-semantics={layoutStatus.semantics}
@@ -3490,6 +3500,7 @@ export function NetworkEditor({
               EVA gruppieren
             </button>
           )}
+          </div>
         </div>
       </div>
 

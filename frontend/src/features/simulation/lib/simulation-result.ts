@@ -1,5 +1,19 @@
 import type { SimulationJob } from "../../../shared/api/types";
 
+export function simulationJobActive(job: Pick<SimulationJob, "status"> | null): boolean {
+  return Boolean(job && !["completed", "failed", "canceled"].includes(job.status));
+}
+
+/** Historical results do not revoke the current project's preflight approval. */
+export function canStartSimulation(input: {
+  validation?: string; projectId?: string; restoredProjectId: string;
+  job: Pick<SimulationJob, "status"> | null; busy: boolean; formatCount: number; scopeValid: boolean;
+}): boolean {
+  return Boolean(input.projectId && input.restoredProjectId === input.projectId
+    && ["APPROVED", "WARNING"].includes(input.validation ?? "") && !input.busy
+    && !simulationJobActive(input.job) && input.formatCount > 0 && input.scopeValid);
+}
+
 type PersistedSimulation = {
   id: string;
   job_id?: string | null;

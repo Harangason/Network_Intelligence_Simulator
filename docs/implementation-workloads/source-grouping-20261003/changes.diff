@@ -1,0 +1,291 @@
+--- before/frontend/src/features/sources/lib/source-directory.ts
++++ after/frontend/src/features/sources/lib/source-directory.ts
+@@ -17,6 +17,11 @@
+   project_id: string; rights_reviewed_at: string; licenses: Record<string, LicenseState>;
+ };
+ export type SourceSort = 'abbreviation' | 'technology' | 'name' | 'url' | 'accessed_at' | 'rights' | 'license';
++export type SourceGroup = {
++  technology: SourceRow['technologies'][number];
++  sources: SourceRow[];
++  totalSourceCount: number;
++};
+ const collator = new Intl.Collator('de', {sensitivity: 'base', numeric: true});
+ const compact = (value: string) => value.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '');
+ 
+@@ -57,3 +62,27 @@
+   const parsed = new Date(value.length === 10 ? value + 'T12:00:00Z' : value);
+   return Number.isNaN(parsed.getTime()) ? 'Nicht dokumentiert' : parsed.toLocaleDateString('de-DE', {timeZone: 'UTC'});
+ }
++
++/** One visible entry per technology; shared references retain their source ID. */
++export function sourceGroups(rows: SourceRow[], query: string, sort: SourceSort = 'abbreviation', descending = false,
++  licenses: Record<string, LicenseState> = {}): SourceGroup[] {
++  const byTechnology = new Map<string, {technology: SourceGroup['technology']; sources: Map<string, SourceRow>}>();
++  for (const row of rows) for (const technology of row.technologies) {
++    let group = byTechnology.get(technology.id);
++    if (!group) {
++      group = {technology, sources: new Map()};
++      byTechnology.set(technology.id, group);
++    }
++    // Scope search to this technology, so a shared document's other bus names
++    // cannot introduce unrelated technology groups into the results.
++    group.sources.set(row.id, {...row, technologies: [technology]});
++  }
++  const groups = new Map<string, SourceGroup>();
++  for (const [id, group] of byTechnology) {
++    const sources = sourceRows([...group.sources.values()], query, sort, descending, licenses);
++    if (sources.length) groups.set(id, {technology: group.technology, sources, totalSourceCount: group.sources.size});
++  }
++  // Source columns order groups by their first source in the chosen direction.
++  const representatives = [...groups.values()].map(group => ({...group.sources[0], id: group.technology.id}));
++  return sourceRows(representatives, '', sort, descending, licenses).map(row => groups.get(row.id)!);
++}
+--- before/frontend/src/features/sources/lib/source-directory.test.mjs
++++ after/frontend/src/features/sources/lib/source-directory.test.mjs
+@@ -1,6 +1,6 @@
+ import test from 'node:test';
+ import assert from 'node:assert/strict';
+-import { sourceRows, displaySourceDate } from './source-directory.ts';
++import { sourceRows, sourceGroups, displaySourceDate } from './source-directory.ts';
+ 
+ const row = (id, abbreviation, name, date = null) => ({id, name, publisher: 'Publisher', url: 'https://example.org/' + id,
+   accessed_at: date, revisions: [], rights: {label: 'Ungeklärt'}, technologies: [{id, abbreviation, name: abbreviation}]});
+@@ -26,3 +26,30 @@
+   assert.equal(displaySourceDate(null), 'Nicht dokumentiert');
+   assert.equal(displaySourceDate('2026-10-03'), '3.10.2026');
+ });
++
++
++test('one group per technology retains multiple sources and deduplicates repeated associations', () => {
++  const a = row('source-a', '5G', 'Specification A');
++  a.technologies = [{id: '5g', abbreviation: '5G', name: '5G'}];
++  const b = {...a, id: 'source-b', name: 'Specification B'};
++  const groups = sourceGroups([b, a, a], '');
++  assert.equal(groups.length, 1);
++  assert.equal(groups[0].technology.id, '5g');
++  assert.deepEqual(groups[0].sources.map(source => source.id), ['source-a', 'source-b']);
++  assert.equal(groups[0].totalSourceCount, 2);
++});
++
++test('shared source search scopes bus names while retaining document search and source identity', () => {
++  const shared = {...rows[0], technologies: [...rows[0].technologies, ...rows[1].technologies]};
++  assert.deepEqual(sourceGroups([shared], 'can').map(group => group.technology.id), ['can']);
++  const groups = sourceGroups([shared], 'specification');
++  assert.deepEqual(groups.map(group => group.technology.id), ['can', 'ethernet']);
++  assert.ok(groups.every(group => group.sources[0].id === shared.id));
++  assert.deepEqual(shared.technologies.map(item => item.id), ['ethernet', 'can']);
++});
++
++test('group sorting and source filtering preserve counts and unknown-date handling', () => {
++  assert.deepEqual(sourceGroups(rows, '', 'abbreviation', true).map(group => group.technology.id), ['i2c', 'ethernet', 'can']);
++  assert.equal(sourceGroups(rows, '', 'accessed_at', true).at(-1).technology.id, 'can');
++  assert.deepEqual(sourceGroups(rows, 'zzzzzz'), []);
++});
+--- before/frontend/src/features/sources/ui/source-directory-page.tsx
++++ after/frontend/src/features/sources/ui/source-directory-page.tsx
+@@ -4,7 +4,7 @@
+ import { useSearchParams } from 'next/navigation';
+ import { MarketingShell, ProjectAwareLink } from '@/features/marketing/ui/marketing-shell';
+ import { expandBrowserProjectId, readActiveProjectId } from '@/features/settings/lib/user-settings';
+-import { displaySourceDate, sourceRows } from '@/features/sources/lib/source-directory';
++import { displaySourceDate, sourceGroups } from '@/features/sources/lib/source-directory';
+ import type { SourceDirectory, SourceRow, SourceSort } from '@/features/sources/lib/source-directory';
+ import styles from '../../../app/sources/sources.module.css';
+ 
+@@ -56,8 +56,9 @@
+   }, [load]);
+   useEffect(() => { if (selected) dialog.current?.showModal(); }, [selected]);
+   useEffect(() => { if (licenseTechnology) licenseDialog.current?.showModal(); }, [licenseTechnology]);
+-  const rows = useMemo(() => sourceRows(directory?.sources ?? [], query, sort, descending, directory?.licenses), [directory, query, sort, descending]);
+-  const visible = rows.slice(page * 50, (page + 1) * 50);
++  const groups = useMemo(() => sourceGroups(directory?.sources ?? [], query, sort, descending, directory?.licenses), [directory, query, sort, descending]);
++  const visible = groups.slice(page * 50, (page + 1) * 50);
++  const matchingSources = new Set(groups.flatMap(group => group.sources.map(row => row.id))).size;
+   const restricted = directory ? Object.entries(directory.licenses).filter(([, state]) => state.clearance_required) : [];
+   function chooseSort(key: SourceSort) {
+     setDescending(key === sort ? !descending : false); setSort(key); setPage(0);
+@@ -88,30 +89,41 @@
+     <p className={styles.note}>Hier werden Quellenangaben und Links veröffentlicht, keine Originaldokumente. Dokumentrechte, Implementierungsrechte und Zertifizierung sind getrennt. „Ungeklärt“ bedeutet keine erteilte Erlaubnis; ein öffentlicher Download allein genügt nicht.</p>
+     <div className={styles.toolbar}><label htmlFor="source-search">Fuzzy-Suche<input id="source-search" type="search" placeholder="Bustyp, Quelle oder Herausgeber …" value={query}
+       onChange={event => {setQuery(event.target.value); setPage(0);}} /></label>
+-      <span role="status">{rows.length} Treffer</span><button type="button" onClick={() => {setQuery(''); setSort('abbreviation'); setDescending(false); setPage(0);}}>Zurücksetzen</button></div>
++      <span role="status">{groups.length} Bustypen · {matchingSources} Quellen</span><button type="button" onClick={() => {setQuery(''); setSort('abbreviation'); setDescending(false); setPage(0);}}>Zurücksetzen</button></div>
+     {error && <div role="alert" className={styles.error}>{error} <button onClick={() => void load()}>Erneut laden</button></div>}
+     {!directory && !error && <p role="status">Quellen werden geladen …</p>}
+-    {directory && <><div className={styles.tableWrap}><table className={styles.table}><caption className={styles.caption}>Eindeutige Quellen; Standardreihenfolge alphabetisch nach Bustyp. Spaltenköpfe ändern die Sortierung.</caption>
++    {directory && <><div className={styles.tableWrap}><table className={styles.table}><caption className={styles.caption}>Ein Eintrag pro Bustyp; zugehörige Quellen aufklappen. Standardreihenfolge alphabetisch nach Bustyp. Spaltenköpfe sortieren Bustypen und deren Quellen.</caption>
+       <thead><tr>{columns.map(column => <th key={column.key} scope="col" aria-sort={sort === column.key ? descending ? 'descending' : 'ascending' : 'none'}>
+         <button type="button" onClick={() => chooseSort(column.key)}>{column.label} <span aria-hidden="true">{sort === column.key ? descending ? '↓' : '↑' : '↕'}</span></button></th>)}</tr></thead>
+-      <tbody>{visible.map(row => <tr key={row.id}>
+-        <td>{row.technologies.length <= 3 ? row.technologies.map(item => <span className={styles.code} key={item.id}>{item.abbreviation}</span>)
+-          : <details><summary>{row.technologies.slice(0, 3).map(item => item.abbreviation).join(' · ')} · +{row.technologies.length - 3}</summary><div>{row.technologies.map(item => <span className={styles.code} key={item.id}>{item.abbreviation}</span>)}</div></details>}</td>
+-        <td>{row.technologies.length <= 3 ? row.technologies.map(item => <span className={styles.busName} key={item.id}>{item.name}</span>)
+-          : <details><summary>{row.technologies.slice(0, 3).map(item => item.name).join(' · ')} · +{row.technologies.length - 3}</summary><div>{row.technologies.map(item => <span className={styles.busName} key={item.id}>{item.name}</span>)}</div></details>}</td>
+-        <td><strong>{row.name}</strong><small>{row.publisher}</small></td>
+-        <td><a href={row.url} target="_blank" rel="noopener noreferrer" aria-label={`Quelle öffnen: ${row.name}`}>Quelle öffnen ↗</a></td>
+-        <td><time dateTime={row.accessed_at ?? undefined}>{displaySourceDate(row.accessed_at)}</time></td>
+-        <td><button type="button" className={row.rights.publication === 'CONDITIONAL' ? styles.conditional : styles.stop}
+-          onClick={() => setSelected(row)} aria-label={`Lizenzhinweis: ${row.name}`}><span aria-hidden="true">{row.rights.publication === 'CONDITIONAL' ? 'ⓘ' : '⛔'}</span> {row.rights.label}</button></td>
+-        <td>{row.technologies.filter(item => directory.licenses[item.id]?.clearance_required).map(item => <button key={item.id} className={styles.licenseStatus}
+-          onClick={() => {setMessage(''); setLicenseTechnology(item.id);}}>{directory.licenses[item.id].blocked ? '⚠ Gesperrt' : '✓ Freigegeben'} · {item.abbreviation}</button>)}
+-          {!row.technologies.some(item => directory.licenses[item.id]?.clearance_required) && <span className={styles.neutral}>Keine belegte NIS-Lizenzsperre</span>}</td>
++      <tbody>{visible.map(group => <tr key={group.technology.id} data-technology={group.technology.id}>
++        <td><span className={styles.code}>{group.technology.abbreviation}</span></td>
++        <td><strong className={styles.busName}>{group.technology.name}</strong></td>
++        <td colSpan={4}><details className={styles.sourceGroup}>
++          <summary aria-label={`Quellen für ${group.technology.abbreviation} anzeigen`}>
++            <strong>{group.sources.length} {group.sources.length === 1 ? 'Quelle' : 'Quellen'} anzeigen</strong>
++            {group.sources.length !== group.totalSourceCount && <small>von {group.totalSourceCount} Quellen für diesen Bustyp</small>}
++            <small>Veröffentlichungs- und Lizenzhinweise bei den einzelnen Quellen</small>
++          </summary>
++          <table className={styles.sourceList} aria-label={`Quellen für ${group.technology.abbreviation}`}>
++            <thead><tr><th scope="col">Quellenname</th><th scope="col">Link</th><th scope="col">Datum des Abrufs</th><th scope="col">Veröffentlichung / Lizenz</th></tr></thead>
++            <tbody>{group.sources.map(row => <tr key={row.id}>
++              <td><strong>{row.name}</strong><small>{row.publisher}</small></td>
++              <td><a href={row.url} target="_blank" rel="noopener noreferrer" aria-label={`Quelle öffnen: ${row.name}`}>Quelle öffnen ↗</a></td>
++              <td><time dateTime={row.accessed_at ?? undefined}>{displaySourceDate(row.accessed_at)}</time></td>
++              <td><button type="button" className={row.rights.publication === 'CONDITIONAL' ? styles.conditional : styles.stop}
++                onClick={() => setSelected(row)} aria-label={`Lizenzhinweis: ${row.name}`}><span aria-hidden="true">{row.rights.publication === 'CONDITIONAL' ? 'ⓘ' : '⛔'}</span> {row.rights.label}</button></td>
++            </tr>)}</tbody>
++          </table>
++        </details></td>
++        <td>{directory.licenses[group.technology.id]?.clearance_required
++          ? <button className={styles.licenseStatus} onClick={() => {setMessage(''); setLicenseTechnology(group.technology.id);}}>
++            {directory.licenses[group.technology.id].blocked ? '⚠ Gesperrt' : '✓ Freigegeben'} · {group.technology.abbreviation}</button>
++          : <span className={styles.neutral}>Keine belegte NIS-Lizenzsperre</span>}</td>
+       </tr>)}</tbody></table></div>
+-      {!rows.length && <p className={styles.empty}>Keine passenden Quellen. Versuche ein kürzeres Kürzel oder einen anderen Suchbegriff.</p>}
++      {!groups.length && <p className={styles.empty}>Keine passenden Quellen. Versuche ein kürzeres Kürzel oder einen anderen Suchbegriff.</p>}
+       <div className={styles.pagination}><button disabled={page === 0} onClick={() => setPage(page - 1)}>Zurück</button>
+-        <span>Seite {page + 1} von {Math.max(1, Math.ceil(rows.length / 50))} · 50 Einträge pro Seite</span>
+-        <button disabled={(page + 1) * 50 >= rows.length} onClick={() => setPage(page + 1)}>Weiter</button></div>
++        <span>Seite {page + 1} von {Math.max(1, Math.ceil(groups.length / 50))} · 50 Bustypen pro Seite</span>
++        <button disabled={(page + 1) * 50 >= groups.length} onClick={() => setPage(page + 1)}>Weiter</button></div>
+       <section className={styles.licenses} aria-labelledby="license-title"><h2 id="license-title">Projektbezogene Technikfreigaben</h2>
+         <p>Auswählen und Konfigurieren bleibt möglich. Eine gesperrte Technik kann erst nach geprüfter Freigabe ausgeführt werden. Dokumentweitergabe und Produktzertifizierung werden dadurch nicht freigegeben.</p>
+         {restricted.map(([id, state]) => <article key={id}><div><strong>{id.replaceAll('_', ' ').toUpperCase()}</strong><span>{state.blocked ? '⚠ Ausführung gesperrt' : '✓ Projektfreigabe vorhanden'}</span>
+--- before/frontend/src/app/sources/sources.module.css
++++ after/frontend/src/app/sources/sources.module.css
+@@ -11,3 +11,5 @@
+ .summary,.tableWrap,.table th,.table td,.licenses,.licenses article,.dialog,.dialog form{border-color:var(--border)}
+ .toolbar input,.toolbar button,.pagination button,.licenses button,.dialog input,.dialog textarea{border-color:var(--border-strong)}
+ .table details summary{cursor:pointer;line-height:1.6}.table details>div{margin-top:8px}
++
++.table>tbody>tr>td:nth-child(3){max-width:none}.sourceGroup summary{padding:2px 0 8px}.sourceGroup summary strong{color:var(--accent)}.sourceList{width:100%;table-layout:fixed;margin-top:14px;border:1px solid var(--border);border-radius:8px}.sourceList th:first-child{width:38%}.sourceList th:nth-child(2){width:15%}.sourceList th:nth-child(3){width:18%}.sourceList th:nth-child(4){width:29%}.table .sourceList td{min-width:0;max-width:none;overflow-wrap:anywhere;padding:14px 10px}.table .sourceList th{padding:12px 10px;font-size:.75rem}
+--- before/frontend/e2e/source-directory.spec.ts
++++ after/frontend/e2e/source-directory.spec.ts
+@@ -6,17 +6,18 @@
+   await page.getByRole('navigation', {name: 'Hauptnavigation'}).getByRole('link', {name: 'Quellen', exact: true}).click();
+   await expect(page).toHaveURL(new RegExp('/sources\\?project=' + project));
+   await expect(page.getByRole('heading', {name: 'Quellenverzeichnis', exact: true})).toBeVisible();
+-  const table = page.getByRole('table');
+-  await expect(table.locator('tbody tr')).toHaveCount(50);
++  const table = page.getByRole('table').first();
++  await expect(table.locator(':scope > tbody > tr')).toHaveCount(50);
+   await page.getByRole('button', {name: /Name Bustyp/}).click();
+   await expect(table.locator('th[aria-sort="ascending"]')).toContainText('Name Bustyp');
+   await page.getByRole('button', {name: /Name Bustyp/}).click();
+   await expect(table.locator('th[aria-sort="descending"]')).toContainText('Name Bustyp');
+   await page.getByLabel('Fuzzy-Suche').fill('ethernt');
+-  await expect(table.locator('tbody tr').first()).toBeVisible();
+-  await expect(table.locator('tbody')).toContainText('ETHERNET');
++  await expect(table.locator(':scope > tbody > tr').first()).toBeVisible();
++  await expect(table.locator(':scope > tbody')).toContainText('ETHERNET');
+   await page.getByLabel('Fuzzy-Suche').fill('Matter 1.6.1');
+-  await expect(table.locator('tbody tr')).toHaveCount(1);
++  await expect(table.locator(':scope > tbody > tr')).toHaveCount(1);
++  await table.getByText('1 Quelle anzeigen', {exact: true}).click();
+   await expect(table.getByRole('link').first()).toHaveText('Quelle öffnen ↗');
+   await table.getByRole('button', {name: /Lizenzhinweis/}).click();
+   const dialog = page.getByRole('dialog');
+@@ -83,3 +84,20 @@
+   await expect(page.getByRole('navigation', {name: 'Hauptnavigation'}).getByRole('link', {name: 'Quellen', exact: true})).toBeVisible();
+   await expect(heading).toBeVisible();
+ });
++
++
++test('five 5G sources are collected beneath one collapsed technology entry @small', async ({page}) => {
++  await page.goto('/sources?project=source-groups-' + Date.now());
++  const table = page.getByRole('table').first();
++  const group = table.locator(':scope > tbody > tr[data-technology="5g"]');
++  await expect(group).toHaveCount(1);
++  await expect(group.locator('details')).not.toHaveAttribute('open', '');
++  await group.getByText('5 Quellen anzeigen', {exact: true}).click();
++  await expect(group.getByRole('link', {name: /Quelle öffnen:/})).toHaveCount(5);
++  await expect(group.getByRole('button', {name: /Lizenzhinweis:/})).toHaveCount(5);
++  await group.getByRole('button', {name: /Lizenzhinweis:/}).first().click();
++  await expect(page.getByRole('dialog')).toBeVisible();
++  await page.keyboard.press('Escape');
++  await group.locator('summary').click();
++  await expect(group.getByRole('link').first()).not.toBeVisible();
++});
+--- before/scripts/release/run-release-gate.py
++++ after/scripts/release/run-release-gate.py
+@@ -26,6 +26,15 @@
+ 
+ ROOT = Path(__file__).resolve().parents[2]
+ POSTGRES = "postgres:16-alpine@sha256:cf78e76683b9ca8c5733cbbdce6c9262b45b6767934dd0a95e671f9a0fc20685"
++
++
++def frontend_test_files(frontend_root: Path) -> list[str]:
++    """Discover actual tests across feature/shared owners; an empty run is invalid."""
++    paths = sorted(path.relative_to(frontend_root).as_posix()
++                   for path in (frontend_root / 'src').rglob('*.test.mjs') if path.is_file())
++    if not paths:
++        raise RuntimeError('No frontend tests discovered; refusing an empty release test run.')
++    return paths
+ 
+ 
+ def verification_manifest():
+@@ -115,7 +124,7 @@
+             run([sys.executable, '-m', 'unittest', 'discover', '-s', 'scripts/tests',
+                  '-p', 'test_release*.py', '-v'], name='storage-tests')
+             run([node, 'node_modules/typescript/bin/tsc', '--noEmit', '--incremental', 'false'], cwd=ROOT/'frontend', name='typecheck')
+-            run([node, '--experimental-strip-types', '--test', 'src/lib/*.test.mjs', 'src/lib/agent/*.test.mjs'], cwd=ROOT/'frontend', name='frontend-tests')
++            run([node, '--experimental-strip-types', '--test', *frontend_test_files(ROOT/'frontend')], cwd=ROOT/'frontend', name='frontend-tests')
+             run([sys.executable, str(ROOT/'scripts/run-isolated-tests.py'), '--', 'backend/tests', '-q'], name='backend-tests')
+         if initial_source_sha256 != info.build_manifest()['source_sha256']:
+             raise RuntimeError('Sources changed during unit verification. Repeat the gate from the initial source.')
+--- before/scripts/tests/test_release_frontend_discovery.py
++++ after/scripts/tests/test_release_frontend_discovery.py
+@@ -0,0 +1,28 @@
++"""A directory migration cannot silently remove frontend release coverage."""
++import importlib.util
++from pathlib import Path
++import tempfile
++import unittest
++
++SPEC = importlib.util.spec_from_file_location('frontend_release_gate', Path(__file__).resolve().parents[1] / 'run-release-gate.py')
++GATE = importlib.util.module_from_spec(SPEC)
++SPEC.loader.exec_module(GATE)
++
++
++class FrontendDiscoveryTests(unittest.TestCase):
++    def test_features_shared_and_nested_tests_are_all_discovered(self):
++        with tempfile.TemporaryDirectory() as folder:
++            root = Path(folder)
++            expected = ['src/features/agent/lib/catalogs/catalog.test.mjs',
++                        'src/features/sources/lib/source-directory.test.mjs',
++                        'src/shared/api/api.test.mjs']
++            for name in expected + ['src/features/sources/lib/source-directory.ts']:
++                file = root / name
++                file.parent.mkdir(parents=True, exist_ok=True)
++                file.write_text('')
++            self.assertEqual(GATE.frontend_test_files(root), expected)
++
++    def test_empty_discovery_refuses_a_release_run(self):
++        with tempfile.TemporaryDirectory() as folder:
++            with self.assertRaisesRegex(RuntimeError, 'empty release test run'):
++                GATE.frontend_test_files(Path(folder))
+--- before/backend/tests/test_release_safety.py
++++ after/backend/tests/test_release_safety.py
+@@ -125,6 +125,9 @@
+     test_source = tmp_path / 'backend' / 'tests' / 'test_example.py'
+     test_source.parent.mkdir()
+     test_source.write_text('assert True\n')
++    frontend_test = tmp_path / 'frontend/src/features/example/lib/example.test.mjs'
++    frontend_test.parent.mkdir(parents=True)
++    frontend_test.write_text('import test from "node:test"; test("fixture", () => {});\n')
+     # exec_module does not add the entry point's directory as a CLI launch does.
+     # Supply that sibling-import context temporarily for release_storage.
+     monkeypatch.syspath_prepend(str(ROOT / 'scripts'))

@@ -1,0 +1,27 @@
+{
+  "technology": "udp",
+  "source_manifest": "work/udp-primary/manifest.json",
+  "source_read_scopes": {
+    "https://www.rfc-editor.org/rfc/rfc768.html": "Original complete RFC768 read:8-byte ports/length/checksum, optional source0, computed checksum0 mappedFFFF, pseudoheader and no reliability.",
+    "https://www.rfc-editor.org/rfc/rfc8085.html": "Original RFC8085 sections3/4/5 selected congestion/message sizing/reliability/checksums/controlled/multicast guidance read. IPv4/IPv6 normal data65507/65527; fallback min(576,firsthop)IPv4 versus1280IPv6 subtracts all actual headers. TCP reliability cannot be attributed UDP.",
+    "https://www.rfc-editor.org/rfc/rfc2675.html": "Original RFC2675 sections2/3/4 read: Jumbo option includes preceding extension bytes, IPv6 payloadfield0, no Fragment header; UDP length0 iff actual UDP datagram>65535, pseudoheader always actual UDP length. Smaller UDP inside large extension packet retains normal length.",
+    "https://www.rfc-editor.org/rfc/rfc6935.html": "Original RFC6935 section2 read: checksum is IPv6 default, exception specifically enabled destination tunnel port and assessed RFC6936 conditions.",
+    "https://www.rfc-editor.org/rfc/rfc6936.html": "Original RFC6936 selected implementation/usage/applicability sections4/5/6 read with RFC8085 summary: peer/address/inner integrity/misdelivery/path/middlebox/path-change requirements. No unconditional disable checksum for ordinaryIPv6 application.",
+    "https://www.rfc-editor.org/rfc/rfc8200.html": "Original RFC8200 sections4/5/8 selected base40/extensions, source-only fragmentation/link1280 and UDP mandatory checksum/pseudoheader read. No IPv6 broadcast or hoplimit data-age assurance.",
+    "https://www.rfc-editor.org/rfc/rfc8899.html": "Original RFC8899 sections4/5 and6.1 selected one-layer scope/timers/constants/state/probe acknowledgment/UDP application requirements read. Probe timer>=1 and >ackbound, recommended>15 not universal1; maxprobes3/raise600 proposals, confirmed versus tentative size and no confirmation timer for acknowledgedPL."
+  },
+  "additional_field_meanings": {
+    "payload_bytes": "Actual individual UDP datagram data bytes, separate IP options/extensions/header, jumbogram and allhop MTU. No universal Ethernet or65507 limit."
+  },
+  "scope": [
+    "All exported UDP fields individually reviewed against original archived RFC sources and isolated tests. Own UDP/IP/PHY path and industry neutral, no CANretry/Ethernetrate/MTU/gateway fallback.",
+    "IPv4 and IPv6 normal limits, options/extensions, Jumbo versus ordinary wire and pseudoheader length, no Jumbo fragmentation; complete native8-byte header octets compared fields.",
+    "Full versus IPv4-omitted versus qualified IPv6 tunnel checksum scope; computed0 toFFFF, no ordinaryIPv6 zero. Full checksum computation/cryptographic integrity needs actual separate proof.",
+    "Perpath MTU/fallback and header subtraction, separate datagram/application segmentation, multicast receiver paths/congestion/reliability and whole source-to-function acceptance.",
+    "DPLPMTUD own layer/timers/counters/sizes/ack evidence. Only documented checksum/header/probe3/raise600/selectedIPv4base1200 proposals; actual MTU/ports/IP/PHY/clock remain unknown."
+  ],
+  "not_certified": [
+    "Parameter and selected relationships review, not a full UDP/IP/ICMP/DPLPMTUD/zero-tunnel packet executor or every RFC mechanism certified. Legal values do not prove checksum, delivery, reliability, allhop capacity or function.",
+    "Cumulative native/service/UI/wizard release and production delivery pending."
+  ]
+}

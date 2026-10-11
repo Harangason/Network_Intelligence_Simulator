@@ -8,10 +8,10 @@ test('source directory search sort short links and publication notice retain pro
   await expect(page.getByRole('heading', {name: 'Quellenverzeichnis', exact: true})).toBeVisible();
   const table = page.getByRole('table').first();
   await expect(table.locator(':scope > tbody > tr')).toHaveCount(50);
-  await page.getByRole('button', {name: /Name Bustyp/}).click();
-  await expect(table.locator('th[aria-sort="ascending"]')).toContainText('Name Bustyp');
-  await page.getByRole('button', {name: /Name Bustyp/}).click();
-  await expect(table.locator('th[aria-sort="descending"]')).toContainText('Name Bustyp');
+  await page.getByRole('button', {name: 'Technologie / Normbereich', exact: true}).click();
+  await expect(table.locator('th[aria-sort="ascending"]')).toContainText('Technologie / Normbereich');
+  await page.getByRole('button', {name: 'Technologie / Normbereich', exact: true}).click();
+  await expect(table.locator('th[aria-sort="descending"]')).toContainText('Technologie / Normbereich');
   await page.getByLabel('Fuzzy-Suche').fill('ethernt');
   await expect(table.locator(':scope > tbody > tr').first()).toBeVisible();
   await expect(table.locator(':scope > tbody')).toContainText('ETHERNET');

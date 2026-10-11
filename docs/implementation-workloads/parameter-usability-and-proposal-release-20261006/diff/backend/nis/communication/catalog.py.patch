@@ -1,0 +1,32 @@
+--- before/backend/nis/communication/catalog.py
++++ after/backend/nis/communication/catalog.py
+@@ -103,6 +103,18 @@
+     return [deepcopy(import_module(f"backend.nis.communication.technologies.{key}.definition").PROFILE)
+             for key in TECHNOLOGY_IDS]
+ 
++def parameter_value_role(name: str, spec: dict[str, Any]) -> str:
++    """Identity and evidence references cannot be invented as scenario values."""
++    if spec.get('value_role'):
++        return spec['value_role']
++    if spec.get('type') in {'text', 'string'} or not spec.get('type') and not spec.get('numeric') and not spec.get('boolean') and not spec.get('options'):
++        if name.endswith('_source') or name.endswith('_revision') or name == 'revision':
++            return 'EVIDENCE'
++        if name.endswith(('_node_id', '_ref')):
++            return 'REFERENCE'
++    return 'CONFIGURATION'
++
++
+ def simulation_parameter_proposal(technology_id: str, profile: dict[str, Any], name: str, spec: dict[str, Any]) -> dict[str, Any]:
+     """Complete editable scenario examples; never actual device evidence.
+ 
+@@ -125,6 +137,10 @@
+         allowed = model.get('allowed_bps') or []
+         if (not allowed or registered_rate in allowed) and registered_rate >= model.get('minimum_bps', 0) and registered_rate <= model.get('maximum_bps', float('inf')):
+             value, basis = registered_rate, 'REGISTERED_PROFILE_RATE'
++    role = parameter_value_role(name, spec)
++    if value is None and role != 'CONFIGURATION':
++        return {'value': None, 'basis': 'EXPLICIT_REFERENCE_REQUIRED', 'source': 'NIS_SIMULATION_ASSUMPTION',
++                'status': 'UNKNOWN', 'technology': technology_id, 'hardware_evidence': False}
+     if value is None:
+         kind = spec.get('type') or ('number' if spec.get('numeric') else 'boolean' if spec.get('boolean') else 'select' if spec.get('options') else 'text')
+         if kind in {'number', 'integer'}:

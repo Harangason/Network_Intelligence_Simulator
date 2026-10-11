@@ -1,0 +1,104 @@
+--- before/frontend/e2e/technology-parameter-review.spec.ts
++++ after/frontend/e2e/technology-parameter-review.spec.ts
+@@ -1,5 +1,11 @@
+ import { test, expect } from 'playwright/test';
+ import { randomUUID } from 'node:crypto';
++import type { Page } from 'playwright/test';
++
++async function revealParameter(page:Page, key:string) {
++  const group = page.locator(`#parameter-field-${key}`).locator('xpath=ancestor::details[1]');
++  if (await group.count() && await group.getAttribute('open') === null) await group.locator(':scope > summary').click();
++}
+ 
+ for (const scenario of [
+   {technology:'LIN',id:'lin',rate:'19200',key:'lin_bitrate_bps'},
+@@ -143,6 +149,7 @@
+   const afterInvalid = await (await page.request.get('/api/engineering/workflow/parameters', { headers })).json();
+   expect(afterInvalid.parameters).toEqual(beforeInvalid.parameters);
+   expect(afterInvalid.edit_token).toBe(beforeInvalid.edit_token);
++  await revealParameter(page,'i2c_mode');
+   await page.locator('select[name="i2c_mode"]').selectOption('FAST');
+   await page.getByRole('button', { name: 'Parameter speichern →', exact: true }).click();
+   await expect(page.getByText('Technologie- und Timing-Parameter gespeichert.')).toBeVisible();
+@@ -183,6 +190,7 @@
+   expect(saved.parameters.can_clock_hz).toBeUndefined();
+   await page.reload();
+   await expect(clock).toHaveValue('40000000');
++  await revealParameter(page,'can_clock_hz');
+   await clock.fill('80000000');
+   await page.getByRole('button', {name:'Parameter speichern →',exact:true}).click();
+   await expect(page.getByText('Technologie- und Timing-Parameter gespeichert.')).toBeVisible();
+@@ -234,8 +242,29 @@
+   await expect(page.locator('#technology')).toHaveValue('can_fd');
+   await page.locator('#technology').selectOption('lin');
+   await expect(page.locator('input[name="lin_bitrate_bps"]')).not.toHaveValue('');
++  await expect(page.locator('.parameter-group-common #lin_bitrate_bps')).toBeVisible();
++  await expect(page.locator('#lin_registered_source')).toHaveValue('');
++  await expect(page.locator('#lin_registered_source')).not.toBeVisible();
++  await page.getByRole('button',{name:'Parameter speichern →',exact:true}).click();
++  await expect(page.getByText('Technologie- und Timing-Parameter gespeichert.')).toBeVisible();
++  const noFakeSources = await (await page.request.get('/api/engineering/workflow/parameters',{headers})).json();
++  expect(noFakeSources.parameters.simulation_parameter_assumptions.lin.values.lin_registered_source).toBeUndefined();
++  expect(noFakeSources.parameters.simulation_parameter_assumptions.lin.values.lin_commander_node_id).toBeUndefined();
++  await page.locator('.parameter-details').filter({has:page.locator('#lin_registered_source')}).locator(':scope > summary').click();
++  await expect(page.getByLabel('Profilquelle',{exact:true})).toHaveValue('');
++  await page.getByLabel('Profilquelle',{exact:true}).fill('project:reviewed-lin-profile');
++  await page.getByRole('button',{name:'Parameter speichern →',exact:true}).click();
++  await expect(page.getByText('Technologie- und Timing-Parameter gespeichert.')).toBeVisible();
++  await page.reload();
++  await expect(page.locator('#technology')).toHaveValue('can_fd');
++  await page.locator('#technology').selectOption('lin');
++  await expect(page.locator('#lin_registered_source')).toHaveValue('project:reviewed-lin-profile');
++  await expect(page.locator('.parameter-details[open]')).toHaveCount(0);
++  await revealParameter(page,'lin_edition');
+   await page.locator('select[name="lin_edition"]').selectOption('LIN_2_2A_2010');
++  await revealParameter(page,'lin_physical_profile');
+   await page.locator('select[name="lin_physical_profile"]').selectOption('LIN_2_2A_SINGLE_WIRE');
++  await page.locator('#parameter-field-lin_bitrate_bps .parameter-default-details > summary').click();
+   await page.locator('div[title]').filter({has:page.locator('#lin_bitrate_bps')})
+     .getByRole('button',{name:'Bedingten Standardwert übernehmen',exact:true}).click();
+   await expect(page.locator('input[name="lin_bitrate_bps"]')).toHaveValue('19200');
+@@ -298,7 +327,13 @@
+         .filter(element => (element instanceof HTMLInputElement || element instanceof HTMLSelectElement || element instanceof HTMLTextAreaElement)
+           && element.type !== 'checkbox' && element.value === '')
+         .map(element => (element as HTMLInputElement).name));
+-    expect(empty, id).toEqual([]);
++    const references = profile.parameter_schema.filter((field:any) => field.value_role && field.value_role !== 'CONFIGURATION' && field.simulation_default === null).map((field:any)=>field.key);
++    expect(empty.filter((key:string)=>!references.includes(key)), id).toEqual([]);
++    for (const key of references) {
++      const control = page.locator(`[name="${key}"]`);
++      if (await control.count()) await expect(control).toHaveValue('');
++      else await expect(page.locator(`#parameter-field-${key}`)).toContainText('Nicht zutreffend für die gewählte Protokollkonfiguration.');
++    }
+     if (id === 'nmea2000') {
+       await expect(page.locator('input[name="bitrate"]')).toHaveValue('250000');
+       await expect(page.locator('input[name="mtu_bytes"]')).toHaveCount(0);
+@@ -447,9 +482,11 @@
+   const catalog = await (await page.request.get('/api/technologies')).json();
+   const profile = catalog.domains.flatMap((d:{technologies:Array<{id:string}>})=>d.technologies).find((p:{id:string})=>p.id==='sparkplug_b');
+   for (const field of profile.parameter_schema.filter((f:{required?:boolean,type:string})=>f.required&&f.type==='text')) {
++    await revealParameter(page,field.key);
+     await page.locator(`[name="${field.key}"]`).fill('isolated-test-source');
+   }
+   const edited = '18446744073709551614';
++  await revealParameter(page,'spb_alias');
+   await page.locator('#spb_alias').fill(edited);
+   await page.getByRole('button',{name:'Parameter speichern →',exact:true}).click();
+   await expect(page.getByText('Technologie- und Timing-Parameter gespeichert.')).toBeVisible();
+@@ -480,7 +517,7 @@
+   const before=await (await page.request.get('/api/engineering/workflow/parameters/review',{headers})).json();
+   expect(before.source).toBe('CURRENT_CANONICAL_MODEL');
+   expect(before.findings.filter((f:{technology:string})=>f.technology==='can_fd')).toHaveLength(1);
+-  await page.goto(`/studio?mode=parameters&project=${project}&technology=lin&proposal=historical-review#parameter-findings`);
++  await page.goto(`/studio?mode=parameters&project=${project}&technology=lin#parameter-findings`);
+   await expect(page.locator('#technology')).toHaveValue('lin');
+   await expect(page.getByRole('region',{name:'Aktuelle Parameterbefunde'})).toContainText('1 für LIN');
+   await expect(page.locator('#parameter-field-lin_bitrate_bps')).toHaveClass(/parameter-field-finding/);
+@@ -491,6 +528,7 @@
+   await expect(page.locator('#parameter-field-data_bitrate')).toHaveClass(/parameter-field-finding/);
+   await expect(page.locator('#parameter-field-can_clock_hz')).not.toHaveClass(/parameter-field-finding/);
+   const confirm=page.getByRole('form',{name:'CAN-FD-Netze bestätigen'});
++  await revealParameter(page,'can_clock_hz');
+   await page.locator('[name="can_clock_hz"]').fill('80000000');
+   await expect(confirm.getByRole('button',{name:'Für 1 Netze bestätigen & erneut prüfen',exact:true})).toBeDisabled();
+   await expect(page.getByRole('region',{name:'Aktuelle Parameterbefunde'})).toContainText('Speichere zuerst die Änderungen');

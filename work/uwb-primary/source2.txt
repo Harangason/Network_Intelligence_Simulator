@@ -1,0 +1,35 @@
+
+PAGE 1
+DW3000 User Manual   
+ 
+© Decawave Ltd 2019 Version 1.1 Page 44 of 255 
+  
+  
+Figure 17: Flow chart for using double RX buffering 
+ 
+Set up RX channel and other 
+parameters as required
+Issue CMD_RX 
+to enable the receiver 
+Set DIS_DRXB bit = 0
+to enable double buffering
+Await frame arrival, as signalled 
+by the RXFCG event flag (IRQ)
+Read the data in RX_BUFFER_B.
+Read other registers of interest 
+from SET_2, e.g. FINFO, RX_TS
+Clear RX event flags in 
+SYS_STATUS and RDB_STATUS 
+relating to processed frame
+Rx more frames?
+YES
+Issue TRXOFF command and 
+clear double buffered status bits 
+to prevent spurious RX interrupts
+NO
+EXIT
+Check RDB_STATUS 
+SET_1 or SET_2
+Read the data in RX_BUFFER_A.
+Read other registers of interest 
+from SET_1, e.g. FINFO, RX_TS

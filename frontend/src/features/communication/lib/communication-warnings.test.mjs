@@ -33,6 +33,27 @@ test('connected canonical endpoints have no communication warning', () => {
   assert.equal(fixture().assess().size, 0);
 });
 
+test('explicitly retired unused inventory is not required to be wired, but live references remain errors', () => {
+  for (const lifecycle_state of ['deprecated', 'superseded']) {
+    const f = fixture();
+    f.objects.push({ id: 'retired', object_type: 'HardwareNetworkInterface', name: 'Old planned channel',
+      hardware_node_id: 'ecu', network_ref: 'bus', lifecycle_state });
+    assert.equal(f.assess().size, 0);
+    f.topology.nodes[0].ports.push({ id: 'p3', hardwareInterfaceId: 'retired', physicalNetworkId: 'bus' });
+    f.topology.edges.push({ sourcePort: 'p3', targetPort: 'p2' });
+    assert.ok(f.assess().get('retired')?.some(w => w.code === 'PORT_RETIRED'), 'A live drawn retired channel remains invalid without a message.');
+    f.topology.edges.pop();
+    f.objects.find(o => o.id === 'message').hardware_interface_id = 'retired';
+    assert.ok(f.assess().get('message')?.some(w => w.code === 'PORT_RETIRED'));
+    f.route.source.port_id = 'retired';
+    assert.ok(f.assess().get('s1')?.some(w => w.code === 'PORT_RETIRED'));
+  }
+  const f = fixture();
+  f.objects.push({ id: 'unconnected', object_type: 'HardwareNetworkInterface', name: 'Normal channel',
+    hardware_node_id: 'ecu', network_ref: 'bus', lifecycle_state: 'draft' });
+  assert.ok(f.assess().get('unconnected')?.some(w => w.code === 'PORT_DISCONNECTED'));
+});
+
 test('approved route on a detached channel warns through signals, interface and function despite another connected channel', () => {
   const f = fixture();
   const broken = { id: 'old-port', object_type: 'HardwareNetworkInterface', hardware_node_id: 'ecu', name: 'ETH_Camera_01', network_ref: null };

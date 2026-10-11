@@ -1,0 +1,42 @@
+--- before/frontend/src/features/communication/lib/technology-parameters.ts
++++ after/frontend/src/features/communication/lib/technology-parameters.ts
+@@ -58,6 +58,30 @@
+   return matches.length && matches.every(item => item.value === matches[0].value) ? matches[0].value : undefined;
+ }
+ 
++/** Display decimal SI units without changing the profile's canonical bit/s value. */
++export function formatBitrate(value: number): string {
++  const [power, unit] = value >= 1e9 ? [9, 'Gbit/s'] : value >= 1e6 ? [6, 'Mbit/s']
++    : value >= 1e3 ? [3, 'kbit/s'] : [0, 'bit/s'];
++  if (!Number.isFinite(value)) return `${value} ${unit}`;
++  // Shift the canonical decimal text, avoiding a second floating-point rounding.
++  const [mantissa, exponent] = String(value).split('e');
++  const [whole, fraction = ''] = mantissa.replace('-', '').split('.');
++  const digits = whole + fraction;
++  const position = whole.length + Number(exponent ?? 0) - power;
++  const integer = position <= 0 ? '0' : digits.slice(0, position).padEnd(position, '0');
++  const decimal = (position <= 0 ? '0'.repeat(-position) + digits : digits.slice(position)).replace(/0+$/, '');
++  return `${value < 0 ? '-' : ''}${integer}${decimal ? ',' + decimal : ''} ${unit}`;
++}
++
++/** Decimal SI prefixes are presentation only; never persist a decorated rate. */
++export function parseBitrate(text: string): number {
++  const match = text.trim().match(/^([+-]?\d+)(?:[.,](\d+))?\s*(bit\/s|kbit\/s|Mbit\/s|Gbit\/s)?$/);
++  if (!match) return Number(text); // Retain raw numeric input, including scientific notation.
++  const power = { 'bit/s':0, 'kbit/s':3, 'Mbit/s':6, 'Gbit/s':9 }[match[3] ?? 'bit/s']!;
++  // Parse once into the canonical number instead of multiplying a rounded mantissa.
++  return Number(`${match[1]}.${match[2] ?? '0'}e${power}`);
++}
++
+ /** Parse a profile field without rounding protocol counters or durations. */
+ export function numericParameterValue(field: TechnologyParameterField, entered: string): number | string | null {
+   const text = entered.trim();
+@@ -72,7 +96,7 @@
+       || field.decimal_max !== undefined && integer > BigInt(field.decimal_max)) throw new Error(`${field.label}: Der Wert liegt außerhalb des gültigen Bereichs.`);
+     return integer.toString();
+   }
+-  const numeric = Number(text);
++  const numeric = field.unit === 'bit/s' ? parseBitrate(text) : Number(text);
+   if (!Number.isFinite(numeric) || field.integer && !Number.isSafeInteger(numeric)
+     || field.min !== undefined && numeric < field.min || field.max !== undefined && numeric > field.max) {
+     throw new Error(`${field.label}: Der Wert liegt außerhalb des gültigen Bereichs.`);

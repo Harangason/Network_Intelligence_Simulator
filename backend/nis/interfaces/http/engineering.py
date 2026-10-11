@@ -158,6 +158,7 @@ def inspect_execution_goal_route(workload_id):
 
 # URL-Segment (Plural, kebab-case) -> kanonischer Objekttyp
 RESOURCES: dict[str, str] = {
+    "safety-requirements": "SafetyRequirement",
     "hardware-nodes": "HardwareNode",
     "hardware-interfaces": "HardwareNetworkInterface",
     "functions": "Function",
@@ -165,6 +166,60 @@ RESOURCES: dict[str, str] = {
     "messages": "Message",
     "signals": "Signal",
 }
+
+
+@engineering_api.get("/intelligence/safety")
+def safety_assurance_route():
+    from backend.nis.engineering.safety_assurance import export_snapshot, STANDARD_SOURCES
+    from backend.nis.engineering.pagination import all_pages
+    from backend.nis.engineering.network.network_scene import confirmed_groups
+    from copy import deepcopy
+    requirements = all_pages(list_objects, "SafetyRequirement")
+    workflow = WorkflowStatusService(_project_id())
+    state = workflow.get()
+    snapshots = state.get("simulation_snapshots") or []
+    selected_id = request.args.get("snapshot") or (str(snapshots[0]["id"]) if snapshots else None)
+    snapshot = workflow.get_simulation_snapshot(selected_id) if selected_id else None
+    if selected_id and not snapshot:
+        return jsonify({"error": "Simulationssnapshot nicht in diesem Projekt gefunden."}), 404
+    bundle = export_snapshot(_project_id(), snapshot, requirements)
+    if request.args.get("download") == "1":
+        response = jsonify(bundle)
+        response.headers["Content-Disposition"] = 'attachment; filename="nis-safety-evidence.json"'
+        return response
+    hardware = all_pages(list_objects, "HardwareNode")
+    by_id = {str(item["id"]): item for item in hardware}
+    topology = deepcopy(state.get("topology") or {"nodes": [], "edges": []})
+    nodes = {str(node["id"]): node for node in topology.get("nodes", [])}
+    for node in nodes.values():
+        identity = by_id.get(str(node.get("engineeringId") or node["id"]), {}).get("identity") or {}
+        if identity.get("cluster_id"):
+            node.update(clusterId=identity["cluster_id"], clusterName=identity.get("cluster_name"))
+        if identity.get("system_owner_id") or identity.get("systemOwnerId"):
+            node.update(systemOwnerId=identity.get("system_owner_id") or identity["systemOwnerId"])
+        if identity.get("system_owner_source") == "network-editor":
+            node.update(systemOwnerSource="network-editor")
+    # Reuse the network editor's canonical grouping, including wizard-confirmed
+    # clusters. This read-only projection never persists a new membership.
+    clusters, owners = confirmed_groups(topology, ((state.get("context") or {}).get("wizard_request") or {}).get("prompt", ""))
+    cluster_by_anchor = {str(anchor): cluster for cluster in clusters for anchor in cluster["anchors"]}
+    grouping = {}
+    for node_id, node in nodes.items():
+        anchor = node_id
+        while anchor in owners:
+            anchor = str(owners[anchor])
+        cluster = cluster_by_anchor.get(anchor)
+        if cluster:
+            owner = nodes[anchor]
+            grouping[str(node.get("engineeringId") or node_id)] = {
+                "cluster_id": cluster["id"], "cluster_name": cluster["label"],
+                "system_owner_id": str(owner.get("engineeringId") or anchor)}
+    return jsonify({"project_id": _project_id(), "requirements": requirements,
+        "functions": all_pages(list_objects, "Function"), "routes": all_pages(list_routes),
+        "hardware": [{"id": item["id"], "name": item["name"], "identity": item.get("identity") or {},
+                      "grouping": grouping.get(str(item["id"]))} for item in hardware],
+        "profiles": [{"standard": standard, "url": url} for standard, url in STANDARD_SOURCES.items()],
+        "bundle": bundle})
 
 FILTERABLE_QUERY_PARAMS = (
     "domain",
@@ -675,7 +730,8 @@ def _prepare_manual_topology_save(topology: dict, project_id: str, *, actor: str
         physical, changes = materialize_physical_ports(linked,
             all_pages(list_objects, "HardwareNode"), all_pages(list_objects, "HardwareNetworkInterface"),
             state["parameters"].get("networks") or [], prune_unconnected=False, previous_topology=previous_topology,
-            routes=all_pages(list_routes), messages=all_pages(list_objects, "Message"))
+            routes=all_pages(list_routes), messages=all_pages(list_objects, "Message"),
+            logical_interfaces=all_pages(list_objects, "Interface"))
     except ValueError as error:
         raise EngineeringValidationError(str(error)) from error
     networks = list(state["parameters"].get("networks") or [])

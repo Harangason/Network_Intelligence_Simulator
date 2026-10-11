@@ -1,0 +1,38 @@
+FROM node:22-bookworm-slim@sha256:83f487e0a63425e5b4d146fb5e5be574bcbe1b7b843d3ebafdd95eaf7767a7e5 AS node-runtime
+
+FROM python:3.13-slim@sha256:9d2e5553305c7c7b0097999bb17187c69b921ccd6bc9d40e4bb5ebe652c00285
+
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+ENV NODE_ENV=production
+ENV NETWORKIS_FRONTEND_MODE=production
+ENV NETWORKIS_NEXT_DIST_DIR=.next-networkis
+ENV FLASK_HOST=0.0.0.0
+ENV FLASK_PORT=15050
+ENV FRONTEND_PORT=13500
+ENV SIMULATOR_BACKEND_API_URL=http://127.0.0.1:15050/api
+
+WORKDIR /app
+
+COPY --from=node-runtime /usr/local/bin/node /usr/local/bin/node
+COPY --from=node-runtime /usr/local/lib/node_modules /usr/local/lib/node_modules
+
+COPY backend/requirements.txt backend/requirements.lock /app/backend/
+COPY scripts/verify-runtime-lock.py /app/scripts/verify-runtime-lock.py
+RUN python -m pip install --no-cache-dir -r /app/backend/requirements.txt -c /app/backend/requirements.lock \
+    && python -m pip check \
+    && python /app/scripts/verify-runtime-lock.py
+
+COPY frontend/package.json frontend/package-lock.json /app/frontend/
+RUN cd /app/frontend && node /usr/local/lib/node_modules/npm/bin/npm-cli.js ci --include=dev
+
+COPY . /app
+
+ARG NIS_BUILD_COMMIT_ID
+RUN NIS_BUILD_COMMIT_ID="$NIS_BUILD_COMMIT_ID" python /app/scripts/write-build-info.py
+
+RUN cd /app/frontend && node /usr/local/lib/node_modules/npm/bin/npm-cli.js run build
+
+EXPOSE 13500 15050
+
+CMD ["python", "generate_realistic_communication_tool.py"]

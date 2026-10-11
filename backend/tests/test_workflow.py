@@ -870,6 +870,7 @@ def test_preflight_accepts_interface_owned_directly_by_hardware(monkeypatch):
         "topology": {"nodes": [], "edges": []},
     }
     objects = {
+        "SafetyRequirement": [],
         "HardwareNode": [{"id": "hardware", "name": "Basic sensor"}],
         "Function": [],
         "Interface": [{"id": "interface", "name": "Basic sensor interface", "hardware_node_id": "hardware", "function_id": None}],

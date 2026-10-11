@@ -1,0 +1,2897 @@
+{
+  "id": "flexray",
+  "label": "FlexRay",
+  "domain": "generic_networking",
+  "layer": "DATA_LINK",
+  "transport_unit": "FRAME",
+  "payload_element_types": [
+    "SIGNAL",
+    "STATUS"
+  ],
+  "hardware_interface": "flexray_controller",
+  "hardware_capability_aliases": [
+    "flexray_controller"
+  ],
+  "default_stack": [
+    "flexray"
+  ],
+  "stack_variants": [
+    [
+      "flexray"
+    ]
+  ],
+  "default_bitrate": 2500000,
+  "rate_model": {
+    "type": "SINGLE_BITRATE",
+    "fields": [
+      "bitrate_bps"
+    ],
+    "allowed_bps": [
+      2500000,
+      5000000,
+      8000000,
+      10000000
+    ]
+  },
+  "local_timing_schema": [],
+  "parameter_schema": {
+    "bitrate_bps": {
+      "label": "Bitrate",
+      "category": "physical",
+      "scope": "network",
+      "type": "number",
+      "description": "Technology-profiled network rate.",
+      "required": true,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 2500000,
+      "unit": "bit/s",
+      "min": 1,
+      "default_review": {
+        "technology": "flexray",
+        "rate_profile": "flexray",
+        "values": {
+          "bitrate_bps": 2500000
+        },
+        "basis": "LITERATURE_DEFAULT",
+        "status": "REVIEW_REQUIRED",
+        "source": "https://www.nxp.com/docs/en/data-sheet/MFR4310RM.pdf",
+        "source_revision": "MFR4310RM Rev2 May2008 section3.5.1/Table3-110; NXP FlexRay V3 webinar2010; Vector SIL Kit5.0.7 native API representation"
+      },
+      "allowed_bps": [
+        2500000,
+        5000000,
+        8000000,
+        10000000
+      ],
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED",
+      "source": "https://www.nxp.com/docs/en/data-sheet/MFR4310RM.pdf",
+      "source_revision": "MFR4310RM Rev2 May2008 section3.5.1/Table3-110; NXP FlexRay V3 webinar2010; Vector SIL Kit5.0.7 native API representation"
+    },
+    "payload_bytes": {
+      "label": "Payload",
+      "category": "physical",
+      "scope": "message",
+      "type": "number",
+      "description": "Actual frame payload0..254 octets in two-octet words. Static configured global size and dynamic actual frame/maximum size are distinct; prefixes/padding are included.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "max": 254,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.nxp.com/docs/en/data-sheet/MFR4310RM.pdf",
+      "source_revision": "MFR4310RM Rev2 May2008 section3.5.1/Table3-110; NXP FlexRay V3 webinar2010; Vector SIL Kit5.0.7 native API representation",
+      "integer": true,
+      "multiple_of": 2
+    },
+    "cycle_ms": {
+      "label": "Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "Standardperiode fuer zyklische Nachrichten.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "minimum_cycle_time_ms": {
+      "label": "Minimum Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "deadline_ms": {
+      "label": "Deadline",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "timeout_ms": {
+      "label": "Timeout",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_latency_ms": {
+      "label": "Maximum Latency",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "jitter_ms": {
+      "label": "Jitter Budget",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "freshness_ms": {
+      "label": "Data Freshness",
+      "category": "timing",
+      "scope": "signal",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "source_processing_delay_ms": {
+      "label": "Source Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_processing_delay_ms": {
+      "label": "Target Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "propagation_delay_ms": {
+      "label": "Propagation",
+      "category": "timing",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.01,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_bus_load_percent": {
+      "label": "Ziel-Buslast",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "Zielwert fuer die aus Routing, Payload, Zyklus und Bitrate berechnete Buslast.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "peak_factor": {
+      "label": "Peak Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.15,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_factor": {
+      "label": "Burst Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.5,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_window_ms": {
+      "label": "Burst Window",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "warning_threshold": {
+      "label": "Load Warning",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "critical_threshold": {
+      "label": "Load Critical",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 75,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "overload_threshold": {
+      "label": "Load Overload",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 90,
+      "unit": "%",
+      "min": 1,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "queue_size": {
+      "label": "Queue Size",
+      "category": "qos",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 256,
+      "unit": "Frames",
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1",
+      "integer": true
+    },
+    "queue_policy": {
+      "label": "Queue Policy",
+      "category": "qos",
+      "scope": "network",
+      "type": "select",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": "FIFO",
+      "options": [
+        "FIFO",
+        "CUSTOM"
+      ],
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "traffic_class": {
+      "label": "Traffic Class",
+      "category": "qos",
+      "scope": "route",
+      "type": "select",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": "BEST_EFFORT",
+      "options": [
+        "BEST_EFFORT",
+        "CONTROL",
+        "REALTIME",
+        "SAFETY_CRITICAL"
+      ],
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "packet_loss_probability": {
+      "label": "Packet Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "frame_loss_probability": {
+      "label": "Frame Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "bit_error_rate": {
+      "label": "Bit Error Rate",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "corruption_probability": {
+      "label": "Corruption",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duplicate_probability": {
+      "label": "Duplication",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "reordering_probability": {
+      "label": "Reordering",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "required_reliability": {
+      "label": "Required Reliability",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.999,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_offset_ms": {
+      "label": "Clock Offset",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_drift_ppm": {
+      "label": "Clock Drift",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 20,
+      "unit": "ppm",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_precision_ms": {
+      "label": "Sync Precision",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_interval_ms": {
+      "label": "Sync Interval",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1000,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_sync_error_ms": {
+      "label": "Maximum Sync Error",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_delay_ms": {
+      "label": "Gateway Processing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.2,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_queue_delay_ms": {
+      "label": "Gateway Queueing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "protocol_conversion_delay_ms": {
+      "label": "Protocol Conversion",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duration_s": {
+      "label": "Simulation Duration",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 1,
+      "unit": "s",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "seed": {
+      "label": "Random Seed",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 42,
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "max_events": {
+      "label": "Maximum Events",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 100000,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "dropout_probability": {
+      "label": "Failure Injection Dropout",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "fr_profile": {
+      "label": "Actual FlexRay protocol/controller profile",
+      "category": "physical",
+      "scope": "route",
+      "type": "select",
+      "description": "Actual matched FlexRay cluster/node/frame declaration. Controller/edition limits and physical timing/slot fit require their own evidence; no scalar default confirms a valid startup or schedule.",
+      "required": true,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": "PROTOCOL_3_0_1",
+      "options": [
+        "PROTOCOL_3_0_1",
+        "NXP_MFR4310_2_1",
+        "DEVICE_SPECIFIC"
+      ],
+      "integer": false,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED",
+      "source": "https://vectorgrp.github.io/sil-kit-docs/api/services/flexray.html",
+      "source_revision": "Vector SIL Kit5.0.7 FlexrayClusterParameters/NodeParameters/Header/TxBufferConfig representation of protocol3.0.1, not complete normative conformance"
+    },
+    "fr_configuration_source": {
+      "label": "Actual matched controller/protocol/cluster/node configuration",
+      "category": "physical",
+      "scope": "route",
+      "type": "text",
+      "description": "Actual matched FlexRay cluster/node/frame declaration. Controller/edition limits and physical timing/slot fit require their own evidence; no scalar default confirms a valid startup or schedule.",
+      "required": true,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://vectorgrp.github.io/sil-kit-docs/api/services/flexray.html",
+      "source_revision": "Vector SIL Kit5.0.7 FlexrayClusterParameters/NodeParameters/Header/TxBufferConfig representation of protocol3.0.1, not complete normative conformance"
+    },
+    "fr_physical_source": {
+      "label": "Actual A/B PHY/cabling/termination/star/topology evidence",
+      "category": "physical",
+      "scope": "route",
+      "type": "text",
+      "description": "Actual matched FlexRay cluster/node/frame declaration. Controller/edition limits and physical timing/slot fit require their own evidence; no scalar default confirms a valid startup or schedule.",
+      "required": true,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://vectorgrp.github.io/sil-kit-docs/api/services/flexray.html",
+      "source_revision": "Vector SIL Kit5.0.7 FlexrayClusterParameters/NodeParameters/Header/TxBufferConfig representation of protocol3.0.1, not complete normative conformance"
+    },
+    "fr_schedule_source": {
+      "label": "Actual slot/owner/cycle/channel schedule evidence",
+      "category": "physical",
+      "scope": "route",
+      "type": "text",
+      "description": "Actual matched FlexRay cluster/node/frame declaration. Controller/edition limits and physical timing/slot fit require their own evidence; no scalar default confirms a valid startup or schedule.",
+      "required": true,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://vectorgrp.github.io/sil-kit-docs/api/services/flexray.html",
+      "source_revision": "Vector SIL Kit5.0.7 FlexrayClusterParameters/NodeParameters/Header/TxBufferConfig representation of protocol3.0.1, not complete normative conformance"
+    },
+    "fr_segment": {
+      "label": "Actual transmitted frame segment",
+      "category": "physical",
+      "scope": "route",
+      "type": "select",
+      "description": "Actual matched FlexRay cluster/node/frame declaration. Controller/edition limits and physical timing/slot fit require their own evidence; no scalar default confirms a valid startup or schedule.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "STATIC",
+        "DYNAMIC"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://vectorgrp.github.io/sil-kit-docs/api/services/flexray.html",
+      "source_revision": "Vector SIL Kit5.0.7 FlexrayClusterParameters/NodeParameters/Header/TxBufferConfig representation of protocol3.0.1, not complete normative conformance"
+    },
+    "fr_channels": {
+      "label": "Actual controller connected channels",
+      "category": "physical",
+      "scope": "route",
+      "type": "select",
+      "description": "Actual matched FlexRay cluster/node/frame declaration. Controller/edition limits and physical timing/slot fit require their own evidence; no scalar default confirms a valid startup or schedule.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "A",
+        "B",
+        "AB"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://vectorgrp.github.io/sil-kit-docs/api/services/flexray.html",
+      "source_revision": "Vector SIL Kit5.0.7 FlexrayClusterParameters/NodeParameters/Header/TxBufferConfig representation of protocol3.0.1, not complete normative conformance"
+    },
+    "fr_tx_channels": {
+      "label": "Actual selected TX channels",
+      "category": "physical",
+      "scope": "route",
+      "type": "select",
+      "description": "Actual matched FlexRay cluster/node/frame declaration. Controller/edition limits and physical timing/slot fit require their own evidence; no scalar default confirms a valid startup or schedule.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "A",
+        "B",
+        "AB"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://vectorgrp.github.io/sil-kit-docs/api/services/flexray.html",
+      "source_revision": "Vector SIL Kit5.0.7 FlexrayClusterParameters/NodeParameters/Header/TxBufferConfig representation of protocol3.0.1, not complete normative conformance"
+    },
+    "fr_channel_use": {
+      "label": "Actual dual-channel traffic relationship",
+      "category": "physical",
+      "scope": "route",
+      "type": "select",
+      "description": "Actual matched FlexRay cluster/node/frame declaration. Controller/edition limits and physical timing/slot fit require their own evidence; no scalar default confirms a valid startup or schedule.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "SINGLE",
+        "REDUNDANT",
+        "INDEPENDENT"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://vectorgrp.github.io/sil-kit-docs/api/services/flexray.html",
+      "source_revision": "Vector SIL Kit5.0.7 FlexrayClusterParameters/NodeParameters/Header/TxBufferConfig representation of protocol3.0.1, not complete normative conformance"
+    },
+    "fr_frame_id": {
+      "label": "Actual transmitted slot/frame identifier",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual matched FlexRay cluster/node/frame declaration. Controller/edition limits and physical timing/slot fit require their own evidence; no scalar default confirms a valid startup or schedule.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 1,
+      "max": 2047,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://vectorgrp.github.io/sil-kit-docs/api/services/flexray.html",
+      "source_revision": "Vector SIL Kit5.0.7 FlexrayClusterParameters/NodeParameters/Header/TxBufferConfig representation of protocol3.0.1, not complete normative conformance"
+    },
+    "fr_payload_words": {
+      "label": "Actual frame payload length field",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual matched FlexRay cluster/node/frame declaration. Controller/edition limits and physical timing/slot fit require their own evidence; no scalar default confirms a valid startup or schedule.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "16-bit words",
+      "min": 0,
+      "max": 127,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://vectorgrp.github.io/sil-kit-docs/api/services/flexray.html",
+      "source_revision": "Vector SIL Kit5.0.7 FlexrayClusterParameters/NodeParameters/Header/TxBufferConfig representation of protocol3.0.1, not complete normative conformance"
+    },
+    "fr_static_payload_words": {
+      "label": "Actual global static frame payload length",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual matched FlexRay cluster/node/frame declaration. Controller/edition limits and physical timing/slot fit require their own evidence; no scalar default confirms a valid startup or schedule.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "16-bit words",
+      "min": 0,
+      "max": 127,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://vectorgrp.github.io/sil-kit-docs/api/services/flexray.html",
+      "source_revision": "Vector SIL Kit5.0.7 FlexrayClusterParameters/NodeParameters/Header/TxBufferConfig representation of protocol3.0.1, not complete normative conformance"
+    },
+    "fr_dynamic_payload_words_max": {
+      "label": "Actual local maximum dynamic frame payload",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual matched FlexRay cluster/node/frame declaration. Controller/edition limits and physical timing/slot fit require their own evidence; no scalar default confirms a valid startup or schedule.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "16-bit words",
+      "min": 0,
+      "max": 127,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://vectorgrp.github.io/sil-kit-docs/api/services/flexray.html",
+      "source_revision": "Vector SIL Kit5.0.7 FlexrayClusterParameters/NodeParameters/Header/TxBufferConfig representation of protocol3.0.1, not complete normative conformance"
+    },
+    "fr_frame_bytes": {
+      "label": "Actual header/payload/trailer octets excluding line coding",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual matched FlexRay cluster/node/frame declaration. Controller/edition limits and physical timing/slot fit require their own evidence; no scalar default confirms a valid startup or schedule.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 8,
+      "max": 262,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://vectorgrp.github.io/sil-kit-docs/api/services/flexray.html",
+      "source_revision": "Vector SIL Kit5.0.7 FlexrayClusterParameters/NodeParameters/Header/TxBufferConfig representation of protocol3.0.1, not complete normative conformance"
+    },
+    "fr_cycle_counter": {
+      "label": "Actual received/transmitted cycle counter",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual matched FlexRay cluster/node/frame declaration. Controller/edition limits and physical timing/slot fit require their own evidence; no scalar default confirms a valid startup or schedule.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "max": 63,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://vectorgrp.github.io/sil-kit-docs/api/services/flexray.html",
+      "source_revision": "Vector SIL Kit5.0.7 FlexrayClusterParameters/NodeParameters/Header/TxBufferConfig representation of protocol3.0.1, not complete normative conformance"
+    },
+    "fr_cycle_count_max": {
+      "label": "Actual cluster maximum cycle counter",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual matched FlexRay cluster/node/frame declaration. Controller/edition limits and physical timing/slot fit require their own evidence; no scalar default confirms a valid startup or schedule.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 7,
+      "max": 63,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://vectorgrp.github.io/sil-kit-docs/api/services/flexray.html",
+      "source_revision": "Vector SIL Kit5.0.7 FlexrayClusterParameters/NodeParameters/Header/TxBufferConfig representation of protocol3.0.1, not complete normative conformance",
+      "allowed_values": [
+        7,
+        9,
+        11,
+        13,
+        15,
+        17,
+        19,
+        21,
+        23,
+        25,
+        27,
+        29,
+        31,
+        33,
+        35,
+        37,
+        39,
+        41,
+        43,
+        45,
+        47,
+        49,
+        51,
+        53,
+        55,
+        57,
+        59,
+        61,
+        63
+      ]
+    },
+    "fr_cycle_offset": {
+      "label": "Actual cycle multiplexing base offset",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual matched FlexRay cluster/node/frame declaration. Controller/edition limits and physical timing/slot fit require their own evidence; no scalar default confirms a valid startup or schedule.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "cycles",
+      "min": 0,
+      "max": 63,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://vectorgrp.github.io/sil-kit-docs/api/services/flexray.html",
+      "source_revision": "Vector SIL Kit5.0.7 FlexrayClusterParameters/NodeParameters/Header/TxBufferConfig representation of protocol3.0.1, not complete normative conformance"
+    },
+    "fr_repetition": {
+      "label": "Actual cycle multiplexing repetition",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual matched FlexRay cluster/node/frame declaration. Controller/edition limits and physical timing/slot fit require their own evidence; no scalar default confirms a valid startup or schedule.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "cycles",
+      "min": 1,
+      "max": 64,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://vectorgrp.github.io/sil-kit-docs/api/services/flexray.html",
+      "source_revision": "Vector SIL Kit5.0.7 FlexrayClusterParameters/NodeParameters/Header/TxBufferConfig representation of protocol3.0.1, not complete normative conformance",
+      "allowed_values": [
+        1,
+        2,
+        4,
+        8,
+        16,
+        32,
+        64
+      ]
+    },
+    "fr_transmission_mode": {
+      "label": "Actual TX buffer update semantics",
+      "category": "physical",
+      "scope": "route",
+      "type": "select",
+      "description": "Actual matched FlexRay cluster/node/frame declaration. Controller/edition limits and physical timing/slot fit require their own evidence; no scalar default confirms a valid startup or schedule.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "SINGLE_SHOT",
+        "CONTINUOUS"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://vectorgrp.github.io/sil-kit-docs/api/services/flexray.html",
+      "source_revision": "Vector SIL Kit5.0.7 FlexrayClusterParameters/NodeParameters/Header/TxBufferConfig representation of protocol3.0.1, not complete normative conformance"
+    },
+    "fr_preamble": {
+      "label": "Actual payload preamble indicator",
+      "category": "physical",
+      "scope": "route",
+      "type": "boolean",
+      "description": "Actual matched FlexRay cluster/node/frame declaration. Controller/edition limits and physical timing/slot fit require their own evidence; no scalar default confirms a valid startup or schedule.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://vectorgrp.github.io/sil-kit-docs/api/services/flexray.html",
+      "source_revision": "Vector SIL Kit5.0.7 FlexrayClusterParameters/NodeParameters/Header/TxBufferConfig representation of protocol3.0.1, not complete normative conformance"
+    },
+    "fr_payload_valid": {
+      "label": "Actual null-frame bit data-valid meaning",
+      "category": "physical",
+      "scope": "route",
+      "type": "boolean",
+      "description": "Actual matched FlexRay cluster/node/frame declaration. Controller/edition limits and physical timing/slot fit require their own evidence; no scalar default confirms a valid startup or schedule.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://vectorgrp.github.io/sil-kit-docs/api/services/flexray.html",
+      "source_revision": "Vector SIL Kit5.0.7 FlexrayClusterParameters/NodeParameters/Header/TxBufferConfig representation of protocol3.0.1, not complete normative conformance"
+    },
+    "fr_sync_frame": {
+      "label": "Actual synchronization frame indicator",
+      "category": "physical",
+      "scope": "route",
+      "type": "boolean",
+      "description": "Actual matched FlexRay cluster/node/frame declaration. Controller/edition limits and physical timing/slot fit require their own evidence; no scalar default confirms a valid startup or schedule.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://vectorgrp.github.io/sil-kit-docs/api/services/flexray.html",
+      "source_revision": "Vector SIL Kit5.0.7 FlexrayClusterParameters/NodeParameters/Header/TxBufferConfig representation of protocol3.0.1, not complete normative conformance"
+    },
+    "fr_startup_frame": {
+      "label": "Actual startup frame indicator",
+      "category": "physical",
+      "scope": "route",
+      "type": "boolean",
+      "description": "Actual matched FlexRay cluster/node/frame declaration. Controller/edition limits and physical timing/slot fit require their own evidence; no scalar default confirms a valid startup or schedule.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://vectorgrp.github.io/sil-kit-docs/api/services/flexray.html",
+      "source_revision": "Vector SIL Kit5.0.7 FlexrayClusterParameters/NodeParameters/Header/TxBufferConfig representation of protocol3.0.1, not complete normative conformance"
+    },
+    "fr_coldstart_node": {
+      "label": "Actual configured coldstart node role",
+      "category": "physical",
+      "scope": "route",
+      "type": "boolean",
+      "description": "Actual matched FlexRay cluster/node/frame declaration. Controller/edition limits and physical timing/slot fit require their own evidence; no scalar default confirms a valid startup or schedule.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://vectorgrp.github.io/sil-kit-docs/api/services/flexray.html",
+      "source_revision": "Vector SIL Kit5.0.7 FlexrayClusterParameters/NodeParameters/Header/TxBufferConfig representation of protocol3.0.1, not complete normative conformance"
+    },
+    "fr_header_crc": {
+      "label": "Actual encoded11-bit header CRC",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual matched FlexRay cluster/node/frame declaration. Controller/edition limits and physical timing/slot fit require their own evidence; no scalar default confirms a valid startup or schedule.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "max": 2047,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://vectorgrp.github.io/sil-kit-docs/api/services/flexray.html",
+      "source_revision": "Vector SIL Kit5.0.7 FlexrayClusterParameters/NodeParameters/Header/TxBufferConfig representation of protocol3.0.1, not complete normative conformance"
+    },
+    "fr_frame_crc": {
+      "label": "Actual encoded24-bit channel-specific frame CRC",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual matched FlexRay cluster/node/frame declaration. Controller/edition limits and physical timing/slot fit require their own evidence; no scalar default confirms a valid startup or schedule.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "max": 16777215,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://vectorgrp.github.io/sil-kit-docs/api/services/flexray.html",
+      "source_revision": "Vector SIL Kit5.0.7 FlexrayClusterParameters/NodeParameters/Header/TxBufferConfig representation of protocol3.0.1, not complete normative conformance"
+    },
+    "fr_crc_source": {
+      "label": "Actual encoded flags/ID/length/payload/channel CRC verification",
+      "category": "physical",
+      "scope": "route",
+      "type": "text",
+      "description": "Actual matched FlexRay cluster/node/frame declaration. Controller/edition limits and physical timing/slot fit require their own evidence; no scalar default confirms a valid startup or schedule.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://vectorgrp.github.io/sil-kit-docs/api/services/flexray.html",
+      "source_revision": "Vector SIL Kit5.0.7 FlexrayClusterParameters/NodeParameters/Header/TxBufferConfig representation of protocol3.0.1, not complete normative conformance"
+    },
+    "fr_nmv_bytes": {
+      "label": "Actual global network-management-vector length",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual matched FlexRay cluster/node/frame declaration. Controller/edition limits and physical timing/slot fit require their own evidence; no scalar default confirms a valid startup or schedule.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "max": 12,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://vectorgrp.github.io/sil-kit-docs/api/services/flexray.html",
+      "source_revision": "Vector SIL Kit5.0.7 FlexrayClusterParameters/NodeParameters/Header/TxBufferConfig representation of protocol3.0.1, not complete normative conformance"
+    },
+    "fr_message_id": {
+      "label": "Actual dynamic payload preamble message identifier",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual matched FlexRay cluster/node/frame declaration. Controller/edition limits and physical timing/slot fit require their own evidence; no scalar default confirms a valid startup or schedule.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "max": 65535,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://vectorgrp.github.io/sil-kit-docs/api/services/flexray.html",
+      "source_revision": "Vector SIL Kit5.0.7 FlexrayClusterParameters/NodeParameters/Header/TxBufferConfig representation of protocol3.0.1, not complete normative conformance"
+    },
+    "fr_macro_per_cycle": {
+      "label": "Actual global macroticks per cycle",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual matched FlexRay cluster/node/frame declaration. Controller/edition limits and physical timing/slot fit require their own evidence; no scalar default confirms a valid startup or schedule.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "MT",
+      "min": 8,
+      "max": 16000,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://vectorgrp.github.io/sil-kit-docs/api/services/flexray.html",
+      "source_revision": "Vector SIL Kit5.0.7 FlexrayClusterParameters/NodeParameters/Header/TxBufferConfig representation of protocol3.0.1, not complete normative conformance"
+    },
+    "fr_macrotick_us": {
+      "label": "Actual global nominal macrotick duration",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual matched FlexRay cluster/node/frame declaration. Controller/edition limits and physical timing/slot fit require their own evidence; no scalar default confirms a valid startup or schedule.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "us",
+      "min": 0.001,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://vectorgrp.github.io/sil-kit-docs/api/services/flexray.html",
+      "source_revision": "Vector SIL Kit5.0.7 FlexrayClusterParameters/NodeParameters/Header/TxBufferConfig representation of protocol3.0.1, not complete normative conformance"
+    },
+    "fr_microtick_ns": {
+      "label": "Actual node microtick duration",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual matched FlexRay cluster/node/frame declaration. Controller/edition limits and physical timing/slot fit require their own evidence; no scalar default confirms a valid startup or schedule.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "ns",
+      "min": 0.001,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://vectorgrp.github.io/sil-kit-docs/api/services/flexray.html",
+      "source_revision": "Vector SIL Kit5.0.7 FlexrayClusterParameters/NodeParameters/Header/TxBufferConfig representation of protocol3.0.1, not complete normative conformance"
+    },
+    "fr_micro_per_cycle": {
+      "label": "Actual nominal node microticks per cycle",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "These reviewed bounds apply to the Vector5.0.7 representation of FlexRay3.0.1 only. A different protocol/controller profile stays UNVERIFIED until its own bounds are reviewed; no foreign-version fallback.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "uT",
+      "min": 960,
+      "max": 1280000,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://vectorgrp.github.io/sil-kit-docs/api/services/flexray.html",
+      "source_revision": "Vector SIL Kit5.0.7 FlexrayClusterParameters/NodeParameters/Header/TxBufferConfig representation of protocol3.0.1, not complete normative conformance",
+      "schema_when": {
+        "fr_profile": "PROTOCOL_3_0_1"
+      }
+    },
+    "fr_samples_per_microtick": {
+      "label": "Actual controller samples per microtick",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual matched FlexRay cluster/node/frame declaration. Controller/edition limits and physical timing/slot fit require their own evidence; no scalar default confirms a valid startup or schedule.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 1,
+      "max": 2,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://vectorgrp.github.io/sil-kit-docs/api/services/flexray.html",
+      "source_revision": "Vector SIL Kit5.0.7 FlexrayClusterParameters/NodeParameters/Header/TxBufferConfig representation of protocol3.0.1, not complete normative conformance",
+      "allowed_values": [
+        1,
+        2
+      ]
+    },
+    "fr_cycle_us": {
+      "label": "Actual communication cycle duration",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual matched FlexRay cluster/node/frame declaration. Controller/edition limits and physical timing/slot fit require their own evidence; no scalar default confirms a valid startup or schedule.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "us",
+      "min": 0.001,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://vectorgrp.github.io/sil-kit-docs/api/services/flexray.html",
+      "source_revision": "Vector SIL Kit5.0.7 FlexrayClusterParameters/NodeParameters/Header/TxBufferConfig representation of protocol3.0.1, not complete normative conformance"
+    },
+    "fr_cycle_mt": {
+      "label": "Actual complete cycle segment sum",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual matched FlexRay cluster/node/frame declaration. Controller/edition limits and physical timing/slot fit require their own evidence; no scalar default confirms a valid startup or schedule.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "MT",
+      "min": 8,
+      "max": 16000,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://vectorgrp.github.io/sil-kit-docs/api/services/flexray.html",
+      "source_revision": "Vector SIL Kit5.0.7 FlexrayClusterParameters/NodeParameters/Header/TxBufferConfig representation of protocol3.0.1, not complete normative conformance"
+    },
+    "fr_static_slots": {
+      "label": "Actual global static slot count",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual matched FlexRay cluster/node/frame declaration. Controller/edition limits and physical timing/slot fit require their own evidence; no scalar default confirms a valid startup or schedule.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "slots",
+      "min": 2,
+      "max": 1023,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://vectorgrp.github.io/sil-kit-docs/api/services/flexray.html",
+      "source_revision": "Vector SIL Kit5.0.7 FlexrayClusterParameters/NodeParameters/Header/TxBufferConfig representation of protocol3.0.1, not complete normative conformance"
+    },
+    "fr_static_slot_mt": {
+      "label": "Actual global static slot duration",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "These reviewed bounds apply to the Vector5.0.7 representation of FlexRay3.0.1 only. A different protocol/controller profile stays UNVERIFIED until its own bounds are reviewed; no foreign-version fallback.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "MT",
+      "min": 3,
+      "max": 664,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://vectorgrp.github.io/sil-kit-docs/api/services/flexray.html",
+      "source_revision": "Vector SIL Kit5.0.7 FlexrayClusterParameters/NodeParameters/Header/TxBufferConfig representation of protocol3.0.1, not complete normative conformance",
+      "schema_when": {
+        "fr_profile": "PROTOCOL_3_0_1"
+      }
+    },
+    "fr_action_point_mt": {
+      "label": "Actual static action-point offset",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual matched FlexRay cluster/node/frame declaration. Controller/edition limits and physical timing/slot fit require their own evidence; no scalar default confirms a valid startup or schedule.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "MT",
+      "min": 1,
+      "max": 63,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://vectorgrp.github.io/sil-kit-docs/api/services/flexray.html",
+      "source_revision": "Vector SIL Kit5.0.7 FlexrayClusterParameters/NodeParameters/Header/TxBufferConfig representation of protocol3.0.1, not complete normative conformance"
+    },
+    "fr_minislots": {
+      "label": "Actual global dynamic minislot count",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "These reviewed bounds apply to the Vector5.0.7 representation of FlexRay3.0.1 only. A different protocol/controller profile stays UNVERIFIED until its own bounds are reviewed; no foreign-version fallback.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "minislots",
+      "min": 0,
+      "max": 7988,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://vectorgrp.github.io/sil-kit-docs/api/services/flexray.html",
+      "source_revision": "Vector SIL Kit5.0.7 FlexrayClusterParameters/NodeParameters/Header/TxBufferConfig representation of protocol3.0.1, not complete normative conformance",
+      "schema_when": {
+        "fr_profile": "PROTOCOL_3_0_1"
+      }
+    },
+    "fr_minislot_mt": {
+      "label": "Actual global minislot duration",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual matched FlexRay cluster/node/frame declaration. Controller/edition limits and physical timing/slot fit require their own evidence; no scalar default confirms a valid startup or schedule.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "MT",
+      "min": 2,
+      "max": 63,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://vectorgrp.github.io/sil-kit-docs/api/services/flexray.html",
+      "source_revision": "Vector SIL Kit5.0.7 FlexrayClusterParameters/NodeParameters/Header/TxBufferConfig representation of protocol3.0.1, not complete normative conformance"
+    },
+    "fr_minislot_action_point_mt": {
+      "label": "Actual dynamic action-point offset",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual matched FlexRay cluster/node/frame declaration. Controller/edition limits and physical timing/slot fit require their own evidence; no scalar default confirms a valid startup or schedule.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "MT",
+      "min": 1,
+      "max": 31,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://vectorgrp.github.io/sil-kit-docs/api/services/flexray.html",
+      "source_revision": "Vector SIL Kit5.0.7 FlexrayClusterParameters/NodeParameters/Header/TxBufferConfig representation of protocol3.0.1, not complete normative conformance"
+    },
+    "fr_dynamic_idle_minislots": {
+      "label": "Actual dynamic slot idle phase",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual matched FlexRay cluster/node/frame declaration. Controller/edition limits and physical timing/slot fit require their own evidence; no scalar default confirms a valid startup or schedule.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "minislots",
+      "min": 0,
+      "max": 2,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://vectorgrp.github.io/sil-kit-docs/api/services/flexray.html",
+      "source_revision": "Vector SIL Kit5.0.7 FlexrayClusterParameters/NodeParameters/Header/TxBufferConfig representation of protocol3.0.1, not complete normative conformance"
+    },
+    "fr_symbol_window_mt": {
+      "label": "Actual global symbol-window duration",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "These reviewed bounds apply to the Vector5.0.7 representation of FlexRay3.0.1 only. A different protocol/controller profile stays UNVERIFIED until its own bounds are reviewed; no foreign-version fallback.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "MT",
+      "min": 0,
+      "max": 162,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://vectorgrp.github.io/sil-kit-docs/api/services/flexray.html",
+      "source_revision": "Vector SIL Kit5.0.7 FlexrayClusterParameters/NodeParameters/Header/TxBufferConfig representation of protocol3.0.1, not complete normative conformance",
+      "schema_when": {
+        "fr_profile": "PROTOCOL_3_0_1"
+      }
+    },
+    "fr_symbol_action_point_mt": {
+      "label": "Actual symbol-window action-point offset",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual matched FlexRay cluster/node/frame declaration. Controller/edition limits and physical timing/slot fit require their own evidence; no scalar default confirms a valid startup or schedule.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "MT",
+      "min": 1,
+      "max": 63,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://vectorgrp.github.io/sil-kit-docs/api/services/flexray.html",
+      "source_revision": "Vector SIL Kit5.0.7 FlexrayClusterParameters/NodeParameters/Header/TxBufferConfig representation of protocol3.0.1, not complete normative conformance"
+    },
+    "fr_nit_mt": {
+      "label": "Actual network idle time",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual matched FlexRay cluster/node/frame declaration. Controller/edition limits and physical timing/slot fit require their own evidence; no scalar default confirms a valid startup or schedule.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "MT",
+      "min": 1,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://vectorgrp.github.io/sil-kit-docs/api/services/flexray.html",
+      "source_revision": "Vector SIL Kit5.0.7 FlexrayClusterParameters/NodeParameters/Header/TxBufferConfig representation of protocol3.0.1, not complete normative conformance"
+    },
+    "fr_tss_bits": {
+      "label": "Actual transmission start sequence duration",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "These reviewed bounds apply to the Vector5.0.7 representation of FlexRay3.0.1 only. A different protocol/controller profile stays UNVERIFIED until its own bounds are reviewed; no foreign-version fallback.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "bit times",
+      "min": 1,
+      "max": 15,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://vectorgrp.github.io/sil-kit-docs/api/services/flexray.html",
+      "source_revision": "Vector SIL Kit5.0.7 FlexrayClusterParameters/NodeParameters/Header/TxBufferConfig representation of protocol3.0.1, not complete normative conformance",
+      "schema_when": {
+        "fr_profile": "PROTOCOL_3_0_1"
+      }
+    },
+    "fr_coldstart_attempts": {
+      "label": "Actual global coldstart attempt count",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual matched FlexRay cluster/node/frame declaration. Controller/edition limits and physical timing/slot fit require their own evidence; no scalar default confirms a valid startup or schedule.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 2,
+      "max": 31,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://vectorgrp.github.io/sil-kit-docs/api/services/flexray.html",
+      "source_revision": "Vector SIL Kit5.0.7 FlexrayClusterParameters/NodeParameters/Header/TxBufferConfig representation of protocol3.0.1, not complete normative conformance"
+    },
+    "fr_listen_noise": {
+      "label": "Actual startup/wakeup listen noise multiplier",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual matched FlexRay cluster/node/frame declaration. Controller/edition limits and physical timing/slot fit require their own evidence; no scalar default confirms a valid startup or schedule.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 2,
+      "max": 16,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://vectorgrp.github.io/sil-kit-docs/api/services/flexray.html",
+      "source_revision": "Vector SIL Kit5.0.7 FlexrayClusterParameters/NodeParameters/Header/TxBufferConfig representation of protocol3.0.1, not complete normative conformance"
+    },
+    "fr_clock_fatal_pairs": {
+      "label": "Actual no-correction fatal threshold",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual matched FlexRay cluster/node/frame declaration. Controller/edition limits and physical timing/slot fit require their own evidence; no scalar default confirms a valid startup or schedule.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "cycle pairs",
+      "min": 1,
+      "max": 15,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://vectorgrp.github.io/sil-kit-docs/api/services/flexray.html",
+      "source_revision": "Vector SIL Kit5.0.7 FlexrayClusterParameters/NodeParameters/Header/TxBufferConfig representation of protocol3.0.1, not complete normative conformance"
+    },
+    "fr_clock_passive_pairs": {
+      "label": "Actual no-correction passive threshold",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual matched FlexRay cluster/node/frame declaration. Controller/edition limits and physical timing/slot fit require their own evidence; no scalar default confirms a valid startup or schedule.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "cycle pairs",
+      "min": 1,
+      "max": 15,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://vectorgrp.github.io/sil-kit-docs/api/services/flexray.html",
+      "source_revision": "Vector SIL Kit5.0.7 FlexrayClusterParameters/NodeParameters/Header/TxBufferConfig representation of protocol3.0.1, not complete normative conformance"
+    },
+    "fr_sync_frame_ids_max": {
+      "label": "Actual maximum distinct sync identifiers",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual matched FlexRay cluster/node/frame declaration. Controller/edition limits and physical timing/slot fit require their own evidence; no scalar default confirms a valid startup or schedule.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 2,
+      "max": 15,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://vectorgrp.github.io/sil-kit-docs/api/services/flexray.html",
+      "source_revision": "Vector SIL Kit5.0.7 FlexrayClusterParameters/NodeParameters/Header/TxBufferConfig representation of protocol3.0.1, not complete normative conformance"
+    },
+    "fr_allow_halt_clock": {
+      "label": "Actual halt on synchronization error setting",
+      "category": "physical",
+      "scope": "route",
+      "type": "boolean",
+      "description": "Actual matched FlexRay cluster/node/frame declaration. Controller/edition limits and physical timing/slot fit require their own evidence; no scalar default confirms a valid startup or schedule.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://vectorgrp.github.io/sil-kit-docs/api/services/flexray.html",
+      "source_revision": "Vector SIL Kit5.0.7 FlexrayClusterParameters/NodeParameters/Header/TxBufferConfig representation of protocol3.0.1, not complete normative conformance"
+    },
+    "fr_passive_to_active_pairs": {
+      "label": "Actual passive-to-active threshold",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "These reviewed bounds apply to the Vector5.0.7 representation of FlexRay3.0.1 only. A different protocol/controller profile stays UNVERIFIED until its own bounds are reviewed; no foreign-version fallback.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "cycle pairs",
+      "min": 0,
+      "max": 31,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://vectorgrp.github.io/sil-kit-docs/api/services/flexray.html",
+      "source_revision": "Vector SIL Kit5.0.7 FlexrayClusterParameters/NodeParameters/Header/TxBufferConfig representation of protocol3.0.1, not complete normative conformance",
+      "schema_when": {
+        "fr_profile": "PROTOCOL_3_0_1"
+      }
+    },
+    "fr_drift_damping_ut": {
+      "label": "Actual node cluster-drift damping",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "These reviewed bounds apply to the Vector5.0.7 representation of FlexRay3.0.1 only. A different protocol/controller profile stays UNVERIFIED until its own bounds are reviewed; no foreign-version fallback.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "uT",
+      "min": 0,
+      "max": 10,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://vectorgrp.github.io/sil-kit-docs/api/services/flexray.html",
+      "source_revision": "Vector SIL Kit5.0.7 FlexrayClusterParameters/NodeParameters/Header/TxBufferConfig representation of protocol3.0.1, not complete normative conformance",
+      "schema_when": {
+        "fr_profile": "PROTOCOL_3_0_1"
+      }
+    },
+    "fr_startup_range_ut": {
+      "label": "Actual accepted startup timing deviation",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "These reviewed bounds apply to the Vector5.0.7 representation of FlexRay3.0.1 only. A different protocol/controller profile stays UNVERIFIED until its own bounds are reviewed; no foreign-version fallback.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "uT",
+      "min": 29,
+      "max": 2743,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://vectorgrp.github.io/sil-kit-docs/api/services/flexray.html",
+      "source_revision": "Vector SIL Kit5.0.7 FlexrayClusterParameters/NodeParameters/Header/TxBufferConfig representation of protocol3.0.1, not complete normative conformance",
+      "schema_when": {
+        "fr_profile": "PROTOCOL_3_0_1"
+      }
+    },
+    "fr_listen_timeout_ut": {
+      "label": "Actual node listen duration",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "These reviewed bounds apply to the Vector5.0.7 representation of FlexRay3.0.1 only. A different protocol/controller profile stays UNVERIFIED until its own bounds are reviewed; no foreign-version fallback.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "uT",
+      "min": 1926,
+      "max": 2567692,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://vectorgrp.github.io/sil-kit-docs/api/services/flexray.html",
+      "source_revision": "Vector SIL Kit5.0.7 FlexrayClusterParameters/NodeParameters/Header/TxBufferConfig representation of protocol3.0.1, not complete normative conformance",
+      "schema_when": {
+        "fr_profile": "PROTOCOL_3_0_1"
+      }
+    },
+    "fr_key_slot_id": {
+      "label": "Actual key slot;0 means not configured",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual matched FlexRay cluster/node/frame declaration. Controller/edition limits and physical timing/slot fit require their own evidence; no scalar default confirms a valid startup or schedule.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "max": 1023,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://vectorgrp.github.io/sil-kit-docs/api/services/flexray.html",
+      "source_revision": "Vector SIL Kit5.0.7 FlexrayClusterParameters/NodeParameters/Header/TxBufferConfig representation of protocol3.0.1, not complete normative conformance"
+    },
+    "fr_key_only": {
+      "label": "Actual key-slot-only startup mode",
+      "category": "physical",
+      "scope": "route",
+      "type": "boolean",
+      "description": "Actual matched FlexRay cluster/node/frame declaration. Controller/edition limits and physical timing/slot fit require their own evidence; no scalar default confirms a valid startup or schedule.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://vectorgrp.github.io/sil-kit-docs/api/services/flexray.html",
+      "source_revision": "Vector SIL Kit5.0.7 FlexrayClusterParameters/NodeParameters/Header/TxBufferConfig representation of protocol3.0.1, not complete normative conformance"
+    },
+    "fr_key_startup": {
+      "label": "Actual key slot startup role",
+      "category": "physical",
+      "scope": "route",
+      "type": "boolean",
+      "description": "Actual matched FlexRay cluster/node/frame declaration. Controller/edition limits and physical timing/slot fit require their own evidence; no scalar default confirms a valid startup or schedule.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://vectorgrp.github.io/sil-kit-docs/api/services/flexray.html",
+      "source_revision": "Vector SIL Kit5.0.7 FlexrayClusterParameters/NodeParameters/Header/TxBufferConfig representation of protocol3.0.1, not complete normative conformance"
+    },
+    "fr_key_sync": {
+      "label": "Actual key slot synchronization role",
+      "category": "physical",
+      "scope": "route",
+      "type": "boolean",
+      "description": "Actual matched FlexRay cluster/node/frame declaration. Controller/edition limits and physical timing/slot fit require their own evidence; no scalar default confirms a valid startup or schedule.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://vectorgrp.github.io/sil-kit-docs/api/services/flexray.html",
+      "source_revision": "Vector SIL Kit5.0.7 FlexrayClusterParameters/NodeParameters/Header/TxBufferConfig representation of protocol3.0.1, not complete normative conformance"
+    },
+    "fr_latest_tx": {
+      "label": "Actual local last allowed dynamic minislot",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "These reviewed bounds apply to the Vector5.0.7 representation of FlexRay3.0.1 only. A different protocol/controller profile stays UNVERIFIED until its own bounds are reviewed; no foreign-version fallback.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "minislot",
+      "min": 0,
+      "max": 7988,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://vectorgrp.github.io/sil-kit-docs/api/services/flexray.html",
+      "source_revision": "Vector SIL Kit5.0.7 FlexrayClusterParameters/NodeParameters/Header/TxBufferConfig representation of protocol3.0.1, not complete normative conformance",
+      "schema_when": {
+        "fr_profile": "PROTOCOL_3_0_1"
+      }
+    },
+    "fr_macro_offset_a": {
+      "label": "Actual startup macrotick offset on A",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "These reviewed bounds apply to the Vector5.0.7 representation of FlexRay3.0.1 only. A different protocol/controller profile stays UNVERIFIED until its own bounds are reviewed; no foreign-version fallback.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "MT",
+      "min": 2,
+      "max": 68,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://vectorgrp.github.io/sil-kit-docs/api/services/flexray.html",
+      "source_revision": "Vector SIL Kit5.0.7 FlexrayClusterParameters/NodeParameters/Header/TxBufferConfig representation of protocol3.0.1, not complete normative conformance",
+      "schema_when": {
+        "fr_profile": "PROTOCOL_3_0_1"
+      }
+    },
+    "fr_macro_offset_b": {
+      "label": "Actual startup macrotick offset on B",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "These reviewed bounds apply to the Vector5.0.7 representation of FlexRay3.0.1 only. A different protocol/controller profile stays UNVERIFIED until its own bounds are reviewed; no foreign-version fallback.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "MT",
+      "min": 2,
+      "max": 68,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://vectorgrp.github.io/sil-kit-docs/api/services/flexray.html",
+      "source_revision": "Vector SIL Kit5.0.7 FlexrayClusterParameters/NodeParameters/Header/TxBufferConfig representation of protocol3.0.1, not complete normative conformance",
+      "schema_when": {
+        "fr_profile": "PROTOCOL_3_0_1"
+      }
+    },
+    "fr_micro_offset_a": {
+      "label": "Actual secondary-reference offset on A",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "These reviewed bounds apply to the Vector5.0.7 representation of FlexRay3.0.1 only. A different protocol/controller profile stays UNVERIFIED until its own bounds are reviewed; no foreign-version fallback.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "uT",
+      "min": 0,
+      "max": 239,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://vectorgrp.github.io/sil-kit-docs/api/services/flexray.html",
+      "source_revision": "Vector SIL Kit5.0.7 FlexrayClusterParameters/NodeParameters/Header/TxBufferConfig representation of protocol3.0.1, not complete normative conformance",
+      "schema_when": {
+        "fr_profile": "PROTOCOL_3_0_1"
+      }
+    },
+    "fr_micro_offset_b": {
+      "label": "Actual secondary-reference offset on B",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "These reviewed bounds apply to the Vector5.0.7 representation of FlexRay3.0.1 only. A different protocol/controller profile stays UNVERIFIED until its own bounds are reviewed; no foreign-version fallback.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "uT",
+      "min": 0,
+      "max": 239,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://vectorgrp.github.io/sil-kit-docs/api/services/flexray.html",
+      "source_revision": "Vector SIL Kit5.0.7 FlexrayClusterParameters/NodeParameters/Header/TxBufferConfig representation of protocol3.0.1, not complete normative conformance",
+      "schema_when": {
+        "fr_profile": "PROTOCOL_3_0_1"
+      }
+    },
+    "fr_offset_correction_ut": {
+      "label": "Actual maximum permitted offset correction",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "These reviewed bounds apply to the Vector5.0.7 representation of FlexRay3.0.1 only. A different protocol/controller profile stays UNVERIFIED until its own bounds are reviewed; no foreign-version fallback.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "uT",
+      "min": 15,
+      "max": 16082,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://vectorgrp.github.io/sil-kit-docs/api/services/flexray.html",
+      "source_revision": "Vector SIL Kit5.0.7 FlexrayClusterParameters/NodeParameters/Header/TxBufferConfig representation of protocol3.0.1, not complete normative conformance",
+      "schema_when": {
+        "fr_profile": "PROTOCOL_3_0_1"
+      }
+    },
+    "fr_correction_start_mt": {
+      "label": "Actual offset-correction start within NIT",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "These reviewed bounds apply to the Vector5.0.7 representation of FlexRay3.0.1 only. A different protocol/controller profile stays UNVERIFIED until its own bounds are reviewed; no foreign-version fallback.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "MT",
+      "min": 7,
+      "max": 15999,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://vectorgrp.github.io/sil-kit-docs/api/services/flexray.html",
+      "source_revision": "Vector SIL Kit5.0.7 FlexrayClusterParameters/NodeParameters/Header/TxBufferConfig representation of protocol3.0.1, not complete normative conformance",
+      "schema_when": {
+        "fr_profile": "PROTOCOL_3_0_1"
+      }
+    },
+    "fr_rate_correction_ut": {
+      "label": "Actual maximum permitted rate correction",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "These reviewed bounds apply to the Vector5.0.7 representation of FlexRay3.0.1 only. A different protocol/controller profile stays UNVERIFIED until its own bounds are reviewed; no foreign-version fallback.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "uT",
+      "min": 3,
+      "max": 3846,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://vectorgrp.github.io/sil-kit-docs/api/services/flexray.html",
+      "source_revision": "Vector SIL Kit5.0.7 FlexrayClusterParameters/NodeParameters/Header/TxBufferConfig representation of protocol3.0.1, not complete normative conformance",
+      "schema_when": {
+        "fr_profile": "PROTOCOL_3_0_1"
+      }
+    },
+    "fr_wakeup_channel": {
+      "label": "Actual wakeup TX channel",
+      "category": "physical",
+      "scope": "route",
+      "type": "select",
+      "description": "Actual matched FlexRay cluster/node/frame declaration. Controller/edition limits and physical timing/slot fit require their own evidence; no scalar default confirms a valid startup or schedule.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "A",
+        "B"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://vectorgrp.github.io/sil-kit-docs/api/services/flexray.html",
+      "source_revision": "Vector SIL Kit5.0.7 FlexrayClusterParameters/NodeParameters/Header/TxBufferConfig representation of protocol3.0.1, not complete normative conformance"
+    },
+    "fr_wakeup_pattern": {
+      "label": "Actual wakeup symbol repetition count",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual matched FlexRay cluster/node/frame declaration. Controller/edition limits and physical timing/slot fit require their own evidence; no scalar default confirms a valid startup or schedule.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "max": 63,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://vectorgrp.github.io/sil-kit-docs/api/services/flexray.html",
+      "source_revision": "Vector SIL Kit5.0.7 FlexrayClusterParameters/NodeParameters/Header/TxBufferConfig representation of protocol3.0.1, not complete normative conformance"
+    },
+    "fr_wakeup_active_bits": {
+      "label": "Actual wakeup LOW phase",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual matched FlexRay cluster/node/frame declaration. Controller/edition limits and physical timing/slot fit require their own evidence; no scalar default confirms a valid startup or schedule.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "bit times",
+      "min": 15,
+      "max": 60,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://vectorgrp.github.io/sil-kit-docs/api/services/flexray.html",
+      "source_revision": "Vector SIL Kit5.0.7 FlexrayClusterParameters/NodeParameters/Header/TxBufferConfig representation of protocol3.0.1, not complete normative conformance"
+    },
+    "fr_wakeup_idle_bits": {
+      "label": "Actual wakeup idle phase",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual matched FlexRay cluster/node/frame declaration. Controller/edition limits and physical timing/slot fit require their own evidence; no scalar default confirms a valid startup or schedule.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "bit times",
+      "min": 45,
+      "max": 180,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://vectorgrp.github.io/sil-kit-docs/api/services/flexray.html",
+      "source_revision": "Vector SIL Kit5.0.7 FlexrayClusterParameters/NodeParameters/Header/TxBufferConfig representation of protocol3.0.1, not complete normative conformance"
+    },
+    "fr_second_key_id": {
+      "label": "Actual second key slot;0 means not configured",
+      "category": "physical",
+      "scope": "route",
+      "type": "number",
+      "description": "These reviewed bounds apply to the Vector5.0.7 representation of FlexRay3.0.1 only. A different protocol/controller profile stays UNVERIFIED until its own bounds are reviewed; no foreign-version fallback.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "max": 1023,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://vectorgrp.github.io/sil-kit-docs/api/services/flexray.html",
+      "source_revision": "Vector SIL Kit5.0.7 FlexrayClusterParameters/NodeParameters/Header/TxBufferConfig representation of protocol3.0.1, not complete normative conformance",
+      "schema_when": {
+        "fr_profile": "PROTOCOL_3_0_1"
+      }
+    },
+    "fr_two_key_mode": {
+      "label": "Actual two-key-slot/single-coldstart mode",
+      "category": "physical",
+      "scope": "route",
+      "type": "boolean",
+      "description": "These reviewed bounds apply to the Vector5.0.7 representation of FlexRay3.0.1 only. A different protocol/controller profile stays UNVERIFIED until its own bounds are reviewed; no foreign-version fallback.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://vectorgrp.github.io/sil-kit-docs/api/services/flexray.html",
+      "source_revision": "Vector SIL Kit5.0.7 FlexrayClusterParameters/NodeParameters/Header/TxBufferConfig representation of protocol3.0.1, not complete normative conformance",
+      "schema_when": {
+        "fr_profile": "PROTOCOL_3_0_1"
+      }
+    },
+    "fr_clock_source": {
+      "label": "Actual oscillator/precision/drift/decoder/correction evidence",
+      "category": "physical",
+      "scope": "route",
+      "type": "text",
+      "description": "Actual matched FlexRay cluster/node/frame declaration. Controller/edition limits and physical timing/slot fit require their own evidence; no scalar default confirms a valid startup or schedule.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://vectorgrp.github.io/sil-kit-docs/api/services/flexray.html",
+      "source_revision": "Vector SIL Kit5.0.7 FlexrayClusterParameters/NodeParameters/Header/TxBufferConfig representation of protocol3.0.1, not complete normative conformance"
+    },
+    "fr_poc_state": {
+      "label": "Actual protocol operation controller state",
+      "category": "physical",
+      "scope": "route",
+      "type": "select",
+      "description": "Actual matched FlexRay cluster/node/frame declaration. Controller/edition limits and physical timing/slot fit require their own evidence; no scalar default confirms a valid startup or schedule.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "DEFAULT_CONFIG",
+        "CONFIG",
+        "READY",
+        "WAKEUP",
+        "STARTUP",
+        "NORMAL_ACTIVE",
+        "NORMAL_PASSIVE",
+        "HALT"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://vectorgrp.github.io/sil-kit-docs/api/services/flexray.html",
+      "source_revision": "Vector SIL Kit5.0.7 FlexrayClusterParameters/NodeParameters/Header/TxBufferConfig representation of protocol3.0.1, not complete normative conformance"
+    }
+  },
+  "mechanisms": {
+    "access": [
+      "STATIC_TDMA",
+      "DYNAMIC_MINISLOT_FTDMA"
+    ],
+    "integrity": [
+      "HEADER_CRC11",
+      "CHANNEL_SPECIFIC_FRAME_CRC24"
+    ],
+    "synchronization": [
+      "COLDSTART_SYNC_FRAMES",
+      "OFFSET_AND_RATE_CORRECTION"
+    ],
+    "channels": [
+      "A_B_OR_AB",
+      "INDEPENDENT_OR_REDUNDANT_DECLARED_CONFIGURATION"
+    ]
+  },
+  "parameter_constraints": [
+    {
+      "when": {
+        "fr_profile": "PROTOCOL_3_0_1"
+      },
+      "parameter": "bitrate_bps",
+      "allowed": [
+        2500000,
+        5000000,
+        10000000
+      ],
+      "source": "https://www.nxp.com/docs/en/data-sheet/MFR4310RM.pdf",
+      "source_revision": "MFR4310RM Rev2 May2008 section3.5.1/Table3-110; NXP FlexRay V3 webinar2010; Vector SIL Kit5.0.7 native API representation"
+    },
+    {
+      "when": {
+        "fr_profile": "NXP_MFR4310_2_1"
+      },
+      "parameter": "fr_cycle_count_max",
+      "allowed": [
+        63
+      ],
+      "source": "https://www.nxp.com/docs/en/data-sheet/MFR4310RM.pdf",
+      "source_revision": "MFR4310RM Rev2 May2008 section3.5.1/Table3-110; NXP FlexRay V3 webinar2010; Vector SIL Kit5.0.7 native API representation"
+    },
+    {
+      "when": {
+        "fr_profile": "NXP_MFR4310_2_1"
+      },
+      "parameter": "fr_macro_per_cycle",
+      "minimum": 10,
+      "source": "https://www.nxp.com/docs/en/data-sheet/MFR4310RM.pdf",
+      "source_revision": "MFR4310RM Rev2 May2008 section3.5.1/Table3-110; NXP FlexRay V3 webinar2010; Vector SIL Kit5.0.7 native API representation"
+    },
+    {
+      "when": {
+        "fr_profile": "NXP_MFR4310_2_1",
+        "bitrate_bps": 2500000
+      },
+      "parameter": "fr_microtick_ns",
+      "allowed": [
+        50
+      ],
+      "source": "https://www.nxp.com/docs/en/data-sheet/MFR4310RM.pdf",
+      "source_revision": "MFR4310RM Rev2 May2008 section3.5.1/Table3-110; NXP FlexRay V3 webinar2010; Vector SIL Kit5.0.7 native API representation"
+    },
+    {
+      "when": {
+        "fr_profile": "NXP_MFR4310_2_1",
+        "bitrate_bps": 5000000
+      },
+      "parameter": "fr_microtick_ns",
+      "allowed": [
+        25
+      ],
+      "source": "https://www.nxp.com/docs/en/data-sheet/MFR4310RM.pdf",
+      "source_revision": "MFR4310RM Rev2 May2008 section3.5.1/Table3-110; NXP FlexRay V3 webinar2010; Vector SIL Kit5.0.7 native API representation"
+    },
+    {
+      "when": {
+        "fr_profile": "NXP_MFR4310_2_1",
+        "bitrate_bps": 8000000
+      },
+      "parameter": "fr_microtick_ns",
+      "allowed": [
+        25
+      ],
+      "source": "https://www.nxp.com/docs/en/data-sheet/MFR4310RM.pdf",
+      "source_revision": "MFR4310RM Rev2 May2008 section3.5.1/Table3-110; NXP FlexRay V3 webinar2010; Vector SIL Kit5.0.7 native API representation"
+    },
+    {
+      "when": {
+        "fr_profile": "NXP_MFR4310_2_1",
+        "bitrate_bps": 10000000
+      },
+      "parameter": "fr_microtick_ns",
+      "allowed": [
+        25
+      ],
+      "source": "https://www.nxp.com/docs/en/data-sheet/MFR4310RM.pdf",
+      "source_revision": "MFR4310RM Rev2 May2008 section3.5.1/Table3-110; NXP FlexRay V3 webinar2010; Vector SIL Kit5.0.7 native API representation"
+    },
+    {
+      "when": {
+        "fr_profile": "NXP_MFR4310_2_1",
+        "bitrate_bps": 2500000
+      },
+      "parameter": "fr_samples_per_microtick",
+      "allowed": [
+        1
+      ],
+      "source": "https://www.nxp.com/docs/en/data-sheet/MFR4310RM.pdf",
+      "source_revision": "MFR4310RM Rev2 May2008 section3.5.1/Table3-110; NXP FlexRay V3 webinar2010; Vector SIL Kit5.0.7 native API representation"
+    },
+    {
+      "when": {
+        "fr_profile": "NXP_MFR4310_2_1",
+        "bitrate_bps": 5000000
+      },
+      "parameter": "fr_samples_per_microtick",
+      "allowed": [
+        1
+      ],
+      "source": "https://www.nxp.com/docs/en/data-sheet/MFR4310RM.pdf",
+      "source_revision": "MFR4310RM Rev2 May2008 section3.5.1/Table3-110; NXP FlexRay V3 webinar2010; Vector SIL Kit5.0.7 native API representation"
+    },
+    {
+      "when": {
+        "fr_profile": "NXP_MFR4310_2_1",
+        "bitrate_bps": 8000000
+      },
+      "parameter": "fr_samples_per_microtick",
+      "allowed": [
+        2
+      ],
+      "source": "https://www.nxp.com/docs/en/data-sheet/MFR4310RM.pdf",
+      "source_revision": "MFR4310RM Rev2 May2008 section3.5.1/Table3-110; NXP FlexRay V3 webinar2010; Vector SIL Kit5.0.7 native API representation"
+    },
+    {
+      "when": {
+        "fr_profile": "NXP_MFR4310_2_1",
+        "bitrate_bps": 10000000
+      },
+      "parameter": "fr_samples_per_microtick",
+      "allowed": [
+        2
+      ],
+      "source": "https://www.nxp.com/docs/en/data-sheet/MFR4310RM.pdf",
+      "source_revision": "MFR4310RM Rev2 May2008 section3.5.1/Table3-110; NXP FlexRay V3 webinar2010; Vector SIL Kit5.0.7 native API representation"
+    },
+    {
+      "when": {},
+      "parameter": "payload_bytes",
+      "equal_expression": {
+        "product": [
+          2,
+          "fr_payload_words"
+        ]
+      },
+      "source": "https://www.nxp.com/docs/en/data-sheet/MFR4310RM.pdf",
+      "source_revision": "MFR4310RM Rev2 May2008 section3.5.1/Table3-110; NXP FlexRay V3 webinar2010; Vector SIL Kit5.0.7 native API representation"
+    },
+    {
+      "when": {
+        "fr_segment": "STATIC"
+      },
+      "parameter": "fr_payload_words",
+      "equal_parameter": "fr_static_payload_words",
+      "source": "https://www.nxp.com/docs/en/data-sheet/MFR4310RM.pdf",
+      "source_revision": "MFR4310RM Rev2 May2008 section3.5.1/Table3-110; NXP FlexRay V3 webinar2010; Vector SIL Kit5.0.7 native API representation"
+    },
+    {
+      "when": {
+        "fr_segment": "DYNAMIC"
+      },
+      "parameter": "fr_payload_words",
+      "maximum_parameter": "fr_dynamic_payload_words_max",
+      "source": "https://www.nxp.com/docs/en/data-sheet/MFR4310RM.pdf",
+      "source_revision": "MFR4310RM Rev2 May2008 section3.5.1/Table3-110; NXP FlexRay V3 webinar2010; Vector SIL Kit5.0.7 native API representation"
+    },
+    {
+      "when": {
+        "fr_segment": "STATIC"
+      },
+      "parameter": "fr_frame_id",
+      "maximum_parameter": "fr_static_slots",
+      "source": "https://www.nxp.com/docs/en/data-sheet/MFR4310RM.pdf",
+      "source_revision": "MFR4310RM Rev2 May2008 section3.5.1/Table3-110; NXP FlexRay V3 webinar2010; Vector SIL Kit5.0.7 native API representation"
+    },
+    {
+      "when": {
+        "fr_segment": "DYNAMIC"
+      },
+      "parameter": "fr_frame_id",
+      "minimum_expression": {
+        "sum": [
+          "fr_static_slots",
+          1
+        ]
+      },
+      "source": "https://www.nxp.com/docs/en/data-sheet/MFR4310RM.pdf",
+      "source_revision": "MFR4310RM Rev2 May2008 section3.5.1/Table3-110; NXP FlexRay V3 webinar2010; Vector SIL Kit5.0.7 native API representation"
+    },
+    {
+      "when": {},
+      "parameter": "fr_frame_bytes",
+      "equal_expression": {
+        "sum": [
+          8,
+          "payload_bytes"
+        ]
+      },
+      "source": "https://www.nxp.com/docs/en/data-sheet/MFR4310RM.pdf",
+      "source_revision": "MFR4310RM Rev2 May2008 section3.5.1/Table3-110; NXP FlexRay V3 webinar2010; Vector SIL Kit5.0.7 native API representation"
+    },
+    {
+      "when": {},
+      "parameter": "fr_cycle_us",
+      "equal_expression": {
+        "product": [
+          "fr_macro_per_cycle",
+          "fr_macrotick_us"
+        ]
+      },
+      "source": "https://www.nxp.com/docs/en/data-sheet/MFR4310RM.pdf",
+      "source_revision": "MFR4310RM Rev2 May2008 section3.5.1/Table3-110; NXP FlexRay V3 webinar2010; Vector SIL Kit5.0.7 native API representation"
+    },
+    {
+      "when": {},
+      "parameter": "fr_cycle_us",
+      "equal_expression": {
+        "product": [
+          0.001,
+          "fr_micro_per_cycle",
+          "fr_microtick_ns"
+        ]
+      },
+      "source": "https://www.nxp.com/docs/en/data-sheet/MFR4310RM.pdf",
+      "source_revision": "MFR4310RM Rev2 May2008 section3.5.1/Table3-110; NXP FlexRay V3 webinar2010; Vector SIL Kit5.0.7 native API representation"
+    },
+    {
+      "when": {},
+      "parameter": "fr_cycle_mt",
+      "equal_expression": {
+        "sum": [
+          {
+            "product": [
+              "fr_static_slots",
+              "fr_static_slot_mt"
+            ]
+          },
+          {
+            "product": [
+              "fr_minislots",
+              "fr_minislot_mt"
+            ]
+          },
+          "fr_symbol_window_mt",
+          "fr_nit_mt"
+        ]
+      },
+      "source": "https://www.nxp.com/docs/en/data-sheet/MFR4310RM.pdf",
+      "source_revision": "MFR4310RM Rev2 May2008 section3.5.1/Table3-110; NXP FlexRay V3 webinar2010; Vector SIL Kit5.0.7 native API representation"
+    },
+    {
+      "when": {},
+      "parameter": "fr_cycle_mt",
+      "equal_parameter": "fr_macro_per_cycle",
+      "source": "https://www.nxp.com/docs/en/data-sheet/MFR4310RM.pdf",
+      "source_revision": "MFR4310RM Rev2 May2008 section3.5.1/Table3-110; NXP FlexRay V3 webinar2010; Vector SIL Kit5.0.7 native API representation"
+    },
+    {
+      "when": {},
+      "parameter": "fr_action_point_mt",
+      "maximum_parameter": "fr_static_slot_mt",
+      "maximum_offset": -1,
+      "source": "https://www.nxp.com/docs/en/data-sheet/MFR4310RM.pdf",
+      "source_revision": "MFR4310RM Rev2 May2008 section3.5.1/Table3-110; NXP FlexRay V3 webinar2010; Vector SIL Kit5.0.7 native API representation"
+    },
+    {
+      "when": {},
+      "parameter": "fr_minislot_action_point_mt",
+      "maximum_parameter": "fr_minislot_mt",
+      "maximum_offset": -1,
+      "source": "https://www.nxp.com/docs/en/data-sheet/MFR4310RM.pdf",
+      "source_revision": "MFR4310RM Rev2 May2008 section3.5.1/Table3-110; NXP FlexRay V3 webinar2010; Vector SIL Kit5.0.7 native API representation"
+    },
+    {
+      "when": {},
+      "parameter": "fr_symbol_action_point_mt",
+      "maximum_parameter": "fr_symbol_window_mt",
+      "maximum_offset": -1,
+      "source": "https://www.nxp.com/docs/en/data-sheet/MFR4310RM.pdf",
+      "source_revision": "MFR4310RM Rev2 May2008 section3.5.1/Table3-110; NXP FlexRay V3 webinar2010; Vector SIL Kit5.0.7 native API representation"
+    },
+    {
+      "when": {},
+      "parameter": "fr_correction_start_mt",
+      "maximum_parameter": "fr_macro_per_cycle",
+      "maximum_offset": -1,
+      "source": "https://www.nxp.com/docs/en/data-sheet/MFR4310RM.pdf",
+      "source_revision": "MFR4310RM Rev2 May2008 section3.5.1/Table3-110; NXP FlexRay V3 webinar2010; Vector SIL Kit5.0.7 native API representation"
+    },
+    {
+      "when": {},
+      "parameter": "fr_correction_start_mt",
+      "minimum_expression": {
+        "subtract": [
+          "fr_macro_per_cycle",
+          "fr_nit_mt"
+        ]
+      },
+      "source": "https://www.nxp.com/docs/en/data-sheet/MFR4310RM.pdf",
+      "source_revision": "MFR4310RM Rev2 May2008 section3.5.1/Table3-110; NXP FlexRay V3 webinar2010; Vector SIL Kit5.0.7 native API representation"
+    },
+    {
+      "when": {},
+      "parameter": "fr_clock_fatal_pairs",
+      "minimum_parameter": "fr_clock_passive_pairs",
+      "source": "https://www.nxp.com/docs/en/data-sheet/MFR4310RM.pdf",
+      "source_revision": "MFR4310RM Rev2 May2008 section3.5.1/Table3-110; NXP FlexRay V3 webinar2010; Vector SIL Kit5.0.7 native API representation"
+    },
+    {
+      "when": {},
+      "parameter": "fr_cycle_counter",
+      "maximum_parameter": "fr_cycle_count_max",
+      "source": "https://www.nxp.com/docs/en/data-sheet/MFR4310RM.pdf",
+      "source_revision": "MFR4310RM Rev2 May2008 section3.5.1/Table3-110; NXP FlexRay V3 webinar2010; Vector SIL Kit5.0.7 native API representation"
+    },
+    {
+      "when": {},
+      "parameter": "fr_cycle_offset",
+      "maximum_parameter": "fr_repetition",
+      "maximum_offset": -1,
+      "source": "https://www.nxp.com/docs/en/data-sheet/MFR4310RM.pdf",
+      "source_revision": "MFR4310RM Rev2 May2008 section3.5.1/Table3-110; NXP FlexRay V3 webinar2010; Vector SIL Kit5.0.7 native API representation"
+    },
+    {
+      "when": {},
+      "parameter": "fr_cycle_offset",
+      "maximum_parameter": "fr_cycle_count_max",
+      "source": "https://www.nxp.com/docs/en/data-sheet/MFR4310RM.pdf",
+      "source_revision": "MFR4310RM Rev2 May2008 section3.5.1/Table3-110; NXP FlexRay V3 webinar2010; Vector SIL Kit5.0.7 native API representation"
+    },
+    {
+      "when": {
+        "fr_segment": "DYNAMIC"
+      },
+      "parameter": "fr_sync_frame",
+      "allowed": [
+        false
+      ],
+      "source": "https://www.nxp.com/docs/en/data-sheet/MFR4310RM.pdf",
+      "source_revision": "MFR4310RM Rev2 May2008 section3.5.1/Table3-110; NXP FlexRay V3 webinar2010; Vector SIL Kit5.0.7 native API representation"
+    },
+    {
+      "when": {
+        "fr_segment": "DYNAMIC"
+      },
+      "parameter": "fr_startup_frame",
+      "allowed": [
+        false
+      ],
+      "source": "https://www.nxp.com/docs/en/data-sheet/MFR4310RM.pdf",
+      "source_revision": "MFR4310RM Rev2 May2008 section3.5.1/Table3-110; NXP FlexRay V3 webinar2010; Vector SIL Kit5.0.7 native API representation"
+    },
+    {
+      "when": {
+        "fr_startup_frame": true
+      },
+      "parameter": "fr_sync_frame",
+      "allowed": [
+        true
+      ],
+      "source": "https://www.nxp.com/docs/en/data-sheet/MFR4310RM.pdf",
+      "source_revision": "MFR4310RM Rev2 May2008 section3.5.1/Table3-110; NXP FlexRay V3 webinar2010; Vector SIL Kit5.0.7 native API representation"
+    },
+    {
+      "when": {
+        "fr_startup_frame": true
+      },
+      "parameter": "fr_coldstart_node",
+      "allowed": [
+        true
+      ],
+      "source": "https://www.nxp.com/docs/en/data-sheet/MFR4310RM.pdf",
+      "source_revision": "MFR4310RM Rev2 May2008 section3.5.1/Table3-110; NXP FlexRay V3 webinar2010; Vector SIL Kit5.0.7 native API representation"
+    },
+    {
+      "when": {
+        "fr_payload_valid": false
+      },
+      "parameter": "fr_preamble",
+      "allowed": [
+        false
+      ],
+      "source": "https://www.nxp.com/docs/en/data-sheet/MFR4310RM.pdf",
+      "source_revision": "MFR4310RM Rev2 May2008 section3.5.1/Table3-110; NXP FlexRay V3 webinar2010; Vector SIL Kit5.0.7 native API representation"
+    },
+    {
+      "when": {
+        "fr_key_startup": true
+      },
+      "parameter": "fr_key_sync",
+      "allowed": [
+        true
+      ],
+      "source": "https://www.nxp.com/docs/en/data-sheet/MFR4310RM.pdf",
+      "source_revision": "MFR4310RM Rev2 May2008 section3.5.1/Table3-110; NXP FlexRay V3 webinar2010; Vector SIL Kit5.0.7 native API representation"
+    },
+    {
+      "when": {
+        "fr_key_startup": true
+      },
+      "parameter": "fr_key_slot_id",
+      "minimum": 1,
+      "maximum_parameter": "fr_static_slots",
+      "source": "https://www.nxp.com/docs/en/data-sheet/MFR4310RM.pdf",
+      "source_revision": "MFR4310RM Rev2 May2008 section3.5.1/Table3-110; NXP FlexRay V3 webinar2010; Vector SIL Kit5.0.7 native API representation"
+    },
+    {
+      "when": {
+        "fr_key_sync": true
+      },
+      "parameter": "fr_key_slot_id",
+      "minimum": 1,
+      "maximum_parameter": "fr_static_slots",
+      "source": "https://www.nxp.com/docs/en/data-sheet/MFR4310RM.pdf",
+      "source_revision": "MFR4310RM Rev2 May2008 section3.5.1/Table3-110; NXP FlexRay V3 webinar2010; Vector SIL Kit5.0.7 native API representation"
+    },
+    {
+      "when": {
+        "fr_key_only": true
+      },
+      "parameter": "fr_key_slot_id",
+      "minimum": 1,
+      "maximum_parameter": "fr_static_slots",
+      "source": "https://www.nxp.com/docs/en/data-sheet/MFR4310RM.pdf",
+      "source_revision": "MFR4310RM Rev2 May2008 section3.5.1/Table3-110; NXP FlexRay V3 webinar2010; Vector SIL Kit5.0.7 native API representation"
+    },
+    {
+      "when": {
+        "fr_two_key_mode": true
+      },
+      "parameter": "fr_second_key_id",
+      "minimum": 1,
+      "maximum_parameter": "fr_static_slots",
+      "not_equal_parameter": "fr_key_slot_id",
+      "source": "https://www.nxp.com/docs/en/data-sheet/MFR4310RM.pdf",
+      "source_revision": "MFR4310RM Rev2 May2008 section3.5.1/Table3-110; NXP FlexRay V3 webinar2010; Vector SIL Kit5.0.7 native API representation"
+    },
+    {
+      "when": {
+        "fr_channels": "A"
+      },
+      "parameter": "fr_tx_channels",
+      "allowed": [
+        "A"
+      ],
+      "source": "https://www.nxp.com/docs/en/data-sheet/MFR4310RM.pdf",
+      "source_revision": "MFR4310RM Rev2 May2008 section3.5.1/Table3-110; NXP FlexRay V3 webinar2010; Vector SIL Kit5.0.7 native API representation"
+    },
+    {
+      "when": {
+        "fr_channels": "B"
+      },
+      "parameter": "fr_tx_channels",
+      "allowed": [
+        "B"
+      ],
+      "source": "https://www.nxp.com/docs/en/data-sheet/MFR4310RM.pdf",
+      "source_revision": "MFR4310RM Rev2 May2008 section3.5.1/Table3-110; NXP FlexRay V3 webinar2010; Vector SIL Kit5.0.7 native API representation"
+    },
+    {
+      "when": {
+        "fr_channels": "A"
+      },
+      "parameter": "fr_wakeup_channel",
+      "allowed": [
+        "A"
+      ],
+      "source": "https://www.nxp.com/docs/en/data-sheet/MFR4310RM.pdf",
+      "source_revision": "MFR4310RM Rev2 May2008 section3.5.1/Table3-110; NXP FlexRay V3 webinar2010; Vector SIL Kit5.0.7 native API representation"
+    },
+    {
+      "when": {
+        "fr_channels": "B"
+      },
+      "parameter": "fr_wakeup_channel",
+      "allowed": [
+        "B"
+      ],
+      "source": "https://www.nxp.com/docs/en/data-sheet/MFR4310RM.pdf",
+      "source_revision": "MFR4310RM Rev2 May2008 section3.5.1/Table3-110; NXP FlexRay V3 webinar2010; Vector SIL Kit5.0.7 native API representation"
+    },
+    {
+      "when": {
+        "fr_segment": "STATIC",
+        "fr_preamble": true
+      },
+      "parameter": "fr_nmv_bytes",
+      "maximum_parameter": "payload_bytes",
+      "source": "https://www.nxp.com/docs/en/data-sheet/MFR4310RM.pdf",
+      "source_revision": "MFR4310RM Rev2 May2008 section3.5.1/Table3-110; NXP FlexRay V3 webinar2010; Vector SIL Kit5.0.7 native API representation"
+    },
+    {
+      "when": {
+        "fr_segment": "DYNAMIC",
+        "fr_preamble": true
+      },
+      "parameter": "payload_bytes",
+      "minimum": 2,
+      "source": "https://www.nxp.com/docs/en/data-sheet/MFR4310RM.pdf",
+      "source_revision": "MFR4310RM Rev2 May2008 section3.5.1/Table3-110; NXP FlexRay V3 webinar2010; Vector SIL Kit5.0.7 native API representation"
+    },
+    {
+      "when": {
+        "fr_segment": "DYNAMIC",
+        "fr_preamble": false
+      },
+      "parameter": "fr_message_id",
+      "allowed": [],
+      "source": "https://www.nxp.com/docs/en/data-sheet/MFR4310RM.pdf",
+      "source_revision": "MFR4310RM Rev2 May2008 section3.5.1/Table3-110; NXP FlexRay V3 webinar2010; Vector SIL Kit5.0.7 native API representation"
+    },
+    {
+      "when": {
+        "fr_segment": "STATIC"
+      },
+      "parameter": "fr_message_id",
+      "allowed": [],
+      "source": "https://www.nxp.com/docs/en/data-sheet/MFR4310RM.pdf",
+      "source_revision": "MFR4310RM Rev2 May2008 section3.5.1/Table3-110; NXP FlexRay V3 webinar2010; Vector SIL Kit5.0.7 native API representation"
+    },
+    {
+      "when": {},
+      "parameter": "fr_latest_tx",
+      "maximum_parameter": "fr_minislots",
+      "source": "https://www.nxp.com/docs/en/data-sheet/MFR4310RM.pdf",
+      "source_revision": "MFR4310RM Rev2 May2008 section3.5.1/Table3-110; NXP FlexRay V3 webinar2010; Vector SIL Kit5.0.7 native API representation"
+    }
+  ],
+  "physical_layer_profile_id": null,
+  "medium_access_model": null,
+  "native_parameter_prefixes": [],
+  "parameter_aliases": {},
+  "parameter_alias_limits": {},
+  "parameter_evidence_scope": null,
+  "rate_source_profile_id": null,
+  "arbitration_model_id": null,
+  "max_payload_bytes": 254,
+  "capabilities": {
+    "supports_signals": true,
+    "supports_data_objects": false,
+    "supports_streams": false,
+    "supports_multicast": true,
+    "supports_publish_subscribe": false,
+    "supports_request_response": false,
+    "supports_cyclic": true,
+    "supports_event": true,
+    "supports_redundancy": true,
+    "supports_time_sync": true,
+    "supports_safety_profile": false,
+    "supports_segmentation": false,
+    "supports_fragmentation": false,
+    "supports_qos": false
+  },
+  "deterministic": true,
+  "overhead_bytes": 8,
+  "implementation_status": "PARTIAL",
+  "connection_type": "COMMUNICATION_TECHNOLOGY",
+  "parameter_proposals": {
+    "kind": "DISCRETE_STANDARD_RATES",
+    "default_bps": 2500000,
+    "status": "REVIEW_REQUIRED",
+    "source": "https://www.nxp.com/docs/en/data-sheet/MFR4310RM.pdf",
+    "source_revision": "MFR4310RM Rev2 May2008 section3.5.1/Table3-110; NXP FlexRay V3 webinar2010; Vector SIL Kit5.0.7 native API representation",
+    "note": "Lowest reviewed standard rate2.5Mbit/s proposal, standard modes2.5/5/10M;8M is explicitly NXP-specific. Cluster/node/slot/clock/topology values are configured, not universal defaults. No aggregate two-channel capacity or valid schedule is inferred."
+  },
+  "capacity_evidence": {
+    "status": "MODEL_MISSING",
+    "frame_model": null,
+    "schedule_model": null,
+    "requires_confirmed_device_parameters": true
+  },
+  "components": {
+    "binding": "flexray.binding",
+    "generator": "flexray.generator",
+    "validator": "flexray.validator",
+    "timing_model": null,
+    "load_model": null,
+    "encoder": "flexray.encoder",
+    "decoder": "flexray.decoder"
+  },
+  "known_limitations": "Technology-specific conformance details require a vendor/profile extension."
+}

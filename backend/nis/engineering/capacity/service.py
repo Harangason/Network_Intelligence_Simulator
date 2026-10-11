@@ -511,6 +511,10 @@ class CapacityTimingService:
         self.workflow = WorkflowStatusService(project_id)
 
     def calculate(self, overrides: dict[str, Any] | None = None, *, persist: bool = True, include_drafts: bool = False) -> dict[str, Any]:
+        with DEFAULT_TECHNOLOGY_REGISTRY.parameter_validation_session():
+            return self._calculate(overrides, persist=persist, include_drafts=include_drafts)
+
+    def _calculate(self, overrides: dict[str, Any] | None = None, *, persist: bool = True, include_drafts: bool = False) -> dict[str, Any]:
         state = self.workflow.get()
         confirmed_parameters = state.get("parameters") or {}
         parameters = {
@@ -1588,6 +1592,7 @@ class PreflightService:
                 "addressing",
                 "technology",
                 "physical",
+                "safety_assurance",
             )
         }
 
@@ -1615,6 +1620,18 @@ class PreflightService:
             add('routing', finding['severity'], finding['code'], finding['message'],
                 finding.get('recommendation'), **{key: finding[key] for key in
                     ('object_type', 'object_id', 'object_name', 'route_code') if key in finding})
+
+        # Structural safety checks are separate from normative release authority.
+        from backend.nis.engineering.safety_assurance import validate_requirement, validate_bindings, active_requirements
+        from backend.nis.infrastructure.persistence.repository import NotFoundError
+        safety_requirements = active_requirements(all_pages(list_objects, "SafetyRequirement"))
+        for requirement in safety_requirements:
+            try:
+                validate_requirement(requirement["configuration"])
+                validate_bindings(requirement)
+            except (EngineeringValidationError, NotFoundError) as error:
+                add("safety_assurance", "ERROR", "SAFETY_REQUIREMENT_INVALID", str(error),
+                    object_type="SafetyRequirement", object_id=str(requirement["id"]), object_name=requirement["name"])
 
         required = WORKFLOW_STEPS[:5]
         for step in required:
@@ -1938,6 +1955,9 @@ class PreflightService:
             "category_statuses": category_statuses,
             "category_checks": category_checks,
             "scope_coverage": coverage,
+            "safety_requirement_count": len(safety_requirements),
+            "safety_release_approved": False,
+            "safety_assurance_scope": "Structural references only; normative approval and reaction evidence remain separate.",
         }
         snapshot = self.workflow.create_analysis_snapshot(
             "preflight",

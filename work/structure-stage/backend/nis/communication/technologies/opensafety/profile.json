@@ -1,0 +1,3581 @@
+{
+  "id": "opensafety",
+  "label": "openSAFETY",
+  "domain": "generic_networking",
+  "layer": "INDUSTRY_PROFILE",
+  "transport_unit": "PROCESS_DATA",
+  "payload_element_types": [
+    "FIELD",
+    "STATUS",
+    "QUALITY"
+  ],
+  "hardware_interface": "explicit_opensafety_black_channel_and_device",
+  "hardware_capability_aliases": [
+    "generic_network_interface"
+  ],
+  "default_stack": [
+    "opensafety"
+  ],
+  "stack_variants": [
+    [
+      "opensafety"
+    ]
+  ],
+  "default_bitrate": null,
+  "rate_model": {
+    "type": "APPLICATION_DEPENDENT",
+    "fields": []
+  },
+  "local_timing_schema": [],
+  "parameter_schema": {
+    "payload_bytes": {
+      "label": "Payload",
+      "category": "physical",
+      "scope": "message",
+      "type": "number",
+      "description": "Actual application bytes separate versioned safety LE/ordinary redundant copy/slim service framing and selected black-channel overhead. No universalCAN8byte orEthernet1500byte payload proposal.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SFSint.h",
+      "source_revision": "SFS frame constants: two headers4/5, payload0..254, short0..8 CRC1 versus long9..254 CRC2, domain1..1023. Read pinned reference.",
+      "integer": true
+    },
+    "cycle_ms": {
+      "label": "Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "Standardperiode fuer zyklische Nachrichten.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "minimum_cycle_time_ms": {
+      "label": "Minimum Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "deadline_ms": {
+      "label": "Deadline",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "timeout_ms": {
+      "label": "Timeout",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_latency_ms": {
+      "label": "Maximum Latency",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "jitter_ms": {
+      "label": "Jitter Budget",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "freshness_ms": {
+      "label": "Data Freshness",
+      "category": "timing",
+      "scope": "signal",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "source_processing_delay_ms": {
+      "label": "Source Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_processing_delay_ms": {
+      "label": "Target Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "propagation_delay_ms": {
+      "label": "Propagation",
+      "category": "timing",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.01,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_bus_load_percent": {
+      "label": "Ziel-Buslast",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "Zielwert fuer die aus Routing, Payload, Zyklus und Bitrate berechnete Buslast.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "peak_factor": {
+      "label": "Peak Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.15,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_factor": {
+      "label": "Burst Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.5,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_window_ms": {
+      "label": "Burst Window",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "warning_threshold": {
+      "label": "Load Warning",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "critical_threshold": {
+      "label": "Load Critical",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 75,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "overload_threshold": {
+      "label": "Load Overload",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 90,
+      "unit": "%",
+      "min": 1,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "traffic_class": {
+      "label": "Traffic Class",
+      "category": "qos",
+      "scope": "route",
+      "type": "select",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": "BEST_EFFORT",
+      "options": [
+        "BEST_EFFORT",
+        "CONTROL",
+        "REALTIME",
+        "SAFETY_CRITICAL"
+      ],
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "packet_loss_probability": {
+      "label": "Packet Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "frame_loss_probability": {
+      "label": "Frame Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "bit_error_rate": {
+      "label": "Bit Error Rate",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "corruption_probability": {
+      "label": "Corruption",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duplicate_probability": {
+      "label": "Duplication",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "reordering_probability": {
+      "label": "Reordering",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "required_reliability": {
+      "label": "Required Reliability",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.999,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_offset_ms": {
+      "label": "Clock Offset",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_drift_ppm": {
+      "label": "Clock Drift",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 20,
+      "unit": "ppm",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_precision_ms": {
+      "label": "Sync Precision",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_interval_ms": {
+      "label": "Sync Interval",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1000,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_sync_error_ms": {
+      "label": "Maximum Sync Error",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_delay_ms": {
+      "label": "Gateway Processing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.2,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_queue_delay_ms": {
+      "label": "Gateway Queueing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "protocol_conversion_delay_ms": {
+      "label": "Protocol Conversion",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_maximum_throughput": {
+      "label": "Gateway Throughput",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100000000,
+      "unit": "bit/s",
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_input_buffer": {
+      "label": "Gateway Input Buffer",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 256,
+      "unit": "Frames",
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_output_buffer": {
+      "label": "Gateway Output Buffer",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 256,
+      "unit": "Frames",
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_maximum_routes": {
+      "label": "Gateway Maximum Routes",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 10000,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_maximum_messages_s": {
+      "label": "Gateway Messages per Second",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100000,
+      "unit": "msg/s",
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duration_s": {
+      "label": "Simulation Duration",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 1,
+      "unit": "s",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "seed": {
+      "label": "Random Seed",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 42,
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "max_events": {
+      "label": "Maximum Events",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 100000,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "dropout_probability": {
+      "label": "Failure Injection Dropout",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "os_edition": {
+      "type": "select",
+      "description": "Actual reviewed pinned reference version, distinct a claim of full current IEC specification.",
+      "options": [
+        "BR_REFERENCE_1_4_PINNED"
+      ],
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/README.md",
+      "source_revision": "Archived B&R/IXXAT reference distribution1.4, pinned commit. README demonstration1.4.0; version.txt says1.4. No current complete licensed EPSG/IEC specification or NIS certification claimed.",
+      "integer": false,
+      "label": "edition",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "default": "BR_REFERENCE_1_4_PINNED"
+    },
+    "os_service": {
+      "type": "select",
+      "description": "Actual safety management, process data, ordinary service data or slim service data.",
+      "options": [
+        "SNMT",
+        "SPDO",
+        "SSDO",
+        "SLIM_SSDO"
+      ],
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SFSser.c",
+      "source_revision": "Valid six-bit service IDs, serialization and slim-SSDO layout distinct ordinary duplicated payload.",
+      "integer": false,
+      "label": "service",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "os_direction": {
+      "type": "select",
+      "description": "Actual transmit or receive observation; no assumed controller equals consumer role.",
+      "options": [
+        "TRANSMIT",
+        "RECEIVE"
+      ],
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SPDOapi.h",
+      "source_revision": "Call frequency tied to smallest refresh/SCT, actual application supplied consecutive-time clock; no fixed milliseconds inferred.",
+      "integer": false,
+      "label": "direction",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "os_node_role": {
+      "type": "select",
+      "description": "Actual Safety Node, Configuration Manager or Domain Gateway.",
+      "options": [
+        "SN",
+        "SCM",
+        "SDG"
+      ],
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/README.md",
+      "source_revision": "Archived B&R/IXXAT reference distribution1.4, pinned commit. README demonstration1.4.0; version.txt says1.4. No current complete licensed EPSG/IEC specification or NIS certification claimed.",
+      "integer": false,
+      "label": "node role",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "os_configuration": {
+      "type": "select",
+      "description": "Actual device configuration versus source demonstration or explicitly requested minimum supported configuration.",
+      "options": [
+        "ACTUAL",
+        "REFERENCE_DEMO",
+        "MINIMUM_SUPPORTED"
+      ],
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/contrib/EPLScfg.h",
+      "source_revision": "Configurable stack limits and demonstration settings; demoSSDO12, Rx/TxSPDO128 are not universal protocol or application defaults.",
+      "integer": false,
+      "label": "configuration",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "os_mapping_state": {
+      "type": "select",
+      "description": "Actual node state when changing SOD mappings, not UI progress status.",
+      "options": [
+        "INITIAL",
+        "PRE_OPERATIONAL",
+        "OPERATIONAL"
+      ],
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/doc/software/structure_spdo.md",
+      "source_revision": "Pre-operational mapping changes and byte-based mapping; actual valid-connection status and application range checks.",
+      "integer": false,
+      "label": "mapping state",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "os_outcome": {
+      "type": "select",
+      "description": "Actual functional result separate frame validity or safety certification.",
+      "options": [
+        "ACCEPTED",
+        "REJECTED",
+        "PENDING",
+        "UNKNOWN"
+      ],
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SPDOrxConsSm.c",
+      "source_revision": "Actual time synchronization, propagation and SCT consumer checks; first frame after synchronization remains safe until timing validated.",
+      "integer": false,
+      "label": "outcome",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "os_bearer_id": {
+      "type": "text",
+      "description": "Actual separately registered black-channel TechnologyProfile, not openSAFETY itself or always Ethernet.",
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/README.md",
+      "source_revision": "Archived B&R/IXXAT reference distribution1.4, pinned commit. README demonstration1.4.0; version.txt says1.4. No current complete licensed EPSG/IEC specification or NIS certification claimed.",
+      "integer": false,
+      "label": "bearer id",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "os_bearer_source": {
+      "type": "text",
+      "description": "Actual transport topology, framing, service/load/loss and integrity assumptions of black channel.",
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/README.md",
+      "source_revision": "Archived B&R/IXXAT reference distribution1.4, pinned commit. README demonstration1.4.0; version.txt says1.4. No current complete licensed EPSG/IEC specification or NIS certification claimed.",
+      "integer": false,
+      "label": "bearer source",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "os_device_source": {
+      "type": "text",
+      "description": "Actual stack/device revision, enabled services, configured limits and capabilities.",
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/contrib/EPLScfg.h",
+      "source_revision": "Configurable stack limits and demonstration settings; demoSSDO12, Rx/TxSPDO128 are not universal protocol or application defaults.",
+      "integer": false,
+      "label": "device source",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "os_schedule_source": {
+      "type": "text",
+      "description": "Actual traffic, refresh/call frequency/SCT/guarding/synchronization/service bounds.",
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SPDOapi.h",
+      "source_revision": "Call frequency tied to smallest refresh/SCT, actual application supplied consecutive-time clock; no fixed milliseconds inferred.",
+      "integer": false,
+      "label": "schedule source",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "os_timer_source": {
+      "type": "text",
+      "description": "Actual implementation clock tick and monotonic/wrap behavior, not assumed100ms CAN timer.",
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/EPLStypes.h",
+      "source_revision": "Address/TR/UDID/timeout-width/SOD constants; UInt32 timer modular comparison and UInt16 wire consecutive time.",
+      "integer": false,
+      "label": "timer source",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "os_frame_source": {
+      "type": "text",
+      "description": "Actual two-subframe observation including layout, normalized domain/UDID and checksum verification.",
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SFSdeser.c",
+      "source_revision": "Length/header/CRC/subframe validation. SlimSSDO58/59 omits second payload and selects separate long checksum routine.",
+      "integer": false,
+      "label": "frame source",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "os_acceptance_source": {
+      "type": "text",
+      "description": "Actual correlated data acceptance, freshness and application validity requirement.",
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SPDOrxConsSm.c",
+      "source_revision": "Actual time synchronization, propagation and SCT consumer checks; first frame after synchronization remains safe until timing validated.",
+      "integer": false,
+      "label": "acceptance source",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "os_assurance_source": {
+      "type": "text",
+      "description": "Actual hazard/safety-case and certificate applicability evidence; a reference stack is not NIS certification.",
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/README.md",
+      "source_revision": "Archived B&R/IXXAT reference distribution1.4, pinned commit. README demonstration1.4.0; version.txt says1.4. No current complete licensed EPSG/IEC specification or NIS certification claimed.",
+      "integer": false,
+      "label": "assurance source",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "os_udid_hex": {
+      "type": "text",
+      "description": "Actual six-byte unique device identity, not invented from node number or automatically taken as Ethernet MAC.",
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/EPLStypes.h",
+      "source_revision": "Address/TR/UDID/timeout-width/SOD constants; UInt32 timer modular comparison and UInt16 wire consecutive time.",
+      "integer": false,
+      "label": "udid hex",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "os_scm_udid_hex": {
+      "type": "text",
+      "description": "Actual configured six-byte Configuration Manager identity for domain/subframe processing.",
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/EPLStypes.h",
+      "source_revision": "Address/TR/UDID/timeout-width/SOD constants; UInt32 timer modular comparison and UInt16 wire consecutive time.",
+      "integer": false,
+      "label": "scm udid hex",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "os_mapping_source": {
+      "type": "text",
+      "description": "Actual SOD entries/types/order/max-variable-length and application range-validation evidence.",
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/doc/software/structure_spdo.md",
+      "source_revision": "Pre-operational mapping changes and byte-based mapping; actual valid-connection status and application range checks.",
+      "integer": false,
+      "label": "mapping source",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "os_domain": {
+      "type": "number",
+      "description": "Actual Safety Domain Number, independent black-channel network identifier.",
+      "min": 1,
+      "max": 1023,
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SFSint.h",
+      "source_revision": "SFS frame constants: two headers4/5, payload0..254, short0..8 CRC1 versus long9..254 CRC2, domain1..1023. Read pinned reference.",
+      "integer": true,
+      "label": "domain",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "os_address": {
+      "type": "number",
+      "description": "Actual assigned safety address, independent CAN/IP address.",
+      "min": 1,
+      "max": 1023,
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/EPLStypes.h",
+      "source_revision": "Address/TR/UDID/timeout-width/SOD constants; UInt32 timer modular comparison and UInt16 wire consecutive time.",
+      "integer": true,
+      "label": "address",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "os_scm_address": {
+      "type": "number",
+      "description": "Actual Configuration Manager safety address.",
+      "min": 1,
+      "max": 1023,
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/EPLStypes.h",
+      "source_revision": "Address/TR/UDID/timeout-width/SOD constants; UInt32 timer modular comparison and UInt16 wire consecutive time.",
+      "integer": true,
+      "label": "scm address",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "os_time_address": {
+      "type": "number",
+      "description": "Actual ten-bit time request address; zero/not-used depends selected service.",
+      "min": 0,
+      "max": 1023,
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SFSint.h",
+      "source_revision": "SFS frame constants: two headers4/5, payload0..254, short0..8 CRC1 versus long9..254 CRC2, domain1..1023. Read pinned reference.",
+      "integer": true,
+      "label": "time address",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "os_time_request": {
+      "type": "number",
+      "description": "Actual six-bit time-request distinctive number, not a packet retry count.",
+      "min": 0,
+      "max": 63,
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/EPLStypes.h",
+      "source_revision": "Address/TR/UDID/timeout-width/SOD constants; UInt32 timer modular comparison and UInt16 wire consecutive time.",
+      "integer": true,
+      "label": "time request",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "os_frame_id": {
+      "type": "number",
+      "description": "Actual six-bit service identifier, address high bits encoded separately.",
+      "min": 0,
+      "max": 63,
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SFSser.c",
+      "source_revision": "Valid six-bit service IDs, serialization and slim-SSDO layout distinct ordinary duplicated payload.",
+      "integer": true,
+      "label": "frame id",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "os_data_length": {
+      "type": "number",
+      "description": "Actual openSAFETY LE payload length, excludes redundant copy/headers/checksums.",
+      "min": 0,
+      "max": 254,
+      "unit": "byte",
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SFSint.h",
+      "source_revision": "SFS frame constants: two headers4/5, payload0..254, short0..8 CRC1 versus long9..254 CRC2, domain1..1023. Read pinned reference.",
+      "integer": true,
+      "label": "data length",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "os_crc_bytes": {
+      "type": "number",
+      "description": "Actual checksum size per subframe, one for LE<=8 and two for LE>=9.",
+      "min": 1,
+      "max": 2,
+      "unit": "byte",
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SFSint.h",
+      "source_revision": "SFS frame constants: two headers4/5, payload0..254, short0..8 CRC1 versus long9..254 CRC2, domain1..1023. Read pinned reference.",
+      "integer": true,
+      "label": "crc bytes",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "os_crc_polynomial": {
+      "type": "number",
+      "description": "Actual source-version-qualified generator, not a generic CRC16 or an older-edition value.",
+      "min": 0,
+      "max": 65535,
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/tools/oschecksum/include/oschecksum/crc.h",
+      "source_revision": "Reference tools use CRC8 polynomial2F, ordinary CRC16BAAD, slimCRC16AC9A. Do not substitute Modbus, CAN or an older edition polynomial.",
+      "integer": true,
+      "label": "crc polynomial",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "os_crc_initial": {
+      "type": "number",
+      "description": "Actual reference calculation initial register, zero for these selected checksums.",
+      "min": 0,
+      "max": 65535,
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SFSdeser.c",
+      "source_revision": "Length/header/CRC/subframe validation. SlimSSDO58/59 omits second payload and selects separate long checksum routine.",
+      "integer": true,
+      "label": "crc initial",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "os_subframe1_bytes": {
+      "type": "number",
+      "description": "Actual first subframe including four header bytes, payload and checksum.",
+      "min": 5,
+      "max": 260,
+      "unit": "byte",
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SFSint.h",
+      "source_revision": "SFS frame constants: two headers4/5, payload0..254, short0..8 CRC1 versus long9..254 CRC2, domain1..1023. Read pinned reference.",
+      "integer": true,
+      "label": "subframe1 bytes",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "os_subframe2_bytes": {
+      "type": "number",
+      "description": "Actual second subframe including five header bytes/checksum and ordinary redundant payload.",
+      "min": 6,
+      "max": 261,
+      "unit": "byte",
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SFSint.h",
+      "source_revision": "SFS frame constants: two headers4/5, payload0..254, short0..8 CRC1 versus long9..254 CRC2, domain1..1023. Read pinned reference.",
+      "integer": true,
+      "label": "subframe2 bytes",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "os_frame_bytes": {
+      "type": "number",
+      "description": "Actual whole safety frame; ordinary2*LE+11/13, slimLE+11/13; separate bearer.",
+      "min": 11,
+      "max": 521,
+      "unit": "byte",
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SFSdeser.c",
+      "source_revision": "Length/header/CRC/subframe validation. SlimSSDO58/59 omits second payload and selects separate long checksum routine.",
+      "integer": true,
+      "label": "frame bytes",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "os_bearer_overhead_bytes": {
+      "type": "number",
+      "description": "Actual encapsulation overhead on selected black channel, no universal Ethernet22/IP20.",
+      "min": 0,
+      "unit": "byte",
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/README.md",
+      "source_revision": "Archived B&R/IXXAT reference distribution1.4, pinned commit. README demonstration1.4.0; version.txt says1.4. No current complete licensed EPSG/IEC specification or NIS certification claimed.",
+      "integer": true,
+      "label": "bearer overhead bytes",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "os_wire_bytes": {
+      "type": "number",
+      "description": "Actual carried safety frame plus chosen bearer overhead; no physical baud inferred.",
+      "min": 11,
+      "unit": "byte",
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/README.md",
+      "source_revision": "Archived B&R/IXXAT reference distribution1.4, pinned commit. README demonstration1.4.0; version.txt says1.4. No current complete licensed EPSG/IEC specification or NIS certification claimed.",
+      "integer": true,
+      "label": "wire bytes",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "os_bearer_limit_bytes": {
+      "type": "number",
+      "description": "Actual registered bearer/device unit limit at the declared frame boundary.",
+      "min": 1,
+      "unit": "byte",
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/README.md",
+      "source_revision": "Archived B&R/IXXAT reference distribution1.4, pinned commit. README demonstration1.4.0; version.txt says1.4. No current complete licensed EPSG/IEC specification or NIS certification claimed.",
+      "integer": true,
+      "label": "bearer limit bytes",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "os_max_ssdo_payload": {
+      "type": "number",
+      "description": "Actual SSDO-server configured maximum8..254; demo12 versus minimum-supported8 distinct actual application payload.",
+      "min": 8,
+      "max": 254,
+      "unit": "byte",
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/contrib/EPLScfg.h",
+      "source_revision": "Configurable stack limits and demonstration settings; demoSSDO12, Rx/TxSPDO128 are not universal protocol or application defaults.",
+      "integer": true,
+      "label": "max ssdo payload",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "os_configuration": "REFERENCE_DEMO",
+            "os_edition": "BR_REFERENCE_1_4_PINNED"
+          },
+          "value": 12,
+          "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/contrib/EPLScfg.h",
+          "source_revision": "Configurable stack limits and demonstration settings; demoSSDO12, Rx/TxSPDO128 are not universal protocol or application defaults."
+        },
+        {
+          "when": {
+            "os_configuration": "MINIMUM_SUPPORTED",
+            "os_edition": "BR_REFERENCE_1_4_PINNED"
+          },
+          "value": 8,
+          "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/contrib/EPLScfg.h",
+          "source_revision": "Configurable stack limits and demonstration settings; demoSSDO12, Rx/TxSPDO128 are not universal protocol or application defaults."
+        }
+      ]
+    },
+    "os_max_tx_spdo_payload": {
+      "type": "number",
+      "description": "Actual configured maximum TxSPDO, reference allows at most254.",
+      "min": 0,
+      "max": 254,
+      "unit": "byte",
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/contrib/EPLScfg.h",
+      "source_revision": "Configurable stack limits and demonstration settings; demoSSDO12, Rx/TxSPDO128 are not universal protocol or application defaults.",
+      "integer": true,
+      "label": "max tx spdo payload",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "os_configuration": "REFERENCE_DEMO",
+            "os_edition": "BR_REFERENCE_1_4_PINNED"
+          },
+          "value": 128,
+          "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/contrib/EPLScfg.h",
+          "source_revision": "Configurable stack limits and demonstration settings; demoSSDO12, Rx/TxSPDO128 are not universal protocol or application defaults."
+        }
+      ]
+    },
+    "os_max_rx_spdo_payload": {
+      "type": "number",
+      "description": "Actual configured maximum RxSPDO, reference allows at most254.",
+      "min": 0,
+      "max": 254,
+      "unit": "byte",
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/contrib/EPLScfg.h",
+      "source_revision": "Configurable stack limits and demonstration settings; demoSSDO12, Rx/TxSPDO128 are not universal protocol or application defaults.",
+      "integer": true,
+      "label": "max rx spdo payload",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "os_configuration": "REFERENCE_DEMO",
+            "os_edition": "BR_REFERENCE_1_4_PINNED"
+          },
+          "value": 128,
+          "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/contrib/EPLScfg.h",
+          "source_revision": "Configurable stack limits and demonstration settings; demoSSDO12, Rx/TxSPDO128 are not universal protocol or application defaults."
+        }
+      ]
+    },
+    "os_mapped_bytes": {
+      "type": "number",
+      "description": "Actual sum of mapped maximum sizes in a byte-based mapping, not count of variables.",
+      "min": 0,
+      "max": 254,
+      "unit": "byte",
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/doc/software/structure_spdo.md",
+      "source_revision": "Pre-operational mapping changes and byte-based mapping; actual valid-connection status and application range checks.",
+      "integer": true,
+      "label": "mapped bytes",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "os_mapped_entries": {
+      "type": "number",
+      "description": "Actual number of valid SOD mapping entries, matching subindex0.",
+      "min": 0,
+      "max": 253,
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SPDOapi.h",
+      "source_revision": "Call frequency tied to smallest refresh/SCT, actual application supplied consecutive-time clock; no fixed milliseconds inferred.",
+      "integer": true,
+      "label": "mapped entries",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "os_tick_us": {
+      "type": "number",
+      "description": "Actual duration of one application consecutive-time tick; no literature-wide default from an unspecified target.",
+      "min": 0,
+      "unit": "us",
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SPDOapi.h",
+      "source_revision": "Call frequency tied to smallest refresh/SCT, actual application supplied consecutive-time clock; no fixed milliseconds inferred.",
+      "integer": false,
+      "label": "tick us",
+      "category": "timing",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "os_refresh_ticks": {
+      "type": "number",
+      "description": "Actual TxSPDO Refresh Prescale in application ticks, not a global publish period.",
+      "min": 0,
+      "max": 65535,
+      "unit": "tick",
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SPDOapi.h",
+      "source_revision": "Call frequency tied to smallest refresh/SCT, actual application supplied consecutive-time clock; no fixed milliseconds inferred.",
+      "integer": true,
+      "label": "refresh ticks",
+      "category": "timing",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "os_refresh_us": {
+      "type": "number",
+      "description": "Actual refresh time converted with the identified clock tick.",
+      "min": 0,
+      "unit": "us",
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SPDOapi.h",
+      "source_revision": "Call frequency tied to smallest refresh/SCT, actual application supplied consecutive-time clock; no fixed milliseconds inferred.",
+      "integer": false,
+      "label": "refresh us",
+      "category": "timing",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "os_sct_ticks": {
+      "type": "number",
+      "description": "Actual per-consumer Safety Control Time, not a CAN timeout or functional safety guarantee.",
+      "min": 0,
+      "max": 65535,
+      "unit": "tick",
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SPDOrxConsSm.c",
+      "source_revision": "Actual time synchronization, propagation and SCT consumer checks; first frame after synchronization remains safe until timing validated.",
+      "integer": true,
+      "label": "sct ticks",
+      "category": "timing",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "os_sct_us": {
+      "type": "number",
+      "description": "Actual SCT converted with source-qualified tick; separate total fault-reaction time.",
+      "min": 0,
+      "unit": "us",
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SPDOrxConsSm.c",
+      "source_revision": "Actual time synchronization, propagation and SCT consumer checks; first frame after synchronization remains safe until timing validated.",
+      "integer": false,
+      "label": "sct us",
+      "category": "timing",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "os_tx_call_ticks": {
+      "type": "number",
+      "description": "Actual maximum interval between BuildTxSpdo calls, at most the smallest configured active TxSPDO refresh.",
+      "min": 0,
+      "unit": "tick",
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SPDOapi.h",
+      "source_revision": "Call frequency tied to smallest refresh/SCT, actual application supplied consecutive-time clock; no fixed milliseconds inferred.",
+      "integer": false,
+      "label": "tx call ticks",
+      "category": "timing",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "os_rx_check_ticks": {
+      "type": "number",
+      "description": "Actual maximum interval between CheckRxTimeout calls, at most the smallest configured active RxSPDO SCT.",
+      "min": 0,
+      "unit": "tick",
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SPDOapi.h",
+      "source_revision": "Call frequency tied to smallest refresh/SCT, actual application supplied consecutive-time clock; no fixed milliseconds inferred.",
+      "integer": false,
+      "label": "rx check ticks",
+      "category": "timing",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "os_minimum_refresh_ticks": {
+      "type": "number",
+      "description": "Actual minimum refresh across all active TxSPDOs, not inferred from one selected connection.",
+      "min": 0,
+      "max": 65535,
+      "unit": "tick",
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SPDOapi.h",
+      "source_revision": "Call frequency tied to smallest refresh/SCT, actual application supplied consecutive-time clock; no fixed milliseconds inferred.",
+      "integer": true,
+      "label": "minimum refresh ticks",
+      "category": "timing",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "os_minimum_sct_ticks": {
+      "type": "number",
+      "description": "Actual minimum SCT across all active RxSPDOs, not inferred from one selected connection.",
+      "min": 0,
+      "max": 65535,
+      "unit": "tick",
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SPDOapi.h",
+      "source_revision": "Call frequency tied to smallest refresh/SCT, actual application supplied consecutive-time clock; no fixed milliseconds inferred.",
+      "integer": true,
+      "label": "minimum sct ticks",
+      "category": "timing",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "os_elapsed_ticks": {
+      "type": "number",
+      "description": "Actual time since valid consumer data, checked against SCT before accepting data.",
+      "min": 0,
+      "max": 2147483648,
+      "unit": "tick",
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SPDOrxConsSm.c",
+      "source_revision": "Actual time synchronization, propagation and SCT consumer checks; first frame after synchronization remains safe until timing validated.",
+      "integer": true,
+      "label": "elapsed ticks",
+      "category": "timing",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "os_propagation_min_ticks": {
+      "type": "number",
+      "description": "Actual permitted minimum propagation delay from SOD.",
+      "min": 0,
+      "max": 65535,
+      "unit": "tick",
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SPDOrxConsSm.c",
+      "source_revision": "Actual time synchronization, propagation and SCT consumer checks; first frame after synchronization remains safe until timing validated.",
+      "integer": true,
+      "label": "propagation min ticks",
+      "category": "timing",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "os_propagation_max_ticks": {
+      "type": "number",
+      "description": "Actual permitted maximum propagation delay, not assumed zero or Ethernet delay.",
+      "min": 0,
+      "max": 65535,
+      "unit": "tick",
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SPDOrxConsSm.c",
+      "source_revision": "Actual time synchronization, propagation and SCT consumer checks; first frame after synchronization remains safe until timing validated.",
+      "integer": true,
+      "label": "propagation max ticks",
+      "category": "timing",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "os_propagation_ticks": {
+      "type": "number",
+      "description": "Actual synchronized observed propagation delay.",
+      "min": 0,
+      "max": 65535,
+      "unit": "tick",
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SPDOrxConsSm.c",
+      "source_revision": "Actual time synchronization, propagation and SCT consumer checks; first frame after synchronization remains safe until timing validated.",
+      "integer": true,
+      "label": "propagation ticks",
+      "category": "timing",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "os_consecutive_time": {
+      "type": "number",
+      "description": "Actual UInt16 wire consecutive time, modular comparison distinct UInt32 local clock.",
+      "min": 0,
+      "max": 65535,
+      "unit": "tick",
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/EPLStypes.h",
+      "source_revision": "Address/TR/UDID/timeout-width/SOD constants; UInt32 timer modular comparison and UInt16 wire consecutive time.",
+      "integer": true,
+      "label": "consecutive time",
+      "category": "timing",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "os_previous_consecutive_time": {
+      "type": "number",
+      "description": "Actual last validated wire time on same SPDO producer.",
+      "min": 0,
+      "max": 65535,
+      "unit": "tick",
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SPDOrxConsSm.c",
+      "source_revision": "Actual time synchronization, propagation and SCT consumer checks; first frame after synchronization remains safe until timing validated.",
+      "integer": true,
+      "label": "previous consecutive time",
+      "category": "timing",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "os_consecutive_distance": {
+      "type": "number",
+      "description": "Actual UInt16 modular delta; only differences<32768 pass CT_VALID.",
+      "min": 0,
+      "max": 65535,
+      "unit": "tick",
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SPDOrxConsSm.c",
+      "source_revision": "Actual time synchronization, propagation and SCT consumer checks; first frame after synchronization remains safe until timing validated.",
+      "integer": true,
+      "label": "consecutive distance",
+      "category": "timing",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "os_local_clock": {
+      "type": "number",
+      "description": "Actual application UInt32 consecutive timer clock, not necessarily milliseconds.",
+      "min": 0,
+      "max": 4294967295,
+      "unit": "tick",
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/EPLStypes.h",
+      "source_revision": "Address/TR/UDID/timeout-width/SOD constants; UInt32 timer modular comparison and UInt16 wire consecutive time.",
+      "integer": true,
+      "label": "local clock",
+      "category": "timing",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "os_timeout_at": {
+      "type": "number",
+      "description": "Actual UInt32 deadline constructed with same clock and bounded offset.",
+      "min": 0,
+      "max": 4294967295,
+      "unit": "tick",
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/EPLStypes.h",
+      "source_revision": "Address/TR/UDID/timeout-width/SOD constants; UInt32 timer modular comparison and UInt16 wire consecutive time.",
+      "integer": true,
+      "label": "timeout at",
+      "category": "timing",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "os_timeout_distance": {
+      "type": "number",
+      "description": "Actual(local_clock-timeout_at)mod2^32; below2^31 means expired.",
+      "min": 0,
+      "max": 4294967295,
+      "unit": "tick",
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/EPLStypes.h",
+      "source_revision": "Address/TR/UDID/timeout-width/SOD constants; UInt32 timer modular comparison and UInt16 wire consecutive time.",
+      "integer": true,
+      "label": "timeout distance",
+      "category": "timing",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "os_fault_reaction_bound_us": {
+      "type": "number",
+      "description": "Actual assured total detection/stack/application/output fault reaction, not SCT alone.",
+      "min": 0,
+      "unit": "us",
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/README.md",
+      "source_revision": "Archived B&R/IXXAT reference distribution1.4, pinned commit. README demonstration1.4.0; version.txt says1.4. No current complete licensed EPSG/IEC specification or NIS certification claimed.",
+      "integer": false,
+      "label": "fault reaction bound us",
+      "category": "timing",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "os_fault_reaction_required_us": {
+      "type": "number",
+      "description": "Actual hazard-derived maximum accepted reaction time.",
+      "min": 0,
+      "unit": "us",
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/README.md",
+      "source_revision": "Archived B&R/IXXAT reference distribution1.4, pinned commit. README demonstration1.4.0; version.txt says1.4. No current complete licensed EPSG/IEC specification or NIS certification claimed.",
+      "integer": false,
+      "label": "fault reaction required us",
+      "category": "timing",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "os_age_us": {
+      "type": "number",
+      "description": "Actual accepted source data age distinct frame receipt/CRC/SCT.",
+      "min": 0,
+      "unit": "us",
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SPDOrxConsSm.c",
+      "source_revision": "Actual time synchronization, propagation and SCT consumer checks; first frame after synchronization remains safe until timing validated.",
+      "integer": false,
+      "label": "age us",
+      "category": "timing",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "os_freshness_limit_us": {
+      "type": "number",
+      "description": "Actual application accepted source-age bound, not universal safety-bus default.",
+      "min": 0,
+      "unit": "us",
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SPDOrxConsSm.c",
+      "source_revision": "Actual time synchronization, propagation and SCT consumer checks; first frame after synchronization remains safe until timing validated.",
+      "integer": false,
+      "label": "freshness limit us",
+      "category": "timing",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "os_connection_valid": {
+      "type": "boolean",
+      "description": "Actual producer connection-valid indication, separate CRC and consumer acceptance.",
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SPDOrxConsSm.c",
+      "source_revision": "Actual time synchronization, propagation and SCT consumer checks; first frame after synchronization remains safe until timing validated.",
+      "integer": false,
+      "label": "connection valid",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "os_crc1_valid": {
+      "type": "boolean",
+      "description": "Actual source-qualified first subframe checksum result, not a calculated checksum in this parameter model.",
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SFSdeser.c",
+      "source_revision": "Length/header/CRC/subframe validation. SlimSSDO58/59 omits second payload and selects separate long checksum routine.",
+      "integer": false,
+      "label": "crc1 valid",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "os_crc2_valid": {
+      "type": "boolean",
+      "description": "Actual source-qualified second subframe checksum result, independent first checksum.",
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SFSdeser.c",
+      "source_revision": "Length/header/CRC/subframe validation. SlimSSDO58/59 omits second payload and selects separate long checksum routine.",
+      "integer": false,
+      "label": "crc2 valid",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "os_subframes_consistent": {
+      "type": "boolean",
+      "description": "Actual normalized headers/domain/UDID/data agreement after source-defined masking, not raw identical subframes.",
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SFSdeser.c",
+      "source_revision": "Length/header/CRC/subframe validation. SlimSSDO58/59 omits second payload and selects separate long checksum routine.",
+      "integer": false,
+      "label": "subframes consistent",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "os_synchronized": {
+      "type": "boolean",
+      "description": "Actual completed time synchronization for receiving SPDO data.",
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SPDOrxConsSm.c",
+      "source_revision": "Actual time synchronization, propagation and SCT consumer checks; first frame after synchronization remains safe until timing validated.",
+      "integer": false,
+      "label": "synchronized",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "os_first_after_sync": {
+      "type": "boolean",
+      "description": "Actual first frame whose CT is checked after sync; reference keeps data safe on that frame.",
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SPDOrxConsSm.c",
+      "source_revision": "Actual time synchronization, propagation and SCT consumer checks; first frame after synchronization remains safe until timing validated.",
+      "integer": false,
+      "label": "first after sync",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "os_safe_state": {
+      "type": "boolean",
+      "description": "Actual consumer safe state, not assumed false because a frame arrived.",
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SPDOrxConsSm.c",
+      "source_revision": "Actual time synchronization, propagation and SCT consumer checks; first frame after synchronization remains safe until timing validated.",
+      "integer": false,
+      "label": "safe state",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "os_timeout_expired": {
+      "type": "boolean",
+      "description": "Actual modular local-clock timeout result under identified reference comparison.",
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/EPLStypes.h",
+      "source_revision": "Address/TR/UDID/timeout-width/SOD constants; UInt32 timer modular comparison and UInt16 wire consecutive time.",
+      "integer": false,
+      "label": "timeout expired",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "os_mapping_changed": {
+      "type": "boolean",
+      "description": "Whether mappings are currently being modified; only pre-operational state permitted.",
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/doc/software/structure_spdo.md",
+      "source_revision": "Pre-operational mapping changes and byte-based mapping; actual valid-connection status and application range checks.",
+      "integer": false,
+      "label": "mapping changed",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "os_range_validated": {
+      "type": "boolean",
+      "description": "Actual application performed mapped object range/type checks, which stack mapping does not provide.",
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/doc/software/structure_spdo.md",
+      "source_revision": "Pre-operational mapping changes and byte-based mapping; actual valid-connection status and application range checks.",
+      "integer": false,
+      "label": "range validated",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "os_data_accepted": {
+      "type": "boolean",
+      "description": "Actual functional application consumption separate safety certification.",
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SPDOrxConsSm.c",
+      "source_revision": "Actual time synchronization, propagation and SCT consumer checks; first frame after synchronization remains safe until timing validated.",
+      "integer": false,
+      "label": "data accepted",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "os_safety_case_confirmed": {
+      "type": "boolean",
+      "description": "Actual complete hazard/system safety case applicability, never defaulted by protocol name.",
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/README.md",
+      "source_revision": "Archived B&R/IXXAT reference distribution1.4, pinned commit. README demonstration1.4.0; version.txt says1.4. No current complete licensed EPSG/IEC specification or NIS certification claimed.",
+      "integer": false,
+      "label": "safety case confirmed",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "os_certificate_scope_match": {
+      "type": "boolean",
+      "description": "Actual certificate covers exact device/firmware/system use, not this simulation model.",
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/README.md",
+      "source_revision": "Archived B&R/IXXAT reference distribution1.4, pinned commit. README demonstration1.4.0; version.txt says1.4. No current complete licensed EPSG/IEC specification or NIS certification claimed.",
+      "integer": false,
+      "label": "certificate scope match",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "os_safety_accepted": {
+      "type": "boolean",
+      "description": "Actual externally supported safety assurance result, not a checkbox proving SIL.",
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/README.md",
+      "source_revision": "Archived B&R/IXXAT reference distribution1.4, pinned commit. README demonstration1.4.0; version.txt says1.4. No current complete licensed EPSG/IEC specification or NIS certification claimed.",
+      "integer": false,
+      "label": "safety accepted",
+      "category": "communication",
+      "scope": "route",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    }
+  },
+  "mechanisms": {
+    "framing": [
+      "ORDINARY_AND_SLIM_TWO_SUBFRAME_GEOMETRY",
+      "VERSION_QUALIFIED_CHECKSUM_FAMILY"
+    ],
+    "delivery": [
+      "ACTUAL_TIME_SYNC_SCT_PROPAGATION_AND_MAPPING",
+      "CONNECTION_STATUS_DISTINCT_SAFETY_ASSURANCE"
+    ],
+    "qualification": [
+      "NO_CAN_ETHERNET_CLOCK_OR_PAYLOAD_FALLBACK",
+      "ACTUAL_SYSTEM_SAFETY_CASE_NOT_PROTOCOL_CERTIFICATION"
+    ]
+  },
+  "parameter_constraints": [
+    {
+      "parameter": "os_edition",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/README.md",
+      "source_revision": "Archived B&R/IXXAT reference distribution1.4, pinned commit. README demonstration1.4.0; version.txt says1.4. No current complete licensed EPSG/IEC specification or NIS certification claimed.",
+      "required": true
+    },
+    {
+      "parameter": "os_service",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/README.md",
+      "source_revision": "Archived B&R/IXXAT reference distribution1.4, pinned commit. README demonstration1.4.0; version.txt says1.4. No current complete licensed EPSG/IEC specification or NIS certification claimed.",
+      "required": true
+    },
+    {
+      "parameter": "os_direction",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/README.md",
+      "source_revision": "Archived B&R/IXXAT reference distribution1.4, pinned commit. README demonstration1.4.0; version.txt says1.4. No current complete licensed EPSG/IEC specification or NIS certification claimed.",
+      "required": true
+    },
+    {
+      "parameter": "os_node_role",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/README.md",
+      "source_revision": "Archived B&R/IXXAT reference distribution1.4, pinned commit. README demonstration1.4.0; version.txt says1.4. No current complete licensed EPSG/IEC specification or NIS certification claimed.",
+      "required": true
+    },
+    {
+      "parameter": "os_bearer_id",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/README.md",
+      "source_revision": "Archived B&R/IXXAT reference distribution1.4, pinned commit. README demonstration1.4.0; version.txt says1.4. No current complete licensed EPSG/IEC specification or NIS certification claimed.",
+      "required": true
+    },
+    {
+      "parameter": "os_bearer_source",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/README.md",
+      "source_revision": "Archived B&R/IXXAT reference distribution1.4, pinned commit. README demonstration1.4.0; version.txt says1.4. No current complete licensed EPSG/IEC specification or NIS certification claimed.",
+      "required": true
+    },
+    {
+      "parameter": "os_device_source",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/README.md",
+      "source_revision": "Archived B&R/IXXAT reference distribution1.4, pinned commit. README demonstration1.4.0; version.txt says1.4. No current complete licensed EPSG/IEC specification or NIS certification claimed.",
+      "required": true
+    },
+    {
+      "parameter": "os_schedule_source",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/README.md",
+      "source_revision": "Archived B&R/IXXAT reference distribution1.4, pinned commit. README demonstration1.4.0; version.txt says1.4. No current complete licensed EPSG/IEC specification or NIS certification claimed.",
+      "required": true
+    },
+    {
+      "parameter": "os_timer_source",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/README.md",
+      "source_revision": "Archived B&R/IXXAT reference distribution1.4, pinned commit. README demonstration1.4.0; version.txt says1.4. No current complete licensed EPSG/IEC specification or NIS certification claimed.",
+      "required": true
+    },
+    {
+      "parameter": "os_frame_source",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/README.md",
+      "source_revision": "Archived B&R/IXXAT reference distribution1.4, pinned commit. README demonstration1.4.0; version.txt says1.4. No current complete licensed EPSG/IEC specification or NIS certification claimed.",
+      "required": true
+    },
+    {
+      "parameter": "os_acceptance_source",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/README.md",
+      "source_revision": "Archived B&R/IXXAT reference distribution1.4, pinned commit. README demonstration1.4.0; version.txt says1.4. No current complete licensed EPSG/IEC specification or NIS certification claimed.",
+      "required": true
+    },
+    {
+      "parameter": "bitrate_bps",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SFSint.h",
+      "source_revision": "SFS frame constants: two headers4/5, payload0..254, short0..8 CRC1 versus long9..254 CRC2, domain1..1023. Read pinned reference.",
+      "allowed": []
+    },
+    {
+      "parameter": "local_timing_evidence",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SFSint.h",
+      "source_revision": "SFS frame constants: two headers4/5, payload0..254, short0..8 CRC1 versus long9..254 CRC2, domain1..1023. Read pinned reference.",
+      "allowed": []
+    },
+    {
+      "parameter": "os_bearer_id",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SFSint.h",
+      "source_revision": "SFS frame constants: two headers4/5, payload0..254, short0..8 CRC1 versus long9..254 CRC2, domain1..1023. Read pinned reference.",
+      "pattern": "(?i)(?!opensafety$).+"
+    },
+    {
+      "parameter": "os_udid_hex",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/EPLStypes.h",
+      "source_revision": "Address/TR/UDID/timeout-width/SOD constants; UInt32 timer modular comparison and UInt16 wire consecutive time.",
+      "pattern": "[0-9A-Fa-f]{12}"
+    },
+    {
+      "parameter": "os_scm_udid_hex",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/EPLStypes.h",
+      "source_revision": "Address/TR/UDID/timeout-width/SOD constants; UInt32 timer modular comparison and UInt16 wire consecutive time.",
+      "pattern": "[0-9A-Fa-f]{12}"
+    },
+    {
+      "parameter": "os_frame_id",
+      "when": {
+        "os_service": "SNMT"
+      },
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SFSser.c",
+      "source_revision": "Valid six-bit service IDs, serialization and slim-SSDO layout distinct ordinary duplicated payload.",
+      "allowed": [
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        47
+      ]
+    },
+    {
+      "parameter": "os_crc_bytes",
+      "when": {
+        "os_service": "SNMT"
+      },
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SFSint.h",
+      "source_revision": "SFS frame constants: two headers4/5, payload0..254, short0..8 CRC1 versus long9..254 CRC2, domain1..1023. Read pinned reference.",
+      "when_ranges": {
+        "os_data_length": [
+          0,
+          8
+        ]
+      },
+      "allowed": [
+        1
+      ]
+    },
+    {
+      "parameter": "os_crc_polynomial",
+      "when": {
+        "os_service": "SNMT"
+      },
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/tools/oschecksum/include/oschecksum/crc.h",
+      "source_revision": "Reference tools use CRC8 polynomial2F, ordinary CRC16BAAD, slimCRC16AC9A. Do not substitute Modbus, CAN or an older edition polynomial.",
+      "when_ranges": {
+        "os_data_length": [
+          0,
+          8
+        ]
+      },
+      "allowed": [
+        47
+      ]
+    },
+    {
+      "parameter": "os_crc_bytes",
+      "when": {
+        "os_service": "SNMT"
+      },
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SFSint.h",
+      "source_revision": "SFS frame constants: two headers4/5, payload0..254, short0..8 CRC1 versus long9..254 CRC2, domain1..1023. Read pinned reference.",
+      "when_ranges": {
+        "os_data_length": [
+          9,
+          254
+        ]
+      },
+      "allowed": [
+        2
+      ]
+    },
+    {
+      "parameter": "os_crc_polynomial",
+      "when": {
+        "os_service": "SNMT"
+      },
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/tools/oschecksum/include/oschecksum/crc.h",
+      "source_revision": "Reference tools use CRC8 polynomial2F, ordinary CRC16BAAD, slimCRC16AC9A. Do not substitute Modbus, CAN or an older edition polynomial.",
+      "when_ranges": {
+        "os_data_length": [
+          9,
+          254
+        ]
+      },
+      "allowed": [
+        47789
+      ]
+    },
+    {
+      "parameter": "os_frame_bytes",
+      "when": {
+        "os_service": "SNMT"
+      },
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SFSdeser.c",
+      "source_revision": "Length/header/CRC/subframe validation. SlimSSDO58/59 omits second payload and selects separate long checksum routine.",
+      "equal_expression": {
+        "sum": [
+          9,
+          {
+            "product": [
+              "os_crc_bytes",
+              2
+            ]
+          },
+          {
+            "product": [
+              "os_data_length",
+              2
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "parameter": "os_subframe2_bytes",
+      "when": {
+        "os_service": "SNMT"
+      },
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SFSdeser.c",
+      "source_revision": "Length/header/CRC/subframe validation. SlimSSDO58/59 omits second payload and selects separate long checksum routine.",
+      "equal_expression": {
+        "sum": [
+          5,
+          "os_crc_bytes",
+          "os_data_length"
+        ]
+      }
+    },
+    {
+      "parameter": "os_frame_id",
+      "when": {
+        "os_service": "SPDO"
+      },
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SFSser.c",
+      "source_revision": "Valid six-bit service IDs, serialization and slim-SSDO layout distinct ordinary duplicated payload.",
+      "allowed": [
+        48,
+        49,
+        50,
+        51,
+        52,
+        53
+      ]
+    },
+    {
+      "parameter": "os_crc_bytes",
+      "when": {
+        "os_service": "SPDO"
+      },
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SFSint.h",
+      "source_revision": "SFS frame constants: two headers4/5, payload0..254, short0..8 CRC1 versus long9..254 CRC2, domain1..1023. Read pinned reference.",
+      "when_ranges": {
+        "os_data_length": [
+          0,
+          8
+        ]
+      },
+      "allowed": [
+        1
+      ]
+    },
+    {
+      "parameter": "os_crc_polynomial",
+      "when": {
+        "os_service": "SPDO"
+      },
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/tools/oschecksum/include/oschecksum/crc.h",
+      "source_revision": "Reference tools use CRC8 polynomial2F, ordinary CRC16BAAD, slimCRC16AC9A. Do not substitute Modbus, CAN or an older edition polynomial.",
+      "when_ranges": {
+        "os_data_length": [
+          0,
+          8
+        ]
+      },
+      "allowed": [
+        47
+      ]
+    },
+    {
+      "parameter": "os_crc_bytes",
+      "when": {
+        "os_service": "SPDO"
+      },
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SFSint.h",
+      "source_revision": "SFS frame constants: two headers4/5, payload0..254, short0..8 CRC1 versus long9..254 CRC2, domain1..1023. Read pinned reference.",
+      "when_ranges": {
+        "os_data_length": [
+          9,
+          254
+        ]
+      },
+      "allowed": [
+        2
+      ]
+    },
+    {
+      "parameter": "os_crc_polynomial",
+      "when": {
+        "os_service": "SPDO"
+      },
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/tools/oschecksum/include/oschecksum/crc.h",
+      "source_revision": "Reference tools use CRC8 polynomial2F, ordinary CRC16BAAD, slimCRC16AC9A. Do not substitute Modbus, CAN or an older edition polynomial.",
+      "when_ranges": {
+        "os_data_length": [
+          9,
+          254
+        ]
+      },
+      "allowed": [
+        47789
+      ]
+    },
+    {
+      "parameter": "os_frame_bytes",
+      "when": {
+        "os_service": "SPDO"
+      },
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SFSdeser.c",
+      "source_revision": "Length/header/CRC/subframe validation. SlimSSDO58/59 omits second payload and selects separate long checksum routine.",
+      "equal_expression": {
+        "sum": [
+          9,
+          {
+            "product": [
+              "os_crc_bytes",
+              2
+            ]
+          },
+          {
+            "product": [
+              "os_data_length",
+              2
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "parameter": "os_subframe2_bytes",
+      "when": {
+        "os_service": "SPDO"
+      },
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SFSdeser.c",
+      "source_revision": "Length/header/CRC/subframe validation. SlimSSDO58/59 omits second payload and selects separate long checksum routine.",
+      "equal_expression": {
+        "sum": [
+          5,
+          "os_crc_bytes",
+          "os_data_length"
+        ]
+      }
+    },
+    {
+      "parameter": "os_frame_id",
+      "when": {
+        "os_service": "SSDO"
+      },
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SFSser.c",
+      "source_revision": "Valid six-bit service IDs, serialization and slim-SSDO layout distinct ordinary duplicated payload.",
+      "allowed": [
+        56,
+        57
+      ]
+    },
+    {
+      "parameter": "os_crc_bytes",
+      "when": {
+        "os_service": "SSDO"
+      },
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SFSint.h",
+      "source_revision": "SFS frame constants: two headers4/5, payload0..254, short0..8 CRC1 versus long9..254 CRC2, domain1..1023. Read pinned reference.",
+      "when_ranges": {
+        "os_data_length": [
+          0,
+          8
+        ]
+      },
+      "allowed": [
+        1
+      ]
+    },
+    {
+      "parameter": "os_crc_polynomial",
+      "when": {
+        "os_service": "SSDO"
+      },
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/tools/oschecksum/include/oschecksum/crc.h",
+      "source_revision": "Reference tools use CRC8 polynomial2F, ordinary CRC16BAAD, slimCRC16AC9A. Do not substitute Modbus, CAN or an older edition polynomial.",
+      "when_ranges": {
+        "os_data_length": [
+          0,
+          8
+        ]
+      },
+      "allowed": [
+        47
+      ]
+    },
+    {
+      "parameter": "os_crc_bytes",
+      "when": {
+        "os_service": "SSDO"
+      },
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SFSint.h",
+      "source_revision": "SFS frame constants: two headers4/5, payload0..254, short0..8 CRC1 versus long9..254 CRC2, domain1..1023. Read pinned reference.",
+      "when_ranges": {
+        "os_data_length": [
+          9,
+          254
+        ]
+      },
+      "allowed": [
+        2
+      ]
+    },
+    {
+      "parameter": "os_crc_polynomial",
+      "when": {
+        "os_service": "SSDO"
+      },
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/tools/oschecksum/include/oschecksum/crc.h",
+      "source_revision": "Reference tools use CRC8 polynomial2F, ordinary CRC16BAAD, slimCRC16AC9A. Do not substitute Modbus, CAN or an older edition polynomial.",
+      "when_ranges": {
+        "os_data_length": [
+          9,
+          254
+        ]
+      },
+      "allowed": [
+        47789
+      ]
+    },
+    {
+      "parameter": "os_frame_bytes",
+      "when": {
+        "os_service": "SSDO"
+      },
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SFSdeser.c",
+      "source_revision": "Length/header/CRC/subframe validation. SlimSSDO58/59 omits second payload and selects separate long checksum routine.",
+      "equal_expression": {
+        "sum": [
+          9,
+          {
+            "product": [
+              "os_crc_bytes",
+              2
+            ]
+          },
+          {
+            "product": [
+              "os_data_length",
+              2
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "parameter": "os_subframe2_bytes",
+      "when": {
+        "os_service": "SSDO"
+      },
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SFSdeser.c",
+      "source_revision": "Length/header/CRC/subframe validation. SlimSSDO58/59 omits second payload and selects separate long checksum routine.",
+      "equal_expression": {
+        "sum": [
+          5,
+          "os_crc_bytes",
+          "os_data_length"
+        ]
+      }
+    },
+    {
+      "parameter": "os_frame_id",
+      "when": {
+        "os_service": "SLIM_SSDO"
+      },
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SFSser.c",
+      "source_revision": "Valid six-bit service IDs, serialization and slim-SSDO layout distinct ordinary duplicated payload.",
+      "allowed": [
+        58,
+        59
+      ]
+    },
+    {
+      "parameter": "os_crc_bytes",
+      "when": {
+        "os_service": "SLIM_SSDO"
+      },
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SFSint.h",
+      "source_revision": "SFS frame constants: two headers4/5, payload0..254, short0..8 CRC1 versus long9..254 CRC2, domain1..1023. Read pinned reference.",
+      "when_ranges": {
+        "os_data_length": [
+          0,
+          8
+        ]
+      },
+      "allowed": [
+        1
+      ]
+    },
+    {
+      "parameter": "os_crc_polynomial",
+      "when": {
+        "os_service": "SLIM_SSDO"
+      },
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/tools/oschecksum/include/oschecksum/crc.h",
+      "source_revision": "Reference tools use CRC8 polynomial2F, ordinary CRC16BAAD, slimCRC16AC9A. Do not substitute Modbus, CAN or an older edition polynomial.",
+      "when_ranges": {
+        "os_data_length": [
+          0,
+          8
+        ]
+      },
+      "allowed": [
+        47
+      ]
+    },
+    {
+      "parameter": "os_crc_bytes",
+      "when": {
+        "os_service": "SLIM_SSDO"
+      },
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SFSint.h",
+      "source_revision": "SFS frame constants: two headers4/5, payload0..254, short0..8 CRC1 versus long9..254 CRC2, domain1..1023. Read pinned reference.",
+      "when_ranges": {
+        "os_data_length": [
+          9,
+          254
+        ]
+      },
+      "allowed": [
+        2
+      ]
+    },
+    {
+      "parameter": "os_crc_polynomial",
+      "when": {
+        "os_service": "SLIM_SSDO"
+      },
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/tools/oschecksum/include/oschecksum/crc.h",
+      "source_revision": "Reference tools use CRC8 polynomial2F, ordinary CRC16BAAD, slimCRC16AC9A. Do not substitute Modbus, CAN or an older edition polynomial.",
+      "when_ranges": {
+        "os_data_length": [
+          9,
+          254
+        ]
+      },
+      "allowed": [
+        44186
+      ]
+    },
+    {
+      "parameter": "os_frame_bytes",
+      "when": {
+        "os_service": "SLIM_SSDO"
+      },
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SFSdeser.c",
+      "source_revision": "Length/header/CRC/subframe validation. SlimSSDO58/59 omits second payload and selects separate long checksum routine.",
+      "equal_expression": {
+        "sum": [
+          9,
+          {
+            "product": [
+              "os_crc_bytes",
+              2
+            ]
+          },
+          {
+            "product": [
+              "os_data_length",
+              1
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "parameter": "os_subframe2_bytes",
+      "when": {
+        "os_service": "SLIM_SSDO"
+      },
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SFSdeser.c",
+      "source_revision": "Length/header/CRC/subframe validation. SlimSSDO58/59 omits second payload and selects separate long checksum routine.",
+      "equal_expression": {
+        "sum": [
+          5,
+          "os_crc_bytes",
+          0
+        ]
+      }
+    },
+    {
+      "parameter": "os_crc_initial",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SFSdeser.c",
+      "source_revision": "Length/header/CRC/subframe validation. SlimSSDO58/59 omits second payload and selects separate long checksum routine.",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "parameter": "os_subframe1_bytes",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SFSint.h",
+      "source_revision": "SFS frame constants: two headers4/5, payload0..254, short0..8 CRC1 versus long9..254 CRC2, domain1..1023. Read pinned reference.",
+      "equal_expression": {
+        "sum": [
+          4,
+          "os_data_length",
+          "os_crc_bytes"
+        ]
+      }
+    },
+    {
+      "parameter": "os_data_length",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SFSint.h",
+      "source_revision": "SFS frame constants: two headers4/5, payload0..254, short0..8 CRC1 versus long9..254 CRC2, domain1..1023. Read pinned reference.",
+      "when_present": [
+        "os_frame_bytes"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "os_crc_bytes",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SFSint.h",
+      "source_revision": "SFS frame constants: two headers4/5, payload0..254, short0..8 CRC1 versus long9..254 CRC2, domain1..1023. Read pinned reference.",
+      "when_present": [
+        "os_frame_bytes"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "os_data_length",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/tools/oschecksum/include/oschecksum/crc.h",
+      "source_revision": "Reference tools use CRC8 polynomial2F, ordinary CRC16BAAD, slimCRC16AC9A. Do not substitute Modbus, CAN or an older edition polynomial.",
+      "when_present": [
+        "os_crc_polynomial"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "os_data_length",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SFSint.h",
+      "source_revision": "SFS frame constants: two headers4/5, payload0..254, short0..8 CRC1 versus long9..254 CRC2, domain1..1023. Read pinned reference.",
+      "when_present": [
+        "os_crc_bytes"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "os_wire_bytes",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/README.md",
+      "source_revision": "Archived B&R/IXXAT reference distribution1.4, pinned commit. README demonstration1.4.0; version.txt says1.4. No current complete licensed EPSG/IEC specification or NIS certification claimed.",
+      "equal_expression": {
+        "sum": [
+          "os_frame_bytes",
+          "os_bearer_overhead_bytes"
+        ]
+      }
+    },
+    {
+      "parameter": "os_frame_bytes",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/README.md",
+      "source_revision": "Archived B&R/IXXAT reference distribution1.4, pinned commit. README demonstration1.4.0; version.txt says1.4. No current complete licensed EPSG/IEC specification or NIS certification claimed.",
+      "when_present": [
+        "os_wire_bytes"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "os_bearer_overhead_bytes",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/README.md",
+      "source_revision": "Archived B&R/IXXAT reference distribution1.4, pinned commit. README demonstration1.4.0; version.txt says1.4. No current complete licensed EPSG/IEC specification or NIS certification claimed.",
+      "when_present": [
+        "os_wire_bytes"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "os_wire_bytes",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/README.md",
+      "source_revision": "Archived B&R/IXXAT reference distribution1.4, pinned commit. README demonstration1.4.0; version.txt says1.4. No current complete licensed EPSG/IEC specification or NIS certification claimed.",
+      "maximum_parameter": "os_bearer_limit_bytes"
+    },
+    {
+      "parameter": "os_data_length",
+      "when": {
+        "os_service": "SSDO"
+      },
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/contrib/EPLScfg.h",
+      "source_revision": "Configurable stack limits and demonstration settings; demoSSDO12, Rx/TxSPDO128 are not universal protocol or application defaults.",
+      "maximum_parameter": "os_max_ssdo_payload"
+    },
+    {
+      "parameter": "os_data_length",
+      "when": {
+        "os_service": "SLIM_SSDO"
+      },
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/contrib/EPLScfg.h",
+      "source_revision": "Configurable stack limits and demonstration settings; demoSSDO12, Rx/TxSPDO128 are not universal protocol or application defaults.",
+      "maximum_parameter": "os_max_ssdo_payload"
+    },
+    {
+      "parameter": "os_data_length",
+      "when": {
+        "os_service": "SPDO",
+        "os_direction": "TRANSMIT"
+      },
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/contrib/EPLScfg.h",
+      "source_revision": "Configurable stack limits and demonstration settings; demoSSDO12, Rx/TxSPDO128 are not universal protocol or application defaults.",
+      "maximum_parameter": "os_max_tx_spdo_payload"
+    },
+    {
+      "parameter": "os_data_length",
+      "when": {
+        "os_service": "SPDO",
+        "os_direction": "RECEIVE"
+      },
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/contrib/EPLScfg.h",
+      "source_revision": "Configurable stack limits and demonstration settings; demoSSDO12, Rx/TxSPDO128 are not universal protocol or application defaults.",
+      "maximum_parameter": "os_max_rx_spdo_payload"
+    },
+    {
+      "parameter": "os_mapped_bytes",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/doc/software/structure_spdo.md",
+      "source_revision": "Pre-operational mapping changes and byte-based mapping; actual valid-connection status and application range checks.",
+      "maximum_parameter": "os_data_length"
+    },
+    {
+      "parameter": "os_mapping_state",
+      "when": {
+        "os_mapping_changed": true
+      },
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/doc/software/structure_spdo.md",
+      "source_revision": "Pre-operational mapping changes and byte-based mapping; actual valid-connection status and application range checks.",
+      "allowed": [
+        "PRE_OPERATIONAL"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "os_mapping_source",
+      "when": {
+        "os_mapping_changed": true
+      },
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/doc/software/structure_spdo.md",
+      "source_revision": "Pre-operational mapping changes and byte-based mapping; actual valid-connection status and application range checks.",
+      "required": true
+    },
+    {
+      "parameter": "os_tick_us",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SPDOapi.h",
+      "source_revision": "Call frequency tied to smallest refresh/SCT, actual application supplied consecutive-time clock; no fixed milliseconds inferred.",
+      "exclusive_minimum": 0
+    },
+    {
+      "parameter": "os_refresh_us",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SPDOapi.h",
+      "source_revision": "Call frequency tied to smallest refresh/SCT, actual application supplied consecutive-time clock; no fixed milliseconds inferred.",
+      "equal_expression": {
+        "product": [
+          "os_refresh_ticks",
+          "os_tick_us"
+        ]
+      }
+    },
+    {
+      "parameter": "os_refresh_ticks",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SPDOapi.h",
+      "source_revision": "Call frequency tied to smallest refresh/SCT, actual application supplied consecutive-time clock; no fixed milliseconds inferred.",
+      "when_present": [
+        "os_refresh_us"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "os_tick_us",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SPDOapi.h",
+      "source_revision": "Call frequency tied to smallest refresh/SCT, actual application supplied consecutive-time clock; no fixed milliseconds inferred.",
+      "when_present": [
+        "os_refresh_us"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "os_sct_us",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SPDOapi.h",
+      "source_revision": "Call frequency tied to smallest refresh/SCT, actual application supplied consecutive-time clock; no fixed milliseconds inferred.",
+      "equal_expression": {
+        "product": [
+          "os_sct_ticks",
+          "os_tick_us"
+        ]
+      }
+    },
+    {
+      "parameter": "os_sct_ticks",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SPDOapi.h",
+      "source_revision": "Call frequency tied to smallest refresh/SCT, actual application supplied consecutive-time clock; no fixed milliseconds inferred.",
+      "when_present": [
+        "os_sct_us"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "os_tick_us",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SPDOapi.h",
+      "source_revision": "Call frequency tied to smallest refresh/SCT, actual application supplied consecutive-time clock; no fixed milliseconds inferred.",
+      "when_present": [
+        "os_sct_us"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "os_propagation_min_ticks",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SPDOrxConsSm.c",
+      "source_revision": "Actual time synchronization, propagation and SCT consumer checks; first frame after synchronization remains safe until timing validated.",
+      "maximum_parameter": "os_propagation_max_ticks"
+    },
+    {
+      "parameter": "os_tx_call_ticks",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SPDOapi.h",
+      "source_revision": "Call frequency tied to smallest refresh/SCT, actual application supplied consecutive-time clock; no fixed milliseconds inferred.",
+      "exclusive_minimum": 0,
+      "maximum_parameter": "os_minimum_refresh_ticks"
+    },
+    {
+      "parameter": "os_minimum_refresh_ticks",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SPDOapi.h",
+      "source_revision": "Call frequency tied to smallest refresh/SCT, actual application supplied consecutive-time clock; no fixed milliseconds inferred.",
+      "when_present": [
+        "os_tx_call_ticks"
+      ],
+      "required": true,
+      "exclusive_minimum": 0
+    },
+    {
+      "parameter": "os_rx_check_ticks",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SPDOapi.h",
+      "source_revision": "Call frequency tied to smallest refresh/SCT, actual application supplied consecutive-time clock; no fixed milliseconds inferred.",
+      "exclusive_minimum": 0,
+      "maximum_parameter": "os_minimum_sct_ticks"
+    },
+    {
+      "parameter": "os_minimum_sct_ticks",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SPDOapi.h",
+      "source_revision": "Call frequency tied to smallest refresh/SCT, actual application supplied consecutive-time clock; no fixed milliseconds inferred.",
+      "when_present": [
+        "os_rx_check_ticks"
+      ],
+      "required": true,
+      "exclusive_minimum": 0
+    },
+    {
+      "parameter": "os_propagation_ticks",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SPDOrxConsSm.c",
+      "source_revision": "Actual time synchronization, propagation and SCT consumer checks; first frame after synchronization remains safe until timing validated.",
+      "minimum_parameter": "os_propagation_min_ticks",
+      "maximum_parameter": "os_propagation_max_ticks"
+    },
+    {
+      "parameter": "os_consecutive_distance",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SPDOrxConsSm.c",
+      "source_revision": "Actual time synchronization, propagation and SCT consumer checks; first frame after synchronization remains safe until timing validated.",
+      "equal_expression": {
+        "integer_remainder": [
+          {
+            "subtract": [
+              "os_consecutive_time",
+              "os_previous_consecutive_time"
+            ]
+          },
+          65536
+        ]
+      }
+    },
+    {
+      "parameter": "os_consecutive_time",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SPDOrxConsSm.c",
+      "source_revision": "Actual time synchronization, propagation and SCT consumer checks; first frame after synchronization remains safe until timing validated.",
+      "when_present": [
+        "os_consecutive_distance"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "os_previous_consecutive_time",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SPDOrxConsSm.c",
+      "source_revision": "Actual time synchronization, propagation and SCT consumer checks; first frame after synchronization remains safe until timing validated.",
+      "when_present": [
+        "os_consecutive_distance"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "os_timeout_distance",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/EPLStypes.h",
+      "source_revision": "Address/TR/UDID/timeout-width/SOD constants; UInt32 timer modular comparison and UInt16 wire consecutive time.",
+      "equal_expression": {
+        "integer_remainder": [
+          {
+            "subtract": [
+              "os_local_clock",
+              "os_timeout_at"
+            ]
+          },
+          4294967296
+        ]
+      }
+    },
+    {
+      "parameter": "os_local_clock",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/EPLStypes.h",
+      "source_revision": "Address/TR/UDID/timeout-width/SOD constants; UInt32 timer modular comparison and UInt16 wire consecutive time.",
+      "when_present": [
+        "os_timeout_distance"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "os_timeout_at",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/EPLStypes.h",
+      "source_revision": "Address/TR/UDID/timeout-width/SOD constants; UInt32 timer modular comparison and UInt16 wire consecutive time.",
+      "when_present": [
+        "os_timeout_distance"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "os_timeout_expired",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/EPLStypes.h",
+      "source_revision": "Address/TR/UDID/timeout-width/SOD constants; UInt32 timer modular comparison and UInt16 wire consecutive time.",
+      "when_ranges": {
+        "os_timeout_distance": [
+          0,
+          2147483647
+        ]
+      },
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "os_timeout_expired",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/EPLStypes.h",
+      "source_revision": "Address/TR/UDID/timeout-width/SOD constants; UInt32 timer modular comparison and UInt16 wire consecutive time.",
+      "when_ranges": {
+        "os_timeout_distance": [
+          2147483648,
+          4294967295
+        ]
+      },
+      "allowed": [
+        false
+      ]
+    },
+    {
+      "parameter": "os_data_accepted",
+      "when": {
+        "os_first_after_sync": true
+      },
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SPDOrxConsSm.c",
+      "source_revision": "Actual time synchronization, propagation and SCT consumer checks; first frame after synchronization remains safe until timing validated.",
+      "allowed": [
+        false
+      ]
+    },
+    {
+      "parameter": "os_crc1_valid",
+      "when": {
+        "os_data_accepted": true
+      },
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SPDOrxConsSm.c",
+      "source_revision": "Actual time synchronization, propagation and SCT consumer checks; first frame after synchronization remains safe until timing validated.",
+      "allowed": [
+        true
+      ],
+      "required": true
+    },
+    {
+      "parameter": "os_crc2_valid",
+      "when": {
+        "os_data_accepted": true
+      },
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SPDOrxConsSm.c",
+      "source_revision": "Actual time synchronization, propagation and SCT consumer checks; first frame after synchronization remains safe until timing validated.",
+      "allowed": [
+        true
+      ],
+      "required": true
+    },
+    {
+      "parameter": "os_subframes_consistent",
+      "when": {
+        "os_data_accepted": true
+      },
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SPDOrxConsSm.c",
+      "source_revision": "Actual time synchronization, propagation and SCT consumer checks; first frame after synchronization remains safe until timing validated.",
+      "allowed": [
+        true
+      ],
+      "required": true
+    },
+    {
+      "parameter": "os_range_validated",
+      "when": {
+        "os_data_accepted": true
+      },
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SPDOrxConsSm.c",
+      "source_revision": "Actual time synchronization, propagation and SCT consumer checks; first frame after synchronization remains safe until timing validated.",
+      "allowed": [
+        true
+      ],
+      "required": true
+    },
+    {
+      "parameter": "os_outcome",
+      "when": {
+        "os_data_accepted": true
+      },
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SPDOrxConsSm.c",
+      "source_revision": "Actual time synchronization, propagation and SCT consumer checks; first frame after synchronization remains safe until timing validated.",
+      "allowed": [
+        "ACCEPTED"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "os_synchronized",
+      "when": {
+        "os_data_accepted": true,
+        "os_service": "SPDO",
+        "os_direction": "RECEIVE"
+      },
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SPDOrxConsSm.c",
+      "source_revision": "Actual time synchronization, propagation and SCT consumer checks; first frame after synchronization remains safe until timing validated.",
+      "allowed": [
+        true
+      ],
+      "required": true
+    },
+    {
+      "parameter": "os_connection_valid",
+      "when": {
+        "os_data_accepted": true,
+        "os_service": "SPDO",
+        "os_direction": "RECEIVE"
+      },
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SPDOrxConsSm.c",
+      "source_revision": "Actual time synchronization, propagation and SCT consumer checks; first frame after synchronization remains safe until timing validated.",
+      "allowed": [
+        true
+      ],
+      "required": true
+    },
+    {
+      "parameter": "os_safe_state",
+      "when": {
+        "os_data_accepted": true,
+        "os_service": "SPDO",
+        "os_direction": "RECEIVE"
+      },
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SPDOrxConsSm.c",
+      "source_revision": "Actual time synchronization, propagation and SCT consumer checks; first frame after synchronization remains safe until timing validated.",
+      "allowed": [
+        false
+      ],
+      "required": true
+    },
+    {
+      "parameter": "os_sct_ticks",
+      "when": {
+        "os_data_accepted": true,
+        "os_service": "SPDO",
+        "os_direction": "RECEIVE"
+      },
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SPDOrxConsSm.c",
+      "source_revision": "Actual time synchronization, propagation and SCT consumer checks; first frame after synchronization remains safe until timing validated.",
+      "required": true
+    },
+    {
+      "parameter": "os_elapsed_ticks",
+      "when": {
+        "os_data_accepted": true,
+        "os_service": "SPDO",
+        "os_direction": "RECEIVE"
+      },
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SPDOrxConsSm.c",
+      "source_revision": "Actual time synchronization, propagation and SCT consumer checks; first frame after synchronization remains safe until timing validated.",
+      "required": true
+    },
+    {
+      "parameter": "os_consecutive_time",
+      "when": {
+        "os_data_accepted": true,
+        "os_service": "SPDO",
+        "os_direction": "RECEIVE"
+      },
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SPDOrxConsSm.c",
+      "source_revision": "Actual time synchronization, propagation and SCT consumer checks; first frame after synchronization remains safe until timing validated.",
+      "required": true
+    },
+    {
+      "parameter": "os_previous_consecutive_time",
+      "when": {
+        "os_data_accepted": true,
+        "os_service": "SPDO",
+        "os_direction": "RECEIVE"
+      },
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SPDOrxConsSm.c",
+      "source_revision": "Actual time synchronization, propagation and SCT consumer checks; first frame after synchronization remains safe until timing validated.",
+      "required": true
+    },
+    {
+      "parameter": "os_consecutive_distance",
+      "when": {
+        "os_data_accepted": true,
+        "os_service": "SPDO",
+        "os_direction": "RECEIVE"
+      },
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SPDOrxConsSm.c",
+      "source_revision": "Actual time synchronization, propagation and SCT consumer checks; first frame after synchronization remains safe until timing validated.",
+      "required": true
+    },
+    {
+      "parameter": "os_propagation_min_ticks",
+      "when": {
+        "os_data_accepted": true,
+        "os_service": "SPDO",
+        "os_direction": "RECEIVE"
+      },
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SPDOrxConsSm.c",
+      "source_revision": "Actual time synchronization, propagation and SCT consumer checks; first frame after synchronization remains safe until timing validated.",
+      "required": true
+    },
+    {
+      "parameter": "os_propagation_max_ticks",
+      "when": {
+        "os_data_accepted": true,
+        "os_service": "SPDO",
+        "os_direction": "RECEIVE"
+      },
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SPDOrxConsSm.c",
+      "source_revision": "Actual time synchronization, propagation and SCT consumer checks; first frame after synchronization remains safe until timing validated.",
+      "required": true
+    },
+    {
+      "parameter": "os_propagation_ticks",
+      "when": {
+        "os_data_accepted": true,
+        "os_service": "SPDO",
+        "os_direction": "RECEIVE"
+      },
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SPDOrxConsSm.c",
+      "source_revision": "Actual time synchronization, propagation and SCT consumer checks; first frame after synchronization remains safe until timing validated.",
+      "required": true
+    },
+    {
+      "parameter": "os_tick_us",
+      "when": {
+        "os_data_accepted": true,
+        "os_service": "SPDO",
+        "os_direction": "RECEIVE"
+      },
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SPDOrxConsSm.c",
+      "source_revision": "Actual time synchronization, propagation and SCT consumer checks; first frame after synchronization remains safe until timing validated.",
+      "required": true
+    },
+    {
+      "parameter": "os_timeout_expired",
+      "when": {
+        "os_data_accepted": true
+      },
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/EPLStypes.h",
+      "source_revision": "Address/TR/UDID/timeout-width/SOD constants; UInt32 timer modular comparison and UInt16 wire consecutive time.",
+      "allowed": [
+        false
+      ]
+    },
+    {
+      "parameter": "os_elapsed_ticks",
+      "when": {
+        "os_data_accepted": true,
+        "os_service": "SPDO",
+        "os_direction": "RECEIVE"
+      },
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SPDOrxConsSm.c",
+      "source_revision": "Actual time synchronization, propagation and SCT consumer checks; first frame after synchronization remains safe until timing validated.",
+      "exclusive_maximum_expression": "os_sct_ticks"
+    },
+    {
+      "parameter": "os_consecutive_distance",
+      "when": {
+        "os_data_accepted": true,
+        "os_service": "SPDO",
+        "os_direction": "RECEIVE"
+      },
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SPDOrxConsSm.c",
+      "source_revision": "Actual time synchronization, propagation and SCT consumer checks; first frame after synchronization remains safe until timing validated.",
+      "maximum": 32767
+    },
+    {
+      "parameter": "os_fault_reaction_bound_us",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/README.md",
+      "source_revision": "Archived B&R/IXXAT reference distribution1.4, pinned commit. README demonstration1.4.0; version.txt says1.4. No current complete licensed EPSG/IEC specification or NIS certification claimed.",
+      "maximum_parameter": "os_fault_reaction_required_us"
+    },
+    {
+      "parameter": "os_safety_case_confirmed",
+      "when": {
+        "os_safety_accepted": true
+      },
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/README.md",
+      "source_revision": "Archived B&R/IXXAT reference distribution1.4, pinned commit. README demonstration1.4.0; version.txt says1.4. No current complete licensed EPSG/IEC specification or NIS certification claimed.",
+      "allowed": [
+        true
+      ],
+      "required": true
+    },
+    {
+      "parameter": "os_certificate_scope_match",
+      "when": {
+        "os_safety_accepted": true
+      },
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/README.md",
+      "source_revision": "Archived B&R/IXXAT reference distribution1.4, pinned commit. README demonstration1.4.0; version.txt says1.4. No current complete licensed EPSG/IEC specification or NIS certification claimed.",
+      "allowed": [
+        true
+      ],
+      "required": true
+    },
+    {
+      "parameter": "os_assurance_source",
+      "when": {
+        "os_safety_accepted": true
+      },
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/README.md",
+      "source_revision": "Archived B&R/IXXAT reference distribution1.4, pinned commit. README demonstration1.4.0; version.txt says1.4. No current complete licensed EPSG/IEC specification or NIS certification claimed.",
+      "required": true
+    },
+    {
+      "parameter": "os_age_us",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SPDOrxConsSm.c",
+      "source_revision": "Actual time synchronization, propagation and SCT consumer checks; first frame after synchronization remains safe until timing validated.",
+      "maximum_parameter": "os_freshness_limit_us"
+    },
+    {
+      "parameter": "os_freshness_limit_us",
+      "when": {},
+      "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/src/eplssrc/SN/SPDOrxConsSm.c",
+      "source_revision": "Actual time synchronization, propagation and SCT consumer checks; first frame after synchronization remains safe until timing validated.",
+      "when_present": [
+        "os_age_us"
+      ],
+      "required": true
+    }
+  ],
+  "physical_layer_profile_id": null,
+  "medium_access_model": null,
+  "native_parameter_prefixes": [
+    "os_"
+  ],
+  "parameter_aliases": {},
+  "parameter_alias_limits": {},
+  "parameter_evidence_scope": "EXPLICIT_LAYER",
+  "rate_source_profile_id": null,
+  "arbitration_model_id": null,
+  "max_payload_bytes": null,
+  "capabilities": {
+    "supports_signals": true,
+    "supports_data_objects": false,
+    "supports_streams": false,
+    "supports_multicast": false,
+    "supports_publish_subscribe": false,
+    "supports_request_response": false,
+    "supports_cyclic": true,
+    "supports_event": true,
+    "supports_redundancy": true,
+    "supports_time_sync": false,
+    "supports_safety_profile": true,
+    "supports_segmentation": false,
+    "supports_fragmentation": false,
+    "supports_qos": false
+  },
+  "deterministic": true,
+  "overhead_bytes": 8,
+  "implementation_status": "PLANNED",
+  "connection_type": "COMMUNICATION_TECHNOLOGY",
+  "parameter_proposals": {
+    "kind": "BLACK_CHANNEL_DEVICE_AND_SAFETY_CASE_DEPENDENT",
+    "status": "REVIEW_REQUIRED",
+    "source": "https://raw.githubusercontent.com/rknall/openSAFETY/630495210c5aab1b39884b7b5c8feef62e95f245/README.md",
+    "source_revision": "Archived B&R/IXXAT reference distribution1.4, pinned commit. README demonstration1.4.0; version.txt says1.4. No current complete licensed EPSG/IEC specification or NIS certification claimed.",
+    "values": {},
+    "minimum_standard_bitrate_bps": null
+  },
+  "capacity_evidence": {
+    "status": "MODEL_MISSING",
+    "frame_model": null,
+    "schedule_model": null,
+    "requires_confirmed_device_parameters": true
+  },
+  "components": {
+    "binding": "opensafety.binding",
+    "generator": "opensafety.generator",
+    "validator": "opensafety.validator",
+    "timing_model": null,
+    "load_model": null,
+    "encoder": "opensafety.encoder",
+    "decoder": "opensafety.decoder"
+  },
+  "known_limitations": "Technology-specific conformance details require a vendor/profile extension."
+}

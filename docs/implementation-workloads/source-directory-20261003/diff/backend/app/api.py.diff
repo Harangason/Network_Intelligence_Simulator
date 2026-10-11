@@ -1,0 +1,40 @@
+--- before/backend/app/api.py
++++ after/backend/app/api.py
+@@ -119,6 +119,37 @@
+ @api.route("/technologies", methods=["GET"])
+ def technologies():
+     return Response(JOBS.simulations.catalog_json(), mimetype='application/json')
++
++
++@api.get('/technology-sources')
++def technology_sources():
++    from ..communication.technologies.sources import directory_from_profiles
++    from ..communication.technologies.licensing import license_states
++    catalog = JOBS.simulations.catalog()
++    profiles = {profile['id']: profile for domain in catalog['domains'] for profile in domain['technologies']}
++    directory = directory_from_profiles(list(profiles.values()))
++    directory['licenses'] = license_states(_request_project_id(), list(profiles.values()))
++    directory['project_id'] = _request_project_id()
++    return jsonify(directory)
++
++
++@api.route('/technology-licenses', methods=['GET', 'POST'])
++def technology_licenses():
++    from ..communication.technologies.licensing import license_states, submit_evidence
++    project_id = _explicit_project_id()
++    if not project_id:
++        return jsonify({'error': 'Ein ausdrückliches Projekt ist für Lizenznachweise erforderlich.'}), 400
++    if request.method == 'GET':
++        return jsonify({'project_id': project_id, 'licenses': license_states(project_id, COMMUNICATION_TECHNOLOGY_REGISTRY.profiles())})
++    payload = request.get_json(silent=True)
++    if not isinstance(payload, dict):
++        return jsonify({'error': 'Ein JSON-Objekt ist erforderlich.'}), 400
++    try:
++        technology_id = COMMUNICATION_TECHNOLOGY_REGISTRY.normalize_id(payload.get('technology'))
++        row = submit_evidence(project_id, technology_id, payload)
++    except (ValueError, TypeError) as error:
++        return jsonify({'error': str(error)}), 400
++    return jsonify({'record': row, 'message': 'Nachweis eingereicht. Die Technik bleibt bis zur Betreiberprüfung gesperrt.'}), 201
+ 
+ 
+ @api.post("/technologies/resolve")

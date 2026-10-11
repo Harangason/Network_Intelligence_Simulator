@@ -1,0 +1,34 @@
+--- before/backend/tests/test_standalone_simulator.py
++++ after/backend/tests/test_standalone_simulator.py
+@@ -1,4 +1,6 @@
+ from __future__ import annotations
++
++from backend.tests.native_transport_fixtures import lin_design
+ 
+ import json
+ import tempfile
+@@ -201,6 +203,8 @@
+             with self.subTest(technology=technology):
+                 network = {"id": "bus", "technology": technology,
+                            "bitrate": modeled_rates.get(technology, 1_000_000)}
++                if technology == "lin":
++                    network.update(lin_design())
+                 if technology == "can_fd":
+                     network.update(arbitration_bitrate=500_000, data_bitrate=2_000_000)
+                 config = {"duration_s": .001, "networks": [network], "hardware": [
+@@ -293,6 +297,7 @@
+                 run_simulation(config)
+             self.assertFalse((Path(temp_dir) / "traces" / "universal_trace.jsonl").exists())
+             config["networks"][0]["technology"] = "lin"
++            config["networks"][0].update(lin_design())
+             for node in config["hardware"]:
+                 node["ports"][0]["interfaces"][0]["technology"] = "lin"
+             result = run_simulation(config)
+@@ -324,6 +329,7 @@
+         with self.assertRaisesRegex(ValueError, "TIMING_UNVERIFIED"):
+             generate_universal_events(config, normalize_hardware_config(config), start_utc=0)
+         config["networks"][0]["technology"] = "lin"
++        config["networks"][0].update(lin_design())
+         for node in config["hardware"]:
+             node["ports"][0]["interfaces"][0]["technology"] = "lin"
+         profile = normalize_hardware_config(config)

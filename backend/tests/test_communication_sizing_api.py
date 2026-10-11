@@ -85,5 +85,23 @@ def test_dimensioning_persists_canonical_periods_and_rolls_back_failed_adoption(
         assert workflow.get()["parameters"]["communication_schedule"]["networks"]
         assert workflow.get()["context"]["communication_sizing_history"]
         assert client.post("/api/engineering/capacity/dimension/apply", json=payload).status_code == 409
+        # A fresh review of unchanged traffic must still check its routes, but
+        # must not rewrite periods, revoke approvals or invalidate the model.
+        before_message = get_object("Message", ids["status"])
+        before_signal = get_object("Signal", str(signal["id"]))
+        before_routes = {ids[row["id"]]: get_route(ids[row["id"]]) for row in routes}
+        repeat_plan = client.post("/api/engineering/capacity/dimension", json={}).get_json()
+        repeated = client.post("/api/engineering/capacity/dimension/apply", json={
+            "source_token": repeat_plan["source_token"], "policy": repeat_plan["policy"], "approve_valid": True})
+        assert repeated.status_code == 200, repeated.get_json()
+        assert repeated.get_json()["changed_messages"] == 0
+        assert repeated.get_json()["changed_signals"] == 0
+        assert repeated.get_json()["changed_routes"] == 0
+        assert get_object("Message", ids["status"])["version"] == before_message["version"]
+        assert get_object("Signal", str(signal["id"]))["version"] == before_signal["version"]
+        for route_id, before_route in before_routes.items():
+            after_route = get_route(route_id)
+            assert after_route["revision"] == before_route["revision"]
+            assert after_route["approval_state"] == before_route["approval_state"]
     finally:
         reset_project(token)

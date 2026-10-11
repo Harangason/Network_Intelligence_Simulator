@@ -1,0 +1,23 @@
+--- before/backend/engineering/agent_tools/proposal_service.py
++++ after/backend/engineering/agent_tools/proposal_service.py
+@@ -229,8 +229,9 @@
+                 if target is None or str(target.get('technology') or '').upper() != 'LIN':
+                     raise ValueError('Das deklarierte LIN-Netz wurde nicht gefunden.')
+                 from ...communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY
+-                result = DEFAULT_TECHNOLOGY_REGISTRY.validate_parameters('LIN', {'bitrate_bps': data['bitrate']})
+-                if result['status'] != 'VALID':
++                native_values = {key: value for key, value in target.items() if key in DEFAULT_TECHNOLOGY_REGISTRY.parameter_keys('lin')}
++                result = DEFAULT_TECHNOLOGY_REGISTRY.validate_parameters('lin', {**native_values, 'bitrate': data['bitrate'], 'lin_bitrate_bps': data['bitrate']})
++                if result['status'] in {'INVALID', 'UNKNOWN'}:
+                     raise ValueError('LIN TechnologyProfile: ' + str(result['findings']))
+             elif kind == "Network" and action == "CREATE":
+                 if not data.get("id") or not data.get("technology"):
+@@ -516,6 +517,8 @@
+                 if target is None:
+                     raise ConcurrentUpdateError('Das zu ändernde LIN-Netz wurde entfernt.')
+                 target.update(data)
++                if row['proposal_type'] == 'NETWORK_BITRATE_UPDATE':
++                    target['lin_bitrate_bps'] = data['bitrate']
+                 item = target
+             else:
+                 parameters.setdefault("networks", []).append(data)

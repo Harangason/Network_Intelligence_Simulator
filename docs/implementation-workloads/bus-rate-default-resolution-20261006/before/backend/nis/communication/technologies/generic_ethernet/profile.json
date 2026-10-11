@@ -1,0 +1,2550 @@
+{
+  "id": "generic_ethernet",
+  "label": "Generic Ethernet",
+  "domain": "generic_networking",
+  "layer": "DATA_LINK",
+  "transport_unit": "FRAME",
+  "payload_element_types": [
+    "FIELD",
+    "RAW_DATA"
+  ],
+  "hardware_interface": "ethernet_port",
+  "hardware_capability_aliases": [
+    "ethernet_port"
+  ],
+  "default_stack": [
+    "generic_ethernet"
+  ],
+  "stack_variants": [
+    [
+      "generic_ethernet"
+    ]
+  ],
+  "default_bitrate": 10000000,
+  "rate_model": {
+    "type": "ETHERNET_LINK_RATE",
+    "fields": [
+      "bitrate_bps"
+    ],
+    "allowed_bps": [
+      10000000,
+      100000000,
+      1000000000,
+      2500000000,
+      5000000000,
+      10000000000
+    ]
+  },
+  "local_timing_schema": [],
+  "parameter_schema": {
+    "bitrate_bps": {
+      "label": "Link Speed",
+      "category": "physical",
+      "scope": "network",
+      "type": "number",
+      "description": "Technology-profiled network rate.",
+      "required": true,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 10000000,
+      "unit": "bit/s",
+      "min": 1,
+      "default_review": {
+        "technology": "generic_ethernet",
+        "rate_profile": "generic_ethernet",
+        "values": {
+          "bitrate_bps": 10000000
+        },
+        "basis": "LITERATURE_DEFAULT",
+        "status": "REVIEW_REQUIRED",
+        "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/00002268B.pdf",
+        "source_revision": "LAN9116 DS00002268B 2017 sections1.2/3.2/5.4; qualified10BASE-T baseline. TI DP83867 SNLS484J June2026; Broadcom BCM84918 rates"
+      },
+      "allowed_bps": [
+        10000000,
+        100000000,
+        1000000000,
+        2500000000,
+        5000000000,
+        10000000000
+      ],
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/00002268B.pdf",
+      "source_revision": "LAN9116 DS00002268B 2017 sections1.2/3.2/5.4; qualified10BASE-T baseline. TI DP83867 SNLS484J June2026; Broadcom BCM84918 rates"
+    },
+    "payload_bytes": {
+      "label": "Payload",
+      "category": "physical",
+      "scope": "message",
+      "type": "number",
+      "description": "Actual selected MAC-client or upper-layer octets. Upper headers, padding, VLAN tags and FCS are separate; no universal8-byte payload.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/00002268B.pdf",
+      "source_revision": "LAN9116 DS00002268B 2017 sections1.2/3.2/5.4; qualified10BASE-T baseline. TI DP83867 SNLS484J June2026; Broadcom BCM84918 rates",
+      "integer": true
+    },
+    "cycle_ms": {
+      "label": "Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "Standardperiode fuer zyklische Nachrichten.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "minimum_cycle_time_ms": {
+      "label": "Minimum Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "deadline_ms": {
+      "label": "Deadline",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "timeout_ms": {
+      "label": "Timeout",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_latency_ms": {
+      "label": "Maximum Latency",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "jitter_ms": {
+      "label": "Jitter Budget",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "freshness_ms": {
+      "label": "Data Freshness",
+      "category": "timing",
+      "scope": "signal",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "source_processing_delay_ms": {
+      "label": "Source Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_processing_delay_ms": {
+      "label": "Target Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "propagation_delay_ms": {
+      "label": "Propagation",
+      "category": "timing",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.01,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_bus_load_percent": {
+      "label": "Ziel-Buslast",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "Zielwert fuer die aus Routing, Payload, Zyklus und Bitrate berechnete Buslast.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "peak_factor": {
+      "label": "Peak Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.15,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_factor": {
+      "label": "Burst Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.5,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_window_ms": {
+      "label": "Burst Window",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "warning_threshold": {
+      "label": "Load Warning",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "critical_threshold": {
+      "label": "Load Critical",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 75,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "overload_threshold": {
+      "label": "Load Overload",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 90,
+      "unit": "%",
+      "min": 1,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "queue_size": {
+      "label": "Queue Size",
+      "category": "qos",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 256,
+      "unit": "Frames",
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1",
+      "integer": true
+    },
+    "queue_policy": {
+      "label": "Queue Policy",
+      "category": "qos",
+      "scope": "network",
+      "type": "select",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": "FIFO",
+      "options": [
+        "FIFO",
+        "CUSTOM"
+      ],
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "qos_priority": {
+      "label": "Default Priority",
+      "category": "qos",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual IEEE802.1Q PCP integer0..7 only for tags; no default3 or automatic queue mapping, reservation, CBS/TAS.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "max": 7,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/00002268B.pdf",
+      "source_revision": "LAN9116 DS00002268B 2017 sections1.2/3.2/5.4; qualified10BASE-T baseline. TI DP83867 SNLS484J June2026; Broadcom BCM84918 rates",
+      "integer": true
+    },
+    "traffic_class": {
+      "label": "Traffic Class",
+      "category": "qos",
+      "scope": "route",
+      "type": "select",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": "BEST_EFFORT",
+      "options": [
+        "BEST_EFFORT",
+        "CONTROL",
+        "REALTIME",
+        "SAFETY_CRITICAL"
+      ],
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "packet_loss_probability": {
+      "label": "Packet Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "frame_loss_probability": {
+      "label": "Frame Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "bit_error_rate": {
+      "label": "Bit Error Rate",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "corruption_probability": {
+      "label": "Corruption",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duplicate_probability": {
+      "label": "Duplication",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "reordering_probability": {
+      "label": "Reordering",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "required_reliability": {
+      "label": "Required Reliability",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.999,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_offset_ms": {
+      "label": "Clock Offset",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_drift_ppm": {
+      "label": "Clock Drift",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 20,
+      "unit": "ppm",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_precision_ms": {
+      "label": "Sync Precision",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_interval_ms": {
+      "label": "Sync Interval",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1000,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_sync_error_ms": {
+      "label": "Maximum Sync Error",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_delay_ms": {
+      "label": "Gateway Processing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.2,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_queue_delay_ms": {
+      "label": "Gateway Queueing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "protocol_conversion_delay_ms": {
+      "label": "Protocol Conversion",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duration_s": {
+      "label": "Simulation Duration",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 1,
+      "unit": "s",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "seed": {
+      "label": "Random Seed",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 42,
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "max_events": {
+      "label": "Maximum Events",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 100000,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "dropout_probability": {
+      "label": "Failure Injection Dropout",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "mtu_bytes": {
+      "label": "MTU",
+      "category": "physical",
+      "scope": "network",
+      "type": "number",
+      "description": "MAC-client octet limit, not IP MTU or whole frame. BASIC_MAC max1500; jumbo requires actual matched endpoints and path source.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 1,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/00002268B.pdf",
+      "source_revision": "LAN9116 DS00002268B 2017 sections1.2/3.2/5.4; qualified10BASE-T baseline. TI DP83867 SNLS484J June2026; Broadcom BCM84918 rates",
+      "integer": true,
+      "conditional_defaults": [
+        {
+          "when": {
+            "eth_frame_profile": "BASIC_MAC"
+          },
+          "value": 1500
+        }
+      ]
+    },
+    "duplex": {
+      "label": "Duplex",
+      "category": "physical",
+      "scope": "network",
+      "type": "select",
+      "description": "Actual negotiated or consistently forced duplex, unknown. HALF uses collision access; cannot inherit full-duplex FIFO proof.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "FULL",
+        "HALF"
+      ],
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/00002268B.pdf",
+      "source_revision": "LAN9116 DS00002268B 2017 sections1.2/3.2/5.4; qualified10BASE-T baseline. TI DP83867 SNLS484J June2026; Broadcom BCM84918 rates"
+    },
+    "vlan_id": {
+      "label": "VLAN ID",
+      "category": "qos",
+      "scope": "network",
+      "type": "number",
+      "description": "Actual tag VID0 is priority-only,1..4094 assigned VLAN,4095 reserved. Untagged has no VID; no invented VLAN0.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "max": 4094,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/00002268B.pdf",
+      "source_revision": "LAN9116 DS00002268B 2017 sections1.2/3.2/5.4; qualified10BASE-T baseline. TI DP83867 SNLS484J June2026; Broadcom BCM84918 rates",
+      "integer": true
+    },
+    "rate_limit_bit_s": {
+      "label": "Rate Limit",
+      "category": "qos",
+      "scope": "route",
+      "type": "number",
+      "description": "Actual configured policer/shaper bit rate;0 means explicitly disabled, not absence. Byte-accounting/burst/queue source required for timing.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "bit/s",
+      "min": 0,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/00002268B.pdf",
+      "source_revision": "LAN9116 DS00002268B 2017 sections1.2/3.2/5.4; qualified10BASE-T baseline. TI DP83867 SNLS484J June2026; Broadcom BCM84918 rates",
+      "integer": true
+    },
+    "eth_phy": {
+      "label": "Actual selected Ethernet PHY",
+      "category": "physical",
+      "scope": "network",
+      "type": "select",
+      "description": "Ethernet declaration. Installed link/queue/device evidence is separate; source-qualified proposals never confirm physical or E2E capacity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": "10BASE_T",
+      "options": [
+        "10BASE_T",
+        "100BASE_TX",
+        "1000BASE_T",
+        "2_5GBASE_T",
+        "5GBASE_T",
+        "10GBASE_T",
+        "10BASE_T1S",
+        "100BASE_T1",
+        "1000BASE_T1",
+        "DEVICE_SPECIFIC"
+      ],
+      "integer": false,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/00002268B.pdf",
+      "source_revision": "LAN9116 DS00002268B 2017 sections1.2/3.2/5.4; qualified10BASE-T baseline. TI DP83867 SNLS484J June2026; Broadcom BCM84918 rates"
+    },
+    "eth_device_source": {
+      "label": "Actual PHY/MAC hardware revision and capabilities",
+      "category": "physical",
+      "scope": "network",
+      "type": "text",
+      "description": "Ethernet declaration. Installed link/queue/device evidence is separate; source-qualified proposals never confirm physical or E2E capacity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/00002268B.pdf",
+      "source_revision": "LAN9116 DS00002268B 2017 sections1.2/3.2/5.4; qualified10BASE-T baseline. TI DP83867 SNLS484J June2026; Broadcom BCM84918 rates"
+    },
+    "eth_topology_source": {
+      "label": "Actual per-direction ports/cabling/forwarding path",
+      "category": "physical",
+      "scope": "network",
+      "type": "text",
+      "description": "Ethernet declaration. Installed link/queue/device evidence is separate; source-qualified proposals never confirm physical or E2E capacity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/00002268B.pdf",
+      "source_revision": "LAN9116 DS00002268B 2017 sections1.2/3.2/5.4; qualified10BASE-T baseline. TI DP83867 SNLS484J June2026; Broadcom BCM84918 rates"
+    },
+    "eth_frame_profile": {
+      "label": "MAC frame size profile",
+      "category": "physical",
+      "scope": "network",
+      "type": "select",
+      "description": "Ethernet declaration. Installed link/queue/device evidence is separate; source-qualified proposals never confirm physical or E2E capacity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": "BASIC_MAC",
+      "options": [
+        "BASIC_MAC",
+        "JUMBO_DEVICE"
+      ],
+      "integer": false,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/00002268B.pdf",
+      "source_revision": "LAN9116 DS00002268B 2017 sections1.2/3.2/5.4; qualified10BASE-T baseline. TI DP83867 SNLS484J June2026; Broadcom BCM84918 rates"
+    },
+    "eth_frame_format": {
+      "label": "Actual length/type interpretation",
+      "category": "physical",
+      "scope": "network",
+      "type": "select",
+      "description": "Ethernet declaration. Installed link/queue/device evidence is separate; source-qualified proposals never confirm physical or E2E capacity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "ETHERTYPE",
+        "LENGTH_LLC"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/00002268B.pdf",
+      "source_revision": "LAN9116 DS00002268B 2017 sections1.2/3.2/5.4; qualified10BASE-T baseline. TI DP83867 SNLS484J June2026; Broadcom BCM84918 rates"
+    },
+    "eth_payload_layer": {
+      "label": "Actual octet measurement boundary",
+      "category": "physical",
+      "scope": "network",
+      "type": "select",
+      "description": "Ethernet declaration. Installed link/queue/device evidence is separate; source-qualified proposals never confirm physical or E2E capacity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": "MAC_CLIENT",
+      "options": [
+        "MAC_CLIENT",
+        "UPPER_LAYER"
+      ],
+      "integer": false,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/00002268B.pdf",
+      "source_revision": "LAN9116 DS00002268B 2017 sections1.2/3.2/5.4; qualified10BASE-T baseline. TI DP83867 SNLS484J June2026; Broadcom BCM84918 rates"
+    },
+    "eth_upper_header_bytes": {
+      "label": "Actual headers within MAC client",
+      "category": "physical",
+      "scope": "network",
+      "type": "number",
+      "description": "Ethernet declaration. Installed link/queue/device evidence is separate; source-qualified proposals never confirm physical or E2E capacity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/00002268B.pdf",
+      "source_revision": "LAN9116 DS00002268B 2017 sections1.2/3.2/5.4; qualified10BASE-T baseline. TI DP83867 SNLS484J June2026; Broadcom BCM84918 rates",
+      "conditional_defaults": [
+        {
+          "when": {
+            "eth_payload_layer": "MAC_CLIENT"
+          },
+          "value": 0
+        }
+      ]
+    },
+    "eth_header_source": {
+      "label": "Actual higher-layer/LLC headers and encapsulation source",
+      "category": "physical",
+      "scope": "network",
+      "type": "text",
+      "description": "Ethernet declaration. Installed link/queue/device evidence is separate; source-qualified proposals never confirm physical or E2E capacity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/00002268B.pdf",
+      "source_revision": "LAN9116 DS00002268B 2017 sections1.2/3.2/5.4; qualified10BASE-T baseline. TI DP83867 SNLS484J June2026; Broadcom BCM84918 rates"
+    },
+    "eth_client_bytes": {
+      "label": "Actual full MAC-client bytes before pad",
+      "category": "physical",
+      "scope": "network",
+      "type": "number",
+      "description": "Ethernet declaration. Installed link/queue/device evidence is separate; source-qualified proposals never confirm physical or E2E capacity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/00002268B.pdf",
+      "source_revision": "LAN9116 DS00002268B 2017 sections1.2/3.2/5.4; qualified10BASE-T baseline. TI DP83867 SNLS484J June2026; Broadcom BCM84918 rates"
+    },
+    "eth_pad_bytes": {
+      "label": "Actual minimum-frame padding",
+      "category": "physical",
+      "scope": "network",
+      "type": "number",
+      "description": "Ethernet declaration. Installed link/queue/device evidence is separate; source-qualified proposals never confirm physical or E2E capacity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "max": 46,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/00002268B.pdf",
+      "source_revision": "LAN9116 DS00002268B 2017 sections1.2/3.2/5.4; qualified10BASE-T baseline. TI DP83867 SNLS484J June2026; Broadcom BCM84918 rates"
+    },
+    "eth_tag_mode": {
+      "label": "Actual tag layout",
+      "category": "physical",
+      "scope": "network",
+      "type": "select",
+      "description": "Ethernet declaration. Installed link/queue/device evidence is separate; source-qualified proposals never confirm physical or E2E capacity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "UNTAGGED",
+        "PRIORITY",
+        "VLAN",
+        "STACKED_DEVICE"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/00002268B.pdf",
+      "source_revision": "LAN9116 DS00002268B 2017 sections1.2/3.2/5.4; qualified10BASE-T baseline. TI DP83867 SNLS484J June2026; Broadcom BCM84918 rates"
+    },
+    "eth_vlan_tags": {
+      "label": "Actual tag count",
+      "category": "physical",
+      "scope": "network",
+      "type": "number",
+      "description": "Ethernet declaration. Installed link/queue/device evidence is separate; source-qualified proposals never confirm physical or E2E capacity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "max": 2,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/00002268B.pdf",
+      "source_revision": "LAN9116 DS00002268B 2017 sections1.2/3.2/5.4; qualified10BASE-T baseline. TI DP83867 SNLS484J June2026; Broadcom BCM84918 rates"
+    },
+    "eth_dei": {
+      "label": "Actual tag drop-eligibility bit",
+      "category": "physical",
+      "scope": "network",
+      "type": "boolean",
+      "description": "Ethernet declaration. Installed link/queue/device evidence is separate; source-qualified proposals never confirm physical or E2E capacity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/00002268B.pdf",
+      "source_revision": "LAN9116 DS00002268B 2017 sections1.2/3.2/5.4; qualified10BASE-T baseline. TI DP83867 SNLS484J June2026; Broadcom BCM84918 rates"
+    },
+    "eth_type_length": {
+      "label": "Actual innermost type/length16-bit field",
+      "category": "physical",
+      "scope": "network",
+      "type": "number",
+      "description": "Ethernet declaration. Installed link/queue/device evidence is separate; source-qualified proposals never confirm physical or E2E capacity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "max": 65535,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/00002268B.pdf",
+      "source_revision": "LAN9116 DS00002268B 2017 sections1.2/3.2/5.4; qualified10BASE-T baseline. TI DP83867 SNLS484J June2026; Broadcom BCM84918 rates"
+    },
+    "eth_source_mac": {
+      "label": "Actual sender48-bit MAC",
+      "category": "physical",
+      "scope": "network",
+      "type": "text",
+      "description": "Ethernet declaration. Installed link/queue/device evidence is separate; source-qualified proposals never confirm physical or E2E capacity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/00002268B.pdf",
+      "source_revision": "LAN9116 DS00002268B 2017 sections1.2/3.2/5.4; qualified10BASE-T baseline. TI DP83867 SNLS484J June2026; Broadcom BCM84918 rates",
+      "pattern": "[0-9A-Fa-f][02468AaCcEe](?::[0-9A-Fa-f]{2}){5}",
+      "forbidden_values": [
+        "00:00:00:00:00:00"
+      ]
+    },
+    "eth_destination_mac": {
+      "label": "Actual unicast/multicast/broadcast48-bit MAC",
+      "category": "physical",
+      "scope": "network",
+      "type": "text",
+      "description": "Ethernet declaration. Installed link/queue/device evidence is separate; source-qualified proposals never confirm physical or E2E capacity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/00002268B.pdf",
+      "source_revision": "LAN9116 DS00002268B 2017 sections1.2/3.2/5.4; qualified10BASE-T baseline. TI DP83867 SNLS484J June2026; Broadcom BCM84918 rates",
+      "pattern": "[0-9A-Fa-f]{2}(?::[0-9A-Fa-f]{2}){5}",
+      "forbidden_values": [
+        "00:00:00:00:00:00"
+      ]
+    },
+    "eth_mac_frame_bytes": {
+      "label": "Actual frame including FCS, excluding preamble/IFG",
+      "category": "physical",
+      "scope": "network",
+      "type": "number",
+      "description": "Ethernet declaration. Installed link/queue/device evidence is separate; source-qualified proposals never confirm physical or E2E capacity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 64,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/00002268B.pdf",
+      "source_revision": "LAN9116 DS00002268B 2017 sections1.2/3.2/5.4; qualified10BASE-T baseline. TI DP83867 SNLS484J June2026; Broadcom BCM84918 rates"
+    },
+    "eth_wire_slot_bytes": {
+      "label": "Actual MAC frame+preamble/SFD+IFG",
+      "category": "physical",
+      "scope": "network",
+      "type": "number",
+      "description": "Equivalent octets of MAC+preamble/SFD+actual bit gap. Non-octet-multiple IFG yields a fractional octet count; calculator uses exact bit count.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 84,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/00002268B.pdf",
+      "source_revision": "LAN9116 DS00002268B 2017 sections1.2/3.2/5.4; qualified10BASE-T baseline. TI DP83867 SNLS484J June2026; Broadcom BCM84918 rates"
+    },
+    "eth_ifg_bits": {
+      "label": "Actual transmit inter-frame gap",
+      "category": "physical",
+      "scope": "network",
+      "type": "number",
+      "description": "Ethernet declaration. Installed link/queue/device evidence is separate; source-qualified proposals never confirm physical or E2E capacity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 96,
+      "unit": "bit",
+      "min": 96,
+      "integer": true,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/00002268B.pdf",
+      "source_revision": "LAN9116 DS00002268B 2017 sections1.2/3.2/5.4; qualified10BASE-T baseline. TI DP83867 SNLS484J June2026; Broadcom BCM84918 rates"
+    },
+    "eth_peer_rate_bps": {
+      "label": "Actual peer negotiated rate",
+      "category": "physical",
+      "scope": "network",
+      "type": "number",
+      "description": "Ethernet declaration. Installed link/queue/device evidence is separate; source-qualified proposals never confirm physical or E2E capacity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "bit/s",
+      "min": 1,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/00002268B.pdf",
+      "source_revision": "LAN9116 DS00002268B 2017 sections1.2/3.2/5.4; qualified10BASE-T baseline. TI DP83867 SNLS484J June2026; Broadcom BCM84918 rates"
+    },
+    "eth_peer_duplex": {
+      "label": "Actual peer duplex",
+      "category": "physical",
+      "scope": "network",
+      "type": "select",
+      "description": "Ethernet declaration. Installed link/queue/device evidence is separate; source-qualified proposals never confirm physical or E2E capacity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "FULL",
+        "HALF"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/00002268B.pdf",
+      "source_revision": "LAN9116 DS00002268B 2017 sections1.2/3.2/5.4; qualified10BASE-T baseline. TI DP83867 SNLS484J June2026; Broadcom BCM84918 rates"
+    },
+    "eth_autoneg_enabled": {
+      "label": "Actual PHY auto-negotiation enabled",
+      "category": "physical",
+      "scope": "network",
+      "type": "boolean",
+      "description": "Ethernet declaration. Installed link/queue/device evidence is separate; source-qualified proposals never confirm physical or E2E capacity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/00002268B.pdf",
+      "source_revision": "LAN9116 DS00002268B 2017 sections1.2/3.2/5.4; qualified10BASE-T baseline. TI DP83867 SNLS484J June2026; Broadcom BCM84918 rates"
+    },
+    "eth_autoneg_complete": {
+      "label": "Actual auto-negotiation completed",
+      "category": "physical",
+      "scope": "network",
+      "type": "boolean",
+      "description": "Ethernet declaration. Installed link/queue/device evidence is separate; source-qualified proposals never confirm physical or E2E capacity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/00002268B.pdf",
+      "source_revision": "LAN9116 DS00002268B 2017 sections1.2/3.2/5.4; qualified10BASE-T baseline. TI DP83867 SNLS484J June2026; Broadcom BCM84918 rates"
+    },
+    "eth_link_up": {
+      "label": "Actual operational link state",
+      "category": "physical",
+      "scope": "network",
+      "type": "boolean",
+      "description": "Ethernet declaration. Installed link/queue/device evidence is separate; source-qualified proposals never confirm physical or E2E capacity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/00002268B.pdf",
+      "source_revision": "LAN9116 DS00002268B 2017 sections1.2/3.2/5.4; qualified10BASE-T baseline. TI DP83867 SNLS484J June2026; Broadcom BCM84918 rates"
+    },
+    "eth_negotiation_source": {
+      "label": "Actual advertised/resolved peer capabilities and status",
+      "category": "physical",
+      "scope": "network",
+      "type": "text",
+      "description": "Ethernet declaration. Installed link/queue/device evidence is separate; source-qualified proposals never confirm physical or E2E capacity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/00002268B.pdf",
+      "source_revision": "LAN9116 DS00002268B 2017 sections1.2/3.2/5.4; qualified10BASE-T baseline. TI DP83867 SNLS484J June2026; Broadcom BCM84918 rates"
+    },
+    "eth_pause_rx": {
+      "label": "Actual MAC reaction to received PAUSE",
+      "category": "physical",
+      "scope": "network",
+      "type": "boolean",
+      "description": "Ethernet declaration. Installed link/queue/device evidence is separate; source-qualified proposals never confirm physical or E2E capacity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.microchip.com/content/dam/mchp/documents/UNG/ProductDocuments/DataSheets/LAN9645xF-Data-Sheet-DS00006065.pdf",
+      "source_revision": "LAN9645xF DS00006065C 2026 sections4.7/4.13/4.14; device-dependent features, not universal defaults"
+    },
+    "eth_pause_tx": {
+      "label": "Actual transmitted PAUSE enabled",
+      "category": "physical",
+      "scope": "network",
+      "type": "boolean",
+      "description": "Ethernet declaration. Installed link/queue/device evidence is separate; source-qualified proposals never confirm physical or E2E capacity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.microchip.com/content/dam/mchp/documents/UNG/ProductDocuments/DataSheets/LAN9645xF-Data-Sheet-DS00006065.pdf",
+      "source_revision": "LAN9645xF DS00006065C 2026 sections4.7/4.13/4.14; device-dependent features, not universal defaults"
+    },
+    "eth_pause_quanta": {
+      "label": "Actual PAUSE timer512-bit quanta",
+      "category": "physical",
+      "scope": "network",
+      "type": "number",
+      "description": "Ethernet declaration. Installed link/queue/device evidence is separate; source-qualified proposals never confirm physical or E2E capacity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "max": 65535,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/00002268B.pdf",
+      "source_revision": "LAN9116 DS00002268B 2017 sections1.2/3.2/5.4; qualified10BASE-T baseline. TI DP83867 SNLS484J June2026; Broadcom BCM84918 rates"
+    },
+    "eth_pause_time_us": {
+      "label": "Actual PAUSE timer at selected link rate",
+      "category": "timing",
+      "scope": "network",
+      "type": "number",
+      "description": "Ethernet declaration. Installed link/queue/device evidence is separate; source-qualified proposals never confirm physical or E2E capacity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "us",
+      "min": 0,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/00002268B.pdf",
+      "source_revision": "LAN9116 DS00002268B sections3.2.1/5.4.8 PAUSE512-bit quanta; aggregateblocking separate"
+    },
+    "eth_flow_bound_us": {
+      "label": "Actual aggregate flow-control blocking bound",
+      "category": "timing",
+      "scope": "network",
+      "type": "number",
+      "description": "Ethernet declaration. Installed link/queue/device evidence is separate; source-qualified proposals never confirm physical or E2E capacity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "us",
+      "min": 0,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/00002268B.pdf",
+      "source_revision": "LAN9116 DS00002268B 2017 sections1.2/3.2/5.4; qualified10BASE-T baseline. TI DP83867 SNLS484J June2026; Broadcom BCM84918 rates"
+    },
+    "eth_flow_source": {
+      "label": "Actual PAUSE/PFC/backpressure admission/burst proof",
+      "category": "physical",
+      "scope": "network",
+      "type": "text",
+      "description": "Ethernet declaration. Installed link/queue/device evidence is separate; source-qualified proposals never confirm physical or E2E capacity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.microchip.com/content/dam/mchp/documents/UNG/ProductDocuments/DataSheets/LAN9645xF-Data-Sheet-DS00006065.pdf",
+      "source_revision": "LAN9645xF DS00006065C 2026 sections4.7/4.13/4.14; device-dependent features, not universal defaults"
+    },
+    "eth_backpressure": {
+      "label": "Actual half-duplex collision backpressure",
+      "category": "physical",
+      "scope": "network",
+      "type": "boolean",
+      "description": "Ethernet declaration. Installed link/queue/device evidence is separate; source-qualified proposals never confirm physical or E2E capacity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/00002268B.pdf",
+      "source_revision": "LAN9116 DS00002268B 2017 sections1.2/3.2/5.4; qualified10BASE-T baseline. TI DP83867 SNLS484J June2026; Broadcom BCM84918 rates"
+    },
+    "eth_collision_slot_bits": {
+      "label": "Actual CSMA/CD collision slot",
+      "category": "physical",
+      "scope": "network",
+      "type": "number",
+      "description": "Ethernet declaration. Installed link/queue/device evidence is separate; source-qualified proposals never confirm physical or E2E capacity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "bit",
+      "min": 512,
+      "max": 4096,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/00002268B.pdf",
+      "source_revision": "LAN9116 DS00002268B 2017 sections1.2/3.2/5.4; qualified10BASE-T baseline. TI DP83867 SNLS484J June2026; Broadcom BCM84918 rates"
+    },
+    "eth_attempt_limit": {
+      "label": "Actual device MAC transmission attempt budget",
+      "category": "physical",
+      "scope": "network",
+      "type": "number",
+      "description": "Ethernet declaration. Installed link/queue/device evidence is separate; source-qualified proposals never confirm physical or E2E capacity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 1,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/00002268B.pdf",
+      "source_revision": "LAN9116 DS00002268B 2017 sections1.2/3.2/5.4; qualified10BASE-T baseline. TI DP83867 SNLS484J June2026; Broadcom BCM84918 rates"
+    },
+    "eth_backoff_limit": {
+      "label": "Actual device MAC exponential backoff limit",
+      "category": "physical",
+      "scope": "network",
+      "type": "number",
+      "description": "Ethernet declaration. Installed link/queue/device evidence is separate; source-qualified proposals never confirm physical or E2E capacity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/00002268B.pdf",
+      "source_revision": "LAN9116 DS00002268B 2017 sections1.2/3.2/5.4; qualified10BASE-T baseline. TI DP83867 SNLS484J June2026; Broadcom BCM84918 rates"
+    },
+    "eth_collision_source": {
+      "label": "Actual collision domain/backoff/retry/extension model",
+      "category": "physical",
+      "scope": "network",
+      "type": "text",
+      "description": "Ethernet declaration. Installed link/queue/device evidence is separate; source-qualified proposals never confirm physical or E2E capacity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/00002268B.pdf",
+      "source_revision": "LAN9116 DS00002268B 2017 sections1.2/3.2/5.4; qualified10BASE-T baseline. TI DP83867 SNLS484J June2026; Broadcom BCM84918 rates"
+    },
+    "eth_plca_enabled": {
+      "label": "Actual10BASE-T1S PLCA enabled",
+      "category": "physical",
+      "scope": "network",
+      "type": "boolean",
+      "description": "Ethernet declaration. Installed link/queue/device evidence is separate; source-qualified proposals never confirm physical or E2E capacity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/LAN8670-1-2-Data-Sheet-60001573.pdf",
+      "source_revision": "LAN8670/1/2 DS60001573K 2025 sections4.8/5.4.74..78; PLCA optional, ID255 disabled, register/default revision distinctions"
+    },
+    "eth_plca_active": {
+      "label": "Actual PLCA beacon status",
+      "category": "physical",
+      "scope": "network",
+      "type": "boolean",
+      "description": "Ethernet declaration. Installed link/queue/device evidence is separate; source-qualified proposals never confirm physical or E2E capacity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/LAN8670-1-2-Data-Sheet-60001573.pdf",
+      "source_revision": "LAN8670/1/2 DS60001573K 2025 sections4.8/5.4.74..78; PLCA optional, ID255 disabled, register/default revision distinctions"
+    },
+    "eth_plca_id": {
+      "label": "Actual PLCA LocalID",
+      "category": "physical",
+      "scope": "network",
+      "type": "number",
+      "description": "Ethernet declaration. Installed link/queue/device evidence is separate; source-qualified proposals never confirm physical or E2E capacity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "max": 255,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/LAN8670-1-2-Data-Sheet-60001573.pdf",
+      "source_revision": "LAN8670/1/2 DS60001573K 2025 sections4.8/5.4.74..78; PLCA optional, ID255 disabled, register/default revision distinctions"
+    },
+    "eth_plca_count": {
+      "label": "Actual coordinator transmit-opportunity count",
+      "category": "physical",
+      "scope": "network",
+      "type": "number",
+      "description": "Ethernet declaration. Installed link/queue/device evidence is separate; source-qualified proposals never confirm physical or E2E capacity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 1,
+      "max": 255,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/LAN8670-1-2-Data-Sheet-60001573.pdf",
+      "source_revision": "LAN8670/1/2 DS60001573K 2025 sections4.8/5.4.74..78; PLCA optional, ID255 disabled, register/default revision distinctions"
+    },
+    "eth_plca_to_bits": {
+      "label": "PLCA transmit opportunity timer",
+      "category": "physical",
+      "scope": "network",
+      "type": "number",
+      "description": "IEEE802.3-2022 Clause30.16.1.1.5 baseline32BT, not historicalOA1.0 value24; identical across actual mixing segment.100ns perBT at10M, actual delay evaluation required for change.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "bit",
+      "min": 0,
+      "max": 255,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/LAN8670-1-2-Data-Sheet-60001573.pdf",
+      "source_revision": "LAN8670/1/2 DS60001573K 2025 sections4.8/5.4.74..78; PLCA optional, ID255 disabled, register/default revision distinctions",
+      "conditional_defaults": [
+        {
+          "when": {
+            "eth_phy": "10BASE_T1S",
+            "eth_plca_enabled": true
+          },
+          "value": 32
+        }
+      ]
+    },
+    "eth_plca_burst_count": {
+      "label": "Actual additional frames per opportunity",
+      "category": "physical",
+      "scope": "network",
+      "type": "number",
+      "description": "Ethernet declaration. Installed link/queue/device evidence is separate; source-qualified proposals never confirm physical or E2E capacity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "max": 255,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/LAN8670-1-2-Data-Sheet-60001573.pdf",
+      "source_revision": "LAN8670/1/2 DS60001573K 2025 sections4.8/5.4.74..78; PLCA optional, ID255 disabled, register/default revision distinctions"
+    },
+    "eth_plca_burst_bits": {
+      "label": "Actual PLCA burst timer",
+      "category": "physical",
+      "scope": "network",
+      "type": "number",
+      "description": "Ethernet declaration. Installed link/queue/device evidence is separate; source-qualified proposals never confirm physical or E2E capacity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "bit",
+      "min": 0,
+      "max": 255,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/LAN8670-1-2-Data-Sheet-60001573.pdf",
+      "source_revision": "LAN8670/1/2 DS60001573K 2025 sections4.8/5.4.74..78; PLCA optional, ID255 disabled, register/default revision distinctions"
+    },
+    "eth_plca_source": {
+      "label": "Actual revision/coordinator/uniqueID/delay/opportunity map",
+      "category": "physical",
+      "scope": "network",
+      "type": "text",
+      "description": "Ethernet declaration. Installed link/queue/device evidence is separate; source-qualified proposals never confirm physical or E2E capacity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/AIS/ProductDocuments/DataSheets/LAN8670-1-2-Data-Sheet-60001573.pdf",
+      "source_revision": "LAN8670/1/2 DS60001573K 2025 sections4.8/5.4.74..78; PLCA optional, ID255 disabled, register/default revision distinctions"
+    },
+    "eth_eee_enabled": {
+      "label": "Actual energy-efficient Ethernet LPI enabled",
+      "category": "physical",
+      "scope": "network",
+      "type": "boolean",
+      "description": "Ethernet declaration. Installed link/queue/device evidence is separate; source-qualified proposals never confirm physical or E2E capacity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/00002268B.pdf",
+      "source_revision": "LAN9116 DS00002268B 2017 sections1.2/3.2/5.4; qualified10BASE-T baseline. TI DP83867 SNLS484J June2026; Broadcom BCM84918 rates"
+    },
+    "eth_eee_wake_us": {
+      "label": "Actual PHY LPI wake bound",
+      "category": "timing",
+      "scope": "network",
+      "type": "number",
+      "description": "Ethernet declaration. Installed link/queue/device evidence is separate; source-qualified proposals never confirm physical or E2E capacity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "us",
+      "min": 0,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/00002268B.pdf",
+      "source_revision": "LAN9116 DS00002268B 2017 sections1.2/3.2/5.4; qualified10BASE-T baseline. TI DP83867 SNLS484J June2026; Broadcom BCM84918 rates"
+    },
+    "eth_eee_sleep_us": {
+      "label": "Actual PHY LPI sleep bound",
+      "category": "timing",
+      "scope": "network",
+      "type": "number",
+      "description": "Ethernet declaration. Installed link/queue/device evidence is separate; source-qualified proposals never confirm physical or E2E capacity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "us",
+      "min": 0,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/00002268B.pdf",
+      "source_revision": "LAN9116 DS00002268B 2017 sections1.2/3.2/5.4; qualified10BASE-T baseline. TI DP83867 SNLS484J June2026; Broadcom BCM84918 rates"
+    },
+    "eth_eee_source": {
+      "label": "Actual negotiated LPI mode and PHY timing source",
+      "category": "physical",
+      "scope": "network",
+      "type": "text",
+      "description": "Ethernet declaration. Installed link/queue/device evidence is separate; source-qualified proposals never confirm physical or E2E capacity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.microchip.com/content/dam/mchp/documents/UNG/ProductDocuments/DataSheets/LAN9645xF-Data-Sheet-DS00006065.pdf",
+      "source_revision": "LAN9645xF DS00006065C 2026 sections4.7/4.13/4.14; device-dependent features, not universal defaults"
+    },
+    "eth_forwarding_mode": {
+      "label": "Actual forwarding behavior",
+      "category": "physical",
+      "scope": "network",
+      "type": "select",
+      "description": "Ethernet declaration. Installed link/queue/device evidence is separate; source-qualified proposals never confirm physical or E2E capacity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "ENDPOINT",
+        "STORE_FORWARD",
+        "CUT_THROUGH",
+        "DEVICE_SPECIFIC"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.microchip.com/content/dam/mchp/documents/UNG/ProductDocuments/DataSheets/LAN9645xF-Data-Sheet-DS00006065.pdf",
+      "source_revision": "LAN9645xF DS00006065C 2026 sections4.7/4.13/4.14; device-dependent features, not universal defaults"
+    },
+    "eth_forwarding_bound_us": {
+      "label": "Actual forwarding/processing bound",
+      "category": "timing",
+      "scope": "network",
+      "type": "number",
+      "description": "Ethernet declaration. Installed link/queue/device evidence is separate; source-qualified proposals never confirm physical or E2E capacity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "us",
+      "min": 0,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/00002268B.pdf",
+      "source_revision": "LAN9116 DS00002268B 2017 sections1.2/3.2/5.4; qualified10BASE-T baseline. TI DP83867 SNLS484J June2026; Broadcom BCM84918 rates"
+    },
+    "eth_queue_source": {
+      "label": "Actual TX queue capacity/priority mapping/traffic source",
+      "category": "physical",
+      "scope": "network",
+      "type": "text",
+      "description": "Ethernet declaration. Installed link/queue/device evidence is separate; source-qualified proposals never confirm physical or E2E capacity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.microchip.com/content/dam/mchp/documents/UNG/ProductDocuments/DataSheets/LAN9645xF-Data-Sheet-DS00006065.pdf",
+      "source_revision": "LAN9645xF DS00006065C 2026 sections4.7/4.13/4.14; device-dependent features, not universal defaults"
+    },
+    "eth_policing_source": {
+      "label": "Actual byte accounting/burst/policer/shaper source",
+      "category": "physical",
+      "scope": "network",
+      "type": "text",
+      "description": "Ethernet declaration. Installed link/queue/device evidence is separate; source-qualified proposals never confirm physical or E2E capacity.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.microchip.com/content/dam/mchp/documents/UNG/ProductDocuments/DataSheets/LAN9645xF-Data-Sheet-DS00006065.pdf",
+      "source_revision": "LAN9645xF DS00006065C 2026 sections4.7/4.13/4.14; device-dependent features, not universal defaults"
+    }
+  },
+  "mechanisms": {
+    "integrity": [
+      "ETHERNET_FCS"
+    ],
+    "addressing": [
+      "MAC_ADDRESS"
+    ],
+    "arbitration": [
+      "EXPLICIT_FULL_DUPLEX_OR_CSMA_CD_NOT_CAN"
+    ],
+    "upper_layer_resolution": [
+      "ARP_IF_IPV4",
+      "NDP_IF_IPV6"
+    ]
+  },
+  "parameter_constraints": [
+    {
+      "when": {
+        "eth_phy": "10BASE_T"
+      },
+      "parameter": "bitrate_bps",
+      "allowed": [
+        10000000
+      ]
+    },
+    {
+      "when": {
+        "eth_phy": "100BASE_TX"
+      },
+      "parameter": "bitrate_bps",
+      "allowed": [
+        100000000
+      ]
+    },
+    {
+      "when": {
+        "eth_phy": "1000BASE_T"
+      },
+      "parameter": "bitrate_bps",
+      "allowed": [
+        1000000000
+      ]
+    },
+    {
+      "when": {
+        "eth_phy": "2_5GBASE_T"
+      },
+      "parameter": "bitrate_bps",
+      "allowed": [
+        2500000000
+      ]
+    },
+    {
+      "when": {
+        "eth_phy": "5GBASE_T"
+      },
+      "parameter": "bitrate_bps",
+      "allowed": [
+        5000000000
+      ]
+    },
+    {
+      "when": {
+        "eth_phy": "10GBASE_T"
+      },
+      "parameter": "bitrate_bps",
+      "allowed": [
+        10000000000
+      ]
+    },
+    {
+      "when": {
+        "eth_phy": "10BASE_T1S"
+      },
+      "parameter": "bitrate_bps",
+      "allowed": [
+        10000000
+      ]
+    },
+    {
+      "when": {
+        "eth_phy": "100BASE_T1"
+      },
+      "parameter": "bitrate_bps",
+      "allowed": [
+        100000000
+      ]
+    },
+    {
+      "when": {
+        "eth_phy": "1000BASE_T1"
+      },
+      "parameter": "bitrate_bps",
+      "allowed": [
+        1000000000
+      ]
+    },
+    {
+      "when": {
+        "eth_phy": "2_5GBASE_T"
+      },
+      "parameter": "duplex",
+      "allowed": [
+        "FULL"
+      ]
+    },
+    {
+      "when": {
+        "eth_phy": "5GBASE_T"
+      },
+      "parameter": "duplex",
+      "allowed": [
+        "FULL"
+      ]
+    },
+    {
+      "when": {
+        "eth_phy": "10GBASE_T"
+      },
+      "parameter": "duplex",
+      "allowed": [
+        "FULL"
+      ]
+    },
+    {
+      "when": {
+        "eth_phy": "100BASE_T1"
+      },
+      "parameter": "duplex",
+      "allowed": [
+        "FULL"
+      ]
+    },
+    {
+      "when": {
+        "eth_phy": "1000BASE_T1"
+      },
+      "parameter": "duplex",
+      "allowed": [
+        "FULL"
+      ]
+    },
+    {
+      "when": {
+        "eth_phy": "10BASE_T1S"
+      },
+      "parameter": "duplex",
+      "allowed": [
+        "HALF"
+      ]
+    },
+    {
+      "when": {
+        "eth_phy": "10BASE_T"
+      },
+      "parameter": "eth_plca_enabled",
+      "allowed": []
+    },
+    {
+      "when": {
+        "eth_phy": "100BASE_TX"
+      },
+      "parameter": "eth_plca_enabled",
+      "allowed": []
+    },
+    {
+      "when": {
+        "eth_phy": "1000BASE_T"
+      },
+      "parameter": "eth_plca_enabled",
+      "allowed": []
+    },
+    {
+      "when": {
+        "eth_phy": "2_5GBASE_T"
+      },
+      "parameter": "eth_plca_enabled",
+      "allowed": []
+    },
+    {
+      "when": {
+        "eth_phy": "5GBASE_T"
+      },
+      "parameter": "eth_plca_enabled",
+      "allowed": []
+    },
+    {
+      "when": {
+        "eth_phy": "10GBASE_T"
+      },
+      "parameter": "eth_plca_enabled",
+      "allowed": []
+    },
+    {
+      "when": {
+        "eth_phy": "100BASE_T1"
+      },
+      "parameter": "eth_plca_enabled",
+      "allowed": []
+    },
+    {
+      "when": {
+        "eth_phy": "1000BASE_T1"
+      },
+      "parameter": "eth_plca_enabled",
+      "allowed": []
+    },
+    {
+      "when": {
+        "eth_plca_enabled": false
+      },
+      "parameter": "eth_plca_active",
+      "allowed": []
+    },
+    {
+      "when": {
+        "eth_plca_enabled": false
+      },
+      "parameter": "eth_plca_id",
+      "allowed": []
+    },
+    {
+      "when": {
+        "eth_plca_enabled": false
+      },
+      "parameter": "eth_plca_count",
+      "allowed": []
+    },
+    {
+      "when": {
+        "eth_plca_enabled": false
+      },
+      "parameter": "eth_plca_to_bits",
+      "allowed": []
+    },
+    {
+      "when": {
+        "eth_plca_enabled": false
+      },
+      "parameter": "eth_plca_burst_count",
+      "allowed": []
+    },
+    {
+      "when": {
+        "eth_plca_enabled": false
+      },
+      "parameter": "eth_plca_burst_bits",
+      "allowed": []
+    },
+    {
+      "when": {
+        "eth_plca_id": 255
+      },
+      "parameter": "eth_plca_active",
+      "allowed": [
+        false
+      ]
+    },
+    {
+      "when": {
+        "eth_plca_active": true
+      },
+      "parameter": "eth_plca_id",
+      "maximum": 254
+    },
+    {
+      "when": {
+        "eth_frame_profile": "BASIC_MAC"
+      },
+      "parameter": "mtu_bytes",
+      "maximum": 1500
+    },
+    {
+      "when": {},
+      "parameter": "payload_bytes",
+      "maximum_parameter": "mtu_bytes"
+    },
+    {
+      "when": {
+        "eth_frame_profile": "BASIC_MAC"
+      },
+      "parameter": "payload_bytes",
+      "maximum": 1500
+    },
+    {
+      "when": {},
+      "parameter": "eth_client_bytes",
+      "maximum_parameter": "mtu_bytes"
+    },
+    {
+      "when": {
+        "eth_frame_profile": "BASIC_MAC"
+      },
+      "parameter": "eth_client_bytes",
+      "maximum": 1500
+    },
+    {
+      "when": {
+        "eth_frame_profile": "BASIC_MAC"
+      },
+      "parameter": "eth_mac_frame_bytes",
+      "maximum_expression": {
+        "sum": [
+          1518,
+          {
+            "product": [
+              4,
+              "eth_vlan_tags"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "when": {
+        "eth_payload_layer": "MAC_CLIENT"
+      },
+      "parameter": "eth_upper_header_bytes",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "when": {},
+      "parameter": "eth_client_bytes",
+      "equal_sum": [
+        {
+          "parameter": "payload_bytes"
+        },
+        {
+          "parameter": "eth_upper_header_bytes"
+        }
+      ]
+    },
+    {
+      "when": {},
+      "parameter": "eth_pad_bytes",
+      "equal_expression": {
+        "maximum": [
+          0,
+          {
+            "subtract": [
+              46,
+              {
+                "sum": [
+                  "eth_client_bytes",
+                  {
+                    "product": [
+                      4,
+                      "eth_vlan_tags"
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "when": {},
+      "parameter": "eth_mac_frame_bytes",
+      "equal_expression": {
+        "sum": [
+          18,
+          "eth_client_bytes",
+          "eth_pad_bytes",
+          {
+            "product": [
+              4,
+              "eth_vlan_tags"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "when": {},
+      "parameter": "eth_wire_slot_bytes",
+      "equal_expression": {
+        "sum": [
+          "eth_mac_frame_bytes",
+          8,
+          {
+            "product": [
+              "eth_ifg_bits",
+              0.125
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "when": {
+        "eth_tag_mode": "UNTAGGED"
+      },
+      "parameter": "eth_vlan_tags",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "when": {
+        "eth_tag_mode": "PRIORITY"
+      },
+      "parameter": "eth_vlan_tags",
+      "allowed": [
+        1
+      ]
+    },
+    {
+      "when": {
+        "eth_tag_mode": "VLAN"
+      },
+      "parameter": "eth_vlan_tags",
+      "allowed": [
+        1
+      ]
+    },
+    {
+      "when": {
+        "eth_tag_mode": "STACKED_DEVICE"
+      },
+      "parameter": "eth_vlan_tags",
+      "allowed": [
+        2
+      ]
+    },
+    {
+      "when": {
+        "eth_tag_mode": "UNTAGGED"
+      },
+      "parameter": "vlan_id",
+      "allowed": []
+    },
+    {
+      "when": {
+        "eth_tag_mode": "UNTAGGED"
+      },
+      "parameter": "qos_priority",
+      "allowed": []
+    },
+    {
+      "when": {
+        "eth_tag_mode": "UNTAGGED"
+      },
+      "parameter": "eth_dei",
+      "allowed": []
+    },
+    {
+      "when": {
+        "eth_tag_mode": "PRIORITY"
+      },
+      "parameter": "vlan_id",
+      "allowed": [
+        0
+      ]
+    },
+    {
+      "when": {
+        "eth_tag_mode": "VLAN"
+      },
+      "parameter": "vlan_id",
+      "minimum": 1
+    },
+    {
+      "when": {
+        "eth_tag_mode": "STACKED_DEVICE"
+      },
+      "parameter": "vlan_id",
+      "minimum": 1
+    },
+    {
+      "when": {
+        "eth_frame_format": "ETHERTYPE"
+      },
+      "parameter": "eth_type_length",
+      "minimum": 1536
+    },
+    {
+      "when": {
+        "eth_frame_format": "LENGTH_LLC"
+      },
+      "parameter": "eth_type_length",
+      "maximum": 1500
+    },
+    {
+      "when": {
+        "eth_frame_format": "LENGTH_LLC"
+      },
+      "parameter": "eth_type_length",
+      "equal_parameter": "eth_client_bytes"
+    },
+    {
+      "when": {
+        "duplex": "FULL"
+      },
+      "parameter": "eth_backpressure",
+      "allowed": [
+        false
+      ]
+    },
+    {
+      "when": {
+        "duplex": "HALF"
+      },
+      "parameter": "eth_pause_rx",
+      "allowed": [
+        false
+      ]
+    },
+    {
+      "when": {
+        "duplex": "HALF"
+      },
+      "parameter": "eth_pause_tx",
+      "allowed": [
+        false
+      ]
+    },
+    {
+      "when": {
+        "duplex": "HALF"
+      },
+      "parameter": "eth_eee_enabled",
+      "allowed": [
+        false
+      ]
+    },
+    {
+      "when": {
+        "duplex": "FULL"
+      },
+      "parameter": "eth_collision_slot_bits",
+      "allowed": []
+    },
+    {
+      "when": {
+        "duplex": "FULL"
+      },
+      "parameter": "eth_attempt_limit",
+      "allowed": []
+    },
+    {
+      "when": {
+        "duplex": "FULL"
+      },
+      "parameter": "eth_backoff_limit",
+      "allowed": []
+    },
+    {
+      "when": {
+        "duplex": "HALF",
+        "bitrate_bps": 10000000
+      },
+      "parameter": "eth_collision_slot_bits",
+      "allowed": [
+        512
+      ]
+    },
+    {
+      "when": {
+        "duplex": "HALF",
+        "bitrate_bps": 100000000
+      },
+      "parameter": "eth_collision_slot_bits",
+      "allowed": [
+        512
+      ]
+    },
+    {
+      "when": {
+        "duplex": "HALF",
+        "bitrate_bps": 1000000000
+      },
+      "parameter": "eth_collision_slot_bits",
+      "allowed": [
+        4096
+      ]
+    },
+    {
+      "when": {},
+      "parameter": "eth_pause_time_us",
+      "equal_expression": {
+        "product": [
+          "eth_pause_quanta",
+          512,
+          1000000,
+          {
+            "power": [
+              "bitrate_bps",
+              -1
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "when": {
+        "eth_pause_rx": false,
+        "eth_pause_tx": false
+      },
+      "parameter": "eth_pause_quanta",
+      "allowed": []
+    },
+    {
+      "when": {
+        "eth_pause_rx": false,
+        "eth_pause_tx": false
+      },
+      "parameter": "eth_pause_time_us",
+      "allowed": []
+    },
+    {
+      "when": {
+        "eth_eee_enabled": false
+      },
+      "parameter": "eth_eee_wake_us",
+      "allowed": []
+    },
+    {
+      "when": {
+        "eth_eee_enabled": false
+      },
+      "parameter": "eth_eee_sleep_us",
+      "allowed": []
+    },
+    {
+      "when": {},
+      "parameter": "eth_peer_rate_bps",
+      "equal_parameter": "bitrate_bps"
+    },
+    {
+      "when": {},
+      "parameter": "eth_peer_duplex",
+      "equal_parameter": "duplex"
+    },
+    {
+      "when": {},
+      "parameter": "rate_limit_bit_s",
+      "maximum_parameter": "bitrate_bps"
+    }
+  ],
+  "physical_layer_profile_id": null,
+  "medium_access_model": null,
+  "native_parameter_prefixes": [
+    "eth_"
+  ],
+  "parameter_aliases": {},
+  "parameter_alias_limits": {},
+  "parameter_evidence_scope": null,
+  "rate_source_profile_id": null,
+  "arbitration_model_id": null,
+  "max_payload_bytes": 1500,
+  "capabilities": {
+    "supports_signals": true,
+    "supports_data_objects": false,
+    "supports_streams": false,
+    "supports_multicast": true,
+    "supports_publish_subscribe": false,
+    "supports_request_response": false,
+    "supports_cyclic": true,
+    "supports_event": true,
+    "supports_redundancy": false,
+    "supports_time_sync": false,
+    "supports_safety_profile": false,
+    "supports_segmentation": false,
+    "supports_fragmentation": false,
+    "supports_qos": false
+  },
+  "deterministic": false,
+  "overhead_bytes": 8,
+  "implementation_status": "EXPERIMENTAL",
+  "connection_type": "COMMUNICATION_TECHNOLOGY",
+  "parameter_proposals": {
+    "kind": "BASELINE_PROFILE_RATE",
+    "default_bps": 10000000,
+    "status": "REVIEW_REQUIRED",
+    "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/00002268B.pdf",
+    "source_revision": "LAN9116 DS00002268B 2017 sections1.2/3.2/5.4; qualified10BASE-T baseline. TI DP83867 SNLS484J June2026; Broadcom BCM84918 rates",
+    "note": "Explicit IEEE802.3 Generic Ethernet entry uses the reviewed 10BASE-T/10M baseline proposal. Actual PHY, duplex, MAC-client layout, peer, flow and path configuration remain required; no independent 1G default or implicit TCP/IP header."
+  },
+  "capacity_evidence": {
+    "status": "MODEL_MISSING",
+    "frame_model": null,
+    "schedule_model": null,
+    "requires_confirmed_device_parameters": true
+  },
+  "components": {
+    "binding": "generic_ethernet.binding",
+    "generator": "generic_ethernet.generator",
+    "validator": "generic_ethernet.validator",
+    "timing_model": null,
+    "load_model": null,
+    "encoder": "generic_ethernet.encoder",
+    "decoder": "generic_ethernet.decoder"
+  },
+  "known_limitations": "Technology-specific conformance details require a vendor/profile extension."
+}

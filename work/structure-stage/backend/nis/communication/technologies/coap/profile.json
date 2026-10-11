@@ -1,0 +1,3340 @@
+{
+  "id": "coap",
+  "label": "CoAP",
+  "domain": "generic_networking",
+  "layer": "APPLICATION",
+  "transport_unit": "PDU",
+  "payload_element_types": [
+    "DATA_OBJECT",
+    "RAW_DATA"
+  ],
+  "hardware_interface": "explicit_ip_link_interface",
+  "hardware_capability_aliases": [
+    "ethernet_or_wireless_interface"
+  ],
+  "default_stack": [
+    "coap"
+  ],
+  "stack_variants": [
+    [
+      "coap"
+    ],
+    [
+      "ethernet",
+      "ip",
+      "udp",
+      "coap"
+    ]
+  ],
+  "default_bitrate": null,
+  "rate_model": {
+    "type": "INHERITED_OR_NOT_APPLICABLE",
+    "fields": []
+  },
+  "local_timing_schema": [],
+  "parameter_schema": {
+    "payload_bytes": {
+      "label": "Payload",
+      "category": "physical",
+      "scope": "message",
+      "type": "number",
+      "description": "Actual CoAP payload in one message/block, not complete body or message size.1152 is a conservative unknown-path message bound,1024 its payload suggestion. Reliable CSMSizes/BERT can differ; no universal1152payloadcap.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 June2014 /7959 Aug2016 /8323 Feb2018 /8974 Jan2021",
+      "integer": true
+    },
+    "cycle_ms": {
+      "label": "Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "Standardperiode fuer zyklische Nachrichten.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "minimum_cycle_time_ms": {
+      "label": "Minimum Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "deadline_ms": {
+      "label": "Deadline",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "timeout_ms": {
+      "label": "Timeout",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_latency_ms": {
+      "label": "Maximum Latency",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "jitter_ms": {
+      "label": "Jitter Budget",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "freshness_ms": {
+      "label": "Data Freshness",
+      "category": "timing",
+      "scope": "signal",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "source_processing_delay_ms": {
+      "label": "Source Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_processing_delay_ms": {
+      "label": "Target Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "propagation_delay_ms": {
+      "label": "Propagation",
+      "category": "timing",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.01,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_bus_load_percent": {
+      "label": "Ziel-Buslast",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "Zielwert fuer die aus Routing, Payload, Zyklus und Bitrate berechnete Buslast.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "peak_factor": {
+      "label": "Peak Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.15,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_factor": {
+      "label": "Burst Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.5,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_window_ms": {
+      "label": "Burst Window",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "warning_threshold": {
+      "label": "Load Warning",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "critical_threshold": {
+      "label": "Load Critical",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 75,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "overload_threshold": {
+      "label": "Load Overload",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 90,
+      "unit": "%",
+      "min": 1,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "queue_size": {
+      "label": "Queue Size",
+      "category": "qos",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 256,
+      "unit": "Frames",
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1",
+      "integer": true
+    },
+    "queue_policy": {
+      "label": "Queue Policy",
+      "category": "qos",
+      "scope": "network",
+      "type": "select",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": "FIFO",
+      "options": [
+        "FIFO",
+        "PRIORITY",
+        "CUSTOM"
+      ],
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "traffic_class": {
+      "label": "Traffic Class",
+      "category": "qos",
+      "scope": "route",
+      "type": "select",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": "BEST_EFFORT",
+      "options": [
+        "BEST_EFFORT",
+        "CONTROL",
+        "REALTIME",
+        "SAFETY_CRITICAL"
+      ],
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "packet_loss_probability": {
+      "label": "Packet Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "frame_loss_probability": {
+      "label": "Frame Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "bit_error_rate": {
+      "label": "Bit Error Rate",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "corruption_probability": {
+      "label": "Corruption",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duplicate_probability": {
+      "label": "Duplication",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "reordering_probability": {
+      "label": "Reordering",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "required_reliability": {
+      "label": "Required Reliability",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.999,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_offset_ms": {
+      "label": "Clock Offset",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_drift_ppm": {
+      "label": "Clock Drift",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 20,
+      "unit": "ppm",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_precision_ms": {
+      "label": "Sync Precision",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_interval_ms": {
+      "label": "Sync Interval",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1000,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_sync_error_ms": {
+      "label": "Maximum Sync Error",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_delay_ms": {
+      "label": "Gateway Processing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.2,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_queue_delay_ms": {
+      "label": "Gateway Queueing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "protocol_conversion_delay_ms": {
+      "label": "Protocol Conversion",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duration_s": {
+      "label": "Simulation Duration",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 1,
+      "unit": "s",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "seed": {
+      "label": "Random Seed",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 42,
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1",
+      "integer": true
+    },
+    "max_events": {
+      "label": "Maximum Events",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 100000,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1",
+      "integer": true
+    },
+    "dropout_probability": {
+      "label": "Failure Injection Dropout",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "coap_transport": {
+      "label": "Actual CoAP transport",
+      "category": "communication",
+      "scope": "route",
+      "type": "select",
+      "description": "CoAP native configuration. Standard proposals are not measured endpoint/path/round-trip facts. UDP reliability fields do not apply to reliable transports; actual capabilities and protocol sequence require evidence.",
+      "required": true,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "UDP",
+        "DTLS",
+        "TCP",
+        "TLS",
+        "WS",
+        "WSS"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "IETF RFC7252 accessed2026-10-01"
+    },
+    "coap_version": {
+      "label": "UDP message version baseline",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "CoAP native configuration. Standard proposals are not measured endpoint/path/round-trip facts. UDP reliability fields do not apply to reliable transports; actual capabilities and protocol sequence require evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 1,
+      "max": 1,
+      "integer": true,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED",
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "IETF RFC7252 accessed2026-10-01",
+      "conditional_defaults": [
+        {
+          "when": {
+            "coap_transport": "UDP"
+          },
+          "value": 1
+        },
+        {
+          "when": {
+            "coap_transport": "DTLS"
+          },
+          "value": 1
+        }
+      ]
+    },
+    "coap_message_type": {
+      "label": "Actual UDP message type",
+      "category": "communication",
+      "scope": "message",
+      "type": "select",
+      "description": "CoAP native configuration. Standard proposals are not measured endpoint/path/round-trip facts. UDP reliability fields do not apply to reliable transports; actual capabilities and protocol sequence require evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "CON",
+        "NON",
+        "ACK",
+        "RST"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "IETF RFC7252 accessed2026-10-01"
+    },
+    "coap_message_id": {
+      "label": "Actual UDP message ID",
+      "category": "communication",
+      "scope": "message",
+      "type": "number",
+      "description": "CoAP native configuration. Standard proposals are not measured endpoint/path/round-trip facts. UDP reliability fields do not apply to reliable transports; actual capabilities and protocol sequence require evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "max": 65535,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "IETF RFC7252 accessed2026-10-01"
+    },
+    "coap_code": {
+      "label": "Actual encoded request/response code",
+      "category": "communication",
+      "scope": "message",
+      "type": "number",
+      "description": "CoAP native configuration. Standard proposals are not measured endpoint/path/round-trip facts. UDP reliability fields do not apply to reliable transports; actual capabilities and protocol sequence require evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "max": 255,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "IETF RFC7252 accessed2026-10-01"
+    },
+    "coap_token_format": {
+      "label": "Token encoding baseline",
+      "category": "communication",
+      "scope": "route",
+      "type": "select",
+      "description": "CoAP native configuration. Standard proposals are not measured endpoint/path/round-trip facts. UDP reliability fields do not apply to reliable transports; actual capabilities and protocol sequence require evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": "BASE_8",
+      "options": [
+        "BASE_8",
+        "EXTENDED_RFC8974"
+      ],
+      "integer": false,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED",
+      "source": "https://www.rfc-editor.org/rfc/rfc8974.html",
+      "source_revision": "IETF RFC8974 accessed2026-10-01"
+    },
+    "coap_token_bytes": {
+      "label": "Actual token length",
+      "category": "communication",
+      "scope": "message",
+      "type": "number",
+      "description": "CoAP native configuration. Standard proposals are not measured endpoint/path/round-trip facts. UDP reliability fields do not apply to reliable transports; actual capabilities and protocol sequence require evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "max": 65804,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc8974.html",
+      "source_revision": "IETF RFC8974 accessed2026-10-01"
+    },
+    "coap_peer_token_limit": {
+      "label": "Actual peer-supported token limit",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "CoAP native configuration. Standard proposals are not measured endpoint/path/round-trip facts. UDP reliability fields do not apply to reliable transports; actual capabilities and protocol sequence require evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 8,
+      "max": 65804,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc8974.html",
+      "source_revision": "IETF RFC8974 accessed2026-10-01"
+    },
+    "coap_uri": {
+      "label": "Actual CoAP resource URI",
+      "category": "communication",
+      "scope": "route",
+      "type": "text",
+      "description": "CoAP native configuration. Standard proposals are not measured endpoint/path/round-trip facts. UDP reliability fields do not apply to reliable transports; actual capabilities and protocol sequence require evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "IETF RFC7252 accessed2026-10-01",
+      "format": "ABSOLUTE_URI",
+      "allowed_schemes": [
+        "coap",
+        "coaps",
+        "coap+tcp",
+        "coaps+tcp",
+        "coap+ws",
+        "coaps+ws"
+      ]
+    },
+    "coap_port": {
+      "label": "Endpoint service port proposal",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "CoAP native configuration. Standard proposals are not measured endpoint/path/round-trip facts. UDP reliability fields do not apply to reliable transports; actual capabilities and protocol sequence require evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 1,
+      "max": 65535,
+      "integer": true,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED",
+      "source": "https://www.rfc-editor.org/rfc/rfc8323.html",
+      "source_revision": "IETF RFC8323 accessed2026-10-01",
+      "conditional_defaults": [
+        {
+          "when": {
+            "coap_transport": "UDP"
+          },
+          "value": 5683
+        },
+        {
+          "when": {
+            "coap_transport": "DTLS"
+          },
+          "value": 5684
+        },
+        {
+          "when": {
+            "coap_transport": "TCP"
+          },
+          "value": 5683
+        },
+        {
+          "when": {
+            "coap_transport": "TLS"
+          },
+          "value": 5684
+        },
+        {
+          "when": {
+            "coap_transport": "WS"
+          },
+          "value": 80
+        },
+        {
+          "when": {
+            "coap_transport": "WSS"
+          },
+          "value": 443
+        }
+      ]
+    },
+    "coap_ack_timeout_s": {
+      "label": "ACK timeout baseline",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "CoAP native configuration. Standard proposals are not measured endpoint/path/round-trip facts. UDP reliability fields do not apply to reliable transports; actual capabilities and protocol sequence require evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "s",
+      "min": 0,
+      "integer": false,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED",
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "IETF RFC7252 accessed2026-10-01",
+      "conditional_defaults": [
+        {
+          "when": {
+            "coap_transport": "UDP"
+          },
+          "value": 2
+        },
+        {
+          "when": {
+            "coap_transport": "DTLS"
+          },
+          "value": 2
+        }
+      ]
+    },
+    "coap_ack_random_factor": {
+      "label": "ACK randomization factor baseline",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "CoAP native configuration. Standard proposals are not measured endpoint/path/round-trip facts. UDP reliability fields do not apply to reliable transports; actual capabilities and protocol sequence require evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 1,
+      "integer": false,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED",
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "IETF RFC7252 accessed2026-10-01",
+      "conditional_defaults": [
+        {
+          "when": {
+            "coap_transport": "UDP"
+          },
+          "value": 1.5
+        },
+        {
+          "when": {
+            "coap_transport": "DTLS"
+          },
+          "value": 1.5
+        }
+      ]
+    },
+    "coap_max_retransmit": {
+      "label": "Maximum retransmission count baseline",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "CoAP native configuration. Standard proposals are not measured endpoint/path/round-trip facts. UDP reliability fields do not apply to reliable transports; actual capabilities and protocol sequence require evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "integer": true,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED",
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "IETF RFC7252 accessed2026-10-01",
+      "conditional_defaults": [
+        {
+          "when": {
+            "coap_transport": "UDP"
+          },
+          "value": 4
+        },
+        {
+          "when": {
+            "coap_transport": "DTLS"
+          },
+          "value": 4
+        }
+      ]
+    },
+    "coap_nstart": {
+      "label": "Outstanding confirmable exchanges baseline",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "CoAP native configuration. Standard proposals are not measured endpoint/path/round-trip facts. UDP reliability fields do not apply to reliable transports; actual capabilities and protocol sequence require evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 1,
+      "integer": true,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED",
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "IETF RFC7252 accessed2026-10-01",
+      "conditional_defaults": [
+        {
+          "when": {
+            "coap_transport": "UDP"
+          },
+          "value": 1
+        },
+        {
+          "when": {
+            "coap_transport": "DTLS"
+          },
+          "value": 1
+        }
+      ]
+    },
+    "coap_default_leisure_s": {
+      "label": "Multicast response leisure baseline",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "CoAP native configuration. Standard proposals are not measured endpoint/path/round-trip facts. UDP reliability fields do not apply to reliable transports; actual capabilities and protocol sequence require evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "s",
+      "min": 0,
+      "integer": false,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED",
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "IETF RFC7252 accessed2026-10-01",
+      "conditional_defaults": [
+        {
+          "when": {
+            "coap_transport": "UDP"
+          },
+          "value": 5
+        },
+        {
+          "when": {
+            "coap_transport": "DTLS"
+          },
+          "value": 5
+        }
+      ]
+    },
+    "coap_probing_rate_Bps": {
+      "label": "Nonresponsive endpoint probing rate",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "CoAP native configuration. Standard proposals are not measured endpoint/path/round-trip facts. UDP reliability fields do not apply to reliable transports; actual capabilities and protocol sequence require evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte/s",
+      "min": 0,
+      "integer": false,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED",
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "IETF RFC7252 accessed2026-10-01",
+      "conditional_defaults": [
+        {
+          "when": {
+            "coap_transport": "UDP"
+          },
+          "value": 1
+        },
+        {
+          "when": {
+            "coap_transport": "DTLS"
+          },
+          "value": 1
+        }
+      ]
+    },
+    "coap_congestion_control_verified": {
+      "label": "Actual changed-timer congestion-control evidence",
+      "category": "communication",
+      "scope": "route",
+      "type": "boolean",
+      "description": "CoAP native configuration. Standard proposals are not measured endpoint/path/round-trip facts. UDP reliability fields do not apply to reliable transports; actual capabilities and protocol sequence require evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "IETF RFC7252 accessed2026-10-01"
+    },
+    "coap_max_latency_s": {
+      "label": "Protocol datagram lifetime assumption",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "CoAP native configuration. Standard proposals are not measured endpoint/path/round-trip facts. UDP reliability fields do not apply to reliable transports; actual capabilities and protocol sequence require evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "s",
+      "min": 0,
+      "integer": false,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED",
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "IETF RFC7252 accessed2026-10-01",
+      "conditional_defaults": [
+        {
+          "when": {
+            "coap_transport": "UDP"
+          },
+          "value": 100
+        },
+        {
+          "when": {
+            "coap_transport": "DTLS"
+          },
+          "value": 100
+        }
+      ]
+    },
+    "coap_processing_delay_s": {
+      "label": "Protocol processing-delay assumption",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "CoAP native configuration. Standard proposals are not measured endpoint/path/round-trip facts. UDP reliability fields do not apply to reliable transports; actual capabilities and protocol sequence require evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "s",
+      "min": 0,
+      "integer": false,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED",
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "IETF RFC7252 accessed2026-10-01",
+      "conditional_defaults": [
+        {
+          "when": {
+            "coap_transport": "UDP",
+            "coap_ack_timeout_s": 2
+          },
+          "value": 2
+        },
+        {
+          "when": {
+            "coap_transport": "DTLS",
+            "coap_ack_timeout_s": 2
+          },
+          "value": 2
+        }
+      ]
+    },
+    "coap_max_transmit_span_s": {
+      "label": "Derived last retransmission span",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "CoAP native configuration. Standard proposals are not measured endpoint/path/round-trip facts. UDP reliability fields do not apply to reliable transports; actual capabilities and protocol sequence require evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "s",
+      "min": 0,
+      "integer": false,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED",
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "IETF RFC7252 accessed2026-10-01",
+      "conditional_defaults": [
+        {
+          "when": {
+            "coap_transport": "UDP",
+            "coap_ack_timeout_s": 2,
+            "coap_ack_random_factor": 1.5,
+            "coap_max_retransmit": 4
+          },
+          "value": 45
+        },
+        {
+          "when": {
+            "coap_transport": "DTLS",
+            "coap_ack_timeout_s": 2,
+            "coap_ack_random_factor": 1.5,
+            "coap_max_retransmit": 4
+          },
+          "value": 45
+        }
+      ]
+    },
+    "coap_max_transmit_wait_s": {
+      "label": "Derived acknowledgement wait bound",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "CoAP native configuration. Standard proposals are not measured endpoint/path/round-trip facts. UDP reliability fields do not apply to reliable transports; actual capabilities and protocol sequence require evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "s",
+      "min": 0,
+      "integer": false,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED",
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "IETF RFC7252 accessed2026-10-01",
+      "conditional_defaults": [
+        {
+          "when": {
+            "coap_transport": "UDP",
+            "coap_ack_timeout_s": 2,
+            "coap_ack_random_factor": 1.5,
+            "coap_max_retransmit": 4
+          },
+          "value": 93
+        },
+        {
+          "when": {
+            "coap_transport": "DTLS",
+            "coap_ack_timeout_s": 2,
+            "coap_ack_random_factor": 1.5,
+            "coap_max_retransmit": 4
+          },
+          "value": 93
+        }
+      ]
+    },
+    "coap_max_rtt_s": {
+      "label": "Derived protocol maximum RTT",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "CoAP native configuration. Standard proposals are not measured endpoint/path/round-trip facts. UDP reliability fields do not apply to reliable transports; actual capabilities and protocol sequence require evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "s",
+      "min": 0,
+      "integer": false,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED",
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "IETF RFC7252 accessed2026-10-01",
+      "conditional_defaults": [
+        {
+          "when": {
+            "coap_transport": "UDP",
+            "coap_max_latency_s": 100,
+            "coap_processing_delay_s": 2
+          },
+          "value": 202
+        },
+        {
+          "when": {
+            "coap_transport": "DTLS",
+            "coap_max_latency_s": 100,
+            "coap_processing_delay_s": 2
+          },
+          "value": 202
+        }
+      ]
+    },
+    "coap_exchange_lifetime_s": {
+      "label": "Message ID exchange lifetime",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "CoAP native configuration. Standard proposals are not measured endpoint/path/round-trip facts. UDP reliability fields do not apply to reliable transports; actual capabilities and protocol sequence require evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "s",
+      "min": 0,
+      "integer": false,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED",
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "IETF RFC7252 accessed2026-10-01",
+      "conditional_defaults": [
+        {
+          "when": {
+            "coap_transport": "UDP",
+            "coap_ack_timeout_s": 2,
+            "coap_ack_random_factor": 1.5,
+            "coap_max_retransmit": 4,
+            "coap_max_latency_s": 100,
+            "coap_processing_delay_s": 2
+          },
+          "value": 247
+        },
+        {
+          "when": {
+            "coap_transport": "DTLS",
+            "coap_ack_timeout_s": 2,
+            "coap_ack_random_factor": 1.5,
+            "coap_max_retransmit": 4,
+            "coap_max_latency_s": 100,
+            "coap_processing_delay_s": 2
+          },
+          "value": 247
+        }
+      ]
+    },
+    "coap_non_lifetime_s": {
+      "label": "Non-confirmable message ID lifetime",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "CoAP native configuration. Standard proposals are not measured endpoint/path/round-trip facts. UDP reliability fields do not apply to reliable transports; actual capabilities and protocol sequence require evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "s",
+      "min": 0,
+      "integer": false,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED",
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "IETF RFC7252 accessed2026-10-01",
+      "conditional_defaults": [
+        {
+          "when": {
+            "coap_transport": "UDP",
+            "coap_non_repeat": true,
+            "coap_ack_timeout_s": 2,
+            "coap_ack_random_factor": 1.5,
+            "coap_max_retransmit": 4,
+            "coap_max_latency_s": 100
+          },
+          "value": 145
+        },
+        {
+          "when": {
+            "coap_transport": "UDP",
+            "coap_non_repeat": false,
+            "coap_ack_timeout_s": 2,
+            "coap_ack_random_factor": 1.5,
+            "coap_max_retransmit": 4,
+            "coap_max_latency_s": 100
+          },
+          "value": 100
+        },
+        {
+          "when": {
+            "coap_transport": "DTLS",
+            "coap_non_repeat": true,
+            "coap_ack_timeout_s": 2,
+            "coap_ack_random_factor": 1.5,
+            "coap_max_retransmit": 4,
+            "coap_max_latency_s": 100
+          },
+          "value": 145
+        },
+        {
+          "when": {
+            "coap_transport": "DTLS",
+            "coap_non_repeat": false,
+            "coap_ack_timeout_s": 2,
+            "coap_ack_random_factor": 1.5,
+            "coap_max_retransmit": 4,
+            "coap_max_latency_s": 100
+          },
+          "value": 100
+        }
+      ]
+    },
+    "coap_non_repeat": {
+      "label": "Actual NON message repetition",
+      "category": "communication",
+      "scope": "route",
+      "type": "boolean",
+      "description": "CoAP native configuration. Standard proposals are not measured endpoint/path/round-trip facts. UDP reliability fields do not apply to reliable transports; actual capabilities and protocol sequence require evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "IETF RFC7252 accessed2026-10-01"
+    },
+    "coap_max_age_s": {
+      "label": "Absent response Max-Age baseline",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "CoAP native configuration. Standard proposals are not measured endpoint/path/round-trip facts. UDP reliability fields do not apply to reliable transports; actual capabilities and protocol sequence require evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "s",
+      "min": 0,
+      "max": 4294967295,
+      "integer": true,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED",
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "IETF RFC7252 accessed2026-10-01"
+    },
+    "coap_content_format": {
+      "label": "Actual registered Content-Format",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "CoAP native configuration. Standard proposals are not measured endpoint/path/round-trip facts. UDP reliability fields do not apply to reliable transports; actual capabilities and protocol sequence require evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "max": 65535,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "IETF RFC7252 accessed2026-10-01"
+    },
+    "coap_accept": {
+      "label": "Actual registered Accept format",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "CoAP native configuration. Standard proposals are not measured endpoint/path/round-trip facts. UDP reliability fields do not apply to reliable transports; actual capabilities and protocol sequence require evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "max": 65535,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "IETF RFC7252 accessed2026-10-01"
+    },
+    "coap_options_bytes": {
+      "label": "Actual encoded options length",
+      "category": "communication",
+      "scope": "message",
+      "type": "number",
+      "description": "CoAP native configuration. Standard proposals are not measured endpoint/path/round-trip facts. UDP reliability fields do not apply to reliable transports; actual capabilities and protocol sequence require evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "IETF RFC7252 accessed2026-10-01"
+    },
+    "coap_header_bytes": {
+      "label": "Actual native header length",
+      "category": "communication",
+      "scope": "message",
+      "type": "number",
+      "description": "CoAP native configuration. Standard proposals are not measured endpoint/path/round-trip facts. UDP reliability fields do not apply to reliable transports; actual capabilities and protocol sequence require evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 2,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc8323.html",
+      "source_revision": "IETF RFC8323 accessed2026-10-01"
+    },
+    "coap_payload_marker_bytes": {
+      "label": "Actual payload marker length",
+      "category": "communication",
+      "scope": "message",
+      "type": "number",
+      "description": "CoAP native configuration. Standard proposals are not measured endpoint/path/round-trip facts. UDP reliability fields do not apply to reliable transports; actual capabilities and protocol sequence require evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "max": 1,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "IETF RFC7252 accessed2026-10-01"
+    },
+    "coap_message_bytes": {
+      "label": "Actual complete encoded CoAP message",
+      "category": "communication",
+      "scope": "message",
+      "type": "number",
+      "description": "CoAP native configuration. Standard proposals are not measured endpoint/path/round-trip facts. UDP reliability fields do not apply to reliable transports; actual capabilities and protocol sequence require evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 2,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc8323.html",
+      "source_revision": "IETF RFC8323 accessed2026-10-01"
+    },
+    "coap_body_bytes": {
+      "label": "Actual complete representation body",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "CoAP native configuration. Standard proposals are not measured endpoint/path/round-trip facts. UDP reliability fields do not apply to reliable transports; actual capabilities and protocol sequence require evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc7959.html",
+      "source_revision": "IETF RFC7959 accessed2026-10-01"
+    },
+    "coap_mtu_policy": {
+      "label": "Actual path-size policy",
+      "category": "communication",
+      "scope": "route",
+      "type": "select",
+      "description": "CoAP native configuration. Standard proposals are not measured endpoint/path/round-trip facts. UDP reliability fields do not apply to reliable transports; actual capabilities and protocol sequence require evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "VALIDATED_PATH",
+        "UNKNOWN_PATH_RFC7252"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "IETF RFC7252 accessed2026-10-01"
+    },
+    "coap_path_mtu_bytes": {
+      "label": "Actual confirmed path MTU",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "CoAP native configuration. Standard proposals are not measured endpoint/path/round-trip facts. UDP reliability fields do not apply to reliable transports; actual capabilities and protocol sequence require evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 1,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "IETF RFC7252 accessed2026-10-01"
+    },
+    "coap_csm_max_message_bytes": {
+      "label": "Reliable CSM max-message base value",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "CoAP native configuration. Standard proposals are not measured endpoint/path/round-trip facts. UDP reliability fields do not apply to reliable transports; actual capabilities and protocol sequence require evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "max": 4294967295,
+      "integer": true,
+      "parameter_origin": "TRANSPORT_PROFILE",
+      "default_status": "PROPOSED",
+      "source": "https://www.rfc-editor.org/rfc/rfc8323.html",
+      "source_revision": "IETF RFC8323 accessed2026-10-01",
+      "conditional_defaults": [
+        {
+          "when": {
+            "coap_transport": "TCP"
+          },
+          "value": 1152
+        },
+        {
+          "when": {
+            "coap_transport": "TLS"
+          },
+          "value": 1152
+        },
+        {
+          "when": {
+            "coap_transport": "WS"
+          },
+          "value": 1152
+        },
+        {
+          "when": {
+            "coap_transport": "WSS"
+          },
+          "value": 1152
+        }
+      ]
+    },
+    "coap_csm_blockwise_supported": {
+      "label": "Actual reliable block-wise capability",
+      "category": "communication",
+      "scope": "route",
+      "type": "boolean",
+      "description": "CoAP native configuration. Standard proposals are not measured endpoint/path/round-trip facts. UDP reliability fields do not apply to reliable transports; actual capabilities and protocol sequence require evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc8323.html",
+      "source_revision": "IETF RFC8323 accessed2026-10-01"
+    },
+    "coap_block_kind": {
+      "label": "Actual block option",
+      "category": "communication",
+      "scope": "route",
+      "type": "select",
+      "description": "CoAP native configuration. Standard proposals are not measured endpoint/path/round-trip facts. UDP reliability fields do not apply to reliable transports; actual capabilities and protocol sequence require evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "BLOCK1",
+        "BLOCK2"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc7959.html",
+      "source_revision": "IETF RFC7959 accessed2026-10-01"
+    },
+    "coap_block_usage": {
+      "label": "Actual block option usage",
+      "category": "communication",
+      "scope": "route",
+      "type": "select",
+      "description": "CoAP native configuration. Standard proposals are not measured endpoint/path/round-trip facts. UDP reliability fields do not apply to reliable transports; actual capabilities and protocol sequence require evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "DESCRIPTIVE",
+        "CONTROL"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc7959.html",
+      "source_revision": "IETF RFC7959 accessed2026-10-01"
+    },
+    "coap_block_number": {
+      "label": "Actual block number",
+      "category": "communication",
+      "scope": "message",
+      "type": "number",
+      "description": "CoAP native configuration. Standard proposals are not measured endpoint/path/round-trip facts. UDP reliability fields do not apply to reliable transports; actual capabilities and protocol sequence require evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "max": 1048575,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc7959.html",
+      "source_revision": "IETF RFC7959 accessed2026-10-01"
+    },
+    "coap_block_szx": {
+      "label": "Actual block size exponent;7 meansBERT",
+      "category": "communication",
+      "scope": "message",
+      "type": "number",
+      "description": "CoAP native configuration. Standard proposals are not measured endpoint/path/round-trip facts. UDP reliability fields do not apply to reliable transports; actual capabilities and protocol sequence require evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "max": 7,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc8323.html",
+      "source_revision": "IETF RFC8323 accessed2026-10-01"
+    },
+    "coap_block_more": {
+      "label": "Actual more blocks flag",
+      "category": "communication",
+      "scope": "message",
+      "type": "boolean",
+      "description": "CoAP native configuration. Standard proposals are not measured endpoint/path/round-trip facts. UDP reliability fields do not apply to reliable transports; actual capabilities and protocol sequence require evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc7959.html",
+      "source_revision": "IETF RFC7959 accessed2026-10-01"
+    },
+    "coap_observe_kind": {
+      "label": "Actual Observe option use",
+      "category": "communication",
+      "scope": "route",
+      "type": "select",
+      "description": "CoAP native configuration. Standard proposals are not measured endpoint/path/round-trip facts. UDP reliability fields do not apply to reliable transports; actual capabilities and protocol sequence require evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "options": [
+        "REQUEST",
+        "NOTIFICATION"
+      ],
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc7641.html",
+      "source_revision": "IETF RFC7641 accessed2026-10-01"
+    },
+    "coap_observe_value": {
+      "label": "Actual Observe register/cancel or sequence",
+      "category": "communication",
+      "scope": "route",
+      "type": "number",
+      "description": "CoAP native configuration. Standard proposals are not measured endpoint/path/round-trip facts. UDP reliability fields do not apply to reliable transports; actual capabilities and protocol sequence require evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "min": 0,
+      "max": 16777215,
+      "integer": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc7641.html",
+      "source_revision": "IETF RFC7641 accessed2026-10-01"
+    },
+    "coap_multicast": {
+      "label": "Actual multicast communication",
+      "category": "communication",
+      "scope": "route",
+      "type": "boolean",
+      "description": "CoAP native configuration. Standard proposals are not measured endpoint/path/round-trip facts. UDP reliability fields do not apply to reliable transports; actual capabilities and protocol sequence require evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "IETF RFC7252 accessed2026-10-01"
+    },
+    "coap_peer_capability_source": {
+      "label": "Actual endpoint/negotiation evidence",
+      "category": "communication",
+      "scope": "route",
+      "type": "text",
+      "description": "CoAP native configuration. Standard proposals are not measured endpoint/path/round-trip facts. UDP reliability fields do not apply to reliable transports; actual capabilities and protocol sequence require evidence.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "integer": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "source": "https://www.rfc-editor.org/rfc/rfc8323.html",
+      "source_revision": "IETF RFC8323 accessed2026-10-01"
+    }
+  },
+  "mechanisms": {
+    "addressing": [
+      "COAP_URI",
+      "REQUEST_RESPONSE_TOKEN"
+    ],
+    "reliability": [
+      "UDP_CONFIRMABLE_ACK_RETRANSMIT",
+      "RELIABLE_TRANSPORT_CSM"
+    ],
+    "flow_control": [
+      "COAP_UDP_CONGESTION_CONTROL",
+      "COAP_BLOCKWISE",
+      "BERT_IF_NEGOTIATED"
+    ],
+    "supervision": [
+      "COAP_OBSERVE_OPTION",
+      "COAP_MAX_AGE"
+    ],
+    "security": [
+      "EXPLICIT_DTLS_TLS_OR_OSCORE_PROFILE"
+    ]
+  },
+  "parameter_constraints": [
+    {
+      "when": {
+        "coap_transport": "TCP"
+      },
+      "parameter": "coap_version",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_transport": "TCP"
+      },
+      "parameter": "coap_message_type",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_transport": "TCP"
+      },
+      "parameter": "coap_message_id",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_transport": "TCP"
+      },
+      "parameter": "coap_ack_timeout_s",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_transport": "TCP"
+      },
+      "parameter": "coap_ack_random_factor",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_transport": "TCP"
+      },
+      "parameter": "coap_max_retransmit",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_transport": "TCP"
+      },
+      "parameter": "coap_nstart",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_transport": "TCP"
+      },
+      "parameter": "coap_default_leisure_s",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_transport": "TCP"
+      },
+      "parameter": "coap_probing_rate_Bps",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_transport": "TCP"
+      },
+      "parameter": "coap_max_latency_s",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_transport": "TCP"
+      },
+      "parameter": "coap_processing_delay_s",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_transport": "TCP"
+      },
+      "parameter": "coap_max_transmit_span_s",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_transport": "TCP"
+      },
+      "parameter": "coap_max_transmit_wait_s",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_transport": "TCP"
+      },
+      "parameter": "coap_max_rtt_s",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_transport": "TCP"
+      },
+      "parameter": "coap_exchange_lifetime_s",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_transport": "TCP"
+      },
+      "parameter": "coap_non_lifetime_s",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_transport": "TCP"
+      },
+      "parameter": "coap_non_repeat",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_transport": "TCP"
+      },
+      "parameter": "coap_congestion_control_verified",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_transport": "TLS"
+      },
+      "parameter": "coap_version",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_transport": "TLS"
+      },
+      "parameter": "coap_message_type",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_transport": "TLS"
+      },
+      "parameter": "coap_message_id",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_transport": "TLS"
+      },
+      "parameter": "coap_ack_timeout_s",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_transport": "TLS"
+      },
+      "parameter": "coap_ack_random_factor",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_transport": "TLS"
+      },
+      "parameter": "coap_max_retransmit",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_transport": "TLS"
+      },
+      "parameter": "coap_nstart",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_transport": "TLS"
+      },
+      "parameter": "coap_default_leisure_s",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_transport": "TLS"
+      },
+      "parameter": "coap_probing_rate_Bps",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_transport": "TLS"
+      },
+      "parameter": "coap_max_latency_s",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_transport": "TLS"
+      },
+      "parameter": "coap_processing_delay_s",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_transport": "TLS"
+      },
+      "parameter": "coap_max_transmit_span_s",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_transport": "TLS"
+      },
+      "parameter": "coap_max_transmit_wait_s",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_transport": "TLS"
+      },
+      "parameter": "coap_max_rtt_s",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_transport": "TLS"
+      },
+      "parameter": "coap_exchange_lifetime_s",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_transport": "TLS"
+      },
+      "parameter": "coap_non_lifetime_s",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_transport": "TLS"
+      },
+      "parameter": "coap_non_repeat",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_transport": "TLS"
+      },
+      "parameter": "coap_congestion_control_verified",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_transport": "WS"
+      },
+      "parameter": "coap_version",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_transport": "WS"
+      },
+      "parameter": "coap_message_type",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_transport": "WS"
+      },
+      "parameter": "coap_message_id",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_transport": "WS"
+      },
+      "parameter": "coap_ack_timeout_s",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_transport": "WS"
+      },
+      "parameter": "coap_ack_random_factor",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_transport": "WS"
+      },
+      "parameter": "coap_max_retransmit",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_transport": "WS"
+      },
+      "parameter": "coap_nstart",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_transport": "WS"
+      },
+      "parameter": "coap_default_leisure_s",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_transport": "WS"
+      },
+      "parameter": "coap_probing_rate_Bps",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_transport": "WS"
+      },
+      "parameter": "coap_max_latency_s",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_transport": "WS"
+      },
+      "parameter": "coap_processing_delay_s",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_transport": "WS"
+      },
+      "parameter": "coap_max_transmit_span_s",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_transport": "WS"
+      },
+      "parameter": "coap_max_transmit_wait_s",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_transport": "WS"
+      },
+      "parameter": "coap_max_rtt_s",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_transport": "WS"
+      },
+      "parameter": "coap_exchange_lifetime_s",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_transport": "WS"
+      },
+      "parameter": "coap_non_lifetime_s",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_transport": "WS"
+      },
+      "parameter": "coap_non_repeat",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_transport": "WS"
+      },
+      "parameter": "coap_congestion_control_verified",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_transport": "WSS"
+      },
+      "parameter": "coap_version",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_transport": "WSS"
+      },
+      "parameter": "coap_message_type",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_transport": "WSS"
+      },
+      "parameter": "coap_message_id",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_transport": "WSS"
+      },
+      "parameter": "coap_ack_timeout_s",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_transport": "WSS"
+      },
+      "parameter": "coap_ack_random_factor",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_transport": "WSS"
+      },
+      "parameter": "coap_max_retransmit",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_transport": "WSS"
+      },
+      "parameter": "coap_nstart",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_transport": "WSS"
+      },
+      "parameter": "coap_default_leisure_s",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_transport": "WSS"
+      },
+      "parameter": "coap_probing_rate_Bps",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_transport": "WSS"
+      },
+      "parameter": "coap_max_latency_s",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_transport": "WSS"
+      },
+      "parameter": "coap_processing_delay_s",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_transport": "WSS"
+      },
+      "parameter": "coap_max_transmit_span_s",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_transport": "WSS"
+      },
+      "parameter": "coap_max_transmit_wait_s",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_transport": "WSS"
+      },
+      "parameter": "coap_max_rtt_s",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_transport": "WSS"
+      },
+      "parameter": "coap_exchange_lifetime_s",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_transport": "WSS"
+      },
+      "parameter": "coap_non_lifetime_s",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_transport": "WSS"
+      },
+      "parameter": "coap_non_repeat",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_transport": "WSS"
+      },
+      "parameter": "coap_congestion_control_verified",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_transport": "UDP"
+      },
+      "parameter": "coap_csm_max_message_bytes",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_transport": "UDP"
+      },
+      "parameter": "coap_csm_blockwise_supported",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_transport": "DTLS"
+      },
+      "parameter": "coap_csm_max_message_bytes",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_transport": "DTLS"
+      },
+      "parameter": "coap_csm_blockwise_supported",
+      "allowed": [],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_token_format": "BASE_8"
+      },
+      "parameter": "coap_token_bytes",
+      "maximum": 8,
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {},
+      "parameter": "coap_token_bytes",
+      "maximum_parameter": "coap_peer_token_limit",
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_transport": "UDP"
+      },
+      "parameter": "coap_block_szx",
+      "maximum": 6,
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_transport": "DTLS"
+      },
+      "parameter": "coap_block_szx",
+      "maximum": 6,
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_csm_blockwise_supported": false
+      },
+      "parameter": "coap_block_szx",
+      "maximum": 6,
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_block_szx": 7
+      },
+      "parameter": "coap_csm_max_message_bytes",
+      "exclusive_minimum": 1152,
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_block_usage": "DESCRIPTIVE",
+        "coap_block_more": true,
+        "coap_block_szx": 0
+      },
+      "parameter": "payload_bytes",
+      "allowed": [
+        16
+      ],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_block_usage": "DESCRIPTIVE",
+        "coap_block_more": true,
+        "coap_block_szx": 1
+      },
+      "parameter": "payload_bytes",
+      "allowed": [
+        32
+      ],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_block_usage": "DESCRIPTIVE",
+        "coap_block_more": true,
+        "coap_block_szx": 2
+      },
+      "parameter": "payload_bytes",
+      "allowed": [
+        64
+      ],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_block_usage": "DESCRIPTIVE",
+        "coap_block_more": true,
+        "coap_block_szx": 3
+      },
+      "parameter": "payload_bytes",
+      "allowed": [
+        128
+      ],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_block_usage": "DESCRIPTIVE",
+        "coap_block_more": true,
+        "coap_block_szx": 4
+      },
+      "parameter": "payload_bytes",
+      "allowed": [
+        256
+      ],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_block_usage": "DESCRIPTIVE",
+        "coap_block_more": true,
+        "coap_block_szx": 5
+      },
+      "parameter": "payload_bytes",
+      "allowed": [
+        512
+      ],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_block_usage": "DESCRIPTIVE",
+        "coap_block_more": true,
+        "coap_block_szx": 6
+      },
+      "parameter": "payload_bytes",
+      "allowed": [
+        1024
+      ],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_block_usage": "DESCRIPTIVE",
+        "coap_block_more": true,
+        "coap_block_szx": 7
+      },
+      "parameter": "payload_bytes",
+      "multiple_of": 1024,
+      "minimum": 1024,
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_block_kind": "BLOCK2",
+        "coap_block_usage": "CONTROL"
+      },
+      "parameter": "coap_block_more",
+      "allowed": [
+        false
+      ],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_observe_kind": "REQUEST"
+      },
+      "parameter": "coap_observe_value",
+      "allowed": [
+        0,
+        1
+      ],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_mtu_policy": "UNKNOWN_PATH_RFC7252"
+      },
+      "parameter": "payload_bytes",
+      "maximum": 1024,
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_mtu_policy": "UNKNOWN_PATH_RFC7252"
+      },
+      "parameter": "coap_message_bytes",
+      "maximum": 1152,
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_transport": "TCP"
+      },
+      "parameter": "coap_multicast",
+      "allowed": [
+        false
+      ],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_transport": "TLS"
+      },
+      "parameter": "coap_multicast",
+      "allowed": [
+        false
+      ],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_transport": "WS"
+      },
+      "parameter": "coap_multicast",
+      "allowed": [
+        false
+      ],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_transport": "WSS"
+      },
+      "parameter": "coap_multicast",
+      "allowed": [
+        false
+      ],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_congestion_control_verified": false
+      },
+      "parameter": "coap_ack_timeout_s",
+      "minimum": 2,
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_congestion_control_verified": false
+      },
+      "parameter": "coap_nstart",
+      "maximum": 1,
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {},
+      "parameter": "coap_ack_timeout_s",
+      "exclusive_minimum": 0,
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {},
+      "parameter": "coap_default_leisure_s",
+      "exclusive_minimum": 0,
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {},
+      "parameter": "coap_probing_rate_Bps",
+      "exclusive_minimum": 0,
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {},
+      "parameter": "coap_max_transmit_span_s",
+      "equal_expression": {
+        "product": [
+          "coap_ack_timeout_s",
+          {
+            "subtract": [
+              {
+                "power": [
+                  2,
+                  "coap_max_retransmit"
+                ]
+              },
+              1
+            ]
+          },
+          "coap_ack_random_factor"
+        ]
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {},
+      "parameter": "coap_max_transmit_wait_s",
+      "equal_expression": {
+        "product": [
+          "coap_ack_timeout_s",
+          {
+            "subtract": [
+              {
+                "power": [
+                  2,
+                  {
+                    "sum": [
+                      "coap_max_retransmit",
+                      1
+                    ]
+                  }
+                ]
+              },
+              1
+            ]
+          },
+          "coap_ack_random_factor"
+        ]
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {},
+      "parameter": "coap_max_rtt_s",
+      "equal_expression": {
+        "sum": [
+          {
+            "product": [
+              2,
+              "coap_max_latency_s"
+            ]
+          },
+          "coap_processing_delay_s"
+        ]
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {},
+      "parameter": "coap_exchange_lifetime_s",
+      "minimum_expression": {
+        "sum": [
+          {
+            "product": [
+              "coap_ack_timeout_s",
+              {
+                "subtract": [
+                  {
+                    "power": [
+                      2,
+                      "coap_max_retransmit"
+                    ]
+                  },
+                  1
+                ]
+              },
+              "coap_ack_random_factor"
+            ]
+          },
+          {
+            "sum": [
+              {
+                "product": [
+                  2,
+                  "coap_max_latency_s"
+                ]
+              },
+              "coap_processing_delay_s"
+            ]
+          }
+        ]
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {},
+      "parameter": "coap_exchange_lifetime_s",
+      "minimum_expression": {
+        "product": [
+          "coap_ack_timeout_s",
+          {
+            "subtract": [
+              {
+                "power": [
+                  2,
+                  {
+                    "sum": [
+                      "coap_max_retransmit",
+                      1
+                    ]
+                  }
+                ]
+              },
+              1
+            ]
+          },
+          "coap_ack_random_factor"
+        ]
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_non_repeat": true
+      },
+      "parameter": "coap_non_lifetime_s",
+      "minimum_expression": {
+        "sum": [
+          {
+            "product": [
+              "coap_ack_timeout_s",
+              {
+                "subtract": [
+                  {
+                    "power": [
+                      2,
+                      "coap_max_retransmit"
+                    ]
+                  },
+                  1
+                ]
+              },
+              "coap_ack_random_factor"
+            ]
+          },
+          "coap_max_latency_s"
+        ]
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_non_repeat": false
+      },
+      "parameter": "coap_non_lifetime_s",
+      "minimum_parameter": "coap_max_latency_s",
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {},
+      "parameter": "coap_message_bytes",
+      "minimum_expression": {
+        "sum": [
+          "payload_bytes",
+          "coap_token_bytes",
+          "coap_options_bytes",
+          "coap_header_bytes",
+          "coap_payload_marker_bytes"
+        ]
+      },
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {},
+      "parameter": "coap_message_bytes",
+      "maximum_parameter": "coap_csm_max_message_bytes",
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_message_type": "RST"
+      },
+      "parameter": "payload_bytes",
+      "allowed": [
+        0
+      ],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_message_type": "RST"
+      },
+      "parameter": "coap_code",
+      "allowed": [
+        0
+      ],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_message_type": "RST"
+      },
+      "parameter": "coap_token_bytes",
+      "allowed": [
+        0
+      ],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_message_type": "RST"
+      },
+      "parameter": "coap_options_bytes",
+      "allowed": [
+        0
+      ],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_code": 0
+      },
+      "parameter": "payload_bytes",
+      "allowed": [
+        0
+      ],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_code": 0
+      },
+      "parameter": "coap_token_bytes",
+      "allowed": [
+        0
+      ],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_code": 0
+      },
+      "parameter": "coap_options_bytes",
+      "allowed": [
+        0
+      ],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "payload_bytes": 0
+      },
+      "parameter": "coap_payload_marker_bytes",
+      "allowed": [
+        0
+      ],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {},
+      "when_positive": [
+        "payload_bytes"
+      ],
+      "parameter": "coap_payload_marker_bytes",
+      "allowed": [
+        1
+      ],
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_transport": "UDP"
+      },
+      "parameter": "coap_header_bytes",
+      "minimum": 4,
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_transport": "DTLS"
+      },
+      "parameter": "coap_header_bytes",
+      "minimum": 4,
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_transport": "UDP"
+      },
+      "parameter": "coap_uri",
+      "pattern": "(?i)coap://.*",
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_transport": "DTLS"
+      },
+      "parameter": "coap_uri",
+      "pattern": "(?i)coaps://.*",
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_transport": "TCP"
+      },
+      "parameter": "coap_uri",
+      "pattern": "(?i)coap\\+tcp://.*",
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_transport": "TLS"
+      },
+      "parameter": "coap_uri",
+      "pattern": "(?i)coaps\\+tcp://.*",
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_transport": "WS"
+      },
+      "parameter": "coap_uri",
+      "pattern": "(?i)coap\\+ws://.*",
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    },
+    {
+      "when": {
+        "coap_transport": "WSS"
+      },
+      "parameter": "coap_uri",
+      "pattern": "(?i)coaps\\+ws://.*",
+      "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+      "source_revision": "RFC7252 /7959 /8323 /7641 /8974 transport-specific normative definitions accessed2026-10-01"
+    }
+  ],
+  "physical_layer_profile_id": null,
+  "medium_access_model": null,
+  "native_parameter_prefixes": [],
+  "parameter_aliases": {},
+  "parameter_alias_limits": {},
+  "parameter_evidence_scope": null,
+  "rate_source_profile_id": null,
+  "arbitration_model_id": null,
+  "max_payload_bytes": null,
+  "capabilities": {
+    "supports_signals": true,
+    "supports_data_objects": true,
+    "supports_streams": false,
+    "supports_multicast": true,
+    "supports_publish_subscribe": false,
+    "supports_request_response": true,
+    "supports_cyclic": true,
+    "supports_event": true,
+    "supports_redundancy": false,
+    "supports_time_sync": false,
+    "supports_safety_profile": false,
+    "supports_segmentation": true,
+    "supports_fragmentation": false,
+    "supports_qos": false
+  },
+  "deterministic": false,
+  "overhead_bytes": 8,
+  "implementation_status": "EXPERIMENTAL",
+  "connection_type": "COMMUNICATION_TECHNOLOGY",
+  "parameter_proposals": {
+    "kind": "NO_OWN_PHYSICAL_RATE",
+    "status": "REVIEW_REQUIRED",
+    "source": "https://www.rfc-editor.org/rfc/rfc7252.html",
+    "source_revision": "RFC7252 June2014 /7959 Aug2016 /8323 Feb2018 /8974 Jan2021",
+    "note": "No CoAP bitrate. Actual UDP/DTLS, TCP/TLS orWebSocket andIP/link bindings mustbe explicit; applicationbody/message/block lengths areseparate andno1152universalpayloadcap."
+  },
+  "capacity_evidence": {
+    "status": "MODEL_MISSING",
+    "frame_model": null,
+    "schedule_model": null,
+    "requires_confirmed_device_parameters": true
+  },
+  "components": {
+    "binding": "coap.binding",
+    "generator": "coap.generator",
+    "validator": "coap.validator",
+    "timing_model": null,
+    "load_model": null,
+    "encoder": "coap.encoder",
+    "decoder": "coap.decoder"
+  },
+  "known_limitations": "Technology-specific conformance details require a vendor/profile extension."
+}

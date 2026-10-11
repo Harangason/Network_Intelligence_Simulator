@@ -1,0 +1,1794 @@
+{
+  "id": "wtb",
+  "label": "WTB",
+  "domain": "generic_networking",
+  "layer": "DATA_LINK",
+  "transport_unit": "PROCESS_DATA",
+  "payload_element_types": [
+    "SIGNAL",
+    "STATUS"
+  ],
+  "hardware_interface": "wtb_actual_master_segment",
+  "hardware_capability_aliases": [
+    "wtb_interface"
+  ],
+  "default_stack": [
+    "wtb"
+  ],
+  "stack_variants": [
+    [
+      "wtb"
+    ]
+  ],
+  "default_bitrate": null,
+  "rate_model": {
+    "type": "WTB_EDITION_OWN_MASTER_SCHEDULE",
+    "fields": []
+  },
+  "local_timing_schema": [],
+  "parameter_schema": {
+    "payload_bytes": {
+      "label": "Payload",
+      "category": "physical",
+      "scope": "message",
+      "type": "number",
+      "description": "Actual WTB usefulframebytes, separateDD/LC/SD/SZ/FCS/flags/stuffing; noEthernet payload.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "unit": "Byte",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "UNKNOWN",
+      "source": "https://www.researchgate.net/publication/224342060_Modeling_Wire_Train_Bus_communication_using_timed_Colored_Petri_Nets",
+      "source_revision": "Bago/Peric/Marijan SICE2008 DOI10.1109/SICE.2008.4655160 selected2.2/3 andFig4:128bytes/frame, pre16..32, DD/LC/SD/SZ4bytes, FCS16, flags16, ED2, stuffing afterfiveones, BP25±1ms, periodic<=60%,2^N*25ms,N0..7, master1, up to32nodes. Primary publication web extract retained; original PDF not verified locally. No full IEC61375-2-1 conformance.",
+      "max": 128,
+      "integer": true
+    },
+    "cycle_ms": {
+      "label": "Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "Standardperiode fuer zyklische Nachrichten.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "minimum_cycle_time_ms": {
+      "label": "Minimum Cycle Time",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "deadline_ms": {
+      "label": "Deadline",
+      "category": "timing",
+      "scope": "message",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "timeout_ms": {
+      "label": "Timeout",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_latency_ms": {
+      "label": "Maximum Latency",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "jitter_ms": {
+      "label": "Jitter Budget",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "freshness_ms": {
+      "label": "Data Freshness",
+      "category": "timing",
+      "scope": "signal",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 500,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "source_processing_delay_ms": {
+      "label": "Source Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_processing_delay_ms": {
+      "label": "Target Processing",
+      "category": "timing",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "propagation_delay_ms": {
+      "label": "Propagation",
+      "category": "timing",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.01,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "target_bus_load_percent": {
+      "label": "Ziel-Buslast",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "Zielwert fuer die aus Routing, Payload, Zyklus und Bitrate berechnete Buslast.",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "peak_factor": {
+      "label": "Peak Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.15,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_factor": {
+      "label": "Burst Factor",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 1.5,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "burst_window_ms": {
+      "label": "Burst Window",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 100,
+      "unit": "ms",
+      "min": 0.1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "warning_threshold": {
+      "label": "Load Warning",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 60,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "critical_threshold": {
+      "label": "Load Critical",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 75,
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "overload_threshold": {
+      "label": "Load Overload",
+      "category": "capacity",
+      "scope": "analysis",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": false,
+      "validation_relevant": true,
+      "default": 90,
+      "unit": "%",
+      "min": 1,
+      "max": 100,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "queue_size": {
+      "label": "Queue Size",
+      "category": "qos",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 256,
+      "unit": "Frames",
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "queue_policy": {
+      "label": "Queue Policy",
+      "category": "qos",
+      "scope": "network",
+      "type": "select",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": "FIFO",
+      "options": [
+        "FIFO",
+        "PRIORITY",
+        "STRICT_PRIORITY",
+        "WEIGHTED_PRIORITY",
+        "WRR",
+        "ROUND_ROBIN",
+        "TIME_TRIGGERED",
+        "TAS",
+        "CBS",
+        "CUSTOM"
+      ],
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "qos_priority": {
+      "label": "Default Priority",
+      "category": "qos",
+      "scope": "route",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 3,
+      "min": 0,
+      "max": 7,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "traffic_class": {
+      "label": "Traffic Class",
+      "category": "qos",
+      "scope": "route",
+      "type": "select",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": "BEST_EFFORT",
+      "options": [
+        "BEST_EFFORT",
+        "CONTROL",
+        "REALTIME",
+        "SAFETY_CRITICAL"
+      ],
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "packet_loss_probability": {
+      "label": "Packet Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "frame_loss_probability": {
+      "label": "Frame Loss",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "bit_error_rate": {
+      "label": "Bit Error Rate",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "corruption_probability": {
+      "label": "Corruption",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duplicate_probability": {
+      "label": "Duplication",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "reordering_probability": {
+      "label": "Reordering",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "required_reliability": {
+      "label": "Required Reliability",
+      "category": "reliability",
+      "scope": "reliability",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.999,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_offset_ms": {
+      "label": "Clock Offset",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "clock_drift_ppm": {
+      "label": "Clock Drift",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 20,
+      "unit": "ppm",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_precision_ms": {
+      "label": "Sync Precision",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "sync_interval_ms": {
+      "label": "Sync Interval",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1000,
+      "unit": "ms",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "maximum_sync_error_ms": {
+      "label": "Maximum Sync Error",
+      "category": "synchronization",
+      "scope": "network",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 1,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_delay_ms": {
+      "label": "Gateway Processing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0.2,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "gateway_queue_delay_ms": {
+      "label": "Gateway Queueing",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "protocol_conversion_delay_ms": {
+      "label": "Protocol Conversion",
+      "category": "gateway",
+      "scope": "gateway",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": true,
+      "default": 0,
+      "unit": "ms",
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "duration_s": {
+      "label": "Simulation Duration",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 1,
+      "unit": "s",
+      "min": 0.001,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "seed": {
+      "label": "Random Seed",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 42,
+      "min": 0,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "max_events": {
+      "label": "Maximum Events",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 100000,
+      "min": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "dropout_probability": {
+      "label": "Failure Injection Dropout",
+      "category": "simulation",
+      "scope": "simulation",
+      "type": "number",
+      "description": "",
+      "required": false,
+      "editable": true,
+      "simulation_relevant": true,
+      "validation_relevant": false,
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "parameter_origin": "NIS_SCENARIO",
+      "default_status": "PROPOSED",
+      "source": "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+      "source_revision": "NIS_SCENARIO_POLICY_V1"
+    },
+    "wt_profile": {
+      "type": "select",
+      "description": "Actual standard edition/binding or independently ordered half-speed implementation.",
+      "source": "https://www.eke-electronics.com/wp-content/uploads/2025/05/Technical-Specifications.pdf",
+      "source_revision": "Original manufacturer EKE technicalspecifications2025 selectedWireTrainBusmodule: IEC61375-1 1Mbit/s,500kbit/s onlyonrequest, actualmodule/wiring/diagnostics/fritting evidence distinctotherinterfaces.",
+      "options": [
+        "STANDARD_1M",
+        "EKE_ORDERED_HALF",
+        "REGISTERED_ACTUAL"
+      ],
+      "label": "wt profile",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "wt_role": {
+      "type": "select",
+      "description": "Actual inaugurated ownership; master address1, other nodes by topology.",
+      "source": "https://www.researchgate.net/publication/224342060_Modeling_Wire_Train_Bus_communication_using_timed_Colored_Petri_Nets",
+      "source_revision": "Bago/Peric/Marijan SICE2008 DOI10.1109/SICE.2008.4655160 selected2.2/3 andFig4:128bytes/frame, pre16..32, DD/LC/SD/SZ4bytes, FCS16, flags16, ED2, stuffing afterfiveones, BP25±1ms, periodic<=60%,2^N*25ms,N0..7, master1, up to32nodes. Primary publication web extract retained; original PDF not verified locally. No full IEC61375-2-1 conformance.",
+      "options": [
+        "MASTER",
+        "SLAVE",
+        "UNINAUGURATED"
+      ],
+      "label": "wt role",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "wt_outcome": {
+      "type": "select",
+      "description": "Independent consuming function result, not frame/FCS receipt.",
+      "source": "https://www.researchgate.net/publication/224342060_Modeling_Wire_Train_Bus_communication_using_timed_Colored_Petri_Nets",
+      "source_revision": "Bago/Peric/Marijan SICE2008 DOI10.1109/SICE.2008.4655160 selected2.2/3 andFig4:128bytes/frame, pre16..32, DD/LC/SD/SZ4bytes, FCS16, flags16, ED2, stuffing afterfiveones, BP25±1ms, periodic<=60%,2^N*25ms,N0..7, master1, up to32nodes. Primary publication web extract retained; original PDF not verified locally. No full IEC61375-2-1 conformance.",
+      "options": [
+        "ACCEPTED",
+        "FRAME_ONLY",
+        "ERROR",
+        "UNKNOWN"
+      ],
+      "label": "wt outcome",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "wt_rate_bps": {
+      "type": "number",
+      "description": "Actual WTB data clock; Manchester transitions are not double data rate.",
+      "source": "https://www.eke-electronics.com/wp-content/uploads/2025/05/Technical-Specifications.pdf",
+      "source_revision": "Original manufacturer EKE technicalspecifications2025 selectedWireTrainBusmodule: IEC61375-1 1Mbit/s,500kbit/s onlyonrequest, actualmodule/wiring/diagnostics/fritting evidence distinctotherinterfaces.",
+      "min": 1,
+      "unit": "bit/s",
+      "integer": false,
+      "label": "wt rate bps",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "wt_profile": "STANDARD_1M"
+          },
+          "value": 1000000,
+          "source": "https://www.eke-electronics.com/wp-content/uploads/2025/05/Technical-Specifications.pdf",
+          "source_revision": "Original manufacturer EKE technicalspecifications2025 selectedWireTrainBusmodule: IEC61375-1 1Mbit/s,500kbit/s onlyonrequest, actualmodule/wiring/diagnostics/fritting evidence distinctotherinterfaces."
+        }
+      ]
+    },
+    "wt_nodes": {
+      "type": "number",
+      "description": "Actual whole segment node count including master.",
+      "source": "https://unicontrols.cz/eng/products/tcn/tcn.asp",
+      "source_revision": "OriginalUnicontrolsTCN2002 selectedWTBbasics:1Mbit/s shieldedtwistedpair,860m/32nodes, galvanictransformerisolation, duplicatedmedium andoptionalcontactfritting. Historicaledition notallinstalledcapability.",
+      "min": 1,
+      "max": 32,
+      "integer": true,
+      "label": "wt nodes",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "wt_length_m": {
+      "type": "number",
+      "description": "Actual installed cable length within qualified historical no-repeater baseline.",
+      "source": "https://unicontrols.cz/eng/products/tcn/tcn.asp",
+      "source_revision": "OriginalUnicontrolsTCN2002 selectedWTBbasics:1Mbit/s shieldedtwistedpair,860m/32nodes, galvanictransformerisolation, duplicatedmedium andoptionalcontactfritting. Historicaledition notallinstalledcapability.",
+      "min": 0,
+      "max": 860,
+      "unit": "m",
+      "integer": false,
+      "label": "wt length m",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "wt_address": {
+      "type": "number",
+      "description": "Actual inaugurated node address, not fixed guessed slave address.",
+      "source": "https://www.researchgate.net/publication/224342060_Modeling_Wire_Train_Bus_communication_using_timed_Colored_Petri_Nets",
+      "source_revision": "Bago/Peric/Marijan SICE2008 DOI10.1109/SICE.2008.4655160 selected2.2/3 andFig4:128bytes/frame, pre16..32, DD/LC/SD/SZ4bytes, FCS16, flags16, ED2, stuffing afterfiveones, BP25±1ms, periodic<=60%,2^N*25ms,N0..7, master1, up to32nodes. Primary publication web extract retained; original PDF not verified locally. No full IEC61375-2-1 conformance.",
+      "min": 1,
+      "max": 63,
+      "integer": true,
+      "label": "wt address",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "wt_basic_ms": {
+      "type": "number",
+      "description": "Actual basic schedule period.",
+      "source": "https://www.researchgate.net/publication/224342060_Modeling_Wire_Train_Bus_communication_using_timed_Colored_Petri_Nets",
+      "source_revision": "Bago/Peric/Marijan SICE2008 DOI10.1109/SICE.2008.4655160 selected2.2/3 andFig4:128bytes/frame, pre16..32, DD/LC/SD/SZ4bytes, FCS16, flags16, ED2, stuffing afterfiveones, BP25±1ms, periodic<=60%,2^N*25ms,N0..7, master1, up to32nodes. Primary publication web extract retained; original PDF not verified locally. No full IEC61375-2-1 conformance.",
+      "min": 24,
+      "max": 26,
+      "unit": "ms",
+      "integer": false,
+      "label": "wt basic ms",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "wt_profile": "STANDARD_1M"
+          },
+          "value": 25,
+          "source": "https://www.researchgate.net/publication/224342060_Modeling_Wire_Train_Bus_communication_using_timed_Colored_Petri_Nets",
+          "source_revision": "Bago/Peric/Marijan SICE2008 DOI10.1109/SICE.2008.4655160 selected2.2/3 andFig4:128bytes/frame, pre16..32, DD/LC/SD/SZ4bytes, FCS16, flags16, ED2, stuffing afterfiveones, BP25±1ms, periodic<=60%,2^N*25ms,N0..7, master1, up to32nodes. Primary publication web extract retained; original PDF not verified locally. No full IEC61375-2-1 conformance."
+        }
+      ]
+    },
+    "wt_period_exponent": {
+      "type": "number",
+      "description": "Actual process-data period exponent chosen by inauguration.",
+      "source": "https://www.researchgate.net/publication/224342060_Modeling_Wire_Train_Bus_communication_using_timed_Colored_Petri_Nets",
+      "source_revision": "Bago/Peric/Marijan SICE2008 DOI10.1109/SICE.2008.4655160 selected2.2/3 andFig4:128bytes/frame, pre16..32, DD/LC/SD/SZ4bytes, FCS16, flags16, ED2, stuffing afterfiveones, BP25±1ms, periodic<=60%,2^N*25ms,N0..7, master1, up to32nodes. Primary publication web extract retained; original PDF not verified locally. No full IEC61375-2-1 conformance.",
+      "min": 0,
+      "max": 7,
+      "integer": true,
+      "label": "wt period exponent",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "wt_process_ms": {
+      "type": "number",
+      "description": "Nominal declared process period2^N*25ms; not applicationdeadline.",
+      "source": "https://www.researchgate.net/publication/224342060_Modeling_Wire_Train_Bus_communication_using_timed_Colored_Petri_Nets",
+      "source_revision": "Bago/Peric/Marijan SICE2008 DOI10.1109/SICE.2008.4655160 selected2.2/3 andFig4:128bytes/frame, pre16..32, DD/LC/SD/SZ4bytes, FCS16, flags16, ED2, stuffing afterfiveones, BP25±1ms, periodic<=60%,2^N*25ms,N0..7, master1, up to32nodes. Primary publication web extract retained; original PDF not verified locally. No full IEC61375-2-1 conformance.",
+      "min": 25,
+      "max": 3200,
+      "unit": "ms",
+      "integer": false,
+      "label": "wt process ms",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "wt_profile": "STANDARD_1M",
+            "wt_period_exponent": 0
+          },
+          "value": 25,
+          "source": "https://www.researchgate.net/publication/224342060_Modeling_Wire_Train_Bus_communication_using_timed_Colored_Petri_Nets",
+          "source_revision": "Bago/Peric/Marijan SICE2008 DOI10.1109/SICE.2008.4655160 selected2.2/3 andFig4:128bytes/frame, pre16..32, DD/LC/SD/SZ4bytes, FCS16, flags16, ED2, stuffing afterfiveones, BP25±1ms, periodic<=60%,2^N*25ms,N0..7, master1, up to32nodes. Primary publication web extract retained; original PDF not verified locally. No full IEC61375-2-1 conformance."
+        }
+      ]
+    },
+    "wt_periodic_ms": {
+      "type": "number",
+      "description": "Actual periodic phase bound no more than60% of basicperiod.",
+      "source": "https://www.researchgate.net/publication/224342060_Modeling_Wire_Train_Bus_communication_using_timed_Colored_Petri_Nets",
+      "source_revision": "Bago/Peric/Marijan SICE2008 DOI10.1109/SICE.2008.4655160 selected2.2/3 andFig4:128bytes/frame, pre16..32, DD/LC/SD/SZ4bytes, FCS16, flags16, ED2, stuffing afterfiveones, BP25±1ms, periodic<=60%,2^N*25ms,N0..7, master1, up to32nodes. Primary publication web extract retained; original PDF not verified locally. No full IEC61375-2-1 conformance.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "label": "wt periodic ms",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "wt_sporadic_ms": {
+      "type": "number",
+      "description": "Actual remaining supervisory/message phase.",
+      "source": "https://www.researchgate.net/publication/224342060_Modeling_Wire_Train_Bus_communication_using_timed_Colored_Petri_Nets",
+      "source_revision": "Bago/Peric/Marijan SICE2008 DOI10.1109/SICE.2008.4655160 selected2.2/3 andFig4:128bytes/frame, pre16..32, DD/LC/SD/SZ4bytes, FCS16, flags16, ED2, stuffing afterfiveones, BP25±1ms, periodic<=60%,2^N*25ms,N0..7, master1, up to32nodes. Primary publication web extract retained; original PDF not verified locally. No full IEC61375-2-1 conformance.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "label": "wt sporadic ms",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "wt_preamble_bits": {
+      "type": "number",
+      "description": "Actual framepreamble.",
+      "source": "https://www.researchgate.net/publication/224342060_Modeling_Wire_Train_Bus_communication_using_timed_Colored_Petri_Nets",
+      "source_revision": "Bago/Peric/Marijan SICE2008 DOI10.1109/SICE.2008.4655160 selected2.2/3 andFig4:128bytes/frame, pre16..32, DD/LC/SD/SZ4bytes, FCS16, flags16, ED2, stuffing afterfiveones, BP25±1ms, periodic<=60%,2^N*25ms,N0..7, master1, up to32nodes. Primary publication web extract retained; original PDF not verified locally. No full IEC61375-2-1 conformance.",
+      "min": 16,
+      "max": 32,
+      "unit": "bit",
+      "integer": true,
+      "label": "wt preamble bits",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "PROPOSED_CONDITIONAL",
+      "validation_relevant": true,
+      "simulation_relevant": false,
+      "conditional_defaults": [
+        {
+          "when": {
+            "wt_profile": "STANDARD_1M"
+          },
+          "value": 16,
+          "source": "https://www.researchgate.net/publication/224342060_Modeling_Wire_Train_Bus_communication_using_timed_Colored_Petri_Nets",
+          "source_revision": "Bago/Peric/Marijan SICE2008 DOI10.1109/SICE.2008.4655160 selected2.2/3 andFig4:128bytes/frame, pre16..32, DD/LC/SD/SZ4bytes, FCS16, flags16, ED2, stuffing afterfiveones, BP25±1ms, periodic<=60%,2^N*25ms,N0..7, master1, up to32nodes. Primary publication web extract retained; original PDF not verified locally. No full IEC61375-2-1 conformance."
+        }
+      ]
+    },
+    "wt_frame_data_bytes": {
+      "type": "number",
+      "description": "Actual complete useful data in this frame, not segmentedwholemessage.",
+      "source": "https://www.researchgate.net/publication/224342060_Modeling_Wire_Train_Bus_communication_using_timed_Colored_Petri_Nets",
+      "source_revision": "Bago/Peric/Marijan SICE2008 DOI10.1109/SICE.2008.4655160 selected2.2/3 andFig4:128bytes/frame, pre16..32, DD/LC/SD/SZ4bytes, FCS16, flags16, ED2, stuffing afterfiveones, BP25±1ms, periodic<=60%,2^N*25ms,N0..7, master1, up to32nodes. Primary publication web extract retained; original PDF not verified locally. No full IEC61375-2-1 conformance.",
+      "min": 0,
+      "max": 128,
+      "unit": "byte",
+      "integer": true,
+      "label": "wt frame data bytes",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "wt_stuffed_bits": {
+      "type": "number",
+      "description": "Actual extra bits afterfiveones betweenflags includingheader/FCS.",
+      "source": "https://www.researchgate.net/publication/224342060_Modeling_Wire_Train_Bus_communication_using_timed_Colored_Petri_Nets",
+      "source_revision": "Bago/Peric/Marijan SICE2008 DOI10.1109/SICE.2008.4655160 selected2.2/3 andFig4:128bytes/frame, pre16..32, DD/LC/SD/SZ4bytes, FCS16, flags16, ED2, stuffing afterfiveones, BP25±1ms, periodic<=60%,2^N*25ms,N0..7, master1, up to32nodes. Primary publication web extract retained; original PDF not verified locally. No full IEC61375-2-1 conformance.",
+      "min": 0,
+      "unit": "bit",
+      "integer": true,
+      "label": "wt stuffed bits",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "wt_frame_bits": {
+      "type": "number",
+      "description": "Actualpreamble+flags+DD/LC/SD/SZ+data+FCS+ED+stuffing.",
+      "source": "https://www.researchgate.net/publication/224342060_Modeling_Wire_Train_Bus_communication_using_timed_Colored_Petri_Nets",
+      "source_revision": "Bago/Peric/Marijan SICE2008 DOI10.1109/SICE.2008.4655160 selected2.2/3 andFig4:128bytes/frame, pre16..32, DD/LC/SD/SZ4bytes, FCS16, flags16, ED2, stuffing afterfiveones, BP25±1ms, periodic<=60%,2^N*25ms,N0..7, master1, up to32nodes. Primary publication web extract retained; original PDF not verified locally. No full IEC61375-2-1 conformance.",
+      "min": 0,
+      "unit": "bit",
+      "integer": true,
+      "label": "wt frame bits",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "wt_air_us": {
+      "type": "number",
+      "description": "Nominal frameclock airtime, not complete request/response/schedule.",
+      "source": "https://www.researchgate.net/publication/224342060_Modeling_Wire_Train_Bus_communication_using_timed_Colored_Petri_Nets",
+      "source_revision": "Bago/Peric/Marijan SICE2008 DOI10.1109/SICE.2008.4655160 selected2.2/3 andFig4:128bytes/frame, pre16..32, DD/LC/SD/SZ4bytes, FCS16, flags16, ED2, stuffing afterfiveones, BP25±1ms, periodic<=60%,2^N*25ms,N0..7, master1, up to32nodes. Primary publication web extract retained; original PDF not verified locally. No full IEC61375-2-1 conformance.",
+      "min": 0,
+      "unit": "us",
+      "integer": false,
+      "label": "wt air us",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "wt_source_ms": {
+      "type": "number",
+      "description": "Actual producer/gateway processing bound.",
+      "source": "https://www.researchgate.net/publication/224342060_Modeling_Wire_Train_Bus_communication_using_timed_Colored_Petri_Nets",
+      "source_revision": "Bago/Peric/Marijan SICE2008 DOI10.1109/SICE.2008.4655160 selected2.2/3 andFig4:128bytes/frame, pre16..32, DD/LC/SD/SZ4bytes, FCS16, flags16, ED2, stuffing afterfiveones, BP25±1ms, periodic<=60%,2^N*25ms,N0..7, master1, up to32nodes. Primary publication web extract retained; original PDF not verified locally. No full IEC61375-2-1 conformance.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "label": "wt source ms",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "wt_transport_ms": {
+      "type": "number",
+      "description": "Actual inaugurated request/response/queue/retry/pathbound.",
+      "source": "https://www.researchgate.net/publication/224342060_Modeling_Wire_Train_Bus_communication_using_timed_Colored_Petri_Nets",
+      "source_revision": "Bago/Peric/Marijan SICE2008 DOI10.1109/SICE.2008.4655160 selected2.2/3 andFig4:128bytes/frame, pre16..32, DD/LC/SD/SZ4bytes, FCS16, flags16, ED2, stuffing afterfiveones, BP25±1ms, periodic<=60%,2^N*25ms,N0..7, master1, up to32nodes. Primary publication web extract retained; original PDF not verified locally. No full IEC61375-2-1 conformance.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "label": "wt transport ms",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "wt_use_ms": {
+      "type": "number",
+      "description": "Actual consumingfunctionprocessingbound.",
+      "source": "https://www.researchgate.net/publication/224342060_Modeling_Wire_Train_Bus_communication_using_timed_Colored_Petri_Nets",
+      "source_revision": "Bago/Peric/Marijan SICE2008 DOI10.1109/SICE.2008.4655160 selected2.2/3 andFig4:128bytes/frame, pre16..32, DD/LC/SD/SZ4bytes, FCS16, flags16, ED2, stuffing afterfiveones, BP25±1ms, periodic<=60%,2^N*25ms,N0..7, master1, up to32nodes. Primary publication web extract retained; original PDF not verified locally. No full IEC61375-2-1 conformance.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "label": "wt use ms",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "wt_e2e_ms": {
+      "type": "number",
+      "description": "Actual source-to-use bound independent frameCRC.",
+      "source": "https://www.researchgate.net/publication/224342060_Modeling_Wire_Train_Bus_communication_using_timed_Colored_Petri_Nets",
+      "source_revision": "Bago/Peric/Marijan SICE2008 DOI10.1109/SICE.2008.4655160 selected2.2/3 andFig4:128bytes/frame, pre16..32, DD/LC/SD/SZ4bytes, FCS16, flags16, ED2, stuffing afterfiveones, BP25±1ms, periodic<=60%,2^N*25ms,N0..7, master1, up to32nodes. Primary publication web extract retained; original PDF not verified locally. No full IEC61375-2-1 conformance.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "label": "wt e2e ms",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "wt_deadline_ms": {
+      "type": "number",
+      "description": "Independent applicationdeadline.",
+      "source": "https://www.researchgate.net/publication/224342060_Modeling_Wire_Train_Bus_communication_using_timed_Colored_Petri_Nets",
+      "source_revision": "Bago/Peric/Marijan SICE2008 DOI10.1109/SICE.2008.4655160 selected2.2/3 andFig4:128bytes/frame, pre16..32, DD/LC/SD/SZ4bytes, FCS16, flags16, ED2, stuffing afterfiveones, BP25±1ms, periodic<=60%,2^N*25ms,N0..7, master1, up to32nodes. Primary publication web extract retained; original PDF not verified locally. No full IEC61375-2-1 conformance.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "label": "wt deadline ms",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "wt_age_ms": {
+      "type": "number",
+      "description": "Actual consumeddataage.",
+      "source": "https://www.researchgate.net/publication/224342060_Modeling_Wire_Train_Bus_communication_using_timed_Colored_Petri_Nets",
+      "source_revision": "Bago/Peric/Marijan SICE2008 DOI10.1109/SICE.2008.4655160 selected2.2/3 andFig4:128bytes/frame, pre16..32, DD/LC/SD/SZ4bytes, FCS16, flags16, ED2, stuffing afterfiveones, BP25±1ms, periodic<=60%,2^N*25ms,N0..7, master1, up to32nodes. Primary publication web extract retained; original PDF not verified locally. No full IEC61375-2-1 conformance.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "label": "wt age ms",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "wt_freshness_ms": {
+      "type": "number",
+      "description": "Independent allowabledataage.",
+      "source": "https://www.researchgate.net/publication/224342060_Modeling_Wire_Train_Bus_communication_using_timed_Colored_Petri_Nets",
+      "source_revision": "Bago/Peric/Marijan SICE2008 DOI10.1109/SICE.2008.4655160 selected2.2/3 andFig4:128bytes/frame, pre16..32, DD/LC/SD/SZ4bytes, FCS16, flags16, ED2, stuffing afterfiveones, BP25±1ms, periodic<=60%,2^N*25ms,N0..7, master1, up to32nodes. Primary publication web extract retained; original PDF not verified locally. No full IEC61375-2-1 conformance.",
+      "min": 0,
+      "unit": "ms",
+      "integer": false,
+      "label": "wt freshness ms",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "wt_inaugurated": {
+      "type": "boolean",
+      "description": "Actual complete topology/master/orientation/address evidence.",
+      "source": "https://www.researchgate.net/publication/224342060_Modeling_Wire_Train_Bus_communication_using_timed_Colored_Petri_Nets",
+      "source_revision": "Bago/Peric/Marijan SICE2008 DOI10.1109/SICE.2008.4655160 selected2.2/3 andFig4:128bytes/frame, pre16..32, DD/LC/SD/SZ4bytes, FCS16, flags16, ED2, stuffing afterfiveones, BP25±1ms, periodic<=60%,2^N*25ms,N0..7, master1, up to32nodes. Primary publication web extract retained; original PDF not verified locally. No full IEC61375-2-1 conformance.",
+      "label": "wt inaugurated",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "wt_schedule_verified": {
+      "type": "boolean",
+      "description": "Actual periodic/sporadic/masterownershipandbufferbound.",
+      "source": "https://www.researchgate.net/publication/224342060_Modeling_Wire_Train_Bus_communication_using_timed_Colored_Petri_Nets",
+      "source_revision": "Bago/Peric/Marijan SICE2008 DOI10.1109/SICE.2008.4655160 selected2.2/3 andFig4:128bytes/frame, pre16..32, DD/LC/SD/SZ4bytes, FCS16, flags16, ED2, stuffing afterfiveones, BP25±1ms, periodic<=60%,2^N*25ms,N0..7, master1, up to32nodes. Primary publication web extract retained; original PDF not verified locally. No full IEC61375-2-1 conformance.",
+      "label": "wt schedule verified",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "wt_data_accepted": {
+      "type": "boolean",
+      "description": "Actual independent consuming function succeeds.",
+      "source": "https://www.researchgate.net/publication/224342060_Modeling_Wire_Train_Bus_communication_using_timed_Colored_Petri_Nets",
+      "source_revision": "Bago/Peric/Marijan SICE2008 DOI10.1109/SICE.2008.4655160 selected2.2/3 andFig4:128bytes/frame, pre16..32, DD/LC/SD/SZ4bytes, FCS16, flags16, ED2, stuffing afterfiveones, BP25±1ms, periodic<=60%,2^N*25ms,N0..7, master1, up to32nodes. Primary publication web extract retained; original PDF not verified locally. No full IEC61375-2-1 conformance.",
+      "label": "wt data accepted",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "wt_revision": {
+      "type": "text",
+      "description": "Actual device/standardedition.",
+      "source": "https://www.researchgate.net/publication/224342060_Modeling_Wire_Train_Bus_communication_using_timed_Colored_Petri_Nets",
+      "source_revision": "Bago/Peric/Marijan SICE2008 DOI10.1109/SICE.2008.4655160 selected2.2/3 andFig4:128bytes/frame, pre16..32, DD/LC/SD/SZ4bytes, FCS16, flags16, ED2, stuffing afterfiveones, BP25±1ms, periodic<=60%,2^N*25ms,N0..7, master1, up to32nodes. Primary publication web extract retained; original PDF not verified locally. No full IEC61375-2-1 conformance.",
+      "label": "wt revision",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "wt_device_source": {
+      "type": "text",
+      "description": "Actual frame/decoder/buffer capabilities.",
+      "source": "https://www.researchgate.net/publication/224342060_Modeling_Wire_Train_Bus_communication_using_timed_Colored_Petri_Nets",
+      "source_revision": "Bago/Peric/Marijan SICE2008 DOI10.1109/SICE.2008.4655160 selected2.2/3 andFig4:128bytes/frame, pre16..32, DD/LC/SD/SZ4bytes, FCS16, flags16, ED2, stuffing afterfiveones, BP25±1ms, periodic<=60%,2^N*25ms,N0..7, master1, up to32nodes. Primary publication web extract retained; original PDF not verified locally. No full IEC61375-2-1 conformance.",
+      "label": "wt device source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "wt_physical_source": {
+      "type": "text",
+      "description": "Actual installed redundancy/terminations/isolation/fritting/length.",
+      "source": "https://www.researchgate.net/publication/224342060_Modeling_Wire_Train_Bus_communication_using_timed_Colored_Petri_Nets",
+      "source_revision": "Bago/Peric/Marijan SICE2008 DOI10.1109/SICE.2008.4655160 selected2.2/3 andFig4:128bytes/frame, pre16..32, DD/LC/SD/SZ4bytes, FCS16, flags16, ED2, stuffing afterfiveones, BP25±1ms, periodic<=60%,2^N*25ms,N0..7, master1, up to32nodes. Primary publication web extract retained; original PDF not verified locally. No full IEC61375-2-1 conformance.",
+      "label": "wt physical source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "wt_schedule_source": {
+      "type": "text",
+      "description": "Actual inauguration, requests, responses andallocation.",
+      "source": "https://www.researchgate.net/publication/224342060_Modeling_Wire_Train_Bus_communication_using_timed_Colored_Petri_Nets",
+      "source_revision": "Bago/Peric/Marijan SICE2008 DOI10.1109/SICE.2008.4655160 selected2.2/3 andFig4:128bytes/frame, pre16..32, DD/LC/SD/SZ4bytes, FCS16, flags16, ED2, stuffing afterfiveones, BP25±1ms, periodic<=60%,2^N*25ms,N0..7, master1, up to32nodes. Primary publication web extract retained; original PDF not verified locally. No full IEC61375-2-1 conformance.",
+      "label": "wt schedule source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "wt_acceptance_source": {
+      "type": "text",
+      "description": "Independent application deadline/freshness/errorcontract.",
+      "source": "https://www.researchgate.net/publication/224342060_Modeling_Wire_Train_Bus_communication_using_timed_Colored_Petri_Nets",
+      "source_revision": "Bago/Peric/Marijan SICE2008 DOI10.1109/SICE.2008.4655160 selected2.2/3 andFig4:128bytes/frame, pre16..32, DD/LC/SD/SZ4bytes, FCS16, flags16, ED2, stuffing afterfiveones, BP25±1ms, periodic<=60%,2^N*25ms,N0..7, master1, up to32nodes. Primary publication web extract retained; original PDF not verified locally. No full IEC61375-2-1 conformance.",
+      "label": "wt acceptance source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": true,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    },
+    "wt_observation_source": {
+      "type": "text",
+      "description": "Actual correlated producer/bus/consumer observations.",
+      "source": "https://www.researchgate.net/publication/224342060_Modeling_Wire_Train_Bus_communication_using_timed_Colored_Petri_Nets",
+      "source_revision": "Bago/Peric/Marijan SICE2008 DOI10.1109/SICE.2008.4655160 selected2.2/3 andFig4:128bytes/frame, pre16..32, DD/LC/SD/SZ4bytes, FCS16, flags16, ED2, stuffing afterfiveones, BP25±1ms, periodic<=60%,2^N*25ms,N0..7, master1, up to32nodes. Primary publication web extract retained; original PDF not verified locally. No full IEC61375-2-1 conformance.",
+      "label": "wt observation source",
+      "category": "technology",
+      "scope": "network",
+      "editable": true,
+      "required": false,
+      "parameter_origin": "DEVICE_CONFIGURATION",
+      "default_status": "UNKNOWN",
+      "validation_relevant": true,
+      "simulation_relevant": false
+    }
+  },
+  "mechanisms": {
+    "network": [
+      "WTB_NOT_MVB_OR_ETB"
+    ],
+    "timing": [
+      "ACTUAL_MASTER_REQUEST_REPLY_AND_STUFFING"
+    ]
+  },
+  "parameter_constraints": [
+    {
+      "parameter": "bitrate",
+      "when": {},
+      "allowed": [],
+      "source": "https://www.researchgate.net/publication/224342060_Modeling_Wire_Train_Bus_communication_using_timed_Colored_Petri_Nets"
+    },
+    {
+      "parameter": "reserved_bandwidth_percent",
+      "when": {},
+      "allowed": [],
+      "source": "https://www.researchgate.net/publication/224342060_Modeling_Wire_Train_Bus_communication_using_timed_Colored_Petri_Nets"
+    },
+    {
+      "parameter": "sync_method",
+      "when": {},
+      "allowed": [],
+      "source": "https://www.researchgate.net/publication/224342060_Modeling_Wire_Train_Bus_communication_using_timed_Colored_Petri_Nets"
+    },
+    {
+      "parameter": "retransmission_enabled",
+      "when": {},
+      "allowed": [],
+      "source": "https://www.researchgate.net/publication/224342060_Modeling_Wire_Train_Bus_communication_using_timed_Colored_Petri_Nets"
+    },
+    {
+      "parameter": "retransmission_rate",
+      "when": {},
+      "allowed": [],
+      "source": "https://www.researchgate.net/publication/224342060_Modeling_Wire_Train_Bus_communication_using_timed_Colored_Petri_Nets"
+    },
+    {
+      "parameter": "retry_limit",
+      "when": {},
+      "allowed": [],
+      "source": "https://www.researchgate.net/publication/224342060_Modeling_Wire_Train_Bus_communication_using_timed_Colored_Petri_Nets"
+    },
+    {
+      "parameter": "retransmission_delay_ms",
+      "when": {},
+      "allowed": [],
+      "source": "https://www.researchgate.net/publication/224342060_Modeling_Wire_Train_Bus_communication_using_timed_Colored_Petri_Nets"
+    },
+    {
+      "parameter": "gateway_maximum_throughput",
+      "when": {},
+      "allowed": [],
+      "source": "https://www.researchgate.net/publication/224342060_Modeling_Wire_Train_Bus_communication_using_timed_Colored_Petri_Nets"
+    },
+    {
+      "parameter": "gateway_input_buffer",
+      "when": {},
+      "allowed": [],
+      "source": "https://www.researchgate.net/publication/224342060_Modeling_Wire_Train_Bus_communication_using_timed_Colored_Petri_Nets"
+    },
+    {
+      "parameter": "gateway_output_buffer",
+      "when": {},
+      "allowed": [],
+      "source": "https://www.researchgate.net/publication/224342060_Modeling_Wire_Train_Bus_communication_using_timed_Colored_Petri_Nets"
+    },
+    {
+      "parameter": "gateway_maximum_routes",
+      "when": {},
+      "allowed": [],
+      "source": "https://www.researchgate.net/publication/224342060_Modeling_Wire_Train_Bus_communication_using_timed_Colored_Petri_Nets"
+    },
+    {
+      "parameter": "gateway_maximum_messages_s",
+      "when": {},
+      "allowed": [],
+      "source": "https://www.researchgate.net/publication/224342060_Modeling_Wire_Train_Bus_communication_using_timed_Colored_Petri_Nets"
+    },
+    {
+      "parameter": "wt_rate_bps",
+      "when": {
+        "wt_profile": "STANDARD_1M"
+      },
+      "source": "https://www.eke-electronics.com/wp-content/uploads/2025/05/Technical-Specifications.pdf",
+      "allowed": [
+        1000000
+      ]
+    },
+    {
+      "parameter": "wt_rate_bps",
+      "when": {
+        "wt_profile": "EKE_ORDERED_HALF"
+      },
+      "source": "https://www.eke-electronics.com/wp-content/uploads/2025/05/Technical-Specifications.pdf",
+      "allowed": [
+        500000
+      ]
+    },
+    {
+      "parameter": "wt_address",
+      "when": {
+        "wt_role": "MASTER"
+      },
+      "source": "https://www.researchgate.net/publication/224342060_Modeling_Wire_Train_Bus_communication_using_timed_Colored_Petri_Nets",
+      "allowed": [
+        1
+      ]
+    },
+    {
+      "parameter": "wt_address",
+      "when": {
+        "wt_role": "SLAVE"
+      },
+      "source": "https://www.researchgate.net/publication/224342060_Modeling_Wire_Train_Bus_communication_using_timed_Colored_Petri_Nets",
+      "forbidden": [
+        1
+      ]
+    },
+    {
+      "parameter": "wt_process_ms",
+      "when": {},
+      "source": "https://www.researchgate.net/publication/224342060_Modeling_Wire_Train_Bus_communication_using_timed_Colored_Petri_Nets",
+      "equal_expression": {
+        "product": [
+          25,
+          {
+            "power": [
+              2,
+              "wt_period_exponent"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "parameter": "wt_periodic_ms",
+      "when": {},
+      "source": "https://www.researchgate.net/publication/224342060_Modeling_Wire_Train_Bus_communication_using_timed_Colored_Petri_Nets",
+      "maximum_expression": {
+        "product": [
+          "wt_basic_ms",
+          0.6
+        ]
+      }
+    },
+    {
+      "parameter": "wt_sporadic_ms",
+      "when": {},
+      "source": "https://www.researchgate.net/publication/224342060_Modeling_Wire_Train_Bus_communication_using_timed_Colored_Petri_Nets",
+      "equal_expression": {
+        "subtract": [
+          "wt_basic_ms",
+          "wt_periodic_ms"
+        ]
+      }
+    },
+    {
+      "parameter": "wt_frame_data_bytes",
+      "when": {},
+      "source": "https://www.researchgate.net/publication/224342060_Modeling_Wire_Train_Bus_communication_using_timed_Colored_Petri_Nets",
+      "equal_parameter": "payload_bytes"
+    },
+    {
+      "parameter": "wt_stuffed_bits",
+      "when": {},
+      "source": "https://www.researchgate.net/publication/224342060_Modeling_Wire_Train_Bus_communication_using_timed_Colored_Petri_Nets",
+      "maximum_expression": {
+        "floor": [
+          {
+            "product": [
+              {
+                "sum": [
+                  48,
+                  {
+                    "product": [
+                      "wt_frame_data_bytes",
+                      8
+                    ]
+                  }
+                ]
+              },
+              0.2
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "parameter": "wt_frame_bits",
+      "when": {},
+      "source": "https://www.researchgate.net/publication/224342060_Modeling_Wire_Train_Bus_communication_using_timed_Colored_Petri_Nets",
+      "equal_expression": {
+        "sum": [
+          "wt_preamble_bits",
+          66,
+          {
+            "product": [
+              "wt_frame_data_bytes",
+              8
+            ]
+          },
+          "wt_stuffed_bits"
+        ]
+      }
+    },
+    {
+      "parameter": "wt_air_us",
+      "when": {},
+      "source": "https://www.researchgate.net/publication/224342060_Modeling_Wire_Train_Bus_communication_using_timed_Colored_Petri_Nets",
+      "equal_ratio": {
+        "numerator_parameter": "wt_frame_bits",
+        "denominator_parameter": "wt_rate_bps",
+        "factor": 1000000
+      }
+    },
+    {
+      "parameter": "wt_e2e_ms",
+      "when": {},
+      "source": "https://www.researchgate.net/publication/224342060_Modeling_Wire_Train_Bus_communication_using_timed_Colored_Petri_Nets",
+      "equal_expression": {
+        "sum": [
+          "wt_source_ms",
+          "wt_transport_ms",
+          "wt_use_ms"
+        ]
+      },
+      "maximum_parameter": "wt_deadline_ms"
+    },
+    {
+      "parameter": "wt_age_ms",
+      "when": {},
+      "source": "https://www.researchgate.net/publication/224342060_Modeling_Wire_Train_Bus_communication_using_timed_Colored_Petri_Nets",
+      "maximum_parameter": "wt_freshness_ms"
+    },
+    {
+      "parameter": "wt_source_ms",
+      "when": {},
+      "source": "https://www.researchgate.net/publication/224342060_Modeling_Wire_Train_Bus_communication_using_timed_Colored_Petri_Nets",
+      "when_present": [
+        "wt_e2e_ms"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "wt_transport_ms",
+      "when": {},
+      "source": "https://www.researchgate.net/publication/224342060_Modeling_Wire_Train_Bus_communication_using_timed_Colored_Petri_Nets",
+      "when_present": [
+        "wt_e2e_ms"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "wt_use_ms",
+      "when": {},
+      "source": "https://www.researchgate.net/publication/224342060_Modeling_Wire_Train_Bus_communication_using_timed_Colored_Petri_Nets",
+      "when_present": [
+        "wt_e2e_ms"
+      ],
+      "required": true
+    },
+    {
+      "parameter": "wt_e2e_ms",
+      "when": {
+        "wt_data_accepted": true
+      },
+      "source": "https://www.researchgate.net/publication/224342060_Modeling_Wire_Train_Bus_communication_using_timed_Colored_Petri_Nets",
+      "required": true
+    },
+    {
+      "parameter": "wt_deadline_ms",
+      "when": {
+        "wt_data_accepted": true
+      },
+      "source": "https://www.researchgate.net/publication/224342060_Modeling_Wire_Train_Bus_communication_using_timed_Colored_Petri_Nets",
+      "required": true
+    },
+    {
+      "parameter": "wt_age_ms",
+      "when": {
+        "wt_data_accepted": true
+      },
+      "source": "https://www.researchgate.net/publication/224342060_Modeling_Wire_Train_Bus_communication_using_timed_Colored_Petri_Nets",
+      "required": true
+    },
+    {
+      "parameter": "wt_freshness_ms",
+      "when": {
+        "wt_data_accepted": true
+      },
+      "source": "https://www.researchgate.net/publication/224342060_Modeling_Wire_Train_Bus_communication_using_timed_Colored_Petri_Nets",
+      "required": true
+    },
+    {
+      "parameter": "wt_observation_source",
+      "when": {
+        "wt_data_accepted": true
+      },
+      "source": "https://www.researchgate.net/publication/224342060_Modeling_Wire_Train_Bus_communication_using_timed_Colored_Petri_Nets",
+      "required": true
+    },
+    {
+      "parameter": "wt_inaugurated",
+      "when": {
+        "wt_data_accepted": true
+      },
+      "source": "https://www.researchgate.net/publication/224342060_Modeling_Wire_Train_Bus_communication_using_timed_Colored_Petri_Nets",
+      "required": true,
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "wt_schedule_verified",
+      "when": {
+        "wt_data_accepted": true
+      },
+      "source": "https://www.researchgate.net/publication/224342060_Modeling_Wire_Train_Bus_communication_using_timed_Colored_Petri_Nets",
+      "required": true,
+      "allowed": [
+        true
+      ]
+    },
+    {
+      "parameter": "wt_outcome",
+      "when": {
+        "wt_data_accepted": true
+      },
+      "source": "https://www.researchgate.net/publication/224342060_Modeling_Wire_Train_Bus_communication_using_timed_Colored_Petri_Nets",
+      "required": true,
+      "allowed": [
+        "ACCEPTED"
+      ]
+    }
+  ],
+  "physical_layer_profile_id": null,
+  "medium_access_model": null,
+  "native_parameter_prefixes": [
+    "wt_"
+  ],
+  "parameter_aliases": {},
+  "parameter_alias_limits": {},
+  "parameter_evidence_scope": "EXPLICIT_LAYER",
+  "rate_source_profile_id": null,
+  "arbitration_model_id": null,
+  "max_payload_bytes": null,
+  "capabilities": {
+    "supports_signals": true,
+    "supports_data_objects": false,
+    "supports_streams": false,
+    "supports_multicast": true,
+    "supports_publish_subscribe": false,
+    "supports_request_response": false,
+    "supports_cyclic": true,
+    "supports_event": true,
+    "supports_redundancy": true,
+    "supports_time_sync": true,
+    "supports_safety_profile": false,
+    "supports_segmentation": false,
+    "supports_fragmentation": false,
+    "supports_qos": false
+  },
+  "deterministic": true,
+  "overhead_bytes": 8,
+  "implementation_status": "PARTIAL",
+  "connection_type": "COMMUNICATION_TECHNOLOGY",
+  "parameter_proposals": {
+    "kind": "DEVICE_DEPENDENT",
+    "status": "REVIEW_REQUIRED",
+    "required_fields": [],
+    "note": "No universal rate is available; inspect the selected hardware/profile."
+  },
+  "capacity_evidence": {
+    "status": "MODEL_MISSING",
+    "frame_model": null,
+    "schedule_model": null,
+    "requires_confirmed_device_parameters": true
+  },
+  "components": {
+    "binding": "wtb.binding",
+    "generator": "wtb.generator",
+    "validator": "wtb.validator",
+    "timing_model": null,
+    "load_model": null,
+    "encoder": "wtb.encoder",
+    "decoder": "wtb.decoder"
+  },
+  "known_limitations": "Technology-specific conformance details require a vendor/profile extension."
+}
