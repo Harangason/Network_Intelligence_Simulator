@@ -1,0 +1,465 @@
+--- before/frontend/src/features/workflow/stage_08_results_analysis/results-workbench.tsx
++++ after/frontend/src/features/workflow/stage_08_results_analysis/results-workbench.tsx
+@@ -16,6 +16,8 @@
+ import { readActiveProjectId, withProjectParam } from "@/features/settings/lib/user-settings";
+ import { simulationPage } from "@/features/simulation/lib/simulation-pagination";
+ import { SimulationPageControls } from "@/features/simulation/ui/simulation-page-controls";
++import { RuntimeModelViews, RuntimeTrendTools } from "./runtime-chart-tools";
++import { forecastUnderAssumptions } from "./runtime-chart-data";
+ 
+ export function ResultsWorkbench({ initialProjectId = "", initialSnapshotId }: { initialProjectId?: string; initialSnapshotId?: string }) {
+   const [snapshots, setSnapshots] = useState<SimulationSnapshot[]>([]);
+@@ -83,17 +85,21 @@
+ 
+   const job = selected?.job_id ? jobs[selected.job_id] : undefined;
+   const observed = mergeSimulationResult(job?.result, selected?.result);
+-  const predictionSource = selected?.calculated_metrics ?? capacity?.results;
++  // A historical forecast must belong to that run, never to today's capacity snapshot.
++  const predictionSource = selected ? selected.calculated_metrics : capacity?.results;
++  const assumptions = forecastUnderAssumptions(predictionSource);
+   const predicted = predictionSource && "overview" in predictionSource
+     ? (predictionSource.overview as {
+-        max_peak_load_percent: number;
+-        worst_end_to_end_latency_ms: number;
+-        minimum_capacity_reserve_percent: number;
++        max_peak_load_percent: number | null;
++        worst_end_to_end_latency_ms: number | null;
++        minimum_capacity_reserve_percent: number | null;
+         capacity_verified?: boolean;
+         timing_verified?: boolean;
+         network_count: number;
+       })
+     : null;
++  const forecastValue = (value: unknown, verified: boolean | undefined, unit: string, digits = 2) =>
++    verified === true && typeof value === "number" && Number.isFinite(value) ? `${value.toFixed(digits)} ${unit}` : "Nachweis offen";
+   const traceEvents = observed?.trace?.events;
+   const runtime = observed?.runtime_metrics;
+   const compareJob = compareSnapshot?.job_id ? jobs[compareSnapshot.job_id] : undefined;
+@@ -139,7 +145,6 @@
+         </aside>
+         <div className="result-analysis">
+           {selected ? <>
+-            {selected.is_outdated && <div className="workflow-blocker warning"><strong>Historisches Ergebnis · OUTDATED</strong><span>{selected.outdated_reason}</span></div>}
+             {observed?.assessment ? <div className={`workflow-blocker ${observed.assessment.conformance === "PASS" ? "" : "warning"}`}>
+               <strong>Anforderungserfüllung: {observed.assessment.conformance === "PASS" ? "Bestanden" : observed.assessment.conformance === "FAIL" ? "Nicht bestanden" : "Nicht vollständig geprüft"}</strong>
+               <span>Signale im Lauf: {observed.assessment.observed_signal_count} / {observed.assessment.scope_coverage.required_signals} im gewählten Umfang. {observed.assessment.scope_coverage.excluded_signals} ausdrücklich ausgeschlossen.</span>
+@@ -150,9 +155,15 @@
+               </details>}
+               <span>Routen: {observed.assessment.failed_route_count} verletzt, {observed.assessment.unevaluated_route_count} nicht auswertbar. Fehlende Nachweise: {observed.assessment.missing_observed_route_ids.length} Routen, {observed.assessment.missing_observed_network_ids.length} Netze.</span>
+             </div> : (observed && <div className="workflow-blocker warning"><strong>Anforderungserfüllung nicht geprüft</strong><span>Für diesen Lauf fehlt eine vollständige Bewertung von Transportumfang und Anforderungen.</span></div>)}
+-            <div className="metric-strip"><div className="metric"><span>Snapshot</span><strong>{selected.id.slice(0, 8)}</strong></div><div className="metric"><span>Ausführung</span><strong>{job?.status ?? selected.status}</strong></div><div className="metric"><span>Prognose Peak</span><strong>{predicted?.capacity_verified ? `${Number(predicted.max_peak_load_percent).toFixed(2)} %` : "Nicht nachgewiesen"}</strong></div><div className="metric"><span>Runtime Peak</span><strong>{runtime?.available ? `${runtimePeak.toFixed(2)} %` : "—"}</strong></div><div className="metric"><span>Trace Events</span><strong>{traceEvents?.toLocaleString("de-DE") ?? "—"}</strong></div></div>
++            <div className="metric-strip"><div className="metric"><span>Snapshot</span><strong>{selected.id.slice(0, 8)}</strong></div><div className="metric"><span>Ausführung</span><strong>{job?.status ?? selected.status}</strong></div><div className="metric"><span>{predicted?.capacity_verified ? "Prognose Peak" : "Peak unter Annahmen"}</span><strong>{predicted?.capacity_verified ? forecastValue(predicted.max_peak_load_percent, true, "%") : assumptions?.peak != null ? `${assumptions.peak.toFixed(2)} %` : selected.result === undefined ? "Wird geladen …" : "Keine vollständige Prognose"}</strong></div><div className="metric"><span>Runtime Peak</span><strong>{runtime?.available ? `${runtimePeak.toFixed(2)} %` : "—"}</strong></div><div className="metric"><span>Trace Events</span><strong>{traceEvents?.toLocaleString("de-DE") ?? "—"}</strong></div></div>
+             {compareRuntime?.available && <div className="impact-strip"><ResultMetric label="Δ Runtime Peak" value={`${(runtimePeak - comparePeak).toFixed(2)} %`} /><ResultMetric label="Δ Events" value={String((runtime?.summary?.event_count ?? 0) - (compareRuntime.summary?.event_count ?? 0))} /><ResultMetric label="Δ Drops" value={String((runtime?.summary?.dropped_frames ?? 0) - (compareRuntime.summary?.dropped_frames ?? 0))} /><ResultMetric label="Δ Timeouts" value={String((runtime?.summary?.timeouts ?? 0) - (compareRuntime.summary?.timeouts ?? 0))} /></div>}
+-            <div className="comparison-grid"><section><p className="eyebrow">Calculated</p><h3>Engineering-Prognose</h3><dl className="overview-list"><div><dt>Peak Load</dt><dd>{predicted?.capacity_verified ? `${Number(predicted.max_peak_load_percent).toFixed(2)} %` : "Nicht nachgewiesen"}</dd></div><div><dt>Worst E2E</dt><dd>{predicted?.timing_verified ? `${Number(predicted.worst_end_to_end_latency_ms).toFixed(3)} ms` : "Nicht nachgewiesen"}</dd></div><div><dt>Reserve</dt><dd>{predicted?.capacity_verified ? `${Number(predicted.minimum_capacity_reserve_percent).toFixed(2)} %` : "Nicht nachgewiesen"}</dd></div><div><dt>Netze</dt><dd>{predicted ? String(predicted.network_count) : "—"}</dd></div></dl></section><section><p className="eyebrow">Observed</p><h3>Simulation</h3><dl className="overview-list"><div><dt>Peak / Burst</dt><dd>{runtime?.available ? `${runtimePeak.toFixed(2)} / ${runtimeBurst.toFixed(2)} %` : "—"}</dd></div><div><dt>Worst E2E</dt><dd>{runtime?.available ? `${runtimeLatency.toFixed(3)} ms` : "—"}</dd></div><div><dt>Drops / Korruption</dt><dd>{runtime?.available ? `${runtime.summary?.dropped_frames ?? 0} / ${runtime.summary?.corrupted_frames ?? 0}` : "—"}</dd></div><div><dt>Timeouts / Jitter</dt><dd>{runtime?.available ? `${runtime.summary?.timeouts ?? 0} / ${runtime.summary?.jitter_violations ?? 0}` : "—"}</dd></div></dl></section></div>
++            <div className="comparison-grid"><section><p className="eyebrow">Calculated</p><h3>Engineering-Prognose</h3><dl className="overview-list">
++              <div><dt>Peak · Gerätenachweis</dt><dd>{forecastValue(predicted?.max_peak_load_percent,predicted?.capacity_verified,"%")}</dd></div>
++              {!predicted?.capacity_verified && <div><dt>Peak · berechnete Annahme</dt><dd>{assumptions?.peak != null ? `${assumptions.peak.toFixed(2)} %` : "Keine vollständigen Annahmewerte"}</dd></div>}
++              <div><dt>Worst E2E · Nachweis</dt><dd>{forecastValue(predicted?.worst_end_to_end_latency_ms,predicted?.timing_verified,"ms",3)}</dd></div>
++              <div><dt>Reserve{predicted?.capacity_verified ? "" : " · berechnete Annahme"}</dt><dd>{predicted?.capacity_verified ? forecastValue(predicted.minimum_capacity_reserve_percent,true,"%") : assumptions?.reserve != null ? `${assumptions.reserve.toFixed(2)} %` : "Nachweis offen"}</dd></div><div><dt>Netze</dt><dd>{predicted ? String(predicted.network_count) : "—"}</dd></div></dl>
++              <p className="runtime-chart-note">Quelle: eingefrorene Kapazitätsberechnung dieses Laufs. {predicted?.capacity_verified ? "Bestätigte Kapazitätsparameter." : "Ohne vollständige Geräte-/Parameterbelege bleibt der Nachweis offen. Nominale Last aus Busspezifikation und Nachrichten kann trotzdem unter gespeicherten Annahmen berechnet sein."} Funktionale Zeitfreigabe bleibt separat.</p>
++            </section><section><p className="eyebrow">Observed</p><h3>Simulation</h3><dl className="overview-list"><div><dt>Peak / Burst</dt><dd>{runtime?.available ? `${runtimePeak.toFixed(2)} / ${runtimeBurst.toFixed(2)} %` : "—"}</dd></div><div><dt>Worst E2E</dt><dd>{runtime?.available ? `${runtimeLatency.toFixed(3)} ms` : "—"}</dd></div><div><dt>Drops / Korruption</dt><dd>{runtime?.available ? `${runtime.summary?.dropped_frames ?? 0} / ${runtime.summary?.corrupted_frames ?? 0}` : "—"}</dd></div><div><dt>Timeouts / Jitter</dt><dd>{runtime?.available ? `${runtime.summary?.timeouts ?? 0} / ${runtime.summary?.jitter_violations ?? 0}` : "—"}</dd></div></dl><p className="runtime-chart-note">Quelle: ausgeführter Simulationslauf. Der Runtime-Peak belegt die modellierte Auslastung im Peak-Fenster; er ersetzt keinen Gerätenachweis der Prognose.</p></section></div>
+           </> : <div className="analysis-empty"><strong>Kein Lauf ausgewählt</strong><p>Ergebnisse werden nicht gelöscht; veraltete Läufe bleiben als historische Evidenz sichtbar.</p></div>}
+         </div>
+       </div>
+@@ -334,7 +345,6 @@
+ }) {
+   const [allNetworks, setAllNetworks] = useState(false);
+   const [allEcus, setAllEcus] = useState(false);
+-  const [trendNetwork, setTrendNetwork] = useState("");
+   const [selectedEcu, setSelectedEcu] = useState("");
+   const [expandedChart, setExpandedChart] = useState<string | null>(null);
+   const chartsRef = useRef<HTMLElement>(null);
+@@ -349,17 +359,10 @@
+   }
+   const ranked = useMemo(() => networks.filter(item => Number.isFinite(item.peak_load_percent) && item.peak_load_percent >= 0)
+     .toSorted((a, b) => b.peak_load_percent - a.peak_load_percent || a.network_id.localeCompare(b.network_id)), [networks]);
+-  const bars = allNetworks ? ranked : ranked.slice(0, 8);
++  const bars = allNetworks || expandedChart === "load" ? ranked : ranked.slice(0, 8);
+   const barMaximum = ranked.reduce((maximum, item) => Math.max(maximum, item.peak_load_percent), 100);
+   const statuses = useMemo(() => ROUTE_STATUS_SERIES.map(series => ({ ...series, count: routes.filter(route => route.status === series.key).length })), [routes]);
+   const statusTotal = statuses.reduce((sum, series) => sum + series.count, 0);
+-  const traceNetworks = useMemo(() => new Set((trace?.bus_load ?? []).map(point => point.network_id)), [trace?.bus_load]);
+-  const trendChoices = useMemo(() => networks.filter(item => traceNetworks.has(item.network_id))
+-    .toSorted((a, b) => (a.network_name || a.network_id).localeCompare(b.network_name || b.network_id)), [networks, traceNetworks]);
+-  const selectedNetworkId = trendChoices.some(item => item.network_id === trendNetwork) ? trendNetwork : trendChoices[0]?.network_id ?? "";
+-  const trendPoints = useMemo(() => (trace?.bus_load ?? []).filter(point => point.network_id === selectedNetworkId
+-    && Number.isFinite(point.time_s) && point.time_s >= 0 && Number.isFinite(point.load_percent) && point.load_percent >= 0)
+-    .toSorted((a, b) => a.time_s - b.time_s), [trace?.bus_load, selectedNetworkId]);
+   const ecuEvidence = useMemo(() => ecuRouteGroups(snapshot.configuration, routes), [snapshot.configuration, routes]);
+   const ecuRows = allEcus ? ecuEvidence.hotspots : ecuEvidence.hotspots.slice(0, 8);
+   const selectedEcuRow = ecuEvidence.hotspots.find(row => row.id === selectedEcu);
+@@ -383,7 +386,7 @@
+             <strong>{item.peak_load_percent.toFixed(2)} %</strong>
+           </button>)}</div>
+           <div className="runtime-chart-scale"><span>Skala ab 0 %</span><span>Maximum {barMaximum.toFixed(2)} %</span></div>
+-          {ranked.length > 8 && <button className="button secondary tiny" type="button" onClick={() => setAllNetworks(value => !value)}>{allNetworks ? "Top 8 anzeigen" : `Alle ${ranked.length} Netze anzeigen`}</button>}
++          {ranked.length > 8 && expandedChart !== "load" && <button className="button secondary tiny" type="button" onClick={() => setAllNetworks(value => !value)}>{allNetworks ? "Top 8 anzeigen" : `Alle ${ranked.length} Netze anzeigen`}</button>}
+           <p className="runtime-chart-note">{bars.length} von {ranked.length} Netzen mit belegtem Peak. Balken auswählen, um die Netztabelle zu filtern.</p>
+         </> : <p className="runtime-chart-empty">Keine belegten Peak-Werte für die gefilterten Netze.</p>}
+         {ranked.length < networks.length && <p className="runtime-chart-note">Für {networks.length - ranked.length} Netze fehlt ein gültiger Peak-Wert.</p>}
+@@ -409,12 +412,12 @@
+         </div> : <p className="runtime-chart-empty">Keine Routenbewertung für diesen Filter vorhanden.</p>}
+         {statusTotal < routes.length && <p className="runtime-chart-note">Bei {routes.length - statusTotal} Routen fehlt ein bekannter Bewertungsstatus.</p>}
+         <p className="runtime-chart-note">Nicht vollständig geprüfte Routen bleiben separat sichtbar. Legende auswählen, um die Routentabelle zu filtern.</p>
++        <RuntimeModelViews networks={networks} routes={routes} expanded={expandedChart === "routes"}/>
+       </section>
+       <section className="runtime-chart-card" hidden={expandedChart !== null && expandedChart !== "trend"} aria-label="Trenddiagramm der Buslast">
+         {chartButton("trend", "Trenddiagramm")}
+         <header><p className="eyebrow">Trend</p><h4>Buslast im Laufverlauf</h4><p>Zeit seit Laufbeginn; ausschließlich gespeicherte Simulationspunkte.</p></header>
+-        {!!trendChoices.length && <label className="runtime-chart-network">Netz auswählen<select value={selectedNetworkId} onChange={event => setTrendNetwork(event.target.value)}>{trendChoices.map(item => <option key={item.network_id} value={item.network_id}>{item.network_name || item.network_id}</option>)}</select></label>}
+-        <RuntimeLoadTrend key={selectedNetworkId} points={trendPoints} />
++        <RuntimeTrendTools networks={networks} routes={routes} trace={trace} expanded={expandedChart === "trend"}/>
+       </section>
+       <section className="runtime-chart-card" hidden={expandedChart !== null && expandedChart !== "ecu"} aria-label="Fehlerhäufung bei ECUs">
+         {chartButton("ecu", "ECU-Häufung")}
+@@ -441,49 +444,3 @@
+   </section>;
+ }
+ 
+-function RuntimeLoadTrend({ points }: { points: ModelSimulationTrace["bus_load"] }) {
+-  const [page, setPage] = useState(0);
+-  const valuesPage = simulationPage(points, page, 100);
+-  const drawn = useMemo(() => {
+-    if (points.length <= 800) return points;
+-    // Retain real extrema and endpoints; never invent or average a plotted value.
+-    const selected = new Set([0, points.length - 1]);
+-    const size = Math.ceil(points.length / 399);
+-    for (let start = 0; start < points.length; start += size) {
+-      let low = start, high = start;
+-      for (let index = start + 1; index < Math.min(start + size, points.length); index++) {
+-        if (points[index].load_percent < points[low].load_percent) low = index;
+-        if (points[index].load_percent > points[high].load_percent) high = index;
+-      }
+-      selected.add(low); selected.add(high);
+-    }
+-    return [...selected].toSorted((a, b) => a - b).map(index => points[index]);
+-  }, [points]);
+-  if (!points.length) return <p className="runtime-chart-empty">Keine gespeicherte Buslast-Zeitreihe für dieses Netz im aktuellen Filter.</p>;
+-  const width = 560, height = 240, left = 52, top = 18, right = 18, bottom = 44;
+-  const maximumTime = points.reduce((maximum, point) => Math.max(maximum, point.time_s), 0.001);
+-  const maximumLoad = points.reduce((maximum, point) => Math.max(maximum, point.load_percent), 100);
+-  const x = (time: number) => left + time / maximumTime * (width - left - right);
+-  const y = (load: number) => top + (1 - load / maximumLoad) * (height - top - bottom);
+-  const windows = [...new Set(points.map(point => point.window_ms).filter(value => Number.isFinite(value)))];
+-  return <>
+-    <div className="runtime-trend-scroll" tabIndex={0} aria-label="Buslastverlauf, horizontal scrollbar">
+-      <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label={`Buslastverlauf mit ${points.length} gespeicherten Punkten; Zeit in Sekunden, Buslast in Prozent`}>
+-        <title>Buslast über der Zeit</title>
+-        {[0, maximumLoad / 2, maximumLoad].map(value => <g key={value}><line x1={left} x2={width - right} y1={y(value)} y2={y(value)} className="runtime-trend-grid" /><text x={left - 8} y={y(value) + 4} textAnchor="end">{value.toFixed(1)}</text></g>)}
+-        <line x1={left} x2={left} y1={top} y2={height - bottom} className="runtime-trend-axis" />
+-        <line x1={left} x2={width - right} y1={height - bottom} y2={height - bottom} className="runtime-trend-axis" />
+-        {[0, maximumTime / 2, maximumTime].map(value => <text key={value} x={x(value)} y={height - bottom + 20} textAnchor="middle">{value.toFixed(3)} s</text>)}
+-        <text x={left} y="12">Buslast (%)</text>
+-        {drawn.length > 1 && <polyline points={drawn.map(point => `${x(point.time_s)},${y(point.load_percent)}`).join(" ")} className="runtime-trend-line" />}
+-        {drawn.map((point, index) => <circle key={`${point.time_s}-${index}`} cx={x(point.time_s)} cy={y(point.load_percent)} r="3" className="runtime-trend-point"><title>{point.time_s.toFixed(3)} s · {point.load_percent.toFixed(2)} % · Fenster {Number.isFinite(point.window_ms) ? `${point.window_ms} ms` : "nicht dokumentiert"}</title></circle>)}
+-      </svg>
+-    </div>
+-    <p className="runtime-chart-note">{points.length} gespeicherte Stützpunkte. {windows.length ? `Auswertefenster: ${windows.join(" / ")} ms.` : "Auswertefenster nicht dokumentiert."}{points.length === 1 ? " Ein einzelner Punkt belegt keinen Trend." : ""}</p>
+-    {drawn.length < points.length && <p className="runtime-chart-note">Die Kurve zeigt {drawn.length} echte Stützpunkte als Min/Max-Auszug. Alle {points.length} gespeicherten Werte bleiben in der Tabelle erreichbar.</p>}
+-    <details className="runtime-trend-values"><summary>Werte als Tabelle</summary>
+-      <SimulationPageControls label="Buslastwerte" {...valuesPage} onPage={setPage} />
+-      <div className="runtime-chart-table-scroll"><table><thead><tr><th scope="col">Zeit (s)</th><th scope="col">Buslast (%)</th><th scope="col">Fenster (ms)</th></tr></thead><tbody>{valuesPage.items.map((point, index) => <tr key={`${point.time_s}-${index}`}><td>{point.time_s.toFixed(3)}</td><td>{point.load_percent.toFixed(2)}</td><td>{Number.isFinite(point.window_ms) ? point.window_ms : "—"}</td></tr>)}</tbody></table></div>
+-    </details>
+-  </>;
+-}
+--- before/frontend/src/features/workflow/stage_09_intelligence/intelligence-workbench.tsx
++++ after/frontend/src/features/workflow/stage_09_intelligence/intelligence-workbench.tsx
+@@ -1,7 +1,6 @@
+ "use client";
+ 
+ import Link from "next/link";
+-import { CommunicationSizingPanel } from "@/features/communication/ui/communication-sizing-panel";
+ import { SafetyAssurancePanel } from "@/features/intelligence/ui/safety-assurance-panel";
+ import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
+ import {
+@@ -138,7 +137,6 @@
+   const results = snapshot.results;
+   return (
+     <section className="intelligence-workbench">
+-      <CommunicationSizingPanel />
+       <SafetyAssurancePanel />
+       <header className="intelligence-toolbar">
+         <div>
+--- before/frontend/src/app/globals.css
++++ after/frontend/src/app/globals.css
+@@ -13293,6 +13293,47 @@
+ .runtime-hotspot-details small { display: block; margin-top: 4px; color: var(--muted); font-size: 9px; }
+ .runtime-trend-values { min-width: 0; color: var(--text); font-size: 11px; }
+ .runtime-trend-values summary { cursor: pointer; margin-bottom: 8px; }
++.runtime-chart-grid-expanded .runtime-load-bars { max-height: none; height: max(320px, calc(100dvh - 365px)); align-content: start; gap: 8px; }
++.runtime-chart-grid-expanded .runtime-load-bar { grid-template-columns: minmax(160px, 28%) minmax(80px, 1fr) 75px; min-height: 36px; }
++.runtime-chart-grid-expanded .runtime-load-bar-label, .runtime-chart-grid-expanded .runtime-load-bar strong { font-size: 12px; }
++.runtime-chart-grid-expanded .runtime-load-bar-track { height: 16px; }
++.runtime-chart-grid-expanded .runtime-status-chart { justify-content: flex-start; gap: 32px; }
++.runtime-chart-grid-expanded .runtime-status-chart > svg { width: clamp(220px, 30vw, 340px); height: auto; }
++.runtime-chart-grid-expanded .runtime-chart-legend { max-width: 600px; }
++.runtime-trend-tools, .runtime-model-views, .runtime-partner-jitter { display: grid; gap: 12px; min-width: 0; }
++.runtime-plot-toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; }
++.runtime-plot-toolbar label, .runtime-model-views > label, .runtime-network-picker > label, .runtime-time-window { display: grid; gap: 5px; min-width: 0; color: var(--muted); font-size: 11px; }
++.runtime-plot-toolbar select, .runtime-model-views select, .runtime-network-picker input[type="search"] { min-height: 34px; padding: 6px 8px; border: 1px solid var(--border); border-radius: 5px; color: var(--text); background: var(--background); max-width: 100%; }
++.runtime-plot-toolbar label { flex: 1 1 170px; }
++.runtime-zoom-buttons { display: flex; flex-wrap: wrap; gap: 6px; }
++.runtime-network-picker { border: 1px solid var(--border); padding: 10px; border-radius: 5px; font-size: 11px; }
++.runtime-network-picker summary { cursor: pointer; }
++.runtime-network-picker[open] { display: grid; gap: 10px; }
++.runtime-network-picker > div { display: grid; gap: 6px; max-height: 220px; overflow: auto; }
++.runtime-network-picker > div > label { display: flex; align-items: center; gap: 8px; overflow-wrap: anywhere; color: var(--text); }
++.runtime-network-picker input[type="checkbox"] { width: 16px; height: 16px; flex-shrink: 0; }
++.runtime-network-picker small { color: var(--muted); margin-left: auto; }
++.runtime-series-legend { display: flex; flex-wrap: wrap; gap: 8px 16px; font-size: 11px; }
++.runtime-series-legend span { display: flex; gap: 6px; align-items: center; overflow-wrap: anywhere; }
++.runtime-series-legend i { display: inline-block; width: 12px; height: 12px; flex-shrink: 0; }
++.runtime-time-window input { width: 100%; }
++.runtime-partner-jitter, .runtime-model-views { border-top: 1px solid var(--border); padding-top: 14px; }
++.runtime-model-bars { display: grid; gap: 8px; }
++.runtime-model-bars > div { display: grid; grid-template-columns: minmax(100px, 35%) minmax(30px, 1fr) 40px; align-items: center; gap: 10px; min-height: 26px; font-size: 11px; }
++.runtime-model-bars span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
++.runtime-model-bars i { display: block; height: 14px; background: var(--accent); min-width: 2px; }
++.runtime-model-bars strong { text-align: right; font-family: var(--font-geist-mono), monospace; }
++.runtime-jitter-table { min-width: 700px; }
++.runtime-jitter-table th:first-child { text-align: left; max-width: 280px; overflow-wrap: anywhere; }
++.runtime-jitter-table small { display: block; margin-top: 5px; }
++.runtime-jitter-track { position: relative; display: block; height: 10px; background: var(--surface-deep); margin-top: 6px; }
++.runtime-jitter-track i { display: block; height: 100%; background: var(--accent); }
++.runtime-jitter-track b { position: absolute; top: -2px; bottom: -2px; width: 2px; background: var(--danger); }
++@media (max-width: 600px) {
++  .runtime-chart-grid-expanded .runtime-load-bar { grid-template-columns: minmax(90px, 36%) minmax(40px, 1fr) auto; }
++  .runtime-chart-grid-expanded .runtime-load-bar-label, .runtime-chart-grid-expanded .runtime-load-bar strong { font-size: 10px; }
++  .runtime-chart-grid-expanded .runtime-status-chart > svg { width: 220px; }
++}
+ .runtime-table-tools { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; color: var(--muted); font-size: 10px; }
+ .runtime-column-filters input { display: block; width: 100%; min-width: 0; min-height: 28px; padding: 5px 7px; border: 1px solid var(--border); border-radius: 4px; background: var(--background); color: var(--text); font: inherit; text-transform: none; }
+ .runtime-column-filters input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+--- before/AGENTS.md
++++ after/AGENTS.md
+@@ -78,10 +78,10 @@
+ Required release gates must still pass; this rule does not authorize bypassing
+ checks or deploying an untested build.
+ 
+-## Scoped direct delivery for simulation UI work
++## Scoped direct delivery for simulation and results UI work
+ 
+-On 2026-10-12 the user explicitly instructed that these simulation UI and
+-historical playback changes use only small final checks and direct production
++On 2026-10-12 the user explicitly instructed that these simulation UI,
++historical playback and related results/intelligence presentation changes use only small final checks and direct production
+ delivery, without a new image or a full test/release run. For this scoped work,
+ that instruction supersedes the complete-image release procedure above.
+ Preserve backend, model, preflight and staleness gates. Build the frontend with
+--- before/frontend/src/features/workflow/stage_08_results_analysis/runtime-chart-tools.tsx
++++ after/frontend/src/features/workflow/stage_08_results_analysis/runtime-chart-tools.tsx
+@@ -0,0 +1,124 @@
++"use client";
++
++import { useEffect, useMemo, useRef, useState } from "react";
++import type { ModelSimulationTrace, RuntimeNetworkMetric, RuntimeRouteMetric } from "@/shared/api/types";
++import { simulationPage } from "@/features/simulation/lib/simulation-pagination";
++import { SimulationPageControls } from "@/features/simulation/ui/simulation-page-controls";
++import { CHART_COLORS, extremaSample, jitterAssessment, loadWindow, zoomWindow } from "./runtime-chart-data";
++
++export function RuntimeTrendTools({ networks, routes, trace, expanded }: {
++  networks: RuntimeNetworkMetric[]; routes: RuntimeRouteMetric[]; trace?: ModelSimulationTrace; expanded: boolean;
++}) {
++  const points = trace?.bus_load ?? [];
++  const choices = useMemo(() => {
++    const ids = new Set(points.map(p => p.network_id));
++    return networks.filter(n => ids.has(n.network_id)).toSorted((a,b) => (a.network_name || a.network_id).localeCompare(b.network_name || b.network_id));
++  }, [points, networks]);
++  const [selection, setSelection] = useState<string[] | null>(null);
++  const ids = (selection ?? choices.slice(0, 1).map(n => n.network_id)).filter(id => choices.some(n => n.network_id === id));
++  const [search, setSearch] = useState("");
++  const [kind, setKind] = useState("line");
++  const [autoScale, setAutoScale] = useState(true);
++  const [range, setRange] = useState<readonly [number,number] | null>(null);
++  const [page, setPage] = useState(0);
++  const plot = useRef<HTMLDivElement>(null);
++  const [width, setWidth] = useState(560);
++  useEffect(() => {
++    if (!plot.current) return;
++    const observer = new ResizeObserver(([entry]) => setWidth(Math.max(440, Math.round(entry.contentRect.width))));
++    observer.observe(plot.current);
++    return () => observer.disconnect();
++  }, []);
++  const all = useMemo(() => loadWindow(points, ids, 0, Infinity), [points, ids.join("|")]);
++  const total = all.reduce((max,p) => Math.max(max,p.time_s),.001);
++  const start = Math.max(0, Math.min(range?.[0] ?? 0, total - total / 100));
++  const end = Math.max(start + total / 100, Math.min(range?.[1] ?? total, total));
++  const visible = useMemo(() => loadWindow(all, ids, start, end), [all, ids.join("|"), start, end]);
++  const series = ids.map((id, index) => ({ id, color: CHART_COLORS[index], network: choices.find(n => n.network_id === id),
++    points: extremaSample(visible.filter(p => p.network_id === id)) }));
++  const rawPage = simulationPage(visible, page, 100);
++  const maximumLoad = visible.reduce((max,p) => Math.max(max,p.load_percent),autoScale ? .1 : 100) * (autoScale ? 1.1 : 1);
++  const height = expanded ? 420 : 260, left = 64, right = 24, top = 26, bottom = 36;
++  const x = (time:number) => left + (time-start) / (end-start) * (width-left-right);
++  const y = (load:number) => top + (1-load/maximumLoad) * (height-top-bottom);
++  function updateRange(next: readonly [number,number] | null) { setRange(next); setPage(0); }
++  function toggle(id: string) { setSelection(ids.includes(id) ? ids.filter(i => i !== id) : [...ids, id].slice(0,6)); setPage(0); }
++  function pan(direction:number) {
++    const span = end-start, next = Math.max(0,Math.min(total-span,start+span*.5*direction));
++    updateRange([next,next+span]);
++  }
++  return <div className="runtime-trend-tools">
++    <div className="runtime-plot-toolbar">
++      <label>Diagrammtyp<select aria-label="Diagrammtyp" value={kind} onChange={e => setKind(e.target.value)}><option value="line">Linien</option><option value="step">Stufen</option><option value="points">Punkte</option><option value="bar">Balken</option></select></label>
++      <label>Y-Skala<select aria-label="Y-Skala" value={autoScale ? "auto" : "full"} onChange={e => setAutoScale(e.target.value === "auto")}><option value="auto">An sichtbare Werte anpassen</option><option value="full">Ab 0 bis mindestens 100 %</option></select></label>
++      <div className="runtime-zoom-buttons"><button className="button secondary tiny" disabled={!all.length} onClick={() => updateRange(zoomWindow(start,end,total,.5))}>Zoom +</button><button className="button secondary tiny" disabled={!all.length} onClick={() => updateRange(zoomWindow(start,end,total,2))}>Zoom −</button><button className="button secondary tiny" disabled={start <= 0} onClick={() => pan(-1)} aria-label="Zeitfenster nach links">←</button><button className="button secondary tiny" disabled={end >= total} onClick={() => pan(1)} aria-label="Zeitfenster nach rechts">→</button><button className="button secondary tiny" onClick={() => updateRange(null)}>Zoom zurücksetzen</button></div>
++    </div>
++    <details className="runtime-network-picker"><summary>Netze überlagern · {ids.length} / 6 ausgewählt</summary>
++      <label>Netze suchen<input type="search" value={search} onChange={e => setSearch(e.target.value)} placeholder="Name oder Bustyp" /></label>
++      <p className="runtime-chart-note">Bis zu sechs Netze beliebiger Bustypen. Jede Kurve behält ihre eigenen Zeitpunkte und Auswertefenster.</p>
++      <div>{choices.filter(n => `${n.network_name} ${n.network_id} ${n.technology}`.toLowerCase().includes(search.toLowerCase())).map(n => <label key={n.network_id}><input type="checkbox" checked={ids.includes(n.network_id)} disabled={!ids.includes(n.network_id) && ids.length >= 6} onChange={() => toggle(n.network_id)} />{n.network_name || n.network_id}<small>{n.technology}</small></label>)}</div>
++    </details>
++    <div className="runtime-series-legend">{series.map(s => <span key={s.id}><i style={{background:s.color}} />{s.network?.network_name || s.id} · {s.network?.technology} · Fenster {[...new Set(all.filter(p => p.network_id === s.id).map(p => p.window_ms))].map(w => Number.isFinite(w) ? `${w} ms` : "offen").join(" / ")}</span>)}</div>
++    <div className="runtime-trend-scroll" ref={plot}>
++      {visible.length ? <svg viewBox={`0 0 ${width} ${height}`} style={{height}} role="img" aria-label={`Buslastverlauf: ${ids.length} Netze, ${start.toFixed(3)} bis ${end.toFixed(3)} Sekunden; Buslast in Prozent`}>
++        <title>Gespeicherte Buslastwerte · {kind === "step" ? "Stufendarstellung" : kind === "bar" ? "Balkendarstellung" : kind === "points" ? "Punktdarstellung" : "Linienverbindung"}</title>
++        {[0,maximumLoad/2,maximumLoad].map(v => <g key={v}><line x1={left} x2={width-right} y1={y(v)} y2={y(v)} className="runtime-trend-grid"/><text x={left-8} y={y(v)+4} textAnchor="end">{v.toFixed(2)}</text></g>)}
++        <line x1={left} x2={left} y1={top} y2={height-bottom} className="runtime-trend-axis"/><line x1={left} x2={width-right} y1={height-bottom} y2={height-bottom} className="runtime-trend-axis"/>
++        {[start,(start+end)/2,end].map(v => <text key={v} x={x(v)} y={height-12} textAnchor="middle">{v.toFixed(3)} s</text>)}<text x={left} y={16}>Buslast (%)</text>
++        {series.map(s => <g key={s.id}>
++          {kind === "line" && s.points.length > 1 && <polyline fill="none" stroke={s.color} strokeWidth="2" points={s.points.map(p => `${x(p.time_s)},${y(p.load_percent)}`).join(" ")}/>}
++          {kind === "step" && s.points.length > 1 && <path fill="none" stroke={s.color} strokeWidth="2" d={s.points.map((p,i) => i === 0 ? `M${x(p.time_s)},${y(p.load_percent)}` : `H${x(p.time_s)}V${y(p.load_percent)}`).join(" ")}/>}
++          {s.points.map((p,i) => kind === "bar" ? <line key={i} x1={x(p.time_s)} x2={x(p.time_s)} y1={y(0)} y2={y(p.load_percent)} stroke={s.color} strokeWidth={4} opacity=".7"><title>{s.network?.network_name} · {p.time_s.toFixed(3)} s · {p.load_percent.toFixed(2)} %</title></line> : <circle key={i} cx={x(p.time_s)} cy={y(p.load_percent)} r="3" fill={s.color}><title>{s.network?.network_name} · {p.time_s.toFixed(3)} s · {p.load_percent.toFixed(2)} % · Fenster {p.window_ms} ms</title></circle>)}
++        </g>)}
++      </svg> : <p className="runtime-chart-empty">Keine gespeicherten Buslastpunkte im gewählten Netz-/Zeitfilter.</p>}
++    </div>
++    {!!all.length && <label className="runtime-time-window">Zeitfenster verschieben · {start.toFixed(3)}–{end.toFixed(3)} s<input aria-label="Zeitfenster verschieben" type="range" min={0} max={Math.max(0,total-(end-start))} step={total/1000} value={start} disabled={end-start >= total} onChange={e => updateRange([Number(e.target.value),Number(e.target.value)+end-start])}/></label>}
++    <p className="runtime-chart-note">{visible.length} von {all.length} gespeicherten Punkten im Zeitfenster. Verbindungen zwischen Punkten sind Darstellung, keine zusätzlichen Messungen.{series.some(s => s.points.length < visible.filter(p => p.network_id === s.id).length) ? " Kurvenauszug erhält echte Minima, Maxima und Endpunkte; alle Werte stehen in der Tabelle." : ""}</p>
++    <details className="runtime-trend-values"><summary>Werte als Tabelle</summary><SimulationPageControls label="Buslastwerte" {...rawPage} onPage={setPage}/><div className="runtime-chart-table-scroll"><table><thead><tr><th>Netz</th><th>Zeit (s)</th><th>Buslast (%)</th><th>Fenster (ms)</th></tr></thead><tbody>{rawPage.items.map((p,i) => <tr key={i}><td>{choices.find(n => n.network_id === p.network_id)?.network_name || p.network_id}</td><td>{p.time_s.toFixed(3)}</td><td>{p.load_percent.toFixed(2)}</td><td>{Number.isFinite(p.window_ms) ? p.window_ms : "—"}</td></tr>)}</tbody></table></div></details>
++    <PartnerJitter routes={routes.filter(r => ids.includes(r.network_id))}/>
++  </div>;
++}
++
++function PartnerJitter({ routes }: { routes:RuntimeRouteMetric[] }) {
++  const [sender,setSender] = useState("");
++  const [receiver,setReceiver] = useState("");
++  const [page,setPage] = useState(0);
++  const senders = new Map(routes.filter(r => r.sender_id).map(r => [r.sender_id!,r.sender || r.sender_id!]));
++  const receivers = new Map(routes.flatMap(r => (r.receiver_ids ?? []).map((id,i) => [id,r.receivers?.[i] || id] as const)));
++  const filtered = routes.filter(r => (!sender || sender === r.sender_id) && (!receiver || r.receiver_ids?.includes(receiver)))
++    .toSorted((a,b) => b.maximum_jitter_ms-a.maximum_jitter_ms);
++  const entries = simulationPage(filtered,page,10);
++  const scale = Math.max(.001,...filtered.map(r => Number.isFinite(r.maximum_jitter_ms) ? r.maximum_jitter_ms : 0),...filtered.map(r => r.jitter_limit_ms ?? 0).filter(Number.isFinite));
++  const display = (v:unknown) => typeof v === "number" && Number.isFinite(v) ? v.toFixed(3) : "—";
++  return <section className="runtime-partner-jitter" aria-label="Jitter zwischen Kommunikationspartnern"><header><h4>Jitter zwischen Kommunikationspartnern</h4><p>Gesamter Lauf, unabhängig vom Zoom-Zeitfenster. Gespeicherte Routenmetriken der gewählten Netze: |Ist-Intervall − Soll-Zyklus| in ms. Keine Geräte- oder funktionale Zeitfreigabe.</p></header>
++    <div className="runtime-plot-toolbar"><label>Sender<select aria-label="Sender" value={sender} onChange={e => {setSender(e.target.value);setPage(0);}}><option value="">Alle Sender</option>{[...senders].map(([id,name]) => <option key={id} value={id}>{name}</option>)}</select></label><label>Empfänger<select aria-label="Empfänger" value={receiver} onChange={e => {setReceiver(e.target.value);setPage(0);}}><option value="">Alle Empfänger</option>{[...receivers].map(([id,name]) => <option key={id} value={id}>{name}</option>)}</select></label></div>
++    <SimulationPageControls label="Jitter-Routen" {...entries} onPage={setPage}/>
++    <div className="runtime-chart-table-scroll"><table className="runtime-jitter-table"><thead><tr><th>Sender → Empfänger / Route</th><th>Jitter Ø / p95 / p99 (ms)</th><th>Max / Grenze (ms)</th><th>Bewertung</th></tr></thead><tbody>{entries.items.map(r => {
++      const status=jitterAssessment(r), measured=status !== "Keine bewertbaren Intervalle";
++      return <tr key={r.route_id}><th scope="row">{r.sender || r.sender_id || "Sender offen"} → {r.receivers?.join(", ") || r.receiver_ids?.join(", ") || "Empfänger offen"}<small>{r.route_name || r.route_id}</small></th><td>{measured ? `${display(r.average_jitter_ms)} / ${display(r.p95_jitter_ms)} / ${display(r.p99_jitter_ms)}` : "—"}</td><td>{measured ? display(r.maximum_jitter_ms) : "—"} / {display(r.jitter_limit_ms)}<span className="runtime-jitter-track">{measured && <i style={{width:`${r.maximum_jitter_ms/scale*100}%`}}/>}{r.jitter_limit_ms != null && Number.isFinite(r.jitter_limit_ms) && r.jitter_limit_ms >= 0 && <b style={{left:`${r.jitter_limit_ms/scale*100}%`}} title="Jitter-Grenze"/>}</span></td><td>{status}</td></tr>;
++    })}</tbody></table></div>
++    {!filtered.length && <p className="runtime-chart-empty">Keine Routen für diese Partnerauswahl vorhanden.</p>}
++    <p className="runtime-chart-note">Balken: maximaler Jitter · Strich: explizite Grenze. Weniger als zwei gültige Empfangsereignisse oder ein fehlender Soll-Zyklus ergeben keine Bewertung. Ohne Grenze ist auch 0 ms kein bestandener Nachweis. Mehrere Empfänger bleiben als gemeinsame Route sichtbar.</p>
++  </section>;
++}
++
++export function RuntimeModelViews({networks,routes,expanded}: {networks:RuntimeNetworkMetric[];routes:RuntimeRouteMetric[];expanded:boolean}) {
++  const [view,setView] = useState("technology");
++  const [page,setPage] = useState(0);
++  const grouped = new Map<string,{name:string,count:number}>();
++  function add(id:string,name:string) { const old=grouped.get(id); grouped.set(id,{name,count:(old?.count ?? 0)+1}); }
++  if (view === "technology") networks.forEach(n => add(n.technology || "unknown", n.technology || "Technologie offen"));
++  if (view === "network") routes.forEach(r => add(r.network_id,networks.find(n => n.network_id === r.network_id)?.network_name || r.network_id));
++  if (view === "partners") routes.forEach(r => {
++    if (!(r.receiver_ids?.length)) add(`${r.sender_id ?? "unknown"}|unknown`,`${r.sender || r.sender_id || "Sender offen"} → Empfänger offen`);
++    else r.receiver_ids.forEach((id,i) => add(`${r.sender_id ?? "unknown"}|${id}`,`${r.sender || r.sender_id || "Sender offen"} → ${r.receivers?.[i] || id}`));
++  });
++  const ranked=[...grouped].map(([id,row]) => ({id,...row})).toSorted((a,b)=>b.count-a.count || a.name.localeCompare(b.name));
++  const entries=simulationPage(ranked,page,expanded?24:8),maximum=Math.max(1,...ranked.map(r=>r.count));
++  return <section className="runtime-model-views" aria-label="Weitere Modellsichten"><label>Modellsicht<select aria-label="Modellsicht" value={view} onChange={e=>{setView(e.target.value);setPage(0);}}><option value="technology">Netze je Bustyp</option><option value="network">Routen je Netz</option><option value="partners">Routen zwischen Partnern</option></select></label>
++    <div className="runtime-model-bars">{entries.items.map(r=><div key={r.id}><span title={r.name}>{r.name}</span><i style={{width:`${r.count/maximum*100}%`}}/><strong>{r.count}</strong></div>)}</div>
++    <SimulationPageControls label="Modellsicht" {...entries} onPage={setPage}/>
++    <p className="runtime-chart-note">Gespeicherter Lauf im aktuellen Tabellenfilter · {view === "technology" ? `${networks.length} Netze` : `${routes.length} Routen`}. {view === "partners" ? "Eine Multicast-Route zählt je Empfänger einmal; Beteiligung ist keine zusätzliche physische Übertragung." : "Anzahl, keine zusätzliche Lastberechnung."}</p>
++    {!ranked.length && <p className="runtime-chart-empty">Keine Daten im aktuellen Filter.</p>}
++  </section>;
++}
+--- before/frontend/src/features/workflow/stage_08_results_analysis/runtime-chart-data.ts
++++ after/frontend/src/features/workflow/stage_08_results_analysis/runtime-chart-data.ts
+@@ -0,0 +1,50 @@
++import type { ModelSimulationTrace, RuntimeRouteMetric } from "../../../shared/api/types";
++
++export type LoadPoint = ModelSimulationTrace["bus_load"][number];
++export const CHART_COLORS = ["var(--accent)", "#2478b5", "#b86a15", "#9854a6", "#c04454", "#16877d"];
++export function loadWindow(points: LoadPoint[], ids: string[], start: number, end: number) {
++  const selected = new Set(ids);
++  return points.filter(p => selected.has(p.network_id) && Number.isFinite(p.time_s) && p.time_s >= 0
++    && p.time_s >= start && p.time_s <= end && Number.isFinite(p.load_percent) && p.load_percent >= 0)
++    .toSorted((a, b) => a.time_s - b.time_s || a.network_id.localeCompare(b.network_id));
++}
++export function extremaSample(points: LoadPoint[]) {
++  if (points.length <= 800) return points;
++  const selected = new Set([0, points.length - 1]);
++  const size = Math.ceil(points.length / 399);
++  for (let start = 0; start < points.length; start += size) {
++    let low = start, high = start;
++    for (let i = start + 1; i < Math.min(start + size, points.length); i++) {
++      if (points[i].load_percent < points[low].load_percent) low = i;
++      if (points[i].load_percent > points[high].load_percent) high = i;
++    }
++    selected.add(low); selected.add(high);
++  }
++  return [...selected].toSorted((a, b) => a - b).map(i => points[i]);
++}
++export function zoomWindow(start: number, end: number, total: number, factor: number) {
++  const span = Math.min(total, Math.max(total / 100, (end - start) * factor));
++  const nextStart = Math.max(0, Math.min(total - span, (start + end - span) / 2));
++  return [nextStart, nextStart + span] as const;
++}
++export function jitterAssessment(route: RuntimeRouteMetric) {
++  const received = (route as RuntimeRouteMetric & { received_event_count?: number }).received_event_count;
++  const hasIntervals = received === undefined ? Number.isFinite(route.actual_max_cycle_ms) && route.actual_max_cycle_ms > 0 : received >= 2;
++  if (!hasIntervals || !Number.isFinite(route.configured_cycle_ms) || route.configured_cycle_ms <= 0
++    || !Number.isFinite(route.maximum_jitter_ms) || route.maximum_jitter_ms < 0) return "Keine bewertbaren Intervalle";
++  if (route.jitter_limit_ms == null || !Number.isFinite(route.jitter_limit_ms) || route.jitter_limit_ms < 0) return "Grenze offen";
++  return route.maximum_jitter_ms > route.jitter_limit_ms + 1e-7 ? "Grenze überschritten" : "Innerhalb der Grenze";
++}
++export function forecastUnderAssumptions(source: unknown) {
++  if (!source || typeof source !== "object" || !("networks" in source) || !Array.isArray(source.networks)) return null;
++  const rows = source.networks.filter((r: Record<string, unknown>) => r.capacity_applicable !== false);
++  if (!rows.length) return null;
++  const values = (field: string) => rows.map((r: Record<string, unknown>) => {
++    const assumption = r.simulation_capacity as Record<string, unknown> | undefined;
++    return r.capacity_verified === true ? r[field] : assumption?.status === "CALCULATED_UNDER_ASSUMPTIONS" ? assumption[field] : undefined;
++  });
++  const peak = values("peak_load_percent"), reserve = values("capacity_reserve_percent");
++  const valid = (items: unknown[]): items is number[] => items.every(v => typeof v === "number" && Number.isFinite(v));
++  return { peak: valid(peak) && peak.every(v => v >= 0) ? Math.max(...peak) : null,
++    reserve: valid(reserve) ? Math.min(...reserve) : null, networks: rows.length };
++}
+--- before/frontend/src/features/workflow/stage_08_results_analysis/runtime-chart-data.test.mjs
++++ after/frontend/src/features/workflow/stage_08_results_analysis/runtime-chart-data.test.mjs
+@@ -0,0 +1,34 @@
++import test from 'node:test';
++import assert from 'node:assert/strict';
++import { loadWindow, extremaSample, zoomWindow, jitterAssessment, forecastUnderAssumptions } from './runtime-chart-data.ts';
++test('overlay preserves real times, excludes other networks and invalid points', () => {
++  const points=[{network_id:'a',time_s:0,load_percent:0},{network_id:'b',time_s:1,load_percent:2},{network_id:'c',time_s:1,load_percent:8},{network_id:'a',time_s:NaN,load_percent:1},{network_id:'a',time_s:1,load_percent:-1}];
++  assert.deepEqual(loadWindow(points,['a','b'],0,1),points.slice(0,2));
++  assert.deepEqual(loadWindow(points,[],0,1),[]);
++});
++test('sampling retains spike, endpoints and original objects', () => {
++  const points=Array.from({length:2000},(_,i)=>({time_s:i,load_percent:i===555?999:1}));
++  const sampled=extremaSample(points);
++  assert(sampled.includes(points[0]) && sampled.includes(points.at(-1)) && sampled.includes(points[555]));
++  assert(sampled.every(p=>points.includes(p)) && sampled.length<=800);
++});
++test('zoom clamps edges and never exceeds the observed time range',()=>{
++  assert.deepEqual(zoomWindow(0,10,10,.5),[2.5,7.5]);
++  assert.deepEqual(zoomWindow(8,10,10,2),[6,10]);
++  assert.deepEqual(zoomWindow(2,8,10,10),[0,10]);
++});
++test('jitter needs observed intervals and an explicit limit, including zero',()=>{
++  const r={received_event_count:2,configured_cycle_ms:10,maximum_jitter_ms:0,jitter_limit_ms:0};
++  assert.equal(jitterAssessment(r),'Innerhalb der Grenze');
++  assert.equal(jitterAssessment({...r,maximum_jitter_ms:1}),'Grenze überschritten');
++  assert.equal(jitterAssessment({...r,jitter_limit_ms:null}),'Grenze offen');
++  assert.equal(jitterAssessment({...r,received_event_count:1}),'Keine bewertbaren Intervalle');
++  assert.equal(jitterAssessment({...r,configured_cycle_ms:0}),'Keine bewertbaren Intervalle');
++});
++test('forecast uses only explicit stored assumptions; incomplete coverage is unknown',()=>{
++  const a={capacity_verified:false,simulation_capacity:{status:'CALCULATED_UNDER_ASSUMPTIONS',peak_load_percent:30,capacity_reserve_percent:70}};
++  assert.deepEqual(forecastUnderAssumptions({networks:[a]}),{peak:30,reserve:70,networks:1});
++  assert.equal(forecastUnderAssumptions({networks:[a,{capacity_verified:false}]}).peak,null);
++  assert.equal(forecastUnderAssumptions({overview:{max_peak_load_percent:66}}),null);
++  assert.equal(forecastUnderAssumptions({networks:[{...a,simulation_capacity:{...a.simulation_capacity,peak_load_percent:null}}]}).peak,null);
++});

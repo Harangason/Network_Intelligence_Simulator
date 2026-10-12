@@ -1,0 +1,145 @@
+{
+  "goal_id": "studio-release-get-transport-repair",
+  "goal_type": "implementation",
+  "kind": "repair",
+  "repository": "I:\\PycharmProjects\\My_first_Network_Simulator",
+  "modify_code": true,
+  "allow_repair": true,
+  "revision_before": {
+    "frontend/e2e/wizard.spec.ts": "07255f651de218cafeeb2b5b5f76eacb71b634442cf1a2babec959cb8ab41c40"
+  },
+  "before": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\studio-layout-capacity-search-20261011\\transport-read-repair\\wizard.spec.before.ts",
+      "sha256": "07255f651de218cafeeb2b5b5f76eacb71b634442cf1a2babec959cb8ab41c40"
+    }
+  ],
+  "files_changed": [
+    "frontend/e2e/wizard.spec.ts"
+  ],
+  "unresolved_decisions": [],
+  "required_outcomes": [
+    "bounded_read_transport_recovery",
+    "original_assertions_preserved",
+    "complete_release_pass"
+  ],
+  "validation_requirements": [
+    "transport_counterprobe",
+    "full_release_gate"
+  ],
+  "outcomes": {
+    "bounded_read_transport_recovery": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\studio-layout-capacity-search-20261011\\transport-counterprobe.json",
+          "sha256": "cef16dcaa6703de10850926f16132c397ff337ea36edc71ea95dcf0d28b989f7"
+        }
+      ]
+    },
+    "original_assertions_preserved": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\studio-layout-capacity-search-20261011\\transport-read-repair\\assertion-preservation.json",
+          "sha256": "4e1771ff900ce0d22217f86053b23789b07e53924aee26e566ed20773a66a510"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\studio-layout-capacity-search-20261011\\transport-read-repair\\owned-changes.diff",
+          "sha256": "372c3ca9fd5eb59cc01d1ff2a15b5d530ed59d4ca19440c7b916e60c383b2e58"
+        }
+      ]
+    },
+    "complete_release_pass": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\delivery-e846375a3120\\e474119485bd\\receipt.json",
+          "sha256": "799b28700113d54a4d996cbe37f10df769ab6fc081fc5db770a84a56823ce516"
+        }
+      ]
+    }
+  },
+  "validations": {
+    "transport_counterprobe": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\studio-layout-capacity-search-20261011\\transport-counterprobe.json",
+          "sha256": "cef16dcaa6703de10850926f16132c397ff337ea36edc71ea95dcf0d28b989f7"
+        }
+      ]
+    },
+    "full_release_gate": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\delivery-e846375a3120\\e474119485bd\\receipt.json",
+          "sha256": "799b28700113d54a4d996cbe37f10df769ab6fc081fc5db770a84a56823ce516"
+        }
+      ]
+    }
+  },
+  "completion_status": "COMPLETED",
+  "repair": {
+    "owner": "TOOL_CHECKER",
+    "finding_ids": [
+      "ROUTING_REVIEW_GET_SOCKET_RESET"
+    ],
+    "root_cause": "The verification readProject helper uses a single HTTP GET with zero transport retries. The genuine Node trace shows Socket.socketOnEnd socket hang up in 4.791 ms, before any HTTP response; the same isolated persisted endpoint then returns correct project data on three consecutive reads. A transient connection reset prematurely terminates the persisted-state assertions. The underlying reason for peer socket closure is not claimed.",
+    "first_failing_layer": "Playwright APIRequestContext HTTP read transport, before HTTP status/body and continuity assertions",
+    "reproduction": "Full immutable-image gate: routing parameter return review fails at wizard.spec.ts:276 -> readProject:62. Real loopback counterprobe reproduces the same socket hang up and proves recovery is limited to ECONNRESET.",
+    "evidence": [
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\studio-layout-capacity-search-20261011\\transport-diagnosis.json",
+        "sha256": "bae2b271798e4ad9c0d12737e9ab4e44ebb20058b23f12c1fc5c1bf35c4a7915"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\studio-layout-capacity-search-20261011\\transport-counterprobe.json",
+        "sha256": "cef16dcaa6703de10850926f16132c397ff337ea36edc71ea95dcf0d28b989f7"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\frontend\\node_modules\\playwright-core\\lib\\coreBundle.js",
+        "sha256": "549070af3acabb3efcc4f55bfe6210f9f7c2fcf633cf7eaa59bfe60719969171"
+      }
+    ],
+    "affected_files": [
+      "frontend/e2e/wizard.spec.ts"
+    ],
+    "affected_services": [
+      "release verification read helper"
+    ],
+    "required_fix": "Use the pinned Playwright maxRetries=2 only on readProject GET. Keep timeout 60s, HTTP failures, JSON validation, project/provenance/continuity assertions and writes unchanged.",
+    "acceptance_criteria": [
+      "one reset recovers with actual response",
+      "persistent resets still fail",
+      "HTTP 500 not retried",
+      "malformed JSON still fails",
+      "writes never retried",
+      "original assertions byte-preserved outside GET options",
+      "fresh complete gate on exact same source image"
+    ],
+    "targeted_tests": [
+      "transport_counterprobe.mjs",
+      "actual routing-review case in fresh full gate"
+    ],
+    "weaken_assertions_to_pass": false
+  },
+  "after": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\studio-layout-capacity-search-20261011\\transport-read-repair\\wizard.spec.after.ts",
+      "sha256": "df331cbd314a928b7b009eaf7bdae8592f184afedb92fb10b30aba6ba70fa9d2"
+    }
+  ],
+  "diff": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\studio-layout-capacity-search-20261011\\transport-read-repair\\owned-changes.diff",
+      "sha256": "372c3ca9fd5eb59cc01d1ff2a15b5d530ed59d4ca19440c7b916e60c383b2e58"
+    }
+  ],
+  "remaining_findings": [],
+  "delivery": {
+    "decision": "NOT_APPLICABLE",
+    "reason": "Verification-only GET transport input; the unchanged application image completed the full new gate and was deployed and verified by the parent workload."
+  }
+}

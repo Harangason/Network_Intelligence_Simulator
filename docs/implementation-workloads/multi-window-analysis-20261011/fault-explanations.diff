@@ -1,0 +1,123 @@
+--- before/frontend/src/features/simulation/ui/model-simulation-runner.tsx
++++ after/frontend/src/features/simulation/ui/model-simulation-runner.tsx
+@@ -66,6 +66,45 @@
+   MESSAGE: ["MESSAGE_LOSS", "MESSAGE_DELAY", "MESSAGE_JITTER", "MESSAGE_DUPLICATION", "MESSAGE_CORRUPTION", "MESSAGE_WRONG_CYCLE", "MESSAGE_TIMEOUT", "BURST_TRAFFIC", "FRAME_ERROR", "ROUTING_FAILURE"],
+   NETWORK: ["NETWORK_OVERLOAD", "BUS_OFF", "LINK_DOWN", "GATEWAY_DELAY", "GATEWAY_DROP", "QUEUE_OVERFLOW", "CONGESTION", "TEMPORARY_DISCONNECT"],
+ } as const;
++
++type FaultType = typeof FAULT_TYPES[keyof typeof FAULT_TYPES][number];
++const FAULT_SCOPE_LABELS = { SIGNAL: "Signal", MESSAGE: "Nachricht", NETWORK: "Netzwerk" } as const;
++// Presentation only: the existing fault engine remains authoritative.
++const FAULT_HELP: Record<FaultType, { label: string; explanation: string; valueLabel?: string; valueHint?: string }> = {
++  SIGNAL_STUCK: { label: "Signal bleibt hängen", explanation: "Hält den beim Fehlereintritt erfassten Signalwert fest. Der Zusatzwert wird nicht verwendet." },
++  SIGNAL_OFFSET: { label: "Signalwert verschieben", explanation: "Addiert den Zusatzwert zum regulären Signalwert.", valueLabel: "Verschiebung (Signaleinheit)", valueHint: "5 bedeutet +5 in der Einheit des betroffenen Signals. Bei 0 verwendet das Modell 10 % seines Wertebereichs." },
++  SIGNAL_DRIFT: { label: "Signal driftet", explanation: "Die Abweichung wächst mit der Zeit seit Fehlerbeginn.", valueLabel: "Drift (Signaleinheit/s)", valueHint: "5 bedeutet eine zusätzliche Abweichung von +5 pro Sekunde. Bei 0 verwendet das Modell 10 % des Wertebereichs pro Sekunde." },
++  SIGNAL_SPIKE: { label: "Signalspitze", explanation: "Erhöht die Signalwerte während des gesamten Fehlerfensters um den Zusatzwert.", valueLabel: "Spitzenhöhe (Signaleinheit)", valueHint: "5 bedeutet +5 in der Signaleinheit. Für eine kurze Spitze ein entsprechend kurzes Fehlerfenster wählen. Bei 0 verwendet das Modell 10 % des Wertebereichs." },
++  SIGNAL_DROPOUT: { label: "Signal fällt aus", explanation: "Liefert im Fehlerfenster keinen Signalwert. Der Zusatzwert wird nicht verwendet." },
++  SIGNAL_NOISE: { label: "Signal verrauscht", explanation: "Überlagert den Signalwert mit reproduzierbarem Zufallsrauschen.", valueLabel: "Rauschstreuung (Signaleinheit)", valueHint: "Der Betrag des Werts ist die Standardabweichung, keine feste Verschiebung. Bei 0 verwendet das Modell 10 % des Wertebereichs." },
++  SIGNAL_OUT_OF_RANGE: { label: "Signal außerhalb des Wertebereichs", explanation: "Setzt den Signalwert oberhalb seines konfigurierten Maximums.", valueLabel: "Abstand über Maximum (Signaleinheit)", valueHint: "5 bedeutet Maximum +5; verwendet wird der Betrag. Bei 0 verwendet das Modell 10 % des Wertebereichs." },
++  SIGNAL_FROZEN: { label: "Signal eingefroren", explanation: "Hält wie „Signal bleibt hängen“ den ersten Wert im Fehlerfenster fest. Der Zusatzwert wird nicht verwendet." },
++  SIGNAL_DELAYED: { label: "Signal verzögert", explanation: "Liest einen älteren Signalwert. Dieser Editor verwendet die Modellvorgabe von 0,1 s Verzögerung; der Zusatzwert wird nicht verwendet." },
++  SIGNAL_WRONG_SCALE: { label: "Falsche Signalskalierung", explanation: "Multipliziert den Signalwert in diesem Editor mit dem Modellfaktor 2. Der Zusatzwert wird nicht verwendet." },
++  SIGNAL_INVALID_VALUE: { label: "Ungültiger Signalwert", explanation: "Liefert keinen gültigen numerischen Signalwert. Der Zusatzwert wird nicht verwendet." },
++  MESSAGE_LOSS: { label: "Nachrichtenverlust", explanation: "Verwirft die betroffenen Nachrichten im Fehlerfenster. Der Zusatzwert wird nicht verwendet." },
++  MESSAGE_DELAY: { label: "Nachricht verzögert", explanation: "Fügt in diesem Editor 50 ms zusätzliche Übertragungsverzögerung hinzu. Der Zusatzwert wird nicht verwendet." },
++  MESSAGE_JITTER: { label: "Zeitabweichung der Nachricht", explanation: "Verschiebt die Nachrichtenzeit im Modell um 10 ms. Das ist hier eine feste Zeitabweichung, kein Zufallsrauschen; der Zusatzwert wird nicht verwendet." },
++  MESSAGE_DUPLICATION: { label: "Nachricht als Duplikat markieren", explanation: "Kennzeichnet das Ereignis als injiziertes Duplikat für die Auswertung. Der Zusatzwert wird nicht verwendet." },
++  MESSAGE_CORRUPTION: { label: "Nachricht beschädigt", explanation: "Markiert die Nachricht als beschädigt und ersetzt das erste Nutzdatenbyte durch FF. Der Zusatzwert wird nicht verwendet." },
++  MESSAGE_WRONG_CYCLE: { label: "Abweichender Nachrichtenzyklus", explanation: "Setzt die Zyklusreferenz in den Ereignisdaten auf den doppelten bisherigen Wert. Der Zusatzwert wird nicht verwendet." },
++  MESSAGE_TIMEOUT: { label: "Zeitüberschreitung simulieren", explanation: "Injiziert im Modell einen Timeout-Fehler mit 50 ms zusätzlicher Verzögerung. Eine tatsächlich verletzte Frist muss die Auswertung anhand der Anforderungen prüfen. Der Zusatzwert wird nicht verwendet." },
++  BURST_TRAFFIC: { label: "Gebündelter Nachrichtenverkehr", explanation: "Setzt im Simulationsereignis einen Lastfaktor von 4. Der Zusatzwert wird nicht verwendet." },
++  FRAME_ERROR: { label: "Übertragungsrahmen beschädigt", explanation: "Markiert den Rahmen als beschädigt und ersetzt das erste Nutzdatenbyte durch FF. Der Zusatzwert wird nicht verwendet." },
++  ROUTING_FAILURE: { label: "Weiterleitung fehlgeschlagen", explanation: "Verwirft die Nachrichten auf dem betroffenen Übertragungsweg. Der Zusatzwert wird nicht verwendet." },
++  NETWORK_OVERLOAD: { label: "Netzüberlast simulieren", explanation: "Setzt im Simulationsereignis einen Lastfaktor von 4. Der Zusatzwert wird nicht verwendet." },
++  BUS_OFF: { label: "Bus abgeschaltet", explanation: "Verwirft die betroffenen Übertragungen im Fehlerfenster. Der Zusatzwert wird nicht verwendet." },
++  LINK_DOWN: { label: "Verbindung ausgefallen", explanation: "Verwirft Übertragungen auf der betroffenen Verbindung. Der Zusatzwert wird nicht verwendet." },
++  GATEWAY_DELAY: { label: "Gateway verzögert", explanation: "Fügt für die betroffenen Gateway-Übertragungen 50 ms Verzögerung hinzu. Der Zusatzwert wird nicht verwendet." },
++  GATEWAY_DROP: { label: "Gateway verwirft Nachrichten", explanation: "Verwirft die betroffenen Gateway-Übertragungen im Fehlerfenster. Der Zusatzwert wird nicht verwendet." },
++  QUEUE_OVERFLOW: { label: "Warteschlange läuft über", explanation: "Setzt einen Lastfaktor von 4 und verwirft betroffene Ereignisse mit dem Grund „Warteschlangenüberlauf“. Der Zusatzwert wird nicht verwendet." },
++  CONGESTION: { label: "Übertragungsstau", explanation: "Fügt in diesem Editor 50 ms Verzögerung hinzu. Der Zusatzwert wird nicht verwendet." },
++  TEMPORARY_DISCONNECT: { label: "Verbindung kurz unterbrochen", explanation: "Verwirft die betroffenen Übertragungen zwischen Fehlerbeginn und Fehlerende. Der Zusatzwert wird nicht verwendet." },
++};
++
++function faultHelp(type: string) {
++  return FAULT_HELP[type as FaultType];
++}
+ 
+ function simulationSessionKey(projectId: string) {
+   return `nis.active-simulation.${projectId}`;
+@@ -477,7 +516,7 @@
+       setProposals((current) => current.map((item) => item.proposal_id === reviewed.proposal_id ? reviewed : item));
+       if (action === "EDIT") {
+         setProposalMagnitude((current) => ({ ...current, [proposalId]: Number(reviewed.configuration.magnitude ?? magnitude) }));
+-        setProposalReviewState((current) => ({ ...current, [proposalId]: { busy: false, message: `Änderung gespeichert · Magnitude ${Number(reviewed.configuration.magnitude ?? magnitude)}` } }));
++        setProposalReviewState((current) => ({ ...current, [proposalId]: { busy: false, message: `Änderung gespeichert · Zusatzwert ${Number(reviewed.configuration.magnitude ?? magnitude)}` } }));
+       } else {
+         setProposalReviewState((current) => ({ ...current, [proposalId]: { busy: false, message: action === "ACCEPT" ? "Vorschlag übernommen." : "Vorschlag abgelehnt." } }));
+       }
+@@ -599,17 +638,19 @@
+       {!scopeValid && <p className="notice warning">Der gespeicherte Umfang braucht eine gültige Auswahl und Begründung. Bitte im Preflight ergänzen.</p>}
+ 
+       <section className="panel fault-editor">
+-          <div className="compact-heading"><div><p className="eyebrow">Fault scenario</p><h2>Fehler gezielt injizieren</h2></div><button className="button secondary" disabled={busy || !workflow} onClick={() => void askAgentForFaults()} type="button">KI-Vorschläge</button></div>
++          <div className="compact-heading"><div><p className="eyebrow">Fehlerszenario</p><h2>Fehler gezielt injizieren</h2></div><button className="button secondary" disabled={busy || !workflow} onClick={() => void askAgentForFaults()} type="button">KI-Vorschläge</button></div>
+           <div className="fault-builder">
+-            <select value={faultScope} onChange={(event) => { const scope = event.target.value as keyof typeof FAULT_TYPES; setFaultScope(scope); setFaultType(FAULT_TYPES[scope][0]); }}><option value="SIGNAL">Signal</option><option value="MESSAGE">Message</option><option value="NETWORK">Network</option></select>
+-            <select value={faultType} onChange={(event) => setFaultType(event.target.value)}>{FAULT_TYPES[faultScope].map((type) => <option key={type}>{type}</option>)}</select>
+-            <input aria-label="Ziel-ID" placeholder="Ziel-ID, leer = alle" value={faultTarget} onChange={(event) => setFaultTarget(event.target.value)} />
+-            <input aria-label="Fault Start" min="0" placeholder="Start s" step="0.01" type="number" value={faultStart} onChange={(event) => setFaultStart(Number(event.target.value))} />
+-            <input aria-label="Fault Ende" min={faultStart + 0.001} placeholder="Ende s" step="0.01" type="number" value={faultEnd} onChange={(event) => setFaultEnd(Number(event.target.value))} />
+-            <input aria-label="Fault Wert" placeholder="Wert" step="0.1" type="number" value={faultMagnitude} onChange={(event) => setFaultMagnitude(Number(event.target.value))} />
++            <label><span>Fehler betrifft</span><select aria-label="Fehler betrifft" value={faultScope} onChange={(event) => { const scope = event.target.value as keyof typeof FAULT_TYPES; setFaultScope(scope); setFaultType(FAULT_TYPES[scope][0]); }}>{(Object.keys(FAULT_TYPES) as Array<keyof typeof FAULT_TYPES>).map(scope => <option key={scope} value={scope}>{FAULT_SCOPE_LABELS[scope]}</option>)}</select></label>
++            <label><span>Fehlertyp</span><select aria-label="Fehlertyp" aria-describedby="fault-type-description" value={faultType} onChange={(event) => setFaultType(event.target.value)}>{FAULT_TYPES[faultScope].map((type) => <option key={type} value={type}>{FAULT_HELP[type].label}</option>)}</select></label>
++            <label><span>Ziel-ID</span><input aria-label="Ziel-ID" placeholder="Leer = alle im gewählten Bereich" value={faultTarget} onChange={(event) => setFaultTarget(event.target.value)} /><small>ID des Signals, der Nachricht/Route oder des Netzwerks.</small></label>
++            <label><span>Fehlerbeginn (s)</span><input aria-label="Fehlerbeginn (s)" aria-describedby="fault-start-help" min="0" step="0.01" type="number" value={faultStart} onChange={(event) => setFaultStart(Number(event.target.value))} /><small id="fault-start-help">Zeit ab Simulationsstart. 0,25 = nach 250 ms.</small></label>
++            <label><span>Fehlerende (s)</span><input aria-label="Fehlerende (s)" aria-describedby="fault-end-help" min={faultStart + 0.001} step="0.01" type="number" value={faultEnd} onChange={(event) => setFaultEnd(Number(event.target.value))} /><small id="fault-end-help">Zeit ab Simulationsstart, keine Dauer. 1,5 = Ende nach 1,5 s.</small></label>
++            <label><span>{faultHelp(faultType)?.valueLabel ?? "Zusatzwert (nicht verwendet)"}</span><input aria-label="Fehler-Zusatzwert" aria-describedby="fault-value-help" disabled={!faultHelp(faultType)?.valueLabel} step="0.1" type="number" value={faultMagnitude} onChange={(event) => setFaultMagnitude(Number(event.target.value))} /><small id="fault-value-help">{faultHelp(faultType)?.valueHint ?? "Dieser Fehlertyp verwendet den Wert nicht; maßgeblich sind Ziel und Zeitfenster."}</small></label>
+             <button className="button primary" onClick={addFault} type="button">Hinzufügen</button>
+           </div>
+-          <div className="fault-chip-list">{faults.map((fault) => <button className="fault-chip" key={fault.id} title="Fehler entfernen" type="button" onClick={() => setFaults((current) => current.filter((item) => item.id !== fault.id))}><strong>{fault.type}</strong><span>{fault.scope} · {fault.source === "ai" ? "KI geprüft" : "Nutzer"}</span><b>×</b></button>)}{!faults.length && <span className="empty-inline">Keine Fehler aktiv. Der Lauf bildet den Golden Trace.</span>}</div>
++          <p className="fault-description" id="fault-type-description"><strong>{faultHelp(faultType)?.label} <code>{faultType}</code></strong>{faultHelp(faultType)?.explanation}<span>Wirkt von {faultStart.toLocaleString("de-DE")} s bis {Math.max(faultStart + 0.001, faultEnd).toLocaleString("de-DE")} s · Dauer {(Math.max(faultStart + 0.001, faultEnd) - faultStart).toLocaleString("de-DE")} s. Außerhalb der Laufdauer hat das Zeitfenster keine Wirkung.</span></p>
++          <details className="fault-glossary"><summary>Fehlerbegriffe und ihre Wirkung erklären</summary>{(Object.keys(FAULT_TYPES) as Array<keyof typeof FAULT_TYPES>).map(scope => <section key={scope}><h3>{FAULT_SCOPE_LABELS[scope]}</h3><dl>{FAULT_TYPES[scope].map(type => <div key={type}><dt>{FAULT_HELP[type].label} <code>{type}</code></dt><dd>{FAULT_HELP[type].explanation}{FAULT_HELP[type].valueHint && <span> {FAULT_HELP[type].valueHint}</span>}</dd></div>)}</dl></section>)}</details>
++          <div className="fault-chip-list">{faults.map((fault) => <button className="fault-chip" key={fault.id} title={`${fault.type} · ${faultHelp(fault.type)?.explanation ?? "Fehler entfernen"}`} type="button" onClick={() => setFaults((current) => current.filter((item) => item.id !== fault.id))}><strong>{faultHelp(fault.type)?.label ?? fault.type}</strong><span>{FAULT_SCOPE_LABELS[fault.scope]} · {fault.start_s.toLocaleString("de-DE")}–{fault.end_s?.toLocaleString("de-DE") ?? "Laufende"} s · {fault.source === "ai" ? "KI geprüft" : "Nutzer"}</span><b>×</b></button>)}{!faults.length && <span className="empty-inline">Keine Fehler aktiv. Der Lauf bildet die fehlerfreie Referenz (Golden Trace).</span>}</div>
+       </section>
+ 
+       <FaultProposalReview proposals={proposals.filter((proposal) => proposal.status !== "REJECTED" && proposal.status !== "SUPERSEDED")} magnitudes={proposalMagnitude} reviewState={proposalReviewState} onMagnitude={(id, value) => { setProposalMagnitude((current) => ({ ...current, [id]: value })); setProposalReviewState((current) => ({ ...current, [id]: { busy: false, message: "Nicht gespeicherte Änderung" } })); }} onReview={reviewProposal} />
+@@ -647,7 +688,7 @@
+ 
+ function FaultProposalReview({ proposals, magnitudes, reviewState, onMagnitude, onReview }: { proposals: FaultProposal[]; magnitudes: Record<string, number>; reviewState: Record<string, { busy: boolean; message: string; error?: boolean }>; onMagnitude: (id: string, value: number) => void; onReview: (proposal: FaultProposal, action: "ACCEPT" | "EDIT" | "REJECT") => Promise<void> }) {
+   if (!proposals.length) return null;
+-  return <section className="panel fault-proposal-review"><div className="compact-heading"><div><p className="eyebrow">Review gate</p><h2>KI-Fehlervorschläge</h2></div><span>Keine automatische Aktivierung</span></div><div className="fault-proposal-grid">{proposals.map((proposal) => { const state = reviewState[proposal.proposal_id]; return <article key={proposal.proposal_id} className={proposal.status === "APPROVED" ? "approved" : ""}><div><span>{proposal.fault_scope}</span><strong>{proposal.title}</strong><p>{proposal.rationale}</p></div><label><span>Magnitude</span><input type="number" min="0" step="any" value={magnitudes[proposal.proposal_id] ?? Number(proposal.configuration.magnitude ?? 5)} onChange={(event) => onMagnitude(proposal.proposal_id, Number(event.target.value))} /></label><div className="proposal-actions"><button className="button primary" disabled={state?.busy || proposal.status === "APPROVED"} onClick={() => void onReview(proposal, "ACCEPT")} type="button">Übernehmen</button><button className="button secondary" disabled={state?.busy} onClick={() => void onReview(proposal, "EDIT")} type="button">{state?.busy ? "Speichert …" : "Ändern"}</button><button className="button secondary" disabled={state?.busy} onClick={() => void onReview(proposal, "REJECT")} type="button">Ablehnen</button></div>{state?.message && <p className={state.error ? "proposal-feedback error" : "proposal-feedback"} role="status">{state.message}</p>}</article>; })}</div></section>;
++  return <section className="panel fault-proposal-review"><div className="compact-heading"><div><p className="eyebrow">Freigabeprüfung</p><h2>KI-Fehlervorschläge</h2></div><span>Keine automatische Aktivierung</span></div><div className="fault-proposal-grid">{proposals.map((proposal) => { const state = reviewState[proposal.proposal_id]; return <article key={proposal.proposal_id} className={proposal.status === "APPROVED" ? "approved" : ""}><div><span>{FAULT_SCOPE_LABELS[proposal.fault_scope]}</span><strong>{proposal.title}</strong><p>{proposal.rationale}</p></div><label><span>Zusatzwert</span><input type="number" min="0" step="any" value={magnitudes[proposal.proposal_id] ?? Number(proposal.configuration.magnitude ?? 5)} onChange={(event) => onMagnitude(proposal.proposal_id, Number(event.target.value))} /></label><div className="proposal-actions"><button className="button primary" disabled={state?.busy || proposal.status === "APPROVED"} onClick={() => void onReview(proposal, "ACCEPT")} type="button">Übernehmen</button><button className="button secondary" disabled={state?.busy} onClick={() => void onReview(proposal, "EDIT")} type="button">{state?.busy ? "Speichert …" : "Ändern"}</button><button className="button secondary" disabled={state?.busy} onClick={() => void onReview(proposal, "REJECT")} type="button">Ablehnen</button></div>{state?.message && <p className={state.error ? "proposal-feedback error" : "proposal-feedback"} role="status">{state.message}</p>}</article>; })}</div></section>;
+ }
+ 
+ function NetworkView({ job, trace, playhead, topology }: { job: SimulationJob | null; trace: ModelSimulationTrace; playhead: number; topology?: Partial<NetworkTopology> }) {
+--- before/frontend/src/app/globals.css
++++ after/frontend/src/app/globals.css
+@@ -15878,3 +15878,26 @@
+ .signal-selection-name { appearance:none; padding:0; border:0; background:transparent; color:inherit; font:inherit; font-weight:700; text-align:left; cursor:pointer; }
+ .signal-selection-name:focus-visible { outline:2px solid var(--accent); outline-offset:4px; }
+ @media(max-width:800px) { .analysis-compare-sides {grid-template-columns:1fr;} .analysis-window-tools > header {align-items:flex-start;flex-direction:column;} .analysis-window-actions > * {flex:1 1 200px;} }
++
++/* Fault parameters carry visible units and engine-backed explanations. */
++.fault-builder { grid-template-columns:repeat(3,minmax(0,1fr)); align-items:start; }
++.fault-builder > label { display:grid; gap:6px; min-width:0; margin:0; }
++.fault-builder > label > span { color:var(--muted); font-size:11px; }
++.fault-builder small { color:var(--muted); font-size:11px; line-height:1.5; overflow-wrap:anywhere; }
++.fault-builder input,.fault-builder select { min-width:0; }
++.fault-builder input:disabled { opacity:.6; cursor:not-allowed; }
++.fault-builder > button { grid-column:1 / -1; justify-self:start; }
++.fault-description { display:grid; gap:8px; padding:14px; margin-block:14px; border:1px solid var(--border); border-radius:6px; background:var(--background); font-size:12px; line-height:1.6; overflow-wrap:anywhere; }
++.fault-description > strong { display:flex; gap:8px; flex-wrap:wrap; }
++.fault-description > span { color:var(--muted); }
++.fault-description code,.fault-glossary code { color:var(--muted); font-size:11px; overflow-wrap:anywhere; }
++.fault-glossary { margin-block:14px; }
++.fault-glossary summary { cursor:pointer; font-size:12px; }
++.fault-glossary section { margin-top:16px; }
++.fault-glossary h3 { font-size:13px; }
++.fault-glossary dl { margin:0; }
++.fault-glossary dl > div { padding-block:10px; border-top:1px solid var(--border); }
++.fault-glossary dt { display:flex; flex-wrap:wrap; gap:8px; font-size:12px; font-weight:600; }
++.fault-glossary dd { margin:6px 0 0; color:var(--muted); font-size:12px; line-height:1.6; overflow-wrap:anywhere; }
++@media(max-width:760px) { .fault-builder {grid-template-columns:repeat(2,minmax(0,1fr));} }
++@media(max-width:480px) { .fault-builder {grid-template-columns:1fr;} }

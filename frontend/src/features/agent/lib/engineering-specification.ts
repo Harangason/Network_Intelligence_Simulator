@@ -191,9 +191,9 @@ function companionSignal(
  * Class 3/4 devices need an inspectable minimum model instead of a single
  * placeholder signal. Message packing assigns the final offsets and DLC.
  */
-export function expandEngineeringSignalModel(chains: ExtractedEngineeringChain[]) {
+export function expandEngineeringSignalModel(chains: ExtractedEngineeringChain[], preserveHistoricalLimit = false) {
   return chains.flatMap((chain) => {
-    if (!requiresCompleteSignalModel(chain)) return [chain];
+    if (!requiresCompleteSignalModel(chain) || chain.configuration?.functional_output_template) return [chain];
     const candidates = [
       companionSignal(chain, "Status", {
         length_bits: 4,
@@ -271,7 +271,7 @@ export function expandEngineeringSignalModel(chains: ExtractedEngineeringChain[]
       if (seen.has(key)) return false;
       seen.add(key);
       return true;
-    }).slice(0, 5);
+    }).slice(0, preserveHistoricalLimit ? 5 : undefined);
   });
 }
 

@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { CommunicationSizingPanel } from "@/features/communication/ui/communication-sizing-panel";
 import { SafetyAssurancePanel } from "@/features/intelligence/ui/safety-assurance-panel";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -138,7 +137,6 @@ export function IntelligenceWorkbench() {
   const results = snapshot.results;
   return (
     <section className="intelligence-workbench">
-      <CommunicationSizingPanel />
       <SafetyAssurancePanel />
       <header className="intelligence-toolbar">
         <div>

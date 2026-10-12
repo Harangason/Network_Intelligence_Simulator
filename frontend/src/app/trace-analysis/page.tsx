@@ -9,10 +9,12 @@ export default async function TraceAnalysisPage({
 }: {
   searchParams: Promise<ProjectQueryRecord>;
 }) {
-  const initialProjectId = projectIdFromSearchParams(await searchParams);
+  const query=await searchParams;
+  const initialProjectId = projectIdFromSearchParams(query);
+  const secondary=Boolean(query.window && query.primary && query.window!==query.primary);
   return (
     <main className="shell studio-shell workflow-shell trace-analysis-page">
-      <StudioTopbar initialProjectId={initialProjectId} />
+      {secondary ? <header className="analysis-secondary-heading"><strong>NIS · Analysefenster</strong><span>Gespeicherte Daten · Analyseprojektion</span></header> : <StudioTopbar initialProjectId={initialProjectId} />}
       <WorkflowHeader initialProjectId={initialProjectId} variant="trace-analysis" />
       <StudioWorkflowHero eyebrow="Trace Analyse" initialProjectId={initialProjectId} title="Trace-Artefakte analysieren.">
         Botschaften, Sequenzen, Signale und Findings werden aus geladenen Trace-Artefakten untersucht. Engineering-Daten werden nicht verändert.

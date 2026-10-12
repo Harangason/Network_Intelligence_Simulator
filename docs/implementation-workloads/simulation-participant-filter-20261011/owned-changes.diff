@@ -1,0 +1,247 @@
+--- before/frontend/src/features/simulation/ui/e2e-sequence-diagram.tsx
++++ after/frontend/src/features/simulation/ui/e2e-sequence-diagram.tsx
+@@ -2,6 +2,7 @@
+ 
+ import { useId, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
+ import type { SequenceDiagramModel, SequenceEvent } from "@/features/simulation/lib/e2e-sequence";
++import { sequenceEventMatchesParticipants } from "@/features/simulation/lib/e2e-sequence";
+ import { simulationPage } from "../lib/simulation-pagination";
+ import { SimulationPageControls } from "./simulation-page-controls";
+ 
+@@ -40,6 +41,7 @@
+   const [localSelectedId, setLocalSelectedId] = useState<string | null>(null);
+   const [hoveredId, setHoveredId] = useState<string | null>(null);
+   const [query, setQuery] = useState("");
++  const [selectedParticipants, setSelectedParticipants] = useState<string[]>([]);
+   const [measuring, setMeasuring] = useState(false);
+   const [measureIds, setMeasureIds] = useState<string[]>([]);
+   const [page, setPage] = useState(0);
+@@ -53,16 +55,21 @@
+     model.participants.forEach(participant => ordered.add(participant));
+     return [...ordered];
+   }, [model.events, model.participants]);
++  const participantFilter = useMemo(() => new Set(selectedParticipants.filter(participant => participants.includes(participant))), [selectedParticipants, participants]);
+   const origin = model.events.find(event => event.timeS !== null)?.timeS ?? null;
+   const filtered = useMemo(() => {
+     const normalized = query.trim().toLocaleLowerCase();
+-    if (!normalized) return model.events;
+-    return model.events.filter(event => [event.source, event.destination, event.route, event.technology, event.status, event.transactionId ?? ""]
+-      .some(value => value.toLocaleLowerCase().includes(normalized)));
+-  }, [model.events, query]);
++    return model.events.filter(event => sequenceEventMatchesParticipants(event, participantFilter) && (!normalized ||
++      [event.source, event.destination, event.route, event.technology, event.status, event.transactionId ?? ""]
++        .some(value => value.toLocaleLowerCase().includes(normalized))));
++  }, [model.events, query, participantFilter]);
+   const displayed = simulationPage(filtered, page, 200);
+   const shown = displayed.items;
+   const changePage = (next: number) => { setPage(next); setHoveredId(null); scrollRef.current?.scrollTo({ top: 0 }); };
++  const toggleParticipant = (participant: string) => {
++    setSelectedParticipants(current => current.includes(participant) ? current.filter(item => item !== participant) : [...current, participant]);
++    changePage(0);
++  };
+   const width = TIME_COLUMN + Math.max(participants.length, 1) * PARTICIPANT_COLUMN + 96;
+   const height = CHART_TOP + shown.length * ROW_HEIGHT + 16;
+   const xFor = (participant: string) => TIME_COLUMN + Math.max(0, participants.indexOf(participant)) * PARTICIPANT_COLUMN + PARTICIPANT_COLUMN / 2;
+@@ -109,6 +116,11 @@
+         </div>
+       </div>
+     </header>
++    <div className="e2e-sequence-participant-filter" aria-label="Teilnehmerfilter">
++      <span aria-live="polite">{participantFilter.size === 0 ? "Teilnehmer anklicken, um ihre TX/RX-Kommunikation zu filtern." :
++        participantFilter.size === 1 ? `TX/RX von ${[...participantFilter][0]}` : `Kommunikation zwischen ${[...participantFilter].join(" ↔ ")}`}</span>
++      {participantFilter.size > 0 && <button className="e2e-sequence-tool-button" type="button" onClick={() => { setSelectedParticipants([]); changePage(0); }}>Teilnehmerfilter aufheben</button>}
++    </div>
+     <p className="e2e-sequence-context">{filtered.length} Ereignisse · {model.transactions.length} Transaktionen · {participants.length} Teilnehmer · {model.uncorrelatedCount} ohne Transaktions-ID · {model.transactions.filter(item => item.receiverStatus === "ACCEPTED").length} mit belegter Empfängerakzeptanz. {measuring ? measured.length < 2 ? "Start- und Endereignis auswählen." : measureDelta === null ? "Zeitmessung nicht möglich: Zeitstempel fehlen." : `Zeitabstand: ${measureDelta.toFixed(3)} ms` : "Zeit relativ zum ersten bekannten Ereignis."}</p>
+     {measuring && <section className="e2e-sequence-measurement" aria-label="Zeitmessung" aria-live="polite">
+       <header><strong>Zeitmessung</strong><button className="button secondary tiny" type="button" onClick={() => setMeasureIds([])}>Messung zurücksetzen</button></header>
+@@ -122,11 +134,12 @@
+       <div className="e2e-sequence-chart" style={{ width, "--participant-count": participants.length } as CSSProperties}>
+         <div className="e2e-sequence-lanes" style={{ gridTemplateColumns: `${TIME_COLUMN}px repeat(${Math.max(participants.length, 1)}, ${PARTICIPANT_COLUMN}px)` }}>
+           <strong className="e2e-sequence-lane-time">Zeit</strong>
+-          {participants.map((participant, index) => <div className="e2e-sequence-participant" key={participant} title={participant}>
++          {participants.map((participant, index) => <button className="e2e-sequence-participant" type="button" key={participant} title={participant}
++            aria-label={`${participant}: TX/RX filtern`} aria-pressed={participantFilter.has(participant)} onClick={() => toggleParticipant(participant)}>
+             <strong>{MAC_ADDRESS.test(participant) ? `Teilnehmer ${index + 1}` : participant}</strong>
+             <code>{participant}</code>
+             <small>{MAC_ADDRESS.test(participant) ? "Beobachteter Netzwerkteilnehmer" : "Kommunikationsteilnehmer"}</small>
+-          </div>)}
++          </button>)}
+         </div>
+         <svg className="e2e-sequence-svg" width={width} height={height} viewBox={`0 0 ${width} ${height}`} role="img" aria-label={`${shown.length} zeitlich geordnete Ereignisse zwischen ${participants.length} Kommunikationsteilnehmern`}>
+           <defs>
+--- before/frontend/src/features/simulation/ui/model-simulation-runner.tsx
++++ after/frontend/src/features/simulation/ui/model-simulation-runner.tsx
+@@ -655,6 +655,7 @@
+ }
+ 
+ function SignalsView({ trace, playhead }: { trace: ModelSimulationTrace; playhead: number }) {
++  const [compact, setCompact] = useState(true);
+   const [selected, setSelected] = useState(() => initialSignalSelection(trace.signals));
+   const [search, setSearch] = useState("");
+   const [behavior, setBehavior] = useState<SignalBehaviorFilter>("ALL");
+@@ -680,7 +681,7 @@
+   const filteredIds = filtered.map((series) => series.signal_id);
+   const selectFiltered = () => setSelected((current) => [...new Set([...current, ...filteredIds])]);
+   const clearFiltered = () => setSelected((current) => current.filter((id) => !filteredIds.includes(id)));
+-  return <div className="signal-plot-workbench">
++  return <div className={`signal-plot-workbench${compact ? " compact-signals" : ""}`}>
+     <div className="signal-plot-controls">
+       <div className="signal-filter-primary">
+         <label className="signal-filter-field signal-filter-search">
+@@ -701,6 +702,7 @@
+         <div className="signal-selector-actions">
+           <button className="button secondary tiny" onClick={selectFiltered} type="button">Treffer wählen</button>
+           <button className="button secondary tiny" onClick={clearFiltered} type="button">Treffer abwählen</button>
++          <button className="button secondary tiny" aria-pressed={!compact} onClick={() => { setCompact(current => !current); changePage(0); }} type="button">{compact ? "Detailansicht" : "15 Signalspuren"}</button>
+         </div>
+         <output className="signal-filter-summary">{displayed.items.length} dargestellt <i /> {visibleSelected.length} im Filter gewählt <i /> {trace.signals.length} gesamt</output>
+         <div className="signal-time-controls">
+--- before/frontend/src/features/simulation/lib/e2e-sequence.ts
++++ after/frontend/src/features/simulation/lib/e2e-sequence.ts
+@@ -30,6 +30,13 @@
+   correlatedCount: number;
+   uncorrelatedCount: number;
+ };
++
++/** Display filter on original hop endpoints; never infer an unobserved connection. */
++export function sequenceEventMatchesParticipants(event: SequenceEvent, selected: ReadonlySet<string>): boolean {
++  if (selected.size === 0) return true;
++  if (selected.size === 1) return selected.has(event.source) || selected.has(event.destination);
++  return event.source !== event.destination && selected.has(event.source) && selected.has(event.destination);
++}
+ 
+ /** API sequence models are authoritative; this only narrows visible rows for the current view. */
+ export function sequenceModelForEventIds(model: SequenceDiagramModel, eventIds: Set<string>): SequenceDiagramModel {
+--- before/frontend/src/features/simulation/lib/e2e-sequence.test.mjs
++++ after/frontend/src/features/simulation/lib/e2e-sequence.test.mjs
+@@ -1,6 +1,28 @@
+ import assert from 'node:assert/strict';
+ import test from 'node:test';
+-import { buildSequenceDiagram } from './e2e-sequence.ts';
++import { buildSequenceDiagram, sequenceEventMatchesParticipants } from './e2e-sequence.ts';
++
++test('participant filtering keeps actual TX/RX endpoints and canonical evidence for both sources', () => {
++  const records = [
++    { event_id: 'ab', transaction_id: 't', source: 'A', destination: 'B', time_s: 1 },
++    { event_id: 'ba', transaction_id: 't', source: 'B', destination: 'A', time_s: 2 },
++    { event_id: 'bc', source: 'B', destination: 'C', time_s: 3 },
++    { event_id: 'cd', source: 'C', destination: 'D', time_s: 4 },
++    { event_id: 'aa', source: 'A', destination: 'A', time_s: 5 },
++  ];
++  for (const source of ['SIMULATED', 'OBSERVED']) {
++    const model = buildSequenceDiagram(records, source);
++    const original = structuredClone(model);
++    const ids = names => model.events.filter(event => sequenceEventMatchesParticipants(event, new Set(names))).map(event => event.id);
++    assert.deepEqual(ids([]), ['ab', 'ba', 'bc', 'cd', 'aa']);
++    assert.deepEqual(ids(['A']), ['ab', 'ba', 'aa']);
++    assert.deepEqual(ids(['B']), ['ab', 'ba', 'bc']);
++    assert.deepEqual(ids(['A', 'B']), ['ab', 'ba']);
++    assert.deepEqual(ids(['A', 'B', 'C']), ['ab', 'ba', 'bc']);
++    assert.deepEqual(ids(['A', 'C']), []); // No invented connection through B.
++    assert.deepEqual(model, original);
++  }
++});
+ 
+ test('simulation and trace use the same multi-hop transaction projection', () => {
+   const records = [
+--- before/frontend/src/app/globals.css
++++ after/frontend/src/app/globals.css
+@@ -13738,6 +13738,17 @@
+ .signal-chart .limit { position: absolute; left: 16px; color: #9b8740; font: 8px var(--font-geist-mono), monospace; }
+ .signal-chart .limit.max { top: 2px; }
+ .signal-chart .limit.min { bottom: 2px; }
++.compact-signals .signal-lanes { max-height: 630px; }
++.compact-signals .signal-lane { grid-template-columns: minmax(140px, 210px) minmax(0, 1fr); height: 42px; min-height: 42px; }
++.compact-signals .signal-lane > header { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, .8fr); align-items: center; min-height: 0; gap: 6px; padding: 4px 8px; border-right: 1px solid var(--border); border-bottom: 0; }
++.compact-signals .signal-lane header strong,
++.compact-signals .signal-lane header span,
++.compact-signals .signal-lane header b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
++.compact-signals .signal-lane header strong { font-size: 10px; line-height: 13px; }
++.compact-signals .signal-lane header span { margin-top: 2px; font-size: 7px; line-height: 10px; }
++.compact-signals .signal-lane header b { font-size: 10px; text-align: right; }
++.compact-signals .signal-chart { height: 41px; padding: 7px 12px; }
++.compact-signals .signal-chart svg { height: 27px; }
+ .bus-load-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; padding: 16px; }
+ .bus-load-source { grid-column: 1 / -1; display: flex; gap: 12px; align-items: center; padding: 10px 12px; border: 1px solid var(--border); background: var(--surface); font-size: 9px; }
+ .bus-load-source strong { color: var(--accent); }
+@@ -13840,7 +13851,12 @@
+ .e2e-sequence-tool-button[aria-pressed="true"] { color: var(--surface); border-color: var(--accent); background: var(--accent); }
+ .e2e-sequence-lanes { position: sticky; top: 0; z-index: 3; display: grid; min-height: 86px; border-block: 1px solid var(--border); background: var(--surface-deep); }
+ .e2e-sequence-lanes > strong { display: flex; align-items: center; padding: 10px 12px; color: var(--muted); font-size: 10px; text-transform: uppercase; }
+-.e2e-sequence-participant { display: flex; min-width: 0; flex-direction: column; justify-content: center; gap: 4px; border-left: 1px solid var(--border); padding: 8px 12px; }
++.e2e-sequence-participant-filter { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 8px 16px; color: var(--muted); font-size: 11px; }
++.e2e-sequence-participant-filter span { flex: 1; overflow-wrap: anywhere; }
++.e2e-sequence-participant { display: flex; min-width: 0; flex-direction: column; justify-content: center; gap: 4px; border: 0; border-left: 1px solid var(--border); padding: 8px 12px; text-align: left; font: inherit; color: var(--text); background: transparent; cursor: pointer; }
++.e2e-sequence-participant:hover { background: var(--surface-hover); }
++.e2e-sequence-participant[aria-pressed="true"] { background: color-mix(in srgb, var(--accent) 12%, var(--surface)); box-shadow: inset 0 -3px var(--accent); }
++.e2e-sequence-participant:focus-visible { outline: 2px solid var(--accent); outline-offset: -3px; }
+ .e2e-sequence-participant::before { width: 6px; height: 6px; border-radius: 1px; background: var(--accent); content: ""; }
+ .e2e-sequence-participant strong, .e2e-sequence-participant code, .e2e-sequence-participant small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+ .e2e-sequence-participant strong { color: var(--text); font-size: 11px; }
+--- before/frontend/e2e/studio-export-controls.spec.ts
++++ after/frontend/e2e/studio-export-controls.spec.ts
+@@ -66,7 +66,9 @@
+       { time_s: 1, value: index % 2 ? 20 : 10, golden_value: index % 2 ? 20 : 10, faults: [] }],
+   }));
+   const records = Array.from({ length: 405 }, (_, index) => ({ event_id: `event-${index}`, transaction_id: 'transaction',
+-    time_s: index / 1000, source: 'Source', destination: 'Target', route_name: `Route ${index}`, technology: 'ETHERNET', status: 'transmitted' }));
++    time_s: index / 1000, source: index >= 400 ? 'Third' : index === 1 ? 'Target' : 'Source',
++    destination: index >= 400 ? 'Fourth' : index === 1 ? 'Source' : 'Target',
++    route_name: `Route ${index}`, technology: 'ETHERNET', status: 'transmitted' }));
+   const model = buildSequenceDiagram(records, 'SIMULATED');
+   const trace = { scenario: { duration_s: 1 }, signals, frames: records, events: [], bus_load: [], comparison: { available: false } };
+   const blockedRequests: string[] = [];
+@@ -98,6 +100,18 @@
+   await expect(page.locator('.trace-format-trigger')).toContainText('PCAP');
+   await expect(page.getByRole('button', { name: 'Start', exact: true })).toBeEnabled();
+   await expect(page.locator('.signal-lane')).toHaveCount(60);
++  const visibleSignalCount = await page.locator('.signal-lanes').evaluate(element => {
++    const bounds = element.getBoundingClientRect();
++    return [...element.querySelectorAll('.signal-lane')].filter(lane => {
++      const rect = lane.getBoundingClientRect();
++      return rect.top >= bounds.top - 1 && rect.bottom <= bounds.bottom + 1;
++    }).length;
++  });
++  expect(visibleSignalCount).toBe(15);
++  await page.locator('.signal-plot-workbench').screenshot({ path: testInfo.outputPath('fifteen-signal-lanes.png') });
++  await page.getByRole('button', { name: 'Detailansicht', exact: true }).click();
++  await expect(page.locator('.signal-chart').first()).toHaveCSS('height', '126px');
++  await page.getByRole('button', { name: '15 Signalspuren', exact: true }).click();
+   const signalPages = page.getByRole('navigation', { name: 'Signale durchblättern' });
+   await signalPages.getByRole('button', { name: 'Weiter', exact: true }).click();
+   await expect(page.locator('.signal-lane').first()).toContainText('Signal 060');
+@@ -147,6 +161,34 @@
+   await page.getByLabel('Sequenzereignisse suchen').fill('Route 404');
+   await expect(sequence.locator('.e2e-sequence-event')).toHaveCount(1);
+   await expect(sequence.locator('.e2e-sequence-event')).toContainText('Route 404');
++  await page.getByLabel('Sequenzereignisse suchen').fill('');
++  const sourceParticipant = sequence.getByRole('button', { name: 'Source: TX/RX filtern', exact: true });
++  const targetParticipant = sequence.getByRole('button', { name: 'Target: TX/RX filtern', exact: true });
++  const thirdParticipant = sequence.getByRole('button', { name: 'Third: TX/RX filtern', exact: true });
++  await sourceParticipant.click();
++  await expect(sourceParticipant).toHaveAttribute('aria-pressed', 'true');
++  await expect(pages).toContainText('1–200 von 400');
++  await expect(sequence.locator('.e2e-sequence-event').first()).toContainText('Route 0');
++  await expect(sequence.getByLabel('Teilnehmerfilter', { exact: true })).toContainText('TX/RX von Source');
++  await targetParticipant.press('Enter');
++  await expect(targetParticipant).toHaveAttribute('aria-pressed', 'true');
++  await expect(sequence.getByLabel('Teilnehmerfilter', { exact: true })).toContainText('Kommunikation zwischen Source ↔ Target');
++  await expect(sequence.locator('.e2e-sequence-event').nth(1)).toHaveAttribute('aria-label', /Target an Source/);
++  await thirdParticipant.click();
++  await expect(pages).toContainText('von 400');
++  await sourceParticipant.click();
++  await expect(sourceParticipant).toHaveAttribute('aria-pressed', 'false');
++  await expect(sequence.locator('.e2e-sequence-event')).toHaveCount(0);
++  await expect(sequence).toContainText('Keine Ereignisse für diesen Filter.');
++  await thirdParticipant.click();
++  await expect(pages).toContainText('von 400');
++  await targetParticipant.click();
++  await expect(pages).toContainText('von 405');
++  await expect(sequence.getByRole('button', { name: 'Teilnehmerfilter aufheben', exact: true })).toHaveCount(0);
++  await sourceParticipant.click();
++  await sequence.getByRole('button', { name: 'Teilnehmerfilter aufheben', exact: true }).click();
++  await expect(sourceParticipant).toHaveAttribute('aria-pressed', 'false');
++  await expect(pages).toContainText('von 405');
+   for (const width of [954, 390]) {
+     await page.setViewportSize({ width, height: 1244 });
+     await page.getByLabel('Sequenzereignisse suchen').fill('');

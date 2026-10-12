@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 export function RuntimeStatus() {
   const [mode, setMode] = useState<"checking" | "backend" | "browser">("checking");
   const [release, setRelease] = useState<{ id: string; mismatch: boolean } | null>(null);
+  const frontendPatchId = process.env.NEXT_PUBLIC_NETWORKIS_FRONTEND_PATCH_ID;
   useEffect(() => {
     const update = (event: Event) => setMode((event as CustomEvent<"backend" | "browser">).detail);
     window.addEventListener("simulator-mode", update);
@@ -33,5 +34,5 @@ export function RuntimeStatus() {
       window.removeEventListener("simulator-mode", update);
     };
   }, []);
-  return <div className="system-state" aria-live="polite" title={release ? `Backend-Build ${release.id}${release.mismatch ? "; Frontend verwendet einen anderen Stand. Seite neu laden." : "; Frontend und Backend stimmen überein."}` : undefined}><span className={`state-dot ${mode}`} />{mode === "checking" ? "Engine wird geprüft" : mode === "backend" ? "Python engine" : "Browser engine"}{release && <small> · {release.mismatch ? "Build-Abweichung" : release.id}</small>}</div>;
+  return <div className="system-state" aria-live="polite" title={release ? `Backend-Build ${release.id}${release.mismatch ? "; Frontend verwendet einen anderen Stand. Seite neu laden." : frontendPatchId ? `; Frontend-Patch ${frontendPatchId} auf diesem Basis-Build.` : "; Frontend und Backend stimmen überein."}` : undefined}><span className={`state-dot ${mode}`} />{mode === "checking" ? "Engine wird geprüft" : mode === "backend" ? "Python engine" : "Browser engine"}{release && <small> · {release.mismatch ? "Build-Abweichung" : frontendPatchId ? `UI ${frontendPatchId}` : release.id}</small>}</div>;
 }

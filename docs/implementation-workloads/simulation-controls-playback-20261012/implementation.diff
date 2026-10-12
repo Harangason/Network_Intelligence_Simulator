@@ -1,0 +1,196 @@
+--- before/frontend/src/features/simulation/ui/model-simulation-runner.tsx
++++ after/frontend/src/features/simulation/ui/model-simulation-runner.tsx
+@@ -154,6 +154,7 @@
+     }
+   }
+   const [playing, setPlaying] = useState(false);
++  const [controlsOpen, setControlsOpen] = useState(false);
+   const [restoredProjectId, setRestoredProjectId] = useState("");
+   const [restoreAttempt, setRestoreAttempt] = useState(0);
+   const [restoreError, setRestoreError] = useState("");
+@@ -267,7 +268,6 @@
+ 
+   const valid = workflow?.statuses.validation === "APPROVED" || workflow?.statuses.validation === "WARNING";
+   const projectIdForLinks = workflow?.project_id ?? initialProjectId;
+-  const simulationOutdated = snapshot?.is_outdated || workflow?.statuses.simulation === "OUTDATED";
+   const running = simulationJobActive(job);
+   const selectedTechnology = useMemo(() => {
+     const industry = String(workflow?.parameters.industry ?? "");
+@@ -537,16 +537,29 @@
+ 
+   const modelTrace = job?.result?.model_simulation;
+   const maximumTime = Number(modelTrace?.scenario.duration_s || duration);
++  function togglePlayback() {
++    if (!modelTrace) return;
++    if (!playing && playheadRef.current >= maximumTime) movePlayhead(0);
++    setPlaying((current) => !current);
++  }
+   if (workspace?.state.ended) return <section className="simulation-runner"><AnalysisWorkspaceTools project={initialProjectId} view={view}/><p className="notice">Die Analysesitzung wurde beendet. Öffne die Seite erneut, um einen neuen Analysearbeitsbereich zu beginnen.</p></section>;
+ 
+   return (
+     <section className="simulation-runner model-simulation-runner" data-snapshot-id={snapshot?.id} data-job-id={job?.id}>
++      {!valid && <div className="workflow-blocker error"><strong>Simulation blockiert</strong><span>Ein aktueller Preflight mit Status APPROVED oder WARNING ist erforderlich.</span><Link href={withProjectParam("/studio/validation", projectIdForLinks)}>Preflight öffnen</Link></div>}
++      {restoreError && <div className="notice error" role="alert">Der gespeicherte Simulationslauf konnte nicht geladen werden: {restoreError} <button className="button secondary tiny" onClick={() => setRestoreAttempt((attempt) => attempt + 1)} type="button">Erneut laden</button></div>}
++      {workflow?.project_id && restoredProjectId !== workflow.project_id && !restoreError && <div className="notice" role="status">Der gespeicherte Simulationslauf dieses Projekts wird geladen …</div>}
++      {!scopeValid && <p className="notice warning">Der gespeicherte Umfang braucht eine gültige Auswahl und Begründung. Bitte im Preflight ergänzen.</p>}
++      {error && <div className="notice error">{error}</div>}
++      <div className="simulation-analysis-toolbar">
++        <div className="simulation-view-tabs" role="tablist">{(["network", "sequence", "signals", "load", "events"] as SimulationView[]).map((item) => <button aria-selected={view === item} className={view === item ? "active" : ""} key={item} onClick={() => setView(item)} role="tab" type="button">{{ network: "NETWORK / ECU", sequence: "SEQUENCE", signals: "SIGNALS", load: "BUS LOAD", events: "EVENTS" }[item]}</button>)}</div>
++        <button aria-controls="simulation-controls" aria-expanded={controlsOpen} className="button secondary tiny simulation-controls-toggle" onClick={() => setControlsOpen((current) => !current)} type="button">{controlsOpen ? "Steuerung schließen" : "Steuerung"}</button>
++      </div>
++      <div className="simulation-controls" hidden={!controlsOpen} id="simulation-controls">
+       <AnalysisWorkspaceTools project={initialProjectId} view={view === 'load' ? 'load' : view}/>
+-      {snapshot && job && <div className="notice"><strong>Gespeicherter Simulationslauf</strong> · {job.id}
++      {snapshot && job && <div className="notice"><strong>Gespeicherter Simulationslauf{snapshot.is_outdated || workflow?.statuses.simulation === "OUTDATED" ? " · Veraltet" : ""}</strong> · {job.id}
+         <Link href={withProjectParam(`/studio/results?snapshot=${encodeURIComponent(snapshot.id)}`, projectIdForLinks)}>Ergebnis und Bewertung öffnen →</Link>
+       </div>}
+-      {!valid && <div className="workflow-blocker error"><strong>Simulation blockiert</strong><span>Ein aktueller Preflight mit Status APPROVED oder WARNING ist erforderlich.</span><Link href={withProjectParam("/studio/validation", projectIdForLinks)}>Preflight öffnen</Link></div>}
+-      {simulationOutdated && <div className="workflow-blocker warning"><strong>Historisches Simulationsergebnis · OUTDATED</strong><span>{snapshot?.outdated_reason ?? workflow?.stale_reasons.simulation}</span></div>}
+ 
+       <form className="panel simulation-command-bar" onSubmit={start}>
+         <label><span>Szenario</span><select value={mode} onChange={(event) => setMode(event.target.value)}><option value="GOLDEN">Golden / Ideal</option><option value="NORMAL">Normal</option><option value="USER_DEFINED_FAULT">Nutzerfehler</option><option value="AI_GENERATED_FAULT">Geprüfter KI-Fehler</option><option value="STRESS">Stresstest</option></select></label>
+@@ -598,14 +611,11 @@
+         <div className="simulation-transport-controls">
+           <button className="button secondary" disabled={!valid || busy || !formatsResolved || formats.length === 0 || !scopeValid || !workflow} onClick={() => void saveScenarioAs()} type="button">Speichern unter</button>
+           <button className="button primary" disabled={!startAllowed} title={job && !running ? "Neuen Lauf mit der aktuellen Preflight-Freigabe starten. Der gespeicherte Lauf bleibt erhalten." : undefined} type="submit">Start</button>
+-          <button className="button secondary" disabled={!job?.result?.model_simulation} onClick={() => setPlaying((current) => !current)} type="button">{playing ? "Pause" : "Weiter"}</button>
+-          <button className="button secondary" disabled={!running} onClick={() => void stop()} type="button">Stop</button>
++          <button className="button secondary" disabled={!running} onClick={() => void stop()} type="button">Lauf stoppen</button>
+           <button className="button secondary" disabled={!job || running || busy} onClick={reset} type="button">Reset</button>
+         </div>
+       </form>
+       {savedScenarioNotice && <div className="notice success">{savedScenarioNotice}</div>}
+-      {restoreError && <div className="notice error" role="alert">Der gespeicherte Simulationslauf konnte nicht geladen werden: {restoreError} <button className="button secondary tiny" onClick={() => setRestoreAttempt((attempt) => attempt + 1)} type="button">Erneut laden</button></div>}
+-      {workflow?.project_id && restoredProjectId !== workflow.project_id && !restoreError && <div className="notice" role="status">Der gespeicherte Simulationslauf dieses Projekts wird geladen …</div>}
+       {resetPromptOpen && job && (
+         <div className="project-dialog-backdrop">
+           <section aria-labelledby="simulation-reset-title" aria-modal="true" className="project-dialog simulation-reset-dialog" role="alertdialog">
+@@ -635,7 +645,6 @@
+         <p>{simulationScope.include_all ? "Alle aktiven Modellnachrichten und Signale müssen durch bestätigte Routen abgedeckt sein." : simulationScope.reason}</p>
+         <p>Die Simulation verwendet genau den gespeicherten und vorab geprüften Umfang. Ausgewählte Nachrichten schließen ihre enthaltenen Signale ein.</p>
+       </details>
+-      {!scopeValid && <p className="notice warning">Der gespeicherte Umfang braucht eine gültige Auswahl und Begründung. Bitte im Preflight ergänzen.</p>}
+ 
+       <details className="panel fault-editor">
+           <summary><span className="eyebrow">Fehlerszenario</span><strong>Fehler gezielt injizieren</strong><span className="fault-count">{faults.length ? `${faults.length} Fehler aktiv` : "Keine Fehler aktiv"}</span></summary>
+@@ -655,11 +664,9 @@
+       </details>
+ 
+       <FaultProposalReview proposals={proposals.filter((proposal) => proposal.status !== "REJECTED" && proposal.status !== "SUPERSEDED")} magnitudes={proposalMagnitude} reviewState={proposalReviewState} onMagnitude={(id, value) => { setProposalMagnitude((current) => ({ ...current, [id]: value })); setProposalReviewState((current) => ({ ...current, [id]: { busy: false, message: "Nicht gespeicherte Änderung" } })); }} onReview={reviewProposal} />
+-      {error && <div className="notice error">{error}</div>}
+-
+-      <div className="simulation-view-tabs" role="tablist">{(["network", "sequence", "signals", "load", "events"] as SimulationView[]).map((item) => <button aria-selected={view === item} className={view === item ? "active" : ""} key={item} onClick={() => setView(item)} role="tab" type="button">{{ network: "NETWORK / ECU", sequence: "SEQUENCE", signals: "SIGNALS", load: "BUS LOAD", events: "EVENTS" }[item]}</button>)}</div>
++      </div>
+       <section className="panel synchronized-simulation-view">
+-        <SimulationTimeline duration={maximumTime} playhead={playhead} playing={playing} onChange={time => {setPlaying(false);movePlayhead(time);}} />
++        <SimulationTimeline duration={maximumTime} playhead={playhead} playing={playing} available={!!modelTrace} onPlay={togglePlayback} onStop={() => {setPlaying(false);movePlayhead(0);}} onChange={time => {setPlaying(false);movePlayhead(time);}} />
+         {!modelTrace && <div className="simulation-empty-state"><strong>{job ? "Simulation wird verarbeitet" : "Noch kein Lauf gestartet"}</strong><span>Nach dem Start erscheinen Signalwerte, Buslast und Ereignisse auf derselben Zeitachse.</span></div>}
+         {modelTrace && view === "network" && <NetworkView job={job} trace={modelTrace} playhead={playhead} topology={workflow?.topology} />}
+         {modelTrace && view === "sequence" && <SequenceView trace={modelTrace} model={job?.result?.runtime_metrics?.sequence_model} playhead={playhead} />}
+@@ -683,8 +690,8 @@
+   return <label><span>{label}{unit ? ` (${unit})` : ""}</span><input min={min} step={step} type="number" value={value} onChange={(event) => onChange(Number(event.target.value))} /></label>;
+ }
+ 
+-function SimulationTimeline({ duration, playhead, playing, onChange }: { duration: number; playhead: number; playing: boolean; onChange: (value: number) => void }) {
+-  return <div className="simulation-timeline"><span>{playing ? "RUNNING" : "PAUSED"}</span><input aria-label="Simulationszeit" max={Math.max(duration, 0.001)} min="0" step="0.001" type="range" value={Math.min(playhead, duration)} onChange={(event) => onChange(Number(event.target.value))} /><strong>{playhead.toFixed(3)} / {duration.toFixed(3)} s</strong></div>;
++function SimulationTimeline({ duration, playhead, playing, available, onPlay, onStop, onChange }: { duration: number; playhead: number; playing: boolean; available: boolean; onPlay: () => void; onStop: () => void; onChange: (value: number) => void }) {
++  return <div className="simulation-timeline"><div className="simulation-playback-controls"><button className="button secondary tiny" disabled={!available} onClick={onPlay} type="button">{playing ? "Pause" : "Wiedergabe"}</button><button className="button secondary tiny" disabled={!available || (!playing && playhead === 0)} onClick={onStop} type="button">Stopp</button></div><span>{playing ? "WIEDERGABE" : "PAUSIERT"}</span><input aria-label="Simulationszeit" disabled={!available} max={Math.max(duration, 0.001)} min="0" step="0.001" type="range" value={Math.min(playhead, duration)} onChange={(event) => onChange(Number(event.target.value))} /><strong>{playhead.toFixed(3)} / {duration.toFixed(3)} s</strong></div>;
+ }
+ 
+ function FaultProposalReview({ proposals, magnitudes, reviewState, onMagnitude, onReview }: { proposals: FaultProposal[]; magnitudes: Record<string, number>; reviewState: Record<string, { busy: boolean; message: string; error?: boolean }>; onMagnitude: (id: string, value: number) => void; onReview: (proposal: FaultProposal, action: "ACCEPT" | "EDIT" | "REJECT") => Promise<void> }) {
+--- before/frontend/src/app/globals.css
++++ after/frontend/src/app/globals.css
+@@ -13683,11 +13683,19 @@
+ .fault-proposal-grid .proposal-feedback { grid-column: 1 / -1; margin: -3px 0 0; color: var(--accent); font-size: 10px; line-height: 1.4; }
+ .fault-proposal-grid .proposal-feedback.error { color: #a54036; }
+ .proposal-actions button:disabled { opacity: .6; cursor: wait; }
++.simulation-analysis-toolbar { display: flex; align-items: center; gap: 12px; min-width: 0; border-bottom: 1px solid var(--border); }
++.simulation-analysis-toolbar .simulation-view-tabs { flex: 1; min-width: 0; border-bottom: 0; }
++.simulation-controls-toggle { flex-shrink: 0; }
++.simulation-controls { display: grid; gap: 12px; min-width: 0; }
++.simulation-controls[hidden] { display: none; }
++.simulation-controls .notice { margin: 0; overflow-wrap: anywhere; }
++.simulation-controls .analysis-window-tools { margin: 0; }
+ .simulation-view-tabs { display: flex; gap: 2px; padding-top: 3px; border-bottom: 1px solid var(--border); overflow-x: auto; }
+ .simulation-view-tabs button { min-height: 36px; padding: 8px 14px; border: 0; border-bottom: 2px solid transparent; color: var(--muted); background: transparent; cursor: pointer; font-size: 10px; }
+ .simulation-view-tabs button.active { border-bottom-color: var(--accent); color: var(--text); background: var(--surface-hover); }
+ .synchronized-simulation-view { min-height: 360px; padding: 0; overflow: hidden; }
+-.simulation-timeline { display: grid; grid-template-columns: 70px minmax(0, 1fr) 140px; gap: 12px; align-items: center; min-height: 50px; padding: 10px 14px; border-bottom: 1px solid var(--border); background: var(--surface-deep); }
++.simulation-timeline { display: grid; grid-template-columns: auto 80px minmax(0, 1fr) 140px; gap: 12px; align-items: center; min-height: 50px; padding: 10px 14px; border-bottom: 1px solid var(--border); background: var(--surface-deep); }
++.simulation-playback-controls { display: flex; gap: 6px; }
+ .simulation-timeline span { color: var(--accent); font: 9px var(--font-geist-mono), monospace; }
+ .simulation-timeline input { width: 100%; accent-color: var(--accent); }
+ .simulation-timeline strong { text-align: right; font: 10px var(--font-geist-mono), monospace; }
+@@ -13972,7 +13980,11 @@
+   .signal-filter-summary { order: -1; }
+   .signal-time-controls { width: 100%; }
+   .signal-lane > header { min-height: 74px; border-right: 0; border-bottom: 1px solid var(--border); }
+-  .simulation-timeline { grid-template-columns: 58px minmax(0, 1fr); }
++  .simulation-analysis-toolbar { flex-wrap: wrap; gap: 6px; }
++  .simulation-analysis-toolbar .simulation-view-tabs { flex-basis: 100%; }
++  .simulation-controls-toggle { margin-bottom: 6px; }
++  .simulation-timeline { grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
++  .simulation-timeline input { grid-column: 1 / -1; grid-row: 2; }
+   .simulation-timeline strong { grid-column: 1 / -1; text-align: left; }
+   .network-runtime-nodes { grid-template-columns: 1fr; gap: 0; }
+   .runtime-link-line { width: 2px; height: 28px; justify-self: center; }
+--- before/AGENTS.md
++++ after/AGENTS.md
+@@ -78,6 +78,18 @@
+ Required release gates must still pass; this rule does not authorize bypassing
+ checks or deploying an untested build.
+ 
++## Scoped direct delivery for simulation UI work
++
++On 2026-10-12 the user explicitly instructed that these simulation UI and
++historical playback changes use only small final checks and direct production
++delivery, without a new image or a full test/release run. For this scoped work,
++that instruction supersedes the complete-image release procedure above.
++Preserve backend, model, preflight and staleness gates. Build the frontend with
++the existing dependencies, preserve a rollback copy, record the frontend artifact
++identity separately from the unchanged base image, and verify health and the
++affected controls in production. Never represent this delivery as a full gate
++PASS or reuse the base image receipt as evidence for the new UI artifact.
++
+ ## Standing authorization for archived failed-candidate cleanup
+ 
+ On 2026-10-12 the user explicitly authorized removing unused, fully archived
+--- before/frontend/next.config.ts
++++ after/frontend/next.config.ts
+@@ -3,14 +3,17 @@
+ 
+ const configuredDistDir = process.env.NETWORKIS_NEXT_DIST_DIR;
+ let frontendBuildId = "development";
++let frontendPatchId = "";
+ if (process.env.NODE_ENV === "production") {
+   try {
+-    frontendBuildId = JSON.parse(readFileSync(new URL("./public/build-info.json", import.meta.url), "utf8")).build_id;
++    const manifest = JSON.parse(readFileSync(new URL("./public/build-info.json", import.meta.url), "utf8"));
++    frontendBuildId = manifest.build_id;
++    frontendPatchId = manifest.frontend_patch_id ?? "";
+   } catch { /* A local build can run without a release manifest. */ }
+ }
+ 
+ const nextConfig: NextConfig = {
+-  env: { NEXT_PUBLIC_NETWORKIS_BUILD_ID: frontendBuildId },
++  env: { NEXT_PUBLIC_NETWORKIS_BUILD_ID: frontendBuildId, NEXT_PUBLIC_NETWORKIS_FRONTEND_PATCH_ID: frontendPatchId },
+   allowedDevOrigins: ["127.0.0.1", "localhost"],
+   // Large, atomic engineering applies share the bounded agent request budget.
+   // Next's 30-second default can otherwise discard an already committed reply.
+--- before/frontend/src/features/workflow/ui/runtime-status.tsx
++++ after/frontend/src/features/workflow/ui/runtime-status.tsx
+@@ -5,6 +5,7 @@
+ export function RuntimeStatus() {
+   const [mode, setMode] = useState<"checking" | "backend" | "browser">("checking");
+   const [release, setRelease] = useState<{ id: string; mismatch: boolean } | null>(null);
++  const frontendPatchId = process.env.NEXT_PUBLIC_NETWORKIS_FRONTEND_PATCH_ID;
+   useEffect(() => {
+     const update = (event: Event) => setMode((event as CustomEvent<"backend" | "browser">).detail);
+     window.addEventListener("simulator-mode", update);
+@@ -33,5 +34,5 @@
+       window.removeEventListener("simulator-mode", update);
+     };
+   }, []);
+-  return <div className="system-state" aria-live="polite" title={release ? `Backend-Build ${release.id}${release.mismatch ? "; Frontend verwendet einen anderen Stand. Seite neu laden." : "; Frontend und Backend stimmen überein."}` : undefined}><span className={`state-dot ${mode}`} />{mode === "checking" ? "Engine wird geprüft" : mode === "backend" ? "Python engine" : "Browser engine"}{release && <small> · {release.mismatch ? "Build-Abweichung" : release.id}</small>}</div>;
++  return <div className="system-state" aria-live="polite" title={release ? `Backend-Build ${release.id}${release.mismatch ? "; Frontend verwendet einen anderen Stand. Seite neu laden." : frontendPatchId ? `; Frontend-Patch ${frontendPatchId} auf diesem Basis-Build.` : "; Frontend und Backend stimmen überein."}` : undefined}><span className={`state-dot ${mode}`} />{mode === "checking" ? "Engine wird geprüft" : mode === "backend" ? "Python engine" : "Browser engine"}{release && <small> · {release.mismatch ? "Build-Abweichung" : frontendPatchId ? `UI ${frontendPatchId}` : release.id}</small>}</div>;
+ }

@@ -14,12 +14,21 @@ import { ReasoningPanel } from "../../agent/ui/reasoning-panel";
 import { queueEngineeringAgentTask } from '@/features/agent/lib/agent-task-events';
 import { sequenceModelForEventIds, type SequenceDiagramModel } from "@/features/simulation/lib/e2e-sequence";
 import { E2ESequenceDiagram } from "../../simulation/ui/e2e-sequence-diagram";
+import { AnalysisWorkspaceTools, useAnalysisWorkspace } from './analysis-workspace-tools';
+import { AnalysisCompare } from './analysis-compare';
+import { readTraceWindow } from '../lib/trace-window-reader';
+import { VIEW_STAGES } from '../lib/analysis-workspace';
 
 import { automaticProfile, availableColumns, displayTraceValue, TRACE_PROFILES, type TraceProfile } from "@/features/traces/lib/trace-profiles";
 
-type TraceView = "session" | "messages" | "sequence" | "signals" | "trace" | "findings" | "root-cause" | "charts";
+type TraceView = "session" | "messages" | "sequence" | "signals" | "trace" | "findings" | "root-cause" | "charts" | "simulation" | "load" | "network" | "events" | "assistant";
 const ACCEPTED = ".csv,.json,.jsonl,.asc,.blf,.log,.trc,.pcap,.pcapng,.mdf,.mf4";
 const VIEW_META: Record<TraceView, { eyebrow: string; title: string; note: string }> = {
+  simulation: {eyebrow:'Simulation',title:'Simulation · Analyseprojektion',note:'Gespeicherter Lauf; Start und Szenarioänderungen bleiben in der Primäransicht.'},
+  load: {eyebrow:'Bus Load',title:'Buslast und Ereignisse im Zeitfenster',note:'Originalereignisse im gemeinsamen Zeitfenster. Ereigniszahlen sind keine berechnete Buslast.'},
+  network: {eyebrow:'Network / ECU',title:'Teilnehmer und Netzkontext',note:'TX/RX und explizite Referenzen des geladenen Trace-Ausschnitts.'},
+  events: {eyebrow:'Events',title:'Ereignisse im Zeitfenster',note:'Originalereignisse ohne zusätzliche technische Interpretation.'},
+  assistant: {eyebrow:'Analyse-Assistent',title:'Aktiver Analysekontext',note:'Auswahl und Zeitbereich werden dem bestehenden Engineering-Assistenten als Datenreferenzen übergeben.'},
   session: {
     eyebrow: "Schritt 1",
     title: "Session / Daten laden",
@@ -75,6 +84,8 @@ function buildFindings(events: TraceEvent[]) {
 export function TraceAnalysisWorkbench() {
   const router = useRouter();
   const search = useSearchParams();
+  const workspace = useAnalysisWorkspace(search.get('project') ?? undefined);
+  const applyingContext = useRef(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const autoLoadedJobRef = useRef<string | null>(null);
   const [jobs, setJobs] = useState<SimulationJob[]>([]);
@@ -91,6 +102,7 @@ export function TraceAnalysisWorkbench() {
   const [loading, setLoading] = useState(false);
   const [timeStart, setTimeStart] = useState(0);
   const [timeEnd, setTimeEnd] = useState(1e15);
+  const timeRangeDraft = useRef<[number, number]>([0, 1e15]);
   const [selectedEvent, setSelectedEvent] = useState<TraceEvent | null>(null);
   const [sessionDetailsOpen, setSessionDetailsOpen] = useState(false);
   const loadGeneration = useRef(0);
@@ -100,6 +112,54 @@ export function TraceAnalysisWorkbench() {
   const [modelFreshness, setModelFreshness] = useState<{ status: string; reason?: string | null } | null>(null);
   const [chartConfiguration, setChartConfiguration] = useState<SimulationSnapshot["configuration"]>(undefined);
   const [chartContextNote, setChartContextNote] = useState("Kein eingefrorener ECU-Modellbezug geladen.");
+  const [loadSnapshot,setLoadSnapshot] = useState<SimulationSnapshot|null>(null);
+
+  useEffect(() => {
+    if (!workspace) return;
+    if (workspace.state.ended) { loadGeneration.current++; setEvents([]); setSelectedEvent(null); setTraceJob(null); setSequenceModel(null); setChartConfiguration(undefined); setLoadSnapshot(null); chartSnapshot.current=null; setSignalChannels([]); setModelFreshness(null); setChartContextNote('Analysesitzung beendet.'); setLoading(false); return; }
+    // The primary restores its exact URL page through the existing loader.
+    // Only received peer commands may replace that page with shared context.
+    if (workspace.state.descriptor.window_id===workspace.state.descriptor.primary_id && workspace.state.received===0) return;
+    const c = workspace.state.context;
+    const source = c.trace_id ?? c.simulation_run_id;
+    applyingContext.current = true;
+    timeRangeDraft.current = [...c.time_range];
+    setTimeStart(c.time_range[0]); setTimeEnd(c.time_range[1]); setQuery(c.filter_set.query);
+    if (c.signal_id) setSignalChannels([c.signal_id]);
+    const existing = c.event_id ? events.find(e => e.id === c.event_id) : c.time_cursor !== null ? events.filter(e => e.timeKnown).reduce<TraceEvent|null>((nearest,e) => !nearest || Math.abs(e.timestamp-c.time_cursor!)<Math.abs(nearest.timestamp-c.time_cursor!) ? e:nearest,null):null;
+    setSelectedEvent(existing ?? null);
+    if (!c.signal_id && existing?.signals.length) setSignalChannels(existing.signals.map(s=>s.id));
+    const domain = events.filter(e=>e.timeKnown).map(e=>e.timestamp);
+    const outside = c.time_cursor !== null && (!domain.length || c.time_cursor < Math.min(...domain) || c.time_cursor > Math.max(...domain));
+    const timer = window.setTimeout(() => {
+      applyingContext.current = false;
+      if (source && (source !== traceJob || outside || timeStart !== c.time_range[0] || timeEnd !== c.time_range[1] || query !== c.filter_set.query)) {
+        setEvents([]); setSequenceModel(null); setSelectedEvent(null);
+        const focus=c.time_cursor ?? c.time_range[0];
+        const start=outside && c.time_cursor!==null ? Math.max(c.time_range[0],focus-.1):c.time_range[0];
+        const end=outside && c.time_cursor!==null ? Math.min(c.time_range[1],focus+.1):c.time_range[1];
+        void loadWindow(source,0,false,{start,end,focus,query:c.filter_set.query,eventId:c.event_id});
+      }
+    },180);
+    return () => window.clearTimeout(timer);
+    // Incoming ordered primary changes only; local view selections keep their view-state.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[workspace?.state.received,workspace?.state.ended]);
+
+  // Publish user intent directly. Received display state must never echo back,
+  // and an incoming-context guard must not discard a concurrent user edit.
+  function changeTimeRange(start: number, end: number) {
+    timeRangeDraft.current = [start, end];
+    setTimeStart(start); setTimeEnd(end);
+    if (traceJob) workspace?.store.update({time_range: [start, end]});
+  }
+  function changeQuery(value: string) {
+    setQuery(value);
+    if (traceJob) workspace?.store.update({filter_set: {query: value}});
+  }
+  useEffect(() => {
+    if (workspace && workspace.state.descriptor.window_id === workspace.state.descriptor.primary_id) workspace.store.update({view_mode:view,analysis_stage:VIEW_STAGES[view] ?? 'FILTER'});
+  },[view,workspace?.store]);
 
   useEffect(() => { void listSimulations().then(setJobs).catch(() => setJobs([])); }, []);
   useEffect(() => {
@@ -116,48 +176,50 @@ export function TraceAnalysisWorkbench() {
     const savedStart = Number(search.get("start_s") ?? 0), savedEnd = Number(search.get("end_s") ?? 1e15);
     const savedWindow = search.has("event") && Number.isFinite(savedStart) && Number.isFinite(savedEnd) && savedStart >= 0 && savedEnd >= savedStart;
     const range = Number.isFinite(focus) && focus >= 0 ? { start: savedWindow ? savedStart : Math.max(0, focus - .1), end: savedWindow ? savedEnd : focus + .1, focus } : undefined;
-    if (range) { setTimeStart(range.start); setTimeEnd(range.end); setQuery(search.get("q") ?? ""); }
+    if (range) { timeRangeDraft.current = [range.start, range.end]; setTimeStart(range.start); setTimeEnd(range.end); setQuery(search.get("q") ?? ""); }
     const cursor = Number(search.get("cursor") ?? 0);
     void loadWindow(requestedJob, Number.isSafeInteger(cursor) && cursor >= 0 ? cursor : 0, false, range);
   }, [search]);
 
 
-  async function loadWindow(jobId: string, cursor = 0, openDefaultView = false, range?: { start: number; end: number; focus: number }) {
+  async function loadWindow(jobId: string, cursor = 0, openDefaultView = false, range?: { start: number; end: number; focus: number; query?: string; eventId?: string | null }) {
+    if (workspace?.state.ended) return;
     const generation = ++loadGeneration.current;
     const projectId = readActiveProjectId();
     setLoading(true);
     try {
-      const parameters = new URLSearchParams({ cursor: String(cursor), limit: "2000", start_s: String(range?.start ?? timeStart), end_s: String(range?.end ?? timeEnd), q: range ? search.get("q") ?? "" : query });
-      const endpoint = jobId.startsWith("import:") ? `/api/trace-import/${encodeURIComponent(jobId.slice(7))}` : `/api/simulations/${encodeURIComponent(jobId)}/trace-window`;
-      const response = await fetch(`${endpoint}?${parameters}`, {
-        headers: { "X-Project-ID": projectId }, cache: "no-store", signal: AbortSignal.timeout(15000),
-      });
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.error ?? `Trace-Abruf fehlgeschlagen (${response.status}).`);
+      const parameters = new URLSearchParams({ cursor: String(cursor), limit: "2000", start_s: String(range?.start ?? timeStart), end_s: String(range?.end ?? timeEnd), q: range?.query ?? (range ? search.get("q") ?? "" : query) });
+      const result = await readTraceWindow(projectId,jobId,parameters) as Record<string,any>;
       if (generation !== loadGeneration.current || readActiveProjectId() !== projectId) return;
       const loaded = (result.events as Record<string, unknown>[]).map(eventFromRecord);
       setSequenceModel(result.sequence_model ?? null);
       setModelFreshness(result.model_freshness ?? (jobId.startsWith("import:") ? null : { status: "UNVERIFIED" }));
       setEvents(loaded); setCurrentCursor(cursor);
       setChartConfiguration(undefined);
+      setLoadSnapshot(null);
       const snapshotId = result.model_freshness?.snapshot_id;
       setChartContextNote(snapshotId ? "Eingefrorener ECU-Modellbezug wird geladen …" : "Kein zugehöriger Modell-Snapshot: ECU-Typen und Hardware-IDs sind nicht nachgewiesen.");
       if (typeof snapshotId === "string" && snapshotId) {
         const key = `${projectId}:${snapshotId}`;
-        const snapshotRequest = chartSnapshot.current?.key === key ? chartSnapshot.current.request : getWorkflowSimulationSnapshot(snapshotId, projectId);
+        const snapshotRequest = chartSnapshot.current?.key === key ? chartSnapshot.current.request : getWorkflowSimulationSnapshot(snapshotId, projectId, true);
         chartSnapshot.current = { key, request: snapshotRequest };
         void snapshotRequest.then(snapshot => {
           if (generation !== loadGeneration.current || readActiveProjectId() !== projectId) return;
           if (snapshot.job_id !== jobId) { setChartContextNote("Snapshot und Trace-Lauf stimmen nicht überein; ECU-Zuordnung bleibt ungeprüft."); return; }
           setChartConfiguration(snapshot.configuration);
+          setLoadSnapshot(snapshot);
           setChartContextNote(snapshot.configuration ? `ECU-Modellbezug: eingefrorener Snapshot ${snapshot.id.slice(0, 8)}.` : "Snapshot enthält keine eingefrorene Hardware-Konfiguration.");
         }).catch(() => {
           if (chartSnapshot.current?.key === key) chartSnapshot.current = null;
           if (generation === loadGeneration.current && readActiveProjectId() === projectId) setChartContextNote("Der eingefrorene ECU-Modellbezug konnte nicht geladen werden; die Trace-Ereignisse bleiben verfügbar.");
         });
       }
-      setSelectedEvent(search.get("event") ? loaded.find(item => item.id === search.get("event")) ?? null : range && loaded.length ? loaded.reduce((nearest, item) => Math.abs(item.timestamp-range.focus) < Math.abs(nearest.timestamp-range.focus) ? item : nearest) : null);
+      const selectedId = range?.eventId ?? search.get('event');
+      const selected = selectedId ? loaded.find(item=>item.id===selectedId) ?? null : range && loaded.length ? loaded.filter(item=>item.timeKnown).reduce<TraceEvent|null>((nearest,item)=>!nearest || Math.abs(item.timestamp-range.focus)<Math.abs(nearest.timestamp-range.focus)?item:nearest,null):null;
+      setSelectedEvent(selected);
+      if (selected?.signals.length && !workspace?.state.context.signal_id) setSignalChannels(selected.signals.map(s=>s.id));
       setTraceJob(jobId); setNextCursor(result.next_cursor); setSourceName(`Simulation ${jobId} · Trace-Fenster`);
+      if (!range?.eventId && !applyingContext.current) workspace?.store.update({simulation_run_id:jobId.startsWith('import:')?null:jobId,trace_id:jobId,session_id:jobId.startsWith('import:')?jobId.slice(7):jobId});
       setImportWarnings(result.warnings ?? []); setSourceFormat(result.format ?? "JSONL · Simulation");
       if (result.filename) setSourceName(result.filename);
       setError("");
@@ -183,11 +245,13 @@ export function TraceAnalysisWorkbench() {
       if (!response.ok) throw new Error(result.error ?? `Trace-Import fehlgeschlagen (${response.status}).`);
       if (generation !== loadGeneration.current) return;
       const imported = (result.events as Record<string, unknown>[]).map(eventFromRecord);
+      workspace?.store.update({simulation_run_id:null,trace_id:`import:${result.session_id}`,session_id:result.session_id,time_cursor:null,time_basis:null,time_range:[0,1e15],filter_set:{query:""}});
       setEvents(imported); setCurrentCursor(0);
       setModelFreshness(null);
       setSequenceModel(result.sequence_model ?? null);
       setChartConfiguration(undefined); setChartContextNote("Import ohne Modell-Snapshot: ECU-Typen werden nicht aus Teilnehmernamen erraten.");
       setImportWarnings(result.warnings ?? []); setSourceFormat(String(result.format).toUpperCase());
+      timeRangeDraft.current = [0, 1e15];
       setTimeStart(0); setTimeEnd(1e15); setQuery("");
       setSelectedEvent(null);
       setTraceJob(`import:${result.session_id}`); setNextCursor(result.next_cursor);
@@ -200,9 +264,12 @@ export function TraceAnalysisWorkbench() {
 
   const filtered = useMemo(() => {
     const needle = query.trim().toLowerCase();
+    const context=workspace?.state.context;
     return events.map(event => traceMessagePresentation(event, chartConfiguration)).filter((event) => (!event.timeKnown || event.timestamp >= timeStart && event.timestamp <= timeEnd)
+      && (!context?.network_id || event.original.network_id===context.network_id || event.original.network===context.network_id || event.refs.some(ref=>ref.id===context.network_id))
+      && (!context?.ecu_id || event.refs.some(ref=>ref.id===context.ecu_id))
       && (!needle || JSON.stringify(event).toLowerCase().includes(needle)));
-  }, [events, chartConfiguration, query, timeStart, timeEnd]);
+  }, [events, chartConfiguration, query, timeStart, timeEnd,workspace?.state.context.network_id,workspace?.state.context.ecu_id]);
   const findings = useMemo(() => buildFindings(filtered), [filtered]);
   // Use the complete loaded window, never the filtered subset, as the slider domain.
   const timeline = useMemo(() => {
@@ -237,6 +304,9 @@ export function TraceAnalysisWorkbench() {
 
   function selectEvent(event: TraceEvent, targetView?: TraceView) {
     setSelectedEvent(event);
+    const messageId = event.refs.find(ref=>ref.object_type==='Message')?.id ?? (typeof event.original.message_id==='string'?event.original.message_id:null);
+    const signalId = event.signals[0]?.id ?? null;
+    workspace?.store.update({time_range:[...timeRangeDraft.current],filter_set:{query},event_id:event.id,message_id:messageId,signal_id:signalId,ecu_id:event.refs.find(ref=>ref.object_type==='HardwareNode')?.id ?? null,network_id:event.refs.find(ref=>ref.object_type==='Network')?.id ?? null,time_cursor:event.timeKnown?event.timestamp:null,time_basis:traceTimeBasis(event,Boolean(traceJob&&!traceJob.startsWith('import:'))),selected_finding_id:traceEventFindings(event).length?event.id:null,selected_root_cause_id:targetView==='root-cause'?event.id:null});
     const parameters = new URLSearchParams(search.toString());
     parameters.set("event", event.id);
     parameters.set("cursor", String(currentCursor));
@@ -251,6 +321,7 @@ export function TraceAnalysisWorkbench() {
 
   function clearEventSelection() {
     setSelectedEvent(null);
+    workspace?.store.update({event_id:null,message_id:null,signal_id:null,selected_finding_id:null,selected_root_cause_id:null});
     const parameters = new URLSearchParams(search.toString());
     parameters.delete("event");
     parameters.delete("focus_s");
@@ -271,6 +342,8 @@ export function TraceAnalysisWorkbench() {
 
   return (
     <section className="simulation-runner trace-analysis-workbench">
+      <AnalysisWorkspaceTools project={search.get('project') ?? undefined} view={view}/>
+      {workspace?.state.descriptor.link_mode === 'COMPARE' && !workspace.state.ended && <AnalysisCompare context={workspace.state.context} store={workspace.store} jobs={jobs}/>}
       <div className={`simulation-layout trace-analysis-layout${sessionDetailsOpen ? "" : " context-collapsed"}`}>
         <div className="trace-main-column">
           <div className="panel simulation-control-panel trace-control-panel">
@@ -290,24 +363,24 @@ export function TraceAnalysisWorkbench() {
               <button className="button secondary" type="button" onClick={() => { loadGeneration.current += 1; autoLoadedJobRef.current = null; setLoading(false); setEvents([]); setSelectedEvent(null); setSignalChannels([]); setTraceJob(null); setNextCursor(null); setChartConfiguration(undefined); setChartContextNote("Kein eingefrorener ECU-Modellbezug geladen."); setError(""); setSourceName("Keine Trace Session"); setSourceFormat("-"); setImportWarnings([]); setView("session"); router.replace(withProjectParam("/trace-analysis?view=session")); }}>Close Session</button>
             </div> : null}
             <div className="trace-filter-controls">
-              <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Globale Filter: ID, Quelle, Ziel, Payload, Finding ..." />
+              <input value={query} maxLength={4096} onChange={(event) => changeQuery(event.target.value)} placeholder="Globale Filter: ID, Quelle, Ziel, Payload, Finding ..." />
               <div className="trace-time-row">
                 <label>Von (s)<input type="number" min="0" max={timeEnd === 1e15 ? undefined : timeEnd} step="any" value={timeStart} onChange={event => {
                   const value = event.target.valueAsNumber;
-                  if (Number.isFinite(value)) setTimeStart(Math.max(0, Math.min(value, timeEnd)));
+                  if (Number.isFinite(value)) changeTimeRange(Math.max(0, Math.min(value, timeRangeDraft.current[1])), timeRangeDraft.current[1]);
                 }} /></label>
                 <label>Bis (s)<input type="number" min={timeStart} step="any" value={timeEnd === 1e15 ? "" : timeEnd} placeholder="Ende" onChange={event => {
-                  if (!event.target.value) { setTimeEnd(1e15); return; }
+                  if (!event.target.value) { changeTimeRange(timeRangeDraft.current[0], 1e15); return; }
                   const value = event.target.valueAsNumber;
-                  if (Number.isFinite(value)) setTimeEnd(Math.max(timeStart, value));
+                  if (Number.isFinite(value)) changeTimeRange(timeRangeDraft.current[0], Math.max(timeRangeDraft.current[0], value));
                 }} /></label>
               </div>
               <div className="trace-time-slider" role="group" aria-label="Zeitraum auf der Timeline" aria-describedby="trace-timeline-note">
                 <div className="trace-time-track"><div className="trace-time-selection" style={{ left: `${startPercent}%`, width: `${endPercent - startPercent}%` }} /></div>
                 <input type="range" aria-label="Zeitraum Anfang" min={timeline?.min ?? 0} max={timeline?.max ?? 1} step={timelineSpan > 0 ? timelineSpan / 10000 : 1} value={timelineStart} disabled={!timelineSpan}
-                  aria-valuetext={`${timelineStart} Sekunden`} onChange={event => { setTimeStart(Math.min(Number(event.target.value), timelineEnd)); setTimeEnd(timelineEnd); }} />
+                  aria-valuetext={`${timelineStart} Sekunden`} onChange={event => changeTimeRange(Math.min(Number(event.target.value), timelineEnd), timelineEnd)} />
                 <input type="range" aria-label="Zeitraum Ende" min={timeline?.min ?? 0} max={timeline?.max ?? 1} step={timelineSpan > 0 ? timelineSpan / 10000 : 1} value={timelineEnd} disabled={!timelineSpan}
-                  aria-valuetext={`${timelineEnd} Sekunden`} onChange={event => { setTimeEnd(Math.max(Number(event.target.value), timelineStart)); setTimeStart(timelineStart); }} />
+                  aria-valuetext={`${timelineEnd} Sekunden`} onChange={event => changeTimeRange(timelineStart, Math.max(Number(event.target.value), timelineStart))} />
               </div>
               <div className="trace-time-scale"><span>{timeline ? `${timeline.min.toFixed(6)} s` : '—'}</span><span>{timeline ? `${timeline.max.toFixed(6)} s` : '—'}</span></div>
               <small id="trace-timeline-note">{timelineSpan > 0 ? `${traceJob ? 'Timeline des geladenen Trace-Fensters' : 'Timeline der geladenen Session'} · beide Griffe auch mit den Pfeiltasten verschiebbar.` : 'Für die Timeline werden mindestens zwei unterschiedliche Zeitpunkte benötigt.'}</small>
@@ -325,12 +398,15 @@ export function TraceAnalysisWorkbench() {
           {view === "session" && <div className="panel trace-table"><h3>Import Sources</h3><p>Universeller Trace-Import: {ACCEPTED}. Binärformate werden anhand ihrer Dateisignatur erkannt. Vorschau bis 500 MiB und 2000 Ereignisse. ASC/BLF: CAN und CAN FD; PCAP/PCAPNG: Rohpakete; MDF/MF4: skalare Messkanäle. PCAPNG: eine Schnittstelle pro Datei. Rohbytes benötigen für Signalwerte eine passende Decoder-Datenbank.</p>{jobs.filter(job => job.status === 'completed' && !job.validate_only).slice(0, 50).map(job => <button className="artifact" key={job.id} type="button" disabled={loading} onClick={() => void loadWindow(job.id, 0, true)}><strong>Simulation {job.id}</strong><small>Universellen Trace laden · {job.created_at}</small></button>)}{!jobs.some(job => job.status === 'completed' && !job.validate_only) && <p>Keine abgeschlossenen Simulationsläufe in diesem Projekt verfügbar. Lokale Trace-Dateien können über „Load Trace“ geöffnet werden.</p>}</div>}
           {view === "messages" && <TraceTable sessionEvents={events} events={filtered} selected={selectedEvent} onSelect={selectEvent} />}
           {view === "sequence" && <SequenceView events={filtered} model={sequenceModel} selected={selectedEvent} onSelect={selectEvent} onClearSelection={clearEventSelection} />}
-          {view === "signals" && <SignalView events={filtered} selected={selectedEvent} onSelect={selectEvent} channels={signalChannels} onChannels={setSignalChannels} simulationSource={Boolean(traceJob && !traceJob.startsWith('import:'))} />}
+          {view === "signals" && <SignalView events={filtered} selected={selectedEvent} onSelect={selectEvent} channels={signalChannels} onChannels={ids=>{setSignalChannels(ids);workspace?.store.update({signal_id:ids[0]??null});}} simulationSource={Boolean(traceJob && !traceJob.startsWith('import:'))} />}
           {view === "trace" && <TraceTable sessionEvents={events} events={filtered} selected={selectedEvent} onSelect={selectEvent} compact />}
           {view === "findings" && <FindingsTable key={selectedEvent?.id ?? "all"} focusId={selectedEvent?.id} findings={findings} jobId={traceJob} onContext={finding => { const event = events.find(item => item.id === finding.object); if (event) selectEvent(event, 'trace'); }} />}
           {view === "root-cause" && <ReasoningPanel key={`${readActiveProjectId()}:${traceJob}`} project={readActiveProjectId()} jobId={traceJob?.startsWith("import:") ? null : traceJob} jobs={jobs} start={timeStart} end={timeEnd} focus={selectedEvent?.timeKnown ? selectedEvent.timestamp : undefined} />}
           {view === "charts" && <TraceCharts key={`${traceJob}:${currentCursor}:${timeStart}:${timeEnd}:${query}`} events={filtered} loadedCount={events.length} configuration={chartConfiguration} contextNote={chartContextNote}
             simulationSource={!!traceJob && !traceJob.startsWith("import:")} hasMore={nextCursor !== null} selected={selectedEvent} onSelect={selectEvent} onOpen={selectEvent} />}
+          {(view === 'events' || view === 'network' || view === 'simulation') && <TraceTable sessionEvents={events} events={filtered} selected={selectedEvent} onSelect={selectEvent} />}
+          {view === 'load' && <section className="panel"><h3>Gespeicherte Buslast im gewählten Zeitfenster</h3><p>Originalwerte aus dem eingefrorenen Simulationslauf. Der Zeitfilter koppelt die Ereignisansicht.</p><div className="bus-load-grid">{(loadSnapshot?.analysis_network_metrics ?? []).slice(0,100).map(network=>{const points=(loadSnapshot?.analysis_bus_load ?? []).filter(p=>p.network_id===network.network_id&&p.time_s>=timeStart&&p.time_s<=timeEnd);return <article key={network.network_id}><button className="button secondary tiny" type="button" onClick={()=>workspace?.store.update({network_id:network.network_id})}>{network.network_name ?? network.network_id}</button><p>{points.length} gespeicherte Stützpunkte · {network.technology}</p><dl><dt>Peak im Zeitfenster</dt><dd>{points.length?`${Math.max(...points.map(p=>p.load_percent)).toFixed(2)} %`:'Nicht nachgewiesen'}</dd><dt>Peak des gesamten Laufs</dt><dd>{Number.isFinite(network.peak_load_percent)?`${network.peak_load_percent.toFixed(2)} %`:'Nicht nachgewiesen'}</dd></dl></article>;})}</div>{!loadSnapshot?.analysis_network_metrics?.length&&<p>Keine gespeicherten Buslastwerte für diese Quelle verfügbar. Aus Ereigniszahlen allein wird keine Buslast abgeleitet.</p>}</section>}
+          {view === 'assistant' && <div className="panel analysis-assistant-context"><h3>Mit dem Analysekontext arbeiten</h3><p>Öffne den Engineering-Assistenten über die Sprechblase. Er erhält Lauf-, Trace-, Objekt-, Zeit- und Stage-Referenzen dieser Ansicht. Analyseprojektionen ändern keine Engineering-Daten.</p><dl><dt>Lauf / Trace</dt><dd>{traceJob ?? 'Keine Quelle'}</dd><dt>Nachricht</dt><dd>{selectedEvent?.message ?? workspace?.state.context.message_id ?? 'Keine Auswahl'}</dd><dt>Signal</dt><dd>{workspace?.state.context.signal_id ?? 'Keine Auswahl'}</dd><dt>Zeit / Zeitbasis</dt><dd>{workspace?.state.context.time_cursor ?? 'Unbekannt'} s · {workspace?.state.context.time_basis ?? 'Unbekannt'}</dd><dt>Stage / Befund</dt><dd>{workspace?.state.context.analysis_stage} · {workspace?.state.context.selected_finding_id ?? 'Kein ausgewählter Befund'}</dd></dl><ReasoningPanel key={`${traceJob}:${selectedEvent?.id}`} project={readActiveProjectId()} jobId={traceJob?.startsWith('import:')?null:traceJob} jobs={jobs} start={timeStart} end={timeEnd} focus={workspace?.state.context.time_cursor ?? undefined}/></div>}
         </div>
         {sessionDetailsOpen && <aside className="side-column trace-session-details">
           <div className="panel snapshot-summary trace-summary-panel">

@@ -1405,7 +1405,8 @@ def create_simulation_snapshot_route():
 
 @engineering_api.route("/workflow/simulation-snapshots/<snapshot_id>", methods=["GET"])
 def get_simulation_snapshot_route(snapshot_id: str):
-    snapshot = WorkflowStatusService(_project_id()).get_simulation_snapshot(snapshot_id)
+    snapshot = WorkflowStatusService(_project_id()).get_simulation_snapshot(
+        snapshot_id, configuration_only=request.args.get("view") == "configuration")
     if snapshot is None:
         return jsonify({"error": "SimulationSnapshot nicht gefunden."}), 404
     return jsonify(snapshot)

@@ -1,0 +1,11 @@
+# Fehler-Editor: Beschriftung und Erklärung
+
+Nutzerauftrag vom 12.10.2026: Bedeutung von 0,25 / 1,5 / 5 und englischen Fehlerbegriffen erklären.
+
+0,25 ist start_s, 1,5 ist die absolute end_s, keine Dauer. Der Zeitraum ist somit 1,25 Sekunden lang. magnitude=5 wird bei SIGNAL_STUCK und SIGNAL_FROZEN nicht verwendet: SignalFaultOverlayRegistry verwendet stuck(cache, signal.id, baseline). OFFSET und SPIKE addieren magnitude, DRIFT addiert magnitude mal Sekunden seit Beginn, NOISE verwendet den Betrag als Standardabweichung, OUT_OF_RANGE setzt Maximum plus Betrag. Die bestehende Null-Fallbackregel (10 Prozent des Signalwertebereichs) wird beschrieben. Die anderen Editor-Fehlertypen verwenden separate Engine-Parameter oder keinen Zusatzwert; deren tatsächliche Modellvorgaben werden erklärt, ohne magnitude fälschlich als Verzögerung oder Lastfaktor auszugeben.
+
+Quellen: backend/nis/simulation/signals/faults/registry.py, faults/stuck.py und model_based_simulation.py (FaultInjectionEngine._active und event_faults). MESSAGE_JITTER ist im bestehenden Editor eine feste Verschiebung um 10 ms; MESSAGE_DUPLICATION markiert Ereignisse. Die Beschreibung behauptet kein Zufallsjitter oder zusätzlich erzeugte physische Frames. Timeout-Injektion ist keine bestätigte funktionale Fristverletzung.
+
+Bestehende 29 technische Typcodes, ScenarioFault-Payload, Simulation und Backend bleiben erhalten. Die Präsentation zeigt deutsche Auswahltexte und Erklärungen, absolute Zeitbeschriftungen, Laufdauer des Fehlers sowie einen aufklappbaren Begriffsindex. Der Zusatzwert wird für Typen ohne magnitude-Nutzung deaktiviert und erklärt. Labels haben explizite deutsche zugängliche Namen; schmale Ansichten nutzen zwei beziehungsweise eine Spalte.
+
+Validierung: TypeScript --noEmit --incremental false erfolgreich. Keine zusätzliche Design- oder Wortlaut-Testreihe ausgeführt. Vorher-/Nachher-Diff: fault-explanations.diff. Die neun gezielten funktionalen Mehrfenster-Prüfungen bestanden vor dieser reinen UI-Ergänzung; deren Beleg wird nicht als UI-Test ausgegeben. Der gemeinsame neue vollständige Release-PASS und die produktive Funktionsprüfung stehen weiterhin aus. Die bestehende Produktionsprüfung ist um die zugänglichen Parameter, das ungenutzte STUCK-Feld, das editierbare OFFSET-Feld und den Begriffsindex ergänzt; sie wurde noch nicht ausgeführt.

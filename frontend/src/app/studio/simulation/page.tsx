@@ -12,14 +12,15 @@ export default async function WorkflowSimulationPage({
   const query = await searchParams;
   const initialProjectId = projectIdFromSearchParams(query);
   const initialSnapshotId = Array.isArray(query.snapshot) ? query.snapshot[0] : query.snapshot;
+  const secondary = Boolean(query.window && query.primary && query.window !== query.primary);
   return (
     <main className="shell studio-shell workflow-shell">
-      <StudioTopbar initialProjectId={initialProjectId} />
+      {secondary ? <header className="analysis-secondary-heading"><strong>Communication Simulator · Analysefenster</strong><span>Gespeicherte Daten · Analysis projection only</span></header> : <StudioTopbar initialProjectId={initialProjectId} />}
       <WorkflowHeader initialProjectId={initialProjectId} />
       <StudioWorkflowHero eyebrow="Workflow 07" initialProjectId={initialProjectId} title="Signale und Kommunikation gemeinsam simulieren.">
         Modellwerte, Frames, Buslast und Fehlerereignisse laufen auf einer synchronisierten Zeitachse.
       </StudioWorkflowHero>
-      <ModelSimulationRunner key={`${initialProjectId}:${initialSnapshotId}`} initialProjectId={initialProjectId} initialSnapshotId={initialSnapshotId} />
+      <ModelSimulationRunner key={`${initialProjectId}:${initialSnapshotId}`} initialProjectId={initialProjectId} initialSnapshotId={initialSnapshotId} readOnly={secondary} />
     </main>
   );
 }

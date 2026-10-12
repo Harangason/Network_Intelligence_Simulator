@@ -1666,6 +1666,16 @@ class PreflightService:
         interfaces = all_pages(list_objects, "Interface")
         messages = all_pages(list_objects, "Message")
         signals = all_pages(list_objects, "Signal")
+        from backend.nis.engineering.communication.device_communication import communication_findings
+        functional_nodes = {str(node['id']) for node in hardware
+                            if ((node.get('identity') or {}).get('functional_device_contract') or {}).get('version') == 1}
+        functional_graph = {kind: {str(row['id']): row for row in rows} for kind, rows in
+                            [('HardwareNode', hardware), ('Function', functions), ('Interface', interfaces),
+                             ('Message', messages), ('Signal', signals)]}
+        for finding in communication_findings(functional_graph):
+            if finding['object_id'] in functional_nodes:
+                add('engineering_model', finding['severity'], finding['code'], finding['message'],
+                    object_type=finding['object_type'], object_id=finding['object_id'])
         for address_finding in LogicalNodeAddressAllocator(self.project_id).findings():
             add(
                 "addressing",

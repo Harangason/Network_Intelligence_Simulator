@@ -1,0 +1,10 @@
+from pathlib import Path
+import json,hashlib,shutil
+HERE=Path(__file__).resolve().parent;ROOT=HERE.parents[2]
+files=['frontend/src/features/traces/ui/analysis-workspace-tools.tsx','frontend/src/features/traces/lib/analysis-workspace.ts','frontend/src/features/traces/lib/analysis-workspace-browser.ts','frontend/src/features/traces/lib/analysis-workspace.test.mjs','frontend/src/app/globals.css']
+def evidence(p):return {'path':str(p),'sha256':hashlib.sha256(p.read_bytes()).hexdigest()}
+before=[];revision={}
+for n in files:
+ p=ROOT/n;t=HERE/'before'/n;t.parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(p,t);before.append(evidence(t));revision[n]=evidence(p)['sha256']
+w={'goal_id':HERE.name,'goal_type':'implementation','kind':'implementation','repository':str(ROOT),'project_scope':'Simulation command row and explicit simulation/trace window destinations','requested_change':'One-row simulation controls; split simulation/trace actions into two columns and prevent presets/profiles from replacing the current page','modify_code':True,'allow_repair':True,'revision_before':revision,'before':before,'required_outcomes':['single_command_row','explicit_window_destinations','stay_on_current_page','verified_direct_production_delivery'],'validation_requirements':['typecheck','workspace_tests','focused_browser','production'],'constraints':['Small checks and direct frontend delivery, no image/full gate','Preserve source/cursor/project and existing profiles'],'forbidden_changes':['No backend or model changes','No EIP delivery','No full PASS claim'],'unresolved_decisions':[],'files_changed':files,'implementation_plan':['Extend existing board identity to window URLs and optional profile metadata','Explicit columns and new-window-only presets/restoration','Scoped frontend checks, compile and overlay existing production with rollback'],'delivery':{'decision':'YES','authorization':'Standing user instruction: small checks, no image/full test, direct production','target':'Existing NetworkIS frontend'},'completion_status':'IMPLEMENTING'}
+(HERE/'workload.json').write_text(json.dumps(w,indent=2),encoding='utf-8')

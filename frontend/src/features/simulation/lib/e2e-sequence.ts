@@ -1,5 +1,89 @@
 export type SequenceSource = "SIMULATED" | "OBSERVED";
 
+/** Read-only boolean search: NOT > AND > OR, with quoted phrases and parentheses. */
+export function compileSequenceSearch(query: string): { error: string | null; matches: (event: SequenceEvent) => boolean } {
+  type Token = { kind: "TERM" | "AND" | "OR" | "NOT" | "(" | ")"; value: string };
+  type Predicate = (fields: string[]) => boolean;
+  const text = query.trim();
+  const fields = (event: SequenceEvent) => [event.source, event.destination, event.route, event.technology,
+    event.status, event.transactionId ?? ""].map(value => value.toLocaleLowerCase());
+  const term = (value: string): Predicate => values => values.some(field => field.includes(value.toLocaleLowerCase()));
+  if (!text) return { error: null, matches: () => true };
+  try {
+    if (text.length > 4096) throw new Error("Suchausdruck ist zu lang (maximal 4096 Zeichen).");
+    // Preserve the existing literal phrase search when no expression syntax is used.
+    if (!/[()"]|(?:^|\s)(?:UND|AND|ODER|OR|NICHT|NOT)(?=\s|$)/i.test(text)) {
+      const predicate = term(text);
+      return { error: null, matches: event => predicate(fields(event)) };
+    }
+    const tokens: Token[] = [];
+    const operators: Record<string, Token["kind"]> = { UND: "AND", AND: "AND", ODER: "OR", OR: "OR", NICHT: "NOT", NOT: "NOT" };
+    let position = 0;
+    while (position < text.length) {
+      if (/\s/.test(text[position])) { position++; continue; }
+      const character = text[position];
+      if (character === "(" || character === ")") { tokens.push({ kind: character, value: character }); position++; continue; }
+      if (character === '"') {
+        position++;
+        let value = "", closed = false;
+        while (position < text.length) {
+          const next = text[position++];
+          if (next === '"') { closed = true; break; }
+          if (next === "\\" && /["\\]/.test(text[position] ?? "")) value += text[position++];
+          else value += next;
+        }
+        if (!closed) throw new Error("Schließendes Anführungszeichen fehlt.");
+        if (!value) throw new Error("Leerer Suchbegriff ist nicht zulässig.");
+        tokens.push({ kind: "TERM", value });
+        continue;
+      }
+      const start = position;
+      while (position < text.length && !/[\s()"]/.test(text[position])) position++;
+      const value = text.slice(start, position);
+      tokens.push({ kind: operators[value.toUpperCase()] ?? "TERM", value });
+    }
+    let cursor = 0;
+    function primary(depth: number): Predicate {
+      if (depth > 64) throw new Error("Suchausdruck ist zu tief verschachtelt.");
+      const token = tokens[cursor++];
+      if (!token) throw new Error("Suchbegriff nach dem Operator fehlt.");
+      if (token.kind === "NOT") { const operand = primary(depth + 1); return values => !operand(values); }
+      if (token.kind === "(") {
+        const operand = disjunction(depth + 1);
+        if (tokens[cursor++]?.kind !== ")") throw new Error("Schließende Klammer fehlt.");
+        return operand;
+      }
+      if (token.kind !== "TERM") throw new Error(`Suchbegriff vor „${token.value}“ fehlt.`);
+      return term(token.value);
+    }
+    function conjunction(depth: number): Predicate {
+      let predicate = primary(depth);
+      while (tokens[cursor] && tokens[cursor].kind !== "OR" && tokens[cursor].kind !== ")") {
+        if (tokens[cursor].kind === "AND") cursor++;
+        const right = primary(depth);
+        const left = predicate;
+        predicate = values => left(values) && right(values);
+      }
+      return predicate;
+    }
+    function disjunction(depth: number): Predicate {
+      let predicate = conjunction(depth);
+      while (tokens[cursor]?.kind === "OR") {
+        cursor++;
+        const right = conjunction(depth);
+        const left = predicate;
+        predicate = values => left(values) || right(values);
+      }
+      return predicate;
+    }
+    const predicate = disjunction(0);
+    if (cursor !== tokens.length) throw new Error("Unerwartete schließende Klammer.");
+    return { error: null, matches: event => predicate(fields(event)) };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Ungültiger Suchausdruck.", matches: () => false };
+  }
+}
+
 export type SequenceEvent = {
   id: string;
   transactionId: string | null;

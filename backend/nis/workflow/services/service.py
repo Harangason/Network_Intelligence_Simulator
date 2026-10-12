@@ -1609,11 +1609,15 @@ class WorkflowStatusService:
         return self._serialize_row(row)
 
     def get_simulation_snapshot(self, snapshot_id: str, *, require_current: bool = False,
-                                metadata_only: bool = False) -> dict[str, Any] | None:
+                                metadata_only: bool = False, configuration_only: bool = False) -> dict[str, Any] | None:
         # Recovery must bind the frozen input and current revision in one read.
         # Missing legacy revision metadata is not authority to execute again.
         columns = ("id, project_id, source_versions, status, job_id, is_outdated, outdated_reason"
                    if metadata_only else "*")
+        if configuration_only:
+            columns = ("id, project_id, source_versions, status, job_id, is_outdated, outdated_reason, configuration, "
+                       "result->'runtime_metrics'->'networks' AS analysis_network_metrics, "
+                       "result->'model_simulation'->'bus_load' AS analysis_bus_load")
         query = f"SELECT {columns} FROM engineering_simulation_snapshots WHERE id = %s AND project_id = %s"
         if require_current:
             selected = ', '.join('snapshot.' + column.strip() for column in columns.split(','))

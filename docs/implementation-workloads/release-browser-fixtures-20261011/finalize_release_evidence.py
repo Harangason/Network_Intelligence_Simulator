@@ -10,8 +10,8 @@ from urllib.request import urlopen
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[2]
-GATE = ROOT / 'backend/test-output/release-gates/delivery-c86da4ee7aca/d0e543c8df2e'
-EXPECTED_IMAGE = 'sha256:02af1aef2580a7c7e63824cb718f9d42a36c96b681e8e8f829899713103b5258'
+GATE = ROOT / 'backend/test-output/release-gates/delivery-c292d9af64a2/e0cc8540367f'
+EXPECTED_IMAGE = 'sha256:7c4fc26963c885da6be0230f8eef158234c22ddec07ab480ceeb2186088713c1'
 DOCKER = r'C:\Users\marti\AppData\Local\Programs\DockerDesktop\resources\bin\docker.exe'
 
 def read(path):
@@ -57,6 +57,8 @@ elif sys.argv[1] == 'finalize':
     assert production['status'] == functional['status'] == 'PASSED'
     assert production['running_image'] == EXPECTED_IMAGE
     assert functional['safety_typed_form'] and functional['simulation_native_formats']
+    assert functional['visible_signal_lanes'] == 15
+    assert functional['participant_single_filter'] and functional['participant_pair_filter'] and functional['participant_toggle_clear']
     release_ref = ref(GATE / 'receipt.json')
     production_ref = ref(HERE / 'production-verification.json')
     functional_refs = [ref(HERE / 'production-functional.json'), ref(HERE / 'production-safety.png')]
@@ -66,11 +68,11 @@ elif sys.argv[1] == 'finalize':
         'health': {'status': 'PASSED', 'evidence': [production_ref]},
         'functional': {'status': 'PASSED', 'evidence': functional_refs},
     }
-    for name in ('safety-ui-trace-export-20261011', 'wizard-whitespace-20261011', 'release-browser-fixtures-20261011'):
+    for name in ('safety-ui-trace-export-20261011', 'wizard-whitespace-20261011', 'release-browser-fixtures-20261011', 'simulation-participant-filter-20261011'):
         path = HERE.parent / name / 'workload.json'
         workload = read(path)
         workload['tests'] = {'status': 'PASSED', 'receipt': release_ref,
-            'scope': '605 frontend tests; 21794 backend tests and 56 subtests; 110 browser cases; small and large HTTP wizard checks; TypeScript and storage tests'}
+            'scope': '606 frontend tests; 21794 backend tests and 56 subtests; 110 browser cases; small and large HTTP wizard checks; TypeScript and storage tests'}
         workload['delivery'].update(status='DEPLOYED_VERIFIED', tested_version=EXPECTED_IMAGE,
             running_version=EXPECTED_IMAGE, checks=checks)
         for outcome, row in workload['outcomes'].items():
@@ -79,8 +81,10 @@ elif sys.argv[1] == 'finalize':
             else:
                 row['scope'] = 'SOURCE_REVIEW_AND_COMPLETE_ISOLATED_RELEASE_GATE'
                 row['evidence'].append(release_ref)
-                if outcome in ('safety_layout', 'structured_requirement_editor', 'canonical_cluster_route_picker', 'native_format_initialization'):
+                if outcome in ('safety_layout', 'structured_requirement_editor', 'canonical_cluster_route_picker', 'native_format_initialization', 'fifteen_visible_signal_lanes', 'participant_single_tx_rx_toggle', 'participant_group_internal_communication'):
                     row['evidence'].extend(functional_refs)
+        if name == 'simulation-participant-filter-20261011':
+            workload['validations']['targeted_browser_regression'] = {'status': 'PASSED', 'scope': 'Simulation display case within complete browser gate; original assertions and compact layout / bidirectional participant toggle counterprobes', 'evidence': [ref(GATE / 'browser.json')]}
         workload['validations']['full_release_gate'] = {'status': 'PASSED', 'evidence': [release_ref]}
         if 'full_release_gate' not in workload['validation_requirements']:
             workload['validation_requirements'].append('full_release_gate')

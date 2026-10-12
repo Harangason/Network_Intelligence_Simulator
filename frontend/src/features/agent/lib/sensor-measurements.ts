@@ -1,4 +1,6 @@
 export const SENSOR_MEASUREMENTS = [
+  { id: 'object_list', label: 'Objektdaten', unit: 'byte', match: /object.?list|objekt.?liste|radar.*(?:objekt|object|track)/i,
+    dataComplexity: 'STRUCTURED_OBJECT_LIST', semanticType: 'BYTE_ARRAY', elementType: 'OBJECT', payloadBytes: 1168, defaultCycleMs: 50 },
   { id: 'image_frame', label: 'Bilddaten', unit: 'byte', match: /kamera|camera|vision/i,
     dataComplexity: 'IMAGE_STREAM', semanticType: 'BYTE_ARRAY', elementType: 'IMAGE', payloadBytes: 1400, defaultCycleMs: 33 },
   { id: 'point_cloud', label: 'Punktwolke', unit: 'byte', match: /lidar|laser.?scanner/i,

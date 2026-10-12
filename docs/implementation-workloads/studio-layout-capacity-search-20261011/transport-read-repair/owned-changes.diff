@@ -1,0 +1,13 @@
+--- before/frontend/e2e/wizard.spec.ts
++++ after/frontend/e2e/wizard.spec.ts
+@@ -59,7 +59,9 @@
+ }
+ 
+ async function readProject(page: Page, project: string, path: string) {
+-  const result = await page.request.get(path, { headers: { 'X-Project-ID': project }, timeout: 60_000 });
++  // Recover only a peer connection reset on this idempotent read. HTTP errors,
++  // malformed data and all continuity assertions remain failures within 60s.
++  const result = await page.request.get(path, { headers: { 'X-Project-ID': project }, timeout: 60_000, maxRetries: 2 });
+   try {
+     if (!result.ok()) throw new Error(`${path}: HTTP ${result.status()} ${(await result.text()).slice(0, 4000)}`);
+     return await result.json();

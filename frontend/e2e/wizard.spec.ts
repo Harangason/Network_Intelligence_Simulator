@@ -7,6 +7,13 @@ import { reviewVirtualTransports } from './support/native-transport-fixtures';
 
 const steps = WIZARD_STEPS;
 const done = WIZARD_DONE;
+
+async function openSimulationRun(page: Page) {
+  const controls = page.locator('[aria-controls="simulation-controls"]');
+  if (await controls.getAttribute('aria-expanded') === 'false') await controls.click();
+  const panel = page.locator('.simulation-command-panel');
+  if (await panel.getAttribute('open') === null) await panel.locator(':scope > summary').click();
+}
 type WriteTiming = { url: string; started: number; duration_ms?: number; status?: number; failure?: string };
 const writeTimings = new Map<string, WriteTiming[]>();
 const workflowPageFailures = new WeakMap<Page, string[]>();
@@ -59,7 +66,9 @@ async function assertEngineeringPageHealthy(page: Page) {
 }
 
 async function readProject(page: Page, project: string, path: string) {
-  const result = await page.request.get(path, { headers: { 'X-Project-ID': project }, timeout: 60_000 });
+  // Recover only a peer connection reset on this idempotent read. HTTP errors,
+  // malformed data and all continuity assertions remain failures within 60s.
+  const result = await page.request.get(path, { headers: { 'X-Project-ID': project }, timeout: 60_000, maxRetries: 2 });
   try {
     if (!result.ok()) throw new Error(`${path}: HTTP ${result.status()} ${(await result.text()).slice(0, 4000)}`);
     return await result.json();
@@ -656,11 +665,13 @@ test('new small wizard traverses all nine stages and survives reload/restart @sm
     await expect(freshRunner).toHaveAttribute('data-snapshot-id', artifacts.snapshot);
     await expect(fresh.getByRole('heading', { name: 'Simulation abgeschlossen', exact: true })).toBeVisible();
     // A completed historical run must not block the current approved preflight.
+    await openSimulationRun(fresh);
     await expect(fresh.getByRole('button', { name: 'Start', exact: true })).toBeEnabled();
     await fresh.getByRole('button', { name: 'Reset', exact: true }).click();
     await fresh.getByRole('button', { name: 'Ansicht zurücksetzen', exact: true }).click();
     await expect(freshRunner).not.toHaveAttribute('data-job-id');
     await fresh.reload();
+    await openSimulationRun(fresh);
     await expect(fresh.getByRole('button', { name: 'Start', exact: true })).toBeEnabled();
     await expect(freshRunner).not.toHaveAttribute('data-job-id');
     await fresh.goto(`/studio/results?project=${project}&snapshot=${artifacts.snapshot}`);
@@ -670,6 +681,7 @@ test('new small wizard traverses all nine stages and survives reload/restart @sm
     // Actual normal START, without resetting/deleting the restored completed run.
     await fresh.goto(`/studio/simulation?project=${project}&snapshot=${artifacts.snapshot}`);
     await expect(freshRunner).toHaveAttribute('data-job-id', artifacts.job);
+    await openSimulationRun(fresh);
     await fresh.getByRole('button', { name: 'Start', exact: true }).click();
     await expect.poll(async () => {
       restartedJob = await freshRunner.getAttribute('data-job-id');

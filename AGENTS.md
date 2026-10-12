@@ -78,6 +78,38 @@ A restart of the existing image does not count as deployment of a tested change.
 Required release gates must still pass; this rule does not authorize bypassing
 checks or deploying an untested build.
 
+## Scoped direct delivery for simulation and results UI work
+
+On 2026-10-12 the user explicitly instructed that these simulation UI,
+historical playback and related results/intelligence presentation changes use only small final checks and direct production
+delivery, without a new image or a full test/release run. For this scoped work,
+that instruction supersedes the complete-image release procedure above.
+Preserve backend, model, preflight and staleness gates. Build the frontend with
+the existing dependencies, preserve a rollback copy, record the frontend artifact
+identity separately from the unchanged base image, and verify health and the
+affected controls in production. Never represent this delivery as a full gate
+PASS or reuse the base image receipt as evidence for the new UI artifact.
+
+## Standing authorization for archived failed-candidate cleanup
+
+On 2026-10-12 the user explicitly authorized removing unused, fully archived
+failed release candidates without asking again when needed to continue a release.
+This authorization applies only to candidates with a preserved FAIL receipt and
+a complete recoverable image archive whose index, configuration, all referenced
+layers and immutable image identity have been verified. Record archive hashes,
+receipt evidence, fresh usage checks and the exact removal in the workload.
+
+Before removal, check all running and stopped container references and confirm
+the exact tag still identifies the archived image. Protect production, rollback
+images, container-referenced images and candidates with PASS, active or unknown
+release status. This scoped authorization permits removing those verified unused
+FAIL candidates even when age or feature-delivery retention would otherwise
+require a separate decision; do not invent delivered-equivalence evidence.
+Remove only the necessary audited candidates with `docker image rm --no-prune`;
+never use force or bulk pruning. All other image classes remain subject to
+`scripts/release_storage.py` retention requirements. Required release checks and
+exact tested-image deployment remain mandatory.
+
 ## NIS links in chat
 
 When providing a local NIS link, always also provide a clickable VPN/LAN link

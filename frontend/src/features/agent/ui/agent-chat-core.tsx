@@ -2280,6 +2280,7 @@ export function EngineeringAgentWizard({
         `- Systemcluster-Netzvorgaben: ${clusterSummary || "keine explizite Clusterbindung"}\n` +
         `- Bus-Teilnehmergrenzen: ${JSON.stringify(normalizeEngineeringWizardSettings(workflow?.context.engineering_wizard_settings).bus_participant_limits)}\n` +
         (Object.keys(selectedActuatorCommands).length ? `- Aktor-Befehle: ${JSON.stringify(selectedActuatorCommands)}\n` : '') +
+        `- Funktionaler Generierungsvertrag: sensor-actuator-v1\n` +
         `- Systemcluster-Graph: ${JSON.stringify(equipmentClusterGraphPrompt(equipmentClusterAssignments, networkArchitecture))}\n` +
         `- Topologie-Cluster-Profil: ${topologyKnowledge.profile}\n` +
         `- Topologie-Cluster-Regeln: ${topologyKnowledge.ruleSummary.join("; ") || "generische Systemnaehe verwenden"}\n` +

@@ -300,6 +300,8 @@ export type AnalysisSnapshot = {
 
 export type SimulationSnapshot = {
   id: string;
+  analysis_network_metrics?: import('../../../shared/api/types').RuntimeNetworkMetric[];
+  analysis_bus_load?: Array<{network_id:string;time_s:number;load_percent:number}>;
   source_versions: Record<WorkflowStepId, number>;
   configuration?: Record<string, unknown>;
   calculated_metrics?: CapacityResults;
@@ -641,8 +643,8 @@ export const getWorkflowSnapshots = (projectId = readActiveProjectId()) =>
     simulations: SimulationSnapshot[];
   }>("/workflow/snapshots", { headers: { "X-Project-ID": projectId } });
 
-export const getWorkflowSimulationSnapshot = (snapshotId: string, projectId = readActiveProjectId()) =>
-  request<SimulationSnapshot>(`/workflow/simulation-snapshots/${encodeURIComponent(snapshotId)}`, { headers: { "X-Project-ID": projectId } });
+export const getWorkflowSimulationSnapshot = (snapshotId: string, projectId = readActiveProjectId(), configurationOnly = false) =>
+  request<SimulationSnapshot>(`/workflow/simulation-snapshots/${encodeURIComponent(snapshotId)}${configurationOnly ? '?view=configuration' : ''}`, { headers: { "X-Project-ID": projectId } });
 
 export type IntelligenceIssue = {
   severity: "ERROR" | "WARNING" | "INFO";

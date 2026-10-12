@@ -1,6 +1,27 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { inspectSignal, inspectMessageSignals, buildNetworkInspection } from "./capacity-network-inspection.ts";
+import { inspectSignal, inspectMessageSignals, buildNetworkInspection, capacityLoadOverview } from "./capacity-network-inspection.ts";
+
+test('load overview aggregates recorded assumptions separately from device qualification', () => {
+  const networks = [
+    { capacity_verified: true, peak_load_percent: 40, capacity_reserve_percent: 50 },
+    { capacity_verified: false, peak_load_percent: 0, capacity_reserve_percent: 0,
+      simulation_capacity: { peak_load_percent: 75, capacity_reserve_percent: 12, hardware_evidence: false, functional_timing_accepted: false } },
+    { capacity_applicable: false, peak_load_percent: 999, capacity_reserve_percent: -999 },
+  ];
+  const original = structuredClone(networks);
+  assert.deepEqual(capacityLoadOverview(networks), { applicableCount: 2, verifiedCount: 1, peak: 75, reserve: 12 });
+  assert.deepEqual(networks, original);
+});
+
+test('missing or nonfinite recorded metrics stay unknown, with no invented reserve or zero fallback', () => {
+  assert.deepEqual(capacityLoadOverview([{ capacity_verified: false, simulation_capacity: { peak_load_percent: 70 } }]),
+    { applicableCount: 1, verifiedCount: 0, peak: 70, reserve: null });
+  assert.equal(capacityLoadOverview([{ capacity_verified: false, peak_load_percent: 0 }]).peak, null);
+  assert.equal(capacityLoadOverview([{ capacity_verified: true, peak_load_percent: NaN, capacity_reserve_percent: Infinity }]).reserve, null);
+  assert.equal(capacityLoadOverview([{ capacity_verified: true, peak_load_percent: 30 }, { capacity_verified: false }]).peak, null);
+  assert.deepEqual(capacityLoadOverview([]), { applicableCount: 0, verifiedCount: 0, peak: null, reserve: null });
+});
 
 const message = { id: "message", name: "Status", dlc: 8, interface_id: "sensor-port" };
 const signal = { id: "signal", name: "Value", message_id: "message", start_bit: 0, length_bits: 8,

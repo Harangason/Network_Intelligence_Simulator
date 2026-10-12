@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useSearchParams } from 'next/navigation';
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   cancelSimulation,
@@ -43,6 +44,9 @@ import { sequenceModelForEventIds, type SequenceDiagramModel } from "@/features/
 import { E2ESequenceDiagram } from "./e2e-sequence-diagram";
 import { simulationPage } from "../lib/simulation-pagination";
 import { SimulationPageControls } from "./simulation-page-controls";
+import { AnalysisWorkspaceTools, useAnalysisWorkspace } from '@/features/traces/ui/analysis-workspace-tools';
+import { VIEW_STAGES } from '@/features/traces/lib/analysis-workspace';
+import { SaveDialog } from '@/features/projects/ui/save-dialog';
 
 type SimulationView = "network" | "sequence" | "signals" | "load" | "events";
 type ScenarioFault = {
@@ -64,13 +68,55 @@ const FAULT_TYPES = {
   NETWORK: ["NETWORK_OVERLOAD", "BUS_OFF", "LINK_DOWN", "GATEWAY_DELAY", "GATEWAY_DROP", "QUEUE_OVERFLOW", "CONGESTION", "TEMPORARY_DISCONNECT"],
 } as const;
 
+type FaultType = typeof FAULT_TYPES[keyof typeof FAULT_TYPES][number];
+const FAULT_SCOPE_LABELS = { SIGNAL: "Signal", MESSAGE: "Nachricht", NETWORK: "Netzwerk" } as const;
+// Presentation only: the existing fault engine remains authoritative.
+const FAULT_HELP: Record<FaultType, { label: string; explanation: string; valueLabel?: string; valueHint?: string }> = {
+  SIGNAL_STUCK: { label: "Signal bleibt hängen", explanation: "Hält den beim Fehlereintritt erfassten Signalwert fest. Der Zusatzwert wird nicht verwendet." },
+  SIGNAL_OFFSET: { label: "Signalwert verschieben", explanation: "Addiert den Zusatzwert zum regulären Signalwert.", valueLabel: "Verschiebung (Signaleinheit)", valueHint: "5 bedeutet +5 in der Einheit des betroffenen Signals. Bei 0 verwendet das Modell 10 % seines Wertebereichs." },
+  SIGNAL_DRIFT: { label: "Signal driftet", explanation: "Die Abweichung wächst mit der Zeit seit Fehlerbeginn.", valueLabel: "Drift (Signaleinheit/s)", valueHint: "5 bedeutet eine zusätzliche Abweichung von +5 pro Sekunde. Bei 0 verwendet das Modell 10 % des Wertebereichs pro Sekunde." },
+  SIGNAL_SPIKE: { label: "Signalspitze", explanation: "Erhöht die Signalwerte während des gesamten Fehlerfensters um den Zusatzwert.", valueLabel: "Spitzenhöhe (Signaleinheit)", valueHint: "5 bedeutet +5 in der Signaleinheit. Für eine kurze Spitze ein entsprechend kurzes Fehlerfenster wählen. Bei 0 verwendet das Modell 10 % des Wertebereichs." },
+  SIGNAL_DROPOUT: { label: "Signal fällt aus", explanation: "Liefert im Fehlerfenster keinen Signalwert. Der Zusatzwert wird nicht verwendet." },
+  SIGNAL_NOISE: { label: "Signal verrauscht", explanation: "Überlagert den Signalwert mit reproduzierbarem Zufallsrauschen.", valueLabel: "Rauschstreuung (Signaleinheit)", valueHint: "Der Betrag des Werts ist die Standardabweichung, keine feste Verschiebung. Bei 0 verwendet das Modell 10 % des Wertebereichs." },
+  SIGNAL_OUT_OF_RANGE: { label: "Signal außerhalb des Wertebereichs", explanation: "Setzt den Signalwert oberhalb seines konfigurierten Maximums.", valueLabel: "Abstand über Maximum (Signaleinheit)", valueHint: "5 bedeutet Maximum +5; verwendet wird der Betrag. Bei 0 verwendet das Modell 10 % des Wertebereichs." },
+  SIGNAL_FROZEN: { label: "Signal eingefroren", explanation: "Hält wie „Signal bleibt hängen“ den ersten Wert im Fehlerfenster fest. Der Zusatzwert wird nicht verwendet." },
+  SIGNAL_DELAYED: { label: "Signal verzögert", explanation: "Liest einen älteren Signalwert. Dieser Editor verwendet die Modellvorgabe von 0,1 s Verzögerung; der Zusatzwert wird nicht verwendet." },
+  SIGNAL_WRONG_SCALE: { label: "Falsche Signalskalierung", explanation: "Multipliziert den Signalwert in diesem Editor mit dem Modellfaktor 2. Der Zusatzwert wird nicht verwendet." },
+  SIGNAL_INVALID_VALUE: { label: "Ungültiger Signalwert", explanation: "Liefert keinen gültigen numerischen Signalwert. Der Zusatzwert wird nicht verwendet." },
+  MESSAGE_LOSS: { label: "Nachrichtenverlust", explanation: "Verwirft die betroffenen Nachrichten im Fehlerfenster. Der Zusatzwert wird nicht verwendet." },
+  MESSAGE_DELAY: { label: "Nachricht verzögert", explanation: "Fügt in diesem Editor 50 ms zusätzliche Übertragungsverzögerung hinzu. Der Zusatzwert wird nicht verwendet." },
+  MESSAGE_JITTER: { label: "Zeitabweichung der Nachricht", explanation: "Verschiebt die Nachrichtenzeit im Modell um 10 ms. Das ist hier eine feste Zeitabweichung, kein Zufallsrauschen; der Zusatzwert wird nicht verwendet." },
+  MESSAGE_DUPLICATION: { label: "Nachricht als Duplikat markieren", explanation: "Kennzeichnet das Ereignis als injiziertes Duplikat für die Auswertung. Der Zusatzwert wird nicht verwendet." },
+  MESSAGE_CORRUPTION: { label: "Nachricht beschädigt", explanation: "Markiert die Nachricht als beschädigt und ersetzt das erste Nutzdatenbyte durch FF. Der Zusatzwert wird nicht verwendet." },
+  MESSAGE_WRONG_CYCLE: { label: "Abweichender Nachrichtenzyklus", explanation: "Setzt die Zyklusreferenz in den Ereignisdaten auf den doppelten bisherigen Wert. Der Zusatzwert wird nicht verwendet." },
+  MESSAGE_TIMEOUT: { label: "Zeitüberschreitung simulieren", explanation: "Injiziert im Modell einen Timeout-Fehler mit 50 ms zusätzlicher Verzögerung. Eine tatsächlich verletzte Frist muss die Auswertung anhand der Anforderungen prüfen. Der Zusatzwert wird nicht verwendet." },
+  BURST_TRAFFIC: { label: "Gebündelter Nachrichtenverkehr", explanation: "Setzt im Simulationsereignis einen Lastfaktor von 4. Der Zusatzwert wird nicht verwendet." },
+  FRAME_ERROR: { label: "Übertragungsrahmen beschädigt", explanation: "Markiert den Rahmen als beschädigt und ersetzt das erste Nutzdatenbyte durch FF. Der Zusatzwert wird nicht verwendet." },
+  ROUTING_FAILURE: { label: "Weiterleitung fehlgeschlagen", explanation: "Verwirft die Nachrichten auf dem betroffenen Übertragungsweg. Der Zusatzwert wird nicht verwendet." },
+  NETWORK_OVERLOAD: { label: "Netzüberlast simulieren", explanation: "Setzt im Simulationsereignis einen Lastfaktor von 4. Der Zusatzwert wird nicht verwendet." },
+  BUS_OFF: { label: "Bus abgeschaltet", explanation: "Verwirft die betroffenen Übertragungen im Fehlerfenster. Der Zusatzwert wird nicht verwendet." },
+  LINK_DOWN: { label: "Verbindung ausgefallen", explanation: "Verwirft Übertragungen auf der betroffenen Verbindung. Der Zusatzwert wird nicht verwendet." },
+  GATEWAY_DELAY: { label: "Gateway verzögert", explanation: "Fügt für die betroffenen Gateway-Übertragungen 50 ms Verzögerung hinzu. Der Zusatzwert wird nicht verwendet." },
+  GATEWAY_DROP: { label: "Gateway verwirft Nachrichten", explanation: "Verwirft die betroffenen Gateway-Übertragungen im Fehlerfenster. Der Zusatzwert wird nicht verwendet." },
+  QUEUE_OVERFLOW: { label: "Warteschlange läuft über", explanation: "Setzt einen Lastfaktor von 4 und verwirft betroffene Ereignisse mit dem Grund „Warteschlangenüberlauf“. Der Zusatzwert wird nicht verwendet." },
+  CONGESTION: { label: "Übertragungsstau", explanation: "Fügt in diesem Editor 50 ms Verzögerung hinzu. Der Zusatzwert wird nicht verwendet." },
+  TEMPORARY_DISCONNECT: { label: "Verbindung kurz unterbrochen", explanation: "Verwirft die betroffenen Übertragungen zwischen Fehlerbeginn und Fehlerende. Der Zusatzwert wird nicht verwendet." },
+};
+
+function faultHelp(type: string) {
+  return FAULT_HELP[type as FaultType];
+}
+
 function simulationSessionKey(projectId: string) {
   return `nis.active-simulation.${projectId}`;
 }
 
 const RESET_SIMULATION_VIEW = "reset-view";
 
-export function ModelSimulationRunner({ initialProjectId = "", initialSnapshotId }: { initialProjectId?: string; initialSnapshotId?: string }) {
+export function ModelSimulationRunner({ initialProjectId = "", initialSnapshotId, readOnly = false }: { initialProjectId?: string; initialSnapshotId?: string; readOnly?: boolean }) {
+  const parameters = useSearchParams();
+  const workspace = useAnalysisWorkspace(initialProjectId);
+  const incomingRun = workspace?.state.received ? workspace.state.context.simulation_run_id : parameters.get('job');
   const [catalog, setCatalog] = useState<Catalog | null>(null);
   const [workflow, setWorkflow] = useState<WorkflowState | null>(null);
   const [snapshot, setSnapshot] = useState<SimulationSnapshot | null>(null);
@@ -79,6 +125,9 @@ export function ModelSimulationRunner({ initialProjectId = "", initialSnapshotId
   const startInFlight = useRef(false);
   const [error, setError] = useState("");
   const [savedScenarioNotice, setSavedScenarioNotice] = useState("");
+  const [scenarioSaveOpen, setScenarioSaveOpen] = useState(false);
+  const [scenarioName, setScenarioName] = useState("");
+  const [scenarioSaveError, setScenarioSaveError] = useState("");
   const [mode, setMode] = useState("GOLDEN");
   const [duration, setDuration] = useState(2);
   const [speed, setSpeed] = useState(1);
@@ -98,9 +147,21 @@ export function ModelSimulationRunner({ initialProjectId = "", initialSnapshotId
   const [proposals, setProposals] = useState<FaultProposal[]>([]);
   const [proposalMagnitude, setProposalMagnitude] = useState<Record<string, number>>({});
   const [proposalReviewState, setProposalReviewState] = useState<Record<string, { busy: boolean; message: string; error?: boolean }>>({});
-  const [view, setView] = useState<SimulationView>("signals");
+  const [view, setView] = useState<SimulationView>(() => {
+    const requested = parameters.get('view');
+    return requested && ['network','sequence','signals','load','events'].includes(requested) ? requested as SimulationView : 'signals';
+  });
   const [playhead, setPlayhead] = useState(0);
+  const playheadRef = useRef(0);
+  function movePlayhead(time: number, publish = true) {
+    playheadRef.current = time;
+    setPlayhead(time);
+    if (publish && job && workspace?.store.state.context.simulation_run_id === job.id) {
+      workspace.store.update({time_cursor:time,time_basis:'simulation_relative'});
+    }
+  }
   const [playing, setPlaying] = useState(false);
+  const [controlsOpen, setControlsOpen] = useState(false);
   const [restoredProjectId, setRestoredProjectId] = useState("");
   const [restoreAttempt, setRestoreAttempt] = useState(0);
   const [restoreError, setRestoreError] = useState("");
@@ -114,7 +175,7 @@ export function ModelSimulationRunner({ initialProjectId = "", initialSnapshotId
     setRestoreError("");
     setJob(null);
     setSnapshot(null);
-    const savedJobId = window.sessionStorage.getItem(simulationSessionKey(projectId));
+    const savedJobId = incomingRun ?? window.sessionStorage.getItem(simulationSessionKey(projectId));
     if (!initialSnapshotId && savedJobId === RESET_SIMULATION_VIEW) {
       setRestoredProjectId(projectId);
       return () => { active = false; };
@@ -140,7 +201,7 @@ export function ModelSimulationRunner({ initialProjectId = "", initialSnapshotId
       if (active) setRestoreError(caught instanceof Error ? caught.message : "Simulationslauf nicht erreichbar.");
     });
     return () => { active = false; };
-  }, [initialSnapshotId, restoreAttempt, workflow?.project_id]);
+  }, [initialSnapshotId, restoreAttempt, workflow?.project_id, incomingRun]);
 
   useEffect(() => {
     const projectId = workflow?.project_id;
@@ -192,24 +253,28 @@ export function ModelSimulationRunner({ initialProjectId = "", initialSnapshotId
   }, [job?.status]);
 
   useEffect(() => {
+    if (job) workspace?.store.update({simulation_run_id:job.id,trace_id:job.id,session_id:job.id,time_basis:'simulation_relative'});
+  },[job?.id,workspace?.store]);
+  useEffect(() => {if(workspace && workspace.state.descriptor.window_id === workspace.state.descriptor.primary_id)workspace.store.update({view_mode:view,analysis_stage:VIEW_STAGES[view]??'FILTER'});},[view,workspace?.store]);
+  useEffect(() => {
+    if (!workspace) return;
+    const c = workspace.store.state.context;
+    if (c.simulation_run_id === job?.id && c.time_cursor !== null && c.time_basis === 'simulation_relative' && c.time_cursor !== playheadRef.current) { setPlaying(false); movePlayhead(c.time_cursor,false); }
+  },[workspace?.state.received]);
+
+  useEffect(() => {
     if (!playing || !job?.result?.model_simulation) return;
     const maximum = Number(job.result.model_simulation.scenario.duration_s || duration);
     const timer = window.setInterval(() => {
-      setPlayhead((current) => {
-        const next = current + 0.05 * speed;
-        if (next >= maximum) {
-          setPlaying(false);
-          return maximum;
-        }
-        return next;
-      });
+      const next = Math.min(maximum,playheadRef.current + 0.05 * speed);
+      if (next >= maximum) setPlaying(false);
+      movePlayhead(next);
     }, 50);
     return () => window.clearInterval(timer);
   }, [duration, job?.result?.model_simulation, playing, speed]);
 
   const valid = workflow?.statuses.validation === "APPROVED" || workflow?.statuses.validation === "WARNING";
   const projectIdForLinks = workflow?.project_id ?? initialProjectId;
-  const simulationOutdated = snapshot?.is_outdated || workflow?.statuses.simulation === "OUTDATED";
   const running = simulationJobActive(job);
   const selectedTechnology = useMemo(() => {
     const industry = String(workflow?.parameters.industry ?? "");
@@ -286,6 +351,7 @@ export function ModelSimulationRunner({ initialProjectId = "", initialSnapshotId
 
   async function start(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (readOnly) return;
     if (!workflow || !startAllowed || startInFlight.current) return;
     startInFlight.current = true;
     setBusy(true);
@@ -343,7 +409,7 @@ export function ModelSimulationRunner({ initialProjectId = "", initialSnapshotId
         ...(hasTopology ? { config } : config),
       }, false);
       setPlaying(false);
-      setPlayhead(0);
+      movePlayhead(0);
       setSnapshot(nextSnapshot);
       setJob(nextJob);
       window.sessionStorage.setItem(simulationSessionKey(workflow.project_id), nextJob.id);
@@ -357,19 +423,30 @@ export function ModelSimulationRunner({ initialProjectId = "", initialSnapshotId
     }
   }
 
+  function openScenarioSave() {
+    setScenarioName(`${mode === "GOLDEN" ? "Golden / Ideal" : mode === "NORMAL" ? "Normalbetrieb" : mode === "STRESS" ? "Stresstest" : "Fehlerszenario"} ${new Date().toLocaleString("de-DE")}`);
+    setScenarioSaveError("");
+    setScenarioSaveOpen(true);
+  }
+
   async function saveScenarioAs() {
-    if (!workflow || !valid || !formatsResolved || formats.length === 0 || !scopeValid) return;
-    const defaultName = `${mode === "GOLDEN" ? "Golden / Ideal" : mode === "NORMAL" ? "Normalbetrieb" : mode === "STRESS" ? "Stresstest" : "Fehlerszenario"} ${new Date().toLocaleString("de-DE")}`;
-    const name = window.prompt("Szenario speichern unter", defaultName)?.trim();
+    if (readOnly || busy) return;
+    if (!workflow || !valid || !formatsResolved || formats.length === 0 || !scopeValid) {
+      setScenarioSaveError("Das Szenario braucht einen gültigen Preflight, Umfang und Trace-Formate.");
+      return;
+    }
+    const name = scenarioName.trim();
     if (!name) return;
     setBusy(true);
+    setScenarioSaveError("");
     setError("");
     setSavedScenarioNotice("");
     try {
       const saved = await saveSimulationScenario(workflow.project_id, buildScenario(name));
       setSavedScenarioNotice(`Szenario "${String(saved.name || name)}" gespeichert.`);
+      setScenarioSaveOpen(false);
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Szenario konnte nicht gespeichert werden.");
+      setScenarioSaveError(caught instanceof Error ? caught.message : "Szenario konnte nicht gespeichert werden.");
     } finally {
       setBusy(false);
     }
@@ -403,7 +480,7 @@ export function ModelSimulationRunner({ initialProjectId = "", initialSnapshotId
     window.history.replaceState(window.history.state, "", withProjectParam("/studio/simulation", projectIdForLinks));
     setResetPromptOpen(false);
     setPlaying(false);
-    setPlayhead(0);
+    movePlayhead(0);
     setJob(null);
     setSnapshot(null);
     setError("");
@@ -458,7 +535,7 @@ export function ModelSimulationRunner({ initialProjectId = "", initialSnapshotId
       setProposals((current) => current.map((item) => item.proposal_id === reviewed.proposal_id ? reviewed : item));
       if (action === "EDIT") {
         setProposalMagnitude((current) => ({ ...current, [proposalId]: Number(reviewed.configuration.magnitude ?? magnitude) }));
-        setProposalReviewState((current) => ({ ...current, [proposalId]: { busy: false, message: `Änderung gespeichert · Magnitude ${Number(reviewed.configuration.magnitude ?? magnitude)}` } }));
+        setProposalReviewState((current) => ({ ...current, [proposalId]: { busy: false, message: `Änderung gespeichert · Zusatzwert ${Number(reviewed.configuration.magnitude ?? magnitude)}` } }));
       } else {
         setProposalReviewState((current) => ({ ...current, [proposalId]: { busy: false, message: action === "ACCEPT" ? "Vorschlag übernommen." : "Vorschlag abgelehnt." } }));
       }
@@ -479,16 +556,32 @@ export function ModelSimulationRunner({ initialProjectId = "", initialSnapshotId
 
   const modelTrace = job?.result?.model_simulation;
   const maximumTime = Number(modelTrace?.scenario.duration_s || duration);
+  function togglePlayback() {
+    if (!modelTrace) return;
+    if (!playing && playheadRef.current >= maximumTime) movePlayhead(0);
+    setPlaying((current) => !current);
+  }
+  if (workspace?.state.ended) return <section className="simulation-runner"><AnalysisWorkspaceTools project={initialProjectId} view={view}/><p className="notice">Die Analysesitzung wurde beendet. Öffne die Seite erneut, um einen neuen Analysearbeitsbereich zu beginnen.</p></section>;
 
   return (
     <section className="simulation-runner model-simulation-runner" data-snapshot-id={snapshot?.id} data-job-id={job?.id}>
-      {snapshot && job && <div className="notice"><strong>Gespeicherter Simulationslauf</strong> · {job.id}
-        <Link href={withProjectParam(`/studio/results?snapshot=${encodeURIComponent(snapshot.id)}`, projectIdForLinks)}>Ergebnis und Bewertung öffnen →</Link>
-      </div>}
       {!valid && <div className="workflow-blocker error"><strong>Simulation blockiert</strong><span>Ein aktueller Preflight mit Status APPROVED oder WARNING ist erforderlich.</span><Link href={withProjectParam("/studio/validation", projectIdForLinks)}>Preflight öffnen</Link></div>}
-      {simulationOutdated && <div className="workflow-blocker warning"><strong>Historisches Simulationsergebnis · OUTDATED</strong><span>{snapshot?.outdated_reason ?? workflow?.stale_reasons.simulation}</span></div>}
+      {restoreError && <div className="notice error" role="alert">Der gespeicherte Simulationslauf konnte nicht geladen werden: {restoreError} <button className="button secondary tiny" onClick={() => setRestoreAttempt((attempt) => attempt + 1)} type="button">Erneut laden</button></div>}
+      {workflow?.project_id && restoredProjectId !== workflow.project_id && !restoreError && <div className="notice" role="status">Der gespeicherte Simulationslauf dieses Projekts wird geladen …</div>}
+      {!scopeValid && <p className="notice warning">Der gespeicherte Umfang braucht eine gültige Auswahl und Begründung. Bitte im Preflight ergänzen.</p>}
+      {error && <div className="notice error">{error}</div>}
+      <div className="simulation-analysis-toolbar">
+        <div className="simulation-view-tabs" role="tablist">{(["network", "sequence", "signals", "load", "events"] as SimulationView[]).map((item) => <button aria-selected={view === item} className={view === item ? "active" : ""} key={item} onClick={() => setView(item)} role="tab" type="button">{{ network: "NETWORK / ECU", sequence: "SEQUENCE", signals: "SIGNALS", load: "BUS LOAD", events: "EVENTS" }[item]}</button>)}</div>
+        <button aria-controls="simulation-controls" aria-expanded={controlsOpen} className="button secondary tiny simulation-controls-toggle" onClick={() => setControlsOpen((current) => !current)} type="button">{controlsOpen ? "Steuerung schließen" : "Steuerung"}</button>
+      </div>
+      <div className="simulation-controls" hidden={!controlsOpen} id="simulation-controls">
+      <AnalysisWorkspaceTools project={initialProjectId} view={view === 'load' ? 'load' : view} collapsible/>
+      {readOnly && <p className="notice">Gespeicherter Simulationslauf · Start und Szenarioänderungen bleiben in der Primäransicht.</p>}
+      {!readOnly && <>
 
-      <form className="panel simulation-command-bar" onSubmit={start}>
+      <details className="panel simulation-control-panel simulation-command-panel">
+      <summary><span className="eyebrow">Simulationslauf</span><strong>Szenario und Ausführung</strong></summary>
+      <form className="simulation-command-bar" onSubmit={start}>
         <label><span>Szenario</span><select value={mode} onChange={(event) => setMode(event.target.value)}><option value="GOLDEN">Golden / Ideal</option><option value="NORMAL">Normal</option><option value="USER_DEFINED_FAULT">Nutzerfehler</option><option value="AI_GENERATED_FAULT">Geprüfter KI-Fehler</option><option value="STRESS">Stresstest</option></select></label>
         <NumberInput label="Dauer" unit="s" value={duration} min={0.1} step={0.1} onChange={setDuration} />
         <NumberInput label="Geschwindigkeit" unit="x" value={speed} min={0.1} step={0.1} onChange={setSpeed} />
@@ -536,16 +629,22 @@ export function ModelSimulationRunner({ initialProjectId = "", initialSnapshotId
           )}
         </div>
         <div className="simulation-transport-controls">
-          <button className="button secondary" disabled={!valid || busy || !formatsResolved || formats.length === 0 || !scopeValid || !workflow} onClick={() => void saveScenarioAs()} type="button">Speichern unter</button>
+          <button className="button secondary" disabled={!valid || busy || !formatsResolved || formats.length === 0 || !scopeValid || !workflow} onClick={openScenarioSave} type="button">Speichern unter</button>
           <button className="button primary" disabled={!startAllowed} title={job && !running ? "Neuen Lauf mit der aktuellen Preflight-Freigabe starten. Der gespeicherte Lauf bleibt erhalten." : undefined} type="submit">Start</button>
-          <button className="button secondary" disabled={!job?.result?.model_simulation} onClick={() => setPlaying((current) => !current)} type="button">{playing ? "Pause" : "Weiter"}</button>
-          <button className="button secondary" disabled={!running} onClick={() => void stop()} type="button">Stop</button>
+          <button className="button secondary" disabled={!running} onClick={() => void stop()} type="button">Lauf stoppen</button>
           <button className="button secondary" disabled={!job || running || busy} onClick={reset} type="button">Reset</button>
         </div>
       </form>
+      </details>
       {savedScenarioNotice && <div className="notice success">{savedScenarioNotice}</div>}
-      {restoreError && <div className="notice error" role="alert">Der gespeicherte Simulationslauf konnte nicht geladen werden: {restoreError} <button className="button secondary tiny" onClick={() => setRestoreAttempt((attempt) => attempt + 1)} type="button">Erneut laden</button></div>}
-      {workflow?.project_id && restoredProjectId !== workflow.project_id && !restoreError && <div className="notice" role="status">Der gespeicherte Simulationslauf dieses Projekts wird geladen …</div>}
+      {scenarioSaveOpen && <SaveDialog titleId="scenario-save-title" busy={busy} onCancel={() => setScenarioSaveOpen(false)}>
+        <form className="save-dialog-form" onSubmit={event => {event.preventDefault();void saveScenarioAs();}}>
+          <div><p className="eyebrow">Simulationsszenario</p><h2 id="scenario-save-title">Szenario speichern unter</h2><p>Speichert die aktuellen Einstellungen und Fehler im aktiven Projekt. Der gespeicherte Simulationslauf bleibt erhalten.</p></div>
+          <label><span>Szenarioname</span><input autoFocus required maxLength={200} value={scenarioName} onChange={event => setScenarioName(event.target.value)} /></label>
+          {scenarioSaveError && <p className="notice error" role="alert">{scenarioSaveError}</p>}
+          <div className="project-dialog-actions"><button className="button secondary" disabled={busy} onClick={() => setScenarioSaveOpen(false)} type="button">Abbrechen</button><button className="button primary" disabled={busy || !scenarioName.trim()} type="submit">{busy ? "Speichert …" : "Szenario speichern"}</button></div>
+        </form>
+      </SaveDialog>}
       {resetPromptOpen && job && (
         <div className="project-dialog-backdrop">
           <section aria-labelledby="simulation-reset-title" aria-modal="true" className="project-dialog simulation-reset-dialog" role="alertdialog">
@@ -569,33 +668,35 @@ export function ModelSimulationRunner({ initialProjectId = "", initialSnapshotId
         </div>
       )}
 
-      <section className="panel simulation-scope-panel">
-        <div className="compact-heading"><div><p className="eyebrow">Geprüfter Simulationsumfang</p><h2>{simulationScope.include_all ? "Gesamtes aktives Modell" : `${simulationScope.message_ids.length} Nachrichten und ${simulationScope.signal_ids.length} Signale ausgewählt`}</h2></div><Link className="button secondary" href={withProjectParam("/studio/validation", projectIdForLinks)}>Umfang im Preflight ändern</Link></div>
+      <details className="panel simulation-control-panel simulation-scope-panel">
+        <summary><span className="eyebrow">Geprüfter Simulationsumfang</span><strong>{simulationScope.include_all ? "Gesamtes aktives Modell" : `${simulationScope.message_ids.length} Nachrichten und ${simulationScope.signal_ids.length} Signale ausgewählt`}</strong></summary>
+        <Link className="button secondary" href={withProjectParam("/studio/validation", projectIdForLinks)}>Umfang im Preflight ändern</Link>
         <p>{simulationScope.include_all ? "Alle aktiven Modellnachrichten und Signale müssen durch bestätigte Routen abgedeckt sein." : simulationScope.reason}</p>
         <p>Die Simulation verwendet genau den gespeicherten und vorab geprüften Umfang. Ausgewählte Nachrichten schließen ihre enthaltenen Signale ein.</p>
-        {!scopeValid && <p className="notice warning">Der gespeicherte Umfang braucht eine gültige Auswahl und Begründung. Bitte im Preflight ergänzen.</p>}
-      </section>
+      </details>
 
-      <section className="panel fault-editor">
-          <div className="compact-heading"><div><p className="eyebrow">Fault scenario</p><h2>Fehler gezielt injizieren</h2></div><button className="button secondary" disabled={busy || !workflow} onClick={() => void askAgentForFaults()} type="button">KI-Vorschläge</button></div>
+      <details className="panel simulation-control-panel fault-editor">
+          <summary><span className="eyebrow">Fehlerszenario</span><strong>Fehler gezielt injizieren</strong><span className="fault-count">{faults.length ? `${faults.length} Fehler aktiv` : "Keine Fehler aktiv"}</span></summary>
+          <div className="fault-editor-actions"><button className="button secondary" disabled={busy || !workflow} onClick={() => void askAgentForFaults()} type="button">KI-Vorschläge</button></div>
           <div className="fault-builder">
-            <select value={faultScope} onChange={(event) => { const scope = event.target.value as keyof typeof FAULT_TYPES; setFaultScope(scope); setFaultType(FAULT_TYPES[scope][0]); }}><option value="SIGNAL">Signal</option><option value="MESSAGE">Message</option><option value="NETWORK">Network</option></select>
-            <select value={faultType} onChange={(event) => setFaultType(event.target.value)}>{FAULT_TYPES[faultScope].map((type) => <option key={type}>{type}</option>)}</select>
-            <input aria-label="Ziel-ID" placeholder="Ziel-ID, leer = alle" value={faultTarget} onChange={(event) => setFaultTarget(event.target.value)} />
-            <input aria-label="Fault Start" min="0" placeholder="Start s" step="0.01" type="number" value={faultStart} onChange={(event) => setFaultStart(Number(event.target.value))} />
-            <input aria-label="Fault Ende" min={faultStart + 0.001} placeholder="Ende s" step="0.01" type="number" value={faultEnd} onChange={(event) => setFaultEnd(Number(event.target.value))} />
-            <input aria-label="Fault Wert" placeholder="Wert" step="0.1" type="number" value={faultMagnitude} onChange={(event) => setFaultMagnitude(Number(event.target.value))} />
+            <label><span>Fehler betrifft</span><select aria-label="Fehler betrifft" value={faultScope} onChange={(event) => { const scope = event.target.value as keyof typeof FAULT_TYPES; setFaultScope(scope); setFaultType(FAULT_TYPES[scope][0]); }}>{(Object.keys(FAULT_TYPES) as Array<keyof typeof FAULT_TYPES>).map(scope => <option key={scope} value={scope}>{FAULT_SCOPE_LABELS[scope]}</option>)}</select></label>
+            <label><span>Fehlertyp</span><select aria-label="Fehlertyp" aria-describedby="fault-type-description" value={faultType} onChange={(event) => setFaultType(event.target.value)}>{FAULT_TYPES[faultScope].map((type) => <option key={type} value={type}>{FAULT_HELP[type].label}</option>)}</select></label>
+            <label><span>Ziel-ID</span><input aria-label="Ziel-ID" placeholder="Leer = alle im gewählten Bereich" value={faultTarget} onChange={(event) => setFaultTarget(event.target.value)} /><small>ID des Signals, der Nachricht/Route oder des Netzwerks.</small></label>
+            <label><span>Fehlerbeginn (s)</span><input aria-label="Fehlerbeginn (s)" aria-describedby="fault-start-help" min="0" step="0.01" type="number" value={faultStart} onChange={(event) => setFaultStart(Number(event.target.value))} /><small id="fault-start-help">Zeit ab Simulationsstart. 0,25 = nach 250 ms.</small></label>
+            <label><span>Fehlerende (s)</span><input aria-label="Fehlerende (s)" aria-describedby="fault-end-help" min={faultStart + 0.001} step="0.01" type="number" value={faultEnd} onChange={(event) => setFaultEnd(Number(event.target.value))} /><small id="fault-end-help">Zeit ab Simulationsstart, keine Dauer. 1,5 = Ende nach 1,5 s.</small></label>
+            <label><span>{faultHelp(faultType)?.valueLabel ?? "Zusatzwert (nicht verwendet)"}</span><input aria-label="Fehler-Zusatzwert" aria-describedby="fault-value-help" disabled={!faultHelp(faultType)?.valueLabel} step="0.1" type="number" value={faultMagnitude} onChange={(event) => setFaultMagnitude(Number(event.target.value))} /><small id="fault-value-help">{faultHelp(faultType)?.valueHint ?? "Dieser Fehlertyp verwendet den Wert nicht; maßgeblich sind Ziel und Zeitfenster."}</small></label>
             <button className="button primary" onClick={addFault} type="button">Hinzufügen</button>
           </div>
-          <div className="fault-chip-list">{faults.map((fault) => <button className="fault-chip" key={fault.id} title="Fehler entfernen" type="button" onClick={() => setFaults((current) => current.filter((item) => item.id !== fault.id))}><strong>{fault.type}</strong><span>{fault.scope} · {fault.source === "ai" ? "KI geprüft" : "Nutzer"}</span><b>×</b></button>)}{!faults.length && <span className="empty-inline">Keine Fehler aktiv. Der Lauf bildet den Golden Trace.</span>}</div>
-      </section>
+          <p className="fault-description" id="fault-type-description"><strong>{faultHelp(faultType)?.label} <code>{faultType}</code></strong>{faultHelp(faultType)?.explanation}<span>Wirkt von {faultStart.toLocaleString("de-DE")} s bis {Math.max(faultStart + 0.001, faultEnd).toLocaleString("de-DE")} s · Dauer {(Math.max(faultStart + 0.001, faultEnd) - faultStart).toLocaleString("de-DE")} s. Außerhalb der Laufdauer hat das Zeitfenster keine Wirkung.</span></p>
+          <details className="fault-glossary"><summary>Fehlerbegriffe und ihre Wirkung erklären</summary>{(Object.keys(FAULT_TYPES) as Array<keyof typeof FAULT_TYPES>).map(scope => <section key={scope}><h3>{FAULT_SCOPE_LABELS[scope]}</h3><dl>{FAULT_TYPES[scope].map(type => <div key={type}><dt>{FAULT_HELP[type].label} <code>{type}</code></dt><dd>{FAULT_HELP[type].explanation}{FAULT_HELP[type].valueHint && <span> {FAULT_HELP[type].valueHint}</span>}</dd></div>)}</dl></section>)}</details>
+          <div className="fault-chip-list">{faults.map((fault) => <button className="fault-chip" key={fault.id} title={`${fault.type} · ${faultHelp(fault.type)?.explanation ?? "Fehler entfernen"}`} type="button" onClick={() => setFaults((current) => current.filter((item) => item.id !== fault.id))}><strong>{faultHelp(fault.type)?.label ?? fault.type}</strong><span>{FAULT_SCOPE_LABELS[fault.scope]} · {fault.start_s.toLocaleString("de-DE")}–{fault.end_s?.toLocaleString("de-DE") ?? "Laufende"} s · {fault.source === "ai" ? "KI geprüft" : "Nutzer"}</span><b>×</b></button>)}{!faults.length && <span className="empty-inline">Keine Fehler aktiv. Der Lauf bildet die fehlerfreie Referenz (Golden Trace).</span>}</div>
+      </details>
 
       <FaultProposalReview proposals={proposals.filter((proposal) => proposal.status !== "REJECTED" && proposal.status !== "SUPERSEDED")} magnitudes={proposalMagnitude} reviewState={proposalReviewState} onMagnitude={(id, value) => { setProposalMagnitude((current) => ({ ...current, [id]: value })); setProposalReviewState((current) => ({ ...current, [id]: { busy: false, message: "Nicht gespeicherte Änderung" } })); }} onReview={reviewProposal} />
-      {error && <div className="notice error">{error}</div>}
-
-      <div className="simulation-view-tabs" role="tablist">{(["network", "sequence", "signals", "load", "events"] as SimulationView[]).map((item) => <button aria-selected={view === item} className={view === item ? "active" : ""} key={item} onClick={() => setView(item)} role="tab" type="button">{{ network: "NETWORK / ECU", sequence: "SEQUENCE", signals: "SIGNALS", load: "BUS LOAD", events: "EVENTS" }[item]}</button>)}</div>
+      </>}
+      </div>
       <section className="panel synchronized-simulation-view">
-        <SimulationTimeline duration={maximumTime} playhead={playhead} playing={playing} onChange={setPlayhead} />
+        <SimulationTimeline duration={maximumTime} playhead={playhead} playing={playing} available={!!modelTrace} onPlay={togglePlayback} onStop={() => {setPlaying(false);movePlayhead(0);}} onChange={time => {setPlaying(false);movePlayhead(time);}} />
         {!modelTrace && <div className="simulation-empty-state"><strong>{job ? "Simulation wird verarbeitet" : "Noch kein Lauf gestartet"}</strong><span>Nach dem Start erscheinen Signalwerte, Buslast und Ereignisse auf derselben Zeitachse.</span></div>}
         {modelTrace && view === "network" && <NetworkView job={job} trace={modelTrace} playhead={playhead} topology={workflow?.topology} />}
         {modelTrace && view === "sequence" && <SequenceView trace={modelTrace} model={job?.result?.runtime_metrics?.sequence_model} playhead={playhead} />}
@@ -619,13 +720,13 @@ function NumberInput({ label, unit, value, min, step, onChange }: { label: strin
   return <label><span>{label}{unit ? ` (${unit})` : ""}</span><input min={min} step={step} type="number" value={value} onChange={(event) => onChange(Number(event.target.value))} /></label>;
 }
 
-function SimulationTimeline({ duration, playhead, playing, onChange }: { duration: number; playhead: number; playing: boolean; onChange: (value: number) => void }) {
-  return <div className="simulation-timeline"><span>{playing ? "RUNNING" : "PAUSED"}</span><input aria-label="Simulationszeit" max={Math.max(duration, 0.001)} min="0" step="0.001" type="range" value={Math.min(playhead, duration)} onChange={(event) => onChange(Number(event.target.value))} /><strong>{playhead.toFixed(3)} / {duration.toFixed(3)} s</strong></div>;
+function SimulationTimeline({ duration, playhead, playing, available, onPlay, onStop, onChange }: { duration: number; playhead: number; playing: boolean; available: boolean; onPlay: () => void; onStop: () => void; onChange: (value: number) => void }) {
+  return <div className="simulation-timeline"><div className="simulation-playback-controls"><button className="button secondary tiny" disabled={!available} onClick={onPlay} type="button">{playing ? "Pause" : "Wiedergabe"}</button><button className="button secondary tiny" disabled={!available || (!playing && playhead === 0)} onClick={onStop} type="button">Stopp</button></div><span>{playing ? "WIEDERGABE" : "PAUSIERT"}</span><input aria-label="Simulationszeit" disabled={!available} max={Math.max(duration, 0.001)} min="0" step="0.001" type="range" value={Math.min(playhead, duration)} onChange={(event) => onChange(Number(event.target.value))} /><strong>{playhead.toFixed(3)} / {duration.toFixed(3)} s</strong></div>;
 }
 
 function FaultProposalReview({ proposals, magnitudes, reviewState, onMagnitude, onReview }: { proposals: FaultProposal[]; magnitudes: Record<string, number>; reviewState: Record<string, { busy: boolean; message: string; error?: boolean }>; onMagnitude: (id: string, value: number) => void; onReview: (proposal: FaultProposal, action: "ACCEPT" | "EDIT" | "REJECT") => Promise<void> }) {
   if (!proposals.length) return null;
-  return <section className="panel fault-proposal-review"><div className="compact-heading"><div><p className="eyebrow">Review gate</p><h2>KI-Fehlervorschläge</h2></div><span>Keine automatische Aktivierung</span></div><div className="fault-proposal-grid">{proposals.map((proposal) => { const state = reviewState[proposal.proposal_id]; return <article key={proposal.proposal_id} className={proposal.status === "APPROVED" ? "approved" : ""}><div><span>{proposal.fault_scope}</span><strong>{proposal.title}</strong><p>{proposal.rationale}</p></div><label><span>Magnitude</span><input type="number" min="0" step="any" value={magnitudes[proposal.proposal_id] ?? Number(proposal.configuration.magnitude ?? 5)} onChange={(event) => onMagnitude(proposal.proposal_id, Number(event.target.value))} /></label><div className="proposal-actions"><button className="button primary" disabled={state?.busy || proposal.status === "APPROVED"} onClick={() => void onReview(proposal, "ACCEPT")} type="button">Übernehmen</button><button className="button secondary" disabled={state?.busy} onClick={() => void onReview(proposal, "EDIT")} type="button">{state?.busy ? "Speichert …" : "Ändern"}</button><button className="button secondary" disabled={state?.busy} onClick={() => void onReview(proposal, "REJECT")} type="button">Ablehnen</button></div>{state?.message && <p className={state.error ? "proposal-feedback error" : "proposal-feedback"} role="status">{state.message}</p>}</article>; })}</div></section>;
+  return <section className="panel fault-proposal-review"><div className="compact-heading"><div><p className="eyebrow">Freigabeprüfung</p><h2>KI-Fehlervorschläge</h2></div><span>Keine automatische Aktivierung</span></div><div className="fault-proposal-grid">{proposals.map((proposal) => { const state = reviewState[proposal.proposal_id]; return <article key={proposal.proposal_id} className={proposal.status === "APPROVED" ? "approved" : ""}><div><span>{FAULT_SCOPE_LABELS[proposal.fault_scope]}</span><strong>{proposal.title}</strong><p>{proposal.rationale}</p></div><label><span>Zusatzwert</span><input type="number" min="0" step="any" value={magnitudes[proposal.proposal_id] ?? Number(proposal.configuration.magnitude ?? 5)} onChange={(event) => onMagnitude(proposal.proposal_id, Number(event.target.value))} /></label><div className="proposal-actions"><button className="button primary" disabled={state?.busy || proposal.status === "APPROVED"} onClick={() => void onReview(proposal, "ACCEPT")} type="button">Übernehmen</button><button className="button secondary" disabled={state?.busy} onClick={() => void onReview(proposal, "EDIT")} type="button">{state?.busy ? "Speichert …" : "Ändern"}</button><button className="button secondary" disabled={state?.busy} onClick={() => void onReview(proposal, "REJECT")} type="button">Ablehnen</button></div>{state?.message && <p className={state.error ? "proposal-feedback error" : "proposal-feedback"} role="status">{state.message}</p>}</article>; })}</div></section>;
 }
 
 function NetworkView({ job, trace, playhead, topology }: { job: SimulationJob | null; trace: ModelSimulationTrace; playhead: number; topology?: Partial<NetworkTopology> }) {
@@ -649,12 +750,17 @@ function NetworkView({ job, trace, playhead, topology }: { job: SimulationJob | 
 }
 
 function SequenceView({ trace, model: sourceModel, playhead }: { trace: ModelSimulationTrace; model?: SequenceDiagramModel; playhead: number }) {
+  const workspace = useAnalysisWorkspace();
   const model = useMemo(() => sourceModel ? sequenceModelForEventIds(sourceModel, new Set((trace.frames ?? [])
     .filter(frame => frame.time_s <= playhead + 0.000001).map(frame => String(frame.event_id ?? "")))) : null, [sourceModel, trace.frames, playhead]);
-  return model ? <E2ESequenceDiagram model={model} /> : <div className="panel trace-sequence"><p>Das gemeinsame Sequenzmodell steht für diesen Simulationslauf nicht zur Verfügung.</p></div>;
+  return model ? <E2ESequenceDiagram model={model} selectedId={workspace?.state.context.event_id} onSelect={event => {
+    const frame = trace.frames.find(f=>f.event_id===event.id);
+    workspace?.store.update({event_id:event.id,time_cursor:event.timeS,time_basis:'simulation_relative',network_id:frame?.network ?? null,frame_index:frame?trace.frames.indexOf(frame):null,message_id:null,signal_id:null});
+  }} /> : <div className="panel trace-sequence"><p>Das gemeinsame Sequenzmodell steht für diesen Simulationslauf nicht zur Verfügung.</p></div>;
 }
 
 function SignalsView({ trace, playhead }: { trace: ModelSimulationTrace; playhead: number }) {
+  const workspace = useAnalysisWorkspace();
   const [compact, setCompact] = useState(true);
   const [selected, setSelected] = useState(() => initialSignalSelection(trace.signals));
   const [search, setSearch] = useState("");
@@ -713,11 +819,11 @@ function SignalsView({ trace, playhead }: { trace: ModelSimulationTrace; playhea
       {selectorOpen && <div className="signal-selector">{filtered.map((series) => <label key={series.signal_id}><input checked={selected.includes(series.signal_id)} type="checkbox" onChange={(event) => setSelected((current) => event.target.checked ? [...new Set([...current, series.signal_id])] : current.filter((id) => id !== series.signal_id))} /><span>{series.signal}<small>{series.semantic_type ?? series.behavior_type} · {series.unit || "ohne Einheit"}</small></span></label>)}{!filtered.length && <p>Keine Signale für diesen Filter.</p>}</div>}
     </div>
     <SimulationPageControls label="Signale" {...displayed} onPage={changePage} />
-    <div className="signal-lanes" ref={lanesRef}>{displayed.items.map((series) => <SignalLane key={series.signal_id} series={series} windowStart={windowStart} windowEnd={windowEnd} playhead={playhead} />)}{!trace.signals.length && <div className="simulation-empty-state"><strong>Keine Signalzuordnung gefunden</strong><span>Die Frames wurden simuliert, aber kein Engineering-Signal ist dem Kommunikationspfad zugeordnet.</span></div>}{trace.signals.length > 0 && visibleSelected.length === 0 && <div className="simulation-empty-state"><strong>Keine ausgewählten Treffer</strong><span>Filter ändern oder „Treffer wählen“ verwenden.</span></div>}</div>
+    <div className="signal-lanes" ref={lanesRef}>{displayed.items.map((series) => <SignalLane key={series.signal_id} series={series} windowStart={windowStart} windowEnd={windowEnd} playhead={playhead} onSelect={() => workspace?.store.update({signal_id:series.signal_id,time_cursor:playhead,time_basis:'simulation_relative'})} />)}{!trace.signals.length && <div className="simulation-empty-state"><strong>Keine Signalzuordnung gefunden</strong><span>Die Frames wurden simuliert, aber kein Engineering-Signal ist dem Kommunikationspfad zugeordnet.</span></div>}{trace.signals.length > 0 && visibleSelected.length === 0 && <div className="simulation-empty-state"><strong>Keine ausgewählten Treffer</strong><span>Filter ändern oder „Treffer wählen“ verwenden.</span></div>}</div>
   </div>;
 }
 
-function SignalLane({ series, windowStart, windowEnd, playhead }: { series: ModelSignalSeries; windowStart: number; windowEnd: number; playhead: number }) {
+function SignalLane({ series, windowStart, windowEnd, playhead, onSelect }: { series: ModelSignalSeries; windowStart: number; windowEnd: number; playhead: number; onSelect: () => void }) {
   const width = 1000;
   const height = 92;
   const span = Math.max(1e-9, series.maximum - series.minimum);
@@ -728,7 +834,7 @@ function SignalLane({ series, windowStart, windowEnd, playhead }: { series: Mode
   const faultPoints = visiblePoints.filter((item) => item.faults.length);
   const current = signalCurrentPoint(series, playhead);
   const playheadX = (playhead - windowStart) / Math.max(windowEnd - windowStart, 0.001) * width;
-  return <article className="signal-lane"><header><div><strong>{series.signal}</strong><span>{series.behavior_type} · {modelLabel(series.model_label)}</span></div><b title={current?.value === null || current?.value === undefined ? "Kein Rohwert" : `Rohwert: ${current.value}`}>{formatSignalValue(series, current)}</b></header><div className="signal-chart"><svg aria-label={`${series.signal} Signalverlauf`} preserveAspectRatio="none" viewBox={`0 0 ${width} ${height}`}><line className="signal-limit" x1="0" x2={width} y1="1" y2="1" /><line className="signal-limit" x1="0" x2={width} y1={height - 1} y2={height - 1} /><polyline className="signal-golden-line" points={golden} /><polyline className="signal-actual-line" points={actual} />{faultPoints.map((item, index) => { const [x, y] = point(item.time_s, item.value).split(","); return <circle className="signal-fault-marker" cx={x} cy={y} key={`${item.time_s}-${index}`} r="4" />; })}{playheadX >= 0 && playheadX <= width && <line className="signal-playhead" x1={playheadX} x2={playheadX} y1="0" y2={height} />}</svg><span className="limit max">{series.maximum}</span><span className="limit min">{series.minimum}</span></div></article>;
+  return <article className="signal-lane"><header><div><button className="signal-selection-name" type="button" onClick={onSelect}>{series.signal}</button><span>{series.behavior_type} · {modelLabel(series.model_label)}</span></div><b title={current?.value === null || current?.value === undefined ? "Kein Rohwert" : `Rohwert: ${current.value}`}>{formatSignalValue(series, current)}</b></header><div className="signal-chart"><svg aria-label={`${series.signal} Signalverlauf`} preserveAspectRatio="none" viewBox={`0 0 ${width} ${height}`}><line className="signal-limit" x1="0" x2={width} y1="1" y2="1" /><line className="signal-limit" x1="0" x2={width} y1={height - 1} y2={height - 1} /><polyline className="signal-golden-line" points={golden} /><polyline className="signal-actual-line" points={actual} />{faultPoints.map((item, index) => { const [x, y] = point(item.time_s, item.value).split(","); return <circle className="signal-fault-marker" cx={x} cy={y} key={`${item.time_s}-${index}`} r="4" />; })}{playheadX >= 0 && playheadX <= width && <line className="signal-playhead" x1={playheadX} x2={playheadX} y1="0" y2={height} />}</svg><span className="limit max">{series.maximum}</span><span className="limit min">{series.minimum}</span></div></article>;
 }
 
 function modelLabel(label: ModelSignalSeries["model_label"]) {

@@ -41,10 +41,6 @@ import {
 import { withProjectParam, readActiveProjectId } from "@/features/settings/lib/user-settings";
 import type { LicenseState } from "@/features/sources/lib/source-directory";
 
-const parameterNavItems = [
-  ["parameter-technology", "Technologie"],
-  ["parameter-values", "Parameter"],
-] as const;
 const busLoadRangeKeys = new Set([
   "target_bus_load_percent",
   "warning_threshold",
@@ -1431,12 +1427,6 @@ export function SimulationWizard({
           </div>
         ) : domain && technology ? (
           <>
-            <nav aria-label="Parameter-Abschnitte" className="parameter-section-nav">
-              {parameterNavItems.map(([id, label]) => (
-                <a href={`#${id}`} key={id}>{label}</a>
-              ))}
-            </nav>
-
             <div className="section-title" id="parameter-technology">
               <span>01</span>
               Technologie

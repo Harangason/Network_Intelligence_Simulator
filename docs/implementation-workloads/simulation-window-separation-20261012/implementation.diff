@@ -1,0 +1,292 @@
+--- before/frontend/src/features/traces/ui/analysis-workspace-tools.tsx
++++ after/frontend/src/features/traces/ui/analysis-workspace-tools.tsx
+@@ -2,7 +2,7 @@
+ import { useEffect, useState } from 'react';
+ import { readActiveProjectId } from '@/features/settings/lib/user-settings';
+ import { analysisWorkspaceStore, type WorkspaceState, type WorkspaceStore } from '../lib/analysis-workspace-browser';
+-import { ANALYSIS_VIEWS, analysisWindowId, analysisViewHref, type AnalysisView, type LinkMode, type WorkspaceProfile } from '../lib/analysis-workspace';
++import { ANALYSIS_VIEWS, SIMULATION_WINDOW_VIEWS, analysisWindowId, type AnalysisView, type LinkMode, type WorkspaceProfile, type WindowDescriptor } from '../lib/analysis-workspace';
+ export function useAnalysisWorkspace(project?: string) {
+   const [connection,setConnection] = useState<{state:WorkspaceState;store:WorkspaceStore}|null>(null);
+   useEffect(() => {
+@@ -22,7 +22,8 @@
+ export function AnalysisWorkspaceTools({project,view}: {project?:string;view:AnalysisView}) {
+   const connection = useAnalysisWorkspace(project);
+   const [target,setTarget] = useState<AnalysisView>('signals');
+-  const [fallbacks,setFallbacks] = useState<Array<{view:AnalysisView;href:string}>>([]);
++  const [traceTarget,setTraceTarget] = useState<AnalysisView>('trace');
++  const [fallbacks,setFallbacks] = useState<Array<{view:AnalysisView;href:string;board:WindowDescriptor['board_id']}>>([]);
+   const [profileName,setProfileName] = useState('Mein Analysearbeitsbereich');
+   const [restore,setRestore] = useState(false);
+   const [profileId,setProfileId] = useState('');
+@@ -33,36 +34,47 @@
+   const {state,store} = connection, d = state.descriptor;
+   const primary = d.primary_id === d.window_id;
+   const profiles = store.profiles();
+-  const open = (next:AnalysisView,mode:LinkMode = 'FOLLOW_PRIMARY',size?:[number,number]) => { const href=store.open(next,mode,size); setFallbacks(current => [...current,{view:next,href}].slice(-6)); };
++  const simulationAvailable = d.board_id === 'simulation' || Boolean(state.context.simulation_run_id);
++  const traceAvailable = Boolean(state.context.trace_id || state.context.simulation_run_id);
++  const open = (next:AnalysisView,mode:LinkMode = 'FOLLOW_PRIMARY',size?:[number,number],board:WindowDescriptor['board_id']='trace') => { const href=store.open(next,mode,size,board); setFallbacks(current => [...current,{view:next,href,board}].slice(-6)); };
+   const save = () => {
+     const others = state.windows.filter(w => w.window_id !== d.window_id).slice(0,6);
+-    const p: WorkspaceProfile = {version:1,profile_id:analysisWindowId(),name:profileName.trim() || 'Analysearbeitsbereich',user_id:'local-session',project_scope:d.project_id,primary_view:view,secondary_views:others.map(w => w.view_id),link_modes:others.map(w => w.link_mode),preferred_window_sizes:others.map(w => [Math.max(320,w.width),Math.max(320,w.height)]),preferred_monitor_roles:others.map((_,i) => `Analyse ${i+1}`),restore_on_start:restore};
++    const p: WorkspaceProfile = {version:1,profile_id:analysisWindowId(),name:profileName.trim() || 'Analysearbeitsbereich',user_id:'local-session',project_scope:d.project_id,primary_view:view,primary_board:d.board_id,secondary_views:others.map(w => w.view_id),secondary_boards:others.map(w=>w.board_id),link_modes:others.map(w => w.link_mode),preferred_window_sizes:others.map(w => [Math.max(320,w.width),Math.max(320,w.height)]),preferred_monitor_roles:others.map((_,i) => `Analyse ${i+1}`),restore_on_start:restore};
+     try { store.saveProfile(p); setProfileId(p.profile_id); setNotice('Arbeitsbereich für dieses Projekt und diese lokale Browser-Sitzung gespeichert.'); } catch { setNotice('Der Browser erlaubt das Speichern des Arbeitsbereichs nicht.'); }
+   };
+   const load = () => {
+     const p = profiles.find(p => p.profile_id === profileId); if (!p) return;
+-    setFallbacks([]); p.secondary_views.forEach((v,i) => open(v,p.link_modes[i],p.preferred_window_sizes[i]));
++    setFallbacks([]); p.secondary_views.forEach((v,i) => open(v,p.link_modes[i],p.preferred_window_sizes[i],p.secondary_boards?.[i] ?? (v==='simulation'?'simulation':'trace')));
+     setNotice(`Arbeitsbereich „${p.name}“ geöffnet. Fenster auf die gewünschten Monitore ziehen; gesperrte Fenster über die Links öffnen. Es werden keine Bearbeitungen wiederhergestellt.`);
+-    if(p.primary_view!==view)window.location.assign(analysisViewHref({...d,view_id:p.primary_view,context:state.context}));
++    const board=p.primary_board ?? (p.primary_view==='simulation'?'simulation':'trace');
++    if(p.primary_view!==view || board!==d.board_id)open(p.primary_view,'INDEPENDENT',undefined,board);
+   };
+   return <section className="panel analysis-window-tools" aria-label="Analysefenster und Arbeitsbereich">
+-    <header><strong>{primary ? 'Primäransicht' : 'Analysefenster'} · {ANALYSIS_VIEWS[view]}</strong><output aria-label="Gemeinsamer Zeitcursor">Zeitcursor: {state.context.time_cursor === null ? 'Unbekannt' : `${state.context.time_cursor} s`} · {state.context.time_basis ?? 'Zeitbasis unbekannt'}</output><span className="analysis-link-status" role="status">{state.ended ? 'Sitzung beendet' : primary ? `${state.windows.length} Fenster` : d.link_mode === 'FOLLOW_PRIMARY' ? state.primary_alive ? 'Mit Primäransicht gekoppelt' : 'Primäransicht nicht erreichbar · Kontext bleibt sichtbar' : d.link_mode === 'COMPARE' ? 'Vergleich · getrennte Kontexte' : 'Unabhängiger Kontext'}</span></header>
+-    <div className="analysis-window-actions">
+-      <label><span className="analysis-control-label">Ansicht</span><select aria-label="Ansicht" value={target} onChange={e => setTarget(e.target.value as AnalysisView)}>{Object.entries(ANALYSIS_VIEWS).map(([id,label]) => <option value={id} key={id}>{label}</option>)}</select></label>
+-      <button className="button secondary" type="button" disabled={state.ended} onClick={() => open(target)}>↗ In neuem Fenster öffnen</button>
+-      <button className="button secondary" type="button" disabled={state.ended} onClick={() => open(target,'INDEPENDENT')}>Unabhängig öffnen</button>
+-      <button className="button secondary" type="button" disabled={state.ended} onClick={() => open('trace','COMPARE')}>⇄ Vergleich öffnen</button>
+-      {!primary && <label><span className="analysis-control-label">Kopplung</span><select aria-label="Fensterkopplung" value={d.link_mode} onChange={e => store.mode(e.target.value as LinkMode)}><option value="FOLLOW_PRIMARY">Primäransicht folgen</option><option value="INDEPENDENT">Unabhängig</option><option value="COMPARE">Vergleich</option></select></label>}
+-      <button className="button secondary tiny" type="button" onClick={() => open('assistant')}>Analyse-Assistent öffnen</button>
++    <header><strong>{d.board_id==='simulation'?'Simulation':'Trace-Analyse'} · {primary ? 'Primäransicht' : 'Analysefenster'} · {ANALYSIS_VIEWS[view]}</strong><output aria-label="Gemeinsamer Zeitcursor">Zeitcursor: {state.context.time_cursor === null ? 'Unbekannt' : `${state.context.time_cursor} s`} · {state.context.time_basis ?? 'Zeitbasis unbekannt'}</output><span className="analysis-link-status" role="status">{state.ended ? 'Sitzung beendet' : primary ? `${state.windows.length} Fenster` : d.link_mode === 'FOLLOW_PRIMARY' ? state.primary_alive ? 'Mit Primäransicht gekoppelt' : 'Primäransicht nicht erreichbar · Kontext bleibt sichtbar' : d.link_mode === 'COMPARE' ? 'Vergleich · getrennte Kontexte' : 'Unabhängiger Kontext'}</span></header>
++    <div className="analysis-window-columns">
++      <section aria-label="Simulationsfenster"><h4>Simulation</h4><small>Ansichten und Wiedergabe des Simulationslaufs.</small><div className="analysis-window-actions">
++        <label><span className="analysis-control-label">Simulationsansicht</span><select aria-label="Simulationsansicht" value={target} onChange={e=>setTarget(e.target.value as AnalysisView)}>{SIMULATION_WINDOW_VIEWS.map(v=><option value={v} key={v}>{ANALYSIS_VIEWS[v]}</option>)}</select></label>
++        <button className="button secondary" type="button" disabled={state.ended || !simulationAvailable} onClick={()=>open(target,'FOLLOW_PRIMARY',undefined,'simulation')}>Simulationsfenster öffnen</button>
++        <button className="button secondary" type="button" disabled={state.ended || !simulationAvailable} onClick={()=>open(target,'INDEPENDENT',undefined,'simulation')}>Simulation unabhängig öffnen</button>
++      </div>{!simulationAvailable && <small>Kein zugehöriger Simulationslauf im aktuellen Kontext.</small>}</section>
++      <section aria-label="Trace-Analysefenster"><h4>Trace-Analyse</h4><small>Gespeicherte Kommunikation auswerten; öffnet ein zusätzliches Fenster.</small><div className="analysis-window-actions">
++        <label><span className="analysis-control-label">Trace-Ansicht</span><select aria-label="Trace-Ansicht" value={traceTarget} onChange={e=>setTraceTarget(e.target.value as AnalysisView)}>{Object.entries(ANALYSIS_VIEWS).filter(([id])=>id!=='simulation').map(([id,label])=><option value={id} key={id}>{label}</option>)}</select></label>
++        <button className="button secondary" type="button" disabled={state.ended || !traceAvailable} onClick={()=>open(traceTarget)}>Trace-Fenster öffnen</button>
++        <button className="button secondary" type="button" disabled={state.ended || !traceAvailable} onClick={()=>open(traceTarget,'INDEPENDENT')}>Trace unabhängig öffnen</button>
++        <button className="button secondary" type="button" disabled={state.ended || !traceAvailable} onClick={()=>open('trace','COMPARE')}>Trace vergleichen</button>
++        <button className="button secondary tiny" type="button" disabled={state.ended || !traceAvailable} onClick={()=>open('assistant')}>Analyse-Assistent öffnen</button>
++      </div>{!traceAvailable && <small>Noch keine gespeicherte Trace im aktuellen Kontext.</small>}</section>
+     </div>
++    {!primary && <label>Fensterkopplung<select aria-label="Fensterkopplung" value={d.link_mode} onChange={e => store.mode(e.target.value as LinkMode)}><option value="FOLLOW_PRIMARY">Primäransicht folgen</option><option value="INDEPENDENT">Unabhängig</option><option value="COMPARE">Vergleich</option></select></label>}
+     {state.error && <p className="notice" role="alert">{state.error}</p>}
+-    {fallbacks.length > 0 && <div className="analysis-window-links" aria-label="Analysefenster Ersatzlinks">{fallbacks.map(item => <a key={item.href} href={item.href} target="_blank" rel="noopener noreferrer">{ANALYSIS_VIEWS[item.view]} separat öffnen</a>)}</div>}
++    {fallbacks.length > 0 && <div className="analysis-window-links" aria-label="Analysefenster Ersatzlinks">{fallbacks.map(item => <a key={item.href} href={item.href} target="_blank" rel="noopener noreferrer">{item.board==='simulation'?'Simulation':'Trace-Analyse'} · {ANALYSIS_VIEWS[item.view]} separat öffnen</a>)}</div>}
+     <details><summary>Arbeitsbereiche und Fenster ({state.windows.length})</summary>
+       <small>Analyseprojektion · derselbe NIS-Datenbestand. Zeitkopplung übernimmt die dokumentierte Zeitbasis; keine automatische Uhrkorrektur. Fenster können manuell auf einen zweiten Monitor gezogen werden.</small>
+-      <div className="analysis-profile-presets">{PRESETS.map(p => <button className="button secondary tiny" type="button" disabled={state.ended} key={p.name} onClick={() => { setFallbacks([]); p.views.forEach((v,i) => open(v,p.modes?.[i] ?? 'FOLLOW_PRIMARY')); if(p.primary!==view)window.location.assign(analysisViewHref({...d,view_id:p.primary,context:state.context})); }}>{p.name}</button>)}</div>
++      <small>Vorlagen öffnen zusätzliche Analysefenster. Die aktuelle Seite bleibt geöffnet.</small>
++      <div className="analysis-profile-presets">{PRESETS.map(p => <button className="button secondary tiny" type="button" disabled={state.ended || !traceAvailable || p.primary==='simulation' && !simulationAvailable} key={p.name} onClick={() => { setFallbacks([]); p.views.forEach((v,i) => open(v,p.modes?.[i] ?? 'FOLLOW_PRIMARY')); const board=p.primary==='simulation'?'simulation':'trace'; if(p.primary!==view || board!==d.board_id)open(p.primary,'FOLLOW_PRIMARY',undefined,board); }}>{p.name}</button>)}</div>
+       <div className="analysis-profile-editor"><label>Profilname<input maxLength={180} value={profileName} onChange={e => setProfileName(e.target.value)} /></label><label className="analysis-checkbox"><input type="checkbox" checked={restore} onChange={e => setRestore(e.target.checked)} />Beim nächsten Öffnen zur Wiederherstellung anbieten</label><button className="button secondary" type="button" onClick={save}>Arbeitsbereich speichern</button><label>Gespeichertes Profil<select value={profileId} onChange={e => setProfileId(e.target.value)}><option value="">Profil auswählen</option>{profiles.map(p => <option value={p.profile_id} key={p.profile_id}>{p.name}</option>)}</select></label><button className="button secondary" type="button" disabled={!profileId} onClick={load}>Arbeitsbereich wiederherstellen</button></div>
+       {profiles.some(p => p.restore_on_start) && <p role="status">Ein gespeicherter Arbeitsbereich ist zur Wiederherstellung vorgemerkt. Wähle ihn oben und öffne seine Fenster mit „Arbeitsbereich wiederherstellen“.</p>}
+-      <ul>{state.windows.map(w => <li key={w.window_id}>{ANALYSIS_VIEWS[w.view_id]} · {w.window_id === d.primary_id ? 'Primäransicht' : w.link_mode === 'FOLLOW_PRIMARY' ? 'Gekoppelt' : w.link_mode === 'COMPARE' ? 'Vergleich' : 'Unabhängig'} · {w.width} × {w.height}</li>)}</ul>
++      <ul>{state.windows.map(w => <li key={w.window_id}>{w.board_id==='simulation'?'Simulation':'Trace-Analyse'} · {ANALYSIS_VIEWS[w.view_id]} · {w.window_id === d.primary_id ? 'Primäransicht' : w.link_mode === 'FOLLOW_PRIMARY' ? 'Gekoppelt' : w.link_mode === 'COMPARE' ? 'Vergleich' : 'Unabhängig'} · {w.width} × {w.height}</li>)}</ul>
+       <button className="button secondary tiny" type="button" onClick={() => store.end()}>Analysesitzung in allen Fenstern beenden</button>
+     </details>
+     {notice && <p role="status">{notice}</p>}
+--- before/frontend/src/features/traces/lib/analysis-workspace.ts
++++ after/frontend/src/features/traces/lib/analysis-workspace.ts
+@@ -19,7 +19,12 @@
+   context: AnalysisContext; width: number; height: number; last_position: [number, number];
+   created_at: number; last_active_at: number;
+ };
+-export type WorkspaceProfile = { version: 1; profile_id: string; name: string; user_id: 'local-session'; project_scope: string; primary_view: AnalysisView; secondary_views: AnalysisView[]; link_modes: LinkMode[]; preferred_window_sizes: [number, number][]; preferred_monitor_roles: string[]; restore_on_start: boolean };
++export type WorkspaceProfile = { version: 1; profile_id: string; name: string; user_id: 'local-session'; project_scope: string; primary_view: AnalysisView; primary_board?: WindowDescriptor['board_id']; secondary_views: AnalysisView[]; secondary_boards?: WindowDescriptor['board_id'][]; link_modes: LinkMode[]; preferred_window_sizes: [number, number][]; preferred_monitor_roles: string[]; restore_on_start: boolean };
++export const SIMULATION_WINDOW_VIEWS: AnalysisView[] = ['network','sequence','signals','load','events'];
++/** Shared view names are not a destination. Preserve the requested board. */
++export function analysisViewBoard(view:AnalysisView, preferred:WindowDescriptor['board_id']='trace'):WindowDescriptor['board_id'] {
++  return view === 'simulation' || preferred === 'simulation' && SIMULATION_WINDOW_VIEWS.includes(view) ? 'simulation' : 'trace';
++}
+ export const ANALYSIS_VIEWS: Record<AnalysisView, string> = { simulation: 'Simulation', session: 'Session', messages: 'Botschaften', sequence: 'Sequenz', signals: 'Signale', trace: 'Trace', load: 'Bus Load', network: 'Network / ECU', events: 'Events', findings: 'Findings / Gaps', 'root-cause': 'Root Cause', charts: 'Diagramme', assistant: 'Analyse-Assistent' };
+ export const VIEW_STAGES: Partial<Record<AnalysisView, AnalysisStage>> = { session:'LOAD', messages:'INSPECT_MESSAGES', sequence:'FOLLOW_SEQUENCE', signals:'INSPECT_SIGNALS', trace:'SYNCHRONIZE_TRACE', findings:'DETECT_FINDINGS', charts:'EXPLORE_CHARTS', 'root-cause':'EXPLAIN_ROOT_CAUSE' };
+ /** Opaque view identity, also on HTTP LAN origins where randomUUID is unavailable. */
+@@ -78,7 +83,7 @@
+   if (c.compare_left) p.set('compare_left',JSON.stringify(c.compare_left));
+   if (c.compare_right) p.set('compare_right',JSON.stringify(c.compare_right));
+   p.set('q',c.filter_set.query);
+-  return `${descriptor.view_id === 'simulation' ? '/studio/simulation' : '/trace-analysis'}?${p}`;
++  return `${analysisViewBoard(descriptor.view_id,descriptor.board_id) === 'simulation' ? '/studio/simulation' : '/trace-analysis'}?${p}`;
+ }
+ export function contextFromSearch(project: string, search: string): AnalysisContext {
+   const p = new URLSearchParams(search), c = emptyAnalysisContext(project);
+@@ -94,6 +99,8 @@
+ export function validProfile(value: unknown, project: string): value is WorkspaceProfile {
+   if (!value || typeof value !== 'object') return false;
+   const p = value as WorkspaceProfile;
++  if (p.primary_board !== undefined && !['simulation','trace'].includes(p.primary_board)) return false;
++  if (p.secondary_boards !== undefined && (!Array.isArray(p.secondary_boards) || !Array.isArray(p.secondary_views) || p.secondary_boards.length !== p.secondary_views.length || !p.secondary_boards.every(b=>['simulation','trace'].includes(b)))) return false;
+   return p.version === 1 && p.project_scope === project && p.user_id === 'local-session' && boundedString(p.profile_id) && boundedString(p.name) && Object.hasOwn(ANALYSIS_VIEWS,p.primary_view) && Array.isArray(p.secondary_views) && p.secondary_views.length <= 6 && p.secondary_views.every(v => Object.hasOwn(ANALYSIS_VIEWS,v)) && Array.isArray(p.link_modes) && p.link_modes.length === p.secondary_views.length && p.link_modes.every(v => ['FOLLOW_PRIMARY','INDEPENDENT','COMPARE'].includes(v)) && Array.isArray(p.preferred_window_sizes) && p.preferred_window_sizes.length === p.secondary_views.length && p.preferred_window_sizes.every(s => Array.isArray(s) && s.length === 2 && s.every(n => Number.isFinite(n) && n >= 320 && n <= 7680)) && Array.isArray(p.preferred_monitor_roles) && p.preferred_monitor_roles.length <= 6 && p.preferred_monitor_roles.every(boundedString) && typeof p.restore_on_start === 'boolean';
+ }
+ export function validatedDescriptor(value: unknown, project: string): WindowDescriptor | null {
+--- before/frontend/src/features/traces/lib/analysis-workspace-browser.ts
++++ after/frontend/src/features/traces/lib/analysis-workspace-browser.ts
+@@ -1,4 +1,4 @@
+-import { analysisViewHref, analysisWindowId, contextFromSearch, contextWithPatch, validatedContext, validatedDescriptor, validProfile, type AnalysisContext, type AnalysisView, type LinkMode, type WindowDescriptor, type WorkspaceProfile } from './analysis-workspace.ts';
++import { analysisViewBoard, analysisViewHref, analysisWindowId, contextFromSearch, contextWithPatch, validatedContext, validatedDescriptor, validProfile, type AnalysisContext, type AnalysisView, type LinkMode, type WindowDescriptor, type WorkspaceProfile } from './analysis-workspace.ts';
+ export type WorkspaceState = { descriptor: WindowDescriptor; context: AnalysisContext; revision: number; received: number; windows: WindowDescriptor[]; primary_alive: boolean; ended: boolean; error: string };
+ type Packet = { protocol:1; workspace:string; project:string; from:string; primary:string; type:'HELLO'|'STATE'|'PATCH'|'REGISTER'|'CLOSED'|'LOGOUT'; revision:number; context?:AnalysisContext; patch?:Partial<AnalysisContext>; source?:string|null; descriptor?:WindowDescriptor };
+ let store: WorkspaceStore | null = null;
+@@ -98,9 +98,9 @@
+     this.state = {...this.state,descriptor,windows:[...this.state.windows.filter(w => w.window_id !== descriptor.window_id && Date.now()-w.last_active_at<20000),descriptor],primary_alive:descriptor.window_id === descriptor.primary_id || Date.now()-this.lastPrimary<20000};
+     this.send('REGISTER'); this.emit();
+   }
+-  open(view: AnalysisView, mode: LinkMode = 'FOLLOW_PRIMARY', size: [number,number] = [1200,900]): string {
++  open(view: AnalysisView, mode: LinkMode = 'FOLLOW_PRIMARY', size: [number,number] = [1200,900], board?:WindowDescriptor['board_id']): string {
+     const d = this.state.descriptor;
+-    const child = {...d,window_id:analysisWindowId(),board_id:view === 'simulation' ? 'simulation' as const:'trace' as const,view_id:view,link_mode:mode,context:this.state.context};
++    const child = {...d,window_id:analysisWindowId(),board_id:analysisViewBoard(view,board ?? d.board_id),view_id:view,link_mode:mode,context:this.state.context};
+     const href = analysisViewHref(child);
+     const popup = window.open(href,`nis-${child.window_id}`,`popup=yes,width=${size[0]},height=${size[1]}`);
+     if (popup) popup.opener = null;
+--- before/frontend/src/features/traces/lib/analysis-workspace.test.mjs
++++ after/frontend/src/features/traces/lib/analysis-workspace.test.mjs
+@@ -29,6 +29,18 @@
+ test('profiles contain only local project-scoped safe view restore metadata',()=>{
+   const p={version:1,profile_id:'profile',name:'Trace',user_id:'local-session',project_scope:'p',primary_view:'sequence',secondary_views:['signals'],link_modes:['INDEPENDENT'],preferred_window_sizes:[[1200,900]],preferred_monitor_roles:['second'],restore_on_start:true};
+   assert.equal(validProfile(p,'p'),true);assert.equal(validProfile(p,'q'),false);assert.equal(validProfile({...p,secondary_views:['editing']},'p'),false);assert.equal(validProfile({...p,preferred_window_sizes:[[Infinity,900]]},'p'),false);
++  assert.equal(validProfile({...p,primary_board:'simulation',secondary_boards:['trace']},'p'),true);
++  assert.equal(validProfile({...p,secondary_boards:[]},'p'),false);
++  assert.equal(validProfile({...p,primary_board:'foreign'},'p'),false);
++});
++test('shared view names retain explicit simulation or trace destinations and source time context',()=>{
++  const context={...emptyAnalysisContext('p'),simulation_run_id:'run',time_cursor:.75,time_basis:'simulation_relative'};
++  const d={window_id:'child',workspace_id:'w',primary_id:'root',project_id:'p',context,link_mode:'FOLLOW_PRIMARY'};
++  for(const view of ['signals','sequence','load','network','events'])for(const board of ['simulation','trace']){
++    const url=new URL(analysisViewHref({...d,view_id:view,board_id:board}),'http://localhost');
++    assert.equal(url.pathname,board==='simulation'?'/studio/simulation':'/trace-analysis');
++    assert.equal(url.searchParams.get('view'),view);assert.equal(url.searchParams.get('job'),'run');assert.equal(url.searchParams.get('focus_s'),'0.75');
++  }
+ });
+ const peers=[];
+ class Channel {
+@@ -38,6 +50,19 @@
+ }
+ function browser(search){const url=new URL(`http://localhost/trace-analysis?project=p&${search}`);return {location:{search:url.search,pathname:url.pathname,hash:''},outerWidth:1200,outerHeight:900,screenX:0,screenY:0,history:{state:null,replaceState(_s,_t,href){const next=new URL(href,url);globalThis.window.location.search=next.search;}},addEventListener(){},removeEventListener(){},dispatchEvent(){},setInterval(){return 1;},clearInterval(){},localStorage:{getItem(){return null;},setItem(){},removeItem(){}}};}
+ const tick=()=>new Promise(r=>setTimeout(r,0));
++test('opening simulation and trace views leaves the current browser page intact, including blocked popups',()=>{
++  const oldWindow=globalThis.window,oldChannel=globalThis.BroadcastChannel;
++  const w=browser('workspace=destinations&window=root&primary=root&view=signals&job=run');w.location.pathname='/studio/simulation';
++  const opened=[];w.open=(href)=>{opened.push(href);return null;};globalThis.window=w;globalThis.BroadcastChannel=Channel;
++  const store=new WorkspaceStore('p'),original=w.location.pathname+w.location.search;
++  try {
++    const sim=new URL(store.open('signals'),'http://localhost');
++    const trace=new URL(store.open('signals','INDEPENDENT',undefined,'trace'),'http://localhost');
++    assert.equal(sim.pathname,'/studio/simulation');assert.equal(trace.pathname,'/trace-analysis');
++    assert.equal(trace.searchParams.get('link'),'INDEPENDENT');assert.equal(sim.searchParams.get('job'),'run');
++    assert.equal(w.location.pathname+w.location.search,original);assert.equal(opened.length,2);assert.match(store.state.error,/blockiert/);
++  } finally {store.dispose();globalThis.window=oldWindow;globalThis.BroadcastChannel=oldChannel;}
++});
+ test('ordered primary sync, follower commands, independent comparison and logout use one context authority',async()=>{
+   const oldWindow=globalThis.window,oldChannel=globalThis.BroadcastChannel;
+   globalThis.BroadcastChannel=Channel;
+--- before/frontend/src/app/globals.css
++++ after/frontend/src/app/globals.css
+@@ -13431,10 +13431,10 @@
+ .model-simulation-runner { display: grid; gap: 14px; padding-bottom: 44px; }
+ .simulation-command-bar {
+   display: grid;
+-  grid-template-columns: minmax(190px, 1.5fr) repeat(3, minmax(140px, 1fr)) minmax(180px, 1.5fr);
+-  gap: 12px;
++  grid-template-columns: minmax(150px, 1.4fr) minmax(72px, .6fr) minmax(100px, .7fr) minmax(64px, .5fr) minmax(130px, 1fr) max-content;
++  gap: 10px;
+   align-items: end;
+-  padding: 16px;
++  padding: 10px 14px;
+ }
+ .simulation-command-bar > label,
+ .trace-format-control { min-width: 0; display: grid; gap: 6px; margin: 0; }
+@@ -13584,7 +13584,7 @@
+ }
+ .simulation-transport-controls {
+   display: grid;
+-  grid-column: 1 / -1;
++  grid-column: auto;
+   grid-template-columns: repeat(5, max-content);
+   gap: 6px;
+   justify-content: end;
+@@ -15922,6 +15922,11 @@
+ .analysis-window-tools { padding: 10px 14px; margin-block: 10px; }
+ .analysis-window-tools > header { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:4px 12px; font-size:.8rem; }
+ .analysis-window-tools > header > output { color:var(--muted); overflow-wrap:anywhere; }
++.analysis-window-columns { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin-top:10px; }
++.analysis-window-columns > section { min-width:0; padding:10px; border:1px solid var(--border); border-radius:6px; }
++.analysis-window-columns h4 { margin:0 0 5px; font-size:13px; }
++.analysis-window-columns .analysis-window-actions label { flex:1 1 130px; min-width:0; }
++@media (max-width:780px) { .analysis-window-columns { grid-template-columns:minmax(0,1fr); } }
+ .analysis-profile-editor,.analysis-profile-presets,.analysis-window-links { display:flex; align-items:flex-end; flex-wrap:wrap; gap:12px; margin-block:12px; }
+ .analysis-window-actions { display:flex; align-items:center; flex-wrap:wrap; gap:6px; margin-block:8px 4px; }
+ .analysis-window-actions label { position:relative; min-width:140px; }
+--- before/frontend/src/features/simulation/ui/model-simulation-runner.tsx
++++ after/frontend/src/features/simulation/ui/model-simulation-runner.tsx
+@@ -112,7 +112,7 @@
+ 
+ const RESET_SIMULATION_VIEW = "reset-view";
+ 
+-export function ModelSimulationRunner({ initialProjectId = "", initialSnapshotId }: { initialProjectId?: string; initialSnapshotId?: string }) {
++export function ModelSimulationRunner({ initialProjectId = "", initialSnapshotId, readOnly = false }: { initialProjectId?: string; initialSnapshotId?: string; readOnly?: boolean }) {
+   const parameters = useSearchParams();
+   const workspace = useAnalysisWorkspace(initialProjectId);
+   const incomingRun = workspace?.state.received ? workspace.state.context.simulation_run_id : parameters.get('job');
+@@ -143,7 +143,10 @@
+   const [proposals, setProposals] = useState<FaultProposal[]>([]);
+   const [proposalMagnitude, setProposalMagnitude] = useState<Record<string, number>>({});
+   const [proposalReviewState, setProposalReviewState] = useState<Record<string, { busy: boolean; message: string; error?: boolean }>>({});
+-  const [view, setView] = useState<SimulationView>("signals");
++  const [view, setView] = useState<SimulationView>(() => {
++    const requested = parameters.get('view');
++    return requested && ['network','sequence','signals','load','events'].includes(requested) ? requested as SimulationView : 'signals';
++  });
+   const [playhead, setPlayhead] = useState(0);
+   const playheadRef = useRef(0);
+   function movePlayhead(time: number, publish = true) {
+@@ -248,7 +251,7 @@
+   useEffect(() => {
+     if (job) workspace?.store.update({simulation_run_id:job.id,trace_id:job.id,session_id:job.id,time_basis:'simulation_relative'});
+   },[job?.id,workspace?.store]);
+-  useEffect(() => {workspace?.store.update({view_mode:view,analysis_stage:VIEW_STAGES[view]??'FILTER'});},[view,workspace?.store]);
++  useEffect(() => {if(workspace && workspace.state.descriptor.window_id === workspace.state.descriptor.primary_id)workspace.store.update({view_mode:view,analysis_stage:VIEW_STAGES[view]??'FILTER'});},[view,workspace?.store]);
+   useEffect(() => {
+     if (!workspace) return;
+     const c = workspace.store.state.context;
+@@ -344,6 +347,7 @@
+ 
+   async function start(event: FormEvent<HTMLFormElement>) {
+     event.preventDefault();
++    if (readOnly) return;
+     if (!workflow || !startAllowed || startInFlight.current) return;
+     startInFlight.current = true;
+     setBusy(true);
+@@ -557,6 +561,8 @@
+       </div>
+       <div className="simulation-controls" hidden={!controlsOpen} id="simulation-controls">
+       <AnalysisWorkspaceTools project={initialProjectId} view={view === 'load' ? 'load' : view}/>
++      {readOnly && <p className="notice">Gespeicherter Simulationslauf · Start und Szenarioänderungen bleiben in der Primäransicht.</p>}
++      {!readOnly && <>
+       {snapshot && job && <div className="notice"><strong>Gespeicherter Simulationslauf{snapshot.is_outdated || workflow?.statuses.simulation === "OUTDATED" ? " · Veraltet" : ""}</strong> · {job.id}
+         <Link href={withProjectParam(`/studio/results?snapshot=${encodeURIComponent(snapshot.id)}`, projectIdForLinks)}>Ergebnis und Bewertung öffnen →</Link>
+       </div>}
+@@ -664,6 +670,7 @@
+       </details>
+ 
+       <FaultProposalReview proposals={proposals.filter((proposal) => proposal.status !== "REJECTED" && proposal.status !== "SUPERSEDED")} magnitudes={proposalMagnitude} reviewState={proposalReviewState} onMagnitude={(id, value) => { setProposalMagnitude((current) => ({ ...current, [id]: value })); setProposalReviewState((current) => ({ ...current, [id]: { busy: false, message: "Nicht gespeicherte Änderung" } })); }} onReview={reviewProposal} />
++      </>}
+       </div>
+       <section className="panel synchronized-simulation-view">
+         <SimulationTimeline duration={maximumTime} playhead={playhead} playing={playing} available={!!modelTrace} onPlay={togglePlayback} onStop={() => {setPlaying(false);movePlayhead(0);}} onChange={time => {setPlaying(false);movePlayhead(time);}} />
+--- before/frontend/src/app/studio/simulation/page.tsx
++++ after/frontend/src/app/studio/simulation/page.tsx
+@@ -3,7 +3,6 @@
+ import { StudioTopbar } from "@/features/workflow/ui/studio-topbar";
+ import { WorkflowHeader } from "@/features/workflow/ui/workflow-header";
+ import { projectIdFromSearchParams, type ProjectQueryRecord } from "@/features/settings/lib/user-settings";
+-import { TraceAnalysisWorkbench } from '@/features/traces/ui/trace-analysis-workbench';
+ 
+ export default async function WorkflowSimulationPage({
+   searchParams,
+@@ -21,7 +20,7 @@
+       <StudioWorkflowHero eyebrow="Workflow 07" initialProjectId={initialProjectId} title="Signale und Kommunikation gemeinsam simulieren.">
+         Modellwerte, Frames, Buslast und Fehlerereignisse laufen auf einer synchronisierten Zeitachse.
+       </StudioWorkflowHero>
+-      {secondary ? <TraceAnalysisWorkbench/> : <ModelSimulationRunner key={`${initialProjectId}:${initialSnapshotId}`} initialProjectId={initialProjectId} initialSnapshotId={initialSnapshotId} />}
++      <ModelSimulationRunner key={`${initialProjectId}:${initialSnapshotId}`} initialProjectId={initialProjectId} initialSnapshotId={initialSnapshotId} readOnly={secondary} />
+     </main>
+   );
+ }

@@ -2,7 +2,7 @@
 
 import { useId, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
 import type { SequenceDiagramModel, SequenceEvent } from "@/features/simulation/lib/e2e-sequence";
-import { sequenceEventMatchesParticipants } from "@/features/simulation/lib/e2e-sequence";
+import { compileSequenceSearch, sequenceEventMatchesParticipants } from "@/features/simulation/lib/e2e-sequence";
 import { simulationPage } from "../lib/simulation-pagination";
 import { SimulationPageControls } from "./simulation-page-controls";
 
@@ -57,12 +57,9 @@ export function E2ESequenceDiagram({ model, selectedId, onSelect, onClearSelecti
   }, [model.events, model.participants]);
   const participantFilter = useMemo(() => new Set(selectedParticipants.filter(participant => participants.includes(participant))), [selectedParticipants, participants]);
   const origin = model.events.find(event => event.timeS !== null)?.timeS ?? null;
-  const filtered = useMemo(() => {
-    const normalized = query.trim().toLocaleLowerCase();
-    return model.events.filter(event => sequenceEventMatchesParticipants(event, participantFilter) && (!normalized ||
-      [event.source, event.destination, event.route, event.technology, event.status, event.transactionId ?? ""]
-        .some(value => value.toLocaleLowerCase().includes(normalized))));
-  }, [model.events, query, participantFilter]);
+  const search = useMemo(() => compileSequenceSearch(query), [query]);
+  const filtered = useMemo(() => model.events.filter(event => sequenceEventMatchesParticipants(event, participantFilter)
+    && search.matches(event)), [model.events, search, participantFilter]);
   const displayed = simulationPage(filtered, page, 200);
   const shown = displayed.items;
   const changePage = (next: number) => { setPage(next); setHoveredId(null); scrollRef.current?.scrollTo({ top: 0 }); };
@@ -108,7 +105,7 @@ export function E2ESequenceDiagram({ model, selectedId, onSelect, onClearSelecti
     <header className="e2e-sequence-header">
       <div><span className="eyebrow">{model.source === "SIMULATED" ? "SIMULIERT" : "BEOBACHTET"}</span><h3>End-to-End-Sequenz</h3></div>
       <div className="e2e-sequence-toolbar">
-        <label className="e2e-sequence-search"><span className="sr-only">Sequenzereignisse suchen</span><input value={query} onChange={event => { setQuery(event.target.value); changePage(0); }} placeholder="Teilnehmer, Route oder Technologie" /></label>
+        <label className="e2e-sequence-search"><span className="sr-only">Sequenzereignisse suchen</span><input value={query} aria-invalid={Boolean(search.error)} aria-describedby={`${markerId}-search-help`} onChange={event => { setQuery(event.target.value); changePage(0); }} placeholder="Teilnehmer, Route; UND / ODER / NICHT" /></label>
         <button className="e2e-sequence-tool-button" type="button" aria-pressed={measuring} onClick={toggleMeasure}>Zeit messen</button>
         <div className="e2e-sequence-levels" role="group" aria-label="Detailstufe">
           {(["FUNCTIONAL", "COMMUNICATION", "TECHNICAL"] as const).map(item =>
@@ -116,6 +113,8 @@ export function E2ESequenceDiagram({ model, selectedId, onSelect, onClearSelecti
         </div>
       </div>
     </header>
+    <p id={`${markerId}-search-help`} className="e2e-sequence-search-help">Suche: Motor UND NICHT LIN · (Motor ODER Getriebe) UND CAN · Anführungszeichen für genaue Wortgruppen. AND / OR / NOT werden ebenfalls unterstützt.</p>
+    {search.error && <p className="notice error" role="alert">{search.error}</p>}
     <div className="e2e-sequence-participant-filter" aria-label="Teilnehmerfilter">
       <span aria-live="polite">{participantFilter.size === 0 ? "Teilnehmer anklicken, um ihre TX/RX-Kommunikation zu filtern." :
         participantFilter.size === 1 ? `TX/RX von ${[...participantFilter][0]}` : `Kommunikation zwischen ${[...participantFilter].join(" ↔ ")}`}</span>

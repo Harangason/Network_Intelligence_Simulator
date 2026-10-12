@@ -1,4 +1,5 @@
 import { addAutomotiveFunctionOutputs, isEngineeringControllerDevice, normalizeHardwareName, type ExtractedEngineeringChain } from "./engineering-specification.ts";
+import { completeFunctionalDeviceDesign, perceptionConsumer } from './functional-device-design.ts';
 import type { EquipmentAssignmentLearningSuggestion, FunctionalPartnerSuggestion } from "../../../shared/api/engineering-api.ts";
 import {
   compareTopologyClusterKeys,
@@ -583,7 +584,7 @@ export function buildEquipmentClusters(
   learnedAssignments: EquipmentAssignmentLearningSuggestion[] = [],
   functionalHistory: FunctionalPartnerSuggestion[] = [],
 ): EquipmentCluster[] {
-  chains = addAutomotiveFunctionOutputs(chains, chains[0]?.domain || industry || "");
+  chains = completeFunctionalDeviceDesign(addAutomotiveFunctionOutputs(chains, chains[0]?.domain || industry || ""));
   const profile = resolveTopologyClusterProfile(industry || chains[0]?.domain);
   const graphMode = Boolean(industry);
   const buckets = new Map<string, { label: string; clusterKey: string; recommendation: string; preferredNetworks: string[]; devices: ExtractedEngineeringChain[] }>();
@@ -672,6 +673,20 @@ export function buildEquipmentClusters(
         path: [source.name, target], reason: 'Berechneter Funktionsausgang für die Antriebskoordination; Bedarf und Empfänger bestätigen.',
         confidence: 0.8, provenance: 'automotive_function_output_dependency', review_status: 'REVIEW_REQUIRED',
       })).filter(route => route.signals.length > 0));
+  }
+  for (const cluster of clusters) {
+    for (const source of cluster.controllers) {
+      const outputs = chains.filter(chain => chain.hardware_name === source.name
+        && (chain.configuration?.functional_device_contract as { role?: string } | undefined)?.role === 'PERCEPTION');
+      if (!outputs.length) continue;
+      const consumers = clusters.flatMap(item => item.controllers).filter(target => target.name !== source.name && perceptionConsumer(target.name));
+      if (!consumers.length) cluster.functionalIssues.push(`${source.name}: Empfänger der verarbeiteten Objektdaten fachlich festlegen.`);
+      for (const target of consumers) cluster.functionalRoutes.push({ source: source.name, target: target.name,
+        signals: outputs.map(item => item.signal_name), path: [source.name, target.name],
+        reason: 'Wahrnehmungsdaten für Navigation, Assistenz oder Sensorfusion; Bedarf und Empfänger bestätigen.',
+        confidence: 0.8, provenance: 'functional_perception_dependency', review_status: 'REVIEW_REQUIRED' });
+      if (!source.sensors.length) cluster.functionalIssues.push(`${source.name}: Messdateneingang für die Wahrnehmungsverarbeitung fehlt.`);
+    }
   }
   for (const choice of functionalHistory) {
     if (choice.industry && resolveTopologyClusterProfile(choice.industry) !== profile) continue;

@@ -1,6 +1,13 @@
-import { test, expect } from 'playwright/test';
+import { test, expect, type Page } from 'playwright/test';
 import { randomUUID } from 'node:crypto';
 import { buildSequenceDiagram } from '../src/features/simulation/lib/e2e-sequence';
+
+async function openSimulationRun(page: Page) {
+  const controls = page.locator('[aria-controls="simulation-controls"]');
+  if (await controls.getAttribute('aria-expanded') === 'false') await controls.click();
+  const panel = page.locator('.simulation-command-panel');
+  if (await panel.getAttribute('open') === null) await panel.locator(':scope > summary').click();
+}
 
 test('network tools remain grouped and usable at narrow and desktop widths @studio-controls', async ({ page }) => {
   const project = 'nis-e2e-toolbar-' + randomUUID();
@@ -66,7 +73,9 @@ test('simulation trace controls expose every signal and event without opaque row
       { time_s: 1, value: index % 2 ? 20 : 10, golden_value: index % 2 ? 20 : 10, faults: [] }],
   }));
   const records = Array.from({ length: 405 }, (_, index) => ({ event_id: `event-${index}`, transaction_id: 'transaction',
-    time_s: index / 1000, source: 'Source', destination: 'Target', route_name: `Route ${index}`, technology: 'ETHERNET', status: 'transmitted' }));
+    time_s: index / 1000, source: index >= 400 ? 'Third' : index === 1 ? 'Target' : 'Source',
+    destination: index >= 400 ? 'Fourth' : index === 1 ? 'Source' : 'Target',
+    route_name: `Route ${index}`, technology: 'ETHERNET', status: 'transmitted' }));
   const model = buildSequenceDiagram(records, 'SIMULATED');
   const trace = { scenario: { duration_s: 1 }, signals, frames: records, events: [], bus_load: [], comparison: { available: false } };
   const blockedRequests: string[] = [];
@@ -88,6 +97,7 @@ test('simulation trace controls expose every signal and event without opaque row
   await page.goto(`/studio/simulation?project=${project}`);
   await expect(page.getByLabel('Dynamik filtern')).toHaveValue('ALL');
   await expect(page.locator('.signal-filter-summary')).toContainText('125 im Filter gewählt');
+  await openSimulationRun(page);
   try {
     await expect(page.getByRole('button', { name: 'Start', exact: true })).toBeDisabled();
     await expect(page.locator('.trace-format-trigger')).toContainText('Projektformate werden geladen');
@@ -98,6 +108,18 @@ test('simulation trace controls expose every signal and event without opaque row
   await expect(page.locator('.trace-format-trigger')).toContainText('PCAP');
   await expect(page.getByRole('button', { name: 'Start', exact: true })).toBeEnabled();
   await expect(page.locator('.signal-lane')).toHaveCount(60);
+  const visibleSignalCount = await page.locator('.signal-lanes').evaluate(element => {
+    const bounds = element.getBoundingClientRect();
+    return [...element.querySelectorAll('.signal-lane')].filter(lane => {
+      const rect = lane.getBoundingClientRect();
+      return rect.top >= bounds.top - 1 && rect.bottom <= bounds.bottom + 1;
+    }).length;
+  });
+  expect(visibleSignalCount).toBe(15);
+  await page.locator('.signal-plot-workbench').screenshot({ path: testInfo.outputPath('fifteen-signal-lanes.png') });
+  await page.getByRole('button', { name: 'Detailansicht', exact: true }).click();
+  await expect(page.locator('.signal-chart').first()).toHaveCSS('height', '126px');
+  await page.getByRole('button', { name: '15 Signalspuren', exact: true }).click();
   const signalPages = page.getByRole('navigation', { name: 'Signale durchblättern' });
   await signalPages.getByRole('button', { name: 'Weiter', exact: true }).click();
   await expect(page.locator('.signal-lane').first()).toContainText('Signal 060');
@@ -147,6 +169,34 @@ test('simulation trace controls expose every signal and event without opaque row
   await page.getByLabel('Sequenzereignisse suchen').fill('Route 404');
   await expect(sequence.locator('.e2e-sequence-event')).toHaveCount(1);
   await expect(sequence.locator('.e2e-sequence-event')).toContainText('Route 404');
+  await page.getByLabel('Sequenzereignisse suchen').fill('');
+  const sourceParticipant = sequence.getByRole('button', { name: 'Source: TX/RX filtern', exact: true });
+  const targetParticipant = sequence.getByRole('button', { name: 'Target: TX/RX filtern', exact: true });
+  const thirdParticipant = sequence.getByRole('button', { name: 'Third: TX/RX filtern', exact: true });
+  await sourceParticipant.click();
+  await expect(sourceParticipant).toHaveAttribute('aria-pressed', 'true');
+  await expect(pages).toContainText('1–200 von 400');
+  await expect(sequence.locator('.e2e-sequence-event').first()).toContainText('Route 0');
+  await expect(sequence.getByLabel('Teilnehmerfilter', { exact: true })).toContainText('TX/RX von Source');
+  await targetParticipant.press('Enter');
+  await expect(targetParticipant).toHaveAttribute('aria-pressed', 'true');
+  await expect(sequence.getByLabel('Teilnehmerfilter', { exact: true })).toContainText('Kommunikation zwischen Source ↔ Target');
+  await expect(sequence.locator('.e2e-sequence-event').nth(1)).toHaveAttribute('aria-label', /Target an Source/);
+  await thirdParticipant.click();
+  await expect(pages).toContainText('von 400');
+  await sourceParticipant.click();
+  await expect(sourceParticipant).toHaveAttribute('aria-pressed', 'false');
+  await expect(sequence.locator('.e2e-sequence-event')).toHaveCount(0);
+  await expect(sequence).toContainText('Keine Ereignisse für diesen Filter.');
+  await thirdParticipant.click();
+  await expect(pages).toContainText('von 400');
+  await targetParticipant.click();
+  await expect(pages).toContainText('von 405');
+  await expect(sequence.getByRole('button', { name: 'Teilnehmerfilter aufheben', exact: true })).toHaveCount(0);
+  await sourceParticipant.click();
+  await sequence.getByRole('button', { name: 'Teilnehmerfilter aufheben', exact: true }).click();
+  await expect(sourceParticipant).toHaveAttribute('aria-pressed', 'false');
+  await expect(pages).toContainText('von 405');
   for (const width of [954, 390]) {
     await page.setViewportSize({ width, height: 1244 });
     await page.getByLabel('Sequenzereignisse suchen').fill('');
@@ -178,6 +228,7 @@ for (const scenario of [
   expect(saved.ok(), await saved.text()).toBe(true);
   await page.goto(`/studio/simulation?project=${project}`);
   const trigger = page.locator('.trace-format-trigger');
+  await openSimulationRun(page);
   await expect(trigger).toContainText(scenario.expected.join(', '));
   await expect(trigger.locator('strong')).toHaveText(String(scenario.expected.length));
   await trigger.click();

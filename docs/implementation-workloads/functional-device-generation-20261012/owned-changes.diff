@@ -1,0 +1,752 @@
+--- before/frontend/src/features/agent/lib/functional-device-design.ts
++++ after/frontend/src/features/agent/lib/functional-device-design.ts
+@@ -0,0 +1,137 @@
++import type { ExtractedEngineeringChain } from './engineering-specification.ts';
++import { SENSOR_MEASUREMENTS, sensorMeasurement, sensorMeasurementSelections } from './sensor-measurements.ts';
++
++/** Functional roles are independent of industry, device class and transport. */
++export function perceptionRole(name: string) {
++  if (/kamera|camera|vision|bildverarbeitung/i.test(name)) return 'image_frame';
++  if (/lidar|laser.?scanner/i.test(name)) return 'point_cloud';
++  if (/radar/i.test(name)) return 'object_list';
++  if (/ultraschall|ultrasonic/i.test(name)) return 'distance';
++  return null;
++}
++
++export function perceptionConsumer(name: string) {
++  return /fahrerassistenz|autonom|navigation|motion.?planning|bewegungsplanung|sensorfusion|perception.?fusion/i.test(name);
++}
++
++export function usesFunctionalDeviceDesign(prompt: string) {
++  return /^- Funktionaler Generierungsvertrag:\s*sensor-actuator-v1\s*$/m.test(prompt)
++    || !/per Wizard-Uebernehmen bestaetigt/.test(prompt)
++    || /^- Generierungsmodus:\s*EXAMPLE_PROJECT\s*$/m.test(prompt);
++}
++
++// Bounded, editable wire design; no detected objects or measured values are invented.
++export const OBJECT_LIST_SCHEMA = {
++  version: 1, byte_order: 'little_endian', max_objects: 48, payload_bytes: 1168,
++  header_bytes: 16, object_bytes: 24, coordinate_frame: 'SOURCE_LOCAL_REQUIRES_REVIEW',
++  header: [
++    { name: 'frame_id', offset_bytes: 0, bits: 32, type: 'unsigned' },
++    { name: 'timestamp', offset_bytes: 4, bits: 64, type: 'unsigned', unit: 'us', time_base: 'SOURCE_CLOCK_REQUIRES_REVIEW' },
++    { name: 'object_count', offset_bytes: 12, bits: 16, type: 'unsigned', maximum: 48 },
++    { name: 'coordinate_frame_id', offset_bytes: 14, bits: 16, type: 'unsigned' },
++  ],
++  fields: [
++    { name: 'object_id', offset_bytes: 0, bits: 32, type: 'unsigned' },
++    { name: 'classification', offset_bytes: 4, bits: 16, type: 'unsigned', vocabulary: 'REQUIRES_REVIEW' },
++    { name: 'confidence', offset_bytes: 6, bits: 16, type: 'unsigned', factor: 0.0001, maximum: 1 },
++    ...['x', 'y', 'z', 'velocity'].map((name, index) => ({ name, offset_bytes: 8 + index * 4,
++      bits: 32, type: 'signed', factor: 0.001, unit: name === 'velocity' ? 'm/s' : 'm' })),
++  ],
++};
++
++/** Enrich only new drafts. Explicit measurements and imported encodings win. */
++export function completeFunctionalDeviceDesign(chains: ExtractedEngineeringChain[], prompt = '', includeOutputs = true) {
++  if (!usesFunctionalDeviceDesign(prompt)) return chains;
++  const choices = sensorMeasurementSelections(prompt);
++  const devices = new Map(chains.map(chain => [chain.hardware_name, chain]));
++  const result = chains.map(chain => {
++    if (chain.device_type !== 'SensorController' || chain.configuration?.generation_role) return chain;
++    const owner = String(chain.configuration?.functional_owner ?? '');
++    const explicit = choices[chain.hardware_name] ?? chain.configuration?.sensor_measurement;
++    const inferred = explicit || sensorMeasurement(chain.hardware_name, chain.signal_name)?.id
++      || (/^Sensor\d+$/i.test(chain.hardware_name) ? perceptionRole(owner) : null);
++    const measurement = SENSOR_MEASUREMENTS.find(item => item.id === inferred);
++    const base = { ...chain,
++      ...(measurement && 'payloadBytes' in measurement ? { device_class: chain.device_class ?? 3,
++        data_complexity: measurement.dataComplexity, payload_element_type: measurement.elementType } : {}),
++      configuration: { ...chain.configuration, functional_device_contract: {
++      version: 1, role: 'SENSOR', measurement: measurement?.id ?? null, owner_name: owner || null,
++      evidence: (chain.configuration?.functional_device_contract as { evidence?: string } | undefined)?.evidence
++        ?? (explicit ? 'explicit_measurement' : 'semantic_draft_requires_review'),
++    } } };
++    if (!explicit && measurement?.id === 'distance' && /^Sensor\d+$/i.test(chain.hardware_name)) {
++      return { ...base, signal_name: `Abstand_${chain.hardware_name}`, signal_display_name: `Abstand_${chain.hardware_name}`,
++        length_bits: 17, dlc: 3, start_bit: 0, factor: 0.01, offset_value: 0, unit: 'm', min_value: 0, max_value: 1000,
++        semantic: { semantic_type: 'NUMERIC', meaning: 'Gemessener Abstand', unit: 'm' },
++        data: { minimum: 0, maximum: 1000, resolution: 0.01 },
++        configuration: { ...base.configuration, sensor_measurement: 'distance',
++          measurement_source: 'functional_owner_draft_requires_review', encoding_type: 'linear',
++          raw_datatype: 'unsigned', bit_length: 17, factor: 0.01, offset: 0 },
++      } satisfies ExtractedEngineeringChain;
++    }
++    if (!measurement || !('payloadBytes' in measurement) || chain.semantic?.semantic_type === 'BYTE_ARRAY') return base;
++    return { ...base, device_class: chain.device_class ?? 3,
++      signal_name: `${measurement.label}_${chain.hardware_name}`, signal_display_name: `${measurement.label}_${chain.hardware_name}`,
++      data_complexity: measurement.dataComplexity, payload_element_type: measurement.elementType,
++      length_bits: measurement.payloadBytes * 8, start_bit: 0, dlc: measurement.payloadBytes,
++      factor: 1, offset_value: 0, unit: 'byte', min_value: undefined, max_value: undefined,
++      semantic: { semantic_type: 'BYTE_ARRAY', meaning: measurement.label, unit: 'not_applicable' },
++      data: { payload_bytes: measurement.payloadBytes },
++      quality: { ...chain.quality, value_domain_complete: true },
++      configuration: { ...base.configuration, sensor_measurement: measurement.id, encoding_type: 'raw',
++        measurement_source: 'functional_owner_draft_requires_review' },
++    } satisfies ExtractedEngineeringChain;
++  });
++  if (!includeOutputs) return result;
++  for (const device of devices.values()) {
++    if (device.device_type === 'SensorController' || device.device_type === 'ActuatorController' || device.device_type === 'Gateway') continue;
++    const role = perceptionRole(`${device.hardware_name} ${device.function_name}`);
++    const sensors = [...devices.values()].filter(item => item.device_type === 'SensorController'
++      && item.configuration?.functional_owner === device.hardware_name).map(item => item.hardware_name);
++    const actuators = [...devices.values()].filter(item => item.device_type === 'ActuatorController'
++      && item.configuration?.functional_owner === device.hardware_name).map(item => item.hardware_name);
++    if (!role) {
++      if (sensors.length || actuators.length) {
++        for (let index = 0; index < result.length; index++) {
++          const item = result[index];
++          if (item.hardware_name !== device.hardware_name) continue;
++          result[index] = { ...item, configuration: { ...item.configuration, functional_device_contract: {
++            version: 1, role: 'PROCESSOR', input_names: sensors, actuator_names: actuators,
++            evidence: 'confirmed_device_ownership_processing_logic_requires_review',
++          } } };
++        }
++      }
++      continue;
++    }
++    const name = `${device.hardware_name}Objektdaten`;
++    const existing = result.findIndex(item => item.hardware_name === device.hardware_name && item.signal_name === name);
++    if (existing >= 0) {
++      const output = result[existing];
++      if ((output.configuration?.functional_device_contract as { role?: string } | undefined)?.role === 'PERCEPTION') {
++        result[existing] = { ...output, configuration: { ...output.configuration, functional_device_contract: {
++          ...(output.configuration!.functional_device_contract as Record<string, unknown>), input_names: sensors, actuator_names: actuators,
++        } } };
++      }
++      continue;
++    }
++    result.push({ ...device, function_name: `${device.hardware_name}_Objektverarbeitung`,
++      function_description: 'Messdaten verarbeiten und strukturierte Objektdaten bereitstellen; Algorithmus, Eingang, Objektvokabular und Zeit-/Koordinatenbezug fachlich bestätigen.',
++      message_name: name, signal_name: name, signal_display_name: name,
++      payload_element_type: 'OBJECT', length_bits: OBJECT_LIST_SCHEMA.payload_bytes * 8,
++      start_bit: 0, dlc: OBJECT_LIST_SCHEMA.payload_bytes, factor: 1, offset_value: 0,
++      unit: 'byte', min_value: undefined, max_value: undefined,
++      semantic: { semantic_type: 'BYTE_ARRAY', meaning: 'Verarbeitete Objektdaten', unit: 'not_applicable' },
++      data: { payload_bytes: OBJECT_LIST_SCHEMA.payload_bytes },
++      configuration: { ...device.configuration, generation_role: 'FUNCTION_OUTPUT', functional_output_template: true,
++        communication_contract: { scope: 'FUNCTION_OUTPUT' }, encoding_type: 'raw',
++        structured_payload: OBJECT_LIST_SCHEMA,
++        functional_device_contract: { version: 1, role: 'PERCEPTION', required_measurement: role,
++          accepted_measurements: role === 'object_list' ? ['object_list', 'distance']
++            : role === 'image_frame' ? ['image_frame', 'object_list']
++              : role === 'point_cloud' ? ['point_cloud', 'object_list'] : ['distance'],
++          input_names: sensors, actuator_names: actuators, output_signal: name, evidence: 'semantic_draft_requires_review' },
++        design_evidence: 'illustrative_template_requires_review' },
++    });
++  }
++  return result;
++}
+--- before/frontend/src/features/agent/lib/functional-device-design.test.mjs
++++ after/frontend/src/features/agent/lib/functional-device-design.test.mjs
+@@ -0,0 +1,87 @@
++import { test } from 'node:test';
++import assert from 'node:assert/strict';
++import { completeFunctionalDeviceDesign, OBJECT_LIST_SCHEMA } from './functional-device-design.ts';
++import { buildEquipmentClusters } from './equipment-clustering.ts';
++import { packEngineeringChains, expandEngineeringSignalModel } from './engineering-specification.ts';
++import { sensorMeasurement } from './sensor-measurements.ts';
++
++const chain = (name, type, domain = 'custom', configuration = {}) => ({
++  hardware_name: name, hardware_description: '', device_type: type, function_name: `${name}Function`,
++  function_description: '', interface_name: `${name}_Ethernet`, interface_type: 'Ethernet', message_name: `${name}Data`,
++  message_id_hex: '0x180', direction: 'tx', cycle_ms: 33, dlc: 1, signal_name: `${name}Value`,
++  signal_display_name: `${name}Value`, start_bit: 0, length_bits: 8, byte_order: 'little_endian',
++  data_type: 'unsigned', factor: 1, offset_value: 0, min_value: 0, max_value: 255, configuration, domain,
++});
++
++test('radar distance remains a scalar quantity; only declared object lists receive the object encoding', () => {
++  assert.equal(sensorMeasurement('FrontRadarDistance')?.id, 'distance');
++  assert.equal(sensorMeasurement('RadarObjectList')?.id, 'object_list');
++  const source = { ...chain('FrontRadarDistance', 'SensorController', 'robotics_ros', { functional_owner: 'RadarProcessing' }),
++    signal_name: 'Distance', unit: 'm', length_bits: 16, min_value: 0, max_value: 655.35, factor: 0.01 };
++  const result = completeFunctionalDeviceDesign([source, chain('RadarProcessing', 'IndustrialPC', 'robotics_ros')]);
++  const sensor = result.find(item => item.hardware_name === source.hardware_name);
++  assert.equal(sensor.length_bits, source.length_bits);
++  assert.equal(sensor.unit, 'm');
++  assert.equal(sensor.configuration.functional_device_contract.measurement, 'distance');
++  assert.ok(result.find(item => item.configuration.functional_output_template).configuration.functional_device_contract.accepted_measurements.includes('distance'));
++});
++
++test('placeholder camera inputs and processed objects work independently of industry and device names', () => {
++  for (const domain of ['automotive', 'robotics_ros', 'aerospace', 'building_automation', 'custom']) {
++    const input = [chain('Kameraverarbeitung', 'IndustrialPC', domain),
++      chain('Sensor1', 'SensorController', domain, { functional_owner: 'Kameraverarbeitung' }),
++      chain('AutonomeNavigation', 'IndustrialPC', domain)];
++    const result = completeFunctionalDeviceDesign(input);
++    const sensor = result.find(item => item.hardware_name === 'Sensor1');
++    assert.equal(sensor.configuration.sensor_measurement, 'image_frame');
++    assert.equal(sensor.semantic.semantic_type, 'BYTE_ARRAY');
++    assert.equal(sensor.interface_type, 'Ethernet');
++    const output = result.find(item => item.configuration.functional_output_template);
++    assert.equal(output.configuration.communication_contract.scope, 'FUNCTION_OUTPUT');
++    assert.deepEqual(output.configuration.functional_device_contract.input_names, ['Sensor1']);
++    assert.equal(output.data.payload_bytes, OBJECT_LIST_SCHEMA.header_bytes + OBJECT_LIST_SCHEMA.max_objects * OBJECT_LIST_SCHEMA.object_bytes);
++    const packed = packEngineeringChains(expandEngineeringSignalModel(result));
++    assert.ok(packed.some(item => item.signal_name === sensor.signal_name && item.semantic.semantic_type === 'BYTE_ARRAY'));
++    const message = packed.find(item => item.signal_name === output.signal_name);
++    assert.equal(message.dlc, 1168);
++    assert.equal(packed.filter(item => item.message_name === message.message_name).length, 1);
++    const clusters = buildEquipmentClusters(result, [{ id: 'Ethernet', label: 'Ethernet' }], domain);
++    const route = clusters.flatMap(item => item.functionalRoutes).find(item => item.source === 'Kameraverarbeitung' && item.target === 'AutonomeNavigation');
++    assert.deepEqual(route.signals, [output.signal_name]);
++    assert.equal(route.review_status, 'REVIEW_REQUIRED');
++    assert.deepEqual(completeFunctionalDeviceDesign(result), result);
++  }
++});
++
++test('explicit scalar choice is not converted into camera data and an unknown sensor stays unresolved', () => {
++  const result = completeFunctionalDeviceDesign([
++    chain('Sensor1', 'SensorController', 'custom', { functional_owner: 'Kameraverarbeitung', sensor_measurement: 'temperature' }),
++    chain('Sensor2', 'SensorController'), chain('Gateway', 'Gateway'),
++  ]);
++  assert.equal(result[0].configuration.functional_device_contract.measurement, 'temperature');
++  assert.equal(result[0].length_bits, 8);
++  assert.equal(result[1].configuration.functional_device_contract.measurement, null);
++  assert.equal(result.length, 3);
++});
++
++test('missing sensors and consumers produce open functional review issues without inventing devices', () => {
++  const input = [chain('CameraProcessing', 'IndustrialPC')];
++  const clusters = buildEquipmentClusters(input, [{ id: 'Ethernet', label: 'Ethernet' }], 'custom');
++  assert.ok(clusters.flatMap(item => item.functionalIssues).some(message => /Messdateneingang/.test(message)));
++  assert.ok(clusters.flatMap(item => item.functionalIssues).some(message => /Empfänger/.test(message)));
++  assert.equal(clusters.flatMap(item => item.functionalRoutes).length, 0);
++});
++
++test('imported reviewed signal encodings stay unchanged', () => {
++  const input = [chain('Kameraverarbeitung', 'ECU'), chain('Sensor1', 'SensorController')];
++  assert.equal(completeFunctionalDeviceDesign(input, 'per Wizard-Uebernehmen bestaetigt'), input);
++});
++
++test('object outputs keep an explicitly selected narrow transport and remain oversized for validation', () => {
++  const source = { ...chain('RadarProcessing', 'IndustrialPC'), interface_type: 'CAN', interface_name: 'explicit_CAN' };
++  const result = completeFunctionalDeviceDesign([source]);
++  const output = result.find(item => item.configuration.functional_output_template);
++  assert.equal(output.interface_type, 'CAN');
++  assert.equal(output.length_bits, 1168 * 8);
++  assert.equal(OBJECT_LIST_SCHEMA.header.find(field => field.name === 'timestamp').time_base, 'SOURCE_CLOCK_REQUIRES_REVIEW');
++});
+--- before/frontend/src/features/agent/lib/sensor-measurements.ts
++++ after/frontend/src/features/agent/lib/sensor-measurements.ts
+@@ -1,4 +1,6 @@
+ export const SENSOR_MEASUREMENTS = [
++  { id: 'object_list', label: 'Objektdaten', unit: 'byte', match: /object.?list|objekt.?liste|radar.*(?:objekt|object|track)/i,
++    dataComplexity: 'STRUCTURED_OBJECT_LIST', semanticType: 'BYTE_ARRAY', elementType: 'OBJECT', payloadBytes: 1168, defaultCycleMs: 50 },
+   { id: 'image_frame', label: 'Bilddaten', unit: 'byte', match: /kamera|camera|vision/i,
+     dataComplexity: 'IMAGE_STREAM', semanticType: 'BYTE_ARRAY', elementType: 'IMAGE', payloadBytes: 1400, defaultCycleMs: 33 },
+   { id: 'point_cloud', label: 'Punktwolke', unit: 'byte', match: /lidar|laser.?scanner/i,
+--- before/frontend/src/features/agent/lib/engineering-specification.ts
++++ after/frontend/src/features/agent/lib/engineering-specification.ts
+@@ -191,9 +191,9 @@
+  * Class 3/4 devices need an inspectable minimum model instead of a single
+  * placeholder signal. Message packing assigns the final offsets and DLC.
+  */
+-export function expandEngineeringSignalModel(chains: ExtractedEngineeringChain[]) {
++export function expandEngineeringSignalModel(chains: ExtractedEngineeringChain[], preserveHistoricalLimit = false) {
+   return chains.flatMap((chain) => {
+-    if (!requiresCompleteSignalModel(chain)) return [chain];
++    if (!requiresCompleteSignalModel(chain) || chain.configuration?.functional_output_template) return [chain];
+     const candidates = [
+       companionSignal(chain, "Status", {
+         length_bits: 4,
+@@ -271,7 +271,7 @@
+       if (seen.has(key)) return false;
+       seen.add(key);
+       return true;
+-    }).slice(0, 5);
++    }).slice(0, preserveHistoricalLimit ? 5 : undefined);
+   });
+ }
+ 
+--- before/frontend/src/features/agent/lib/equipment-clustering.ts
++++ after/frontend/src/features/agent/lib/equipment-clustering.ts
+@@ -1,4 +1,5 @@
+ import { addAutomotiveFunctionOutputs, isEngineeringControllerDevice, normalizeHardwareName, type ExtractedEngineeringChain } from "./engineering-specification.ts";
++import { completeFunctionalDeviceDesign, perceptionConsumer } from './functional-device-design.ts';
+ import type { EquipmentAssignmentLearningSuggestion, FunctionalPartnerSuggestion } from "../../../shared/api/engineering-api.ts";
+ import {
+   compareTopologyClusterKeys,
+@@ -583,7 +584,7 @@
+   learnedAssignments: EquipmentAssignmentLearningSuggestion[] = [],
+   functionalHistory: FunctionalPartnerSuggestion[] = [],
+ ): EquipmentCluster[] {
+-  chains = addAutomotiveFunctionOutputs(chains, chains[0]?.domain || industry || "");
++  chains = completeFunctionalDeviceDesign(addAutomotiveFunctionOutputs(chains, chains[0]?.domain || industry || ""));
+   const profile = resolveTopologyClusterProfile(industry || chains[0]?.domain);
+   const graphMode = Boolean(industry);
+   const buckets = new Map<string, { label: string; clusterKey: string; recommendation: string; preferredNetworks: string[]; devices: ExtractedEngineeringChain[] }>();
+@@ -673,6 +674,20 @@
+         confidence: 0.8, provenance: 'automotive_function_output_dependency', review_status: 'REVIEW_REQUIRED',
+       })).filter(route => route.signals.length > 0));
+   }
++  for (const cluster of clusters) {
++    for (const source of cluster.controllers) {
++      const outputs = chains.filter(chain => chain.hardware_name === source.name
++        && (chain.configuration?.functional_device_contract as { role?: string } | undefined)?.role === 'PERCEPTION');
++      if (!outputs.length) continue;
++      const consumers = clusters.flatMap(item => item.controllers).filter(target => target.name !== source.name && perceptionConsumer(target.name));
++      if (!consumers.length) cluster.functionalIssues.push(`${source.name}: Empfänger der verarbeiteten Objektdaten fachlich festlegen.`);
++      for (const target of consumers) cluster.functionalRoutes.push({ source: source.name, target: target.name,
++        signals: outputs.map(item => item.signal_name), path: [source.name, target.name],
++        reason: 'Wahrnehmungsdaten für Navigation, Assistenz oder Sensorfusion; Bedarf und Empfänger bestätigen.',
++        confidence: 0.8, provenance: 'functional_perception_dependency', review_status: 'REVIEW_REQUIRED' });
++      if (!source.sensors.length) cluster.functionalIssues.push(`${source.name}: Messdateneingang für die Wahrnehmungsverarbeitung fehlt.`);
++    }
++  }
+   for (const choice of functionalHistory) {
+     if (choice.industry && resolveTopologyClusterProfile(choice.industry) !== profile) continue;
+     const cluster = clusters.find(item => item.controllers.some(branch => branch.name === choice.source));
+--- before/frontend/scripts/extract-wizard-specification.mjs
++++ after/frontend/scripts/extract-wizard-specification.mjs
+@@ -1,10 +1,15 @@
+ // Pure data adapter: reuse the wizard's domain catalogs without any HTTP or writes.
+ import { applyIndustryGenerationPath, applyConfirmedClusterGraph, extractEngineeringSpecification, expandEngineeringSignalModel, packEngineeringChains, reconcileConfirmedGraphDevices } from '../src/features/agent/lib/engineering-specification.ts';
++import { completeFunctionalDeviceDesign, usesFunctionalDeviceDesign } from '../src/features/agent/lib/functional-device-design.ts';
+ 
+ let input = '';
+ for await (const chunk of process.stdin) input += chunk;
+ const { prompt } = JSON.parse(input);
+ if (typeof prompt !== 'string' || prompt.length > 120000) throw new Error('Invalid wizard specification');
+ const specification = extractEngineeringSpecification(prompt);
+-specification.chains = applyIndustryGenerationPath(packEngineeringChains(expandEngineeringSignalModel(applyConfirmedClusterGraph(reconcileConfirmedGraphDevices(specification, prompt), prompt)), undefined, prompt), specification.domain, prompt);
++const imported = !usesFunctionalDeviceDesign(prompt);
++const expanded = expandEngineeringSignalModel(completeFunctionalDeviceDesign(applyConfirmedClusterGraph(reconcileConfirmedGraphDevices(specification, prompt), prompt), prompt, false), imported);
++specification.chains = imported
++  ? applyIndustryGenerationPath(packEngineeringChains(expanded, undefined, prompt), specification.domain, prompt)
++  : packEngineeringChains(applyIndustryGenerationPath(completeFunctionalDeviceDesign(expanded, prompt), specification.domain, prompt), undefined, prompt);
+ process.stdout.write(JSON.stringify(specification));
+--- before/backend/nis/agent/tools/wizard_generation.py
++++ after/backend/nis/agent/tools/wizard_generation.py
+@@ -61,7 +61,7 @@
+     'SOMEIP': 'automotive_ethernet',
+ }
+ 
+-MODEL_GENERATOR_VERSION = 'wizard-model-v22-generation-rules'
++MODEL_GENERATOR_VERSION = 'wizard-model-v23-functional-devices'
+ ROUTING_GENERATOR_VERSION = 'wizard-routing-v11-confirmed-recipients-only'
+ 
+ _CONTROLLER_DEVICE_TYPES = {
+@@ -1224,6 +1224,11 @@
+                             "local_ref": f"ownership-{len(changes)}", "data": {"identity": identity}})
+     from backend.nis.engineering.communication.wizard_communication import attach_new_message_contracts
+     attach_new_message_contracts(arguments['prompt'], changes, existing)
++    from backend.nis.engineering.communication.device_communication import attach_functional_device_contracts
++    attach_functional_device_contracts(changes, spec['chains'], hardware_refs,
++        enabled=bool(re.search(r'^- Funktionaler Generierungsvertrag:\s*sensor-actuator-v1\s*$', arguments['prompt'], re.M))
++                or not ('per Wizard-Uebernehmen bestaetigt' in arguments['prompt']
++                        and not re.search(r'^- Generierungsmodus:\s*EXAMPLE_PROJECT\s*$', arguments['prompt'], re.M)))
+     _bind_generated_gateway_status(changes, existing)
+     # Owners precede their endpoints so nested local references resolve on apply.
+     new_hardware = [change for change in changes if change["object_type"] == "HardwareNode" and change.get("action", "CREATE") == "CREATE"]
+--- before/backend/nis/engineering/communication/device_communication.py
++++ after/backend/nis/engineering/communication/device_communication.py
+@@ -127,6 +127,49 @@
+             transport['payload_size'] = message['dlc']
+ 
+ 
++def attach_functional_device_contracts(changes, chains, hardware_refs, *, enabled=True):
++    """Persist draft functional requirements on new canonical nodes only.
++
++    Resolve producer/input identities after all devices exist. Imported or
++    previously reviewed model objects are never silently rewritten here.
++    """
++    if not enabled:
++        return
++    for change in changes:
++        if change.get('action', 'CREATE') != 'CREATE' or change['object_type'] != 'HardwareNode':
++            continue
++        node = change['data']
++        candidates = [c for c in chains if c['hardware_name'] == node['name']]
++        contracts = [(c.get('configuration') or {}).get('functional_device_contract') for c in candidates]
++        contract = next((c for c in contracts if isinstance(c, dict) and c.get('role') == 'PERCEPTION'), None)
++        contract = contract or next((c for c in contracts if isinstance(c, dict)), None)
++        if node['device_type'] == 'ActuatorController':
++            contract = {'version': 1, 'role': 'ACTUATOR', 'evidence': 'wizard_draft_requires_review'}
++        if not contract:
++            continue
++        contract = dict(contract)
++        contract['input_refs'] = [hardware_refs[name.casefold()] for name in contract.pop('input_names', [])
++                                  if name.casefold() in hardware_refs]
++        contract['actuator_refs'] = [hardware_refs[name.casefold()] for name in contract.pop('actuator_names', [])
++                                    if name.casefold() in hardware_refs]
++        owner_name = contract.pop('owner_name', None)
++        owner_ref = hardware_refs.get(str(owner_name or '').casefold()) or (node.get('identity') or {}).get('system_owner_id')
++        if owner_ref:
++            contract['owner_ref'] = owner_ref
++        if contract.get('role') in {'PERCEPTION', 'PROCESSOR'}:
++            # Function rows follow all hardware rows on apply. Keeping input
++            # references there avoids a cyclic controller/sensor CREATE order.
++            node.setdefault('identity', {})['functional_device_contract'] = {
++                key: value for key, value in contract.items() if key not in {'input_refs', 'actuator_refs'}}
++            node_ref = '$' + change['local_ref']
++            for function in changes:
++                if (function['object_type'] == 'Function' and function.get('action', 'CREATE') == 'CREATE'
++                        and function['data'].get('hardware_node_id') == node_ref):
++                    function['data'].setdefault('configuration', {})['functional_device_contract'] = contract
++        else:
++            node.setdefault('identity', {})['functional_device_contract'] = contract
++
++
+ def communication_findings(graph):
+     findings = []
+     nodes = graph.get('HardwareNode', {})
+@@ -155,6 +198,56 @@
+             add('SENSOR_VALUE_MISSING', 'HardwareNode', node, f"{node['name']}: Messwert oder funktionsbezogenes Signal fehlt.")
+         if node.get('device_type') == 'ActuatorController' and profile.device_class >= 2 and not output:
+             add('ACTUATOR_FEEDBACK_MISSING', 'HardwareNode', node, f"{node['name']}: Istwert bzw. Ausführungsrückmeldung fehlt.")
++        contract = (node.get('identity') or {}).get('functional_device_contract') or {}
++        if contract.get('role') in {'PERCEPTION', 'PROCESSOR'}:
++            contract = next(((f.get('configuration') or {}).get('functional_device_contract')
++                             for f in functions.values() if str(f.get('hardware_node_id')) == node_id
++                             and ((f.get('configuration') or {}).get('functional_device_contract') or {}).get('role') == contract.get('role')), contract)
++        if contract.get('version') != 1:
++            continue  # Historical definitions keep their explicit encoding.
++        owner_ref = contract.get('owner_ref') or (node.get('identity') or {}).get('system_owner_id')
++        incoming = [m for m in messages.values() if node_id in
++                    [str(ref) for ref in ((m.get('configuration') or {}).get('transport_unit') or {}).get('consumer_refs', [])]]
++        meaningful = [s for s in output if (s.get('configuration') or {}).get('generation_role') not in
++                      {'STATUS', 'HEALTH', 'MODE', 'QUALITY', 'ALIVECOUNTER', 'DEVICE_STATUS'}
++                      and (s.get('semantic') or {}).get('meaning') not in {'Betriebszustand', 'Diagnosezustand'}]
++        if contract.get('role') == 'SENSOR':
++            if not contract.get('measurement') or not meaningful:
++                add('SENSOR_SEMANTICS_MISSING', 'HardwareNode', node, f"{node['name']}: Fachliche Messgröße und codierter Messdatenausgang fehlen; Status allein genügt nicht.")
++            if not owner_ref and not any(((m.get('configuration') or {}).get('transport_unit') or {}).get('consumer_refs') for m in outgoing):
++                add('SENSOR_CONSUMER_MISSING', 'HardwareNode', node, f"{node['name']}: Verantwortlichen Verarbeiter oder expliziten Messdatenempfänger festlegen.")
++            if owner_ref and not any(str(owner_ref) in [str(ref) for ref in
++                    ((m.get('configuration') or {}).get('transport_unit') or {}).get('consumer_refs', [])] for m in outgoing) and not any(
++                    str(((s.get('configuration') or {}).get('direct_signal_binding') or {}).get('destination_hardware_node_ref')) == str(owner_ref) for s in output):
++                add('SENSOR_CONSUMER_MISSING', 'HardwareNode', node, f"{node['name']}: Messdateneingang am zugeordneten Verarbeiter fehlt.")
++        elif contract.get('role') == 'PERCEPTION':
++            inputs = contract.get('input_refs') or []
++            accepted_measurements = contract.get('accepted_measurements') or [contract.get('required_measurement')]
++            compatible = [ref for ref in inputs if ((nodes.get(str(ref), {}).get('identity') or {}).get('functional_device_contract') or {}).get('measurement') in accepted_measurements]
++            if not compatible:
++                add('FUNCTION_INPUT_MISSING', 'HardwareNode', node, f"{node['name']}: Eingang für {contract.get('required_measurement')} fehlt; Aktorrückmeldung ersetzt keine Sensordaten.")
++            routed_inputs = {owner(m) for m in incoming}
++            routed_inputs.update(str(((s.get('configuration') or {}).get('direct_signal_binding') or {}).get('source_hardware_node_ref'))
++                                 for s in signals.values() if str(((s.get('configuration') or {}).get('direct_signal_binding') or {}).get('destination_hardware_node_ref')) == node_id)
++            if compatible and not any(str(ref) in routed_inputs for ref in compatible):
++                add('FUNCTION_INPUT_ROUTE_MISSING', 'HardwareNode', node, f"{node['name']}: Messdaten sind fachlich zugeordnet, aber ihr Empfang ist nicht vorgesehen.")
++            processed = [s for s in meaningful if s.get('name') == contract.get('output_signal')
++                         and (s.get('configuration') or {}).get('structured_payload')]
++            if not processed:
++                add('FUNCTION_OUTPUT_MISSING', 'HardwareNode', node, f"{node['name']}: Strukturierte Objektdaten fehlen; Betriebsstatus ersetzt kein Verarbeitungsergebnis.")
++            if processed and not any(((m.get('configuration') or {}).get('transport_unit') or {}).get('consumer_refs') for m in outgoing
++                                    if any(str(s.get('message_id')) == str(m['id']) for s in processed)):
++                add('FUNCTION_CONSUMER_MISSING', 'HardwareNode', node, f"{node['name']}: Empfänger der Objektdaten bestätigen oder den Funktionsbedarf explizit überarbeiten.")
++        elif contract.get('role') == 'ACTUATOR':
++            direct_commands = [s for s in signals.values() if str(((s.get('configuration') or {}).get('direct_signal_binding') or {}).get('destination_hardware_node_ref')) == node_id
++                               and str(((s.get('configuration') or {}).get('direct_signal_binding') or {}).get('source_hardware_node_ref')) == str(owner_ref)]
++            command_signals = [s for s in signals.values() if any(str(s.get('message_id')) == str(m['id']) and owner(m) == str(owner_ref) for m in incoming)
++                               and (s.get('configuration') or {}).get('generation_role') not in {'DEVICE_STATUS', 'STATUS', 'HEALTH', 'MODE', 'QUALITY', 'ALIVECOUNTER'}
++                               and (s.get('semantic') or {}).get('meaning') not in {'Betriebszustand', 'Diagnosezustand'}]
++            if not command_signals and not direct_commands:
++                add('ACTUATOR_COMMAND_MISSING', 'HardwareNode', node, f"{node['name']}: Codierter Sollwert/Befehl vom zugeordneten Controller fehlt.")
++            if not owner_ref:
++                add('ACTUATOR_OWNER_MISSING', 'HardwareNode', node, f"{node['name']}: Verantwortlichen Controller fachlich zuordnen.")
+     for message_id, message in messages.items():
+         provenance = (((message.get('configuration') or {}).get('transport_unit') or {}).get('provenance') or {})
+         if provenance.get('generator') != 'wizard-local-actuator-command':
+--- before/backend/tests/test_functional_device_design.py
++++ after/backend/tests/test_functional_device_design.py
+@@ -0,0 +1,141 @@
++from copy import deepcopy
++import json
++from uuid import uuid4
++import pytest
++
++from backend.nis.engineering.communication.device_communication import (
++    attach_functional_device_contracts, communication_findings,
++)
++
++
++def graph(domain='robotics'):
++    nodes = {
++        'sensor': {'id': 'sensor', 'name': 'Sensor1', 'device_type': 'SensorController', 'device_class': 1,
++                   'identity': {'functional_device_contract': {'version': 1, 'role': 'SENSOR', 'measurement': 'image_frame', 'owner_ref': 'camera'}}},
++        'camera': {'id': 'camera', 'name': 'CameraProcessing', 'device_type': 'IndustrialPC', 'device_class': 4,
++                   'identity': {'functional_device_contract': {'version': 1, 'role': 'PERCEPTION', 'required_measurement': 'image_frame',
++                               'input_refs': ['sensor'], 'output_signal': 'Objects'}}},
++        'actuator': {'id': 'actuator', 'name': 'Valve', 'device_type': 'ActuatorController', 'device_class': 1,
++                     'identity': {'functional_device_contract': {'version': 1, 'role': 'ACTUATOR', 'owner_ref': 'camera'}}},
++    }
++    messages = {name: {'id': name, 'interface_id': producer, 'direction': 'tx',
++                      'configuration': {'transport_unit': {'producer_ref': producer, 'consumer_refs': receivers}}}
++                for name, producer, receivers in [('raw', 'sensor', ['camera']), ('objects', 'camera', ['navigation']), ('command', 'camera', ['actuator'])]}
++    return {'HardwareNode': nodes, 'Function': {'function': {'id': 'function', 'hardware_node_id': 'camera', 'domain': domain}},
++            'Interface': {ref: {'id': ref, 'hardware_node_id': ref} for ref in nodes}, 'Message': messages,
++            'Signal': {'image': {'id': 'image', 'name': 'Image', 'message_id': 'raw'},
++                       'objects': {'id': 'objects', 'name': 'Objects', 'message_id': 'objects', 'configuration': {'structured_payload': {'version': 1}}},
++                       'command': {'id': 'command', 'name': 'ValveCommand', 'message_id': 'command'},
++                       'status': {'id': 'status', 'name': 'CameraStatus', 'message_id': 'command', 'semantic': {'meaning': 'Betriebszustand'}}}}
++
++
++def codes(model):
++    return {finding['code'] for finding in communication_findings(model)}
++
++
++def test_functional_acceptance_is_industry_independent_and_requires_real_receptions():
++    for domain in ('automotive', 'robotics', 'aerospace', 'building', 'custom'):
++        model = graph(domain)
++        assert not codes(model)
++        model['Message']['raw']['configuration']['transport_unit']['consumer_refs'] = ['gateway']
++        assert {'SENSOR_CONSUMER_MISSING', 'FUNCTION_INPUT_ROUTE_MISSING'} <= codes(model)
++
++
++def test_status_and_actuator_feedback_cannot_replace_measurements_or_objects():
++    model = graph()
++    model['HardwareNode']['camera']['identity']['functional_device_contract']['input_refs'] = ['actuator']
++    del model['Signal']['objects']
++    assert {'FUNCTION_INPUT_MISSING', 'FUNCTION_OUTPUT_MISSING'} <= codes(model)
++    model['Signal']['image']['configuration'] = {'generation_role': 'DEVICE_STATUS'}
++    assert 'SENSOR_SEMANTICS_MISSING' in codes(model)
++
++
++def test_radar_processing_accepts_scalar_distance_but_not_unrelated_measurements():
++    model = graph()
++    sensor_contract = model['HardwareNode']['sensor']['identity']['functional_device_contract']
++    processor_contract = model['HardwareNode']['camera']['identity']['functional_device_contract']
++    processor_contract.update(required_measurement='object_list', accepted_measurements=['object_list', 'distance'])
++    sensor_contract['measurement'] = 'distance'
++    assert not codes(model)
++    sensor_contract['measurement'] = 'temperature'
++    assert 'FUNCTION_INPUT_MISSING' in codes(model)
++
++
++def test_missing_object_consumer_and_actuator_command_are_reported():
++    model = graph()
++    model['Message']['objects']['configuration']['transport_unit']['consumer_refs'] = []
++    del model['Message']['command']
++    assert {'FUNCTION_CONSUMER_MISSING', 'ACTUATOR_COMMAND_MISSING'} <= codes(model)
++
++
++def test_status_or_unrelated_sender_cannot_satisfy_an_actuator_command():
++    model = graph()
++    model['Signal']['command']['configuration'] = {'generation_role': 'DEVICE_STATUS'}
++    assert 'ACTUATOR_COMMAND_MISSING' in codes(model)
++    model['Signal']['command']['configuration'] = {'generation_role': 'COMMAND'}
++    model['Message']['command']['interface_id'] = 'sensor'
++    assert 'ACTUATOR_COMMAND_MISSING' in codes(model)
++
++
++def test_contract_attachment_resolves_ids_and_never_rewrites_imported_nodes():
++    changes = [{'object_type': 'HardwareNode', 'local_ref': 'camera', 'data': {'name': 'Camera', 'device_type': 'IndustrialPC'}},
++               {'object_type': 'HardwareNode', 'action': 'UPDATE', 'object_id': 'old', 'data': {'name': 'OldCamera'}},
++               {'object_type': 'Function', 'local_ref': 'processing', 'data': {'hardware_node_id': '$camera'}}]
++    chains = [{'hardware_name': 'Camera', 'configuration': {'functional_device_contract': {
++        'version': 1, 'role': 'PERCEPTION', 'input_names': ['Sensor1']}}}]
++    original = deepcopy(changes)
++    attach_functional_device_contracts(changes, chains, {'sensor1': '$sensor', 'camera': '$camera'}, enabled=False)
++    assert changes == original
++    attach_functional_device_contracts(changes, chains, {'sensor1': '$sensor', 'camera': '$camera'})
++    assert 'input_refs' not in changes[0]['data']['identity']['functional_device_contract']
++    assert changes[2]['data']['configuration']['functional_device_contract']['input_refs'] == ['$sensor']
++    assert changes[1] == original[1]
++
++
++@pytest.mark.parametrize('industry,model_type', [('Custom', 'custom'), ('Robotics', 'robotics_ros')])
++def test_real_generator_review_apply_preserves_functional_chain(industry, model_type):
++    from backend.nis.agent.tools import wizard_generation, proposal_service, model
++    from backend.nis.agent.tools.runtime import ToolAuthority, execute
++    from backend.nis.agent.api.tool_contract import Permission
++    authority = ToolAuthority('pytest-functional-chain-' + uuid4().hex)
++    clusters = [{'network_id': 'ethernet', 'bus_name': 'Perception', 'controllers': [
++        {'ecu': 'Kameraverarbeitung', 'sensors': ['Sensor1'], 'actuators': []},
++        {'ecu': 'AutonomeNavigation', 'sensors': [], 'actuators': []}],
++        'functional_routes': [{'source': 'Kameraverarbeitung', 'target': 'AutonomeNavigation',
++                               'signals': ['KameraverarbeitungObjektdaten'], 'excluded_signals': []}]}]
++    prompt = '\n'.join([
++        '- Industrie: ' + industry, '- Projekt-Modelltyp: ' + model_type,
++        '- Netzwerktechnologien: Ethernet (ethernet)',
++        '- Hardware-Sollwerte: {"gateways":0,"ecus":2,"sensors":1,"actuators":0}',
++        '- Geräteanschlüsse: {"Kameraverarbeitung":"Ethernet","AutonomeNavigation":"Ethernet","Sensor1":"Ethernet"}',
++        '- Sensor-Messgrößen: {"Sensor1":"image_frame"}',
++        '- Funktionaler Generierungsvertrag: sensor-actuator-v1',
++        '- Systemcluster-Graph: ' + json.dumps(clusters),
++        'Konkrete Aufgabe des Nutzers, per Wizard-Uebernehmen bestaetigt:',
++        'Erstelle die bestätigte Kameraverarbeitung mit Bilddatensensor und autonomer Navigation.',
++    ])
++
++    def operation():
++        proposal = wizard_generation.generate({'prompt': prompt})
++        checked = proposal_service.validate(proposal['proposal_id'])
++        assert checked['status'] == 'VALIDATED', json.dumps(checked['validation_result'], ensure_ascii=False)
++        approved = proposal_service.review(checked['proposal_id'], revision=checked['revision'],
++                                          decision='approve', actor='test-human', trace_id=uuid4().hex)
++        proposal_service.apply(approved['proposal_id'], actor='test-human', trace_id=uuid4().hex)
++        actual = {kind: {str(row['id']): row for row in model.objects(kind)} for kind in
++                  ('HardwareNode', 'Function', 'Interface', 'Message', 'Signal')}
++        assert not communication_findings(actual)
++        sensor = next(row for row in actual['HardwareNode'].values() if row['name'] == 'Sensor1')
++        camera = next(row for row in actual['HardwareNode'].values() if row['name'] == 'Kameraverarbeitung')
++        target = next(row for row in actual['HardwareNode'].values() if row['name'] == 'AutonomeNavigation')
++        function = next(row for row in actual['Function'].values() if
++                        (row.get('configuration') or {}).get('functional_device_contract'))
++        assert function['configuration']['functional_device_contract']['input_refs'] == [str(sensor['id'])]
++        output = next(row for row in actual['Signal'].values() if row['name'] == 'KameraverarbeitungObjektdaten')
++        message = actual['Message'][str(output['message_id'])]
++        assert message['dlc'] == 1168
++        assert message['configuration']['transport_unit']['consumer_refs'] == [str(target['id'])]
++        assert message['configuration']['transport_unit']['producer_ref'] == str(camera['id'])
++        assert output['configuration']['structured_payload']['max_objects'] == 48
++    result = execute(authority, 'test_functional_apply', Permission.GENERATE_PROPOSAL, {}, lambda _: operation())
++    assert result.success, result
+--- before/backend/nis/engineering/capacity/service.py
++++ after/backend/nis/engineering/capacity/service.py
+@@ -1666,6 +1666,16 @@
+         interfaces = all_pages(list_objects, "Interface")
+         messages = all_pages(list_objects, "Message")
+         signals = all_pages(list_objects, "Signal")
++        from backend.nis.engineering.communication.device_communication import communication_findings
++        functional_nodes = {str(node['id']) for node in hardware
++                            if ((node.get('identity') or {}).get('functional_device_contract') or {}).get('version') == 1}
++        functional_graph = {kind: {str(row['id']): row for row in rows} for kind, rows in
++                            [('HardwareNode', hardware), ('Function', functions), ('Interface', interfaces),
++                             ('Message', messages), ('Signal', signals)]}
++        for finding in communication_findings(functional_graph):
++            if finding['object_id'] in functional_nodes:
++                add('engineering_model', finding['severity'], finding['code'], finding['message'],
++                    object_type=finding['object_type'], object_id=finding['object_id'])
+         for address_finding in LogicalNodeAddressAllocator(self.project_id).findings():
+             add(
+                 "addressing",
+--- before/frontend/src/features/agent/ui/agent-chat-core.tsx
++++ after/frontend/src/features/agent/ui/agent-chat-core.tsx
+@@ -2280,6 +2280,7 @@
+         `- Systemcluster-Netzvorgaben: ${clusterSummary || "keine explizite Clusterbindung"}\n` +
+         `- Bus-Teilnehmergrenzen: ${JSON.stringify(normalizeEngineeringWizardSettings(workflow?.context.engineering_wizard_settings).bus_participant_limits)}\n` +
+         (Object.keys(selectedActuatorCommands).length ? `- Aktor-Befehle: ${JSON.stringify(selectedActuatorCommands)}\n` : '') +
++        `- Funktionaler Generierungsvertrag: sensor-actuator-v1\n` +
+         `- Systemcluster-Graph: ${JSON.stringify(equipmentClusterGraphPrompt(equipmentClusterAssignments, networkArchitecture))}\n` +
+         `- Topologie-Cluster-Profil: ${topologyKnowledge.profile}\n` +
+         `- Topologie-Cluster-Regeln: ${topologyKnowledge.ruleSummary.join("; ") || "generische Systemnaehe verwenden"}\n` +
+--- before/docs/migrations/structure_mapping.csv
++++ after/docs/migrations/structure_mapping.csv
+@@ -3987,3 +3987,12 @@
+ frontend/src/features/traces/lib/trace-window-reader.ts,frontend/src/features/traces/lib/trace-window-reader.ts,canonical-owner,Canonical module owner: frontend/src/features/traces/lib,"[""frontend/src/features/traces/ui/analysis-compare.tsx"", ""frontend/src/features/traces/ui/trace-analysis-workbench.tsx""]",No schema or stored identity change,backend/tests/test_structure_architecture.py; backend/tests/test_structure_completion.py; full release receipt linked in completion report,CANONICAL_PRESENT,frontend/src/features/traces/lib,"[""frontend/src/features/traces/ui/analysis-compare.tsx"", ""frontend/src/features/traces/ui/trace-analysis-workbench.tsx""]","Python AST (including retired alias module paths, relative and literal dynamic imports), TypeScript imports, literal paths and documentation links; external/persisted consumers not observable",Not a removable compatibility wrapper
+ frontend/src/features/traces/ui/analysis-compare.tsx,frontend/src/features/traces/ui/analysis-compare.tsx,canonical-owner,Canonical module owner: frontend/src/features/traces/ui,"[""frontend/src/features/traces/ui/trace-analysis-workbench.tsx""]",No schema or stored identity change,backend/tests/test_structure_architecture.py; backend/tests/test_structure_completion.py; full release receipt linked in completion report,CANONICAL_PRESENT,frontend/src/features/traces/ui,"[""frontend/src/features/traces/ui/trace-analysis-workbench.tsx""]","Python AST (including retired alias module paths, relative and literal dynamic imports), TypeScript imports, literal paths and documentation links; external/persisted consumers not observable",Not a removable compatibility wrapper
+ frontend/src/features/traces/ui/analysis-workspace-tools.tsx,frontend/src/features/traces/ui/analysis-workspace-tools.tsx,canonical-owner,Canonical module owner: frontend/src/features/traces/ui,"[""frontend/src/features/simulation/ui/model-simulation-runner.tsx"", ""frontend/src/features/traces/ui/trace-analysis-workbench.tsx""]",No schema or stored identity change,backend/tests/test_structure_architecture.py; backend/tests/test_structure_completion.py; full release receipt linked in completion report,CANONICAL_PRESENT,frontend/src/features/traces/ui,"[""frontend/src/features/simulation/ui/model-simulation-runner.tsx"", ""frontend/src/features/traces/ui/trace-analysis-workbench.tsx""]","Python AST (including retired alias module paths, relative and literal dynamic imports), TypeScript imports, literal paths and documentation links; external/persisted consumers not observable",Not a removable compatibility wrapper
++backend/tests/test_functional_device_design.py,backend/tests/test_functional_device_design.py,unchanged,Canonical module owner: backend.tests.test_functional_device_design,[],No schema or stored identity change,backend/tests/test_structure_architecture.py; backend/tests/test_structure_completion.py; full release receipt linked in completion report,CANONICAL_PRESENT,backend.tests.test_functional_device_design,[],"Python AST (including retired alias module paths, relative and literal dynamic imports), TypeScript imports, literal paths and documentation links; external/persisted consumers not observable",Not a removable compatibility wrapper
++docs/analysis/camera-assistance-routing-20261012/assessment.md,docs/analysis/camera-assistance-routing-20261012/assessment.md,unchanged,Canonical module owner: docs/analysis/camera-assistance-routing-20261012,[],No schema or stored identity change,backend/tests/test_structure_architecture.py; backend/tests/test_structure_completion.py; full release receipt linked in completion report,CANONICAL_PRESENT,docs/analysis/camera-assistance-routing-20261012,[],"Python AST (including retired alias module paths, relative and literal dynamic imports), TypeScript imports, literal paths and documentation links; external/persisted consumers not observable",Not a removable compatibility wrapper
++docs/analysis/camera-assistance-routing-20261012/evidence.json,docs/analysis/camera-assistance-routing-20261012/evidence.json,unchanged,Canonical module owner: docs/analysis/camera-assistance-routing-20261012,[],No schema or stored identity change,backend/tests/test_structure_architecture.py; backend/tests/test_structure_completion.py; full release receipt linked in completion report,CANONICAL_PRESENT,docs/analysis/camera-assistance-routing-20261012,[],"Python AST (including retired alias module paths, relative and literal dynamic imports), TypeScript imports, literal paths and documentation links; external/persisted consumers not observable",Not a removable compatibility wrapper
++frontend/src/features/agent/lib/functional-device-design.test.mjs,frontend/src/features/agent/lib/functional-device-design.test.mjs,canonical-owner,Canonical module owner: frontend/src/features/agent/lib,[],No schema or stored identity change,backend/tests/test_structure_architecture.py; backend/tests/test_structure_completion.py; full release receipt linked in completion report,CANONICAL_PRESENT,frontend/src/features/agent/lib,[],"Python AST (including retired alias module paths, relative and literal dynamic imports), TypeScript imports, literal paths and documentation links; external/persisted consumers not observable",Not a removable compatibility wrapper
++frontend/src/features/agent/lib/functional-device-design.ts,frontend/src/features/agent/lib/functional-device-design.ts,canonical-owner,Canonical module owner: frontend/src/features/agent/lib,"[""frontend/src/features/agent/lib/equipment-clustering.ts"", ""frontend/src/features/agent/lib/functional-device-design.test.mjs""]",No schema or stored identity change,backend/tests/test_structure_architecture.py; backend/tests/test_structure_completion.py; full release receipt linked in completion report,CANONICAL_PRESENT,frontend/src/features/agent/lib,"[""frontend/src/features/agent/lib/equipment-clustering.ts"", ""frontend/src/features/agent/lib/functional-device-design.test.mjs""]","Python AST (including retired alias module paths, relative and literal dynamic imports), TypeScript imports, literal paths and documentation links; external/persisted consumers not observable",Not a removable compatibility wrapper
++frontend/src/features/projects/ui/save-dialog.tsx,frontend/src/features/projects/ui/save-dialog.tsx,canonical-owner,Canonical module owner: frontend/src/features/projects/ui,"[""frontend/src/features/projects/ui/project-actions.tsx"", ""frontend/src/features/simulation/ui/model-simulation-runner.tsx""]",No schema or stored identity change,backend/tests/test_structure_architecture.py; backend/tests/test_structure_completion.py; full release receipt linked in completion report,CANONICAL_PRESENT,frontend/src/features/projects/ui,"[""frontend/src/features/projects/ui/project-actions.tsx"", ""frontend/src/features/simulation/ui/model-simulation-runner.tsx""]","Python AST (including retired alias module paths, relative and literal dynamic imports), TypeScript imports, literal paths and documentation links; external/persisted consumers not observable",Not a removable compatibility wrapper
++frontend/src/features/workflow/stage_08_results_analysis/runtime-chart-data.test.mjs,frontend/src/features/workflow/stage_08_results_analysis/runtime-chart-data.test.mjs,canonical-owner,Canonical module owner: frontend/src/features/workflow/stage_08_results_analysis,[],No schema or stored identity change,backend/tests/test_structure_architecture.py; backend/tests/test_structure_completion.py; full release receipt linked in completion report,CANONICAL_PRESENT,frontend/src/features/workflow/stage_08_results_analysis,[],"Python AST (including retired alias module paths, relative and literal dynamic imports), TypeScript imports, literal paths and documentation links; external/persisted consumers not observable",Not a removable compatibility wrapper
++frontend/src/features/workflow/stage_08_results_analysis/runtime-chart-data.ts,frontend/src/features/workflow/stage_08_results_analysis/runtime-chart-data.ts,canonical-owner,Canonical module owner: frontend/src/features/workflow/stage_08_results_analysis,"[""frontend/src/features/workflow/stage_08_results_analysis/results-workbench.tsx"", ""frontend/src/features/workflow/stage_08_results_analysis/runtime-chart-data.test.mjs"", ""frontend/src/features/workflow/stage_08_results_analysis/runtime-chart-tools.tsx""]",No schema or stored identity change,backend/tests/test_structure_architecture.py; backend/tests/test_structure_completion.py; full release receipt linked in completion report,CANONICAL_PRESENT,frontend/src/features/workflow/stage_08_results_analysis,"[""frontend/src/features/workflow/stage_08_results_analysis/results-workbench.tsx"", ""frontend/src/features/workflow/stage_08_results_analysis/runtime-chart-data.test.mjs"", ""frontend/src/features/workflow/stage_08_results_analysis/runtime-chart-tools.tsx""]","Python AST (including retired alias module paths, relative and literal dynamic imports), TypeScript imports, literal paths and documentation links; external/persisted consumers not observable",Not a removable compatibility wrapper
++frontend/src/features/workflow/stage_08_results_analysis/runtime-chart-tools.tsx,frontend/src/features/workflow/stage_08_results_analysis/runtime-chart-tools.tsx,canonical-owner,Canonical module owner: frontend/src/features/workflow/stage_08_results_analysis,"[""frontend/src/features/workflow/stage_08_results_analysis/results-workbench.tsx""]",No schema or stored identity change,backend/tests/test_structure_architecture.py; backend/tests/test_structure_completion.py; full release receipt linked in completion report,CANONICAL_PRESENT,frontend/src/features/workflow/stage_08_results_analysis,"[""frontend/src/features/workflow/stage_08_results_analysis/results-workbench.tsx""]","Python AST (including retired alias module paths, relative and literal dynamic imports), TypeScript imports, literal paths and documentation links; external/persisted consumers not observable",Not a removable compatibility wrapper
+--- before/frontend/e2e/analysis-workspace.spec.ts
++++ after/frontend/e2e/analysis-workspace.spec.ts
+@@ -12,11 +12,18 @@
+   return project;
+ }
+ async function open(page:Page,view:string,independent=false) {
+-  const tools=page.getByRole('region',{name:'Analysefenster und Arbeitsbereich'});
+-  await tools.getByRole('combobox',{name:'Ansicht',exact:true}).selectOption(view);
++  const simulationControls=page.locator('[aria-controls="simulation-controls"]');
++  if(await simulationControls.count() && await simulationControls.getAttribute('aria-expanded')==='false')
++    await simulationControls.click();
++  const tools=page.getByLabel('Analysefenster und Arbeitsbereich',{exact:true});
++  // Simulation controls are collapsed by default; use the explicit Trace column.
++  if(await tools.evaluate(element=>element.tagName==='DETAILS' && !element.hasAttribute('open')))
++    await tools.locator(':scope > summary').click();
++  await tools.getByRole('combobox',{name:'Trace-Ansicht',exact:true}).selectOption(view);
+   const popup=page.waitForEvent('popup');
+-  await tools.getByRole('button',{name:independent?'Unabhängig öffnen':'↗ In neuem Fenster öffnen',exact:true}).click();
++  await tools.getByRole('button',{name:independent?'Trace unabhängig öffnen':'Trace-Fenster öffnen',exact:true}).click();
+   const secondary=await popup;await secondary.waitForLoadState('domcontentloaded');
++  expect(new URL(secondary.url()).pathname).toBe('/trace-analysis');
+   await expect(secondary.locator('.trace-control-panel > p').filter({hasText:'Ereignisse im Speicher'})).toHaveText(/^[1-9]\d* Ereignisse im Speicher/);
+   return secondary;
+ }
+@@ -65,7 +72,7 @@
+   const project='nis-e2e-compare-'+randomUUID(),golden=await run(page,project,false),fault=await run(page,project,true);
+   await page.goto(`/trace-analysis?project=${project}&job=${golden}&view=trace`);
+   await expect(page.locator('.trace-control-panel > p').filter({hasText:'Ereignisse im Speicher'})).toHaveText(/^[1-9]\d* Ereignisse im Speicher/);
+-  const popup=page.waitForEvent('popup');await page.getByRole('button',{name:'⇄ Vergleich öffnen',exact:true}).click();const compare=await popup;
++  const popup=page.waitForEvent('popup');await page.getByRole('button',{name:'Trace vergleichen',exact:true}).click();const compare=await popup;
+   await compare.getByLabel('Rechter Vergleichslauf').selectOption(fault);
+   await expect(compare.locator('.analysis-difference').first()).toBeVisible();
+   await expect(compare.getByLabel('Linker Vergleichslauf')).toHaveValue(golden);
+@@ -78,7 +85,7 @@
+   await page.goto(`/studio/simulation?project=${project}&job=${id}`);
+   const time=page.getByLabel('Simulationszeit',{exact:true});
+   await expect(time).toHaveAttribute('max','0.08');
+-  await expect(page.locator('.simulation-timeline')).toContainText('PAUSED');
++  await expect(page.locator('.simulation-timeline')).toContainText('PAUSIERT');
+   const trace=await open(page,'trace');
+   await page.bringToFront();
+   await time.focus();await time.press('Home');
+--- before/frontend/e2e/studio-export-controls.spec.ts
++++ after/frontend/e2e/studio-export-controls.spec.ts
+@@ -1,6 +1,13 @@
+-import { test, expect } from 'playwright/test';
++import { test, expect, type Page } from 'playwright/test';
+ import { randomUUID } from 'node:crypto';
+ import { buildSequenceDiagram } from '../src/features/simulation/lib/e2e-sequence';
++
++async function openSimulationRun(page: Page) {
++  const controls = page.locator('[aria-controls="simulation-controls"]');
++  if (await controls.getAttribute('aria-expanded') === 'false') await controls.click();
++  const panel = page.locator('.simulation-command-panel');
++  if (await panel.getAttribute('open') === null) await panel.locator(':scope > summary').click();
++}
+ 
+ test('network tools remain grouped and usable at narrow and desktop widths @studio-controls', async ({ page }) => {
+   const project = 'nis-e2e-toolbar-' + randomUUID();
+@@ -90,6 +97,7 @@
+   await page.goto(`/studio/simulation?project=${project}`);
+   await expect(page.getByLabel('Dynamik filtern')).toHaveValue('ALL');
+   await expect(page.locator('.signal-filter-summary')).toContainText('125 im Filter gewählt');
++  await openSimulationRun(page);
+   try {
+     await expect(page.getByRole('button', { name: 'Start', exact: true })).toBeDisabled();
+     await expect(page.locator('.trace-format-trigger')).toContainText('Projektformate werden geladen');
+@@ -220,6 +228,7 @@
+   expect(saved.ok(), await saved.text()).toBe(true);
+   await page.goto(`/studio/simulation?project=${project}`);
+   const trigger = page.locator('.trace-format-trigger');
++  await openSimulationRun(page);
+   await expect(trigger).toContainText(scenario.expected.join(', '));
+   await expect(trigger.locator('strong')).toHaveText(String(scenario.expected.length));
+   await trigger.click();
+--- before/frontend/e2e/wizard.spec.ts
++++ after/frontend/e2e/wizard.spec.ts
+@@ -7,6 +7,13 @@
+ 
+ const steps = WIZARD_STEPS;
+ const done = WIZARD_DONE;
++
++async function openSimulationRun(page: Page) {
++  const controls = page.locator('[aria-controls="simulation-controls"]');
++  if (await controls.getAttribute('aria-expanded') === 'false') await controls.click();
++  const panel = page.locator('.simulation-command-panel');
++  if (await panel.getAttribute('open') === null) await panel.locator(':scope > summary').click();
++}
+ type WriteTiming = { url: string; started: number; duration_ms?: number; status?: number; failure?: string };
+ const writeTimings = new Map<string, WriteTiming[]>();
+ const workflowPageFailures = new WeakMap<Page, string[]>();
+@@ -658,11 +665,13 @@
+     await expect(freshRunner).toHaveAttribute('data-snapshot-id', artifacts.snapshot);
+     await expect(fresh.getByRole('heading', { name: 'Simulation abgeschlossen', exact: true })).toBeVisible();
+     // A completed historical run must not block the current approved preflight.
++    await openSimulationRun(fresh);
+     await expect(fresh.getByRole('button', { name: 'Start', exact: true })).toBeEnabled();
+     await fresh.getByRole('button', { name: 'Reset', exact: true }).click();
+     await fresh.getByRole('button', { name: 'Ansicht zurücksetzen', exact: true }).click();
+     await expect(freshRunner).not.toHaveAttribute('data-job-id');
+     await fresh.reload();
++    await openSimulationRun(fresh);
+     await expect(fresh.getByRole('button', { name: 'Start', exact: true })).toBeEnabled();
+     await expect(freshRunner).not.toHaveAttribute('data-job-id');
+     await fresh.goto(`/studio/results?project=${project}&snapshot=${artifacts.snapshot}`);
+@@ -672,6 +681,7 @@
+     // Actual normal START, without resetting/deleting the restored completed run.
+     await fresh.goto(`/studio/simulation?project=${project}&snapshot=${artifacts.snapshot}`);
+     await expect(freshRunner).toHaveAttribute('data-job-id', artifacts.job);
++    await openSimulationRun(fresh);
+     await fresh.getByRole('button', { name: 'Start', exact: true }).click();
+     await expect.poll(async () => {
+       restartedJob = await freshRunner.getAttribute('data-job-id');

@@ -1,0 +1,633 @@
+--- before/frontend/src/app/globals.css
++++ after/frontend/src/app/globals.css
+@@ -13136,13 +13136,13 @@
+ .results-layout {
+   display: grid;
+   grid-template-columns: 280px minmax(0, 1fr);
+-  min-height: 440px;
+   border: 1px solid var(--border);
+   border-radius: 5px;
+   overflow: hidden;
+ }
+ 
+ .result-run-list {
++  align-self: start;
+   border-right: 1px solid var(--border);
+   background: var(--surface);
+ }
+@@ -13170,6 +13170,13 @@
+ .run-canceled { color: var(--warning); }
+ .run-running { color: #66a7ff; }
+ .result-analysis { min-width: 0; padding: 18px; }
++.result-runtime-details { min-width: 0; margin-top: 18px; }
++.result-run-filters { display: grid; gap: 10px; padding: 14px; border-bottom: 1px solid var(--border); }
++.result-run-filters label { display: grid; gap: 5px; font-size: 11px; color: var(--muted); }
++.result-run-filters input, .result-run-filters select { width: 100%; min-width: 0; padding: 8px; border: 1px solid var(--border); border-radius: 5px; background: var(--background); color: var(--text); }
++.result-run-empty { padding: 14px; font-size: 12px; }
++.result-run-list .simulation-page-controls { flex-wrap: wrap; padding: 12px; gap: 8px; }
++.result-run-list .simulation-page-controls output { width: 100%; }
+ .comparison-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; margin-top: 18px; background: var(--border); border: 1px solid var(--border); }
+ .comparison-grid section { padding: 18px; background: var(--surface); }
+ .comparison-grid h3 { margin: 0 0 12px; font-size: 16px; }
+@@ -13230,7 +13237,13 @@
+ .runtime-charts-heading { display: flex; justify-content: space-between; align-items: start; flex-wrap: wrap; gap: 12px; margin-bottom: 14px; }
+ .runtime-charts-heading h3 { margin: 4px 0 7px; font-size: 17px; }
+ .runtime-charts-heading p:last-child { max-width: 100ch; margin: 0; color: var(--muted); font-size: 11px; line-height: 1.6; }
+-.runtime-chart-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 14px; align-items: start; }
++.runtime-chart-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; align-items: stretch; }
++.runtime-chart-grid > .runtime-chart-card { height: 520px; overflow: auto; }
++.runtime-chart-grid > .runtime-chart-card[hidden] { display: none; }
++.runtime-chart-card > .runtime-chart-expand { justify-self: end; }
++.runtime-chart-grid-expanded { grid-template-columns: minmax(0, 1fr); }
++.runtime-chart-grid-expanded > .runtime-chart-card { height: max(520px, calc(100dvh - 160px)); }
++@media (max-width: 800px) { .runtime-chart-grid { grid-template-columns: minmax(0, 1fr); } }
+ .runtime-chart-card { display: grid; align-content: start; gap: 12px; min-width: 0; padding: 16px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
+ .runtime-chart-card h4 { margin: 4px 0 7px; font-size: 15px; }
+ .runtime-chart-card header > p:last-child, .runtime-chart-note { margin: 0; color: var(--muted); font-size: 10px; line-height: 1.6; overflow-wrap: anywhere; }
+@@ -13843,7 +13856,21 @@
+ .e2e-sequence-levels button { min-height: 30px; border: 0; border-radius: 3px; padding: 5px 9px; color: var(--text); background: transparent; font-size: 11px; }
+ .e2e-sequence-levels button[aria-pressed="true"] { color: var(--surface); background: var(--accent); }
+ .e2e-sequence-context { margin: 0; padding: 9px 16px; color: var(--muted); font-size: 11px; }
+-.e2e-sequence-scroll { max-height: 570px; overflow: auto; }
++/* Header, chart top, fifteen 68px event rows and scrollbar clearance. */
++.e2e-sequence-scroll { max-height: 1162px; overflow: auto; }
++.e2e-sequence-search-help { margin: 10px 16px; color: var(--muted); font-size: 11px; line-height: 1.6; }
++.simulation-scope-panel > summary { cursor: pointer; list-style-position: inside; }
++.simulation-scope-panel > summary .eyebrow { display: inline-block; margin: 0 12px 0 0; }
++.simulation-scope-panel > summary strong { font-size: 14px; }
++.simulation-scope-panel[open] > summary { margin-bottom: 16px; }
++.capacity-calculation-help, .capacity-evidence-summary { color: var(--muted); font-size: 12px; line-height: 1.7; }
++.parameter-group-common .form-grid.three { align-items: stretch; }
++.parameter-group-common .form-grid.three > div { display: flex; flex-direction: column; min-width: 0; }
++.parameter-group-common .form-grid.three > div > .field { display: flex; flex-direction: column; flex: 1; min-width: 0; }
++.parameter-group-common .field input, .parameter-group-common .field select { margin-top: auto; }
++@media (min-width: 801px) {
++  .parameter-group-common .form-grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
++}
+ .e2e-sequence-chart { min-width: max-content; }
+ .e2e-sequence-toolbar { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 8px; }
+ .e2e-sequence-search input { width: min(250px, 55vw); min-height: 32px; border: 1px solid var(--border); border-radius: 4px; padding: 5px 9px; color: var(--text); background: var(--surface); font-size: 11px; }
+--- before/frontend/src/features/workflow/stage_08_results_analysis/results-workbench.tsx
++++ after/frontend/src/features/workflow/stage_08_results_analysis/results-workbench.tsx
+@@ -25,6 +25,9 @@
+   const requestedSnapshot = useRef(initialSnapshotId);
+   const loadSequence = useRef(0);
+   const [compareId, setCompareId] = useState<string>("");
++  const [snapshotQuery, setSnapshotQuery] = useState("");
++  const [snapshotStatus, setSnapshotStatus] = useState("");
++  const [snapshotPage, setSnapshotPage] = useState(0);
+   const [error, setError] = useState("");
+   const [loadedSnapshotDetails, setLoadedSnapshotDetails] = useState<Set<string>>(() => new Set());
+ 
+@@ -49,6 +52,9 @@
+ 
+   const selected = useMemo(() => snapshots.find((item) => item.id === selectedId) ?? null, [selectedId, snapshots]);
+   const compareSnapshot = snapshots.find((item) => item.id === compareId);
++  const snapshotEntries = simulationPage(snapshots.filter(item => (!snapshotStatus || item.status === snapshotStatus)
++    && `${item.id} ${item.job_id ?? ""} ${item.status} ${new Date(item.created_at).toLocaleString("de-DE")}`
++      .toLocaleLowerCase().includes(snapshotQuery.trim().toLocaleLowerCase())), snapshotPage, 6);
+ 
+   useEffect(() => {
+     if (!selected) return;
+@@ -122,7 +128,13 @@
+       <div className="results-layout">
+         <aside className="result-run-list">
+           <div className="result-run-list-heading"><strong>SimulationSnapshots</strong><span>{snapshots.length}</span></div>
+-          {snapshots.map((item) => <button className={selectedId === item.id ? "active" : ""} data-snapshot-id={item.id} key={item.id} onClick={() => selectRun(item.id)} type="button"><span className={`run-state run-${item.status.toLowerCase()}`}>{item.status}</span><strong>{new Date(item.created_at).toLocaleString("de-DE")}</strong><small>{item.job_id ? `Job ${item.job_id.slice(0, 10)}` : "Noch nicht ausgeführt"}</small></button>)}
++          <div className="result-run-filters">
++            <label>Läufe filtern<input type="search" placeholder="Datum, Job oder Status" value={snapshotQuery} onChange={event => { setSnapshotQuery(event.target.value); setSnapshotPage(0); }} /></label>
++            <label>Status<select value={snapshotStatus} onChange={event => { setSnapshotStatus(event.target.value); setSnapshotPage(0); }}><option value="">Alle Status</option>{[...new Set(snapshots.map(item => item.status))].map(value => <option key={value} value={value}>{value}</option>)}</select></label>
++          </div>
++          {snapshotEntries.items.map((item) => <button className={selectedId === item.id ? "active" : ""} data-snapshot-id={item.id} key={item.id} onClick={() => selectRun(item.id)} type="button"><span className={`run-state run-${item.status.toLowerCase()}`}>{item.status}</span><strong>{new Date(item.created_at).toLocaleString("de-DE")}</strong><small>{item.job_id ? `Job ${item.job_id.slice(0, 10)}` : "Noch nicht ausgeführt"}</small></button>)}
++          {!!snapshots.length && !snapshotEntries.total && <p className="result-run-empty">Keine passenden Läufe.</p>}
++          <SimulationPageControls label="Läufe" {...snapshotEntries} onPage={setSnapshotPage} />
+           {!snapshots.length && <div className="analysis-empty"><strong>Keine Snapshots</strong><p>Nach einem erfolgreichen Preflight kann die erste Simulation gestartet werden.</p></div>}
+         </aside>
+         <div className="result-analysis">
+@@ -141,11 +153,13 @@
+             <div className="metric-strip"><div className="metric"><span>Snapshot</span><strong>{selected.id.slice(0, 8)}</strong></div><div className="metric"><span>Ausführung</span><strong>{job?.status ?? selected.status}</strong></div><div className="metric"><span>Prognose Peak</span><strong>{predicted?.capacity_verified ? `${Number(predicted.max_peak_load_percent).toFixed(2)} %` : "Nicht nachgewiesen"}</strong></div><div className="metric"><span>Runtime Peak</span><strong>{runtime?.available ? `${runtimePeak.toFixed(2)} %` : "—"}</strong></div><div className="metric"><span>Trace Events</span><strong>{traceEvents?.toLocaleString("de-DE") ?? "—"}</strong></div></div>
+             {compareRuntime?.available && <div className="impact-strip"><ResultMetric label="Δ Runtime Peak" value={`${(runtimePeak - comparePeak).toFixed(2)} %`} /><ResultMetric label="Δ Events" value={String((runtime?.summary?.event_count ?? 0) - (compareRuntime.summary?.event_count ?? 0))} /><ResultMetric label="Δ Drops" value={String((runtime?.summary?.dropped_frames ?? 0) - (compareRuntime.summary?.dropped_frames ?? 0))} /><ResultMetric label="Δ Timeouts" value={String((runtime?.summary?.timeouts ?? 0) - (compareRuntime.summary?.timeouts ?? 0))} /></div>}
+             <div className="comparison-grid"><section><p className="eyebrow">Calculated</p><h3>Engineering-Prognose</h3><dl className="overview-list"><div><dt>Peak Load</dt><dd>{predicted?.capacity_verified ? `${Number(predicted.max_peak_load_percent).toFixed(2)} %` : "Nicht nachgewiesen"}</dd></div><div><dt>Worst E2E</dt><dd>{predicted?.timing_verified ? `${Number(predicted.worst_end_to_end_latency_ms).toFixed(3)} ms` : "Nicht nachgewiesen"}</dd></div><div><dt>Reserve</dt><dd>{predicted?.capacity_verified ? `${Number(predicted.minimum_capacity_reserve_percent).toFixed(2)} %` : "Nicht nachgewiesen"}</dd></div><div><dt>Netze</dt><dd>{predicted ? String(predicted.network_count) : "—"}</dd></div></dl></section><section><p className="eyebrow">Observed</p><h3>Simulation</h3><dl className="overview-list"><div><dt>Peak / Burst</dt><dd>{runtime?.available ? `${runtimePeak.toFixed(2)} / ${runtimeBurst.toFixed(2)} %` : "—"}</dd></div><div><dt>Worst E2E</dt><dd>{runtime?.available ? `${runtimeLatency.toFixed(3)} ms` : "—"}</dd></div><div><dt>Drops / Korruption</dt><dd>{runtime?.available ? `${runtime.summary?.dropped_frames ?? 0} / ${runtime.summary?.corrupted_frames ?? 0}` : "—"}</dd></div><div><dt>Timeouts / Jitter</dt><dd>{runtime?.available ? `${runtime.summary?.timeouts ?? 0} / ${runtime.summary?.jitter_violations ?? 0}` : "—"}</dd></div></dl></section></div>
+-            {runtime?.available ? <RuntimeAnalysis key={selected.id} projectId={projectIdForLinks} runtime={runtime} trace={observed?.model_simulation} snapshot={selected} /> : <div className="workflow-blocker warning"><strong>Keine Runtime-Metriken</strong><span>{runtime?.reason ?? "Dieser historische Lauf wurde noch ohne Runtime-Analyse erzeugt."}</span></div>}
+-            <div className="source-version-table"><strong>Quellversionen</strong>{Object.entries(selected.source_versions ?? {}).map(([key, value]) => <span key={key}>{key.replaceAll("_", " ")} <b>v{value}</b></span>)}</div>
+           </> : <div className="analysis-empty"><strong>Kein Lauf ausgewählt</strong><p>Ergebnisse werden nicht gelöscht; veraltete Läufe bleiben als historische Evidenz sichtbar.</p></div>}
+         </div>
+       </div>
++      {selected && <div className="result-runtime-details">
++        {runtime?.available ? <RuntimeAnalysis key={selected.id} projectId={projectIdForLinks} runtime={runtime} trace={observed?.model_simulation} snapshot={selected} /> : <div className="workflow-blocker warning"><strong>Keine Runtime-Metriken</strong><span>{runtime?.reason ?? "Dieser historische Lauf wurde noch ohne Runtime-Analyse erzeugt."}</span></div>}
++        <div className="source-version-table"><strong>Quellversionen</strong>{Object.entries(selected.source_versions ?? {}).map(([key, value]) => <span key={key}>{key.replaceAll("_", " ")} <b>v{value}</b></span>)}</div>
++      </div>}
+       <div className="analysis-footer-actions"><Link className="button secondary" href={withProjectParam(selected ? `/studio/simulation?snapshot=${encodeURIComponent(selected.id)}` : "/studio/simulation", projectIdForLinks)}>Simulation öffnen</Link><Link className="button primary" href={withProjectParam("/studio/engineering", projectIdForLinks)}>Zum Engineering-Modell →</Link></div>
+     </section>
+   );
+@@ -177,6 +191,7 @@
+ 
+ function RuntimeAnalysis({ projectId, runtime, trace, snapshot }: { projectId?: string; runtime: RuntimeMetrics; trace?: ModelSimulationTrace; snapshot: SimulationSnapshot }) {
+   const [networkFilters, setNetworkFilters] = useState<string[]>([]);
++  const [networkPage, setNetworkPage] = useState(0);
+   const [routeFilters, setRouteFilters] = useState<string[]>([]);
+   const networkRows = useMemo(() => (runtime.networks ?? []).map(item => ({ item, cells: [
+     item.network_id, item.technology,
+@@ -195,10 +210,11 @@
+     ] };
+   }), [runtime.routes]);
+   const shownNetworks = useMemo(() => networkRows.filter(row => matchesRuntimeColumns(row.cells, networkFilters)), [networkRows, networkFilters]);
++  const networkEntries = simulationPage(shownNetworks, networkPage, 50);
+   const shownRoutes = useMemo(() => routeRows.filter(row => matchesRuntimeColumns(row.cells, routeFilters)), [routeRows, routeFilters]);
+   const chartNetworks = useMemo(() => shownNetworks.map(row => row.item), [shownNetworks]);
+   const chartRoutes = useMemo(() => shownRoutes.map(row => row.item), [shownRoutes]);
+-  const changeNetworkFilter = (index: number, value: string) => setNetworkFilters(current => NETWORK_COLUMNS.map((_, column) => column === index ? value : current[column] ?? ""));
++  const changeNetworkFilter = (index: number, value: string) => { setNetworkPage(0); setNetworkFilters(current => NETWORK_COLUMNS.map((_, column) => column === index ? value : current[column] ?? "")); };
+   const changeRouteFilter = (index: number, value: string) => setRouteFilters(current => ROUTE_COLUMNS.map((_, column) => column === index ? value : current[column] ?? ""));
+   return (
+     <div className="runtime-analysis">
+@@ -213,18 +229,19 @@
+       </div>
+       <RuntimeCharts networks={chartNetworks} routes={chartRoutes} trace={trace} snapshot={snapshot} projectId={projectId}
+         peakWindowMs={runtime.peak_window_ms} filtersActive={[...networkFilters, ...routeFilters].some(filter => filter.trim())}
+-        onNetwork={id => setNetworkFilters([id])} onStatus={status => setRouteFilters(ROUTE_COLUMNS.map((_, index) => index === 6 ? status : ""))}
+-        onReset={() => { setNetworkFilters([]); setRouteFilters([]); }} />
++        onNetwork={id => { setNetworkPage(0); setNetworkFilters([id]); }} onStatus={status => setRouteFilters(ROUTE_COLUMNS.map((_, index) => index === 6 ? status : ""))}
++        onReset={() => { setNetworkPage(0); setNetworkFilters([]); setRouteFilters([]); }} />
+       <section className="runtime-section">
+         <div className="panel-heading"><div><p className="eyebrow">Runtime networks</p><h3>Load & Queueing</h3></div><code>{runtime.calculation_model}</code></div>
+-        <div className="runtime-table-tools"><span role="status">{shownNetworks.length} / {networkRows.length} Netze</span><button className="button secondary tiny" type="button" disabled={!networkFilters.some(filter => filter.trim())} onClick={() => setNetworkFilters([])}>Netzfilter zurücksetzen</button></div>
++        <div className="runtime-table-tools"><span role="status">{shownNetworks.length} / {networkRows.length} Netze</span><button className="button secondary tiny" type="button" disabled={!networkFilters.some(filter => filter.trim())} onClick={() => { setNetworkPage(0); setNetworkFilters([]); }}>Netzfilter zurücksetzen</button></div>
+         <div className="analysis-table-wrap"><table className="analysis-table" aria-label="Runtime-Netze"><thead>
+           <tr>{NETWORK_COLUMNS.map(column => <th key={column} scope="col">{column}</th>)}</tr>
+           <RuntimeColumnFilters label="Runtime-Netze" columns={NETWORK_COLUMNS} filters={networkFilters} onChange={changeNetworkFilter} />
+         </thead><tbody>
+-          {shownNetworks.map(({ item, cells }) => <tr key={item.network_id}><td><strong>{cells[0]}</strong></td>{cells.slice(1).map((cell, index) => <td key={NETWORK_COLUMNS[index + 1]}>{cell}</td>)}</tr>)}
++          {networkEntries.items.map(({ item, cells }) => <tr key={item.network_id}><td><strong>{cells[0]}</strong></td>{cells.slice(1).map((cell, index) => <td key={NETWORK_COLUMNS[index + 1]}>{cell}</td>)}</tr>)}
+           {!shownNetworks.length && <tr><td colSpan={NETWORK_COLUMNS.length}>{networkRows.length ? "Keine Netze entsprechen den Spaltenfiltern." : "Keine Runtime-Netze vorhanden."}</td></tr>}
+         </tbody></table></div>
++        <SimulationPageControls label="Netze" {...networkEntries} onPage={setNetworkPage} />
+       </section>
+       <section className="runtime-section">
+         <div className="panel-heading"><div><p className="eyebrow">Route drilldown</p><h3>Latency & Jitter</h3></div><Link className="button secondary tiny" href={withProjectParam("/studio/routing", projectId)}>Routing öffnen</Link></div>
+@@ -319,6 +336,17 @@
+   const [allEcus, setAllEcus] = useState(false);
+   const [trendNetwork, setTrendNetwork] = useState("");
+   const [selectedEcu, setSelectedEcu] = useState("");
++  const [expandedChart, setExpandedChart] = useState<string | null>(null);
++  const chartsRef = useRef<HTMLElement>(null);
++  function toggleChart(chart: string) {
++    setExpandedChart(current => current === chart ? null : chart);
++    chartsRef.current?.scrollIntoView({ block: "start", behavior: "instant" });
++  }
++  function chartButton(chart: string, name: string) {
++    return <button className="button secondary tiny runtime-chart-expand" type="button" aria-expanded={expandedChart === chart}
++      aria-label={`${name}: Ansicht ${expandedChart === chart ? "verkleinern" : "vergrößern"}`} onClick={() => toggleChart(chart)}>
++      {expandedChart === chart ? "Ansicht verkleinern" : "Ansicht vergrößern"}</button>;
++  }
+   const ranked = useMemo(() => networks.filter(item => Number.isFinite(item.peak_load_percent) && item.peak_load_percent >= 0)
+     .toSorted((a, b) => b.peak_load_percent - a.peak_load_percent || a.network_id.localeCompare(b.network_id)), [networks]);
+   const bars = allNetworks ? ranked : ranked.slice(0, 8);
+@@ -337,13 +365,14 @@
+   const selectedEcuRow = ecuEvidence.hotspots.find(row => row.id === selectedEcu);
+   const maxima = ECU_FAULT_COLUMNS.map((_, index) => ecuEvidence.hotspots.reduce((maximum, row) => Math.max(maximum, row.counts[index] ?? 0), 1));
+   let offset = 0;
+-  return <section className="runtime-charts" aria-label="Diagramme des ausgewählten Simulationslaufs">
++  return <section className="runtime-charts" ref={chartsRef} aria-label="Diagramme des ausgewählten Simulationslaufs">
+     <div className="runtime-charts-heading"><div><p className="eyebrow">Diagramme</p><h3>Last, Bewertung und Fehlerhäufung</h3>
+       <p>Snapshot {snapshot.id.slice(0, 8)} · {snapshot.is_outdated ? "Historischer Lauf" : "Ausgewählter Lauf"}. Busdiagramme folgen den Netzfiltern; Routenbewertung und ECU-Häufung den Routenfiltern.</p></div>
+       {filtersActive && <button type="button" className="button secondary tiny" onClick={onReset}>Tabellenfilter zurücksetzen</button>}
+     </div>
+-    <div className="runtime-chart-grid">
+-      <section className="runtime-chart-card" aria-label="Balkendiagramm der Buslast">
++    <div className={`runtime-chart-grid${expandedChart ? " runtime-chart-grid-expanded" : ""}`}>
++      <section className="runtime-chart-card" hidden={expandedChart !== null && expandedChart !== "load"} aria-label="Balkendiagramm der Buslast">
++        {chartButton("load", "Balkendiagramm")}
+         <header><p className="eyebrow">Balken</p><h4>Peak-Buslast je Netz</h4><p>Simulationswerte in %. Peak-Fenster: {peakWindowMs == null ? "nicht dokumentiert" : `${peakWindowMs} ms`}.</p></header>
+         {ranked.length ? <>
+           <div className="runtime-load-bars">{bars.map(item => <button key={item.network_id} type="button" className="runtime-load-bar" onClick={() => onNetwork(item.network_id)}
+@@ -359,7 +388,8 @@
+         </> : <p className="runtime-chart-empty">Keine belegten Peak-Werte für die gefilterten Netze.</p>}
+         {ranked.length < networks.length && <p className="runtime-chart-note">Für {networks.length - ranked.length} Netze fehlt ein gültiger Peak-Wert.</p>}
+       </section>
+-      <section className="runtime-chart-card" aria-label="Kreisdiagramm der Routenbewertungen">
++      <section className="runtime-chart-card" hidden={expandedChart !== null && expandedChart !== "routes"} aria-label="Kreisdiagramm der Routenbewertungen">
++        {chartButton("routes", "Kreisdiagramm")}
+         <header><p className="eyebrow">Kreis</p><h4>Routenbewertung</h4><p>Anteile der {statusTotal} Routen mit gespeichertem Bewertungsstatus im aktuellen Filter.</p></header>
+         {statusTotal ? <div className="runtime-status-chart">
+           <svg viewBox="0 0 140 140" role="img" aria-label={statuses.map(series => `${series.label}: ${series.count}`).join("; ")}>
+@@ -380,12 +410,14 @@
+         {statusTotal < routes.length && <p className="runtime-chart-note">Bei {routes.length - statusTotal} Routen fehlt ein bekannter Bewertungsstatus.</p>}
+         <p className="runtime-chart-note">Nicht vollständig geprüfte Routen bleiben separat sichtbar. Legende auswählen, um die Routentabelle zu filtern.</p>
+       </section>
+-      <section className="runtime-chart-card" aria-label="Trenddiagramm der Buslast">
++      <section className="runtime-chart-card" hidden={expandedChart !== null && expandedChart !== "trend"} aria-label="Trenddiagramm der Buslast">
++        {chartButton("trend", "Trenddiagramm")}
+         <header><p className="eyebrow">Trend</p><h4>Buslast im Laufverlauf</h4><p>Zeit seit Laufbeginn; ausschließlich gespeicherte Simulationspunkte.</p></header>
+         {!!trendChoices.length && <label className="runtime-chart-network">Netz auswählen<select value={selectedNetworkId} onChange={event => setTrendNetwork(event.target.value)}>{trendChoices.map(item => <option key={item.network_id} value={item.network_id}>{item.network_name || item.network_id}</option>)}</select></label>}
+         <RuntimeLoadTrend key={selectedNetworkId} points={trendPoints} />
+       </section>
+-      <section className="runtime-chart-card" aria-label="Fehlerhäufung bei ECUs">
++      <section className="runtime-chart-card" hidden={expandedChart !== null && expandedChart !== "ecu"} aria-label="Fehlerhäufung bei ECUs">
++        {chartButton("ecu", "ECU-Häufung")}
+         <header><p className="eyebrow">ECU-Häufung</p><h4>Fehler auf beteiligten ECU-Routen</h4><p>Zuordnung über Hardware-IDs und ECU-Typen im eingefrorenen Modell dieses Laufs.</p></header>
+         {ecuRows.length ? <>
+           <div className="runtime-chart-table-scroll" tabIndex={0} aria-label="ECU-Fehlerübersicht, horizontal scrollbar"><table className="runtime-hotspot-table"><thead><tr><th scope="col">ECU</th>{ECU_FAULT_COLUMNS.map(column => <th key={column} scope="col">{column}</th>)}</tr></thead><tbody>
+--- before/frontend/src/features/capacity/ui/capacity-workbench.tsx
++++ after/frontend/src/features/capacity/ui/capacity-workbench.tsx
+@@ -21,14 +21,15 @@
+ import { notifyWorkflowChanged } from "../../workflow/ui/workflow-header";
+ import { useWorkflowRefresh } from "@/features/workflow/lib/use-workflow-refresh";
+ import { paginateCapacityItems } from "@/features/capacity/lib/capacity-pagination";
+-import { buildNetworkInspection, type NetworkInspection } from "@/features/capacity/lib/capacity-network-inspection";
++import { buildNetworkInspection, capacityLoadOverview, type NetworkInspection } from "@/features/capacity/lib/capacity-network-inspection";
+ import { readActiveProjectId, withProjectParam } from "@/features/settings/lib/user-settings";
+ 
+-type View = "overview" | "networks" | "messages" | "routes" | "timing" | "gateways" | "critical" | "recommendations";
++type View = "overview" | "load" | "networks" | "messages" | "routes" | "timing" | "gateways" | "critical" | "recommendations";
+ type ViewWarningInfo = Record<View, { count: number; reasons: string[] }>;
+ 
+ const CAPACITY_VIEW_LABELS: Record<View, string> = {
+   overview: "Übersicht",
++  load: "Buslast",
+   networks: "Netze",
+   messages: "Messages",
+   routes: "Routen",
+@@ -38,7 +39,7 @@
+   recommendations: "Empfehlungen",
+ };
+ 
+-const CAPACITY_VIEWS: View[] = ["overview", "networks", "messages", "routes", "timing", "gateways", "critical", "recommendations"];
++const CAPACITY_VIEWS: View[] = ["overview", "load", "networks", "messages", "routes", "timing", "gateways", "critical", "recommendations"];
+ 
+ export function CapacityWorkbench({ initialProjectId = "" }: { initialProjectId?: string }) {
+   const [results, setResults] = useState<CapacityResults | null>(null);
+@@ -146,6 +147,7 @@
+   }
+ 
+   const shown = scenario ?? results;
++  const calculatedLoad = capacityLoadOverview(shown?.networks ?? []);
+   const critical = useMemo(
+     () => shown?.routes.filter((route) => route.status !== "NORMAL") ?? [],
+     [shown],
+@@ -176,7 +178,7 @@
+           <button className="button secondary" disabled={busy} onClick={() => void runScenario()} type="button">
+             Szenario berechnen
+           </button>
+-          <button className="button secondary" disabled={busy} onClick={() => void requestOptimization()} type="button">Zweige optimieren</button>
++          <button className="button secondary" disabled={busy} onClick={() => void requestOptimization()} type="button">Optimierungsvorschläge berechnen</button>
+           <button className="button primary" disabled={busy} onClick={() => void calculate()} type="button">
+             {busy ? "Berechnet …" : "Aktuell berechnen"}
+           </button>
+@@ -201,29 +203,20 @@
+         {scenario && <button className="text-command" onClick={() => setScenario(null)} type="button">Vergleich schließen</button>}
+       </div>
+ 
++      <p className="capacity-calculation-help">„Szenario berechnen“ berechnet die Last mit dem gewählten Stress-Faktor neu und zeigt einen ungespeicherten Vergleich. „Optimierungsvorschläge berechnen“ ermittelt mögliche Netzverteilungen; Änderungen werden erst nach ausdrücklicher Übernahme angewendet.</p>
+       {scenarioImpact && shown?.networks.every((network) => network.capacity_verified === true || network.capacity_applicable === false) && <div className="impact-strip"><Metric label="Δ Peak" value={formatEvidence(scenarioImpact.delta.peak_load_percent, 2, "%", "Nicht vergleichbar")} /><Metric label="Δ Burst" value={formatEvidence(scenarioImpact.delta.burst_load_percent, 2, "%", "Nicht vergleichbar")} /><Metric label="Δ Reserve" value={formatEvidence(scenarioImpact.delta.capacity_reserve_percent, 2, "%", "Nicht vergleichbar")} /><Metric label="Δ E2E" value={formatEvidence(scenarioImpact.delta.end_to_end_latency_ms, 3, "ms", "Nicht vergleichbar")} /></div>}
+ 
+       {shown ? (
+         <>
+           <p>Ø Load beschreibt den nominalen Busbedarf. Peak und Stresslast sind rechnerische Varianten mit Faktor {shown.overview.peak_factor ?? 1.15} und {shown.overview.burst_factor ?? 1.5}; keine gleichzeitig sendenden Teilnehmer und keine Messwerte.</p>
+           <div className="metric-strip">
+-            <Metric label="Peak Load" value={shown.networks.every((network) => network.capacity_verified === true || network.capacity_applicable === false) ? formatEvidence(shown.overview.max_peak_load_percent, 2, "%") : "Nicht nachgewiesen"} />
+-            <Metric label="Kapazitätsreserve" value={shown.networks.every((network) => network.capacity_verified === true || network.capacity_applicable === false) ? formatEvidence(shown.overview.minimum_capacity_reserve_percent, 2, "%") : "Nicht nachgewiesen"} />
++            <Metric label="Peak-Buslast (berechnet)" value={formatEvidence(calculatedLoad.peak, 2, "%", calculatedLoad.applicableCount ? "Berechnung unvollständig" : "Nicht anwendbar")} />
++            <Metric label="Kapazitätsreserve (berechnet)" value={formatEvidence(calculatedLoad.reserve, 2, "%", calculatedLoad.applicableCount ? "Berechnung unvollständig" : "Nicht anwendbar")} />
+             <Metric label="E2E-Antwortgrenze" value={shown.overview.timing_verified ? `${shown.overview.worst_end_to_end_latency_ms.toFixed(3)} ms` : "Nicht nachgewiesen"} />
+             <Metric label="Netze / Routen" value={`${shown.overview.network_count} / ${shown.overview.route_count}`} />
+             <Metric details={statusDetails} label="Status" value={status ?? shown.overview.status} tone={status ?? shown.overview.status} />
+           </div>
+-
+-          {shown.networks.some(network => !network.capacity_verified && network.simulation_capacity) && <section aria-label="Berechnete Simulationsauslegung">
+-            <h3>Berechnet mit gespeicherten Simulationswerten</h3>
+-            <p>Diese Lastwerte verwenden die gespeicherten Projektannahmen und das native Busmodell. Gerätenachweis und funktionale Timingfreigabe stehen weiterhin separat in der Prüfung.</p>
+-            <PaginatedResults items={shown.networks.filter(network => !network.capacity_verified && network.simulation_capacity)} label="Simulationsauslegung">{entries => <div className="analysis-list">
+-              {entries.map(network => <div key={network.network_id}><strong>{network.network_name}</strong>
+-                <span>Ø {formatEvidence(network.simulation_capacity?.average_load_percent,2,'%')} · Peak {formatEvidence(network.simulation_capacity?.peak_load_percent,2,'%')} · Stress {formatEvidence(network.simulation_capacity?.burst_load_percent,2,'%')}</span>
+-                <small>SIMULATIONSANNAHME · {Number(network.simulation_capacity?.average_load_percent) > Number(network.target_bus_load_percent) ? 'Zielauslastung überschritten' : 'Nominale Last berechnet'} · Gerätenachweis offen</small>
+-              </div>)}
+-            </div>}</PaginatedResults>
+-          </section>}
++          <p className="capacity-evidence-summary">Geräte-/Implementierungsnachweise: {calculatedLoad.verifiedCount} / {calculatedLoad.applicableCount} Busnetze bestätigt. Berechnete Werte unter gespeicherten Annahmen sind im Reiter „Buslast“ sichtbar. Die funktionale Zeitfreigabe wird getrennt geprüft.</p>
+ 
+           <div className="analysis-tabs" role="tablist" aria-label="Capacity-Ansichten">
+             {CAPACITY_VIEWS.map((item) => {
+@@ -245,6 +238,16 @@
+           </div>
+           <CapacityViewWarnings label={CAPACITY_VIEW_LABELS[view]} scenarioActive={Boolean(scenario)} sourceVersions={sourceVersions} warning={warningInfo[view]} />
+ 
++          {view === "load" && <section aria-label="Berechnete Simulationsauslegung">
++            <h3>Berechnet mit gespeicherten Simulationswerten</h3>
++            <p>Nominale Buslast ergibt sich aus Busspezifikation, Nachrichtenkodierung, Zykluszeiten und Routen. Dafür ist keine reale ECU nötig. Eine Zusage zum tatsächlichen Gerät und zur funktionalen Antwortzeit braucht zusätzliche Nachweise.</p>
++            <PaginatedResults items={shown.networks.filter(network => network.capacity_applicable !== false)} label="Simulationsauslegung">{entries => <div className="analysis-list">
++              {entries.map(network => <div key={network.network_id}><strong>{network.network_name}</strong>
++                <span>Ø {formatEvidence(network.capacity_verified ? network.average_load_percent : network.simulation_capacity?.average_load_percent, 2, '%')} · Peak {formatEvidence(network.capacity_verified ? network.peak_load_percent : network.simulation_capacity?.peak_load_percent, 2, '%')} · Stress {formatEvidence(network.capacity_verified ? network.burst_load_percent : network.simulation_capacity?.burst_load_percent, 2, '%')}</span>
++                <small>{network.capacity_verified ? 'Gerätenachweis bestätigt' : network.simulation_capacity ? 'SIMULATIONSANNAHME · Nominale Last berechnet · Gerätenachweis offen' : 'Berechnungsdaten fehlen · Eingaben prüfen'}{network.target_status === 'EXCEEDED' ? ' · Zielauslastung überschritten' : ''} · Funktionale Zeitfreigabe separat</small>
++              </div>)}
++            </div>}</PaginatedResults>
++          </section>}
+           {(view === "overview" || view === "networks") && <>
+             <div className="analysis-sort-row"><label htmlFor="capacity-network-sort">Sortierung</label><select id="capacity-network-sort" onChange={(event) => { setNetworkSort(event.target.value as typeof networkSort); setSelectedNetworkId(null); }} value={networkSort}><option value="burst">Burst Load</option><option value="reserve">Geringste Reserve</option><option value="latency">Worst E2E</option></select></div>
+             <NetworkTable key={networkSort} items={sortedNetworks} routes={shown.routes} onSelect={setSelectedNetworkId} selectedId={selectedNetworkId} sourceVersions={sourceVersions} />
+@@ -468,7 +471,7 @@
+ function capacityMeaningText(label: string, reasons: string[]) {
+   const joined = reasons.join(" ").toLowerCase();
+   if (reasons.length > 0 && reasons.every(isOpenEvidenceReason)) {
+-    return "Diese Hinweise bezeichnen fehlende Eingabedaten oder noch offene Zeitnachweise. Sie sind keine Last-, Ziel- oder Plausibilitätsverletzungen; berechnete Auslastung und Reserve werden davon getrennt bewertet.";
++    return "Die nominale Buslast wird aus Busspezifikation, Nachrichten und Zykluszeiten berechnet; dafür ist keine reale ECU nötig. Diese Hinweise betreffen fehlende Eingaben oder offene Geräte-, Implementierungs- und Zeitnachweise. Sie belegen keine Lastverletzung. Vorhandene Lastwerte und Reserve stehen getrennt im Reiter Buslast; eine funktionale Zeitfreigabe bleibt unabhängig davon.";
+   }
+   if (joined.includes("network_transmission_ms") || joined.includes("engpass")) {
+     return "Mindestens eine Uebertragung belegt im aktuellen Netz rechnerisch zu viel Zeit oder Reserve. Die Detailtabellen zeigen, welche Route, Message oder welches Netz den Engpass erzeugt.";
+--- before/frontend/src/features/capacity/lib/capacity-network-inspection.ts
++++ after/frontend/src/features/capacity/lib/capacity-network-inspection.ts
+@@ -1,4 +1,22 @@
+ import { buildCanonicalSignalDefinition, calculateSignalBitRequirement } from "../../engineering/lib/signal-architecture.ts";
++import type { CapacityNetwork } from "../../workflow/lib/workflow-api.ts";
++
++/** Aggregate recorded values only; calculation does not confer device or timing acceptance. */
++export function capacityLoadOverview(networks: CapacityNetwork[]) {
++  const applicable = networks.filter(network => network.capacity_applicable !== false);
++  const values = applicable.map(network => network.capacity_verified === true
++    ? { peak: network.peak_load_percent, reserve: network.capacity_reserve_percent }
++    : { peak: network.simulation_capacity?.peak_load_percent, reserve: network.simulation_capacity?.capacity_reserve_percent });
++  const finite = (value: unknown): value is number => typeof value === "number" && Number.isFinite(value);
++  const completePeak = values.length > 0 && values.every(value => finite(value.peak));
++  const completeReserve = values.length > 0 && values.every(value => finite(value.reserve));
++  return {
++    applicableCount: applicable.length,
++    verifiedCount: applicable.filter(network => network.capacity_verified === true).length,
++    peak: completePeak ? Math.max(...values.map(value => value.peak!)) : null,
++    reserve: completeReserve ? Math.min(...values.map(value => value.reserve!)) : null,
++  };
++}
+ 
+ export type InspectionObject = { id: string; name?: string; [key: string]: unknown };
+ export type InspectionSources = {
+--- before/frontend/src/features/capacity/lib/capacity-network-inspection.test.mjs
++++ after/frontend/src/features/capacity/lib/capacity-network-inspection.test.mjs
+@@ -1,6 +1,27 @@
+ import assert from "node:assert/strict";
+ import test from "node:test";
+-import { inspectSignal, inspectMessageSignals, buildNetworkInspection } from "./capacity-network-inspection.ts";
++import { inspectSignal, inspectMessageSignals, buildNetworkInspection, capacityLoadOverview } from "./capacity-network-inspection.ts";
++
++test('load overview aggregates recorded assumptions separately from device qualification', () => {
++  const networks = [
++    { capacity_verified: true, peak_load_percent: 40, capacity_reserve_percent: 50 },
++    { capacity_verified: false, peak_load_percent: 0, capacity_reserve_percent: 0,
++      simulation_capacity: { peak_load_percent: 75, capacity_reserve_percent: 12, hardware_evidence: false, functional_timing_accepted: false } },
++    { capacity_applicable: false, peak_load_percent: 999, capacity_reserve_percent: -999 },
++  ];
++  const original = structuredClone(networks);
++  assert.deepEqual(capacityLoadOverview(networks), { applicableCount: 2, verifiedCount: 1, peak: 75, reserve: 12 });
++  assert.deepEqual(networks, original);
++});
++
++test('missing or nonfinite recorded metrics stay unknown, with no invented reserve or zero fallback', () => {
++  assert.deepEqual(capacityLoadOverview([{ capacity_verified: false, simulation_capacity: { peak_load_percent: 70 } }]),
++    { applicableCount: 1, verifiedCount: 0, peak: 70, reserve: null });
++  assert.equal(capacityLoadOverview([{ capacity_verified: false, peak_load_percent: 0 }]).peak, null);
++  assert.equal(capacityLoadOverview([{ capacity_verified: true, peak_load_percent: NaN, capacity_reserve_percent: Infinity }]).reserve, null);
++  assert.equal(capacityLoadOverview([{ capacity_verified: true, peak_load_percent: 30 }, { capacity_verified: false }]).peak, null);
++  assert.deepEqual(capacityLoadOverview([]), { applicableCount: 0, verifiedCount: 0, peak: null, reserve: null });
++});
+ 
+ const message = { id: "message", name: "Status", dlc: 8, interface_id: "sensor-port" };
+ const signal = { id: "signal", name: "Value", message_id: "message", start_bit: 0, length_bits: 8,
+--- before/frontend/src/features/simulation/ui/simulation-wizard.tsx
++++ after/frontend/src/features/simulation/ui/simulation-wizard.tsx
+@@ -41,10 +41,6 @@
+ import { withProjectParam, readActiveProjectId } from "@/features/settings/lib/user-settings";
+ import type { LicenseState } from "@/features/sources/lib/source-directory";
+ 
+-const parameterNavItems = [
+-  ["parameter-technology", "Technologie"],
+-  ["parameter-values", "Parameter"],
+-] as const;
+ const busLoadRangeKeys = new Set([
+   "target_bus_load_percent",
+   "warning_threshold",
+@@ -1431,12 +1427,6 @@
+           </div>
+         ) : domain && technology ? (
+           <>
+-            <nav aria-label="Parameter-Abschnitte" className="parameter-section-nav">
+-              {parameterNavItems.map(([id, label]) => (
+-                <a href={`#${id}`} key={id}>{label}</a>
+-              ))}
+-            </nav>
+-
+             <div className="section-title" id="parameter-technology">
+               <span>01</span>
+               Technologie
+--- before/frontend/src/features/simulation/ui/model-simulation-runner.tsx
++++ after/frontend/src/features/simulation/ui/model-simulation-runner.tsx
+@@ -569,12 +569,13 @@
+         </div>
+       )}
+ 
+-      <section className="panel simulation-scope-panel">
+-        <div className="compact-heading"><div><p className="eyebrow">Geprüfter Simulationsumfang</p><h2>{simulationScope.include_all ? "Gesamtes aktives Modell" : `${simulationScope.message_ids.length} Nachrichten und ${simulationScope.signal_ids.length} Signale ausgewählt`}</h2></div><Link className="button secondary" href={withProjectParam("/studio/validation", projectIdForLinks)}>Umfang im Preflight ändern</Link></div>
++      <details className="panel simulation-scope-panel">
++        <summary><span className="eyebrow">Geprüfter Simulationsumfang</span><strong>{simulationScope.include_all ? "Gesamtes aktives Modell" : `${simulationScope.message_ids.length} Nachrichten und ${simulationScope.signal_ids.length} Signale ausgewählt`}</strong></summary>
++        <Link className="button secondary" href={withProjectParam("/studio/validation", projectIdForLinks)}>Umfang im Preflight ändern</Link>
+         <p>{simulationScope.include_all ? "Alle aktiven Modellnachrichten und Signale müssen durch bestätigte Routen abgedeckt sein." : simulationScope.reason}</p>
+         <p>Die Simulation verwendet genau den gespeicherten und vorab geprüften Umfang. Ausgewählte Nachrichten schließen ihre enthaltenen Signale ein.</p>
+-        {!scopeValid && <p className="notice warning">Der gespeicherte Umfang braucht eine gültige Auswahl und Begründung. Bitte im Preflight ergänzen.</p>}
+-      </section>
++      </details>
++      {!scopeValid && <p className="notice warning">Der gespeicherte Umfang braucht eine gültige Auswahl und Begründung. Bitte im Preflight ergänzen.</p>}
+ 
+       <section className="panel fault-editor">
+           <div className="compact-heading"><div><p className="eyebrow">Fault scenario</p><h2>Fehler gezielt injizieren</h2></div><button className="button secondary" disabled={busy || !workflow} onClick={() => void askAgentForFaults()} type="button">KI-Vorschläge</button></div>
+--- before/frontend/src/features/simulation/ui/e2e-sequence-diagram.tsx
++++ after/frontend/src/features/simulation/ui/e2e-sequence-diagram.tsx
+@@ -2,7 +2,7 @@
+ 
+ import { useId, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
+ import type { SequenceDiagramModel, SequenceEvent } from "@/features/simulation/lib/e2e-sequence";
+-import { sequenceEventMatchesParticipants } from "@/features/simulation/lib/e2e-sequence";
++import { compileSequenceSearch, sequenceEventMatchesParticipants } from "@/features/simulation/lib/e2e-sequence";
+ import { simulationPage } from "../lib/simulation-pagination";
+ import { SimulationPageControls } from "./simulation-page-controls";
+ 
+@@ -57,12 +57,9 @@
+   }, [model.events, model.participants]);
+   const participantFilter = useMemo(() => new Set(selectedParticipants.filter(participant => participants.includes(participant))), [selectedParticipants, participants]);
+   const origin = model.events.find(event => event.timeS !== null)?.timeS ?? null;
+-  const filtered = useMemo(() => {
+-    const normalized = query.trim().toLocaleLowerCase();
+-    return model.events.filter(event => sequenceEventMatchesParticipants(event, participantFilter) && (!normalized ||
+-      [event.source, event.destination, event.route, event.technology, event.status, event.transactionId ?? ""]
+-        .some(value => value.toLocaleLowerCase().includes(normalized))));
+-  }, [model.events, query, participantFilter]);
++  const search = useMemo(() => compileSequenceSearch(query), [query]);
++  const filtered = useMemo(() => model.events.filter(event => sequenceEventMatchesParticipants(event, participantFilter)
++    && search.matches(event)), [model.events, search, participantFilter]);
+   const displayed = simulationPage(filtered, page, 200);
+   const shown = displayed.items;
+   const changePage = (next: number) => { setPage(next); setHoveredId(null); scrollRef.current?.scrollTo({ top: 0 }); };
+@@ -108,7 +105,7 @@
+     <header className="e2e-sequence-header">
+       <div><span className="eyebrow">{model.source === "SIMULATED" ? "SIMULIERT" : "BEOBACHTET"}</span><h3>End-to-End-Sequenz</h3></div>
+       <div className="e2e-sequence-toolbar">
+-        <label className="e2e-sequence-search"><span className="sr-only">Sequenzereignisse suchen</span><input value={query} onChange={event => { setQuery(event.target.value); changePage(0); }} placeholder="Teilnehmer, Route oder Technologie" /></label>
++        <label className="e2e-sequence-search"><span className="sr-only">Sequenzereignisse suchen</span><input value={query} aria-invalid={Boolean(search.error)} aria-describedby={`${markerId}-search-help`} onChange={event => { setQuery(event.target.value); changePage(0); }} placeholder="Teilnehmer, Route; UND / ODER / NICHT" /></label>
+         <button className="e2e-sequence-tool-button" type="button" aria-pressed={measuring} onClick={toggleMeasure}>Zeit messen</button>
+         <div className="e2e-sequence-levels" role="group" aria-label="Detailstufe">
+           {(["FUNCTIONAL", "COMMUNICATION", "TECHNICAL"] as const).map(item =>
+@@ -116,6 +113,8 @@
+         </div>
+       </div>
+     </header>
++    <p id={`${markerId}-search-help`} className="e2e-sequence-search-help">Suche: Motor UND NICHT LIN · (Motor ODER Getriebe) UND CAN · Anführungszeichen für genaue Wortgruppen. AND / OR / NOT werden ebenfalls unterstützt.</p>
++    {search.error && <p className="notice error" role="alert">{search.error}</p>}
+     <div className="e2e-sequence-participant-filter" aria-label="Teilnehmerfilter">
+       <span aria-live="polite">{participantFilter.size === 0 ? "Teilnehmer anklicken, um ihre TX/RX-Kommunikation zu filtern." :
+         participantFilter.size === 1 ? `TX/RX von ${[...participantFilter][0]}` : `Kommunikation zwischen ${[...participantFilter].join(" ↔ ")}`}</span>
+--- before/frontend/src/features/simulation/lib/e2e-sequence.ts
++++ after/frontend/src/features/simulation/lib/e2e-sequence.ts
+@@ -1,4 +1,88 @@
+ export type SequenceSource = "SIMULATED" | "OBSERVED";
++
++/** Read-only boolean search: NOT > AND > OR, with quoted phrases and parentheses. */
++export function compileSequenceSearch(query: string): { error: string | null; matches: (event: SequenceEvent) => boolean } {
++  type Token = { kind: "TERM" | "AND" | "OR" | "NOT" | "(" | ")"; value: string };
++  type Predicate = (fields: string[]) => boolean;
++  const text = query.trim();
++  const fields = (event: SequenceEvent) => [event.source, event.destination, event.route, event.technology,
++    event.status, event.transactionId ?? ""].map(value => value.toLocaleLowerCase());
++  const term = (value: string): Predicate => values => values.some(field => field.includes(value.toLocaleLowerCase()));
++  if (!text) return { error: null, matches: () => true };
++  try {
++    if (text.length > 4096) throw new Error("Suchausdruck ist zu lang (maximal 4096 Zeichen).");
++    // Preserve the existing literal phrase search when no expression syntax is used.
++    if (!/[()"]|(?:^|\s)(?:UND|AND|ODER|OR|NICHT|NOT)(?=\s|$)/i.test(text)) {
++      const predicate = term(text);
++      return { error: null, matches: event => predicate(fields(event)) };
++    }
++    const tokens: Token[] = [];
++    const operators: Record<string, Token["kind"]> = { UND: "AND", AND: "AND", ODER: "OR", OR: "OR", NICHT: "NOT", NOT: "NOT" };
++    let position = 0;
++    while (position < text.length) {
++      if (/\s/.test(text[position])) { position++; continue; }
++      const character = text[position];
++      if (character === "(" || character === ")") { tokens.push({ kind: character, value: character }); position++; continue; }
++      if (character === '"') {
++        position++;
++        let value = "", closed = false;
++        while (position < text.length) {
++          const next = text[position++];
++          if (next === '"') { closed = true; break; }
++          if (next === "\\" && /["\\]/.test(text[position] ?? "")) value += text[position++];
++          else value += next;
++        }
++        if (!closed) throw new Error("Schließendes Anführungszeichen fehlt.");
++        if (!value) throw new Error("Leerer Suchbegriff ist nicht zulässig.");
++        tokens.push({ kind: "TERM", value });
++        continue;
++      }
++      const start = position;
++      while (position < text.length && !/[\s()"]/.test(text[position])) position++;
++      const value = text.slice(start, position);
++      tokens.push({ kind: operators[value.toUpperCase()] ?? "TERM", value });
++    }
++    let cursor = 0;
++    function primary(depth: number): Predicate {
++      if (depth > 64) throw new Error("Suchausdruck ist zu tief verschachtelt.");
++      const token = tokens[cursor++];
++      if (!token) throw new Error("Suchbegriff nach dem Operator fehlt.");
++      if (token.kind === "NOT") { const operand = primary(depth + 1); return values => !operand(values); }
++      if (token.kind === "(") {
++        const operand = disjunction(depth + 1);
++        if (tokens[cursor++]?.kind !== ")") throw new Error("Schließende Klammer fehlt.");
++        return operand;
++      }
++      if (token.kind !== "TERM") throw new Error(`Suchbegriff vor „${token.value}“ fehlt.`);
++      return term(token.value);
++    }
++    function conjunction(depth: number): Predicate {
++      let predicate = primary(depth);
++      while (tokens[cursor] && tokens[cursor].kind !== "OR" && tokens[cursor].kind !== ")") {
++        if (tokens[cursor].kind === "AND") cursor++;
++        const right = primary(depth);
++        const left = predicate;
++        predicate = values => left(values) && right(values);
++      }
++      return predicate;
++    }
++    function disjunction(depth: number): Predicate {
++      let predicate = conjunction(depth);
++      while (tokens[cursor]?.kind === "OR") {
++        cursor++;
++        const right = conjunction(depth);
++        const left = predicate;
++        predicate = values => left(values) || right(values);
++      }
++      return predicate;
++    }
++    const predicate = disjunction(0);
++    if (cursor !== tokens.length) throw new Error("Unerwartete schließende Klammer.");
++    return { error: null, matches: event => predicate(fields(event)) };
++  } catch (error) {
++    return { error: error instanceof Error ? error.message : "Ungültiger Suchausdruck.", matches: () => false };
++  }
++}
+ 
+ export type SequenceEvent = {
+   id: string;
+--- before/frontend/src/features/simulation/lib/e2e-sequence.test.mjs
++++ after/frontend/src/features/simulation/lib/e2e-sequence.test.mjs
+@@ -1,6 +1,55 @@
+ import assert from 'node:assert/strict';
+ import test from 'node:test';
+-import { buildSequenceDiagram, sequenceEventMatchesParticipants } from './e2e-sequence.ts';
++import { buildSequenceDiagram, compileSequenceSearch, sequenceEventMatchesParticipants } from './e2e-sequence.ts';
++
++test('boolean sequence search preserves literal phrases and applies NOT before AND before OR', () => {
++  const model = buildSequenceDiagram([
++    { event_id: 'motor-can', source: 'Motor Steuerung', destination: 'System', technology: 'CAN', status: 'transmitted' },
++    { event_id: 'motor-lin', source: 'Motor Steuerung', destination: 'Aktor', technology: 'LIN', status: 'timeout' },
++    { event_id: 'gear', source: 'Getriebe', destination: 'System', technology: 'LIN', status: 'transmitted' },
++    { event_id: 'plain', source: 'Untergrund', destination: 'System', technology: 'CAN FD', route_name: 'Status UND Diagnose' },
++  ], 'SIMULATED');
++  const original = structuredClone(model);
++  const ids = query => {
++    const search = compileSequenceSearch(query);
++    assert.equal(search.error, null);
++    return model.events.filter(search.matches).map(event => event.id);
++  };
++  assert.deepEqual(ids('motor steuerung'), ['motor-can', 'motor-lin']);
++  assert.deepEqual(ids('grund'), ['plain']);
++  assert.deepEqual(ids('Motor UND NICHT LIN'), ['motor-can']);
++  assert.deepEqual(ids('Getriebe ODER Motor UND NICHT LIN'), ['motor-can', 'gear']);
++  assert.deepEqual(ids('(Motor OR Getriebe) AND NOT LIN'), ['motor-can']);
++  assert.deepEqual(ids('"Motor Steuerung" UND timeout'), ['motor-lin']);
++  assert.deepEqual(ids('"CAN FD"'), ['plain']);
++  assert.deepEqual(ids('"Status UND Diagnose"'), ['plain']);
++  assert.deepEqual(model, original);
++});
++
++test('boolean expressions combine with actual endpoint filters for simulated and observed sources', () => {
++  for (const source of ['SIMULATED', 'OBSERVED']) {
++    const model = buildSequenceDiagram([
++      { event_id: 'ab', source: 'A', destination: 'B', technology: 'CAN', status: 'timeout' },
++      { event_id: 'ba', source: 'B', destination: 'A', technology: 'LIN', status: 'transmitted' },
++      { event_id: 'bc', source: 'B', destination: 'C', technology: 'CAN', status: 'timeout' },
++    ], source);
++    const search = compileSequenceSearch('CAN UND (timeout ODER rejected)');
++    assert.deepEqual(model.events.filter(event => search.matches(event)
++      && sequenceEventMatchesParticipants(event, new Set(['A', 'B']))).map(event => event.id), ['ab']);
++  }
++});
++
++test('invalid sequence search reports syntax errors and never silently matches all events', () => {
++  const event = buildSequenceDiagram([{ source: 'A', destination: 'B' }], 'OBSERVED').events[0];
++  for (const query of ['Motor UND', 'ODER Motor', '(Motor ODER LIN', 'Motor)', '()', '"Motor', '""',
++    'NICHT '.repeat(65) + 'Motor', 'a'.repeat(4097)]) {
++    const search = compileSequenceSearch(query);
++    assert.ok(search.error, query);
++    assert.equal(search.matches(event), false, query);
++  }
++  assert.equal(compileSequenceSearch('').matches(event), true);
++  assert.equal(compileSequenceSearch('"A\\\"B"').error, null);
++});
+ 
+ test('participant filtering keeps actual TX/RX endpoints and canonical evidence for both sources', () => {
+   const records = [

@@ -1,4 +1,22 @@
 import { buildCanonicalSignalDefinition, calculateSignalBitRequirement } from "../../engineering/lib/signal-architecture.ts";
+import type { CapacityNetwork } from "../../workflow/lib/workflow-api.ts";
+
+/** Aggregate recorded values only; calculation does not confer device or timing acceptance. */
+export function capacityLoadOverview(networks: CapacityNetwork[]) {
+  const applicable = networks.filter(network => network.capacity_applicable !== false);
+  const values = applicable.map(network => network.capacity_verified === true
+    ? { peak: network.peak_load_percent, reserve: network.capacity_reserve_percent }
+    : { peak: network.simulation_capacity?.peak_load_percent, reserve: network.simulation_capacity?.capacity_reserve_percent });
+  const finite = (value: unknown): value is number => typeof value === "number" && Number.isFinite(value);
+  const completePeak = values.length > 0 && values.every(value => finite(value.peak));
+  const completeReserve = values.length > 0 && values.every(value => finite(value.reserve));
+  return {
+    applicableCount: applicable.length,
+    verifiedCount: applicable.filter(network => network.capacity_verified === true).length,
+    peak: completePeak ? Math.max(...values.map(value => value.peak!)) : null,
+    reserve: completeReserve ? Math.min(...values.map(value => value.reserve!)) : null,
+  };
+}
 
 export type InspectionObject = { id: string; name?: string; [key: string]: unknown };
 export type InspectionSources = {

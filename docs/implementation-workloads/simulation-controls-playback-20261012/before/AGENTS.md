@@ -1,0 +1,110 @@
+# Project Rule
+
+This repository is the canonical Network Simulator project.
+
+When the user refers to "der Simulator", "Simulator", "Network Simulator", or
+the local preview on port 13500 in this workspace, use this project root:
+
+`I:\PycharmProjects\My_first_Network_Simulator`
+
+Do not substitute similarly named copies under `C:\Users\marti\PycharmProjects`
+or the Engineering Intelligence Platform repository unless the user explicitly
+asks for those paths.
+
+
+For architecture generation, spatial grouping, AI reasoning, and network
+assignment, read `docs/SPATIAL_ARCHITECTURE_CONTRACT.md`. Its spatial identity
+rules apply across simulator industries, including vehicles, drones, robots,
+and buildings; do not reduce them to automotive corner names.
+
+For signal generation, communication sizing, release modes and assessment, read
+`docs/COMMUNICATION_DESIGN_CONTRACT.md`. Preserve explicit encodings and separate
+capacity/schedule evidence from functional timing acceptance.
+
+For generated Ethernet network names, follow `docs/NETWORK_NAMING_CONTRACT.md`.
+Persist readable `ETH_<Systemrahmen-or-context>_<NN>` names in the canonical
+model and inherited interface names, not only in rendering helpers.
+
+For industry detection, bus-type detection and generation-path selection, read
+`docs/GENERATION_RULE_MANAGER.md`. Keep industry templates independent from
+technology-specific transport paths; mixed buses use separate registered paths
+and unresolved inputs must not fall back silently to Automotive.
+
+For wizard, agent execution, proposal, or workflow changes, read
+`docs/WIZARD_EXECUTION_CONTRACT.md` and `docs/WIZARD_RELEASE_GATE.md`.
+Run SQL tests through `scripts/run-isolated-tests.py`; never target the product
+database. A wizard release must pass `scripts/run-release-gate.py` and deploy
+the exact tested image via its PASS receipt. Report the actual tested scope;
+visible progress cards or mocked write responses do not prove nine-stage E2E.
+
+For technology parameters, communication mechanisms, physical realization,
+arbitration, PHY constraints, validation/preflight, E2E timing, safety
+assurance, simulation sequence diagrams, or trace sequence diagrams, read the
+following contracts before changing the affected behavior:
+
+- `docs/NIS_TECHNOLOGY_PROFILE_COMMUNICATION_MECHANISMS_STABILIZATION.md`
+- `docs/NIS_PHYSICAL_REALIZATION_ARBITRATION_PHY_RULES.md`
+- `docs/NIS_VALIDATION_PREFLIGHT_DATA_QUALITY_INTEGRATION.md`
+- `docs/NIS_E2E_COMMUNICATION_TIMING_SAFETY_ASSURANCE.md`
+- `docs/NIS_E2E_SEQUENCE_DIAGRAM_SIMULATION_TRACE_TARGET.md`
+
+These contracts require TechnologyProfile to be the single source of truth,
+strict validation without foreign technology fallbacks, explicit physical and
+arbitration modeling, provenance-aware preflight gates, and one correlated
+E2E/sequence model for simulation and observed traces. Embedded work-order
+sections in these documents are requirements summaries, not independent chat
+commands.
+
+## Standing authorization for production delivery
+
+The user explicitly authorizes production delivery of verified NIS changes as a
+standing project rule. After the required tests and release gate pass, deploy the
+exact tested image to the canonical production stack using its PASS receipt,
+then verify the running image identity, health and affected functionality.
+For local delivery, use `python scripts/release-and-deploy.py` so a matching
+complete PASS receipt is reused and an existing image is retested when only
+verification inputs changed. A new candidate is built only for changed
+application source or when no matching image remains. The command performs deployment and checks
+the running image identity; do not stop after creating a candidate image.
+Do not prune historical images without the audited retention evidence required
+by `scripts/release_storage.py`.
+Do not ask again for deployment approval unless the user explicitly excludes
+deployment for the current task or the action exceeds this authorized scope.
+This explicit standing authorization takes precedence over skill defaults that
+request a separate production-delivery decision for each implementation.
+Do not finish implementation work at local verification alone. If delivery is
+blocked, report the concrete blocker and that production still lacks the change.
+A restart of the existing image does not count as deployment of a tested change.
+Required release gates must still pass; this rule does not authorize bypassing
+checks or deploying an untested build.
+
+## Standing authorization for archived failed-candidate cleanup
+
+On 2026-10-12 the user explicitly authorized removing unused, fully archived
+failed release candidates without asking again when needed to continue a release.
+This authorization applies only to candidates with a preserved FAIL receipt and
+a complete recoverable image archive whose index, configuration, all referenced
+layers and immutable image identity have been verified. Record archive hashes,
+receipt evidence, fresh usage checks and the exact removal in the workload.
+
+Before removal, check all running and stopped container references and confirm
+the exact tag still identifies the archived image. Protect production, rollback
+images, container-referenced images and candidates with PASS, active or unknown
+release status. This scoped authorization permits removing those verified unused
+FAIL candidates even when age or feature-delivery retention would otherwise
+require a separate decision; do not invent delivered-equivalence evidence.
+Remove only the necessary audited candidates with `docker image rm --no-prune`;
+never use force or bulk pruning. All other image classes remain subject to
+`scripts/release_storage.py` retention requirements. Required release checks and
+exact tested-image deployment remain mandatory.
+
+## NIS links in chat
+
+When providing a local NIS link, always also provide a clickable VPN/LAN link
+in the chat, especially after starting, restarting, rebuilding or deploying NIS.
+Use `http://192.168.178.10:13500` as the VPN/LAN base address unless a changed
+server address has been verified. Preserve the same path and query parameters,
+especially `project`, so both links open the same project and view.
+Use the current project ID from the task or verified application state; do not
+substitute the default project or invent an ID. A server restart does not itself
+change the project ID. This is a chat reporting rule, not a request for monitoring.

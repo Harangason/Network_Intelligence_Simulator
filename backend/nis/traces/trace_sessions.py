@@ -134,8 +134,10 @@ def session_window(session_id, **options):
     metadata = json.loads((folder / 'metadata.json').read_text(encoding='utf8'))
     page = read_trace_window(folder / 'events.jsonl', **options)
     from backend.nis.simulation.e2e_assurance import build_sequence_model
-    sequence_events = [{**event, 'time_s': event.get('timestamp'), 'source_name': event.get('source'),
-                        'destination_names': [event.get('destination')] if event.get('destination') else []}
+    sequence_events = [{**event, 'time_s': event.get('timestamp'),
+                        'source_name': event.get('source_name') or event.get('source'),
+                        'destination_names': event.get('destination_names') or ([event.get('destination')] if event.get('destination') else []),
+                        'message': event.get('message_names') or event.get('message_name') or event.get('message')}
                        for event in page['events']]
     return {**metadata, **page,
             'sequence_model': build_sequence_model(sequence_events, source='OBSERVED'),

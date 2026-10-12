@@ -13,6 +13,7 @@ import {
   ENGINEERING_AGENT_WIZARD_SESSION_KEY,
 } from "@/features/agent/lib/agent-task-events";
 import { notifyWorkflowChanged } from "../../workflow/ui/workflow-header";
+import { SaveDialog } from "./save-dialog";
 
 type ProjectActionsProps = {
   className?: string;
@@ -24,6 +25,8 @@ export function ProjectActions({ className = "project-actions", showMessage = tr
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [clearDialogOpen, setClearDialogOpen] = useState(false);
   const [projectId, setProjectId] = useState("");
+  const [saveNewProject, setSaveNewProject] = useState(false);
+  const [saveError, setSaveError] = useState("");
   const [busy, setBusy] = useState<"clear" | "save" | "open" | "">("");
   const [message, setMessage] = useState("");
 
@@ -53,6 +56,7 @@ export function ProjectActions({ className = "project-actions", showMessage = tr
   async function saveProject(targetProjectId?: string, forceChoose = false) {
     setBusy("save");
     setMessage("");
+    setSaveError("");
     try {
       const target = targetProjectId ? normalizeProjectId(targetProjectId) : undefined;
       const bundle = await exportProjectBundle(target);
@@ -62,21 +66,22 @@ export function ProjectActions({ className = "project-actions", showMessage = tr
       setMessage(`Gespeichert: ${saved.fileName}`);
     } catch (caught) {
       if ((caught as { name?: string }).name !== "AbortError") {
-        setMessage(caught instanceof Error ? caught.message : "Projekt konnte nicht gespeichert werden.");
+        const detail = caught instanceof Error ? caught.message : "Projekt konnte nicht gespeichert werden.";
+        setMessage(detail);
+        setSaveError(detail);
       }
     } finally {
       setBusy("");
     }
   }
 
-  async function handleSave() {
+  function handleSave() {
     const current = readUserSettings().activeProject;
-    if (current === "default") {
-      setProjectId(`network-project-${new Date().toISOString().slice(0, 10)}`);
-      setSaveDialogOpen(true);
-      return;
-    }
-    await saveProject();
+    setSaveNewProject(current === "default");
+    setProjectId(current === "default" ? `network-project-${new Date().toISOString().slice(0, 10)}` : current);
+    setSaveError("");
+    setMessage("");
+    setSaveDialogOpen(true);
   }
 
   async function handleClear() {
@@ -151,23 +156,24 @@ export function ProjectActions({ className = "project-actions", showMessage = tr
       )}
 
       {saveDialogOpen && (
-        <div className="project-dialog-backdrop" role="presentation">
-          <section aria-labelledby="project-save-title" aria-modal="true" className="project-dialog" role="dialog">
+          <SaveDialog titleId="project-save-title" busy={busy === "save"} onCancel={() => setSaveDialogOpen(false)}>
             <div>
               <p className="eyebrow">Projektablage</p>
-              <h2 id="project-save-title">Projekt anlegen und Speicherort wählen</h2>
+              <h2 id="project-save-title">{saveNewProject ? "Projekt anlegen und speichern" : "Projekt speichern"}</h2>
               <p>Die Projektdatei enthält Workflow, Engineering-Daten, Analysen, Simulationen und Governance-Historie.</p>
+              <p>In SAVED wird das Projekt auf dem NIS-Server abgelegt. „Datei speichern unter“ öffnet die Dateiauswahl oder den Browser-Download.</p>
             </div>
             <label>
               <span>Projekt-ID</span>
-              <input autoFocus onChange={(event) => setProjectId(event.target.value)} value={projectId} />
+              <input autoFocus readOnly={!saveNewProject} onChange={(event) => setProjectId(event.target.value)} value={projectId} />
             </label>
+            {saveError && <p className="notice error" role="alert">{saveError}</p>}
             <div className="project-dialog-actions">
               <button className="button secondary" disabled={busy === "save"} onClick={() => setSaveDialogOpen(false)} type="button">Abbrechen</button>
-              <button className="button primary" disabled={busy === "save" || !projectId.trim()} onClick={() => void saveProject(projectId, true)} type="button">Speicherort wählen</button>
+              <button className="button secondary" disabled={busy === "save" || !projectId.trim()} onClick={() => void saveProject(saveNewProject ? projectId : undefined, true)} type="button">Datei speichern unter</button>
+              <button className="button primary" disabled={busy === "save" || !projectId.trim()} onClick={() => void saveProject(saveNewProject ? projectId : undefined)} type="button">{busy === "save" ? "Speichert …" : "In SAVED speichern"}</button>
             </div>
-          </section>
-        </div>
+          </SaveDialog>
       )}
     </>
   );

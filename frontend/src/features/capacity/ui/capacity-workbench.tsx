@@ -21,14 +21,15 @@ import {
 import { notifyWorkflowChanged } from "../../workflow/ui/workflow-header";
 import { useWorkflowRefresh } from "@/features/workflow/lib/use-workflow-refresh";
 import { paginateCapacityItems } from "@/features/capacity/lib/capacity-pagination";
-import { buildNetworkInspection, type NetworkInspection } from "@/features/capacity/lib/capacity-network-inspection";
+import { buildNetworkInspection, capacityLoadOverview, type NetworkInspection } from "@/features/capacity/lib/capacity-network-inspection";
 import { readActiveProjectId, withProjectParam } from "@/features/settings/lib/user-settings";
 
-type View = "overview" | "networks" | "messages" | "routes" | "timing" | "gateways" | "critical" | "recommendations";
+type View = "overview" | "load" | "networks" | "messages" | "routes" | "timing" | "gateways" | "critical" | "recommendations";
 type ViewWarningInfo = Record<View, { count: number; reasons: string[] }>;
 
 const CAPACITY_VIEW_LABELS: Record<View, string> = {
   overview: "Übersicht",
+  load: "Buslast",
   networks: "Netze",
   messages: "Messages",
   routes: "Routen",
@@ -38,7 +39,7 @@ const CAPACITY_VIEW_LABELS: Record<View, string> = {
   recommendations: "Empfehlungen",
 };
 
-const CAPACITY_VIEWS: View[] = ["overview", "networks", "messages", "routes", "timing", "gateways", "critical", "recommendations"];
+const CAPACITY_VIEWS: View[] = ["overview", "load", "networks", "messages", "routes", "timing", "gateways", "critical", "recommendations"];
 
 export function CapacityWorkbench({ initialProjectId = "" }: { initialProjectId?: string }) {
   const [results, setResults] = useState<CapacityResults | null>(null);
@@ -146,6 +147,7 @@ export function CapacityWorkbench({ initialProjectId = "" }: { initialProjectId?
   }
 
   const shown = scenario ?? results;
+  const calculatedLoad = capacityLoadOverview(shown?.networks ?? []);
   const critical = useMemo(
     () => shown?.routes.filter((route) => route.status !== "NORMAL") ?? [],
     [shown],
@@ -176,7 +178,7 @@ export function CapacityWorkbench({ initialProjectId = "" }: { initialProjectId?
           <button className="button secondary" disabled={busy} onClick={() => void runScenario()} type="button">
             Szenario berechnen
           </button>
-          <button className="button secondary" disabled={busy} onClick={() => void requestOptimization()} type="button">Zweige optimieren</button>
+          <button className="button secondary" disabled={busy} onClick={() => void requestOptimization()} type="button">Optimierungsvorschläge berechnen</button>
           <button className="button primary" disabled={busy} onClick={() => void calculate()} type="button">
             {busy ? "Berechnet …" : "Aktuell berechnen"}
           </button>
@@ -201,29 +203,20 @@ export function CapacityWorkbench({ initialProjectId = "" }: { initialProjectId?
         {scenario && <button className="text-command" onClick={() => setScenario(null)} type="button">Vergleich schließen</button>}
       </div>
 
+      <p className="capacity-calculation-help">„Szenario berechnen“ berechnet die Last mit dem gewählten Stress-Faktor neu und zeigt einen ungespeicherten Vergleich. „Optimierungsvorschläge berechnen“ ermittelt mögliche Netzverteilungen; Änderungen werden erst nach ausdrücklicher Übernahme angewendet.</p>
       {scenarioImpact && shown?.networks.every((network) => network.capacity_verified === true || network.capacity_applicable === false) && <div className="impact-strip"><Metric label="Δ Peak" value={formatEvidence(scenarioImpact.delta.peak_load_percent, 2, "%", "Nicht vergleichbar")} /><Metric label="Δ Burst" value={formatEvidence(scenarioImpact.delta.burst_load_percent, 2, "%", "Nicht vergleichbar")} /><Metric label="Δ Reserve" value={formatEvidence(scenarioImpact.delta.capacity_reserve_percent, 2, "%", "Nicht vergleichbar")} /><Metric label="Δ E2E" value={formatEvidence(scenarioImpact.delta.end_to_end_latency_ms, 3, "ms", "Nicht vergleichbar")} /></div>}
 
       {shown ? (
         <>
           <p>Ø Load beschreibt den nominalen Busbedarf. Peak und Stresslast sind rechnerische Varianten mit Faktor {shown.overview.peak_factor ?? 1.15} und {shown.overview.burst_factor ?? 1.5}; keine gleichzeitig sendenden Teilnehmer und keine Messwerte.</p>
           <div className="metric-strip">
-            <Metric label="Peak Load" value={shown.networks.every((network) => network.capacity_verified === true || network.capacity_applicable === false) ? formatEvidence(shown.overview.max_peak_load_percent, 2, "%") : "Nicht nachgewiesen"} />
-            <Metric label="Kapazitätsreserve" value={shown.networks.every((network) => network.capacity_verified === true || network.capacity_applicable === false) ? formatEvidence(shown.overview.minimum_capacity_reserve_percent, 2, "%") : "Nicht nachgewiesen"} />
+            <Metric label="Peak-Buslast (berechnet)" value={formatEvidence(calculatedLoad.peak, 2, "%", calculatedLoad.applicableCount ? "Berechnung unvollständig" : "Nicht anwendbar")} />
+            <Metric label="Kapazitätsreserve (berechnet)" value={formatEvidence(calculatedLoad.reserve, 2, "%", calculatedLoad.applicableCount ? "Berechnung unvollständig" : "Nicht anwendbar")} />
             <Metric label="E2E-Antwortgrenze" value={shown.overview.timing_verified ? `${shown.overview.worst_end_to_end_latency_ms.toFixed(3)} ms` : "Nicht nachgewiesen"} />
             <Metric label="Netze / Routen" value={`${shown.overview.network_count} / ${shown.overview.route_count}`} />
             <Metric details={statusDetails} label="Status" value={status ?? shown.overview.status} tone={status ?? shown.overview.status} />
           </div>
-
-          {shown.networks.some(network => !network.capacity_verified && network.simulation_capacity) && <section aria-label="Berechnete Simulationsauslegung">
-            <h3>Berechnet mit gespeicherten Simulationswerten</h3>
-            <p>Diese Lastwerte verwenden die gespeicherten Projektannahmen und das native Busmodell. Gerätenachweis und funktionale Timingfreigabe stehen weiterhin separat in der Prüfung.</p>
-            <PaginatedResults items={shown.networks.filter(network => !network.capacity_verified && network.simulation_capacity)} label="Simulationsauslegung">{entries => <div className="analysis-list">
-              {entries.map(network => <div key={network.network_id}><strong>{network.network_name}</strong>
-                <span>Ø {formatEvidence(network.simulation_capacity?.average_load_percent,2,'%')} · Peak {formatEvidence(network.simulation_capacity?.peak_load_percent,2,'%')} · Stress {formatEvidence(network.simulation_capacity?.burst_load_percent,2,'%')}</span>
-                <small>SIMULATIONSANNAHME · {Number(network.simulation_capacity?.average_load_percent) > Number(network.target_bus_load_percent) ? 'Zielauslastung überschritten' : 'Nominale Last berechnet'} · Gerätenachweis offen</small>
-              </div>)}
-            </div>}</PaginatedResults>
-          </section>}
+          <p className="capacity-evidence-summary">Geräte-/Implementierungsnachweise: {calculatedLoad.verifiedCount} / {calculatedLoad.applicableCount} Busnetze bestätigt. Berechnete Werte unter gespeicherten Annahmen sind im Reiter „Buslast“ sichtbar. Die funktionale Zeitfreigabe wird getrennt geprüft.</p>
 
           <div className="analysis-tabs" role="tablist" aria-label="Capacity-Ansichten">
             {CAPACITY_VIEWS.map((item) => {
@@ -245,6 +238,16 @@ export function CapacityWorkbench({ initialProjectId = "" }: { initialProjectId?
           </div>
           <CapacityViewWarnings label={CAPACITY_VIEW_LABELS[view]} scenarioActive={Boolean(scenario)} sourceVersions={sourceVersions} warning={warningInfo[view]} />
 
+          {view === "load" && <section aria-label="Berechnete Simulationsauslegung">
+            <h3>Berechnet mit gespeicherten Simulationswerten</h3>
+            <p>Nominale Buslast ergibt sich aus Busspezifikation, Nachrichtenkodierung, Zykluszeiten und Routen. Dafür ist keine reale ECU nötig. Eine Zusage zum tatsächlichen Gerät und zur funktionalen Antwortzeit braucht zusätzliche Nachweise.</p>
+            <PaginatedResults items={shown.networks.filter(network => network.capacity_applicable !== false)} label="Simulationsauslegung">{entries => <div className="analysis-list">
+              {entries.map(network => <div key={network.network_id}><strong>{network.network_name}</strong>
+                <span>Ø {formatEvidence(network.capacity_verified ? network.average_load_percent : network.simulation_capacity?.average_load_percent, 2, '%')} · Peak {formatEvidence(network.capacity_verified ? network.peak_load_percent : network.simulation_capacity?.peak_load_percent, 2, '%')} · Stress {formatEvidence(network.capacity_verified ? network.burst_load_percent : network.simulation_capacity?.burst_load_percent, 2, '%')}</span>
+                <small>{network.capacity_verified ? 'Gerätenachweis bestätigt' : network.simulation_capacity ? 'SIMULATIONSANNAHME · Nominale Last berechnet · Gerätenachweis offen' : 'Berechnungsdaten fehlen · Eingaben prüfen'}{network.target_status === 'EXCEEDED' ? ' · Zielauslastung überschritten' : ''} · Funktionale Zeitfreigabe separat</small>
+              </div>)}
+            </div>}</PaginatedResults>
+          </section>}
           {(view === "overview" || view === "networks") && <>
             <div className="analysis-sort-row"><label htmlFor="capacity-network-sort">Sortierung</label><select id="capacity-network-sort" onChange={(event) => { setNetworkSort(event.target.value as typeof networkSort); setSelectedNetworkId(null); }} value={networkSort}><option value="burst">Burst Load</option><option value="reserve">Geringste Reserve</option><option value="latency">Worst E2E</option></select></div>
             <NetworkTable key={networkSort} items={sortedNetworks} routes={shown.routes} onSelect={setSelectedNetworkId} selectedId={selectedNetworkId} sourceVersions={sourceVersions} />
@@ -468,7 +471,7 @@ function isOpenEvidenceReason(reason: string) {
 function capacityMeaningText(label: string, reasons: string[]) {
   const joined = reasons.join(" ").toLowerCase();
   if (reasons.length > 0 && reasons.every(isOpenEvidenceReason)) {
-    return "Diese Hinweise bezeichnen fehlende Eingabedaten oder noch offene Zeitnachweise. Sie sind keine Last-, Ziel- oder Plausibilitätsverletzungen; berechnete Auslastung und Reserve werden davon getrennt bewertet.";
+    return "Die nominale Buslast wird aus Busspezifikation, Nachrichten und Zykluszeiten berechnet; dafür ist keine reale ECU nötig. Diese Hinweise betreffen fehlende Eingaben oder offene Geräte-, Implementierungs- und Zeitnachweise. Sie belegen keine Lastverletzung. Vorhandene Lastwerte und Reserve stehen getrennt im Reiter Buslast; eine funktionale Zeitfreigabe bleibt unabhängig davon.";
   }
   if (joined.includes("network_transmission_ms") || joined.includes("engpass")) {
     return "Mindestens eine Uebertragung belegt im aktuellen Netz rechnerisch zu viel Zeit oder Reserve. Die Detailtabellen zeigen, welche Route, Message oder welches Netz den Engpass erzeugt.";

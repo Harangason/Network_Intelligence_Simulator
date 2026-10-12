@@ -1,0 +1,32 @@
+{
+  "status": "PASSED",
+  "scope": "Targeted verification only; does not replace the full release gate or production delivery.",
+  "unit": {
+    "command": "node --experimental-strip-types --test frontend/src/features/traces/lib/analysis-workspace.test.mjs",
+    "passed": 7,
+    "failed": 0,
+    "evidence": "targeted-unit.log"
+  },
+  "typecheck": {
+    "command": "node frontend/node_modules/typescript/bin/tsc --noEmit --incremental false --project frontend/tsconfig.json",
+    "exit_code": 0
+  },
+  "backend": {
+    "command": "python scripts/run-isolated-tests.py -- backend/tests/test_analysis_snapshot_projection.py -q",
+    "passed": 2,
+    "failed": 0,
+    "scope": "Real disposable PostgreSQL snapshot projection, unchanged full result and foreign-project rejection; persisted original trace sequence identity, time and readable names. One existing EngineeringModelDelta.validate warning."
+  },
+  "browser": {
+    "command": "python scripts/run-isolated-tests.py -- docs/implementation-workloads/multi-window-analysis-20261011/test_browser_isolated.py -s -q",
+    "passed": 9,
+    "failed": 0,
+    "scope": "All six required real multi-window E2Es and three existing trace regression cases; actual production frontend build, disposable database, real imports and Golden/Fault jobs. No route mocks or product database writes.",
+    "evidence": "browser-report.json"
+  },
+  "diagnostic_history": {
+    "preserved_attempts": [1, 2, 3, 4, 5, 6, 7, 8],
+    "cursor": "Separate explicit cursor intents from received context; do not republish received positions. Assert the actual restored duration before interaction and activate the primary browser page.",
+    "harness": "Development Fast Refresh reset the simulation during lazy route compilation. The same original assertions, including every keyboard cursor step, pass against the production frontend build."
+  }
+}

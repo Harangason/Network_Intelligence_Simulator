@@ -1,0 +1,201 @@
+--- before/frontend/src/features/simulation/ui/model-simulation-runner.tsx
++++ after/frontend/src/features/simulation/ui/model-simulation-runner.tsx
+@@ -46,6 +46,7 @@
+ import { SimulationPageControls } from "./simulation-page-controls";
+ import { AnalysisWorkspaceTools, useAnalysisWorkspace } from '@/features/traces/ui/analysis-workspace-tools';
+ import { VIEW_STAGES } from '@/features/traces/lib/analysis-workspace';
++import { SaveDialog } from '@/features/projects/ui/save-dialog';
+ 
+ type SimulationView = "network" | "sequence" | "signals" | "load" | "events";
+ type ScenarioFault = {
+@@ -124,6 +125,9 @@
+   const startInFlight = useRef(false);
+   const [error, setError] = useState("");
+   const [savedScenarioNotice, setSavedScenarioNotice] = useState("");
++  const [scenarioSaveOpen, setScenarioSaveOpen] = useState(false);
++  const [scenarioName, setScenarioName] = useState("");
++  const [scenarioSaveError, setScenarioSaveError] = useState("");
+   const [mode, setMode] = useState("GOLDEN");
+   const [duration, setDuration] = useState(2);
+   const [speed, setSpeed] = useState(1);
+@@ -419,19 +423,30 @@
+     }
+   }
+ 
++  function openScenarioSave() {
++    setScenarioName(`${mode === "GOLDEN" ? "Golden / Ideal" : mode === "NORMAL" ? "Normalbetrieb" : mode === "STRESS" ? "Stresstest" : "Fehlerszenario"} ${new Date().toLocaleString("de-DE")}`);
++    setScenarioSaveError("");
++    setScenarioSaveOpen(true);
++  }
++
+   async function saveScenarioAs() {
+-    if (!workflow || !valid || !formatsResolved || formats.length === 0 || !scopeValid) return;
+-    const defaultName = `${mode === "GOLDEN" ? "Golden / Ideal" : mode === "NORMAL" ? "Normalbetrieb" : mode === "STRESS" ? "Stresstest" : "Fehlerszenario"} ${new Date().toLocaleString("de-DE")}`;
+-    const name = window.prompt("Szenario speichern unter", defaultName)?.trim();
++    if (readOnly || busy) return;
++    if (!workflow || !valid || !formatsResolved || formats.length === 0 || !scopeValid) {
++      setScenarioSaveError("Das Szenario braucht einen gültigen Preflight, Umfang und Trace-Formate.");
++      return;
++    }
++    const name = scenarioName.trim();
+     if (!name) return;
+     setBusy(true);
++    setScenarioSaveError("");
+     setError("");
+     setSavedScenarioNotice("");
+     try {
+       const saved = await saveSimulationScenario(workflow.project_id, buildScenario(name));
+       setSavedScenarioNotice(`Szenario "${String(saved.name || name)}" gespeichert.`);
++      setScenarioSaveOpen(false);
+     } catch (caught) {
+-      setError(caught instanceof Error ? caught.message : "Szenario konnte nicht gespeichert werden.");
++      setScenarioSaveError(caught instanceof Error ? caught.message : "Szenario konnte nicht gespeichert werden.");
+     } finally {
+       setBusy(false);
+     }
+@@ -614,7 +629,7 @@
+           )}
+         </div>
+         <div className="simulation-transport-controls">
+-          <button className="button secondary" disabled={!valid || busy || !formatsResolved || formats.length === 0 || !scopeValid || !workflow} onClick={() => void saveScenarioAs()} type="button">Speichern unter</button>
++          <button className="button secondary" disabled={!valid || busy || !formatsResolved || formats.length === 0 || !scopeValid || !workflow} onClick={openScenarioSave} type="button">Speichern unter</button>
+           <button className="button primary" disabled={!startAllowed} title={job && !running ? "Neuen Lauf mit der aktuellen Preflight-Freigabe starten. Der gespeicherte Lauf bleibt erhalten." : undefined} type="submit">Start</button>
+           <button className="button secondary" disabled={!running} onClick={() => void stop()} type="button">Lauf stoppen</button>
+           <button className="button secondary" disabled={!job || running || busy} onClick={reset} type="button">Reset</button>
+@@ -622,6 +637,14 @@
+       </form>
+       </details>
+       {savedScenarioNotice && <div className="notice success">{savedScenarioNotice}</div>}
++      {scenarioSaveOpen && <SaveDialog titleId="scenario-save-title" busy={busy} onCancel={() => setScenarioSaveOpen(false)}>
++        <form className="save-dialog-form" onSubmit={event => {event.preventDefault();void saveScenarioAs();}}>
++          <div><p className="eyebrow">Simulationsszenario</p><h2 id="scenario-save-title">Szenario speichern unter</h2><p>Speichert die aktuellen Einstellungen und Fehler im aktiven Projekt. Der gespeicherte Simulationslauf bleibt erhalten.</p></div>
++          <label><span>Szenarioname</span><input autoFocus required maxLength={200} value={scenarioName} onChange={event => setScenarioName(event.target.value)} /></label>
++          {scenarioSaveError && <p className="notice error" role="alert">{scenarioSaveError}</p>}
++          <div className="project-dialog-actions"><button className="button secondary" disabled={busy} onClick={() => setScenarioSaveOpen(false)} type="button">Abbrechen</button><button className="button primary" disabled={busy || !scenarioName.trim()} type="submit">{busy ? "Speichert …" : "Szenario speichern"}</button></div>
++        </form>
++      </SaveDialog>}
+       {resetPromptOpen && job && (
+         <div className="project-dialog-backdrop">
+           <section aria-labelledby="simulation-reset-title" aria-modal="true" className="project-dialog simulation-reset-dialog" role="alertdialog">
+--- before/frontend/src/features/projects/ui/project-actions.tsx
++++ after/frontend/src/features/projects/ui/project-actions.tsx
+@@ -13,6 +13,7 @@
+   ENGINEERING_AGENT_WIZARD_SESSION_KEY,
+ } from "@/features/agent/lib/agent-task-events";
+ import { notifyWorkflowChanged } from "../../workflow/ui/workflow-header";
++import { SaveDialog } from "./save-dialog";
+ 
+ type ProjectActionsProps = {
+   className?: string;
+@@ -24,6 +25,8 @@
+   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
+   const [clearDialogOpen, setClearDialogOpen] = useState(false);
+   const [projectId, setProjectId] = useState("");
++  const [saveNewProject, setSaveNewProject] = useState(false);
++  const [saveError, setSaveError] = useState("");
+   const [busy, setBusy] = useState<"clear" | "save" | "open" | "">("");
+   const [message, setMessage] = useState("");
+ 
+@@ -53,6 +56,7 @@
+   async function saveProject(targetProjectId?: string, forceChoose = false) {
+     setBusy("save");
+     setMessage("");
++    setSaveError("");
+     try {
+       const target = targetProjectId ? normalizeProjectId(targetProjectId) : undefined;
+       const bundle = await exportProjectBundle(target);
+@@ -62,21 +66,22 @@
+       setMessage(`Gespeichert: ${saved.fileName}`);
+     } catch (caught) {
+       if ((caught as { name?: string }).name !== "AbortError") {
+-        setMessage(caught instanceof Error ? caught.message : "Projekt konnte nicht gespeichert werden.");
++        const detail = caught instanceof Error ? caught.message : "Projekt konnte nicht gespeichert werden.";
++        setMessage(detail);
++        setSaveError(detail);
+       }
+     } finally {
+       setBusy("");
+     }
+   }
+ 
+-  async function handleSave() {
++  function handleSave() {
+     const current = readUserSettings().activeProject;
+-    if (current === "default") {
+-      setProjectId(`network-project-${new Date().toISOString().slice(0, 10)}`);
+-      setSaveDialogOpen(true);
+-      return;
+-    }
+-    await saveProject();
++    setSaveNewProject(current === "default");
++    setProjectId(current === "default" ? `network-project-${new Date().toISOString().slice(0, 10)}` : current);
++    setSaveError("");
++    setMessage("");
++    setSaveDialogOpen(true);
+   }
+ 
+   async function handleClear() {
+@@ -151,23 +156,24 @@
+       )}
+ 
+       {saveDialogOpen && (
+-        <div className="project-dialog-backdrop" role="presentation">
+-          <section aria-labelledby="project-save-title" aria-modal="true" className="project-dialog" role="dialog">
++          <SaveDialog titleId="project-save-title" busy={busy === "save"} onCancel={() => setSaveDialogOpen(false)}>
+             <div>
+               <p className="eyebrow">Projektablage</p>
+-              <h2 id="project-save-title">Projekt anlegen und Speicherort wählen</h2>
++              <h2 id="project-save-title">{saveNewProject ? "Projekt anlegen und speichern" : "Projekt speichern"}</h2>
+               <p>Die Projektdatei enthält Workflow, Engineering-Daten, Analysen, Simulationen und Governance-Historie.</p>
++              <p>In SAVED wird das Projekt auf dem NIS-Server abgelegt. „Datei speichern unter“ öffnet die Dateiauswahl oder den Browser-Download.</p>
+             </div>
+             <label>
+               <span>Projekt-ID</span>
+-              <input autoFocus onChange={(event) => setProjectId(event.target.value)} value={projectId} />
++              <input autoFocus readOnly={!saveNewProject} onChange={(event) => setProjectId(event.target.value)} value={projectId} />
+             </label>
++            {saveError && <p className="notice error" role="alert">{saveError}</p>}
+             <div className="project-dialog-actions">
+               <button className="button secondary" disabled={busy === "save"} onClick={() => setSaveDialogOpen(false)} type="button">Abbrechen</button>
+-              <button className="button primary" disabled={busy === "save" || !projectId.trim()} onClick={() => void saveProject(projectId, true)} type="button">Speicherort wählen</button>
++              <button className="button secondary" disabled={busy === "save" || !projectId.trim()} onClick={() => void saveProject(saveNewProject ? projectId : undefined, true)} type="button">Datei speichern unter</button>
++              <button className="button primary" disabled={busy === "save" || !projectId.trim()} onClick={() => void saveProject(saveNewProject ? projectId : undefined)} type="button">{busy === "save" ? "Speichert …" : "In SAVED speichern"}</button>
+             </div>
+-          </section>
+-        </div>
++          </SaveDialog>
+       )}
+     </>
+   );
+--- before/frontend/src/features/projects/ui/save-dialog.tsx
++++ after/frontend/src/features/projects/ui/save-dialog.tsx
+@@ -0,0 +1,15 @@
++"use client";
++
++import { useEffect, useRef, type ReactNode } from "react";
++
++// An application dialog also works where browser prompt() is suppressed.
++export function SaveDialog({ titleId, busy, onCancel, children }: {
++  titleId: string; busy: boolean; onCancel: () => void; children: ReactNode;
++}) {
++  const dialog = useRef<HTMLDialogElement>(null);
++  useEffect(() => { dialog.current?.showModal(); }, []);
++  return <dialog ref={dialog} aria-labelledby={titleId} className="project-dialog save-dialog" onCancel={event => {
++    event.preventDefault();
++    if (!busy) onCancel();
++  }}>{children}</dialog>;
++}
+--- before/frontend/src/app/globals.css
++++ after/frontend/src/app/globals.css
+@@ -308,6 +308,11 @@
+ .project-dialog label { display: grid; gap: 7px; color: var(--muted); font-size: 10px; }
+ .project-dialog input { min-height: 42px; padding: 9px 11px; border: 1px solid var(--border); border-radius: 4px; color: var(--text); background: var(--background); }
+ .project-dialog-actions { display: flex; justify-content: flex-end; gap: 8px; padding-top: 16px; border-top: 1px solid var(--border); }
++.save-dialog { margin:auto; max-height:calc(100dvh - 32px); overflow:auto; color:var(--text); }
++.save-dialog::backdrop { background:rgb(15 23 42 / .48); }
++.save-dialog-form { display:grid; gap:16px; }
++.save-dialog .project-dialog-actions { flex-wrap:wrap; }
++.save-dialog p[role=alert] { color:var(--danger); }
+ .simulation-reset-dialog { max-height: calc(100dvh - 40px); overflow: auto; }
+ .simulation-reset-artifacts { display: grid; gap: 8px; }
+ .simulation-reset-artifacts a { justify-content: flex-start; }

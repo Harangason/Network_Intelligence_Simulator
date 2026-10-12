@@ -61,7 +61,7 @@ _TOPOLOGY_BUS_BY_PROTOCOL = {
     'SOMEIP': 'automotive_ethernet',
 }
 
-MODEL_GENERATOR_VERSION = 'wizard-model-v22-generation-rules'
+MODEL_GENERATOR_VERSION = 'wizard-model-v23-functional-devices'
 ROUTING_GENERATOR_VERSION = 'wizard-routing-v11-confirmed-recipients-only'
 
 _CONTROLLER_DEVICE_TYPES = {
@@ -1224,6 +1224,11 @@ def generate(arguments: dict, *, source_evidence: list[dict] | None = None) -> d
                             "local_ref": f"ownership-{len(changes)}", "data": {"identity": identity}})
     from backend.nis.engineering.communication.wizard_communication import attach_new_message_contracts
     attach_new_message_contracts(arguments['prompt'], changes, existing)
+    from backend.nis.engineering.communication.device_communication import attach_functional_device_contracts
+    attach_functional_device_contracts(changes, spec['chains'], hardware_refs,
+        enabled=bool(re.search(r'^- Funktionaler Generierungsvertrag:\s*sensor-actuator-v1\s*$', arguments['prompt'], re.M))
+                or not ('per Wizard-Uebernehmen bestaetigt' in arguments['prompt']
+                        and not re.search(r'^- Generierungsmodus:\s*EXAMPLE_PROJECT\s*$', arguments['prompt'], re.M)))
     _bind_generated_gateway_status(changes, existing)
     # Owners precede their endpoints so nested local references resolve on apply.
     new_hardware = [change for change in changes if change["object_type"] == "HardwareNode" and change.get("action", "CREATE") == "CREATE"]
