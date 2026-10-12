@@ -34,3 +34,27 @@ refs/backup/main-before-large-file-cleanup-20261012 erhalten.
 Diese Sicherung enthaelt weiterhin die grossen Git-Objekte und soll nicht
 gepusht werden. Plan, Commit-Zuordnung und Pruefergebnisse liegen lokal
 unter .tmp/git-push-cleanup-20261012/.
+
+
+## Lokale Dateibereinigung am 2026-10-12
+
+Nach der Git-Bereinigung wurden die drei entbehrlichen Diagnose-Dateien
+native-preflight-browser.sql, human-completed-simulation.json und
+workflow-polling-frozen-fixture.json auch lokal entfernt.
+Insgesamt wurden 521705482 Bytes (rund 498 MiB) an lokalen Dateien entfernt.
+
+Beide zugehoerigen Implementierungsarbeiten sind abgeschlossen. Die Dateien
+werden nicht von der Anwendung, den regulaeren Tests oder den Release-Skripten
+referenziert. Historische eigenstaendige SQL-/Workflow-Diagnose-Replays
+benoetigen nach der Entfernung neu erzeugte Eingabedaten.
+Die bestehenden Release-, Simulations- und Produktionsnachweise bleiben erhalten.
+
+Die drei Docker-TAR-Archive bleiben erhalten: Alle drei zugehoerigen
+unveraenderlichen Image-IDs fehlen im Docker-Bestand. Die Archive wurden
+ausdruecklich vor der Image-Loeschung als Wiederherstellungskopien gesichert.
+Ein Nachweis ihrer Entbehrlichkeit liegt nicht vor.
+
+Dateihashes, exakte Loeschliste, begruendete Aufbewahrung und Abschlusspruefung
+liegen lokal unter .tmp/git-push-cleanup-20261012/file-deletion-*.json.
+Die lokale Git-Historiensicherung bleibt erhalten; deren Git-Objekte wurden
+nicht geloescht oder geprunt.
