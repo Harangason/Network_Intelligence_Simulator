@@ -1,6 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { chatDocumentContext, validateChatAttachment } from './chat-attachments.ts';
+import { completeWizardDocumentText, MAX_WIZARD_DOCUMENT_CHARS } from './chat-attachments.ts';
+
+test('wizard documents retain requirements after the former 12000 character cutoff', () => {
+  const source = 'Intro\n' + 'x'.repeat(15000) + '\nController: FinalControl\n';
+  assert.equal(completeWizardDocumentText(source), source);
+  assert.ok(completeWizardDocumentText(source).endsWith('Controller: FinalControl\n'));
+  assert.equal(completeWizardDocumentText('x'.repeat(MAX_WIZARD_DOCUMENT_CHARS)).length, MAX_WIZARD_DOCUMENT_CHARS);
+  assert.throws(() => completeWizardDocumentText('x'.repeat(MAX_WIZARD_DOCUMENT_CHARS + 1)), /nicht gekürzt/);
+});
 
 const source = { name: 'spec.dbc', size: 100, format: 'DBC', text: 'SG_ Fahrersitz links', truncated: false };
 test('preserves extracted engineering content and source boundaries', () => {

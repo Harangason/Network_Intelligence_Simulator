@@ -1,0 +1,33 @@
+{
+  "name": "RateLimiter",
+  "description": "Limits the rate of change of a target signal based on rise and fall rates.",
+  "source_code": "class RateLimiter(FunctionBlock):\n    def step(self, inputs, parameters, dt):\n        target = inputs[\"target\"]\n        rise_rate = parameters[\"rise_rate\"]\n        fall_rate = parameters[\"fall_rate\"]\n        initial = parameters[\"initial\"]\n        \n        if \"output\" not in self.state:\n            self.state[\"output\"] = initial\n        \n        current = self.state[\"output\"]\n        \n        if target > current:\n            max_change = rise_rate * dt\n            new_value = current + max_change\n            if new_value > target:\n                new_value = target\n        else:\n            max_change = fall_rate * dt\n            new_value = current - max_change\n            if new_value < target:\n                new_value = target\n        \n        self.state[\"output\"] = new_value\n        return new_value",
+  "parameter_schema": {
+    "rise_rate": {
+      "type": "number",
+      "required": true,
+      "unit": "generic model unit/s",
+      "minimum": 0
+    },
+    "fall_rate": {
+      "type": "number",
+      "required": true,
+      "unit": "generic model unit/s",
+      "minimum": 0
+    },
+    "initial": {
+      "type": "number",
+      "required": true,
+      "unit": "generic model unit"
+    }
+  },
+  "provenance": {
+    "provider": "ollama-local",
+    "model": "qwen3.8:27b",
+    "model_digest": "22130167c4c20e20c7b71454612966ca8e8171e9b3cc8ab6ce8aa6cbfec79643",
+    "request_sha256": "c3fc5539d6ca5c031c03ab27b3a47fed17265893b91810830dbe9b8076f02183",
+    "generated_by": "QWEN",
+    "status": "UNVALIDATED_SIMULATION_DESIGN"
+  },
+  "source_sha256": "750d38e5ce41335b2ebf4545e93c95718ed95b096e0cf66323055ccee6ed6b32"
+}

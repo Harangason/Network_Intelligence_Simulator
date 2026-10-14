@@ -161,6 +161,53 @@ def project_draft():
     return response, 200 if result.success else 409
 
 
+@agent_api.post('/document-intake')
+def document_intake():
+    """Local-model interpretation only; acceptance follows normal wizard review."""
+    from backend.nis.agent.orchestration.project_intake import interpret_project_document
+    request.max_content_length = 512 * 1024
+    if not _human_intent():
+        return jsonify({'error': 'Bitte die lokale Dokumentauswertung ausdrücklich starten.'}), 403
+    if not _slots.acquire(blocking=False):
+        return jsonify({'error': 'Alle lokalen KI-Arbeitsplätze sind belegt. Bitte erneut versuchen.'}), 429
+    authority = ToolAuthority(_project(), 'local-human')
+    arguments = request.get_json(silent=True) or {}
+    if 'application/x-ndjson' in request.headers.get('Accept', ''):
+        queue = Queue()
+        def worker():
+            try:
+                result = execute(ToolAuthority(authority.project_id, authority.actor, progress_callback=queue.put),
+                    'interpret_project_document', Permission.GENERATE_PROPOSAL, arguments, interpret_project_document)
+                queue.put({'type': 'RESULT', 'result': result.model_dump(mode='json')})
+            finally:
+                _slots.release()
+                queue.put(None)
+        _executor.submit(worker)
+        @stream_with_context
+        def stream():
+            yield json.dumps({'type': 'PROGRESS', 'text': 'Lokaler Qwen startet die vollständige Dokumentprüfung.'}) + '\n'
+            while True:
+                try:
+                    item = queue.get(timeout=15)
+                except Empty:
+                    yield json.dumps({'type': 'HEARTBEAT'}) + '\n'
+                    continue
+                if item is None:
+                    break
+                yield json.dumps(item, ensure_ascii=False) + '\n'
+        return Response(stream(), mimetype='application/x-ndjson',
+                        headers={'Cache-Control': 'no-store', 'X-Accel-Buffering': 'no'})
+    try:
+        result = execute(authority, 'interpret_project_document',
+                         Permission.GENERATE_PROPOSAL, arguments,
+                         interpret_project_document)
+        response = jsonify(result.model_dump(mode='json'))
+        response.headers['Cache-Control'] = 'no-store'
+        return response, 200 if result.success else 422
+    finally:
+        _slots.release()
+
+
 @agent_api.post('/project-draft/create-project')
 def create_project_from_draft():
     from backend.nis.agent.tools import project_creation as project_creation

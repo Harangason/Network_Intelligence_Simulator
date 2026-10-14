@@ -23,7 +23,7 @@ test('radar distance remains a scalar quantity; only declared object lists recei
   assert.equal(sensor.length_bits, source.length_bits);
   assert.equal(sensor.unit, 'm');
   assert.equal(sensor.configuration.functional_device_contract.measurement, 'distance');
-  assert.ok(result.find(item => item.configuration.functional_output_template).configuration.functional_device_contract.accepted_measurements.includes('distance'));
+  assert.deepEqual(result.find(item => item.configuration.functional_output_template).configuration.functional_device_contract.accepted_measurements, ['object_list', 'radar_detections']);
 });
 
 test('placeholder camera inputs and processed objects work independently of industry and device names', () => {

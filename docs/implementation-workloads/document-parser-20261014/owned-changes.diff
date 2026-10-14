@@ -1,0 +1,1123 @@
+--- before/frontend/src/features/agent/lib/engineering-specification.ts
++++ after/frontend/src/features/agent/lib/engineering-specification.ts
+@@ -102,6 +102,7 @@
+   communicationSystemCounts: Record<string, number>;
+   networkArchitecture: NetworkArchitectureMode;
+   targetCounts: EngineeringTargetCounts;
++  unresolvedInventoryGroups: string[];
+ };
+ 
+ export type EngineeringDomainEvidence = {
+@@ -1397,10 +1398,13 @@
+ }
+ 
+ function headingLabel(line: string) {
++  line = line.replace(/[\u2010\u2011\u2212]/g, '-').replace(/\u00ad/g, '');
++  const documentHeading = line.match(/^\s*(?:#{1,6}\s*)?\d+(?:\.\d+)*[.)]?\s+(.+?)\s*$/)?.[1];
++  if (documentHeading) return cleanLabel(documentHeading);
+   const bold = line.match(/^\s*(?:(?:[-*]|\d+\.)\s+)?\*\*(.+?)\*\*(?:\s*:|\s*$)/)?.[1];
+   if (bold) return cleanLabel(bold);
+   const bullet = line.match(/^\s*(?:[-*]|\d+\.)\s+(.+?)\s*$/)?.[1];
+-  if (!bullet) return "";
++  if (!bullet) return /[.!?]|\b(?:der|die|das|eines|mit|with|auf|on|wird|is|must|shall)\b/iu.test(line) ? '' : cleanLabel(line);
+   // Compact specifications often put type and parameters on the same bullet.
+   // Only the leading label identifies the hardware participant.
+   return cleanLabel(bullet.split(/\s*[:,]\s*/, 1)[0] ?? "");
+@@ -1417,7 +1421,8 @@
+ }
+ 
+ function hardwareName(label: string) {
+-  const rawName = cleanLabel(label);
++  const rawName = cleanLabel(label).replace(/\s*\([A-Z][A-Z\d_-]{1,15}\)\s*$/, '').trim();
++  if (!/^[\p{L}\d\s_/-]+$/u.test(rawName) || /^(?:Domain[-\s]+Controllers?|zentrale[rsnm]?\s+Gateway)$/i.test(rawName)) return '';
+   // A transport path such as "BACnet/IP zum Gateway" describes a link, not
+   // another physical gateway. The trailing role word must not create hardware.
+   if (/^(?:bacnet\/ip|bacnet\s+ms\/tp)\s+(?:zum|to)\s+gateway$/i.test(rawName)) return "";
+@@ -1465,6 +1470,8 @@
+ 
+ /** Explicit role-first declarations keep identifiers that have no role suffix. */
+ function declaredHardwareNames(line: string): Array<{ name: string; declaredType: string }> {
++  // Requirements reference capabilities, rather than declaring new hardware.
++  if (requirementOnlyLine(line)) return [];
+   const roles = /\b(gateways?|ecus?|controllers?|sensor(?:en|s)?|aktor(?:en)?|aktuator(?:en)?|actuators?|plcs?|sps|steuerger(?:ä|ae)te?)\b\s*(?::\s*|\s+)(?:namens\s+|named\s+)?/giu;
+   const name = /^(?:"([^"\r\n]+)"|„([^“\r\n]+)“|'([^'\r\n]+)'|([\p{L}][\p{L}\d_-]*))/u;
+   const prose = /^(?:mit|und|and|oder|or|von|vom|zu|zum|zur|fuer|für|auf|an|aus|im|in|der|die|das|den|dem|des|ein(?:e|er|em|en|es)?|einem|einen|with|for|to|is|are|wird|werden|soll|sollen|ist|sind|als|je|pro|insgesamt|jeweils|plus|ueber|über|anzahl|erfassen|messen|misst|steuern|steuert|regeln|regelt|schließen|schliessen|schließt|schliesst|überwachen|ueberwachen|überwacht|ueberwacht|measure|capture|control|can|can_fd|can-fd|lin|ethernet|sensor(?:en|s)?|aktor(?:en)?|aktuator(?:en)?|actuators?|ecus?|gateways?|plcs?)$/iu;
+@@ -1489,7 +1496,7 @@
+       const candidate = remaining.match(name);
+       if (!candidate) break;
+       const label = (candidate[1] ?? candidate[2] ?? candidate[3] ?? candidate[4]).trim();
+-      if (!label || prose.test(label) || isCountedHardwareGroup(label)) break;
++      if (!label || prose.test(label) || /^zentrale[rsnm]?$/i.test(label) || isCountedHardwareGroup(label)) break;
+       result.push({ name: label, declaredType });
+       remaining = remaining.slice(candidate[0].length);
+       const separator = remaining.match(/^\s*(?:,\s*(?:(?:und|and)\s+)?|(?:und|and|&)\s+)/iu);
+@@ -1498,6 +1505,11 @@
+     }
+   }
+   return result;
++}
++
++function requirementOnlyLine(line: string) {
++  const explicitDeclaration = /^\s*(?:[-*]\s*)?(?:Sensor|Aktor|Aktuator|Actuator|ECU|Controller|Gateway|PLC|SPS)\s*:/iu.test(line);
++  return /^\s*REQ\b/iu.test(line) || (!explicitDeclaration && /\b(?:muss|müssen|must|shall)\b/iu.test(line));
+ }
+ 
+ function groupedHardwareNames(lines: string[]): HardwareOccurrence[] {
+@@ -1704,8 +1716,18 @@
+   return text.replace(/^- Bus-Teilnehmergrenzen:[^\r\n]*(?:\r?\n|$)/gm, "");
+ }
+ 
++/** Explicitly declared device abbreviations are not transport tokens. */
++function withoutDeviceAliases(text: string) {
++  const aliases = [...text.matchAll(/^\s*(?:#{1,6}\s*)?(?:\d+(?:\.\d+)*[.)]?\s+)?[^\r\n()]+\b(?:Controller|Computer|ECU|Gateway|Sensor)\s*\(([A-Z][A-Z\d_-]{1,15})\)\s*$/gm)]
++    .map(match => match[1]);
++  for (const alias of aliases) {
++    text = text.replace(new RegExp('\\b' + alias + '\\b(?=\\)\\s*$|[-_]\\d+\\s*:|\\s+(?:MUSS|MÜSSEN|must|shall)\\b|\\s*\\()', 'gm'), 'device_reference');
++  }
++  return text;
++}
++
+ export function extractCommunicationSystems(text: string) {
+-  const key = normalized(withoutPlanningLimits(text));
++  const key = normalized(withoutDeviceAliases(withoutPlanningLimits(text)));
+   const systems: string[] = [];
+   const confirmedMention = (pattern: string) => [...key.matchAll(new RegExp(pattern, "g"))].some((match) => {
+     const start = match.index ?? 0;
+@@ -1720,7 +1742,7 @@
+   if (confirmedMention("\\blin\\b")) systems.push("LIN");
+   if (confirmedMention("\\bcanopen\\b")) systems.push("CANopen");
+   if (confirmedMention("\\bcan fd\\b|\\bcanfd\\b")) systems.push("CAN_FD");
+-  else if (confirmedMention("\\bcan\\b")) systems.push("CAN");
++  if (confirmedMention("\\bcan\\b(?!\\s+fd\\b)")) systems.push("CAN");
+   if (confirmedMention("\\bautomotive ethernet\\b|\\bethernet\\b")) systems.push("Ethernet");
+   if (confirmedMention("\\bsome ip\\b|\\bsomeip\\b")) systems.push("SOME_IP");
+   if (confirmedMention("\\barinc 429\\b|\\barinc429\\b")) systems.push("ARINC");
+@@ -1791,6 +1813,7 @@
+ }
+ 
+ export function extractCommunicationSystemCounts(text: string): Record<string, number> {
++  text = withoutDeviceAliases(text);
+   const counts: Record<string, number> = {};
+   const ethernetSegments: Record<string, number> = {};
+   const countBeforePattern = new RegExp(`\\b${COUNT_TOKEN}\\s*(?:x\\s*)?${COMMUNICATION_SYSTEM_PATTERN}\\b`, "gi");
+@@ -1798,7 +1821,9 @@
+   const qualifiedEthernetSegments = new RegExp(`\\b${COUNT_TOKEN}\\s+(industrial\\s+ethernet|ethernet\\s+backbone)\\s+segmente?\\b`, "gi");
+ 
+   specificationBody(text).split(/\r?\n/).forEach((line) => {
+-    const source = normalized(line.replace(/^\s*#{1,6}\s+/, "").replace(/^\s*\d+[.)]\s+/, ""));
++    const source = normalized(line.replace(/^\s*#{1,6}\s+/, "")
++      .replace(/^\s*\d+(?:\.\d+)*[.)]\s+|^\s*\d+\.\d+(?:\.\d+)*\s+/, "")
++      .replace(/^\s*REQ[^:]*:\s*/i, ''));
+     for (const match of source.matchAll(qualifiedEthernetSegments)) {
+       const category = match[2].startsWith("industrial") ? "industrial" : "backbone";
+       ethernetSegments[category] = Math.max(ethernetSegments[category] ?? 0, countValue(match[1] ?? ""));
+@@ -1842,10 +1867,12 @@
+     if (/automotive|fahrzeug/.test(explicitIndustry)) return "automotive";
+   }
+   const key = normalized(text);
++  const evidence = engineeringDomainEvidence(text);
++  if (evidence.confidence >= 0.65) return evidence.domain;
+   if (/robotics|robotik|roboter|robot.*controller|\bros\b|manipulator|motion planner/.test(key)) return "robotics_ros";
+   if (/industrial|plc|profinet|ethercat|sicherheitssystem|sicherheitssteuerung/.test(key)) return "industrial_automation";
+   if (/aerospace|arinc|avionik/.test(key)) return "aerospace";
+-  if (/\brail\b|bahn|zug|train/.test(key)) return "rail";
++  if (/\brail\b|\bbahn\b|\bzug\b|\btrain\b/.test(key)) return "rail";
+   if (/marine|schiff|ship|vessel|maritim/.test(key)) return "marine";
+   if (/building automation|gebaeude|gebäude|knx|bacnet|hlk/.test(key)) return "building_automation";
+   if (/\benergy\b|energie|microgrid|wechselrichter|schaltanlage|transformator/.test(key)) return "energy";
+@@ -1857,7 +1884,7 @@
+ 
+ const DOMAIN_EVIDENCE_RULES: Array<{ domain: string; markers: RegExp[] }> = [
+   { domain: "rail", markers: [/\bbogie/i, /drehgestell/i, /\baxle/i, /pantograph/i, /stromabnehmer/i, /wayside/i, /eventrecorder/i, /passengerinformation/i, /couplingcontrol/i, /signalling/i] },
+-  { domain: "automotive", markers: [/kombiinstrument/i, /headupdisplay/i, /abgasnachbehandlung/i, /batteriemanagement/i, /motorsteuerung/i, /getriebesteuerung/i, /fahrerassistenz/i, /parkassistenz/i, /keylessentry/i, /bordnetzmanagement/i] },
++  { domain: "automotive", markers: [/straßenfahrzeug|strassenfahrzeug/i, /\bfahrzeug\b/i, /\bchassis\b/i, /\bpowertrain\b/i, /kombiinstrument/i, /headupdisplay/i, /abgasnachbehandlung/i, /batteriemanagement/i, /motorsteuerung/i, /getriebesteuerung/i, /fahrerassistenz/i, /parkassistenz/i, /keylessentry/i, /bordnetzmanagement/i] },
+   { domain: "industrial_automation", markers: [/\bplc\b/i, /profinet/i, /ethercat/i, /fertigungs/i, /foerder/i, /servo/i, /sicherheitssystem/i, /sicherheitssteuerung/i, /deterministisch/i] },
+   { domain: "aerospace", markers: [/arinc/i, /avionik/i, /flightcontrol/i, /landinggear/i, /autopilot/i] },
+   { domain: "energy", markers: [/microgrid/i, /wechselrichter/i, /schaltanlage/i, /transformator/i, /gridcontrol/i] },
+@@ -2049,7 +2076,7 @@
+   domainOverride?: string,
+   completenessFirst = false,
+ ): ExtractedEngineeringSpecification {
+-  text = withoutPlanningLimits(text);
++  text = withoutPlanningLimits(text).replace(/[\u2010\u2011\u2212]/g, '-').replace(/\u00ad/g, '');
+   const explicitMode = text.match(/^- Generierungsmodus:\s*(REAL_PROJECT|EXAMPLE_PROJECT)\s*$/mi)?.[1]?.toUpperCase();
+   const legacyConfirmed = !explicitMode && /per Wizard-Uebernehmen bestaetigt/.test(text);
+   const exampleRequested = engineeringGenerationMode(text) === 'EXAMPLE_PROJECT';
+@@ -2061,6 +2088,9 @@
+   const grouped = groupedHardwareNames(lines);
+   const groupedLineIndexes = new Set(grouped.map((item) => item.index));
+   const occurrences = [...lines.flatMap((line, index): HardwareOccurrence[] => {
++    if (requirementOnlyLine(line)) return [];
++    // Type overviews do not name installed instances or confirm one of each.
++    if (/^\s*(?:Sensorik|Aktorik|Sensor\s+types|Sensortypen|Actuator\s+types|Aktortypen)\s*[:(]/iu.test(line)) return [];
+     if (groupedLineIndexes.has(index)) return [];
+     if (/^\s*[-*]?\s*(?:gemischte|mixed)\s+(?:PLC|SPS)[-–,]/i.test(line)) return [];
+     const singularControllers = singularControllerHardwareNames(line);
+@@ -2073,8 +2103,11 @@
+     const nextIndex = occurrences[occurrenceIndex + 1]?.index ?? lines.length;
+     const sectionBoundary = lines.findIndex((line, index) => index > occurrence.index && index < nextIndex
+       && !lines[index - 1]?.trim()
+-      && /^\s*(?:#{1,6}\s+)?[^-*].*:\s*$/.test(line));
+-    const contextEnd = sectionBoundary >= 0 ? sectionBoundary : nextIndex;
++      && (/^\s*(?:#{1,6}\s*)?\d+(?:\.\d+)*[.)]?\s+/.test(line)
++        || (/^\s*(?:#{1,6}\s+)?[^-*].*:\s*$/.test(line)
++          && !/^\s*(?:Aufgaben|Tasks|Schnittstellen|Interfaces|Anforderungen|Requirements|Plattform|Platform)\s*:/i.test(line))));
++    const inlineList = /\([^)]*,[^)]*\)/.test(lines[occurrence.index]);
++    const contextEnd = inlineList ? occurrence.index + 1 : sectionBoundary >= 0 ? sectionBoundary : nextIndex;
+     const key = normalized(normalizeHardwareName(occurrence.name));
+     const existing = contexts.get(key) ?? { name: occurrence.name, lines: [] };
+     if (occurrence.declaredType) existing.declaredType = occurrence.declaredType;
+@@ -2160,7 +2193,12 @@
+       || (safetyParticipant && Boolean(safetyProfile) && communicationSystems.length === 1)
+       || exampleRequested
+       || (legacyConfirmed && communicationSystems.length === 1);
+-    const contextualInterfaceType = entry.declaredInterface ?? protocolFrom(context, mayUseProjectInterface ? interfaceType : "Other");
++    const documentController = /\b(?:Controller|Computer|ECU)\s*\([A-Z][A-Z\d_-]{1,15}\)/.test(entry.lines[0] ?? '')
++      && isEngineeringControllerDevice(declaredType);
++    const contextualSystems = extractCommunicationSystems(context).filter(system => !['SOME_IP', 'DDS', 'MQTT', 'OPCUA'].includes(system));
++    const ambiguousDocumentConnection = documentController && contextualSystems.length > 1;
++    const contextualInterfaceType = entry.declaredInterface ?? (ambiguousDocumentConnection ? 'Other'
++      : protocolFrom(context, mayUseProjectInterface ? interfaceType : "Other"));
+     const chainInterfaceType = explicitConnection || (contextualInterfaceType === "CAN" && /kamera|camera|radar|lidar|umfeld|objekt/i.test(`${hardwareName} ${context}`)
+       ? "Ethernet"
+       : contextualInterfaceType);
+@@ -2218,6 +2256,7 @@
+       max_value: maxValue,
+       ...architectureMetadata,
+       configuration: { ...architectureMetadata.configuration,
++        ...(ambiguousDocumentConnection ? { connection_candidates: contextualSystems } : {}),
+         ...(explicitCycleMs !== undefined ? { cycle_source: 'explicit_user_specification' } : {}),
+         ...(modeledMeasurement ? { sensor_measurement: modeledMeasurement.id,
+           measurement_source: explicitMeasurementId ? 'explicit_user_selection' : 'semantic_device_role' } : {}),
+@@ -2258,6 +2297,13 @@
+     communicationSystemCounts,
+     networkArchitecture,
+     targetCounts: expanded.targets,
++    unresolvedInventoryGroups: lines.flatMap(line => {
++      const group = line.match(/^\s*(Sensorik|Aktorik|Sensor\s+types|Sensortypen|Actuator\s+types|Aktortypen)\s*[:(]\s*(.+?)\)?\s*$/iu);
++      if (!group) return [];
++      const sensorGroup = /^(?:Sensorik|Sensor\s+types|Sensortypen)$/iu.test(group[1]);
++      if ((sensorGroup ? expanded.targets.sensors : expanded.targets.actuators) > 0) return [];
++      return [`${sensorGroup ? 'Sensorik' : 'Aktorik'} (${group[2]}): Stückzahlen und konkrete Teilnehmer fehlen. Bitte ${sensorGroup ? 'Sensoren' : 'Aktoren'} in der Projektbeschreibung ergänzen und ${sensorGroup ? 'Messgrößen' : 'Stellbefehle'}, Anschlüsse sowie Zuordnungen prüfen.`];
++    }),
+   };
+ }
+ 
+--- before/frontend/src/features/agent/ui/agent-chat-core.tsx
++++ after/frontend/src/features/agent/ui/agent-chat-core.tsx
+@@ -5,6 +5,8 @@
+ import { readAssistantContext } from "@/features/agent/lib/assistant-context";
+ import type { AssistantGraphState } from "@/shared/lib/index.ts";
+ import type { ChatAttachment } from "@/features/agent/lib/chat-attachments";
++import { completeWizardDocumentText, MAX_CHAT_FILE_BYTES } from "@/features/agent/lib/chat-attachments";
++import { readDocumentIntakeResponse, type DocumentIntakeProposal } from '@/features/agent/lib/engineering-agent';
+ import { AgentChatComposer } from "./agent-chat-composer";
+ import { ProjectDraftEditor, type ProjectDraftStatus } from '../../projects/ui/project-draft-editor';
+ 
+@@ -1144,6 +1146,11 @@
+   const [linkedDraftStatus, setLinkedDraftStatus] = useState<ProjectDraftStatus | null>(null);
+   const draftStartRef = useRef(false);
+   const [taskFiles, setTaskFiles] = useState<TaskAttachment[]>([]);
++  const [taskAttachmentError, setTaskAttachmentError] = useState('');
++  const [documentIntakeBusy, setDocumentIntakeBusy] = useState(false);
++  const [documentIntakeProgress, setDocumentIntakeProgress] = useState('');
++  const [documentIntakeError, setDocumentIntakeError] = useState('');
++  const [documentIntake, setDocumentIntake] = useState<{ source: string; project: string; proposal: DocumentIntakeProposal } | null>(null);
+   const [equipmentEdits, setEquipmentEdits] = useState<{ source: string; values: Partial<Record<keyof EngineeringHardwareCounts, string>> }>({ source: "", values: {} });
+   const [communicationSystemEdits, setCommunicationSystemEdits] = useState<{ source: string; values: Record<string, string> }>({ source: "", values: {} });
+   const [equipmentClusterEdits, setEquipmentClusterEdits] = useState<{
+@@ -1186,7 +1193,7 @@
+       : key === 'actuators' && intakeRequirement && /\b(?:aktoren|actuators|ventile|valves)\b/i.test(taskText)
+         && recognizedEquipment.targetCounts.actuators === 0 ? '' : String(recognizedEquipment.targetCounts[key]),
+   ])) as Record<keyof EngineeringHardwareCounts, string>;
+-  const equipmentReady = Object.values(equipmentValues).every((value) => /^\d+$/.test(value)
++  const equipmentReady = !taskAttachmentError && Object.values(equipmentValues).every((value) => /^\d+$/.test(value)
+     && Number(value) <= 1000) && Object.values(equipmentValues).some((value) => Number(value) > 0);
+   const equipmentCounts = Object.fromEntries(EQUIPMENT_CATEGORIES.map(({ key }) => [key, Number(equipmentValues[key])])) as EngineeringHardwareCounts;
+   useEffect(() => {
+@@ -1205,7 +1212,8 @@
+     else if (type === 'Gateway') identifiedCounts.gateways += 1;
+     else if (isEngineeringControllerDevice(type)) identifiedCounts.ecus += 1;
+   }
+-  const equipmentIdentityReady = EQUIPMENT_CATEGORIES.every(({ key }) => identifiedCounts[key] === equipmentCounts[key]);
++  const equipmentIdentityReady = EQUIPMENT_CATEGORIES.every(({ key }) => identifiedCounts[key] === equipmentCounts[key])
++    && plannedEquipment.unresolvedInventoryGroups.length === 0;
+   const connectionInventory = [...new Map(plannedEquipment.chains.map(chain => [chain.hardware_name, chain])).values()];
+   const sensorInventory = connectionInventory.filter(chain => chain.device_type === 'SensorController');
+   const namedSensors = sensorInventory.filter(chain => !/^Sensor\d+$/.test(chain.hardware_name));
+@@ -2026,7 +2034,8 @@
+   const atLastStep = phase === "questionnaire" && step === questionnaireSteps.length - 1;
+   const projectReady = projectName.trim().length > 0;
+   const taskReady = taskText.trim().length > 0 || taskFiles.length > 0;
+-  const effectiveBusy = busy || submitting || !wizardPreferencesReady || Boolean(wizardRestoreError);
++  const effectiveBusy = busy || submitting || documentIntakeBusy || !wizardPreferencesReady || Boolean(wizardRestoreError);
++  const currentDocumentProposal = documentIntake?.source === taskSource && documentIntake.project === projectId ? documentIntake.proposal : null;
+   const selectedArchitecture = architectureOption(networkArchitecture);
+   const plannedNetworkConnections = plannedNetworkConnectionCount({
+     architectureId: selectedArchitecture?.id,
+@@ -2117,10 +2126,45 @@
+     });
+   }
+ 
++  async function reviewDocumentWithQwen() {
++    if (documentIntakeBusy || !taskSource.trim()) return;
++    const source = taskSource;
++    const sourceRequestId = Array.from(crypto.getRandomValues(new Uint8Array(16)), byte => byte.toString(16).padStart(2, '0')).join('');
++    setDocumentIntakeBusy(true); setDocumentIntakeProgress('Lokaler Qwen startet …'); setDocumentIntakeError(''); setDocumentIntake(null);
++    try {
++      completeWizardDocumentText(source);
++      if (readActiveProjectId() !== projectId) throw new Error('Das aktive Projekt wurde gewechselt.');
++      const sessionResponse = await fetch('/api/engineering/agent/review-session', { cache: 'no-store' });
++      if (!sessionResponse.ok) throw new Error('Die Dokumentauswertung konnte nicht vorbereitet werden.');
++      const session = await sessionResponse.json();
++      const response = await fetch('/api/engineering/agent/document-intake', {
++        method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept': 'application/x-ndjson', 'X-Project-ID': projectId,
++          'X-Human-Review': 'confirmed', 'X-Review-CSRF': session.csrf_token },
++        body: JSON.stringify({ source, source_request_id: sourceRequestId, source_name: taskFiles.map(file => file.name).join(', ').slice(0, 180) || 'Projektbeschreibung' }),
++      });
++      const proposal = await readDocumentIntakeResponse(response, text => setDocumentIntakeProgress(text));
++      if (readActiveProjectId() !== projectId || proposal.source_request_id !== sourceRequestId
++          || !/^[0-9a-f]{64}$/.test(proposal.source_sha256) || !proposal.source_complete
++          || proposal.source_chars !== Array.from(source).length || proposal.canonical_writes !== false || proposal.status !== 'REVIEW_REQUIRED') {
++        throw new Error('Der Vorschlag gehört nicht zur vollständigen aktuellen Quelle.');
++      }
++      setDocumentIntake({ source, project: projectId, proposal });
++    } catch (error) {
++      setDocumentIntakeError(error instanceof Error ? error.message : 'Die lokale Dokumentauswertung ist fehlgeschlagen.');
++    } finally { setDocumentIntakeBusy(false); }
++  }
++
+   async function handleTaskFiles(files: FileList | null, source: TaskAttachment["source"] = "task") {
+     const selected = Array.from(files ?? []).slice(0, MAX_TASK_ATTACHMENTS);
+-    const attachments = await Promise.all(selected.map((file) => readTaskAttachment(file, source)));
+-    setTaskFiles((current) => mergeTaskAttachments(current, attachments));
++    try {
++      const attachments = await Promise.all(selected.map((file) => readTaskAttachment(file, source)));
++      const merged = mergeTaskAttachments(taskFiles, attachments);
++      completeWizardDocumentText(merged.map(file => file.content ?? '').join('\n'));
++      setTaskFiles(merged);
++      setTaskAttachmentError('');
++    } catch (error) {
++      setTaskAttachmentError(error instanceof Error ? error.message : 'Die Datei konnte nicht vollständig gelesen werden.');
++    }
+   }
+ 
+   function selectNetworkArchitecture(id: NetworkArchitectureId) {
+@@ -3129,6 +3173,33 @@
+               <small>Text/SVG wird direkt gelesen. PDF, Office und Bilder werden als Evidence in den Auftrag aufgenommen.</small>
+             </span>
+           </label>
++          {taskAttachmentError && <p className="notice error" role="alert">{taskAttachmentError}</p>}
++          <button className="button secondary" type="button" disabled={effectiveBusy || documentIntakeBusy || !taskReady || !!taskAttachmentError}
++            onClick={() => void reviewDocumentWithQwen()}>{documentIntakeBusy ? 'Lokaler Qwen prüft das Dokument …' : 'Lokalen Qwen-Vorschlag erstellen'}</button>
++          {documentIntakeBusy && <p role="status">{documentIntakeProgress}</p>}
++          {documentIntakeError && <p className="notice error" role="alert">{documentIntakeError}</p>}
++          {currentDocumentProposal && <section className="agent-cluster-review" aria-label="Qwen-Dokumentvorschlag">
++            <h3>Lokaler Dokumentvorschlag zur Prüfung</h3>
++            <p>{currentDocumentProposal.interpretation.summary}</p>
++            <p>{currentDocumentProposal.model} · vollständige Quelle ({currentDocumentProposal.source_chars.toLocaleString('de-DE')} Zeichen). Es wurde kein Modell geändert.</p>
++            <details><summary>Erkannte Aussagen und Quellen</summary><ul>
++              {currentDocumentProposal.interpretation.components.map((item, index) => <li key={index}>
++                <strong>{item.name}</strong> · {({ INSTANCE: 'konkretes Gerät', CATEGORY: 'Gerätekategorie ohne Stückzahl', FUNCTION: 'Funktion', REQUIREMENT: 'Anforderung' })[item.kind]}
++                {item.quantity !== null && ' · Anzahl ' + item.quantity}<blockquote>{item.source_quote}</blockquote>
++              </li>)}
++              {currentDocumentProposal.interpretation.technologies.map((item, index) => <li key={'technology-' + index}>
++                {item.name} · {({ TRANSPORT: 'Kommunikationstechnik', DEVICE_ALIAS: 'Gerätekürzel', UNRESOLVED: 'Technik noch offen' })[item.kind]}<blockquote>{item.source_quote}</blockquote>
++              </li>)}
++            </ul></details>
++            <h4>Entwurfsidee</h4><p style={{ whiteSpace: 'pre-wrap' }}>{currentDocumentProposal.interpretation.proposed_task}</p>
++            {currentDocumentProposal.interpretation.assumptions.length > 0 && <><h4>Annahmen zur Prüfung</h4><ul>{currentDocumentProposal.interpretation.assumptions.map((item, index) => <li key={index}>{item}</li>)}</ul></>}
++            {currentDocumentProposal.interpretation.open_questions.length > 0 && <><h4>Offene Angaben</h4><ul>{currentDocumentProposal.interpretation.open_questions.map((item, index) => <li key={index}>{item}</li>)}</ul></>}
++            <p>Du kannst die Entwurfsidee in der Projektbeschreibung ausarbeiten. Geräteumfang, Anschlüsse und Modellvorschlag werden anschließend im normalen Wizard geprüft; dieser Dokumentvorschlag erteilt keine Freigabe.</p>
++            <button className="button secondary" type="button" disabled={effectiveBusy} onClick={() => {
++              const choices = taskText.split(/\r?\n/).filter(line => /^[ \t]*- (?:Sensor-Messgrößen|Aktor-Befehle|Geräteanschlüsse|Gerätezuordnungen|Geräte-Spezifikationen):/.test(line));
++              setTaskText([currentDocumentProposal.interpretation.proposed_task, ...choices].join('\n'));
++            }}>Entwurfstext in Projektbeschreibung übernehmen</button>
++          </section>}
+           {taskFiles.some((file) => file.source === "task") && (
+             <ul className="agent-file-list">
+               {taskFiles.filter((file) => file.source === "task").map((file) => (
+@@ -3137,7 +3208,7 @@
+                   <span>
+                     <strong>{file.name}</strong>
+                     <span>{file.kind} · {formatFileSize(file.size)}</span>
+-                    <small>Aufgaben-Anlage</small>
++                    <small>Aufgaben-Anlage{file.content ? ` · vollständig gelesen (${file.content.length.toLocaleString('de-DE')} Zeichen)` : ''}</small>
+                   </span>
+                 </li>
+               ))}
+@@ -3266,6 +3337,7 @@
+               </button>
+             </div>
+           </div>
++          {taskAttachmentError && <p className="notice error" role="alert">{taskAttachmentError}</p>}
+           {taskFiles.some((file) => file.source === "architecture") && (
+             <ul className="agent-file-list agent-architecture-files">
+               {taskFiles.filter((file) => file.source === "architecture").map((file) => (
+@@ -3326,6 +3398,10 @@
+           {domainMismatchAccepted && (
+             <p className="agent-domain-override"><strong>Bewusste Abweichung:</strong> {selectedDomain?.label ?? selectedIndustry} wird trotz erkannter {detectedDomainOption?.label ?? detectedDomain.domain}-Evidence verwendet.</p>
+           )}
++          {plannedEquipment.unresolvedInventoryGroups.length > 0 && <section className="agent-cluster-review" aria-label="Offene Gerätegruppen" role="alert">
++            <h3>Geräteumfang aus dem Dokument noch offen</h3>
++            <ul>{plannedEquipment.unresolvedInventoryGroups.map(finding => <li key={finding}>{finding}</li>)}</ul>
++          </section>}
+           {openDeviceNames.length > 0 && <section className="agent-cluster-review agent-open-device-summary" aria-label="Offene Geräteangaben">
+             <h3>Offene Geräteangaben · {openDeviceNames.length}</h3>
+             <p>Diese Angaben müssen geklärt werden. Öffne das Gerät im Cluster und lege Messgröße, Stellbefehl oder Anschluss dort fest.</p>
+@@ -3864,19 +3940,20 @@
+   if (!canReadAsText) {
+     return { analysisHint, kind, name: file.name, previewDataUrl, size: file.size, source };
+   }
++  if (file.size > MAX_CHAT_FILE_BYTES) throw new Error(`${file.name}: Die Textdatei darf höchstens 5 MB groß sein.`);
+   try {
+-    const content = await file.text();
++    const content = completeWizardDocumentText(await file.text());
+     return {
+       analysisHint,
+-      content: content.slice(0, 12000),
++      content,
+       kind,
+       name: file.name,
+       previewDataUrl,
+       size: file.size,
+       source,
+     };
+-  } catch {
+-    return { analysisHint, kind, name: file.name, previewDataUrl, size: file.size, source };
++  } catch (error) {
++    throw new Error(`${file.name}: ${error instanceof Error ? error.message : 'Die Textdatei konnte nicht vollständig gelesen werden.'}`);
+   }
+ }
+ 
+--- before/frontend/src/features/agent/lib/engineering-specification.test.mjs
++++ after/frontend/src/features/agent/lib/engineering-specification.test.mjs
+@@ -264,6 +264,69 @@
+   assert.equal(spec.chains.filter(chain => chain.device_type === 'Gateway').length, 1);
+ });
+ import { readFileSync } from 'node:fs';
++
++test('complete requirements document recognizes named controller chapters without turning requirements into inventory', () => {
++  const source = readFileSync(new URL('../../../../e2e/fixtures/document-intake-vehicle.txt', import.meta.url), 'utf8');
++  assert.ok(source.length > 12000);
++  const result = extractEngineeringSpecification(source);
++  assert.equal(result.domain, 'automotive');
++  assert.equal(engineeringDomainEvidence(source).domain, 'automotive');
++  const controllers = result.chains.filter(chain => chain.device_type === 'ECU');
++  assert.deepEqual(controllers.map(chain => chain.hardware_name),
++    ['Powertrain Domain', 'Chassis Domain', 'ADAS Domain', 'Body Domain', 'Infotainment Domain']);
++  assert.match(controllers[0].hardware_description, /Motor-\/Invertersteuerung/);
++  assert.match(controllers[0].hardware_description, /Ethernet/);
++  assert.equal(controllers[0].interface_type, 'Other');
++  assert.deepEqual(controllers[0].configuration.connection_candidates, ['CAN', 'Ethernet']);
++  assert.equal(result.chains.filter(chain => chain.device_type === 'ActuatorController').length, 0);
++  assert.equal(result.chains.some(chain => chain.hardware_name === 'degradieren'), false);
++  assert.equal(result.targetCounts.sensors, 0);
++  assert.equal(result.targetCounts.actuators, 0);
++  assert.equal(result.unresolvedInventoryGroups.length, 2);
++  assert.match(result.unresolvedInventoryGroups[0], /Radar.*Kamera.*Stückzahlen/);
++  assert.match(result.unresolvedInventoryGroups[1], /Bremsaktuator.*Lenkaktuator.*Stückzahlen/);
++  assert.equal(result.communicationSystems.includes('ADC'), false);
++  assert.equal(result.communicationSystemCounts.ADC, undefined);
++  assert.equal(result.communicationSystemCounts.LIN, 1);
++  assert.ok(result.communicationSystems.includes('CAN'));
++  assert.ok(result.communicationSystems.includes('CAN_FD'));
++});
++
++test('device-type overviews remain unknown while separately declared actuator instances are retained', () => {
++  const result = extractEngineeringSpecification('Robotics\nAktortypen: Lenkaktuator, Bremsaktuator\nAktor: BremseVorne\nAnschluss: PWM\nFunktion: Bremsen');
++  assert.deepEqual(result.chains.filter(chain => chain.device_type === 'ActuatorController').map(chain => chain.hardware_name), ['BremseVorne']);
++  assert.equal(result.chains.find(chain => chain.hardware_name === 'BremseVorne').interface_type, 'PWM');
++});
++
++test('plain and numbered controller headings work across industries and keep device sections scoped', () => {
++  for (const [industry, domain] of [['Building Automation', 'building_automation'], ['Robotics', 'robotics_ros'], ['Embedded Systems', 'embedded_systems']]) {
++    for (const heading of ['1.2 Climate Controller (CC)', '## 1.2 Climate Controller (CC)', 'Climate Controller (CC)']) {
++      const source = `Industrie: ${industry}\n${heading}\nAufgaben:\nTemperaturregelung\nSchnittstellen:\nModbus RTU\n\n2. Systemkontext\nEthernet zum Backend\nREQ-CC-10: CC MUSS bei Ausfall eines Sensors degradieren.`;
++      const result = extractEngineeringSpecification(source);
++      assert.equal(result.domain, domain);
++      assert.deepEqual(result.chains.map(chain => chain.hardware_name), ['Climate']);
++      assert.equal(result.chains[0].interface_type, 'ModbusRTU');
++      assert.equal(result.chains[0].hardware_description.includes('Ethernet zum Backend'), false);
++    }
++  }
++});
++
++test('controller aliases do not hide actual analogue input declarations', () => {
++  const source = '1.1 Analysis Domain Controller (ADC)\nREQ-ADC-10: ADC MUSS rechnen.\nSensor: Pressure\nAnschluss: ADC Eingang';
++  assert.ok(extractCommunicationSystems(source).includes('ADC'));
++  assert.equal(extractCommunicationSystemCounts(source).ADC, 1);
++});
++
++test('requirement-only or missing documents do not invent device identities', () => {
++  for (const source of ['', 'REQ-SAFE-14: Fusion MUSS bei Ausfall eines Sensors degradieren.', 'System must control an actuator and monitor a sensor.']) {
++    assert.equal(extractEngineeringSpecification(source).chains.length, 0);
++  }
++});
++
++test('an explicit device declaration may include its requirements on the same line', () => {
++  const result = extractEngineeringSpecification('Industrie: Embedded Systems\nSensor: HeatProbe muss Temperatur messen\nDer Algorithmus läuft auf dem Controller');
++  assert.deepEqual(result.chains.map(chain => chain.hardware_name), ['HeatProbe']);
++});
+ 
+ test('standard status replaces a generated legacy duplicate and class two has status', () => {
+   const base = extractEngineeringSpecification('Motorsteuergerät mit CAN-FD und Signal Motordrehzahl').chains[0];
+--- before/frontend/src/features/agent/lib/chat-attachments.ts
++++ after/frontend/src/features/agent/lib/chat-attachments.ts
+@@ -1,6 +1,15 @@
+ export const MAX_CHAT_ATTACHMENTS = 4;
+ export const MAX_CHAT_FILE_BYTES = 5 * 1024 * 1024;
+ export const MAX_CHAT_DOCUMENT_CHARS = 16_000;
++export const MAX_WIZARD_DOCUMENT_CHARS = 80_000;
++
++/** Wizard inventory must use a complete source, never an unmarked excerpt. */
++export function completeWizardDocumentText(text: string): string {
++  if (text.length > MAX_WIZARD_DOCUMENT_CHARS) {
++    throw new Error(`Die Aufgaben-Anlagen dürfen zusammen höchstens ${MAX_WIZARD_DOCUMENT_CHARS.toLocaleString('de-DE')} Zeichen enthalten. Bitte die Quelle aufteilen; sie wird nicht gekürzt.`);
++  }
++  return text;
++}
+ export const MAX_CHAT_TRACE_BYTES = 500 * 1024 * 1024;
+ export const TRACE_EXTENSIONS = ['pcap', 'pcapng', 'mdf', 'mf4', 'blf', 'asc', 'log', 'trc', 'jsonl', 'csv', 'json'];
+ export function isTraceFile(name: string): boolean { return TRACE_EXTENSIONS.includes(name.split('.').pop()?.toLowerCase() ?? ''); }
+--- before/frontend/src/features/agent/lib/chat-attachments.test.mjs
++++ after/frontend/src/features/agent/lib/chat-attachments.test.mjs
+@@ -1,6 +1,15 @@
+ import test from 'node:test';
+ import assert from 'node:assert/strict';
+ import { chatDocumentContext, validateChatAttachment } from './chat-attachments.ts';
++import { completeWizardDocumentText, MAX_WIZARD_DOCUMENT_CHARS } from './chat-attachments.ts';
++
++test('wizard documents retain requirements after the former 12000 character cutoff', () => {
++  const source = 'Intro\n' + 'x'.repeat(15000) + '\nController: FinalControl\n';
++  assert.equal(completeWizardDocumentText(source), source);
++  assert.ok(completeWizardDocumentText(source).endsWith('Controller: FinalControl\n'));
++  assert.equal(completeWizardDocumentText('x'.repeat(MAX_WIZARD_DOCUMENT_CHARS)).length, MAX_WIZARD_DOCUMENT_CHARS);
++  assert.throws(() => completeWizardDocumentText('x'.repeat(MAX_WIZARD_DOCUMENT_CHARS + 1)), /nicht gekürzt/);
++});
+ 
+ const source = { name: 'spec.dbc', size: 100, format: 'DBC', text: 'SG_ Fahrersitz links', truncated: false };
+ test('preserves extracted engineering content and source boundaries', () => {
+--- before/frontend/e2e/fixtures/document-intake-vehicle.txt
++++ after/frontend/e2e/fixtures/document-intake-vehicle.txt
+@@ -0,0 +1,597 @@
++Das System muss als Straßenfahrzeug sicher, zuverlässig und regelkonform betrieben werden können und alle dafür notwendigen mechanischen, elektrischen, elektronischen und softwarebasierten Funktionen bereitstellen.
++Es muss die Anforderungen an Mobilität, Sicherheit, Automatisierung, Komfort, Effizienz und Vernetzung erfüllen.
++
++1. Systemgrenzen und Systemkontext
++Das System muss mit der Umgebung interagieren (Straße, Verkehr, Infrastruktur, Wetter).
++Eingaben des Fahrers verarbeiten (Lenken, Bremsen, Beschleunigen, HMI).
++mit externen Systemen kommunizieren (Backend, OTA‑Server, Diagnosegeräte).
++gesetzliche Vorgaben und Normen erfüllen (UN‑ECE, ISO 26262, ISO 21434, StVZO).
++
++1. Einleitung und Zweck
++Dieses Dokument beschreibt das Straßenfahrzeug als technisches Gesamtsystem.
++Das Fahrzeug ist ein cyber‑physisches System, das mechanische, elektrische, elektronische und softwarebasierte Komponenten integriert, um eine sichere, regelkonforme und zuverlässige Teilnahme am Straßenverkehr zu ermöglichen.
++Die Beschreibung dient als Grundlage für Systemarchitektur, Safety‑Analysen, Cybersecurity‑Konzepte, E/E‑Design und Requirements‑Engineering.
++
++2. Systemgrenzen und Systemkontext
++2.1 Systemgrenzen
++Das System umfasst:
++
++Mechanische Struktur (Karosserie, Fahrwerk, Bremsen, Antrieb)
++
++Elektrische Energieversorgung (12‑V/48‑V, HV‑System)
++
++Elektronische Steuergeräte (Domain‑Controller, Sensor‑ECUs, Aktor‑ECUs)
++
++Software (Basissoftware, Middleware, Applikationen, ADAS‑Funktionen)
++
++Kommunikationsnetzwerke (CAN, CAN‑FD, Ethernet, LIN)
++
++HMI‑Systeme (Displays, Bedienelemente, Warnanzeigen)
++
++Nicht Bestandteil des Systems sind:
++
++Externe Backend‑Systeme
++
++Externe Infrastruktur (Ladesäulen, Verkehrszeichen, Cloud‑Dienste)
++
++Fahrer oder Insassen (als externe Akteure)
++
++2.2 Systemkontext
++Das Fahrzeug interagiert mit:
++
++Fahrer (Bedienung, Eingaben, HMI)
++
++Verkehrsumgebung (Straße, Objekte, andere Verkehrsteilnehmer)
++
++Infrastruktur (GPS, Mobilfunk, Verkehrszeichen)
++
++Backend‑Systemen (OTA‑Updates, Telemetrie, Diagnose)
++
++3. Systemstruktur (Top‑Level‑Architektur)
++Das Fahrzeug besteht aus vier Hauptdomänen:
++
++3.1 Mechanische Domäne
++Karosserie & Crashstruktur
++
++Fahrwerk (Lenkung, Federung, Dämpfung)
++
++Bremsanlage (hydraulisch, Brake‑by‑Wire)
++
++Antrieb (Verbrenner, Hybrid, Elektro)
++
++Thermomanagement
++
++3.2 Elektrische Domäne
++12‑V/48‑V Bordnetz
++
++Hochvoltsystem (BEV/HEV)
++
++Energieverteilung, Sicherungen, Relais
++
++Ladeinfrastruktur (AC/DC, CCS)
++
++3.3 Elektronische Domäne
++Domain‑Controller (Powertrain, Chassis, ADAS, Body, Infotainment)
++
++Sensorik (Radar, Kamera, Lidar, Ultraschall, IMU, Raddrehzahl)
++
++Aktorik (Bremsaktuator, Lenkaktuator, Antriebsaktuator)
++
++Kommunikationsnetzwerke (CAN, CAN‑FD, Ethernet, LIN)
++
++Diagnosezugänge (UDS, OBD)
++
++3.4 Softwaredomäne
++AUTOSAR Classic Platform (CP)
++
++AUTOSAR Adaptive Platform (AP)
++
++Middleware (SOME/IP, DDS)
++
++ADAS‑Algorithmen (Perception, Fusion, Planning, Control)
++
++OTA‑Update‑Management
++
++Cybersecurity‑Mechanismen
++
++4. Systemfunktionen
++4.1 Längsführung
++Beschleunigen
++
++Verzögern
++
++Geschwindigkeitsregelung (ACC, Tempomat)
++
++4.2 Querführung
++Lenken
++
++Spurhalten (LKA)
++
++Spurwechselassistenz
++
++4.3 Wahrnehmung & Umfeldmodell
++Objekterkennung (Fahrzeuge, Fußgänger, Radfahrer, Hindernisse)
++
++Spurdetektion
++
++Freiraumerkennung
++
++Szeneninterpretation
++
++Sensorfusion (Radar, Kamera, Lidar, IMU)
++
++4.4 Fahrzeugsteuerung
++Trajektorienplanung
++
++Stabilitätskontrolle (ESP, ABS, TCS)
++
++Fahrdynamikregelung
++
++4.5 Sicherheit
++Funktionale Sicherheit (ISO 26262)
++
++Cybersecurity (ISO 21434)
++
++Crashschutz (UN‑ECE R94/R95)
++
++Notbremsassistenz (UN‑ECE R152)
++
++4.6 Komfort & HMI
++Anzeigen, Warnungen, Interaktionen
++
++Klimatisierung
++
++Infotainment
++
++Connectivity (Bluetooth, WLAN, Mobilfunk)
++
++5. Systemanforderungen (Top‑Level)
++Das System muss
++
++sicher betrieben werden können und alle relevanten UN‑ECE‑Regelungen erfüllen.
++
++eine sichere Längs‑ und Querführung gewährleisten.
++
++eine zuverlässige Bremsfunktion gemäß UN‑ECE R13 bereitstellen.
++
++eine sichere Lenkfunktion gemäß UN‑ECE R79 bereitstellen.
++
++eine robuste Umfeldwahrnehmung bereitstellen.
++
++Sensorfusion mit deterministischer Latenz durchführen.
++
++funktionale Sicherheit gemäß ISO 26262 gewährleisten.
++
++Cybersecurity gemäß ISO 21434 gewährleisten.
++
++Diagnose gemäß ISO 14229 unterstützen.
++
++OTA‑Updates gemäß ISO 24089 unterstützen.
++
++mit Backend‑Systemen sicher kommunizieren.
++
++einen definierten Safe State erreichen können.
++
++Fahrerinteraktionen über HMI anzeigen und verarbeiten.
++
++Energieversorgung für alle Subsysteme sicherstellen.
++
++Redundanz für sicherheitskritische Funktionen bereitstellen.
++
++Datenintegrität, Datenqualität und Datenkonsistenz sicherstellen.
++
++deterministische Kommunikationslatenzen gewährleisten.
++
++Sensor‑ und Aktorfehler erkennen und behandeln.
++
++Systemzustände überwachen und protokollieren.
++
++alle sicherheitsrelevanten Funktionen priorisieren.
++
++6. Systemverhalten (High‑Level)
++6.1 Normalbetrieb
++Das System verarbeitet kontinuierlich Sensordaten, führt Fahrfunktionen aus, steuert Aktuatoren und stellt HMI‑Informationen bereit.
++
++6.2 Fehlerbetrieb
++Das System erkennt Fehler, klassifiziert sie und führt definierte Reaktionen aus (Degradation, Safe State, Warnungen).
++
++6.3 Notbetrieb
++Bei kritischen Fehlern führt das System ein kontrolliertes Abbremsen und Stabilisieren durch.
++
++7. Regulatorische Anforderungen
++7.1 UN‑ECE
++R13 Bremsen
++
++R79 Lenkassistenz
++
++R152 Notbremsassistenz
++
++R130 Spurverlassenswarnung
++
++R10 EMV
++
++R94/R95 Crashschutz
++
++7.2 ISO‑Normen
++ISO 26262 Funktionale Sicherheit
++
++ISO 21434 Cybersecurity
++
++ISO 24089 Software‑Updates
++
++ISO 14229 Diagnose (UDS)
++
++ISO 6469 HV‑Sicherheit
++
++8. Zusammenfassung
++Das Fahrzeug ist ein hochintegriertes, sicherheitskritisches System, das mechanische, elektrische, elektronische und softwarebasierte Komponenten zu einer funktionalen Einheit verbindet.
++Es muss eine Vielzahl gesetzlicher, sicherheitstechnischer und funktionaler Anforderungen erfüllen, um einen sicheren, zuverlässigen und regelkonformen Betrieb im Straßenverkehr zu gewährleisten.
++
++
++1. Zielbild der E/E‑Architektur
++Ein modernes Fahrzeug nutzt eine domänenbasierte E/E‑Architektur mit zentralen Domain‑Controllern, die Funktionen bündeln, Rechenleistung zentralisieren und Safety‑ sowie Cybersecurity‑Anforderungen erfüllen.
++
++Architekturmerkmale:
++
++Zentrale Domain‑Controller (Powertrain, Chassis, ADAS, Body, Infotainment)
++
++Ethernet‑Backbone als Hochgeschwindigkeitsnetz
++
++CAN/CAN‑FD für klassische Steuergeräte
++
++LIN für Komfortfunktionen
++
++OTA‑ und Diagnosefähigkeit über Ethernet
++
++Safety‑ und Security‑Mechanismen integriert
++
++2. Domain‑Controller‑Design
++2.1 Powertrain Domain Controller (PDC)
++Aufgaben:
++
++Motor-/Invertersteuerung
++
++Getriebe-/Antriebslogik
++
++HV‑Management
++
++Thermomanagement
++
++Schnittstellen:
++
++Powertrain‑CAN
++
++Ethernet (Backbone)
++
++Diagnose (UDS)
++
++Anforderungen:
++
++REQ‑PDC‑01: PDC MUSS Motor-/Invertersteuerung gemäß ASIL C/D ausführen.
++
++REQ‑PDC‑02: PDC MUSS HV‑Sicherheitsfunktionen gemäß ISO 6469 überwachen.
++
++REQ‑PDC‑03: PDC MUSS Echtzeitfähigkeit < 10 ms Zykluszeit gewährleisten.
++
++REQ‑PDC‑04: PDC MUSS Diagnose gemäß ISO 14229 unterstützen.
++
++REQ‑PDC‑05: PDC MUSS sichere Kommunikation mit ADAS‑Controller gewährleisten.
++
++2.2 Chassis Domain Controller (CDC)
++Aufgaben:
++
++Bremsen (Brake‑by‑Wire, ABS/ESP)
++
++Lenkung (Steer‑by‑Wire, EPS)
++
++Fahrdynamikregelung
++
++Schnittstellen:
++
++Chassis‑CAN/CAN‑FD
++
++Ethernet (ADAS‑Eingriffe)
++
++Safety‑Signale (redundant)
++
++Anforderungen:
++
++REQ‑CDC‑01: CDC MUSS ASIL‑D‑Bremsfunktionen gemäß ISO 26262 ausführen.
++
++REQ‑CDC‑02: CDC MUSS redundante Lenkpfade bereitstellen.
++
++REQ‑CDC‑03: CDC MUSS Notbremsassistenzanforderungen gemäß UN‑ECE R152 umsetzen.
++
++REQ‑CDC‑04: CDC MUSS Lenkassistenz gemäß UN‑ECE R79 unterstützen.
++
++REQ‑CDC‑05: CDC MUSS Fail‑Operational‑Fähigkeit für Level‑3‑Funktionen bieten.
++
++2.3 ADAS Domain Controller (ADC)
++Aufgaben:
++
++Sensorfusion (Radar, Kamera, Lidar, IMU, Ultraschall)
++
++Perception (Objekte, Spuren, Freiraum)
++
++Planning (Trajektorien, Manöver)
++
++Vehicle Control (Längs-/Querführung)
++
++Plattform:
++
++AUTOSAR Adaptive
++
++POSIX‑OS
++
++Hochleistungs‑SoC (CPU + GPU/AI‑Beschleuniger)
++
++Schnittstellen:
++
++Ethernet‑Backbone
++
++Direkte Sensorlinks (GMSL, FPD‑Link, GigE)
++
++CDC (Lenk-/Bremsanforderungen)
++
++PDC (Antriebsanforderungen)
++
++Anforderungen:
++
++REQ‑ADC‑01: ADC MUSS Sensorfusion mit < 50 ms Latenz durchführen.
++
++REQ‑ADC‑02: ADC MUSS Objektliste mit Position, Geschwindigkeit, Klassifikation erzeugen.
++
++REQ‑ADC‑03: ADC MUSS Spurmodell mit min. 30 m Vorschau generieren.
++
++REQ‑ADC‑04: ADC MUSS Multi‑Object‑Tracking unterstützen.
++
++REQ‑ADC‑05: ADC MUSS Szeneninterpretation und Situationsbewertung durchführen.
++
++REQ‑ADC‑06: ADC MUSS AEB gemäß UN‑ECE R152 unterstützen.
++
++REQ‑ADC‑07: ADC MUSS LKA gemäß UN‑ECE R79 unterstützen.
++
++REQ‑ADC‑08: ADC MUSS Fail‑Operational für Level‑3‑Funktionen sein.
++
++REQ‑ADC‑09: ADC MUSS Sensorzeitstempel synchronisieren.
++
++REQ‑ADC‑10: ADC MUSS Sensor‑Cross‑Checks durchführen.
++
++2.4 Body Domain Controller (BDC)
++Aufgaben:
++
++Türen, Fenster, Sitzverstellung
++
++Klima, Innenbeleuchtung
++
++Komfortfunktionen
++
++Schnittstellen:
++
++LIN‑Cluster
++
++Body‑CAN
++
++Anforderungen:
++
++REQ‑BDC‑01: BDC MUSS LIN‑Cluster mit min. 20 Nodes unterstützen.
++
++REQ‑BDC‑02: BDC MUSS Komfortfunktionen gemäß StVZO steuern.
++
++REQ‑BDC‑03: BDC MUSS Diagnose gemäß ISO 14229 unterstützen.
++
++2.5 Infotainment Domain Controller (IDC)
++Aufgaben:
++
++HMI (Cluster, Center‑Display)
++
++Navigation, Media, Connectivity
++
++Smartphone‑Integration
++
++Schnittstellen:
++
++Ethernet
++
++MOST/AVB (optional)
++
++Verbindung zu ADAS‑HMI
++
++Anforderungen:
++
++REQ‑IDC‑01: IDC MUSS HMI‑Status für ADAS anzeigen.
++
++REQ‑IDC‑02: IDC MUSS OTA‑Updates gemäß ISO 24089 unterstützen.
++
++REQ‑IDC‑03: IDC MUSS sichere Kommunikation gemäß ISO 21434 gewährleisten.
++
++3. Kommunikationsarchitektur
++3.1 Ethernet‑Backbone
++100/1000BASE‑T1
++
++VLAN‑Segmentierung
++
++Service‑orientierte Kommunikation (SOME/IP, DDS)
++
++Anforderungen:
++
++REQ‑NET‑01: Backbone MUSS min. 1 Gbit/s unterstützen.
++
++REQ‑NET‑02: Backbone MUSS VLAN‑Segmentierung für Safety/Cybersecurity bieten.
++
++REQ‑NET‑03: Backbone MUSS SOME/IP‑Kommunikation unterstützen.
++
++REQ‑NET‑04: Backbone MUSS deterministische Latenzen < 5 ms ermöglichen.
++
++3.2 Sub‑Busse
++Powertrain‑CAN
++
++Chassis‑CAN
++
++Body‑CAN
++
++LIN‑Busse
++
++Punkt‑zu‑Punkt‑Links für Kameras/Lidar/Radar
++
++Anforderungen:
++
++REQ‑BUS‑01: CAN‑Bus MUSS 500 kbit/s oder CAN‑FD unterstützen.
++
++REQ‑BUS‑02: LIN‑Bus MUSS bis zu 20 Slaves unterstützen.
++
++REQ‑BUS‑03: Punkt‑zu‑Punkt‑Links MUSS min. 2 Gbit/s übertragen.
++
++4. Safety‑Anforderungen (ISO 26262)
++REQ‑SAFE‑01: Alle sicherheitsrelevanten Funktionen MÜSSEN ASIL‑klassifiziert werden.
++REQ‑SAFE‑02: Safety‑Mechanismen MÜSSEN Watchdogs, Plausibilisierung, Heartbeats umfassen.
++REQ‑SAFE‑03: System MUSS Safe State definieren (z. B. kontrolliertes Abbremsen).
++REQ‑SAFE‑04: ADAS‑Funktionen MUSS Fail‑Operational sein (Level‑3).
++REQ‑SAFE‑05: Redundante Sensorik MUSS vorhanden sein (Radar + Kamera).
++
++5. Cybersecurity‑Anforderungen (ISO 21434)
++REQ‑SEC‑01: Domain‑Controller MUSS Secure Boot unterstützen.
++REQ‑SEC‑02: Kommunikation MUSS verschlüsselt sein (TLS, IPsec, SOME/IP‑Sec).
++REQ‑SEC‑03: System MUSS Hardware Security Module (HSM) nutzen.
++REQ‑SEC‑04: OTA‑Updates MÜSSEN signiert und verifiziert werden.
++REQ‑SEC‑05: IDS/IPS MUSS Netzwerkverkehr überwachen.
++REQ‑SEC‑06: Schlüsselmanagement MUSS zentralisiert sein.
++
++6. Diagnose & OTA
++REQ‑DIA‑01: Diagnose MUSS ISO 14229 (UDS) unterstützen.
++REQ‑DIA‑02: Flash‑Programmierung MUSS über Ethernet möglich sein.
++REQ‑DIA‑03: OTA‑Updates MUSS Rollback‑Mechanismus besitzen.
++REQ‑DIA‑04: OTA‑Updates MUSS ISO 24089 erfüllen.
++
++
++7. Erweiterte Safety‑Requirements (ISO 26262)
++(40 neue Anforderungen)
++
++REQ‑SAFE‑06: System MUSS alle sicherheitsrelevanten Signale plausibilisieren.
++REQ‑SAFE‑07: Steuergeräte MÜSSEN zyklische Alive‑Counter verwenden.
++REQ‑SAFE‑08: Safety‑Kommunikation MUSS CRC‑geschützt sein.
++REQ‑SAFE‑09: System MUSS Fehler innerhalb von 100 ms erkennen.
++REQ‑SAFE‑10: System MUSS in einen definierten Safe State übergehen.
++REQ‑SAFE‑11: Safe State MUSS für alle Domänen definiert sein.
++REQ‑SAFE‑12: System MUSS Watchdog‑Überwachung implementieren.
++REQ‑SAFE‑13: System MUSS redundante Pfade für ASIL‑D‑Signale bereitstellen.
++REQ‑SAFE‑14: Sensorfusion MUSS bei Ausfall eines Sensors degradieren.
++REQ‑SAFE‑15: Lenkung MUSS redundante Positionssensoren besitzen.
++REQ‑SAFE‑16: Bremssystem MUSS hydraulischen Fallback besitzen.
++REQ‑SAFE‑17: ADAS‑Controller MUSS Fail‑Operational sein.
++REQ‑SAFE‑18: System MUSS Fehlerklassen gemäß ISO 26262 definieren.
++REQ‑SAFE‑19: System MUSS ASIL‑Decomposition dokumentieren.
++REQ‑SAFE‑20: System MUSS Safety‑Mechanismen überwachen.
++REQ‑SAFE‑21: System MUSS Fehlerreaktionszeiten einhalten.
++REQ‑SAFE‑22: System MUSS interne Selbsttests durchführen.
++REQ‑SAFE‑23: System MUSS Boot‑Time‑Checks durchführen.
++REQ‑SAFE‑24: System MUSS Memory‑ECC verwenden.
++REQ‑SAFE‑25: System MUSS Stack‑Overflow‑Schutz implementieren.
++REQ‑SAFE‑26: System MUSS CPU‑Load überwachen.
++REQ‑SAFE‑27: System MUSS deterministische Ausführungszeiten garantieren.
++REQ‑SAFE‑28: System MUSS Safety‑Logs speichern.
++REQ‑SAFE‑29: Safety‑Logs MÜSSEN unveränderbar sein.
++REQ‑SAFE‑30: System MUSS Safety‑Zustände an HMI melden.
++REQ‑SAFE‑31: System MUSS Safety‑Kommunikation priorisieren.
++REQ‑SAFE‑32: System MUSS Safety‑Zustände an Backend melden.
++REQ‑SAFE‑33: System MUSS Safety‑Zustände persistent speichern.
++REQ‑SAFE‑34: System MUSS Sensor‑Drift erkennen.
++REQ‑SAFE‑35: System MUSS Sensor‑Blockaden erkennen.
++REQ‑SAFE‑36: System MUSS Sensor‑Verschmutzung erkennen.
++REQ‑SAFE‑37: System MUSS Sensor‑Überhitzung erkennen.
++REQ‑SAFE‑38: System MUSS Sensor‑Unterspannung erkennen.
++REQ‑SAFE‑39: System MUSS Sensor‑Überstrom erkennen.
++REQ‑SAFE‑40: System MUSS alle Safety‑Mechanismen dokumentieren.
++REQ‑SAFE‑41: System MUSS Safety‑Mechanismen testen.
++REQ‑SAFE‑42: System MUSS Safety‑Mechanismen validieren.
++REQ‑SAFE‑43: System MUSS Safety‑Mechanismen verifizieren.
++REQ‑SAFE‑44: System MUSS Safety‑Mechanismen versionieren.
++REQ‑SAFE‑45: System MUSS Safety‑Mechanismen rückverfolgbar machen.
++
++8. Erweiterte Cybersecurity‑Requirements (ISO 21434)
++(40 neue Anforderungen)
++
++REQ‑SEC‑07: System MUSS Secure Boot mit Hardware‑Root‑of‑Trust verwenden.
++REQ‑SEC‑08: System MUSS Secure Flash unterstützen.
++REQ‑SEC‑09: System MUSS Firmware‑Integrität prüfen.
++REQ‑SEC‑10: System MUSS Secure Debug implementieren.
++REQ‑SEC‑11: Debug‑Zugänge MÜSSEN deaktivierbar sein.
++REQ‑SEC‑12: System MUSS Schlüsselrotation unterstützen.
++REQ‑SEC‑13: System MUSS Schlüssel sicher speichern.
++REQ‑SEC‑14: System MUSS HSM verwenden.
++REQ‑SEC‑15: System MUSS IDS/IPS implementieren.
++REQ‑SEC‑16: System MUSS Netzwerkverkehr analysieren.
++REQ‑SEC‑17: System MUSS Anomalien erkennen.
++REQ‑SEC‑18: System MUSS DoS‑Angriffe erkennen.
++REQ‑SEC‑19: System MUSS Spoofing erkennen.
++REQ‑SEC‑20: System MUSS Replay‑Angriffe verhindern.
++REQ‑SEC‑21: System MUSS Man‑in‑the‑Middle verhindern.
++REQ‑SEC‑22: System MUSS TLS 1.3 unterstützen.
++REQ‑SEC‑23: System MUSS SOME/IP‑Sec unterstützen.
++REQ‑SEC‑24: System MUSS IPsec unterstützen.
++REQ‑SEC‑25: System MUSS sichere OTA‑Updates unterstützen.
++REQ‑SEC‑26: OTA‑Updates MÜSSEN signiert sein.
++REQ‑SEC‑27: OTA‑Updates MÜSSEN verifiziert werden.
++REQ‑SEC‑28: OTA‑Updates MÜSSEN Rollback verhindern.
++REQ‑SEC‑29: System MUSS sichere Diagnose unterstützen.
++REQ‑SEC‑30: Diagnose MUSS Authentifizierung erfordern.
++REQ‑SEC‑31: System MUSS sichere Log‑Übertragung unterstützen.
++REQ‑SEC‑32: System MUSS sichere Backend‑Kommunikation unterstützen.
++REQ‑SEC‑33: System MUSS sichere Schlüsselverteilung unterstützen.
++REQ‑SEC‑34: System MUSS sichere Schlüsselentfernung unterstützen.
++REQ‑SEC‑35: System MUSS sichere Schlüsselrotation unterstützen.
++REQ‑SEC‑36: System MUSS sichere Schlüsselarchivierung unterstützen.
++REQ‑SEC‑37: System MUSS sichere Schlüsselzerstörung unterstützen.
++REQ‑SEC‑38: System MUSS sichere Benutzerverwaltung unterstützen.
++REQ‑SEC‑39: System MUSS sichere Rollenverwaltung unterstützen.
++REQ‑SEC‑40: System MUSS sichere Rechteverwaltung unterstützen.
++REQ‑SEC‑41: System MUSS sichere Passwortverwaltung unterstützen.
++REQ‑SEC‑42: System MUSS sichere Tokenverwaltung unterstützen.
++REQ‑SEC‑43: System MUSS sichere Zertifikatsverwaltung unterstützen.
++REQ‑SEC‑44: System MUSS sichere Firmware‑Verteilung unterstützen.
++REQ‑SEC‑45: System MUSS sichere Firmware‑Archivierung unterstützen.
++REQ‑SEC‑46: System MUSS sichere Firmware‑Löschung unterstützen.
++
++9. Erweiterte ADAS‑/Sensorfusion‑Requirements
++(40 neue Anforderungen)
++
++REQ‑FUS‑01: Fusion MUSS Radar‑ und Kameradaten zeitlich synchronisieren.
++REQ‑FUS‑02: Fusion MUSS IMU‑Daten integrieren.
++REQ‑FUS‑03: Fusion MUSS Raddrehzahldaten integrieren.
++REQ‑FUS‑04: Fusion MUSS Lidar‑Daten integrieren.
++REQ‑FUS‑05: Fusion MUSS Objektassoziation > 95 % Genauigkeit erreichen.
++REQ‑FUS‑06: Fusion MUSS Tracking‑Stabilität > 98 % erreichen.
++REQ‑FUS‑07: Fusion MUSS Spurdetektion > 95 % Genauigkeit erreichen.
++REQ‑FUS‑08: Fusion MUSS Freiraumerkennung > 90 % Genauigkeit erreichen.
++REQ‑FUS‑09: Fusion MUSS Wetterrobustheit gewährleisten.
++REQ‑FUS‑10: Fusion MUSS Nachtrobustheit gewährleisten.
++REQ‑FUS‑11: Fusion MUSS Sensor‑Dropouts kompensieren.
++REQ‑FUS‑12: Fusion MUSS Sensor‑Drift kompensieren.
++REQ‑FUS‑13: Fusion MUSS Sensor‑Noise filtern.
++REQ‑FUS‑14: Fusion MUSS EKF/UKF unterstützen.
++REQ‑FUS‑15: Fusion MUSS Multi‑Hypothesen‑Tracking unterstützen.
++REQ‑FUS‑16: Fusion MUSS Objektklassifikation validieren.
++REQ‑FUS‑17: Fusion MUSS Fehlklassifikationen erkennen.
++REQ‑FUS‑18: Fusion MUSS Fehlklassifikationen melden.
++REQ‑FUS‑19: Fusion MUSS Szeneninterpretation unterstützen.
++REQ‑FUS‑20: Fusion MUSS Trajektorienvorhersage unterstützen.
++REQ‑FUS‑21: Fusion MUSS Verkehrsflussmodell erstellen.
++REQ‑FUS‑22: Fusion MUSS Hindernisse klassifizieren.
++REQ‑FUS‑23: Fusion MUSS Fußgänger erkennen.
++REQ‑FUS‑24: Fusion MUSS Radfahrer erkennen.
++REQ‑FUS‑25: Fusion MUSS Tiere erkennen.
++REQ‑FUS‑26: Fusion MUSS statische Objekte erkennen.
++REQ‑FUS‑27: Fusion MUSS dynamische Objekte erkennen.
++REQ‑FUS‑28: Fusion MUSS Objektlebenszyklen verwalten.
++REQ‑FUS‑29: Fusion MUSS Objektpriorisierung durchführen.
++REQ‑FUS‑30: Fusion MUSS Objektkonfidenz berechnen.
++REQ‑FUS‑31: Fusion MUSS Datenlatenz überwachen.
++REQ‑FUS‑32: Fusion MUSS Datenqualität bewerten.
++REQ‑FUS‑33: Fusion MUSS Datenintegrität prüfen.
++REQ‑FUS‑34: Fusion MUSS Datenkonsistenz prüfen.
++REQ‑FUS‑35: Fusion MUSS Datenvollständigkeit prüfen.
++REQ‑FUS‑36: Fusion MUSS Datenverfügbarkeit prüfen.
++REQ‑FUS‑37: Fusion MUSS Datenpriorisierung durchführen.
++REQ‑FUS‑38: Fusion MUSS Datenkompression unterstützen.
++REQ‑FUS‑39: Fusion MUSS Datenverschlüsselung unterstützen.
++REQ‑FUS‑40: Fusion MUSS Datenpersistenz unterstützen.--- before/frontend/e2e/document-intake.spec.ts
++++ after/frontend/e2e/document-intake.spec.ts
+@@ -0,0 +1,21 @@
++import { test, expect } from 'playwright/test';
++import { randomUUID } from 'node:crypto';
++import { fileURLToPath } from 'node:url';
++
++test('document intake preserves complete requirements and reports unresolved scope @parser', async ({ page }) => {
++  await page.goto(`/studio/engineering?assistant=project&project=nis-e2e-document-${randomUUID()}`);
++  const dialog = page.getByRole('dialog', { name: 'Engineering-Auftrag erstellen' });
++  await expect(dialog).toBeVisible();
++  await dialog.locator('fieldset.agent-project-name-step input[type=file]').setInputFiles(
++    fileURLToPath(new URL('./fixtures/document-intake-vehicle.txt', import.meta.url)));
++  await expect(dialog.getByText(/vollständig gelesen \(19\.088 Zeichen\)/)).toBeVisible();
++  await dialog.getByRole('button', { name: '4', exact: true }).click();
++  await expect(dialog.getByRole('heading', { name: 'Geräteumfang aus dem Dokument noch offen' })).toBeVisible();
++  await expect(dialog.getByText(/Sensorik \(Radar, Kamera, Lidar, Ultraschall, IMU, Raddrehzahl\)/)).toBeVisible();
++  await expect(dialog.getByRole('spinbutton', { name: 'Controller: verbindliche Anzahl', exact: true })).toHaveValue('5');
++  await expect(dialog.getByText(/Aktorik \(Bremsaktuator, Lenkaktuator, Antriebsaktuator\)/)).toBeVisible();
++  await expect(dialog.getByRole('spinbutton', { name: 'Aktoren: verbindliche Anzahl', exact: true })).toHaveValue('0');
++  await expect(dialog.getByRole('button', { name: 'Übernehmen', exact: true })).toBeDisabled();
++  await expect(dialog.getByRole('table', { name: 'Kommunikationssysteme prüfen' })).not.toContainText('embedded_systems · adc');
++  await expect(dialog).not.toContainText('degradieren /');
++});

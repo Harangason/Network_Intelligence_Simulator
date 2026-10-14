@@ -15,6 +15,25 @@ def validate_behavior(data: dict) -> dict:
         raise ValueError("Unbekanntes Signalverhalten.")
     if data["behavior_type"] == "FORMULA":
         SafeFormula.evaluate(str((data.get("parameters") or {}).get("formula") or ""),{"t":0,"min":0,"max":1,"mid":0.5})
+    if data['behavior_type'] == 'FUNCTION_BLOCK':
+        from backend.nis.agent.tools.model import ProjectRepository
+        from backend.nis.simulation.signals.core.function_block import validate_function_spec
+        repository = ProjectRepository()
+        context = repository.function_context(data['signal_id'])
+        parameters = data.get('parameters') or {}
+        if not (parameters.get('function_block') or {}).get('verification_cases'):
+            raise ValueError('Executable function proposals require independent expected-value cases.')
+        bindings = parameters.get('transport_inputs') or {}
+        sources = {str(policy['signal_id']): repository.get('Signal', policy['signal_id']) for policy in bindings.values()}
+        validate_function_spec(parameters, sources)
+        if set(data.get('dependencies') or []) != set(sources):
+            raise ValueError('Declared function dependencies differ from the input bindings.')
+        received = {str(row['id']) for row in context['candidate_inputs']}
+        if set(sources) - received:
+            raise ValueError('Function input has no declared route/consumer binding to this ECU.')
+        for value in (parameters['invalid_output'],):
+            if not float(signal.get('min_value', 0)) <= float(value) <= float(signal.get('max_value', 1)):
+                raise ValueError('Invalid-input output lies outside its canonical signal range.')
     for dependency in data.get("dependencies") or []:
         get_object("Signal",str(dependency))
         if str(dependency)==str(signal["id"]):
@@ -33,5 +52,8 @@ def save_behavior(data: dict) -> dict:
             (current_project_id(),data["signal_id"],data["behavior_type"],data.get("model_label","RULE_BASED"),
              Jsonb(data.get("parameters") or {}),Jsonb(data.get("dependencies") or [])),
         ).fetchone()
+        if data['behavior_type'] == 'FUNCTION_BLOCK':
+            from backend.nis.infrastructure.storage.saved_storage import ProjectArtifactStore
+            ProjectArtifactStore(current_project_id()).stage_block(data['parameters']['function_block'])
     mark_model_changed()
     return {**row,"id":str(row["behavior_id"])}

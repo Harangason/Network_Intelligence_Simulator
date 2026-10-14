@@ -158,6 +158,9 @@ def test_all_required_behavior_models_are_bounded_and_deterministic(behavior_typ
         params["formula"] = "mid + 5 * sin(t)"
     if behavior_type in {"LOOKUP_TABLE", "EXTERNAL_SERIES"}:
         params["points"] = [{"time_s": 0, "value": 20}, {"time_s": 1, "value": 30}]
+    if behavior_type == "FUNCTION_BLOCK":
+        from backend.tests.test_qwen_function_blocks import specification
+        params.update(specification())
     signal = definition(behavior={"behavior_type": behavior_type, "parameters": params})
     left = SignalBehaviorEngine([signal], seed=77).sample(signal, 0.2)
     right = SignalBehaviorEngine([signal], seed=77).sample(signal, 0.2)

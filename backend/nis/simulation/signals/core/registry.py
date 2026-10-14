@@ -74,6 +74,57 @@ class SignalBehaviorRegistry:
         self.physical_models = PhysicalModelRegistry()
         self.register_defaults()
 
+    @classmethod
+    def get_function_block_standard(cls, standard_id):
+        from copy import deepcopy
+        import hashlib
+        import json
+        from pathlib import Path
+        from backend.nis.simulation.signals.core.function_block import QwenFunctionBlock
+        path = Path(__file__).with_name('function_block_standards.json')
+        content = path.read_bytes()
+        document = json.loads(content)
+        if document.get('owner') != 'SignalBehaviorRegistry' or document.get('schema_version') != 1:
+            raise ValueError('Unsupported function standard catalog contract.')
+        standards = document.get('standards')
+        if not isinstance(standards, list) or not 1 <= len(standards) <= 64:
+            raise ValueError('Invalid function standard catalog.')
+        identifiers = [row['id'].casefold() for row in standards]
+        if len(identifiers) != len(set(identifiers)):
+            raise ValueError('Duplicate function standard identities.')
+        selected = next((row for row in standards if row['id'].casefold() == str(standard_id).casefold()), None)
+        if selected is None:
+            raise ValueError('Unknown function standard: ' + str(standard_id))
+        result = deepcopy(selected)
+        QwenFunctionBlock(result['definition'])
+        if (result['definition'].get('provenance') or {}).get('generated_by') != 'QWEN':
+            raise ValueError('Function standards require QWEN authorship.')
+        result['definition']['standard_origin'] = {'owner':'SignalBehaviorRegistry', 'standard_id':selected['id'],
+            'catalog_sha256':hashlib.sha256(content).hexdigest(),'catalog_version':document['schema_version'],
+            'source_sha256':result['definition']['source_sha256']}
+        return result
+
+    @classmethod
+    def function_block_standards(cls, standard_id=None, include_source=False):
+        import json
+        from pathlib import Path
+        identifiers = ([standard_id] if standard_id is not None else
+            [row['id'] for row in json.loads(Path(__file__).with_name('function_block_standards.json').read_bytes())['standards']])
+        result = []
+        for identifier in identifiers:
+            selected = cls.get_function_block_standard(identifier)
+            definition = selected['definition']
+            item = {'id':selected['id'],'description':definition['description'],'input_types':selected['input_types'],
+                'parameter_schema':definition['parameter_schema'],'parameter_relations':definition.get('parameter_relations') or [],
+                'source_sha256':definition['source_sha256'],'origin':definition['standard_origin'],
+                'logic_rule':definition.get('logic_rule'),'author':'QWEN'}
+            if include_source:
+                item['source_code'] = definition['source_code']
+            result.append(item)
+        return {'owner':'SignalBehaviorRegistry','standards':result,
+                'note':'Explicit input identities/types, parameters, full Boolean truth tables and project review are required. No automatic ECU assignment.'}
+
+
     def register(self, name: str, handler: BehaviorHandler) -> None:
         self._handlers[name.upper()] = handler
 
@@ -99,6 +150,15 @@ class SignalBehaviorRegistry:
         self.register("PHYSICS_MODEL", physical)
         self.register("STATE_MACHINE", self.status_models.generate)
         self.register("STATUS_MODEL", self.status_models.generate)
+        self.register("FUNCTION_BLOCK", received_function_placeholder)
+
+
+def received_function_placeholder(signal, _time_s, _context, _state):
+    # The transport pass evaluates once inputs are actually received. A random
+    # fallback would invent function behavior before that execution boundary.
+    from backend.nis.simulation.signals.core.function_block import validate_function_spec
+    validate_function_spec(signal.parameters)
+    return float(signal.parameters['invalid_output'])
 
 
 def bounds(signal: Any) -> tuple[float, float, float, float]:

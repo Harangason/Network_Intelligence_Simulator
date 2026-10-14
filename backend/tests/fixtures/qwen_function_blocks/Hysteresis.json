@@ -1,0 +1,43 @@
+{
+  "name": "Hysteresis",
+  "description": "A hysteresis block that maintains a boolean state based on input value relative to lower and upper thresholds. State changes only when input crosses the opposite threshold, holding state at equality.",
+  "source_code": "class Hysteresis(FunctionBlock):\n    def step(self, inputs, parameters, dt):\n        value = inputs[\"value\"]\n        lower = parameters[\"lower\"]\n        upper = parameters[\"upper\"]\n        initial = parameters[\"initial\"]\n        active_below = parameters[\"active_below\"]\n        \n        if \"state\" not in self.state:\n            self.state[\"state\"] = initial\n        \n        current_state = self.state[\"state\"]\n        \n        if active_below:\n            if value < lower:\n                new_state = True\n            elif value > upper:\n                new_state = False\n            else:\n                new_state = current_state\n        else:\n            if value > upper:\n                new_state = True\n            elif value < lower:\n                new_state = False\n            else:\n                new_state = current_state\n        \n        self.state[\"state\"] = new_state\n        return new_state",
+  "parameter_schema": {
+    "lower": {
+      "type": "number",
+      "required": true,
+      "unit": "generic model unit"
+    },
+    "upper": {
+      "type": "number",
+      "required": true,
+      "unit": "generic model unit"
+    },
+    "initial": {
+      "type": "boolean",
+      "required": true,
+      "unit": "dimensionless"
+    },
+    "active_below": {
+      "type": "boolean",
+      "required": true,
+      "unit": "dimensionless"
+    }
+  },
+  "parameter_relations": [
+    {
+      "left": "lower",
+      "operator": "<",
+      "right": "upper"
+    }
+  ],
+  "provenance": {
+    "provider": "ollama-local",
+    "model": "qwen3.8:27b",
+    "model_digest": "22130167c4c20e20c7b71454612966ca8e8171e9b3cc8ab6ce8aa6cbfec79643",
+    "request_sha256": "54b4ace7a6dee75fe230c3fefd8e2dbb6e9715a3d8ba878bfa30af8c2f7a42d7",
+    "generated_by": "QWEN",
+    "status": "UNVALIDATED_SIMULATION_DESIGN"
+  },
+  "source_sha256": "d0167ec037f0be7da8ed4227ffd1fe67393029cf086d369f51077dbed8ff1d6f"
+}

@@ -9,7 +9,7 @@ from backend.nis.simulation.signals.core.registry import SafeFormula
 SUPPORTED_BEHAVIOR_TYPES = {
     "CONSTANT", "STEP", "RAMP", "LINEAR", "SINE", "TRIANGLE", "SAWTOOTH",
     "PULSE", "RANDOM_WALK", "BOUNDED_RANDOM", "STATE_DEPENDENT", "FORMULA",
-    "LOOKUP_TABLE", "EXTERNAL_SERIES", "PHYSICS_MODEL", "STATE_MACHINE", "STATUS_MODEL",
+    "LOOKUP_TABLE", "EXTERNAL_SERIES", "PHYSICS_MODEL", "STATE_MACHINE", "STATUS_MODEL", "FUNCTION_BLOCK",
 }
 
 
@@ -114,6 +114,16 @@ def validate_signal_emulation_model(config: dict[str, Any]) -> dict[str, Any]:
                 SafeFormula.evaluate(str(parameters.get("formula") or "mid"), _formula_variables(signal_by_ref))
             except Exception as exc:
                 add_issue(errors, "SIGNAL_FORMULA_INVALID", f"Formel ist nicht ausfuehrbar: {exc}", signal)
+
+        if behavior_type == "FUNCTION_BLOCK":
+            try:
+                from backend.nis.simulation.signals.core.function_block import validate_function_spec
+                validate_function_spec(parameters, signal_by_ref)
+                own_id = str(signal.get('id'))
+                if any(str(policy['signal_id']) == own_id for policy in parameters['transport_inputs'].values()):
+                    raise ValueError('Function output cannot depend on itself.')
+            except (ValueError, TypeError, KeyError, SyntaxError) as exc:
+                add_issue(errors, "FUNCTION_BLOCK_INVALID", str(exc), signal)
 
         dependency_refs = [str(item) for item in _sequence(behavior.get("dependencies") or signal.get("dependencies")) if str(item)]
         dependency_ids: set[str] = set()

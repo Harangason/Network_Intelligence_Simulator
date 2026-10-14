@@ -225,6 +225,10 @@ def _run_simulation(config: dict[str, Any], *, validate_only: bool = False) -> d
             event["golden_time_s"] = baseline["time_s"]
             if event.get("signals"):
                 event["golden_value"] = event["signals"][0].get("golden_value")
+        if config.get('project_id') and config.get('project_id') != 'default':
+            # Complete values and decisions, independent of paginated UI limits
+            # and the user's selected native BLF/PCAP export formats.
+            written.append(write_jsonl(out_dir / 'values' / 'events.jsonl', events))
         if "universal-jsonl" in formats or "jsonl" in formats:
             written.append(write_jsonl(out_dir / "traces" / "universal_trace.jsonl", events))
         if "universal-csv" in formats:

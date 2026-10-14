@@ -624,7 +624,7 @@
          `- Topologie-Cluster-Regeln: ${topologyKnowledge.ruleSummary.join("; ") || "generische Systemnaehe verwenden"}\n` +
 --- before/docs/migrations/structure_mapping.csv
 +++ after/docs/migrations/structure_mapping.csv
-@@ -3987,3 +3987,12 @@
+@@ -3987,3 +3987,13 @@
  frontend/src/features/traces/lib/trace-window-reader.ts,frontend/src/features/traces/lib/trace-window-reader.ts,canonical-owner,Canonical module owner: frontend/src/features/traces/lib,"[""frontend/src/features/traces/ui/analysis-compare.tsx"", ""frontend/src/features/traces/ui/trace-analysis-workbench.tsx""]",No schema or stored identity change,backend/tests/test_structure_architecture.py; backend/tests/test_structure_completion.py; full release receipt linked in completion report,CANONICAL_PRESENT,frontend/src/features/traces/lib,"[""frontend/src/features/traces/ui/analysis-compare.tsx"", ""frontend/src/features/traces/ui/trace-analysis-workbench.tsx""]","Python AST (including retired alias module paths, relative and literal dynamic imports), TypeScript imports, literal paths and documentation links; external/persisted consumers not observable",Not a removable compatibility wrapper
  frontend/src/features/traces/ui/analysis-compare.tsx,frontend/src/features/traces/ui/analysis-compare.tsx,canonical-owner,Canonical module owner: frontend/src/features/traces/ui,"[""frontend/src/features/traces/ui/trace-analysis-workbench.tsx""]",No schema or stored identity change,backend/tests/test_structure_architecture.py; backend/tests/test_structure_completion.py; full release receipt linked in completion report,CANONICAL_PRESENT,frontend/src/features/traces/ui,"[""frontend/src/features/traces/ui/trace-analysis-workbench.tsx""]","Python AST (including retired alias module paths, relative and literal dynamic imports), TypeScript imports, literal paths and documentation links; external/persisted consumers not observable",Not a removable compatibility wrapper
  frontend/src/features/traces/ui/analysis-workspace-tools.tsx,frontend/src/features/traces/ui/analysis-workspace-tools.tsx,canonical-owner,Canonical module owner: frontend/src/features/traces/ui,"[""frontend/src/features/simulation/ui/model-simulation-runner.tsx"", ""frontend/src/features/traces/ui/trace-analysis-workbench.tsx""]",No schema or stored identity change,backend/tests/test_structure_architecture.py; backend/tests/test_structure_completion.py; full release receipt linked in completion report,CANONICAL_PRESENT,frontend/src/features/traces/ui,"[""frontend/src/features/simulation/ui/model-simulation-runner.tsx"", ""frontend/src/features/traces/ui/trace-analysis-workbench.tsx""]","Python AST (including retired alias module paths, relative and literal dynamic imports), TypeScript imports, literal paths and documentation links; external/persisted consumers not observable",Not a removable compatibility wrapper
@@ -637,40 +637,82 @@
 +frontend/src/features/workflow/stage_08_results_analysis/runtime-chart-data.test.mjs,frontend/src/features/workflow/stage_08_results_analysis/runtime-chart-data.test.mjs,canonical-owner,Canonical module owner: frontend/src/features/workflow/stage_08_results_analysis,[],No schema or stored identity change,backend/tests/test_structure_architecture.py; backend/tests/test_structure_completion.py; full release receipt linked in completion report,CANONICAL_PRESENT,frontend/src/features/workflow/stage_08_results_analysis,[],"Python AST (including retired alias module paths, relative and literal dynamic imports), TypeScript imports, literal paths and documentation links; external/persisted consumers not observable",Not a removable compatibility wrapper
 +frontend/src/features/workflow/stage_08_results_analysis/runtime-chart-data.ts,frontend/src/features/workflow/stage_08_results_analysis/runtime-chart-data.ts,canonical-owner,Canonical module owner: frontend/src/features/workflow/stage_08_results_analysis,"[""frontend/src/features/workflow/stage_08_results_analysis/results-workbench.tsx"", ""frontend/src/features/workflow/stage_08_results_analysis/runtime-chart-data.test.mjs"", ""frontend/src/features/workflow/stage_08_results_analysis/runtime-chart-tools.tsx""]",No schema or stored identity change,backend/tests/test_structure_architecture.py; backend/tests/test_structure_completion.py; full release receipt linked in completion report,CANONICAL_PRESENT,frontend/src/features/workflow/stage_08_results_analysis,"[""frontend/src/features/workflow/stage_08_results_analysis/results-workbench.tsx"", ""frontend/src/features/workflow/stage_08_results_analysis/runtime-chart-data.test.mjs"", ""frontend/src/features/workflow/stage_08_results_analysis/runtime-chart-tools.tsx""]","Python AST (including retired alias module paths, relative and literal dynamic imports), TypeScript imports, literal paths and documentation links; external/persisted consumers not observable",Not a removable compatibility wrapper
 +frontend/src/features/workflow/stage_08_results_analysis/runtime-chart-tools.tsx,frontend/src/features/workflow/stage_08_results_analysis/runtime-chart-tools.tsx,canonical-owner,Canonical module owner: frontend/src/features/workflow/stage_08_results_analysis,"[""frontend/src/features/workflow/stage_08_results_analysis/results-workbench.tsx""]",No schema or stored identity change,backend/tests/test_structure_architecture.py; backend/tests/test_structure_completion.py; full release receipt linked in completion report,CANONICAL_PRESENT,frontend/src/features/workflow/stage_08_results_analysis,"[""frontend/src/features/workflow/stage_08_results_analysis/results-workbench.tsx""]","Python AST (including retired alias module paths, relative and literal dynamic imports), TypeScript imports, literal paths and documentation links; external/persisted consumers not observable",Not a removable compatibility wrapper
++docs/TODO.md,docs/TODO.md,canonical-owner,Canonical documentation owner: docs,[],No schema or stored identity change; task todo index only,backend/tests/test_structure_architecture.py; backend/tests/test_structure_completion.py; full release receipt linked in completion report,CANONICAL_PRESENT,docs,[],"Python AST (including retired alias module paths, relative and literal dynamic imports), TypeScript imports, literal paths and documentation links; external/persisted consumers not observable",Not a removable compatibility wrapper
 --- before/frontend/e2e/analysis-workspace.spec.ts
 +++ after/frontend/e2e/analysis-workspace.spec.ts
-@@ -12,11 +12,18 @@
+@@ -1,5 +1,10 @@
+ import {test,expect,type Page} from 'playwright/test';
+ import {randomUUID} from 'node:crypto';
++
++function cursor(page:Page) {
++  return page.getByLabel('Analysefenster und Arbeitsbereich',{exact:true})
++    .locator('.analysis-workspace-settings > small');
++}
+ 
+ async function imported(page:Page,view:string='messages') {
+   const project='nis-e2e-multi-window-'+randomUUID();
+@@ -11,12 +16,21 @@
+   await expect(page.locator('.trace-control-panel')).toContainText('20 Ereignisse im Speicher');
    return project;
  }
- async function open(page:Page,view:string,independent=false) {
+-async function open(page:Page,view:string,independent=false) {
 -  const tools=page.getByRole('region',{name:'Analysefenster und Arbeitsbereich'});
 -  await tools.getByRole('combobox',{name:'Ansicht',exact:true}).selectOption(view);
++async function open(page:Page,view:string,independent=false,comparison=false) {
 +  const simulationControls=page.locator('[aria-controls="simulation-controls"]');
 +  if(await simulationControls.count() && await simulationControls.getAttribute('aria-expanded')==='false')
 +    await simulationControls.click();
 +  const tools=page.getByLabel('Analysefenster und Arbeitsbereich',{exact:true});
-+  // Simulation controls are collapsed by default; use the explicit Trace column.
++  // Open the current explicit launcher and keep the simulation page in place.
 +  if(await tools.evaluate(element=>element.tagName==='DETAILS' && !element.hasAttribute('open')))
 +    await tools.locator(':scope > summary').click();
++  await tools.getByRole('combobox',{name:'Fensterbereich',exact:true}).selectOption('trace');
 +  await tools.getByRole('combobox',{name:'Trace-Ansicht',exact:true}).selectOption(view);
++  await tools.getByRole('combobox',{name:'Kopplung des neuen Fensters',exact:true}).selectOption(comparison?'COMPARE':independent?'INDEPENDENT':'FOLLOW_PRIMARY');
    const popup=page.waitForEvent('popup');
 -  await tools.getByRole('button',{name:independent?'Unabhängig öffnen':'↗ In neuem Fenster öffnen',exact:true}).click();
-+  await tools.getByRole('button',{name:independent?'Trace unabhängig öffnen':'Trace-Fenster öffnen',exact:true}).click();
++  await tools.getByRole('button',{name:'Fenster öffnen',exact:true}).click();
    const secondary=await popup;await secondary.waitForLoadState('domcontentloaded');
 +  expect(new URL(secondary.url()).pathname).toBe('/trace-analysis');
    await expect(secondary.locator('.trace-control-panel > p').filter({hasText:'Ereignisse im Speicher'})).toHaveText(/^[1-9]\d* Ereignisse im Speicher/);
    return secondary;
  }
-@@ -65,7 +72,7 @@
+@@ -25,13 +39,13 @@
+   await page.locator('.e2e-sequence-event').nth(3).click();
+   await expect(signals.getByLabel('Gemeinsamer Trace-Kontext',{exact:true})).toContainText('Druckbericht');
+   await expect(signals.getByLabel('Signal-Analyse',{exact:true})).toContainText('Druck');
+-  await expect(signals.getByLabel('Gemeinsamer Zeitcursor')).toContainText('0.3 s');
++  await expect(cursor(signals)).toContainText('0.3 s');
+   expect(new URL(signals.url()).searchParams.get('project')).toBe(project);
+   await signals.getByLabel('Fensterkopplung').selectOption('INDEPENDENT');
+   await page.locator('.e2e-sequence-event').nth(5).click();
+-  await expect(signals.getByLabel('Gemeinsamer Zeitcursor')).toContainText('0.3 s');
++  await expect(cursor(signals)).toContainText('0.3 s');
+   await signals.getByLabel('Fensterkopplung').selectOption('FOLLOW_PRIMARY');
+-  await expect(signals.getByLabel('Gemeinsamer Zeitcursor')).toContainText('0.5 s');
++  await expect(cursor(signals)).toContainText('0.5 s');
+ });
+ test('E2E-02 bus-load time filter restricts the coupled original event window',async({page})=>{
+   await imported(page,'load');const events=await open(page,'events');
+@@ -53,7 +67,7 @@
+   await imported(page,'findings');const root=await open(page,'root-cause');
+   await page.getByRole('button',{name:'Ereigniskontext',exact:true}).first().click();
+   await expect(root.getByLabel('Gemeinsamer Trace-Kontext',{exact:true})).toContainText('Druckbericht');
+-  await expect(root.getByLabel('Gemeinsamer Zeitcursor')).toContainText('0.3 s');
++  await expect(cursor(root)).toContainText('0.3 s');
+   await expect(root.locator('.trace-control-panel')).toContainText('zeitliche Nachbarschaft allein beweist keine Ursache');
+ });
+ async function run(page:Page,project:string,fault:boolean) {
+@@ -65,7 +79,7 @@
    const project='nis-e2e-compare-'+randomUUID(),golden=await run(page,project,false),fault=await run(page,project,true);
    await page.goto(`/trace-analysis?project=${project}&job=${golden}&view=trace`);
    await expect(page.locator('.trace-control-panel > p').filter({hasText:'Ereignisse im Speicher'})).toHaveText(/^[1-9]\d* Ereignisse im Speicher/);
 -  const popup=page.waitForEvent('popup');await page.getByRole('button',{name:'⇄ Vergleich öffnen',exact:true}).click();const compare=await popup;
-+  const popup=page.waitForEvent('popup');await page.getByRole('button',{name:'Trace vergleichen',exact:true}).click();const compare=await popup;
++  const compare=await open(page,'trace',false,true);
    await compare.getByLabel('Rechter Vergleichslauf').selectOption(fault);
    await expect(compare.locator('.analysis-difference').first()).toBeVisible();
    await expect(compare.getByLabel('Linker Vergleichslauf')).toHaveValue(golden);
-@@ -78,7 +85,7 @@
+@@ -78,7 +92,7 @@
    await page.goto(`/studio/simulation?project=${project}&job=${id}`);
    const time=page.getByLabel('Simulationszeit',{exact:true});
    await expect(time).toHaveAttribute('max','0.08');
@@ -679,6 +721,28 @@
    const trace=await open(page,'trace');
    await page.bringToFront();
    await time.focus();await time.press('Home');
+@@ -88,16 +102,16 @@
+     await expect(time).toHaveValue(String((i+1)/1000));
+   }
+   await expect(time).toHaveValue('0.03');
+-  await expect(page.getByLabel('Gemeinsamer Zeitcursor')).toContainText('0.03 s');
+-  await expect(trace.getByLabel('Gemeinsamer Zeitcursor')).toContainText('0.03 s');
++  await expect(cursor(page)).toContainText('0.03 s');
++  await expect(cursor(trace)).toContainText('0.03 s');
+   expect(await trace.locator('.simulation-command-bar').count()).toBe(0);
+   const headers={'X-Project-ID':project};expect((await(await page.request.get('/api/simulations',{headers})).json()).jobs).toHaveLength(1);
+ });
+ test('E2E-06 signal selection reaches the analysis assistant; profiles restore only views; ending the session clears all windows',async({page})=>{
+   await imported(page,'signals');const assistant=await open(page,'assistant');
+   await page.getByRole('button',{name:/Druck: .*; 0.4/}).first().click();
+-  await expect(assistant.locator('.analysis-assistant-context')).toContainText('pressure');await expect(assistant.getByLabel('Gemeinsamer Zeitcursor')).toContainText('0.4 s');
+-  const tools=page.getByRole('region',{name:'Analysefenster und Arbeitsbereich'});await tools.getByText(/Arbeitsbereiche und Fenster/).click();await tools.getByLabel('Profilname').fill('Signals + Assistant');await tools.getByRole('button',{name:'Arbeitsbereich speichern',exact:true}).click();await expect(tools.getByLabel('Gespeichertes Profil')).toContainText('Signals + Assistant');
++  await expect(assistant.locator('.analysis-assistant-context')).toContainText('pressure');await expect(cursor(assistant)).toContainText('0.4 s');
++  const tools=page.getByRole('region',{name:'Analysefenster und Arbeitsbereich'});await tools.getByText('Arbeitsbereich verwalten',{exact:true}).click();await tools.getByLabel('Profilname').fill('Signals + Assistant');await tools.getByRole('button',{name:'Arbeitsbereich speichern',exact:true}).click();await expect(tools.getByLabel('Gespeichertes Profil')).toContainText('Signals + Assistant');
+   const popup=page.waitForEvent('popup');await tools.getByRole('button',{name:'Arbeitsbereich wiederherstellen',exact:true}).click();const restored=await popup;await expect(restored.locator('.analysis-assistant-context')).toContainText('pressure');
+-  await tools.getByRole('button',{name:'Analysesitzung in allen Fenstern beenden',exact:true}).click();await expect(assistant.getByLabel('Gemeinsamer Zeitcursor')).toContainText('Unbekannt');await expect(restored.getByRole('region',{name:'Analysefenster und Arbeitsbereich'})).toContainText('Sitzung beendet');
++  await tools.getByRole('button',{name:'Analysesitzung in allen Fenstern beenden',exact:true}).click();await expect(cursor(assistant)).toContainText('Unbekannt');await expect(restored.getByRole('region',{name:'Analysefenster und Arbeitsbereich'})).toContainText('Sitzung beendet');
+ });
 --- before/frontend/e2e/studio-export-controls.spec.ts
 +++ after/frontend/e2e/studio-export-controls.spec.ts
 @@ -1,6 +1,13 @@
@@ -696,14 +760,25 @@
  
  test('network tools remain grouped and usable at narrow and desktop widths @studio-controls', async ({ page }) => {
    const project = 'nis-e2e-toolbar-' + randomUUID();
-@@ -90,6 +97,7 @@
+@@ -90,15 +97,16 @@
    await page.goto(`/studio/simulation?project=${project}`);
    await expect(page.getByLabel('Dynamik filtern')).toHaveValue('ALL');
    await expect(page.locator('.signal-filter-summary')).toContainText('125 im Filter gewählt');
 +  await openSimulationRun(page);
    try {
-     await expect(page.getByRole('button', { name: 'Start', exact: true })).toBeDisabled();
+-    await expect(page.getByRole('button', { name: 'Start', exact: true })).toBeDisabled();
++    await expect(page.getByRole('button', { name: 'Lauf starten', exact: true })).toBeDisabled();
      await expect(page.locator('.trace-format-trigger')).toContainText('Projektformate werden geladen');
+     await expect(page.locator('.trace-format-trigger strong')).toHaveText('…');
+   } finally {
+     releaseCatalog();
+   }
+   await expect(page.locator('.trace-format-trigger')).toContainText('PCAP');
+-  await expect(page.getByRole('button', { name: 'Start', exact: true })).toBeEnabled();
++  await expect(page.getByRole('button', { name: 'Lauf starten', exact: true })).toBeEnabled();
+   await expect(page.locator('.signal-lane')).toHaveCount(60);
+   const visibleSignalCount = await page.locator('.signal-lanes').evaluate(element => {
+     const bounds = element.getBoundingClientRect();
 @@ -220,6 +228,7 @@
    expect(saved.ok(), await saved.text()).toBe(true);
    await page.goto(`/studio/simulation?project=${project}`);
@@ -728,25 +803,32 @@
  type WriteTiming = { url: string; started: number; duration_ms?: number; status?: number; failure?: string };
  const writeTimings = new Map<string, WriteTiming[]>();
  const workflowPageFailures = new WeakMap<Page, string[]>();
-@@ -658,11 +665,13 @@
+@@ -658,12 +665,14 @@
      await expect(freshRunner).toHaveAttribute('data-snapshot-id', artifacts.snapshot);
      await expect(fresh.getByRole('heading', { name: 'Simulation abgeschlossen', exact: true })).toBeVisible();
      // A completed historical run must not block the current approved preflight.
+-    await expect(fresh.getByRole('button', { name: 'Start', exact: true })).toBeEnabled();
+-    await fresh.getByRole('button', { name: 'Reset', exact: true }).click();
+-    await fresh.getByRole('button', { name: 'Ansicht zurücksetzen', exact: true }).click();
 +    await openSimulationRun(fresh);
-     await expect(fresh.getByRole('button', { name: 'Start', exact: true })).toBeEnabled();
-     await fresh.getByRole('button', { name: 'Reset', exact: true }).click();
-     await fresh.getByRole('button', { name: 'Ansicht zurücksetzen', exact: true }).click();
++    await expect(fresh.getByRole('button', { name: 'Lauf starten', exact: true })).toBeEnabled();
++    await fresh.locator('.simulation-command-bar').getByRole('button', { name: 'Ansicht zurücksetzen', exact: true }).click();
++    await fresh.getByRole('alertdialog').getByRole('button', { name: 'Ansicht zurücksetzen', exact: true }).click();
      await expect(freshRunner).not.toHaveAttribute('data-job-id');
      await fresh.reload();
+-    await expect(fresh.getByRole('button', { name: 'Start', exact: true })).toBeEnabled();
 +    await openSimulationRun(fresh);
-     await expect(fresh.getByRole('button', { name: 'Start', exact: true })).toBeEnabled();
++    await expect(fresh.getByRole('button', { name: 'Lauf starten', exact: true })).toBeEnabled();
      await expect(freshRunner).not.toHaveAttribute('data-job-id');
      await fresh.goto(`/studio/results?project=${project}&snapshot=${artifacts.snapshot}`);
-@@ -672,6 +681,7 @@
+     await expect(fresh.locator('.result-run-list button.active')).toHaveAttribute('data-snapshot-id', artifacts.snapshot);
+@@ -672,7 +681,8 @@
      // Actual normal START, without resetting/deleting the restored completed run.
      await fresh.goto(`/studio/simulation?project=${project}&snapshot=${artifacts.snapshot}`);
      await expect(freshRunner).toHaveAttribute('data-job-id', artifacts.job);
+-    await fresh.getByRole('button', { name: 'Start', exact: true }).click();
 +    await openSimulationRun(fresh);
-     await fresh.getByRole('button', { name: 'Start', exact: true }).click();
++    await fresh.getByRole('button', { name: 'Lauf starten', exact: true }).click();
      await expect.poll(async () => {
        restartedJob = await freshRunner.getAttribute('data-job-id');
+       return Boolean(restartedJob && restartedJob !== artifacts.job);

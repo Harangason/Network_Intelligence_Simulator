@@ -1,0 +1,22 @@
+{
+  "name": "OnDelay",
+  "description": "A simulation block that outputs True when the input has been continuously active for a duration greater than or equal to the specified delay. It ignores the time elapsed before the input first became active.",
+  "source_code": "class OnDelay(FunctionBlock):\n    def step(self, inputs, parameters, dt):\n        active = inputs.get(\"active\")\n        delay = parameters[\"delay\"]\n        prev_active = self.state.get(\"prev_active\", False)\n        elapsed = self.state.get(\"elapsed\", 0.0)\n        if active:\n            if prev_active:\n                elapsed = elapsed + dt\n            else:\n                elapsed = 0.0\n            self.state[\"prev_active\"] = True\n            self.state[\"elapsed\"] = elapsed\n            return elapsed >= delay\n        else:\n            self.state[\"prev_active\"] = False\n            self.state[\"elapsed\"] = 0.0\n            return False",
+  "parameter_schema": {
+    "delay": {
+      "type": "number",
+      "required": true,
+      "unit": "s",
+      "minimum": 0
+    }
+  },
+  "provenance": {
+    "provider": "ollama-local",
+    "model": "qwen3.8:27b",
+    "model_digest": "22130167c4c20e20c7b71454612966ca8e8171e9b3cc8ab6ce8aa6cbfec79643",
+    "request_sha256": "e20498d45e989e162d6d20ff67e23c5a66c2c7c384918e7442e550196427d9e3",
+    "generated_by": "QWEN",
+    "status": "UNVALIDATED_SIMULATION_DESIGN"
+  },
+  "source_sha256": "7244d97439f5f0e0b0c330845106085f08b8e1c87dcc698bc4406ab0d1e75e8e"
+}

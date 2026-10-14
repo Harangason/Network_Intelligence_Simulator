@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { selectSensorMeasurement, sensorMeasurement, sensorMeasurementSelections } from './sensor-measurements.ts';
+import { selectSensorMeasurement, sensorMeasurement, sensorMeasurementSelections, sensorMeasurementContract } from './sensor-measurements.ts';
 import { extractEngineeringSpecification } from './engineering-specification.ts';
 
 test('PT100 is recognized as a temperature sensor', () => {
@@ -88,4 +88,42 @@ test('malformed and unsupported measurement choices never create devices', () =>
     assert.deepEqual(sensorMeasurementSelections(`- Sensor-Messgrößen: ${json}`), {});
   }
   assert.equal(selectSensorMeasurement('3 Sensoren', 'Sensor1', 'unknown'), '3 Sensoren');
+});
+
+test('compound speed/level names and selector semantics remain distinct across industries', () => {
+  for (const name of ['EngineSpeed', 'MotorSpeed', 'TransmissionInputSpeed', 'TransmissionOutputSpeed', 'TurboSpeed', 'FrontLeftWheelSpeed'])
+    assert.equal(sensorMeasurement(name)?.id, 'speed');
+  for (const name of ['CoolantLevel', 'FuelLevel', 'OilLevel', 'UreaLevel', 'WasherFluidLevel'])
+    assert.equal(sensorMeasurement(name)?.id, 'fill_level');
+  assert.equal(sensorMeasurement('VehicleSpeed')?.unit, 'm/s');
+  assert.equal(sensorMeasurement('GearSelectorPosition')?.id, 'selector_state');
+  assert.equal(sensorMeasurement('PhysicalPosition')?.unit, 'm');
+  assert.equal(sensorMeasurement('ClutchPosition')?.id, 'relative_position');
+  assert.equal(sensorMeasurement('Speed')?.id, undefined);
+});
+
+test('measurement contract preserves explicit encoding and does not infer acquisition or manufacturer accuracy', () => {
+  const pressure = sensorMeasurementContract('TirePressure', { unit: 'kPa', factor: 1, min_value: 0, max_value: 500, cycle_ms: 100 });
+  assert.equal(pressure.unit, 'kPa');
+  assert.equal(pressure.acquisition.sample_period_ms, null);
+  assert.equal(pressure.transport.period_ms, 100);
+  assert.equal(pressure.uncertainty, null);
+  assert.equal(pressure.instrument_range, null);
+});
+
+test('structured profiles describe complete payloads separately from transport fragments', () => {
+  const image = sensorMeasurementContract('Camera').structured_payload;
+  assert.equal(image.complete_frame, false);
+  assert.equal(image.frame_bytes, null);
+  const cloud = sensorMeasurementContract('Lidar').structured_payload;
+  assert.equal(cloud.point_stride_bytes, 12);
+  assert.equal(cloud.cloud_bytes, null);
+  const imu = sensorMeasurementContract('IMU').structured_payload;
+  assert.deepEqual(imu.fields.map(field => field.unit), ['m/s2', 'm/s2', 'm/s2', 'rad/s', 'rad/s', 'rad/s']);
+  assert.equal(imu.covariance, null);
+  const radar = sensorMeasurementContract('RadarDetections').structured_payload;
+  assert.equal(radar.header_bytes + radar.record_bytes * radar.max_records, radar.payload_bytes);
+  assert.equal(radar.classification_supported, false);
+  const navigation = sensorMeasurementContract('GNSS').structured_payload;
+  assert.equal(navigation.geodetic_datum, null);
 });

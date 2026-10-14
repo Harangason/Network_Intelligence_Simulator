@@ -56,10 +56,17 @@ def check_revision(expected, actual) -> None:
         )
 
 
+def mark_project_files_changed() -> None:
+    unit = _request_unit.get()
+    if unit is not None:
+        unit.project_files_changed = True
+
+
 def mark_model_changed() -> None:
     unit = _request_unit.get()
     if unit is not None:
         unit.model_changed = True
+        unit.project_files_changed = True
 
 
 def flush_model_changes(*, actor: str, reason: str) -> None:
@@ -82,6 +89,7 @@ class RequestUnit:
     def __init__(self, project_id: str):
         self.project_id = project_id
         self.model_changed = False
+        self.project_files_changed = False
         self.connection = None
         self.pool_context = None
         self.local_project_lock: threading.RLock | None = None
@@ -115,13 +123,21 @@ class RequestUnit:
         return self.connection
 
     def finish(self, success: bool) -> None:
-        context, self.pool_context = self.pool_context, None
-        self.connection = None
-        resources, self.resources = self.resources, {}
+        context = self.pool_context
+        resources = self.resources
         try:
             if context is not None:
                 if success:
                     try:
+                        # Explicit project deletion owns its existing lifecycle;
+                        # never recreate a deleted project to export a revision.
+                        deleted = (self.connection.execute('SELECT 1 FROM engineering_deleted_projects WHERE project_id=%s',
+                                   (self.project_id,)).fetchone() if self.project_files_changed else None)
+                        if self.project_files_changed and not deleted:
+                            from backend.nis.engineering.projects.project_bundle import ProjectBundleService
+                            from backend.nis.infrastructure.storage.saved_storage import ProjectArtifactStore
+                            bundle = ProjectBundleService().export(self.project_id)
+                            ProjectArtifactStore(self.project_id).stage_snapshot(bundle)
                         for resource in resources.values():
                             resource.prepare()
                     except Exception as error:
@@ -136,6 +152,9 @@ class RequestUnit:
                 resource.rollback()
             raise
         finally:
+            self.pool_context = self.connection = None
+            self.resources = {}
+            self.project_files_changed = False
             project_lock, self.local_project_lock = self.local_project_lock, None
             if project_lock is not None:
                 project_lock.release()

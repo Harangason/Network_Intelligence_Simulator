@@ -61,7 +61,7 @@ _TOPOLOGY_BUS_BY_PROTOCOL = {
     'SOMEIP': 'automotive_ethernet',
 }
 
-MODEL_GENERATOR_VERSION = 'wizard-model-v23-functional-devices'
+MODEL_GENERATOR_VERSION = 'wizard-model-v24-functional-chain-review'
 ROUTING_GENERATOR_VERSION = 'wizard-routing-v11-confirmed-recipients-only'
 
 _CONTROLLER_DEVICE_TYPES = {

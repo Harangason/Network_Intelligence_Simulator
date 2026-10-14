@@ -14,6 +14,12 @@ def select_tools(prompt: str, tools: list[dict]) -> list[dict]:
     names = {"inspect_project","search_model","inspect_object","ask_engineering_question","discover_engineering_tools", "type_engineering_input",
              "inspect_assistant_capabilities", "prepare_assistant_action"}
     focused = set()
+    if re.search(r'dokument|datei|anhang|anlage|document|attachment|specification', prompt, re.I):
+        focused.add('interpret_project_document')
+    if re.search(r'sensor|aktor|actuator|aktuator|stellglied|kamera|camera|radar|lidar|wahrnehm|perception|objektdaten|object.?data|fahrerassistenz|sensorfusion', prompt, re.I):
+        focused.add('validate_device_communication')
+        names.update({'inspect_hardware', 'inspect_signal_definition', 'inspect_message',
+                      'update_object_via_proposal', 'create_objects_via_proposal', 'validate_proposal'})
     from backend.nis.agent.orchestration.project_intake import is_project_request
     if is_project_request(prompt):
         names.update({'prepare_project_request', 'resolve_generation_rules', 'inspect_generation_experience'})
@@ -71,6 +77,9 @@ def select_tools(prompt: str, tools: list[dict]) -> list[dict]:
     if re.search(r"trace|ursach|reasoning|root.?cause|deadline|fault|golden|lauf.*vergleich", prompt, re.I):
         names.update(reasoning_names)
     names.update(focused)
+    if re.search(r'code|funktionsblock|function.?block|hysterese|hysteresis|heiz|ausweich|greif|drehzahl.*warn|baukasten|logik|logic|verkn(?:ü|ue)pf|\b(?:join|xor|xnor|nand|nor|gatter)\b', prompt, re.I):
+        focused.update({'inspect_function_block_standards', 'inspect_logic_expression', 'inspect_function_block_context', 'generate_function_block_proposal', 'inspect_proposal', 'validate_proposal'})
+        names.update(focused)
     if re.search(r'import|datei.*(?:übernehm|einles)|file.*(?:load|read)', prompt, re.I):
         focused.update({'preview_model_import', 'plan_model_import', 'plan_project_bundle_restore'})
         names.update(focused)

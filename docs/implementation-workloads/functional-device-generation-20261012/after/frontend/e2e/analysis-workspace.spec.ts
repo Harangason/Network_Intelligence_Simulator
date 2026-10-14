@@ -1,6 +1,11 @@
 import {test,expect,type Page} from 'playwright/test';
 import {randomUUID} from 'node:crypto';
 
+function cursor(page:Page) {
+  return page.getByLabel('Analysefenster und Arbeitsbereich',{exact:true})
+    .locator('.analysis-workspace-settings > small');
+}
+
 async function imported(page:Page,view:string='messages') {
   const project='nis-e2e-multi-window-'+randomUUID();
   await page.goto(`/trace-analysis?project=${project}`);
@@ -11,17 +16,19 @@ async function imported(page:Page,view:string='messages') {
   await expect(page.locator('.trace-control-panel')).toContainText('20 Ereignisse im Speicher');
   return project;
 }
-async function open(page:Page,view:string,independent=false) {
+async function open(page:Page,view:string,independent=false,comparison=false) {
   const simulationControls=page.locator('[aria-controls="simulation-controls"]');
   if(await simulationControls.count() && await simulationControls.getAttribute('aria-expanded')==='false')
     await simulationControls.click();
   const tools=page.getByLabel('Analysefenster und Arbeitsbereich',{exact:true});
-  // Simulation controls are collapsed by default; use the explicit Trace column.
+  // Open the current explicit launcher and keep the simulation page in place.
   if(await tools.evaluate(element=>element.tagName==='DETAILS' && !element.hasAttribute('open')))
     await tools.locator(':scope > summary').click();
+  await tools.getByRole('combobox',{name:'Fensterbereich',exact:true}).selectOption('trace');
   await tools.getByRole('combobox',{name:'Trace-Ansicht',exact:true}).selectOption(view);
+  await tools.getByRole('combobox',{name:'Kopplung des neuen Fensters',exact:true}).selectOption(comparison?'COMPARE':independent?'INDEPENDENT':'FOLLOW_PRIMARY');
   const popup=page.waitForEvent('popup');
-  await tools.getByRole('button',{name:independent?'Trace unabhängig öffnen':'Trace-Fenster öffnen',exact:true}).click();
+  await tools.getByRole('button',{name:'Fenster öffnen',exact:true}).click();
   const secondary=await popup;await secondary.waitForLoadState('domcontentloaded');
   expect(new URL(secondary.url()).pathname).toBe('/trace-analysis');
   await expect(secondary.locator('.trace-control-panel > p').filter({hasText:'Ereignisse im Speicher'})).toHaveText(/^[1-9]\d* Ereignisse im Speicher/);
@@ -32,13 +39,13 @@ test('E2E-01 sequence selection focuses the corresponding original signals acros
   await page.locator('.e2e-sequence-event').nth(3).click();
   await expect(signals.getByLabel('Gemeinsamer Trace-Kontext',{exact:true})).toContainText('Druckbericht');
   await expect(signals.getByLabel('Signal-Analyse',{exact:true})).toContainText('Druck');
-  await expect(signals.getByLabel('Gemeinsamer Zeitcursor')).toContainText('0.3 s');
+  await expect(cursor(signals)).toContainText('0.3 s');
   expect(new URL(signals.url()).searchParams.get('project')).toBe(project);
   await signals.getByLabel('Fensterkopplung').selectOption('INDEPENDENT');
   await page.locator('.e2e-sequence-event').nth(5).click();
-  await expect(signals.getByLabel('Gemeinsamer Zeitcursor')).toContainText('0.3 s');
+  await expect(cursor(signals)).toContainText('0.3 s');
   await signals.getByLabel('Fensterkopplung').selectOption('FOLLOW_PRIMARY');
-  await expect(signals.getByLabel('Gemeinsamer Zeitcursor')).toContainText('0.5 s');
+  await expect(cursor(signals)).toContainText('0.5 s');
 });
 test('E2E-02 bus-load time filter restricts the coupled original event window',async({page})=>{
   await imported(page,'load');const events=await open(page,'events');
@@ -60,7 +67,7 @@ test('E2E-03 an original finding builds a readable root-cause context, never an 
   await imported(page,'findings');const root=await open(page,'root-cause');
   await page.getByRole('button',{name:'Ereigniskontext',exact:true}).first().click();
   await expect(root.getByLabel('Gemeinsamer Trace-Kontext',{exact:true})).toContainText('Druckbericht');
-  await expect(root.getByLabel('Gemeinsamer Zeitcursor')).toContainText('0.3 s');
+  await expect(cursor(root)).toContainText('0.3 s');
   await expect(root.locator('.trace-control-panel')).toContainText('zeitliche Nachbarschaft allein beweist keine Ursache');
 });
 async function run(page:Page,project:string,fault:boolean) {
@@ -72,7 +79,7 @@ test('E2E-04 real Golden and Fault runs stay separate and expose original differ
   const project='nis-e2e-compare-'+randomUUID(),golden=await run(page,project,false),fault=await run(page,project,true);
   await page.goto(`/trace-analysis?project=${project}&job=${golden}&view=trace`);
   await expect(page.locator('.trace-control-panel > p').filter({hasText:'Ereignisse im Speicher'})).toHaveText(/^[1-9]\d* Ereignisse im Speicher/);
-  const popup=page.waitForEvent('popup');await page.getByRole('button',{name:'Trace vergleichen',exact:true}).click();const compare=await popup;
+  const compare=await open(page,'trace',false,true);
   await compare.getByLabel('Rechter Vergleichslauf').selectOption(fault);
   await expect(compare.locator('.analysis-difference').first()).toBeVisible();
   await expect(compare.getByLabel('Linker Vergleichslauf')).toHaveValue(golden);
@@ -95,16 +102,16 @@ test('E2E-05 restored simulation cursor follows into a bounded read-only trace w
     await expect(time).toHaveValue(String((i+1)/1000));
   }
   await expect(time).toHaveValue('0.03');
-  await expect(page.getByLabel('Gemeinsamer Zeitcursor')).toContainText('0.03 s');
-  await expect(trace.getByLabel('Gemeinsamer Zeitcursor')).toContainText('0.03 s');
+  await expect(cursor(page)).toContainText('0.03 s');
+  await expect(cursor(trace)).toContainText('0.03 s');
   expect(await trace.locator('.simulation-command-bar').count()).toBe(0);
   const headers={'X-Project-ID':project};expect((await(await page.request.get('/api/simulations',{headers})).json()).jobs).toHaveLength(1);
 });
 test('E2E-06 signal selection reaches the analysis assistant; profiles restore only views; ending the session clears all windows',async({page})=>{
   await imported(page,'signals');const assistant=await open(page,'assistant');
   await page.getByRole('button',{name:/Druck: .*; 0.4/}).first().click();
-  await expect(assistant.locator('.analysis-assistant-context')).toContainText('pressure');await expect(assistant.getByLabel('Gemeinsamer Zeitcursor')).toContainText('0.4 s');
-  const tools=page.getByRole('region',{name:'Analysefenster und Arbeitsbereich'});await tools.getByText(/Arbeitsbereiche und Fenster/).click();await tools.getByLabel('Profilname').fill('Signals + Assistant');await tools.getByRole('button',{name:'Arbeitsbereich speichern',exact:true}).click();await expect(tools.getByLabel('Gespeichertes Profil')).toContainText('Signals + Assistant');
+  await expect(assistant.locator('.analysis-assistant-context')).toContainText('pressure');await expect(cursor(assistant)).toContainText('0.4 s');
+  const tools=page.getByRole('region',{name:'Analysefenster und Arbeitsbereich'});await tools.getByText('Arbeitsbereich verwalten',{exact:true}).click();await tools.getByLabel('Profilname').fill('Signals + Assistant');await tools.getByRole('button',{name:'Arbeitsbereich speichern',exact:true}).click();await expect(tools.getByLabel('Gespeichertes Profil')).toContainText('Signals + Assistant');
   const popup=page.waitForEvent('popup');await tools.getByRole('button',{name:'Arbeitsbereich wiederherstellen',exact:true}).click();const restored=await popup;await expect(restored.locator('.analysis-assistant-context')).toContainText('pressure');
-  await tools.getByRole('button',{name:'Analysesitzung in allen Fenstern beenden',exact:true}).click();await expect(assistant.getByLabel('Gemeinsamer Zeitcursor')).toContainText('Unbekannt');await expect(restored.getByRole('region',{name:'Analysefenster und Arbeitsbereich'})).toContainText('Sitzung beendet');
+  await tools.getByRole('button',{name:'Analysesitzung in allen Fenstern beenden',exact:true}).click();await expect(cursor(assistant)).toContainText('Unbekannt');await expect(restored.getByRole('region',{name:'Analysefenster und Arbeitsbereich'})).toContainText('Sitzung beendet');
 });

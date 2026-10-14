@@ -130,10 +130,18 @@ def _device(a):
 
 def _communication_validation(a):
     from backend.nis.engineering.communication.device_communication import communication_findings
-    graph = {kind: {str(row['id']): row for row in access.objects(kind)} for kind in
-             ('HardwareNode', 'Function', 'Interface', 'Message', 'Signal')}
-    findings = communication_findings(graph)
-    return _validation({'valid': not any(f['severity'] == 'ERROR' for f in findings), 'findings': findings})
+    context = access.ProjectRepository().context()
+    snapshot = context.snapshot()
+    graph = {kind: {str(row['id']): row for row in snapshot[section]}
+             for section, kind in access.SECTIONS.items()}
+    findings = communication_findings(graph, include_legacy=a.get('include_legacy', True))
+    return _validation({'valid': bool(graph['HardwareNode']) and not any(f['severity'] in {'ERROR', 'REVIEW'} for f in findings),
+        'findings': findings, 'project_id': context.project_id, 'model_revision': context.revision,
+        'mutation': 'NONE', 'scope': 'Functional model intent; physical routing, processing logic and current preflight require separate evidence.',
+        'next_steps': ['Resolve existing canonical IDs and missing requirements.',
+                       'Create/update through regular proposals; preserve encodings and recipient boundaries.',
+                       'Validate and obtain human review before apply.',
+                       'Recalculate routing/capacity and pass current preflight before a new simulation.']})
 
 
 def _signal(a):
@@ -505,7 +513,7 @@ def register_tools():
     register("calculate_message_payload", "Nutzlastgröße aus Signalbelegung berechnen.", P.READ_MODEL, lambda a:{"packed_messages":generation.packed(a)}, **packing_fields)
     register("allocate_message_identifier", "Freien Identifier ermitteln; Reservierung erst bei Apply.", P.READ_MODEL, _identifier, interface_id=ID,extended=(bool,False),start=(int,256))
     register("validate_message", "Signalüberlappung und Payload prüfen.", P.VALIDATE, _message_validation,message=OBJECT,signals=ITEMS)
-    register("validate_device_communication", "Projekt auf Mindestkommunikation prüfen: Funktionen ab Klasse 3, Status ab Klasse 2, Sensorwerte, Aktorrückmeldung und vollständige Befehlssignale. Offene gerätespezifische Befehle vor der Modellfreigabe mit dem Nutzer klären.", P.VALIDATE, _communication_validation)
+    register("validate_device_communication", "Aktuelle Sensor-Verarbeiter-Ausgang-Empfänger-Aktor-Ketten jeder Branche lesen und prüfen. Alle deklarierten Eingänge, getrennte Objektdaten und explizite Befehle prüfen; Altverträge als Reviewbedarf ausweisen. Keine Modellmutation; fehlende Angaben über reguläre Vorschläge/Freigabe ergänzen. Liefert Projekt und Modellrevision; belegt keine physische Übertragung oder echte Erkennung.", P.VALIDATE, _communication_validation, include_legacy=(bool, True))
     frame_fields=dict(technology=TECHNOLOGY,payload_bytes=(int,Field(ge=0,le=65535)),parameters=OPTIONAL_OBJECT)
     register("calculate_message_size", "Technologiespezifische Framegröße und Sendezeit berechnen.", P.READ_MODEL,_frame,**frame_fields)
     register("calculate_bus_load", "Technologiespezifische Buslast berechnen.", P.READ_MODEL,_load,**frame_fields,cycle_ms=(float,Field(gt=0)),multiplicity=(int,Field(default=1,ge=1,le=100000)))
@@ -534,6 +542,18 @@ def register_tools():
     register("generate_routing","Routen für Sender und Empfänger vorschlagen.",P.GENERATE_PROPOSAL,_route_proposal,source_node_id=ID,destination_node_ids=(list[str],Field(min_length=1,max_length=100)),message_id=(str|None,None),prompt=(str,"Routing erzeugen."))
     for name in ["generate_simulation_scenario","generate_fault_scenario_proposal"]:
         register(name,"Szenario als freizugebenden Vorschlag erzeugen.",P.GENERATE_PROPOSAL,generation.scenario,scenario=OBJECT,prompt=(str,"Szenario vorschlagen."))
+    from backend.nis.agent.tools import function_blocks
+    register("inspect_function_block_standards", "Gemeinsamen QWEN-Baukasten aus dem bestehenden SignalBehaviorRegistry lesen. Standards werden mit expliziten Signalbindungen, vollständigen Wahrheitstabellen und Review übernommen.",
+             P.READ_MODEL, function_blocks.inspect_standards, standard_id=(str | None, None), include_source=(bool, False))
+    register("inspect_logic_expression", "Geklammerte boolesche Entscheidung als Graph prüfen. UND/ODER/NICHT, XOR, NAND, NOR, XNOR, IMPLIES, SELECT und JOIN(N, A, B, ...): genau N wahre Operanden, N als ganzzahliger Modellparameter; keine Modelländerung.",
+             P.READ_MODEL, function_blocks.inspect_logic, expression=TEXT)
+    register("inspect_function_block_context", "Aktuelle kanonische ECU-Funktion, Eingänge, Ausgang, Parameter und Modellrevision für QWEN-Code lesen.",
+             P.READ_MODEL, function_blocks.inspect_context, signal_id=ID)
+    register("generate_function_block_proposal", "QWEN erzeugt selbst ausführbaren Simulationscode für eine Klasse-3/4-Funktion. Explizite Anforderungen, Signalbindungen, Parameter und Modellrevision erforderlich; bestehender Review-/Apply-Pfad bleibt verbindlich.",
+             P.GENERATE_PROPOSAL, function_blocks.generate_proposal, signal_id=ID, model_revision=TEXT,
+             requirements=TEXT, input_bindings=OBJECT, parameter_values=OBJECT, verification_cases=ITEMS,
+             standard_id=(str | None, None), logic_expression=(str | None, None),
+             on_invalid=(Literal['hold_output','fallback'], ...), invalid_output=(float | bool, ...))
     register("generate_signal_behavior_proposal","Signalverhalten zur Prüfung vorschlagen.",P.GENERATE_PROPOSAL,lambda a:proposals.create("SIGNAL_BEHAVIOR",[{"object_type":"SignalBehavior","data":a["behavior"]}],a["rationale"]),behavior=OBJECT,rationale=TEXT)
     register("validate_simulation_preflight","Verbindliche Vorprüfung vor einem Simulationslauf durchführen.",P.VALIDATE,lambda a:_validation(PreflightService(current_project_id()).run()))
     register("create_simulation_snapshot","Validierten unveränderlichen Simulationsstand erzeugen.",P.RUN_SIMULATION,lambda a:_simulation(a,"snapshot"),configuration=OPTIONAL_OBJECT,metadata_only=(bool,False))
@@ -620,6 +640,12 @@ register('prepare_project_request', 'Projektanforderung als versionierten Entwur
          operation_id=(str | None, Field(default=None, min_length=8, max_length=120)),
          revision=(int | None, Field(default=None, ge=1)))
 from backend.nis.agent.tools import project_draft as project_draft
+from backend.nis.agent.orchestration.project_intake import interpret_project_document
+register('interpret_project_document', 'Vollständige Projektquelle mit lokalem Qwen als quellengebundenen Prüfvorschlag auswerten: Instanzen, Kategorien, Funktionen, Anforderungen und Controller-Kürzel unterscheiden. Keine Modelländerung oder Freigabe.',
+         P.GENERATE_PROPOSAL, interpret_project_document,
+         source=(str, Field(min_length=1, max_length=80000)),
+         source_name=(str, Field(default='Projektbeschreibung', min_length=1, max_length=180)),
+         source_request_id=(str | None, Field(default=None, min_length=8, max_length=80)))
 from backend.nis.agent.tools import configuration as configuration
 from backend.nis.agent.tools import project_creation as project_creation
 from backend.nis.agent.tools import project_bundle_restore as project_bundle_restore

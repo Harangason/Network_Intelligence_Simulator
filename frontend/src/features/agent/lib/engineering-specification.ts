@@ -102,6 +102,7 @@ export type ExtractedEngineeringSpecification = {
   communicationSystemCounts: Record<string, number>;
   networkArchitecture: NetworkArchitectureMode;
   targetCounts: EngineeringTargetCounts;
+  unresolvedInventoryGroups: string[];
 };
 
 export type EngineeringDomainEvidence = {
@@ -1397,10 +1398,13 @@ function communicationSystemAllowsTemplateInterface(system: string, interfaceTyp
 }
 
 function headingLabel(line: string) {
+  line = line.replace(/[\u2010\u2011\u2212]/g, '-').replace(/\u00ad/g, '');
+  const documentHeading = line.match(/^\s*(?:#{1,6}\s*)?\d+(?:\.\d+)*[.)]?\s+(.+?)\s*$/)?.[1];
+  if (documentHeading) return cleanLabel(documentHeading);
   const bold = line.match(/^\s*(?:(?:[-*]|\d+\.)\s+)?\*\*(.+?)\*\*(?:\s*:|\s*$)/)?.[1];
   if (bold) return cleanLabel(bold);
   const bullet = line.match(/^\s*(?:[-*]|\d+\.)\s+(.+?)\s*$/)?.[1];
-  if (!bullet) return "";
+  if (!bullet) return /[.!?]|\b(?:der|die|das|eines|mit|with|auf|on|wird|is|must|shall)\b/iu.test(line) ? '' : cleanLabel(line);
   // Compact specifications often put type and parameters on the same bullet.
   // Only the leading label identifies the hardware participant.
   return cleanLabel(bullet.split(/\s*[:,]\s*/, 1)[0] ?? "");
@@ -1417,7 +1421,8 @@ function isCountedHardwareGroup(value: string) {
 }
 
 function hardwareName(label: string) {
-  const rawName = cleanLabel(label);
+  const rawName = cleanLabel(label).replace(/\s*\([A-Z][A-Z\d_-]{1,15}\)\s*$/, '').trim();
+  if (!/^[\p{L}\d\s_/-]+$/u.test(rawName) || /^(?:Domain[-\s]+Controllers?|zentrale[rsnm]?\s+Gateway)$/i.test(rawName)) return '';
   // A transport path such as "BACnet/IP zum Gateway" describes a link, not
   // another physical gateway. The trailing role word must not create hardware.
   if (/^(?:bacnet\/ip|bacnet\s+ms\/tp)\s+(?:zum|to)\s+gateway$/i.test(rawName)) return "";
@@ -1465,6 +1470,8 @@ function singularControllerHardwareNames(line: string): Array<{ name: string; de
 
 /** Explicit role-first declarations keep identifiers that have no role suffix. */
 function declaredHardwareNames(line: string): Array<{ name: string; declaredType: string }> {
+  // Requirements reference capabilities, rather than declaring new hardware.
+  if (requirementOnlyLine(line)) return [];
   const roles = /\b(gateways?|ecus?|controllers?|sensor(?:en|s)?|aktor(?:en)?|aktuator(?:en)?|actuators?|plcs?|sps|steuerger(?:ä|ae)te?)\b\s*(?::\s*|\s+)(?:namens\s+|named\s+)?/giu;
   const name = /^(?:"([^"\r\n]+)"|„([^“\r\n]+)“|'([^'\r\n]+)'|([\p{L}][\p{L}\d_-]*))/u;
   const prose = /^(?:mit|und|and|oder|or|von|vom|zu|zum|zur|fuer|für|auf|an|aus|im|in|der|die|das|den|dem|des|ein(?:e|er|em|en|es)?|einem|einen|with|for|to|is|are|wird|werden|soll|sollen|ist|sind|als|je|pro|insgesamt|jeweils|plus|ueber|über|anzahl|erfassen|messen|misst|steuern|steuert|regeln|regelt|schließen|schliessen|schließt|schliesst|überwachen|ueberwachen|überwacht|ueberwacht|measure|capture|control|can|can_fd|can-fd|lin|ethernet|sensor(?:en|s)?|aktor(?:en)?|aktuator(?:en)?|actuators?|ecus?|gateways?|plcs?)$/iu;
@@ -1489,7 +1496,7 @@ function declaredHardwareNames(line: string): Array<{ name: string; declaredType
       const candidate = remaining.match(name);
       if (!candidate) break;
       const label = (candidate[1] ?? candidate[2] ?? candidate[3] ?? candidate[4]).trim();
-      if (!label || prose.test(label) || isCountedHardwareGroup(label)) break;
+      if (!label || prose.test(label) || /^zentrale[rsnm]?$/i.test(label) || isCountedHardwareGroup(label)) break;
       result.push({ name: label, declaredType });
       remaining = remaining.slice(candidate[0].length);
       const separator = remaining.match(/^\s*(?:,\s*(?:(?:und|and)\s+)?|(?:und|and|&)\s+)/iu);
@@ -1498,6 +1505,11 @@ function declaredHardwareNames(line: string): Array<{ name: string; declaredType
     }
   }
   return result;
+}
+
+function requirementOnlyLine(line: string) {
+  const explicitDeclaration = /^\s*(?:[-*]\s*)?(?:Sensor|Aktor|Aktuator|Actuator|ECU|Controller|Gateway|PLC|SPS)\s*:/iu.test(line);
+  return /^\s*REQ\b/iu.test(line) || (!explicitDeclaration && /\b(?:muss|müssen|must|shall)\b/iu.test(line));
 }
 
 function groupedHardwareNames(lines: string[]): HardwareOccurrence[] {
@@ -1704,8 +1716,18 @@ function withoutPlanningLimits(text: string) {
   return text.replace(/^- Bus-Teilnehmergrenzen:[^\r\n]*(?:\r?\n|$)/gm, "");
 }
 
+/** Explicitly declared device abbreviations are not transport tokens. */
+function withoutDeviceAliases(text: string) {
+  const aliases = [...text.matchAll(/^\s*(?:#{1,6}\s*)?(?:\d+(?:\.\d+)*[.)]?\s+)?[^\r\n()]+\b(?:Controller|Computer|ECU|Gateway|Sensor)\s*\(([A-Z][A-Z\d_-]{1,15})\)\s*$/gm)]
+    .map(match => match[1]);
+  for (const alias of aliases) {
+    text = text.replace(new RegExp('\\b' + alias + '\\b(?=\\)\\s*$|[-_]\\d+\\s*:|\\s+(?:MUSS|MÜSSEN|must|shall)\\b|\\s*\\()', 'gm'), 'device_reference');
+  }
+  return text;
+}
+
 export function extractCommunicationSystems(text: string) {
-  const key = normalized(withoutPlanningLimits(text));
+  const key = normalized(withoutDeviceAliases(withoutPlanningLimits(text)));
   const systems: string[] = [];
   const confirmedMention = (pattern: string) => [...key.matchAll(new RegExp(pattern, "g"))].some((match) => {
     const start = match.index ?? 0;
@@ -1720,7 +1742,7 @@ export function extractCommunicationSystems(text: string) {
   if (confirmedMention("\\blin\\b")) systems.push("LIN");
   if (confirmedMention("\\bcanopen\\b")) systems.push("CANopen");
   if (confirmedMention("\\bcan fd\\b|\\bcanfd\\b")) systems.push("CAN_FD");
-  else if (confirmedMention("\\bcan\\b")) systems.push("CAN");
+  if (confirmedMention("\\bcan\\b(?!\\s+fd\\b)")) systems.push("CAN");
   if (confirmedMention("\\bautomotive ethernet\\b|\\bethernet\\b")) systems.push("Ethernet");
   if (confirmedMention("\\bsome ip\\b|\\bsomeip\\b")) systems.push("SOME_IP");
   if (confirmedMention("\\barinc 429\\b|\\barinc429\\b")) systems.push("ARINC");
@@ -1791,6 +1813,7 @@ function looksLikeBitrateSuffix(value: string) {
 }
 
 export function extractCommunicationSystemCounts(text: string): Record<string, number> {
+  text = withoutDeviceAliases(text);
   const counts: Record<string, number> = {};
   const ethernetSegments: Record<string, number> = {};
   const countBeforePattern = new RegExp(`\\b${COUNT_TOKEN}\\s*(?:x\\s*)?${COMMUNICATION_SYSTEM_PATTERN}\\b`, "gi");
@@ -1798,7 +1821,9 @@ export function extractCommunicationSystemCounts(text: string): Record<string, n
   const qualifiedEthernetSegments = new RegExp(`\\b${COUNT_TOKEN}\\s+(industrial\\s+ethernet|ethernet\\s+backbone)\\s+segmente?\\b`, "gi");
 
   specificationBody(text).split(/\r?\n/).forEach((line) => {
-    const source = normalized(line.replace(/^\s*#{1,6}\s+/, "").replace(/^\s*\d+[.)]\s+/, ""));
+    const source = normalized(line.replace(/^\s*#{1,6}\s+/, "")
+      .replace(/^\s*\d+(?:\.\d+)*[.)]\s+|^\s*\d+\.\d+(?:\.\d+)*\s+/, "")
+      .replace(/^\s*REQ[^:]*:\s*/i, ''));
     for (const match of source.matchAll(qualifiedEthernetSegments)) {
       const category = match[2].startsWith("industrial") ? "industrial" : "backbone";
       ethernetSegments[category] = Math.max(ethernetSegments[category] ?? 0, countValue(match[1] ?? ""));
@@ -1842,10 +1867,12 @@ function domainFrom(text: string) {
     if (/automotive|fahrzeug/.test(explicitIndustry)) return "automotive";
   }
   const key = normalized(text);
+  const evidence = engineeringDomainEvidence(text);
+  if (evidence.confidence >= 0.65) return evidence.domain;
   if (/robotics|robotik|roboter|robot.*controller|\bros\b|manipulator|motion planner/.test(key)) return "robotics_ros";
   if (/industrial|plc|profinet|ethercat|sicherheitssystem|sicherheitssteuerung/.test(key)) return "industrial_automation";
   if (/aerospace|arinc|avionik/.test(key)) return "aerospace";
-  if (/\brail\b|bahn|zug|train/.test(key)) return "rail";
+  if (/\brail\b|\bbahn\b|\bzug\b|\btrain\b/.test(key)) return "rail";
   if (/marine|schiff|ship|vessel|maritim/.test(key)) return "marine";
   if (/building automation|gebaeude|gebäude|knx|bacnet|hlk/.test(key)) return "building_automation";
   if (/\benergy\b|energie|microgrid|wechselrichter|schaltanlage|transformator/.test(key)) return "energy";
@@ -1857,7 +1884,7 @@ function domainFrom(text: string) {
 
 const DOMAIN_EVIDENCE_RULES: Array<{ domain: string; markers: RegExp[] }> = [
   { domain: "rail", markers: [/\bbogie/i, /drehgestell/i, /\baxle/i, /pantograph/i, /stromabnehmer/i, /wayside/i, /eventrecorder/i, /passengerinformation/i, /couplingcontrol/i, /signalling/i] },
-  { domain: "automotive", markers: [/kombiinstrument/i, /headupdisplay/i, /abgasnachbehandlung/i, /batteriemanagement/i, /motorsteuerung/i, /getriebesteuerung/i, /fahrerassistenz/i, /parkassistenz/i, /keylessentry/i, /bordnetzmanagement/i] },
+  { domain: "automotive", markers: [/straßenfahrzeug|strassenfahrzeug/i, /\bfahrzeug\b/i, /\bchassis\b/i, /\bpowertrain\b/i, /kombiinstrument/i, /headupdisplay/i, /abgasnachbehandlung/i, /batteriemanagement/i, /motorsteuerung/i, /getriebesteuerung/i, /fahrerassistenz/i, /parkassistenz/i, /keylessentry/i, /bordnetzmanagement/i] },
   { domain: "industrial_automation", markers: [/\bplc\b/i, /profinet/i, /ethercat/i, /fertigungs/i, /foerder/i, /servo/i, /sicherheitssystem/i, /sicherheitssteuerung/i, /deterministisch/i] },
   { domain: "aerospace", markers: [/arinc/i, /avionik/i, /flightcontrol/i, /landinggear/i, /autopilot/i] },
   { domain: "energy", markers: [/microgrid/i, /wechselrichter/i, /schaltanlage/i, /transformator/i, /gridcontrol/i] },
@@ -2049,7 +2076,7 @@ export function extractEngineeringSpecification(
   domainOverride?: string,
   completenessFirst = false,
 ): ExtractedEngineeringSpecification {
-  text = withoutPlanningLimits(text);
+  text = withoutPlanningLimits(text).replace(/[\u2010\u2011\u2212]/g, '-').replace(/\u00ad/g, '');
   const explicitMode = text.match(/^- Generierungsmodus:\s*(REAL_PROJECT|EXAMPLE_PROJECT)\s*$/mi)?.[1]?.toUpperCase();
   const legacyConfirmed = !explicitMode && /per Wizard-Uebernehmen bestaetigt/.test(text);
   const exampleRequested = engineeringGenerationMode(text) === 'EXAMPLE_PROJECT';
@@ -2061,6 +2088,9 @@ export function extractEngineeringSpecification(
   const grouped = groupedHardwareNames(lines);
   const groupedLineIndexes = new Set(grouped.map((item) => item.index));
   const occurrences = [...lines.flatMap((line, index): HardwareOccurrence[] => {
+    if (requirementOnlyLine(line)) return [];
+    // Type overviews do not name installed instances or confirm one of each.
+    if (/^\s*(?:Sensorik|Aktorik|Sensor\s+types|Sensortypen|Actuator\s+types|Aktortypen)\s*[:(]/iu.test(line)) return [];
     if (groupedLineIndexes.has(index)) return [];
     if (/^\s*[-*]?\s*(?:gemischte|mixed)\s+(?:PLC|SPS)[-–,]/i.test(line)) return [];
     const singularControllers = singularControllerHardwareNames(line);
@@ -2073,8 +2103,11 @@ export function extractEngineeringSpecification(
     const nextIndex = occurrences[occurrenceIndex + 1]?.index ?? lines.length;
     const sectionBoundary = lines.findIndex((line, index) => index > occurrence.index && index < nextIndex
       && !lines[index - 1]?.trim()
-      && /^\s*(?:#{1,6}\s+)?[^-*].*:\s*$/.test(line));
-    const contextEnd = sectionBoundary >= 0 ? sectionBoundary : nextIndex;
+      && (/^\s*(?:#{1,6}\s*)?\d+(?:\.\d+)*[.)]?\s+/.test(line)
+        || (/^\s*(?:#{1,6}\s+)?[^-*].*:\s*$/.test(line)
+          && !/^\s*(?:Aufgaben|Tasks|Schnittstellen|Interfaces|Anforderungen|Requirements|Plattform|Platform)\s*:/i.test(line))));
+    const inlineList = /\([^)]*,[^)]*\)/.test(lines[occurrence.index]);
+    const contextEnd = inlineList ? occurrence.index + 1 : sectionBoundary >= 0 ? sectionBoundary : nextIndex;
     const key = normalized(normalizeHardwareName(occurrence.name));
     const existing = contexts.get(key) ?? { name: occurrence.name, lines: [] };
     if (occurrence.declaredType) existing.declaredType = occurrence.declaredType;
@@ -2142,7 +2175,7 @@ export function extractEngineeringSpecification(
       : declaredType === 'ActuatorController' && safetyEndpoint ? 'SafetyCommand'
         : hardwareName === 'RaspberryPi' ? 'RaspberryPiStatus' : derivedSignal;
     const defaults = generatedPhysicalDefaults(modeledMeasurement?.label ?? signal);
-    const unit = modeledMeasurement?.unit ?? unitFrom(context) ?? defaults.unit;
+    const unit = unitFrom(context) ?? modeledMeasurement?.unit ?? defaults.unit;
     const factor = factorFrom(context, unit);
     const range = rangeFrom(context);
     const explicitCycleMs = numeric(context.match(/(?:^|[,;\s])(\d+(?:[,.]\d+)?)\s*ms\b/i)?.[1])
@@ -2160,7 +2193,12 @@ export function extractEngineeringSpecification(
       || (safetyParticipant && Boolean(safetyProfile) && communicationSystems.length === 1)
       || exampleRequested
       || (legacyConfirmed && communicationSystems.length === 1);
-    const contextualInterfaceType = entry.declaredInterface ?? protocolFrom(context, mayUseProjectInterface ? interfaceType : "Other");
+    const documentController = /\b(?:Controller|Computer|ECU)\s*\([A-Z][A-Z\d_-]{1,15}\)/.test(entry.lines[0] ?? '')
+      && isEngineeringControllerDevice(declaredType);
+    const contextualSystems = extractCommunicationSystems(context).filter(system => !['SOME_IP', 'DDS', 'MQTT', 'OPCUA'].includes(system));
+    const ambiguousDocumentConnection = documentController && contextualSystems.length > 1;
+    const contextualInterfaceType = entry.declaredInterface ?? (ambiguousDocumentConnection ? 'Other'
+      : protocolFrom(context, mayUseProjectInterface ? interfaceType : "Other"));
     const chainInterfaceType = explicitConnection || (contextualInterfaceType === "CAN" && /kamera|camera|radar|lidar|umfeld|objekt/i.test(`${hardwareName} ${context}`)
       ? "Ethernet"
       : contextualInterfaceType);
@@ -2218,6 +2256,7 @@ export function extractEngineeringSpecification(
       max_value: maxValue,
       ...architectureMetadata,
       configuration: { ...architectureMetadata.configuration,
+        ...(ambiguousDocumentConnection ? { connection_candidates: contextualSystems } : {}),
         ...(explicitCycleMs !== undefined ? { cycle_source: 'explicit_user_specification' } : {}),
         ...(modeledMeasurement ? { sensor_measurement: modeledMeasurement.id,
           measurement_source: explicitMeasurementId ? 'explicit_user_selection' : 'semantic_device_role' } : {}),
@@ -2258,6 +2297,13 @@ export function extractEngineeringSpecification(
     communicationSystemCounts,
     networkArchitecture,
     targetCounts: expanded.targets,
+    unresolvedInventoryGroups: lines.flatMap(line => {
+      const group = line.match(/^\s*(Sensorik|Aktorik|Sensor\s+types|Sensortypen|Actuator\s+types|Aktortypen)\s*[:(]\s*(.+?)\)?\s*$/iu);
+      if (!group) return [];
+      const sensorGroup = /^(?:Sensorik|Sensor\s+types|Sensortypen)$/iu.test(group[1]);
+      if ((sensorGroup ? expanded.targets.sensors : expanded.targets.actuators) > 0) return [];
+      return [`${sensorGroup ? 'Sensorik' : 'Aktorik'} (${group[2]}): Stückzahlen und konkrete Teilnehmer fehlen. Bitte ${sensorGroup ? 'Sensoren' : 'Aktoren'} in der Projektbeschreibung ergänzen und ${sensorGroup ? 'Messgrößen' : 'Stellbefehle'}, Anschlüsse sowie Zuordnungen prüfen.`];
+    }),
   };
 }
 

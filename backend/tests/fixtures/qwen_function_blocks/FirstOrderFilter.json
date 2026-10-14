@@ -1,0 +1,27 @@
+{
+  "name": "FirstOrderFilter",
+  "description": "A first-order low-pass filter simulation block that smooths an input signal using a time constant tau. It uses a discrete-time update rule based on the coefficient dt/(tau+dt) to blend the previous output with the current input.",
+  "source_code": "class FirstOrderFilter(FunctionBlock):\n    def step(self, inputs, parameters, dt):\n        value = inputs[\"value\"]\n        tau = parameters[\"tau\"]\n        initial = parameters[\"initial\"]\n        prev = self.state.get(\"prev\", initial)\n        coeff = dt / (tau + dt)\n        out = prev + coeff * (value - prev)\n        self.state[\"prev\"] = out\n        return out",
+  "parameter_schema": {
+    "tau": {
+      "type": "number",
+      "required": true,
+      "unit": "s",
+      "exclusiveMinimum": 0
+    },
+    "initial": {
+      "type": "number",
+      "required": true,
+      "unit": "generic model unit"
+    }
+  },
+  "provenance": {
+    "provider": "ollama-local",
+    "model": "qwen3.8:27b",
+    "model_digest": "22130167c4c20e20c7b71454612966ca8e8171e9b3cc8ab6ce8aa6cbfec79643",
+    "request_sha256": "fae82dea60be844c6869ef0f35e760c0cbb13ea41e113c1cb4aa367c8d8c6cd0",
+    "generated_by": "QWEN",
+    "status": "UNVALIDATED_SIMULATION_DESIGN"
+  },
+  "source_sha256": "8577a59095210bb8eec7d7d1c32193a6d3fb5f910b31cb09cde3f053fb8243bf"
+}

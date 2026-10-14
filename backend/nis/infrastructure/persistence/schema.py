@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 
-SCHEMA_VERSION = 28
+SCHEMA_VERSION = 29
 MIGRATION_LOCK_ID = 1_947_042_611
 
 
@@ -865,7 +865,7 @@ MIGRATION_STATEMENTS: tuple[str, ...] = (
     "ALTER TABLE engineering_workloads DROP CONSTRAINT IF EXISTS engineering_workloads_status_check",
     "ALTER TABLE engineering_workloads ADD CONSTRAINT engineering_workloads_status_check CHECK (status IN ('RECEIVED','PLANNING','IN_PROGRESS','VALIDATING','REPAIRING','INCOMPLETE','READY_FOR_REVIEW','COMPLETED','FAILED','BLOCKED','NEEDS_REVIEW','PAUSED','CANCELED'))",
     "ALTER TABLE engineering_signal_behaviors DROP CONSTRAINT IF EXISTS engineering_signal_behaviors_behavior_type_check",
-    "ALTER TABLE engineering_signal_behaviors ADD CONSTRAINT engineering_signal_behaviors_behavior_type_check CHECK (behavior_type IN ('CONSTANT','STEP','RAMP','LINEAR','SINE','TRIANGLE','SAWTOOTH','PULSE','RANDOM_WALK','BOUNDED_RANDOM','STATE_DEPENDENT','FORMULA','LOOKUP_TABLE','EXTERNAL_SERIES','PHYSICS_MODEL','STATE_MACHINE','STATUS_MODEL'))",
+    "ALTER TABLE engineering_signal_behaviors ADD CONSTRAINT engineering_signal_behaviors_behavior_type_check CHECK (behavior_type IN ('CONSTANT','STEP','RAMP','LINEAR','SINE','TRIANGLE','SAWTOOTH','PULSE','RANDOM_WALK','BOUNDED_RANDOM','STATE_DEPENDENT','FORMULA','LOOKUP_TABLE','EXTERNAL_SERIES','PHYSICS_MODEL','STATE_MACHINE','STATUS_MODEL','FUNCTION_BLOCK'))",
     "ALTER TABLE engineering_hardware_nodes ADD COLUMN IF NOT EXISTS diagnostic_addressable BOOLEAN NOT NULL DEFAULT FALSE",
     "ALTER TABLE engineering_hardware_nodes ADD COLUMN IF NOT EXISTS logical_node_address INTEGER CHECK (logical_node_address BETWEEN 0 AND 65535)",
     "ALTER TABLE engineering_hardware_nodes ADD COLUMN IF NOT EXISTS address_assignment_mode TEXT NOT NULL DEFAULT 'AUTO' CHECK (address_assignment_mode IN ('AUTO','MANUAL','IMPORTED','RESERVED'))",

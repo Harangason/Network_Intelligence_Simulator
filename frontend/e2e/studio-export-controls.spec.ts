@@ -99,14 +99,14 @@ test('simulation trace controls expose every signal and event without opaque row
   await expect(page.locator('.signal-filter-summary')).toContainText('125 im Filter gewählt');
   await openSimulationRun(page);
   try {
-    await expect(page.getByRole('button', { name: 'Start', exact: true })).toBeDisabled();
+    await expect(page.getByRole('button', { name: 'Lauf starten', exact: true })).toBeDisabled();
     await expect(page.locator('.trace-format-trigger')).toContainText('Projektformate werden geladen');
     await expect(page.locator('.trace-format-trigger strong')).toHaveText('…');
   } finally {
     releaseCatalog();
   }
   await expect(page.locator('.trace-format-trigger')).toContainText('PCAP');
-  await expect(page.getByRole('button', { name: 'Start', exact: true })).toBeEnabled();
+  await expect(page.getByRole('button', { name: 'Lauf starten', exact: true })).toBeEnabled();
   await expect(page.locator('.signal-lane')).toHaveCount(60);
   const visibleSignalCount = await page.locator('.signal-lanes').evaluate(element => {
     const bounds = element.getBoundingClientRect();

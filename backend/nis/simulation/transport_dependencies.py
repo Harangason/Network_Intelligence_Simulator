@@ -14,10 +14,14 @@ def apply_transport_dependencies(events, engine):
     models = {sid: s for sid, s in definitions.items() if s.parameters.get("transport_inputs")}
     if not models:
         return
+    from backend.nis.simulation.signals.core.function_block import EcuRuntime, validate_function_spec
+    runtime, reference_runtime = EcuRuntime(), EcuRuntime()
     for signal in models.values():
+        if signal.behavior_type == 'FUNCTION_BLOCK':
+            validate_function_spec(signal.parameters, definitions)
         spec = signal.parameters["transport_inputs"]
-        if not isinstance(spec, dict) or len(spec) > 32 or not signal.parameters.get("formula"):
-            raise ValueError(f"{signal.id}: transport_inputs requires <=32 named inputs and an explicit formula")
+        if not isinstance(spec, dict) or len(spec) > 32 or (signal.behavior_type != "FUNCTION_BLOCK" and not signal.parameters.get("formula")):
+            raise ValueError(f"{signal.id}: transport_inputs requires <=32 named inputs and an explicit formula or function block")
         for name, policy in spec.items():
             if not name.isidentifier() or policy.get("signal_id") not in definitions:
                 raise ValueError(f"{signal.id}: unknown transport input {name}")
@@ -67,6 +71,10 @@ def apply_transport_dependencies(events, engine):
                     value = received["value"] if received and (not stale or policy.get("on_stale", "hold") == "hold") else fallback
                     expected = nominal.get(sid, fallback)
                     actual[name], golden[name] = float(value), float(expected)
+                    if signal.behavior_type == 'FUNCTION_BLOCK' and policy['type'] == 'boolean':
+                        if actual[name] not in (0, 1) or golden[name] not in (0, 1):
+                            raise ValueError('Boolean function input must be encoded as 0/1.')
+                        actual[name], golden[name] = bool(actual[name]), bool(golden[name])
                     inputs.append({"name": name, "signal_id": sid, "value": value, "reference_value": expected,
                         "source_event_id": received["event_id"] if received else None,
                         "source_publish_s": received["published_s"] if received else None,
@@ -75,9 +83,17 @@ def apply_transport_dependencies(events, engine):
                         "last_attempt_status": attempted["status"] if attempted else None,
                         "upstream_faults": (attempted or received or {}).get("faults", []),
                         "age_ms": age, "stale": stale, "policy": dict(policy)})
-                formula = str(signal.parameters["formula"])
-                actual_value = FormulaEvaluator.evaluate(formula, {"t": now, **actual})
-                reference = FormulaEvaluator.evaluate(formula, {"t": now, **golden})
+                impaired = any(i['stale'] or i['upstream_faults'] for i in inputs)
+                function_evidence = {}
+                formula = str(signal.parameters.get('formula') or '')
+                if signal.behavior_type == 'FUNCTION_BLOCK':
+                    actual_value, function_evidence = runtime.evaluate(event['sender_hardware'], signal.id,
+                        signal.parameters, actual, now, not impaired)
+                    reference, _ = reference_runtime.evaluate(event['sender_hardware'], signal.id,
+                        signal.parameters, golden, now, True)
+                else:
+                    actual_value = FormulaEvaluator.evaluate(formula, {"t": now, **actual})
+                    reference = FormulaEvaluator.evaluate(formula, {"t": now, **golden})
                 actual_value = engine.behavior.apply_limits(signal, engine.behavior.apply_resolution(signal, actual_value))
                 reference = engine.behavior.apply_limits(signal, engine.behavior.apply_resolution(signal, reference))
                 value, faults = engine.faults.signal_value(signal, now, actual_value, engine.behavior)
@@ -86,7 +102,7 @@ def apply_transport_dependencies(events, engine):
                     quality="STALE_INPUT" if impaired else "GOOD", faults=faults,
                     source_dependencies=[i["signal_id"] for i in inputs],
                     dependency_valid=not impaired,
-                    dependency_evidence={"model": "SAMPLED_TRANSPORT_INPUT_V1", "formula": formula,
+                    dependency_evidence={"model": "SAMPLED_TRANSPORT_INPUT_V1", "formula": formula, **function_evidence,
                         "evaluation_s": now, "inputs": inputs, "unfaulted_output": actual_value,
                         "reference_output": reference, "input_effect_observed": impaired and actual_value != reference})
                 changed = True

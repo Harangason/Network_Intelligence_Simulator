@@ -580,8 +580,9 @@ export function ModelSimulationRunner({ initialProjectId = "", initialSnapshotId
       {!readOnly && <>
 
       <details className="panel simulation-control-panel simulation-command-panel">
-      <summary><span className="eyebrow">Simulationslauf</span><strong>Szenario und Ausführung</strong></summary>
+      <summary><span className="eyebrow">Simulationslauf</span><strong>Einstellungen und Start</strong></summary>
       <form className="simulation-command-bar" onSubmit={start}>
+        <div className="simulation-run-fields">
         <label><span>Szenario</span><select value={mode} onChange={(event) => setMode(event.target.value)}><option value="GOLDEN">Golden / Ideal</option><option value="NORMAL">Normal</option><option value="USER_DEFINED_FAULT">Nutzerfehler</option><option value="AI_GENERATED_FAULT">Geprüfter KI-Fehler</option><option value="STRESS">Stresstest</option></select></label>
         <NumberInput label="Dauer" unit="s" value={duration} min={0.1} step={0.1} onChange={setDuration} />
         <NumberInput label="Geschwindigkeit" unit="x" value={speed} min={0.1} step={0.1} onChange={setSpeed} />
@@ -628,11 +629,12 @@ export function ModelSimulationRunner({ initialProjectId = "", initialSnapshotId
             </div>
           )}
         </div>
+        </div>
         <div className="simulation-transport-controls">
-          <button className="button secondary" disabled={!valid || busy || !formatsResolved || formats.length === 0 || !scopeValid || !workflow} onClick={openScenarioSave} type="button">Speichern unter</button>
-          <button className="button primary" disabled={!startAllowed} title={job && !running ? "Neuen Lauf mit der aktuellen Preflight-Freigabe starten. Der gespeicherte Lauf bleibt erhalten." : undefined} type="submit">Start</button>
+          <button className="button secondary" disabled={!valid || busy || !formatsResolved || formats.length === 0 || !scopeValid || !workflow} onClick={openScenarioSave} type="button">Szenario speichern unter</button>
+          <button className="button primary" disabled={!startAllowed} title={job && !running ? "Neuen Lauf mit der aktuellen Preflight-Freigabe starten. Der gespeicherte Lauf bleibt erhalten." : undefined} type="submit">Lauf starten</button>
           <button className="button secondary" disabled={!running} onClick={() => void stop()} type="button">Lauf stoppen</button>
-          <button className="button secondary" disabled={!job || running || busy} onClick={reset} type="button">Reset</button>
+          <button className="button secondary" disabled={!job || running || busy} onClick={reset} type="button">Ansicht zurücksetzen</button>
         </div>
       </form>
       </details>
@@ -669,27 +671,24 @@ export function ModelSimulationRunner({ initialProjectId = "", initialSnapshotId
       )}
 
       <details className="panel simulation-control-panel simulation-scope-panel">
-        <summary><span className="eyebrow">Geprüfter Simulationsumfang</span><strong>{simulationScope.include_all ? "Gesamtes aktives Modell" : `${simulationScope.message_ids.length} Nachrichten und ${simulationScope.signal_ids.length} Signale ausgewählt`}</strong></summary>
-        <Link className="button secondary" href={withProjectParam("/studio/validation", projectIdForLinks)}>Umfang im Preflight ändern</Link>
-        <p>{simulationScope.include_all ? "Alle aktiven Modellnachrichten und Signale müssen durch bestätigte Routen abgedeckt sein." : simulationScope.reason}</p>
-        <p>Die Simulation verwendet genau den gespeicherten und vorab geprüften Umfang. Ausgewählte Nachrichten schließen ihre enthaltenen Signale ein.</p>
+        <summary><span className="eyebrow">Simulationsumfang</span><strong>{simulationScope.include_all ? "Gesamtes aktives Modell" : `${simulationScope.message_ids.length} Nachrichten und ${simulationScope.signal_ids.length} Signale ausgewählt`}</strong></summary>
+        <div className="simulation-scope-content"><p>Der gespeicherte Preflight-Umfang ist verbindlich. Nachrichten schließen ihre Signale ein; alle ausgewählten Pfade müssen durch bestätigte Routen abgedeckt sein.</p><Link className="button secondary" href={withProjectParam("/studio/validation", projectIdForLinks)}>Umfang im Preflight ändern</Link></div>
+        {!simulationScope.include_all && <p className="simulation-scope-reason"><strong>Auswahlgrund:</strong> {simulationScope.reason}</p>}
       </details>
 
       <details className="panel simulation-control-panel fault-editor">
           <summary><span className="eyebrow">Fehlerszenario</span><strong>Fehler gezielt injizieren</strong><span className="fault-count">{faults.length ? `${faults.length} Fehler aktiv` : "Keine Fehler aktiv"}</span></summary>
-          <div className="fault-editor-actions"><button className="button secondary" disabled={busy || !workflow} onClick={() => void askAgentForFaults()} type="button">KI-Vorschläge</button></div>
           <div className="fault-builder">
             <label><span>Fehler betrifft</span><select aria-label="Fehler betrifft" value={faultScope} onChange={(event) => { const scope = event.target.value as keyof typeof FAULT_TYPES; setFaultScope(scope); setFaultType(FAULT_TYPES[scope][0]); }}>{(Object.keys(FAULT_TYPES) as Array<keyof typeof FAULT_TYPES>).map(scope => <option key={scope} value={scope}>{FAULT_SCOPE_LABELS[scope]}</option>)}</select></label>
             <label><span>Fehlertyp</span><select aria-label="Fehlertyp" aria-describedby="fault-type-description" value={faultType} onChange={(event) => setFaultType(event.target.value)}>{FAULT_TYPES[faultScope].map((type) => <option key={type} value={type}>{FAULT_HELP[type].label}</option>)}</select></label>
-            <label><span>Ziel-ID</span><input aria-label="Ziel-ID" placeholder="Leer = alle im gewählten Bereich" value={faultTarget} onChange={(event) => setFaultTarget(event.target.value)} /><small>ID des Signals, der Nachricht/Route oder des Netzwerks.</small></label>
-            <label><span>Fehlerbeginn (s)</span><input aria-label="Fehlerbeginn (s)" aria-describedby="fault-start-help" min="0" step="0.01" type="number" value={faultStart} onChange={(event) => setFaultStart(Number(event.target.value))} /><small id="fault-start-help">Zeit ab Simulationsstart. 0,25 = nach 250 ms.</small></label>
-            <label><span>Fehlerende (s)</span><input aria-label="Fehlerende (s)" aria-describedby="fault-end-help" min={faultStart + 0.001} step="0.01" type="number" value={faultEnd} onChange={(event) => setFaultEnd(Number(event.target.value))} /><small id="fault-end-help">Zeit ab Simulationsstart, keine Dauer. 1,5 = Ende nach 1,5 s.</small></label>
-            <label><span>{faultHelp(faultType)?.valueLabel ?? "Zusatzwert (nicht verwendet)"}</span><input aria-label="Fehler-Zusatzwert" aria-describedby="fault-value-help" disabled={!faultHelp(faultType)?.valueLabel} step="0.1" type="number" value={faultMagnitude} onChange={(event) => setFaultMagnitude(Number(event.target.value))} /><small id="fault-value-help">{faultHelp(faultType)?.valueHint ?? "Dieser Fehlertyp verwendet den Wert nicht; maßgeblich sind Ziel und Zeitfenster."}</small></label>
-            <button className="button primary" onClick={addFault} type="button">Hinzufügen</button>
+            <label><span>Ziel-ID</span><input aria-label="Ziel-ID" placeholder="Leer = alle im gewählten Bereich" value={faultTarget} onChange={(event) => setFaultTarget(event.target.value)} /></label>
+            <label><span>Fehlerbeginn (s)</span><input aria-label="Fehlerbeginn (s)" aria-describedby="fault-start-help" min="0" step="0.01" type="number" value={faultStart} onChange={(event) => setFaultStart(Number(event.target.value))} /></label>
+            <label><span>Fehlerende (s)</span><input aria-label="Fehlerende (s)" aria-describedby="fault-end-help" min={faultStart + 0.001} step="0.01" type="number" value={faultEnd} onChange={(event) => setFaultEnd(Number(event.target.value))} /></label>
+            {faultHelp(faultType)?.valueLabel && <label><span>{faultHelp(faultType)?.valueLabel}</span><input aria-label="Fehler-Zusatzwert" aria-describedby="fault-value-help" step="0.1" type="number" value={faultMagnitude} onChange={(event) => setFaultMagnitude(Number(event.target.value))} /></label>}
           </div>
-          <p className="fault-description" id="fault-type-description"><strong>{faultHelp(faultType)?.label} <code>{faultType}</code></strong>{faultHelp(faultType)?.explanation}<span>Wirkt von {faultStart.toLocaleString("de-DE")} s bis {Math.max(faultStart + 0.001, faultEnd).toLocaleString("de-DE")} s · Dauer {(Math.max(faultStart + 0.001, faultEnd) - faultStart).toLocaleString("de-DE")} s. Außerhalb der Laufdauer hat das Zeitfenster keine Wirkung.</span></p>
-          <details className="fault-glossary"><summary>Fehlerbegriffe und ihre Wirkung erklären</summary>{(Object.keys(FAULT_TYPES) as Array<keyof typeof FAULT_TYPES>).map(scope => <section key={scope}><h3>{FAULT_SCOPE_LABELS[scope]}</h3><dl>{FAULT_TYPES[scope].map(type => <div key={type}><dt>{FAULT_HELP[type].label} <code>{type}</code></dt><dd>{FAULT_HELP[type].explanation}{FAULT_HELP[type].valueHint && <span> {FAULT_HELP[type].valueHint}</span>}</dd></div>)}</dl></section>)}</details>
-          <div className="fault-chip-list">{faults.map((fault) => <button className="fault-chip" key={fault.id} title={`${fault.type} · ${faultHelp(fault.type)?.explanation ?? "Fehler entfernen"}`} type="button" onClick={() => setFaults((current) => current.filter((item) => item.id !== fault.id))}><strong>{faultHelp(fault.type)?.label ?? fault.type}</strong><span>{FAULT_SCOPE_LABELS[fault.scope]} · {fault.start_s.toLocaleString("de-DE")}–{fault.end_s?.toLocaleString("de-DE") ?? "Laufende"} s · {fault.source === "ai" ? "KI geprüft" : "Nutzer"}</span><b>×</b></button>)}{!faults.length && <span className="empty-inline">Keine Fehler aktiv. Der Lauf bildet die fehlerfreie Referenz (Golden Trace).</span>}</div>
+          <div className="fault-editor-footer"><p className="fault-description" id="fault-type-description">{faultHelp(faultType)?.explanation}<span>Dauer: {(Math.max(faultStart + 0.001, faultEnd) - faultStart).toLocaleString("de-DE")} s · Zeitangaben ab Simulationsstart.</span></p><div className="fault-editor-actions"><button className="button primary" onClick={addFault} type="button">Hinzufügen</button><button className="button secondary" disabled={busy || !workflow} onClick={() => void askAgentForFaults()} type="button">KI-Vorschläge</button></div></div>
+          <details className="fault-glossary"><summary>Parameterhilfe und Fehlerbegriffe</summary><div className="fault-parameter-help"><p>Ziel-ID: ID des Signals, der Nachricht/Route oder des Netzwerks. Leer betrifft alle im gewählten Bereich.</p><p id="fault-start-help">Beginn: Zeit ab Simulationsstart. 0,25 s = nach 250 ms.</p><p id="fault-end-help">Ende: Zeitpunkt ab Simulationsstart, keine Dauer. 1,5 s = Ende nach 1,5 s. Außerhalb der Laufdauer hat das Zeitfenster keine Wirkung.</p><p id="fault-value-help">{faultHelp(faultType)?.valueHint ?? "Dieser Fehlertyp verwendet keinen Zusatzwert."}</p></div>{(Object.keys(FAULT_TYPES) as Array<keyof typeof FAULT_TYPES>).map(scope => <section key={scope}><h3>{FAULT_SCOPE_LABELS[scope]}</h3><dl>{FAULT_TYPES[scope].map(type => <div key={type}><dt>{FAULT_HELP[type].label} <code>{type}</code></dt><dd>{FAULT_HELP[type].explanation}{FAULT_HELP[type].valueHint && <span> {FAULT_HELP[type].valueHint}</span>}</dd></div>)}</dl></section>)}</details>
+          {!!faults.length && <div className="fault-chip-list" aria-label="Aktive Fehler">{faults.map((fault) => <button className="fault-chip" key={fault.id} title={`${fault.type} · ${faultHelp(fault.type)?.explanation ?? "Fehler entfernen"}`} type="button" onClick={() => setFaults((current) => current.filter((item) => item.id !== fault.id))}><strong>{faultHelp(fault.type)?.label ?? fault.type}</strong><span>{FAULT_SCOPE_LABELS[fault.scope]} · {fault.start_s.toLocaleString("de-DE")}–{fault.end_s?.toLocaleString("de-DE") ?? "Laufende"} s · {fault.source === "ai" ? "KI geprüft" : "Nutzer"}</span><b>×</b></button>)}</div>}
       </details>
 
       <FaultProposalReview proposals={proposals.filter((proposal) => proposal.status !== "REJECTED" && proposal.status !== "SUPERSEDED")} magnitudes={proposalMagnitude} reviewState={proposalReviewState} onMagnitude={(id, value) => { setProposalMagnitude((current) => ({ ...current, [id]: value })); setProposalReviewState((current) => ({ ...current, [id]: { busy: false, message: "Nicht gespeicherte Änderung" } })); }} onReview={reviewProposal} />

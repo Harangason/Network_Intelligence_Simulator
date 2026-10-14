@@ -4,6 +4,32 @@ from backend.nis.domain.device_classification import DeviceClassificationRegistr
 ECU_STATES = {'OFF': 0, 'INIT': 1, 'READY': 2, 'ACTIVE': 3, 'DEGRADED': 4, 'ERROR': 5}
 EXECUTION_STATES = {'IDLE': 0, 'ACCEPTED': 1, 'EXECUTING': 2, 'COMPLETED': 3, 'FAILED': 4}
 
+FUNCTIONAL_DEVICE_REASONING_RULES = (
+    ' Fachliche Gerätekette für jede Branche: Sensor-Messdaten -> zugeordnete Verarbeitung '
+    '-> eigenes Verarbeitungsergebnis -> bestätigter Empfänger -> expliziter Aktorbefehl '
+    '-> Ausführungsrückmeldung. Hardwareklasse, Bus, Gateway und Status ersetzen keine dieser Rollen. '
+    'Bei Sensoren, Aktoren, Kamera-/Radarverarbeitung oder fehlenden Objektdaten zuerst '
+    'validate_device_communication mit include_legacy=true auf dem aktuellen Projekt aufrufen. '
+    'Bei Altmodellen fehlende Verträge als Reviewbedarf behandeln; weder Rohcodes noch Nutzlasten '
+    'oder Empfänger still umschreiben. Alle deklarierten Sensoreingänge müssen Messdaten liefern, '
+    'nicht nur Status oder Aktorrückmeldung. Kamera-Bilddaten und verarbeitete Objektdaten sind '
+    'getrennte Ausgänge; ein skalarer Abstand beweist keine Objekterkennung. '
+    'Für fehlende Rollen canonical IDs mit search_model/inspect_object auflösen und Änderungen '
+    'mit den vorhandenen create_objects_via_proposal/update_object_via_proposal-Funktionen '
+    'vorschlagen. Fehlende Messgröße, Besitz, Stellbefehl, Algorithmus, Nutzdatencodierung, '
+    'Empfänger und Zeit-/Koordinatenbezug gezielt klären. Keine Modellarbeit außerhalb NIS delegieren. '
+    'Vorschläge technisch validieren, regulär zur menschlichen Freigabe vorlegen und erst danach '
+    'übernehmen. Routing, physische Wege, Capacity und Preflight erneut prüfen; Simulation nur '
+    'auf aktuellem freigegebenem Snapshot starten. Ein Entwurf beweist weder echte Erkennung '
+    'noch reale Aktorwirkung oder Funktionsfristen.'
+)
+
+
+def _functional_value(signal):
+    return (signal.get('configuration') or {}).get('generation_role') not in {
+        'STATUS', 'HEALTH', 'MODE', 'QUALITY', 'ALIVECOUNTER', 'DEVICE_STATUS', 'EXECUTION_FEEDBACK', 'FEEDBACK'
+    } and (signal.get('semantic') or {}).get('meaning') not in {'Betriebszustand', 'Diagnosezustand'}
+
 
 def complete_new_controller_status(changes, *, status_technology=None, status_cycle_ms=None):
     """Give newly proposed controllers the same status contract as the wizard.
@@ -135,6 +161,24 @@ def attach_functional_device_contracts(changes, chains, hardware_refs, *, enable
     """
     if not enabled:
         return
+    functional_producers = {}
+    signals_by_message = {}
+    for change in changes:
+        if change.get('action', 'CREATE') == 'CREATE' and change['object_type'] == 'Signal' and _functional_value(change['data']):
+            signals_by_message.setdefault(change['data'].get('message_id'), []).append(change['data'])
+    for change in changes:
+        if change.get('action', 'CREATE') != 'CREATE' or change['object_type'] != 'Message':
+            continue
+        message = change['data']
+        config = message.get('configuration') or {}
+        transport = config.get('transport_unit') or {}
+        if (config.get('communication_contract') or {}).get('scope') != 'FUNCTION_OUTPUT' or message.get('direction') == 'rx':
+            continue
+        if not signals_by_message.get('$' + change['local_ref']):
+            continue
+        for receiver in transport.get('consumer_refs') or []:
+            if transport.get('producer_ref') and str(receiver) != str(transport['producer_ref']):
+                functional_producers.setdefault(str(receiver), set()).add(str(transport['producer_ref']))
     for change in changes:
         if change.get('action', 'CREATE') != 'CREATE' or change['object_type'] != 'HardwareNode':
             continue
@@ -143,13 +187,17 @@ def attach_functional_device_contracts(changes, chains, hardware_refs, *, enable
         contracts = [(c.get('configuration') or {}).get('functional_device_contract') for c in candidates]
         contract = next((c for c in contracts if isinstance(c, dict) and c.get('role') == 'PERCEPTION'), None)
         contract = contract or next((c for c in contracts if isinstance(c, dict)), None)
+        incoming_outputs = functional_producers.get('$' + change['local_ref'], set())
+        if incoming_outputs and node['device_type'] not in {'SensorController', 'ActuatorController', 'Gateway'}:
+            contract = contract or {'version': 1, 'role': 'PROCESSOR', 'evidence': 'confirmed_function_output_reception_processing_logic_requires_review'}
         if node['device_type'] == 'ActuatorController':
             contract = {'version': 1, 'role': 'ACTUATOR', 'evidence': 'wizard_draft_requires_review'}
         if not contract:
             continue
         contract = dict(contract)
-        contract['input_refs'] = [hardware_refs[name.casefold()] for name in contract.pop('input_names', [])
-                                  if name.casefold() in hardware_refs]
+        contract['input_refs'] = list(dict.fromkeys([*contract.get('input_refs', []),
+            *(hardware_refs[name.casefold()] for name in contract.pop('input_names', []) if name.casefold() in hardware_refs),
+            *(sorted(incoming_outputs) if contract.get('role') == 'PROCESSOR' else [])]))
         contract['actuator_refs'] = [hardware_refs[name.casefold()] for name in contract.pop('actuator_names', [])
                                     if name.casefold() in hardware_refs]
         owner_name = contract.pop('owner_name', None)
@@ -170,13 +218,17 @@ def attach_functional_device_contracts(changes, chains, hardware_refs, *, enable
             node.setdefault('identity', {})['functional_device_contract'] = contract
 
 
-def communication_findings(graph):
+def communication_findings(graph, *, include_legacy=False):
     findings = []
     nodes = graph.get('HardwareNode', {})
     functions = graph.get('Function', {})
     interfaces = graph.get('Interface', {})
     messages = graph.get('Message', {})
     signals = graph.get('Signal', {})
+    values_by_message = {}
+    for signal in signals.values():
+        if _functional_value(signal):
+            values_by_message.setdefault(str(signal.get('message_id')), []).append(signal)
     def owner(message):
         interface = interfaces.get(str(message.get('interface_id')), {})
         return str(interface.get('hardware_node_id') or functions.get(str(interface.get('function_id')), {}).get('hardware_node_id') or '')
@@ -204,32 +256,50 @@ def communication_findings(graph):
                              for f in functions.values() if str(f.get('hardware_node_id')) == node_id
                              and ((f.get('configuration') or {}).get('functional_device_contract') or {}).get('role') == contract.get('role')), contract)
         if contract.get('version') != 1:
+            if include_legacy and (node.get('device_type') in {'SensorController', 'ActuatorController'}
+                                   or profile.requires_function_model):
+                findings.append({'code': 'FUNCTIONAL_CONTRACT_REVIEW_REQUIRED', 'object_type': 'HardwareNode',
+                    'object_id': str(node['id']), 'severity': 'REVIEW',
+                    'message': f"{node['name']}: Fachliche Mess-/Verarbeitungs-/Befehlsrolle, Besitz, Ein-/Ausgänge und Empfänger anhand des bestehenden Modells prüfen und als versionierten Änderungsvorschlag bestätigen; vorhandene Codierungen erhalten."})
             continue  # Historical definitions keep their explicit encoding.
         owner_ref = contract.get('owner_ref') or (node.get('identity') or {}).get('system_owner_id')
         incoming = [m for m in messages.values() if node_id in
                     [str(ref) for ref in ((m.get('configuration') or {}).get('transport_unit') or {}).get('consumer_refs', [])]]
-        meaningful = [s for s in output if (s.get('configuration') or {}).get('generation_role') not in
-                      {'STATUS', 'HEALTH', 'MODE', 'QUALITY', 'ALIVECOUNTER', 'DEVICE_STATUS'}
-                      and (s.get('semantic') or {}).get('meaning') not in {'Betriebszustand', 'Diagnosezustand'}]
+        meaningful = [s for s in output if _functional_value(s)]
+        received_measurements = {owner(m) for m in incoming if values_by_message.get(str(m['id']))
+                                 and m.get('direction') != 'rx'}
+        received_measurements.update(str(((s.get('configuration') or {}).get('direct_signal_binding') or {}).get('source_hardware_node_ref'))
+                                    for s in signals.values() if _functional_value(s)
+                                    and str(((s.get('configuration') or {}).get('direct_signal_binding') or {}).get('destination_hardware_node_ref')) == node_id)
         if contract.get('role') == 'SENSOR':
             if not contract.get('measurement') or not meaningful:
                 add('SENSOR_SEMANTICS_MISSING', 'HardwareNode', node, f"{node['name']}: Fachliche Messgröße und codierter Messdatenausgang fehlen; Status allein genügt nicht.")
             if not owner_ref and not any(((m.get('configuration') or {}).get('transport_unit') or {}).get('consumer_refs') for m in outgoing):
                 add('SENSOR_CONSUMER_MISSING', 'HardwareNode', node, f"{node['name']}: Verantwortlichen Verarbeiter oder expliziten Messdatenempfänger festlegen.")
-            if owner_ref and not any(str(owner_ref) in [str(ref) for ref in
+            if owner_ref and not any(values_by_message.get(str(m['id'])) and str(owner_ref) in [str(ref) for ref in
                     ((m.get('configuration') or {}).get('transport_unit') or {}).get('consumer_refs', [])] for m in outgoing) and not any(
-                    str(((s.get('configuration') or {}).get('direct_signal_binding') or {}).get('destination_hardware_node_ref')) == str(owner_ref) for s in output):
+                    _functional_value(s) and str(((s.get('configuration') or {}).get('direct_signal_binding') or {}).get('destination_hardware_node_ref')) == str(owner_ref) for s in output):
                 add('SENSOR_CONSUMER_MISSING', 'HardwareNode', node, f"{node['name']}: Messdateneingang am zugeordneten Verarbeiter fehlt.")
+        elif contract.get('role') == 'PROCESSOR':
+            inputs = {str(ref) for ref in contract.get('input_refs') or []}
+            invalid_inputs = {ref for ref in inputs if ref not in nodes or nodes[ref].get('device_type') == 'ActuatorController'}
+            if invalid_inputs:
+                add('FUNCTION_INPUT_MISSING', 'HardwareNode', node, f"{node['name']}: Deklarierte Mess-/Verarbeitungseingänge fehlen oder verweisen auf Aktoren statt Datenproduzenten: {', '.join(sorted(invalid_inputs))}.")
+            missing_inputs = inputs - invalid_inputs - received_measurements
+            if missing_inputs:
+                add('FUNCTION_INPUT_ROUTE_MISSING', 'HardwareNode', node, f"{node['name']}: Nicht alle deklarierten Sensoreingänge liefern Messdaten: {', '.join(sorted(missing_inputs))}. Status oder Rückmeldung genügt nicht.")
         elif contract.get('role') == 'PERCEPTION':
             inputs = contract.get('input_refs') or []
             accepted_measurements = contract.get('accepted_measurements') or [contract.get('required_measurement')]
-            compatible = [ref for ref in inputs if ((nodes.get(str(ref), {}).get('identity') or {}).get('functional_device_contract') or {}).get('measurement') in accepted_measurements]
+            # A scalar range cannot establish object classification or full kinematics,
+            # even if a historic draft called distance an accepted input.
+            if contract.get('required_measurement') == 'object_list':
+                accepted_measurements = [item for item in accepted_measurements if item != 'distance']
+            compatible = [ref for ref in inputs if set(((nodes.get(str(ref), {}).get('identity') or {}).get('functional_device_contract') or {}).get('measurements') or
+                [((nodes.get(str(ref), {}).get('identity') or {}).get('functional_device_contract') or {}).get('measurement')]) & set(accepted_measurements)]
             if not compatible:
                 add('FUNCTION_INPUT_MISSING', 'HardwareNode', node, f"{node['name']}: Eingang für {contract.get('required_measurement')} fehlt; Aktorrückmeldung ersetzt keine Sensordaten.")
-            routed_inputs = {owner(m) for m in incoming}
-            routed_inputs.update(str(((s.get('configuration') or {}).get('direct_signal_binding') or {}).get('source_hardware_node_ref'))
-                                 for s in signals.values() if str(((s.get('configuration') or {}).get('direct_signal_binding') or {}).get('destination_hardware_node_ref')) == node_id)
-            if compatible and not any(str(ref) in routed_inputs for ref in compatible):
+            if compatible and any(str(ref) not in received_measurements for ref in compatible):
                 add('FUNCTION_INPUT_ROUTE_MISSING', 'HardwareNode', node, f"{node['name']}: Messdaten sind fachlich zugeordnet, aber ihr Empfang ist nicht vorgesehen.")
             processed = [s for s in meaningful if s.get('name') == contract.get('output_signal')
                          and (s.get('configuration') or {}).get('structured_payload')]
@@ -239,11 +309,17 @@ def communication_findings(graph):
                                     if any(str(s.get('message_id')) == str(m['id']) for s in processed)):
                 add('FUNCTION_CONSUMER_MISSING', 'HardwareNode', node, f"{node['name']}: Empfänger der Objektdaten bestätigen oder den Funktionsbedarf explizit überarbeiten.")
         elif contract.get('role') == 'ACTUATOR':
-            direct_commands = [s for s in signals.values() if str(((s.get('configuration') or {}).get('direct_signal_binding') or {}).get('destination_hardware_node_ref')) == node_id
+            direct_commands = [s for s in signals.values() if _functional_value(s)
+                               and (s.get('configuration') or {}).get('generation_role') in {None, 'COMMAND'}
+                               and str(((s.get('configuration') or {}).get('direct_signal_binding') or {}).get('destination_hardware_node_ref')) == node_id
                                and str(((s.get('configuration') or {}).get('direct_signal_binding') or {}).get('source_hardware_node_ref')) == str(owner_ref)]
-            command_signals = [s for s in signals.values() if any(str(s.get('message_id')) == str(m['id']) and owner(m) == str(owner_ref) for m in incoming)
-                               and (s.get('configuration') or {}).get('generation_role') not in {'DEVICE_STATUS', 'STATUS', 'HEALTH', 'MODE', 'QUALITY', 'ALIVECOUNTER'}
-                               and (s.get('semantic') or {}).get('meaning') not in {'Betriebszustand', 'Diagnosezustand'}]
+            command_signals = [s for s in signals.values() if _functional_value(s)
+                               and (s.get('configuration') or {}).get('generation_role') in {None, 'COMMAND'}
+                               and any(str(s.get('message_id')) == str(m['id']) and owner(m) == str(owner_ref)
+                                       and m.get('direction') != 'rx' and (
+                                           (s.get('configuration') or {}).get('generation_role') == 'COMMAND'
+                                           or (((m.get('configuration') or {}).get('transport_unit') or {}).get('provenance') or {}).get('generator') == 'wizard-local-actuator-command')
+                                       for m in incoming)]
             if not command_signals and not direct_commands:
                 add('ACTUATOR_COMMAND_MISSING', 'HardwareNode', node, f"{node['name']}: Codierter Sollwert/Befehl vom zugeordneten Controller fehlt.")
             if not owner_ref:

@@ -1,0 +1,5 @@
+Parser repair: full bounded text attachments (80000 characters total), document headings, controller abbreviations, mixed CAN/CAN-FD, scoped sections, requirement references, and explicit unresolved sensor/actuator type groups.
+
+Original document: 19088 characters and five named domain-controller chapters. The Sensorik and Aktorik lists describe device types without quantities or concrete participant identities; neither confirms installed sensors or actuators. Missing connections, quantities and ownership remain review gates. A later source review corrected the initial remaining false assumption of one actuator per listed type; the regression now requires zero concrete actuators and a visible unresolved Aktorik group.
+
+Current checks: 638 frontend tests and TypeScript pass. Earlier release attempts failed before delivery; their evidence is preserved. The NIS-starten chat obtained explicit authorization and removed the verified archived unused failed candidate, restoring one image-budget slot. The shared gate remains pending the native Qwen source probe and code freeze. No deployment or new browser E2E PASS has occurred; production still lacks this change.

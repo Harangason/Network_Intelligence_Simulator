@@ -1,5 +1,5 @@
 import type { ExtractedEngineeringChain } from './engineering-specification.ts';
-import { SENSOR_MEASUREMENTS, sensorMeasurement, sensorMeasurementSelections } from './sensor-measurements.ts';
+import { SENSOR_MEASUREMENTS, sensorMeasurement, sensorMeasurementSelections, sensorMeasurementContract } from './sensor-measurements.ts';
 
 /** Functional roles are independent of industry, device class and transport. */
 export function perceptionRole(name: string) {
@@ -22,20 +22,21 @@ export function usesFunctionalDeviceDesign(prompt: string) {
 
 // Bounded, editable wire design; no detected objects or measured values are invented.
 export const OBJECT_LIST_SCHEMA = {
-  version: 1, byte_order: 'little_endian', max_objects: 48, payload_bytes: 1168,
-  header_bytes: 16, object_bytes: 24, coordinate_frame: 'SOURCE_LOCAL_REQUIRES_REVIEW',
+  version: 1, design_evidence: 'ILLUSTRATIVE_WIRE_DESIGN', processing_evidence: 'NONE', field_validity: 'REQUIRES_REVIEW', byte_order: 'little_endian', max_objects: 32, payload_bytes: 1168,
+  header_bytes: 16, object_bytes: 36, coordinate_frame: 'SOURCE_LOCAL_REQUIRES_REVIEW',
   header: [
     { name: 'frame_id', offset_bytes: 0, bits: 32, type: 'unsigned' },
     { name: 'timestamp', offset_bytes: 4, bits: 64, type: 'unsigned', unit: 'us', time_base: 'SOURCE_CLOCK_REQUIRES_REVIEW' },
-    { name: 'object_count', offset_bytes: 12, bits: 16, type: 'unsigned', maximum: 48 },
+    { name: 'object_count', offset_bytes: 12, bits: 16, type: 'unsigned', maximum: 32 },
     { name: 'coordinate_frame_id', offset_bytes: 14, bits: 16, type: 'unsigned' },
   ],
   fields: [
     { name: 'object_id', offset_bytes: 0, bits: 32, type: 'unsigned' },
-    { name: 'classification', offset_bytes: 4, bits: 16, type: 'unsigned', vocabulary: 'REQUIRES_REVIEW' },
-    { name: 'confidence', offset_bytes: 6, bits: 16, type: 'unsigned', factor: 0.0001, maximum: 1 },
-    ...['x', 'y', 'z', 'velocity'].map((name, index) => ({ name, offset_bytes: 8 + index * 4,
-      bits: 32, type: 'signed', factor: 0.001, unit: name === 'velocity' ? 'm/s' : 'm' })),
+    { name: 'validity_flags', offset_bytes: 4, bits: 16, type: 'unsigned', vocabulary: 'REQUIRES_REVIEW' },
+    { name: 'classification', offset_bytes: 6, bits: 16, type: 'unsigned', vocabulary: 'REQUIRES_REVIEW' },
+    { name: 'confidence', offset_bytes: 8, bits: 32, type: 'float', maximum: 1 },
+    ...['x', 'y', 'z', 'velocity_x', 'velocity_y', 'velocity_z'].map((name, index) => ({ name, offset_bytes: 12 + index * 4,
+      bits: 32, type: 'float', unit: name.startsWith('velocity') ? 'm/s' : 'm' })),
   ],
 };
 
@@ -54,7 +55,7 @@ export function completeFunctionalDeviceDesign(chains: ExtractedEngineeringChain
     const base = { ...chain,
       ...(measurement && 'payloadBytes' in measurement ? { device_class: chain.device_class ?? 3,
         data_complexity: measurement.dataComplexity, payload_element_type: measurement.elementType } : {}),
-      configuration: { ...chain.configuration, functional_device_contract: {
+      configuration: { ...chain.configuration, measurement_contract: sensorMeasurementContract(chain.hardware_name, { name: chain.signal_name, unit: measurement && 'payloadBytes' in measurement ? 'byte' : chain.unit, min_value: measurement && 'payloadBytes' in measurement ? undefined : chain.min_value, max_value: measurement && 'payloadBytes' in measurement ? undefined : chain.max_value, factor: chain.factor, length_bits: measurement && 'payloadBytes' in measurement ? measurement.payloadBytes * 8 : chain.length_bits, data_type: chain.data_type, cycle_ms: chain.cycle_ms }, measurement?.id), functional_device_contract: {
       version: 1, role: 'SENSOR', measurement: measurement?.id ?? null, owner_name: owner || null,
       evidence: (chain.configuration?.functional_device_contract as { evidence?: string } | undefined)?.evidence
         ?? (explicit ? 'explicit_measurement' : 'semantic_draft_requires_review'),
@@ -78,7 +79,7 @@ export function completeFunctionalDeviceDesign(chains: ExtractedEngineeringChain
       semantic: { semantic_type: 'BYTE_ARRAY', meaning: measurement.label, unit: 'not_applicable' },
       data: { payload_bytes: measurement.payloadBytes },
       quality: { ...chain.quality, value_domain_complete: true },
-      configuration: { ...base.configuration, sensor_measurement: measurement.id, encoding_type: 'raw',
+      configuration: { ...base.configuration, structured_payload: 'structured_payload' in base.configuration.measurement_contract ? base.configuration.measurement_contract.structured_payload : undefined, sensor_measurement: measurement.id, encoding_type: 'raw',
         measurement_source: 'functional_owner_draft_requires_review' },
     } satisfies ExtractedEngineeringChain;
   });
@@ -124,9 +125,11 @@ export function completeFunctionalDeviceDesign(chains: ExtractedEngineeringChain
       data: { payload_bytes: OBJECT_LIST_SCHEMA.payload_bytes },
       configuration: { ...device.configuration, generation_role: 'FUNCTION_OUTPUT', functional_output_template: true,
         communication_contract: { scope: 'FUNCTION_OUTPUT' }, encoding_type: 'raw',
-        structured_payload: OBJECT_LIST_SCHEMA,
+        structured_payload: OBJECT_LIST_SCHEMA, processing_contract: { algorithm: null, evidence: 'NONE',
+          input_kind: role, classification: 'UNKNOWN', cartesian_kinematics: 'UNKNOWN',
+          coordinate_transform: null, timing: null, simulation_design: true },
         functional_device_contract: { version: 1, role: 'PERCEPTION', required_measurement: role,
-          accepted_measurements: role === 'object_list' ? ['object_list', 'distance']
+          accepted_measurements: role === 'object_list' ? ['object_list', 'radar_detections']
             : role === 'image_frame' ? ['image_frame', 'object_list']
               : role === 'point_cloud' ? ['point_cloud', 'object_list'] : ['distance'],
           input_names: sensors, actuator_names: actuators, output_signal: name, evidence: 'semantic_draft_requires_review' },

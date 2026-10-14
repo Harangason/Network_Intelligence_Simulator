@@ -3,6 +3,25 @@
 Applies to generation, AI proposals, sizing, simulation, analysis and later exports.
 User basis: LIN reference/brake audit of 2026-09-10 and its implementation approval.
 
+## NIS-owned functional device workflow
+
+User clarification of 2026-10-14: teach the NIS agent the workflow rather than
+editing individual user models outside NIS. Sensor and actuator requests must
+include the existing `validate_device_communication` capability in bounded tool
+selection. The agent checks all declared measurement/processing inputs, separate
+function outputs, confirmed consumers, explicit commands and execution feedback.
+A routed status is not a delivered measurement; measurements and feedback are
+not commands. The shared communication owner supplies the reasoning rules.
+
+The agent audit returns the canonical project and frozen model revision. Missing
+legacy functional contracts are REVIEW findings, not silently inferred or applied
+contracts. Preserve existing encodings and use ordinary proposals, validation,
+human review and guarded apply to resolve them. Ordinary historic preflight
+compatibility does not constitute a completed functional audit. An empty model
+cannot pass the agent audit. Physical paths, executable processing logic, capacity,
+timing and simulation preflight remain separate evidence gates. No user project
+is migrated or simulated merely by deploying this capability.
+
 ## Ethernet response-time evidence
 
 The capacity service may report `FEASIBLE_UNDER_ASSUMPTIONS` for Ethernet only

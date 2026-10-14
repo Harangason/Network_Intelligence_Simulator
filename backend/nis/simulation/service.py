@@ -325,18 +325,34 @@ class SimulationService:
                 config.get("engineering_model") if isinstance(config.get("engineering_model"), dict) else {},
             )
         check_cancellation(force=True)
-        result = self.simulator.run(config, validate_only=validate_only)
-        check_cancellation(force=True)
-        if not validate_only:
-            if result.get("status") == "validation_failed" or (result.get("hardware_validation") or {}).get("valid") is False:
-                findings = (result.get("hardware_validation") or {}).get("findings") or []
-                details = "; ".join(str(item.get("message")) for item in findings if item.get("severity") == "error")
-                raise ValueError("Hardware-Validierung fehlgeschlagen: " + (details or "kein ausführbarer Simulationslauf"))
-            result["runtime_metrics"] = self.runtime_load_monitor.analyze(result, config)
+        archive = None
+        run_revision = None
+        if not validate_only and project_id != 'default':
+            from backend.nis.infrastructure.storage.saved_storage import ProjectArtifactStore
+            from backend.nis.engineering.simulation import artifact_job_id
+            archive = ProjectArtifactStore(project_id)
+            config['project_id'] = project_id
+            run_revision = archive.begin_run(str(payload.get('simulation_job_id') or artifact_job_id(output_dir)), config)
+        result = None
+        try:
+            result = self.simulator.run(config, validate_only=validate_only)
             check_cancellation(force=True)
-            if payload.get("workflow_managed") or project_id != "default":
-                from backend.nis.engineering.simulation import artifact_job_id
-                from backend.nis.engineering.simulation import persist_trace_metadata
+            if not validate_only:
+                if result.get("status") == "validation_failed" or (result.get("hardware_validation") or {}).get("valid") is False:
+                    findings = (result.get("hardware_validation") or {}).get("findings") or []
+                    details = "; ".join(str(item.get("message")) for item in findings if item.get("severity") == "error")
+                    raise ValueError("Hardware-Validierung fehlgeschlagen: " + (details or "kein ausführbarer Simulationslauf"))
+                result["runtime_metrics"] = self.runtime_load_monitor.analyze(result, config)
+                check_cancellation(force=True)
+                if payload.get("workflow_managed") or project_id != "default":
+                    from backend.nis.engineering.simulation import artifact_job_id
+                    from backend.nis.engineering.simulation import persist_trace_metadata
 
-                persist_trace_metadata(project_id, str(payload.get('simulation_job_id') or artifact_job_id(output_dir)), result, config)
-        return result
+                    persist_trace_metadata(project_id, str(payload.get('simulation_job_id') or artifact_job_id(output_dir)), result, config)
+            if archive is not None:
+                result['project_revision'] = archive.finish_run(run_revision, output_dir, result=result)
+            return result
+        except Exception as error:
+            if archive is not None:
+                archive.finish_run(run_revision, output_dir, result=result, error=error)
+            raise

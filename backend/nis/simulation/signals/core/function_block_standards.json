@@ -1,0 +1,2575 @@
+{
+  "owner": "SignalBehaviorRegistry",
+  "schema_version": 1,
+  "standards": [
+    {
+      "id": "AND",
+      "input_types": {
+        "A": "boolean",
+        "B": "boolean"
+      },
+      "definition": {
+        "name": "AND",
+        "description": "Returns the boolean conjunction of inputs A and B.",
+        "source_code": "class AND(FunctionBlock):\n    def step(self, inputs, parameters, dt):\n        A = inputs[\"A\"]\n        B = inputs[\"B\"]\n        return A and B",
+        "parameter_schema": {},
+        "parameter_relations": [],
+        "source_sha256": "c080750fb9f73827cb863b474aaa081da58061fa949355770214e11b80e12b99",
+        "provenance": {
+          "provider": "ollama-local",
+          "model": "qwen3.8:27b",
+          "model_digest": "22130167c4c20e20c7b71454612966ca8e8171e9b3cc8ab6ce8aa6cbfec79643",
+          "generated_by": "QWEN",
+          "request_sha256": "9e010a512d851e0c5d6f4857d62dc919eda8a3d0fd9c342feca68f328c4b1358",
+          "request": {
+            "model": "qwen3.8:27b",
+            "messages": [
+              {
+                "role": "user",
+                "content": "Create each executable standard block yourself from these specifications. All inputs are BOOLEAN. {\"AND\": {\"inputs\": [\"A\", \"B\"], \"requirement\": \"Return boolean conjunction of A and B.\"}, \"OR\": {\"inputs\": [\"A\", \"B\"], \"requirement\": \"Return boolean inclusive disjunction of A and B.\"}, \"XOR\": {\"inputs\": [\"A\", \"B\"], \"requirement\": \"Return true iff exactly one of A and B is true.\"}, \"NOT\": {\"inputs\": [\"A\"], \"requirement\": \"Return the boolean negation of A.\"}, \"NAND\": {\"inputs\": [\"A\", \"B\"], \"requirement\": \"Return the negation of the conjunction of A and B.\"}, \"NOR\": {\"inputs\": [\"A\", \"B\"], \"requirement\": \"Return the negation of the inclusive disjunction of A and B.\"}, \"XNOR\": {\"inputs\": [\"A\", \"B\"], \"requirement\": \"Return true iff A and B have the same boolean value.\"}, \"BUFFER\": {\"inputs\": [\"A\"], \"requirement\": \"Return the boolean value A unchanged.\"}, \"IMPLIES\": {\"inputs\": [\"A\", \"B\"], \"requirement\": \"Boolean implication: false only when A is true and B is false.\"}, \"SELECT\": {\"inputs\": [\"S\", \"A\", \"B\"], \"requirement\": \"Boolean selector: when S is true return A, otherwise return B.\"}, \"DECISION_ABCD\": {\"inputs\": [\"A\", \"B\", \"C\", \"D\"], \"requirement\": \"Return (A OR B) AND C AND NOT D. This exact grouping is mandatory.\"}}\nReturn one JSON object {\"blocks\":[...]}. Each block has name (exact ID), description, source_code, parameter_schema {}, parameter_relations []. No parameters or persistent state for these stateless Boolean decisions. Code is one class inheriting FunctionBlock, one step(self, inputs, parameters, dt) method, no annotations. Use literal input dictionary keys exactly as specified and return a boolean. Allowed Boolean operators and/or/not and comparisons == != < <= > >= in not in. For XOR use Boolean comparison, never ^. Forbidden identity operators is/is not. No imports, loops, list/dict construction, function calls, decorators, builtins, arbitrary attributes, eval/exec, helper methods. Only local assignments, if/else, return, dictionary subscript and simple Boolean operators. Do not create tests, truth tables, validation claims or physical/safety claims. Do not change the requested definitions."
+              }
+            ],
+            "think": false,
+            "stream": true,
+            "format": "json",
+            "keep_alive": "10m",
+            "options": {
+              "temperature": 0,
+              "num_ctx": 8192,
+              "num_predict": 4500
+            }
+          },
+          "response": {
+            "model": "qwen3.8:27b",
+            "done": true,
+            "message": {
+              "content": "{\n  \"blocks\": [\n    {\n      \"name\": \"AND\",\n      \"description\": \"Returns the boolean conjunction of inputs A and B.\",\n      \"source_code\": \"class AND(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        return A and B\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"OR\",\n      \"description\": \"Returns the boolean inclusive disjunction of inputs A and B.\",\n      \"source_code\": \"class OR(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        return A or B\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"XOR\",\n      \"description\": \"Returns true iff exactly one of A and B is true.\",\n      \"source_code\": \"class XOR(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        return A != B\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"NOT\",\n      \"description\": \"Returns the boolean negation of input A.\",\n      \"source_code\": \"class NOT(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        return not A\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"NAND\",\n      \"description\": \"Returns the negation of the conjunction of A and B.\",\n      \"source_code\": \"class NAND(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        return not (A and B)\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"NOR\",\n      \"description\": \"Returns the negation of the inclusive disjunction of A and B.\",\n      \"source_code\": \"class NOR(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        return not (A or B)\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"XNOR\",\n      \"description\": \"Returns true iff A and B have the same boolean value.\",\n      \"source_code\": \"class XNOR(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        return A == B\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"BUFFER\",\n      \"description\": \"Returns the boolean value A unchanged.\",\n      \"source_code\": \"class BUFFER(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        return A\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"IMPLIES\",\n      \"description\": \"Boolean implication: false only when A is true and B is false.\",\n      \"source_code\": \"class IMPLIES(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        return (not A) or B\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"SELECT\",\n      \"description\": \"Boolean selector: when S is true return A, otherwise return B.\",\n      \"source_code\": \"class SELECT(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        S = inputs[\\\"S\\\"]\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        if S:\\n            return A\\n        else:\\n            return B\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"DECISION_ABCD\",\n      \"description\": \"Returns (A OR B) AND C AND NOT D.\",\n      \"source_code\": \"class DECISION_ABCD(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        C = inputs[\\\"C\\\"]\\n        D = inputs[\\\"D\\\"]\\n        return (A or B) and C and (not D)\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    }\n  ]\n}"
+            }
+          },
+          "status": "UNREVIEWED_SIMULATION_DESIGN"
+        },
+        "standard_id": "AND",
+        "logic_rule": {
+          "expression": "A and B",
+          "tree": {
+            "operator": "AND",
+            "operands": [
+              {
+                "input": "A"
+              },
+              {
+                "input": "B"
+              }
+            ]
+          },
+          "inputs": [
+            "A",
+            "B"
+          ],
+          "output_type": "boolean",
+          "stateful": false
+        },
+        "verification_cases": [
+          {
+            "name": "AND complete truth table",
+            "source": "NIS independent Boolean requirements; explicit grouped example",
+            "steps": [
+              {
+                "inputs": {
+                  "A": false,
+                  "B": false
+                },
+                "expected": false,
+                "dt_s": 0.0
+              },
+              {
+                "inputs": {
+                  "A": false,
+                  "B": true
+                },
+                "expected": false,
+                "dt_s": 0.0
+              },
+              {
+                "inputs": {
+                  "A": true,
+                  "B": false
+                },
+                "expected": false,
+                "dt_s": 0.0
+              },
+              {
+                "inputs": {
+                  "A": true,
+                  "B": true
+                },
+                "expected": true,
+                "dt_s": 0.0
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "OR",
+      "input_types": {
+        "A": "boolean",
+        "B": "boolean"
+      },
+      "definition": {
+        "name": "OR",
+        "description": "Returns the boolean inclusive disjunction of inputs A and B.",
+        "source_code": "class OR(FunctionBlock):\n    def step(self, inputs, parameters, dt):\n        A = inputs[\"A\"]\n        B = inputs[\"B\"]\n        return A or B",
+        "parameter_schema": {},
+        "parameter_relations": [],
+        "source_sha256": "8ad68360fe11cefa3c89804a86766c4a89e804902aa2f45cc49d12f2520692b6",
+        "provenance": {
+          "provider": "ollama-local",
+          "model": "qwen3.8:27b",
+          "model_digest": "22130167c4c20e20c7b71454612966ca8e8171e9b3cc8ab6ce8aa6cbfec79643",
+          "generated_by": "QWEN",
+          "request_sha256": "9e010a512d851e0c5d6f4857d62dc919eda8a3d0fd9c342feca68f328c4b1358",
+          "request": {
+            "model": "qwen3.8:27b",
+            "messages": [
+              {
+                "role": "user",
+                "content": "Create each executable standard block yourself from these specifications. All inputs are BOOLEAN. {\"AND\": {\"inputs\": [\"A\", \"B\"], \"requirement\": \"Return boolean conjunction of A and B.\"}, \"OR\": {\"inputs\": [\"A\", \"B\"], \"requirement\": \"Return boolean inclusive disjunction of A and B.\"}, \"XOR\": {\"inputs\": [\"A\", \"B\"], \"requirement\": \"Return true iff exactly one of A and B is true.\"}, \"NOT\": {\"inputs\": [\"A\"], \"requirement\": \"Return the boolean negation of A.\"}, \"NAND\": {\"inputs\": [\"A\", \"B\"], \"requirement\": \"Return the negation of the conjunction of A and B.\"}, \"NOR\": {\"inputs\": [\"A\", \"B\"], \"requirement\": \"Return the negation of the inclusive disjunction of A and B.\"}, \"XNOR\": {\"inputs\": [\"A\", \"B\"], \"requirement\": \"Return true iff A and B have the same boolean value.\"}, \"BUFFER\": {\"inputs\": [\"A\"], \"requirement\": \"Return the boolean value A unchanged.\"}, \"IMPLIES\": {\"inputs\": [\"A\", \"B\"], \"requirement\": \"Boolean implication: false only when A is true and B is false.\"}, \"SELECT\": {\"inputs\": [\"S\", \"A\", \"B\"], \"requirement\": \"Boolean selector: when S is true return A, otherwise return B.\"}, \"DECISION_ABCD\": {\"inputs\": [\"A\", \"B\", \"C\", \"D\"], \"requirement\": \"Return (A OR B) AND C AND NOT D. This exact grouping is mandatory.\"}}\nReturn one JSON object {\"blocks\":[...]}. Each block has name (exact ID), description, source_code, parameter_schema {}, parameter_relations []. No parameters or persistent state for these stateless Boolean decisions. Code is one class inheriting FunctionBlock, one step(self, inputs, parameters, dt) method, no annotations. Use literal input dictionary keys exactly as specified and return a boolean. Allowed Boolean operators and/or/not and comparisons == != < <= > >= in not in. For XOR use Boolean comparison, never ^. Forbidden identity operators is/is not. No imports, loops, list/dict construction, function calls, decorators, builtins, arbitrary attributes, eval/exec, helper methods. Only local assignments, if/else, return, dictionary subscript and simple Boolean operators. Do not create tests, truth tables, validation claims or physical/safety claims. Do not change the requested definitions."
+              }
+            ],
+            "think": false,
+            "stream": true,
+            "format": "json",
+            "keep_alive": "10m",
+            "options": {
+              "temperature": 0,
+              "num_ctx": 8192,
+              "num_predict": 4500
+            }
+          },
+          "response": {
+            "model": "qwen3.8:27b",
+            "done": true,
+            "message": {
+              "content": "{\n  \"blocks\": [\n    {\n      \"name\": \"AND\",\n      \"description\": \"Returns the boolean conjunction of inputs A and B.\",\n      \"source_code\": \"class AND(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        return A and B\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"OR\",\n      \"description\": \"Returns the boolean inclusive disjunction of inputs A and B.\",\n      \"source_code\": \"class OR(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        return A or B\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"XOR\",\n      \"description\": \"Returns true iff exactly one of A and B is true.\",\n      \"source_code\": \"class XOR(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        return A != B\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"NOT\",\n      \"description\": \"Returns the boolean negation of input A.\",\n      \"source_code\": \"class NOT(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        return not A\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"NAND\",\n      \"description\": \"Returns the negation of the conjunction of A and B.\",\n      \"source_code\": \"class NAND(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        return not (A and B)\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"NOR\",\n      \"description\": \"Returns the negation of the inclusive disjunction of A and B.\",\n      \"source_code\": \"class NOR(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        return not (A or B)\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"XNOR\",\n      \"description\": \"Returns true iff A and B have the same boolean value.\",\n      \"source_code\": \"class XNOR(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        return A == B\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"BUFFER\",\n      \"description\": \"Returns the boolean value A unchanged.\",\n      \"source_code\": \"class BUFFER(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        return A\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"IMPLIES\",\n      \"description\": \"Boolean implication: false only when A is true and B is false.\",\n      \"source_code\": \"class IMPLIES(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        return (not A) or B\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"SELECT\",\n      \"description\": \"Boolean selector: when S is true return A, otherwise return B.\",\n      \"source_code\": \"class SELECT(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        S = inputs[\\\"S\\\"]\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        if S:\\n            return A\\n        else:\\n            return B\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"DECISION_ABCD\",\n      \"description\": \"Returns (A OR B) AND C AND NOT D.\",\n      \"source_code\": \"class DECISION_ABCD(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        C = inputs[\\\"C\\\"]\\n        D = inputs[\\\"D\\\"]\\n        return (A or B) and C and (not D)\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    }\n  ]\n}"
+            }
+          },
+          "status": "UNREVIEWED_SIMULATION_DESIGN"
+        },
+        "standard_id": "OR",
+        "logic_rule": {
+          "expression": "A or B",
+          "tree": {
+            "operator": "OR",
+            "operands": [
+              {
+                "input": "A"
+              },
+              {
+                "input": "B"
+              }
+            ]
+          },
+          "inputs": [
+            "A",
+            "B"
+          ],
+          "output_type": "boolean",
+          "stateful": false
+        },
+        "verification_cases": [
+          {
+            "name": "OR complete truth table",
+            "source": "NIS independent Boolean requirements; explicit grouped example",
+            "steps": [
+              {
+                "inputs": {
+                  "A": false,
+                  "B": false
+                },
+                "expected": false,
+                "dt_s": 0.0
+              },
+              {
+                "inputs": {
+                  "A": false,
+                  "B": true
+                },
+                "expected": true,
+                "dt_s": 0.0
+              },
+              {
+                "inputs": {
+                  "A": true,
+                  "B": false
+                },
+                "expected": true,
+                "dt_s": 0.0
+              },
+              {
+                "inputs": {
+                  "A": true,
+                  "B": true
+                },
+                "expected": true,
+                "dt_s": 0.0
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "XOR",
+      "input_types": {
+        "A": "boolean",
+        "B": "boolean"
+      },
+      "definition": {
+        "name": "XOR",
+        "description": "Returns true iff exactly one of A and B is true.",
+        "source_code": "class XOR(FunctionBlock):\n    def step(self, inputs, parameters, dt):\n        A = inputs[\"A\"]\n        B = inputs[\"B\"]\n        return A != B",
+        "parameter_schema": {},
+        "parameter_relations": [],
+        "source_sha256": "6d8ec37c500da3923ce8bf891f6a4685ecd4d6f9c14ea352159b0a1346c9adac",
+        "provenance": {
+          "provider": "ollama-local",
+          "model": "qwen3.8:27b",
+          "model_digest": "22130167c4c20e20c7b71454612966ca8e8171e9b3cc8ab6ce8aa6cbfec79643",
+          "generated_by": "QWEN",
+          "request_sha256": "9e010a512d851e0c5d6f4857d62dc919eda8a3d0fd9c342feca68f328c4b1358",
+          "request": {
+            "model": "qwen3.8:27b",
+            "messages": [
+              {
+                "role": "user",
+                "content": "Create each executable standard block yourself from these specifications. All inputs are BOOLEAN. {\"AND\": {\"inputs\": [\"A\", \"B\"], \"requirement\": \"Return boolean conjunction of A and B.\"}, \"OR\": {\"inputs\": [\"A\", \"B\"], \"requirement\": \"Return boolean inclusive disjunction of A and B.\"}, \"XOR\": {\"inputs\": [\"A\", \"B\"], \"requirement\": \"Return true iff exactly one of A and B is true.\"}, \"NOT\": {\"inputs\": [\"A\"], \"requirement\": \"Return the boolean negation of A.\"}, \"NAND\": {\"inputs\": [\"A\", \"B\"], \"requirement\": \"Return the negation of the conjunction of A and B.\"}, \"NOR\": {\"inputs\": [\"A\", \"B\"], \"requirement\": \"Return the negation of the inclusive disjunction of A and B.\"}, \"XNOR\": {\"inputs\": [\"A\", \"B\"], \"requirement\": \"Return true iff A and B have the same boolean value.\"}, \"BUFFER\": {\"inputs\": [\"A\"], \"requirement\": \"Return the boolean value A unchanged.\"}, \"IMPLIES\": {\"inputs\": [\"A\", \"B\"], \"requirement\": \"Boolean implication: false only when A is true and B is false.\"}, \"SELECT\": {\"inputs\": [\"S\", \"A\", \"B\"], \"requirement\": \"Boolean selector: when S is true return A, otherwise return B.\"}, \"DECISION_ABCD\": {\"inputs\": [\"A\", \"B\", \"C\", \"D\"], \"requirement\": \"Return (A OR B) AND C AND NOT D. This exact grouping is mandatory.\"}}\nReturn one JSON object {\"blocks\":[...]}. Each block has name (exact ID), description, source_code, parameter_schema {}, parameter_relations []. No parameters or persistent state for these stateless Boolean decisions. Code is one class inheriting FunctionBlock, one step(self, inputs, parameters, dt) method, no annotations. Use literal input dictionary keys exactly as specified and return a boolean. Allowed Boolean operators and/or/not and comparisons == != < <= > >= in not in. For XOR use Boolean comparison, never ^. Forbidden identity operators is/is not. No imports, loops, list/dict construction, function calls, decorators, builtins, arbitrary attributes, eval/exec, helper methods. Only local assignments, if/else, return, dictionary subscript and simple Boolean operators. Do not create tests, truth tables, validation claims or physical/safety claims. Do not change the requested definitions."
+              }
+            ],
+            "think": false,
+            "stream": true,
+            "format": "json",
+            "keep_alive": "10m",
+            "options": {
+              "temperature": 0,
+              "num_ctx": 8192,
+              "num_predict": 4500
+            }
+          },
+          "response": {
+            "model": "qwen3.8:27b",
+            "done": true,
+            "message": {
+              "content": "{\n  \"blocks\": [\n    {\n      \"name\": \"AND\",\n      \"description\": \"Returns the boolean conjunction of inputs A and B.\",\n      \"source_code\": \"class AND(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        return A and B\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"OR\",\n      \"description\": \"Returns the boolean inclusive disjunction of inputs A and B.\",\n      \"source_code\": \"class OR(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        return A or B\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"XOR\",\n      \"description\": \"Returns true iff exactly one of A and B is true.\",\n      \"source_code\": \"class XOR(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        return A != B\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"NOT\",\n      \"description\": \"Returns the boolean negation of input A.\",\n      \"source_code\": \"class NOT(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        return not A\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"NAND\",\n      \"description\": \"Returns the negation of the conjunction of A and B.\",\n      \"source_code\": \"class NAND(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        return not (A and B)\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"NOR\",\n      \"description\": \"Returns the negation of the inclusive disjunction of A and B.\",\n      \"source_code\": \"class NOR(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        return not (A or B)\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"XNOR\",\n      \"description\": \"Returns true iff A and B have the same boolean value.\",\n      \"source_code\": \"class XNOR(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        return A == B\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"BUFFER\",\n      \"description\": \"Returns the boolean value A unchanged.\",\n      \"source_code\": \"class BUFFER(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        return A\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"IMPLIES\",\n      \"description\": \"Boolean implication: false only when A is true and B is false.\",\n      \"source_code\": \"class IMPLIES(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        return (not A) or B\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"SELECT\",\n      \"description\": \"Boolean selector: when S is true return A, otherwise return B.\",\n      \"source_code\": \"class SELECT(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        S = inputs[\\\"S\\\"]\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        if S:\\n            return A\\n        else:\\n            return B\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"DECISION_ABCD\",\n      \"description\": \"Returns (A OR B) AND C AND NOT D.\",\n      \"source_code\": \"class DECISION_ABCD(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        C = inputs[\\\"C\\\"]\\n        D = inputs[\\\"D\\\"]\\n        return (A or B) and C and (not D)\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    }\n  ]\n}"
+            }
+          },
+          "status": "UNREVIEWED_SIMULATION_DESIGN"
+        },
+        "standard_id": "XOR",
+        "logic_rule": {
+          "expression": "XOR (A ,B )",
+          "tree": {
+            "operator": "XOR",
+            "operands": [
+              {
+                "input": "A"
+              },
+              {
+                "input": "B"
+              }
+            ]
+          },
+          "inputs": [
+            "A",
+            "B"
+          ],
+          "output_type": "boolean",
+          "stateful": false
+        },
+        "verification_cases": [
+          {
+            "name": "XOR complete truth table",
+            "source": "NIS independent Boolean requirements; explicit grouped example",
+            "steps": [
+              {
+                "inputs": {
+                  "A": false,
+                  "B": false
+                },
+                "expected": false,
+                "dt_s": 0.0
+              },
+              {
+                "inputs": {
+                  "A": false,
+                  "B": true
+                },
+                "expected": true,
+                "dt_s": 0.0
+              },
+              {
+                "inputs": {
+                  "A": true,
+                  "B": false
+                },
+                "expected": true,
+                "dt_s": 0.0
+              },
+              {
+                "inputs": {
+                  "A": true,
+                  "B": true
+                },
+                "expected": false,
+                "dt_s": 0.0
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "NOT",
+      "input_types": {
+        "A": "boolean"
+      },
+      "definition": {
+        "name": "NOT",
+        "description": "Returns the boolean negation of input A.",
+        "source_code": "class NOT(FunctionBlock):\n    def step(self, inputs, parameters, dt):\n        A = inputs[\"A\"]\n        return not A",
+        "parameter_schema": {},
+        "parameter_relations": [],
+        "source_sha256": "b3b940c431fbdaa43ec6409e1e997c4969685b821d1376be2b16242e52598bbc",
+        "provenance": {
+          "provider": "ollama-local",
+          "model": "qwen3.8:27b",
+          "model_digest": "22130167c4c20e20c7b71454612966ca8e8171e9b3cc8ab6ce8aa6cbfec79643",
+          "generated_by": "QWEN",
+          "request_sha256": "9e010a512d851e0c5d6f4857d62dc919eda8a3d0fd9c342feca68f328c4b1358",
+          "request": {
+            "model": "qwen3.8:27b",
+            "messages": [
+              {
+                "role": "user",
+                "content": "Create each executable standard block yourself from these specifications. All inputs are BOOLEAN. {\"AND\": {\"inputs\": [\"A\", \"B\"], \"requirement\": \"Return boolean conjunction of A and B.\"}, \"OR\": {\"inputs\": [\"A\", \"B\"], \"requirement\": \"Return boolean inclusive disjunction of A and B.\"}, \"XOR\": {\"inputs\": [\"A\", \"B\"], \"requirement\": \"Return true iff exactly one of A and B is true.\"}, \"NOT\": {\"inputs\": [\"A\"], \"requirement\": \"Return the boolean negation of A.\"}, \"NAND\": {\"inputs\": [\"A\", \"B\"], \"requirement\": \"Return the negation of the conjunction of A and B.\"}, \"NOR\": {\"inputs\": [\"A\", \"B\"], \"requirement\": \"Return the negation of the inclusive disjunction of A and B.\"}, \"XNOR\": {\"inputs\": [\"A\", \"B\"], \"requirement\": \"Return true iff A and B have the same boolean value.\"}, \"BUFFER\": {\"inputs\": [\"A\"], \"requirement\": \"Return the boolean value A unchanged.\"}, \"IMPLIES\": {\"inputs\": [\"A\", \"B\"], \"requirement\": \"Boolean implication: false only when A is true and B is false.\"}, \"SELECT\": {\"inputs\": [\"S\", \"A\", \"B\"], \"requirement\": \"Boolean selector: when S is true return A, otherwise return B.\"}, \"DECISION_ABCD\": {\"inputs\": [\"A\", \"B\", \"C\", \"D\"], \"requirement\": \"Return (A OR B) AND C AND NOT D. This exact grouping is mandatory.\"}}\nReturn one JSON object {\"blocks\":[...]}. Each block has name (exact ID), description, source_code, parameter_schema {}, parameter_relations []. No parameters or persistent state for these stateless Boolean decisions. Code is one class inheriting FunctionBlock, one step(self, inputs, parameters, dt) method, no annotations. Use literal input dictionary keys exactly as specified and return a boolean. Allowed Boolean operators and/or/not and comparisons == != < <= > >= in not in. For XOR use Boolean comparison, never ^. Forbidden identity operators is/is not. No imports, loops, list/dict construction, function calls, decorators, builtins, arbitrary attributes, eval/exec, helper methods. Only local assignments, if/else, return, dictionary subscript and simple Boolean operators. Do not create tests, truth tables, validation claims or physical/safety claims. Do not change the requested definitions."
+              }
+            ],
+            "think": false,
+            "stream": true,
+            "format": "json",
+            "keep_alive": "10m",
+            "options": {
+              "temperature": 0,
+              "num_ctx": 8192,
+              "num_predict": 4500
+            }
+          },
+          "response": {
+            "model": "qwen3.8:27b",
+            "done": true,
+            "message": {
+              "content": "{\n  \"blocks\": [\n    {\n      \"name\": \"AND\",\n      \"description\": \"Returns the boolean conjunction of inputs A and B.\",\n      \"source_code\": \"class AND(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        return A and B\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"OR\",\n      \"description\": \"Returns the boolean inclusive disjunction of inputs A and B.\",\n      \"source_code\": \"class OR(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        return A or B\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"XOR\",\n      \"description\": \"Returns true iff exactly one of A and B is true.\",\n      \"source_code\": \"class XOR(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        return A != B\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"NOT\",\n      \"description\": \"Returns the boolean negation of input A.\",\n      \"source_code\": \"class NOT(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        return not A\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"NAND\",\n      \"description\": \"Returns the negation of the conjunction of A and B.\",\n      \"source_code\": \"class NAND(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        return not (A and B)\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"NOR\",\n      \"description\": \"Returns the negation of the inclusive disjunction of A and B.\",\n      \"source_code\": \"class NOR(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        return not (A or B)\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"XNOR\",\n      \"description\": \"Returns true iff A and B have the same boolean value.\",\n      \"source_code\": \"class XNOR(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        return A == B\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"BUFFER\",\n      \"description\": \"Returns the boolean value A unchanged.\",\n      \"source_code\": \"class BUFFER(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        return A\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"IMPLIES\",\n      \"description\": \"Boolean implication: false only when A is true and B is false.\",\n      \"source_code\": \"class IMPLIES(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        return (not A) or B\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"SELECT\",\n      \"description\": \"Boolean selector: when S is true return A, otherwise return B.\",\n      \"source_code\": \"class SELECT(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        S = inputs[\\\"S\\\"]\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        if S:\\n            return A\\n        else:\\n            return B\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"DECISION_ABCD\",\n      \"description\": \"Returns (A OR B) AND C AND NOT D.\",\n      \"source_code\": \"class DECISION_ABCD(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        C = inputs[\\\"C\\\"]\\n        D = inputs[\\\"D\\\"]\\n        return (A or B) and C and (not D)\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    }\n  ]\n}"
+            }
+          },
+          "status": "UNREVIEWED_SIMULATION_DESIGN"
+        },
+        "standard_id": "NOT",
+        "logic_rule": {
+          "expression": "not A",
+          "tree": {
+            "operator": "NOT",
+            "operands": [
+              {
+                "input": "A"
+              }
+            ]
+          },
+          "inputs": [
+            "A"
+          ],
+          "output_type": "boolean",
+          "stateful": false
+        },
+        "verification_cases": [
+          {
+            "name": "NOT complete truth table",
+            "source": "NIS independent Boolean requirements; explicit grouped example",
+            "steps": [
+              {
+                "inputs": {
+                  "A": false
+                },
+                "expected": true,
+                "dt_s": 0.0
+              },
+              {
+                "inputs": {
+                  "A": true
+                },
+                "expected": false,
+                "dt_s": 0.0
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "NAND",
+      "input_types": {
+        "A": "boolean",
+        "B": "boolean"
+      },
+      "definition": {
+        "name": "NAND",
+        "description": "Returns the negation of the conjunction of A and B.",
+        "source_code": "class NAND(FunctionBlock):\n    def step(self, inputs, parameters, dt):\n        A = inputs[\"A\"]\n        B = inputs[\"B\"]\n        return not (A and B)",
+        "parameter_schema": {},
+        "parameter_relations": [],
+        "source_sha256": "15b50e6db21361c621d214b7c3922581303d28386fdbcbb2f056036ce7767978",
+        "provenance": {
+          "provider": "ollama-local",
+          "model": "qwen3.8:27b",
+          "model_digest": "22130167c4c20e20c7b71454612966ca8e8171e9b3cc8ab6ce8aa6cbfec79643",
+          "generated_by": "QWEN",
+          "request_sha256": "9e010a512d851e0c5d6f4857d62dc919eda8a3d0fd9c342feca68f328c4b1358",
+          "request": {
+            "model": "qwen3.8:27b",
+            "messages": [
+              {
+                "role": "user",
+                "content": "Create each executable standard block yourself from these specifications. All inputs are BOOLEAN. {\"AND\": {\"inputs\": [\"A\", \"B\"], \"requirement\": \"Return boolean conjunction of A and B.\"}, \"OR\": {\"inputs\": [\"A\", \"B\"], \"requirement\": \"Return boolean inclusive disjunction of A and B.\"}, \"XOR\": {\"inputs\": [\"A\", \"B\"], \"requirement\": \"Return true iff exactly one of A and B is true.\"}, \"NOT\": {\"inputs\": [\"A\"], \"requirement\": \"Return the boolean negation of A.\"}, \"NAND\": {\"inputs\": [\"A\", \"B\"], \"requirement\": \"Return the negation of the conjunction of A and B.\"}, \"NOR\": {\"inputs\": [\"A\", \"B\"], \"requirement\": \"Return the negation of the inclusive disjunction of A and B.\"}, \"XNOR\": {\"inputs\": [\"A\", \"B\"], \"requirement\": \"Return true iff A and B have the same boolean value.\"}, \"BUFFER\": {\"inputs\": [\"A\"], \"requirement\": \"Return the boolean value A unchanged.\"}, \"IMPLIES\": {\"inputs\": [\"A\", \"B\"], \"requirement\": \"Boolean implication: false only when A is true and B is false.\"}, \"SELECT\": {\"inputs\": [\"S\", \"A\", \"B\"], \"requirement\": \"Boolean selector: when S is true return A, otherwise return B.\"}, \"DECISION_ABCD\": {\"inputs\": [\"A\", \"B\", \"C\", \"D\"], \"requirement\": \"Return (A OR B) AND C AND NOT D. This exact grouping is mandatory.\"}}\nReturn one JSON object {\"blocks\":[...]}. Each block has name (exact ID), description, source_code, parameter_schema {}, parameter_relations []. No parameters or persistent state for these stateless Boolean decisions. Code is one class inheriting FunctionBlock, one step(self, inputs, parameters, dt) method, no annotations. Use literal input dictionary keys exactly as specified and return a boolean. Allowed Boolean operators and/or/not and comparisons == != < <= > >= in not in. For XOR use Boolean comparison, never ^. Forbidden identity operators is/is not. No imports, loops, list/dict construction, function calls, decorators, builtins, arbitrary attributes, eval/exec, helper methods. Only local assignments, if/else, return, dictionary subscript and simple Boolean operators. Do not create tests, truth tables, validation claims or physical/safety claims. Do not change the requested definitions."
+              }
+            ],
+            "think": false,
+            "stream": true,
+            "format": "json",
+            "keep_alive": "10m",
+            "options": {
+              "temperature": 0,
+              "num_ctx": 8192,
+              "num_predict": 4500
+            }
+          },
+          "response": {
+            "model": "qwen3.8:27b",
+            "done": true,
+            "message": {
+              "content": "{\n  \"blocks\": [\n    {\n      \"name\": \"AND\",\n      \"description\": \"Returns the boolean conjunction of inputs A and B.\",\n      \"source_code\": \"class AND(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        return A and B\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"OR\",\n      \"description\": \"Returns the boolean inclusive disjunction of inputs A and B.\",\n      \"source_code\": \"class OR(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        return A or B\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"XOR\",\n      \"description\": \"Returns true iff exactly one of A and B is true.\",\n      \"source_code\": \"class XOR(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        return A != B\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"NOT\",\n      \"description\": \"Returns the boolean negation of input A.\",\n      \"source_code\": \"class NOT(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        return not A\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"NAND\",\n      \"description\": \"Returns the negation of the conjunction of A and B.\",\n      \"source_code\": \"class NAND(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        return not (A and B)\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"NOR\",\n      \"description\": \"Returns the negation of the inclusive disjunction of A and B.\",\n      \"source_code\": \"class NOR(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        return not (A or B)\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"XNOR\",\n      \"description\": \"Returns true iff A and B have the same boolean value.\",\n      \"source_code\": \"class XNOR(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        return A == B\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"BUFFER\",\n      \"description\": \"Returns the boolean value A unchanged.\",\n      \"source_code\": \"class BUFFER(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        return A\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"IMPLIES\",\n      \"description\": \"Boolean implication: false only when A is true and B is false.\",\n      \"source_code\": \"class IMPLIES(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        return (not A) or B\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"SELECT\",\n      \"description\": \"Boolean selector: when S is true return A, otherwise return B.\",\n      \"source_code\": \"class SELECT(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        S = inputs[\\\"S\\\"]\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        if S:\\n            return A\\n        else:\\n            return B\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"DECISION_ABCD\",\n      \"description\": \"Returns (A OR B) AND C AND NOT D.\",\n      \"source_code\": \"class DECISION_ABCD(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        C = inputs[\\\"C\\\"]\\n        D = inputs[\\\"D\\\"]\\n        return (A or B) and C and (not D)\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    }\n  ]\n}"
+            }
+          },
+          "status": "UNREVIEWED_SIMULATION_DESIGN"
+        },
+        "standard_id": "NAND",
+        "logic_rule": {
+          "expression": "NAND (A ,B )",
+          "tree": {
+            "operator": "NAND",
+            "operands": [
+              {
+                "input": "A"
+              },
+              {
+                "input": "B"
+              }
+            ]
+          },
+          "inputs": [
+            "A",
+            "B"
+          ],
+          "output_type": "boolean",
+          "stateful": false
+        },
+        "verification_cases": [
+          {
+            "name": "NAND complete truth table",
+            "source": "NIS independent Boolean requirements; explicit grouped example",
+            "steps": [
+              {
+                "inputs": {
+                  "A": false,
+                  "B": false
+                },
+                "expected": true,
+                "dt_s": 0.0
+              },
+              {
+                "inputs": {
+                  "A": false,
+                  "B": true
+                },
+                "expected": true,
+                "dt_s": 0.0
+              },
+              {
+                "inputs": {
+                  "A": true,
+                  "B": false
+                },
+                "expected": true,
+                "dt_s": 0.0
+              },
+              {
+                "inputs": {
+                  "A": true,
+                  "B": true
+                },
+                "expected": false,
+                "dt_s": 0.0
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "NOR",
+      "input_types": {
+        "A": "boolean",
+        "B": "boolean"
+      },
+      "definition": {
+        "name": "NOR",
+        "description": "Returns the negation of the inclusive disjunction of A and B.",
+        "source_code": "class NOR(FunctionBlock):\n    def step(self, inputs, parameters, dt):\n        A = inputs[\"A\"]\n        B = inputs[\"B\"]\n        return not (A or B)",
+        "parameter_schema": {},
+        "parameter_relations": [],
+        "source_sha256": "d7b9f07411ba3b0bf0c160be3760bc22736f1ce24a7003c0010024ce35ee428e",
+        "provenance": {
+          "provider": "ollama-local",
+          "model": "qwen3.8:27b",
+          "model_digest": "22130167c4c20e20c7b71454612966ca8e8171e9b3cc8ab6ce8aa6cbfec79643",
+          "generated_by": "QWEN",
+          "request_sha256": "9e010a512d851e0c5d6f4857d62dc919eda8a3d0fd9c342feca68f328c4b1358",
+          "request": {
+            "model": "qwen3.8:27b",
+            "messages": [
+              {
+                "role": "user",
+                "content": "Create each executable standard block yourself from these specifications. All inputs are BOOLEAN. {\"AND\": {\"inputs\": [\"A\", \"B\"], \"requirement\": \"Return boolean conjunction of A and B.\"}, \"OR\": {\"inputs\": [\"A\", \"B\"], \"requirement\": \"Return boolean inclusive disjunction of A and B.\"}, \"XOR\": {\"inputs\": [\"A\", \"B\"], \"requirement\": \"Return true iff exactly one of A and B is true.\"}, \"NOT\": {\"inputs\": [\"A\"], \"requirement\": \"Return the boolean negation of A.\"}, \"NAND\": {\"inputs\": [\"A\", \"B\"], \"requirement\": \"Return the negation of the conjunction of A and B.\"}, \"NOR\": {\"inputs\": [\"A\", \"B\"], \"requirement\": \"Return the negation of the inclusive disjunction of A and B.\"}, \"XNOR\": {\"inputs\": [\"A\", \"B\"], \"requirement\": \"Return true iff A and B have the same boolean value.\"}, \"BUFFER\": {\"inputs\": [\"A\"], \"requirement\": \"Return the boolean value A unchanged.\"}, \"IMPLIES\": {\"inputs\": [\"A\", \"B\"], \"requirement\": \"Boolean implication: false only when A is true and B is false.\"}, \"SELECT\": {\"inputs\": [\"S\", \"A\", \"B\"], \"requirement\": \"Boolean selector: when S is true return A, otherwise return B.\"}, \"DECISION_ABCD\": {\"inputs\": [\"A\", \"B\", \"C\", \"D\"], \"requirement\": \"Return (A OR B) AND C AND NOT D. This exact grouping is mandatory.\"}}\nReturn one JSON object {\"blocks\":[...]}. Each block has name (exact ID), description, source_code, parameter_schema {}, parameter_relations []. No parameters or persistent state for these stateless Boolean decisions. Code is one class inheriting FunctionBlock, one step(self, inputs, parameters, dt) method, no annotations. Use literal input dictionary keys exactly as specified and return a boolean. Allowed Boolean operators and/or/not and comparisons == != < <= > >= in not in. For XOR use Boolean comparison, never ^. Forbidden identity operators is/is not. No imports, loops, list/dict construction, function calls, decorators, builtins, arbitrary attributes, eval/exec, helper methods. Only local assignments, if/else, return, dictionary subscript and simple Boolean operators. Do not create tests, truth tables, validation claims or physical/safety claims. Do not change the requested definitions."
+              }
+            ],
+            "think": false,
+            "stream": true,
+            "format": "json",
+            "keep_alive": "10m",
+            "options": {
+              "temperature": 0,
+              "num_ctx": 8192,
+              "num_predict": 4500
+            }
+          },
+          "response": {
+            "model": "qwen3.8:27b",
+            "done": true,
+            "message": {
+              "content": "{\n  \"blocks\": [\n    {\n      \"name\": \"AND\",\n      \"description\": \"Returns the boolean conjunction of inputs A and B.\",\n      \"source_code\": \"class AND(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        return A and B\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"OR\",\n      \"description\": \"Returns the boolean inclusive disjunction of inputs A and B.\",\n      \"source_code\": \"class OR(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        return A or B\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"XOR\",\n      \"description\": \"Returns true iff exactly one of A and B is true.\",\n      \"source_code\": \"class XOR(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        return A != B\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"NOT\",\n      \"description\": \"Returns the boolean negation of input A.\",\n      \"source_code\": \"class NOT(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        return not A\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"NAND\",\n      \"description\": \"Returns the negation of the conjunction of A and B.\",\n      \"source_code\": \"class NAND(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        return not (A and B)\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"NOR\",\n      \"description\": \"Returns the negation of the inclusive disjunction of A and B.\",\n      \"source_code\": \"class NOR(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        return not (A or B)\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"XNOR\",\n      \"description\": \"Returns true iff A and B have the same boolean value.\",\n      \"source_code\": \"class XNOR(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        return A == B\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"BUFFER\",\n      \"description\": \"Returns the boolean value A unchanged.\",\n      \"source_code\": \"class BUFFER(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        return A\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"IMPLIES\",\n      \"description\": \"Boolean implication: false only when A is true and B is false.\",\n      \"source_code\": \"class IMPLIES(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        return (not A) or B\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"SELECT\",\n      \"description\": \"Boolean selector: when S is true return A, otherwise return B.\",\n      \"source_code\": \"class SELECT(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        S = inputs[\\\"S\\\"]\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        if S:\\n            return A\\n        else:\\n            return B\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"DECISION_ABCD\",\n      \"description\": \"Returns (A OR B) AND C AND NOT D.\",\n      \"source_code\": \"class DECISION_ABCD(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        C = inputs[\\\"C\\\"]\\n        D = inputs[\\\"D\\\"]\\n        return (A or B) and C and (not D)\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    }\n  ]\n}"
+            }
+          },
+          "status": "UNREVIEWED_SIMULATION_DESIGN"
+        },
+        "standard_id": "NOR",
+        "logic_rule": {
+          "expression": "NOR (A ,B )",
+          "tree": {
+            "operator": "NOR",
+            "operands": [
+              {
+                "input": "A"
+              },
+              {
+                "input": "B"
+              }
+            ]
+          },
+          "inputs": [
+            "A",
+            "B"
+          ],
+          "output_type": "boolean",
+          "stateful": false
+        },
+        "verification_cases": [
+          {
+            "name": "NOR complete truth table",
+            "source": "NIS independent Boolean requirements; explicit grouped example",
+            "steps": [
+              {
+                "inputs": {
+                  "A": false,
+                  "B": false
+                },
+                "expected": true,
+                "dt_s": 0.0
+              },
+              {
+                "inputs": {
+                  "A": false,
+                  "B": true
+                },
+                "expected": false,
+                "dt_s": 0.0
+              },
+              {
+                "inputs": {
+                  "A": true,
+                  "B": false
+                },
+                "expected": false,
+                "dt_s": 0.0
+              },
+              {
+                "inputs": {
+                  "A": true,
+                  "B": true
+                },
+                "expected": false,
+                "dt_s": 0.0
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "XNOR",
+      "input_types": {
+        "A": "boolean",
+        "B": "boolean"
+      },
+      "definition": {
+        "name": "XNOR",
+        "description": "Returns true iff A and B have the same boolean value.",
+        "source_code": "class XNOR(FunctionBlock):\n    def step(self, inputs, parameters, dt):\n        A = inputs[\"A\"]\n        B = inputs[\"B\"]\n        return A == B",
+        "parameter_schema": {},
+        "parameter_relations": [],
+        "source_sha256": "fc813d503920ba6fdf6fb703bc454a1235ec99dd4747d1b6b1f9fce623ed67f4",
+        "provenance": {
+          "provider": "ollama-local",
+          "model": "qwen3.8:27b",
+          "model_digest": "22130167c4c20e20c7b71454612966ca8e8171e9b3cc8ab6ce8aa6cbfec79643",
+          "generated_by": "QWEN",
+          "request_sha256": "9e010a512d851e0c5d6f4857d62dc919eda8a3d0fd9c342feca68f328c4b1358",
+          "request": {
+            "model": "qwen3.8:27b",
+            "messages": [
+              {
+                "role": "user",
+                "content": "Create each executable standard block yourself from these specifications. All inputs are BOOLEAN. {\"AND\": {\"inputs\": [\"A\", \"B\"], \"requirement\": \"Return boolean conjunction of A and B.\"}, \"OR\": {\"inputs\": [\"A\", \"B\"], \"requirement\": \"Return boolean inclusive disjunction of A and B.\"}, \"XOR\": {\"inputs\": [\"A\", \"B\"], \"requirement\": \"Return true iff exactly one of A and B is true.\"}, \"NOT\": {\"inputs\": [\"A\"], \"requirement\": \"Return the boolean negation of A.\"}, \"NAND\": {\"inputs\": [\"A\", \"B\"], \"requirement\": \"Return the negation of the conjunction of A and B.\"}, \"NOR\": {\"inputs\": [\"A\", \"B\"], \"requirement\": \"Return the negation of the inclusive disjunction of A and B.\"}, \"XNOR\": {\"inputs\": [\"A\", \"B\"], \"requirement\": \"Return true iff A and B have the same boolean value.\"}, \"BUFFER\": {\"inputs\": [\"A\"], \"requirement\": \"Return the boolean value A unchanged.\"}, \"IMPLIES\": {\"inputs\": [\"A\", \"B\"], \"requirement\": \"Boolean implication: false only when A is true and B is false.\"}, \"SELECT\": {\"inputs\": [\"S\", \"A\", \"B\"], \"requirement\": \"Boolean selector: when S is true return A, otherwise return B.\"}, \"DECISION_ABCD\": {\"inputs\": [\"A\", \"B\", \"C\", \"D\"], \"requirement\": \"Return (A OR B) AND C AND NOT D. This exact grouping is mandatory.\"}}\nReturn one JSON object {\"blocks\":[...]}. Each block has name (exact ID), description, source_code, parameter_schema {}, parameter_relations []. No parameters or persistent state for these stateless Boolean decisions. Code is one class inheriting FunctionBlock, one step(self, inputs, parameters, dt) method, no annotations. Use literal input dictionary keys exactly as specified and return a boolean. Allowed Boolean operators and/or/not and comparisons == != < <= > >= in not in. For XOR use Boolean comparison, never ^. Forbidden identity operators is/is not. No imports, loops, list/dict construction, function calls, decorators, builtins, arbitrary attributes, eval/exec, helper methods. Only local assignments, if/else, return, dictionary subscript and simple Boolean operators. Do not create tests, truth tables, validation claims or physical/safety claims. Do not change the requested definitions."
+              }
+            ],
+            "think": false,
+            "stream": true,
+            "format": "json",
+            "keep_alive": "10m",
+            "options": {
+              "temperature": 0,
+              "num_ctx": 8192,
+              "num_predict": 4500
+            }
+          },
+          "response": {
+            "model": "qwen3.8:27b",
+            "done": true,
+            "message": {
+              "content": "{\n  \"blocks\": [\n    {\n      \"name\": \"AND\",\n      \"description\": \"Returns the boolean conjunction of inputs A and B.\",\n      \"source_code\": \"class AND(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        return A and B\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"OR\",\n      \"description\": \"Returns the boolean inclusive disjunction of inputs A and B.\",\n      \"source_code\": \"class OR(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        return A or B\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"XOR\",\n      \"description\": \"Returns true iff exactly one of A and B is true.\",\n      \"source_code\": \"class XOR(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        return A != B\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"NOT\",\n      \"description\": \"Returns the boolean negation of input A.\",\n      \"source_code\": \"class NOT(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        return not A\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"NAND\",\n      \"description\": \"Returns the negation of the conjunction of A and B.\",\n      \"source_code\": \"class NAND(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        return not (A and B)\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"NOR\",\n      \"description\": \"Returns the negation of the inclusive disjunction of A and B.\",\n      \"source_code\": \"class NOR(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        return not (A or B)\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"XNOR\",\n      \"description\": \"Returns true iff A and B have the same boolean value.\",\n      \"source_code\": \"class XNOR(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        return A == B\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"BUFFER\",\n      \"description\": \"Returns the boolean value A unchanged.\",\n      \"source_code\": \"class BUFFER(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        return A\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"IMPLIES\",\n      \"description\": \"Boolean implication: false only when A is true and B is false.\",\n      \"source_code\": \"class IMPLIES(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        return (not A) or B\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"SELECT\",\n      \"description\": \"Boolean selector: when S is true return A, otherwise return B.\",\n      \"source_code\": \"class SELECT(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        S = inputs[\\\"S\\\"]\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        if S:\\n            return A\\n        else:\\n            return B\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"DECISION_ABCD\",\n      \"description\": \"Returns (A OR B) AND C AND NOT D.\",\n      \"source_code\": \"class DECISION_ABCD(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        C = inputs[\\\"C\\\"]\\n        D = inputs[\\\"D\\\"]\\n        return (A or B) and C and (not D)\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    }\n  ]\n}"
+            }
+          },
+          "status": "UNREVIEWED_SIMULATION_DESIGN"
+        },
+        "standard_id": "XNOR",
+        "logic_rule": {
+          "expression": "XNOR (A ,B )",
+          "tree": {
+            "operator": "XNOR",
+            "operands": [
+              {
+                "input": "A"
+              },
+              {
+                "input": "B"
+              }
+            ]
+          },
+          "inputs": [
+            "A",
+            "B"
+          ],
+          "output_type": "boolean",
+          "stateful": false
+        },
+        "verification_cases": [
+          {
+            "name": "XNOR complete truth table",
+            "source": "NIS independent Boolean requirements; explicit grouped example",
+            "steps": [
+              {
+                "inputs": {
+                  "A": false,
+                  "B": false
+                },
+                "expected": true,
+                "dt_s": 0.0
+              },
+              {
+                "inputs": {
+                  "A": false,
+                  "B": true
+                },
+                "expected": false,
+                "dt_s": 0.0
+              },
+              {
+                "inputs": {
+                  "A": true,
+                  "B": false
+                },
+                "expected": false,
+                "dt_s": 0.0
+              },
+              {
+                "inputs": {
+                  "A": true,
+                  "B": true
+                },
+                "expected": true,
+                "dt_s": 0.0
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "BUFFER",
+      "input_types": {
+        "A": "boolean"
+      },
+      "definition": {
+        "name": "BUFFER",
+        "description": "Returns the boolean value A unchanged.",
+        "source_code": "class BUFFER(FunctionBlock):\n    def step(self, inputs, parameters, dt):\n        A = inputs[\"A\"]\n        return A",
+        "parameter_schema": {},
+        "parameter_relations": [],
+        "source_sha256": "b703b05cb70fdcfe5a7e0d4218a978619953965e7a1dd8426d8ee6a5357f02fa",
+        "provenance": {
+          "provider": "ollama-local",
+          "model": "qwen3.8:27b",
+          "model_digest": "22130167c4c20e20c7b71454612966ca8e8171e9b3cc8ab6ce8aa6cbfec79643",
+          "generated_by": "QWEN",
+          "request_sha256": "9e010a512d851e0c5d6f4857d62dc919eda8a3d0fd9c342feca68f328c4b1358",
+          "request": {
+            "model": "qwen3.8:27b",
+            "messages": [
+              {
+                "role": "user",
+                "content": "Create each executable standard block yourself from these specifications. All inputs are BOOLEAN. {\"AND\": {\"inputs\": [\"A\", \"B\"], \"requirement\": \"Return boolean conjunction of A and B.\"}, \"OR\": {\"inputs\": [\"A\", \"B\"], \"requirement\": \"Return boolean inclusive disjunction of A and B.\"}, \"XOR\": {\"inputs\": [\"A\", \"B\"], \"requirement\": \"Return true iff exactly one of A and B is true.\"}, \"NOT\": {\"inputs\": [\"A\"], \"requirement\": \"Return the boolean negation of A.\"}, \"NAND\": {\"inputs\": [\"A\", \"B\"], \"requirement\": \"Return the negation of the conjunction of A and B.\"}, \"NOR\": {\"inputs\": [\"A\", \"B\"], \"requirement\": \"Return the negation of the inclusive disjunction of A and B.\"}, \"XNOR\": {\"inputs\": [\"A\", \"B\"], \"requirement\": \"Return true iff A and B have the same boolean value.\"}, \"BUFFER\": {\"inputs\": [\"A\"], \"requirement\": \"Return the boolean value A unchanged.\"}, \"IMPLIES\": {\"inputs\": [\"A\", \"B\"], \"requirement\": \"Boolean implication: false only when A is true and B is false.\"}, \"SELECT\": {\"inputs\": [\"S\", \"A\", \"B\"], \"requirement\": \"Boolean selector: when S is true return A, otherwise return B.\"}, \"DECISION_ABCD\": {\"inputs\": [\"A\", \"B\", \"C\", \"D\"], \"requirement\": \"Return (A OR B) AND C AND NOT D. This exact grouping is mandatory.\"}}\nReturn one JSON object {\"blocks\":[...]}. Each block has name (exact ID), description, source_code, parameter_schema {}, parameter_relations []. No parameters or persistent state for these stateless Boolean decisions. Code is one class inheriting FunctionBlock, one step(self, inputs, parameters, dt) method, no annotations. Use literal input dictionary keys exactly as specified and return a boolean. Allowed Boolean operators and/or/not and comparisons == != < <= > >= in not in. For XOR use Boolean comparison, never ^. Forbidden identity operators is/is not. No imports, loops, list/dict construction, function calls, decorators, builtins, arbitrary attributes, eval/exec, helper methods. Only local assignments, if/else, return, dictionary subscript and simple Boolean operators. Do not create tests, truth tables, validation claims or physical/safety claims. Do not change the requested definitions."
+              }
+            ],
+            "think": false,
+            "stream": true,
+            "format": "json",
+            "keep_alive": "10m",
+            "options": {
+              "temperature": 0,
+              "num_ctx": 8192,
+              "num_predict": 4500
+            }
+          },
+          "response": {
+            "model": "qwen3.8:27b",
+            "done": true,
+            "message": {
+              "content": "{\n  \"blocks\": [\n    {\n      \"name\": \"AND\",\n      \"description\": \"Returns the boolean conjunction of inputs A and B.\",\n      \"source_code\": \"class AND(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        return A and B\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"OR\",\n      \"description\": \"Returns the boolean inclusive disjunction of inputs A and B.\",\n      \"source_code\": \"class OR(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        return A or B\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"XOR\",\n      \"description\": \"Returns true iff exactly one of A and B is true.\",\n      \"source_code\": \"class XOR(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        return A != B\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"NOT\",\n      \"description\": \"Returns the boolean negation of input A.\",\n      \"source_code\": \"class NOT(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        return not A\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"NAND\",\n      \"description\": \"Returns the negation of the conjunction of A and B.\",\n      \"source_code\": \"class NAND(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        return not (A and B)\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"NOR\",\n      \"description\": \"Returns the negation of the inclusive disjunction of A and B.\",\n      \"source_code\": \"class NOR(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        return not (A or B)\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"XNOR\",\n      \"description\": \"Returns true iff A and B have the same boolean value.\",\n      \"source_code\": \"class XNOR(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        return A == B\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"BUFFER\",\n      \"description\": \"Returns the boolean value A unchanged.\",\n      \"source_code\": \"class BUFFER(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        return A\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"IMPLIES\",\n      \"description\": \"Boolean implication: false only when A is true and B is false.\",\n      \"source_code\": \"class IMPLIES(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        return (not A) or B\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"SELECT\",\n      \"description\": \"Boolean selector: when S is true return A, otherwise return B.\",\n      \"source_code\": \"class SELECT(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        S = inputs[\\\"S\\\"]\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        if S:\\n            return A\\n        else:\\n            return B\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"DECISION_ABCD\",\n      \"description\": \"Returns (A OR B) AND C AND NOT D.\",\n      \"source_code\": \"class DECISION_ABCD(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        C = inputs[\\\"C\\\"]\\n        D = inputs[\\\"D\\\"]\\n        return (A or B) and C and (not D)\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    }\n  ]\n}"
+            }
+          },
+          "status": "UNREVIEWED_SIMULATION_DESIGN"
+        },
+        "standard_id": "BUFFER",
+        "logic_rule": {
+          "expression": "A",
+          "tree": {
+            "input": "A"
+          },
+          "inputs": [
+            "A"
+          ],
+          "output_type": "boolean",
+          "stateful": false
+        },
+        "verification_cases": [
+          {
+            "name": "BUFFER complete truth table",
+            "source": "NIS independent Boolean requirements; explicit grouped example",
+            "steps": [
+              {
+                "inputs": {
+                  "A": false
+                },
+                "expected": false,
+                "dt_s": 0.0
+              },
+              {
+                "inputs": {
+                  "A": true
+                },
+                "expected": true,
+                "dt_s": 0.0
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "IMPLIES",
+      "input_types": {
+        "A": "boolean",
+        "B": "boolean"
+      },
+      "definition": {
+        "name": "IMPLIES",
+        "description": "Boolean implication: false only when A is true and B is false.",
+        "source_code": "class IMPLIES(FunctionBlock):\n    def step(self, inputs, parameters, dt):\n        A = inputs[\"A\"]\n        B = inputs[\"B\"]\n        return (not A) or B",
+        "parameter_schema": {},
+        "parameter_relations": [],
+        "source_sha256": "24d7f27ac03fd5505b7c277e81d55c0800c131a867ac09bf1b00b1aa833474b6",
+        "provenance": {
+          "provider": "ollama-local",
+          "model": "qwen3.8:27b",
+          "model_digest": "22130167c4c20e20c7b71454612966ca8e8171e9b3cc8ab6ce8aa6cbfec79643",
+          "generated_by": "QWEN",
+          "request_sha256": "9e010a512d851e0c5d6f4857d62dc919eda8a3d0fd9c342feca68f328c4b1358",
+          "request": {
+            "model": "qwen3.8:27b",
+            "messages": [
+              {
+                "role": "user",
+                "content": "Create each executable standard block yourself from these specifications. All inputs are BOOLEAN. {\"AND\": {\"inputs\": [\"A\", \"B\"], \"requirement\": \"Return boolean conjunction of A and B.\"}, \"OR\": {\"inputs\": [\"A\", \"B\"], \"requirement\": \"Return boolean inclusive disjunction of A and B.\"}, \"XOR\": {\"inputs\": [\"A\", \"B\"], \"requirement\": \"Return true iff exactly one of A and B is true.\"}, \"NOT\": {\"inputs\": [\"A\"], \"requirement\": \"Return the boolean negation of A.\"}, \"NAND\": {\"inputs\": [\"A\", \"B\"], \"requirement\": \"Return the negation of the conjunction of A and B.\"}, \"NOR\": {\"inputs\": [\"A\", \"B\"], \"requirement\": \"Return the negation of the inclusive disjunction of A and B.\"}, \"XNOR\": {\"inputs\": [\"A\", \"B\"], \"requirement\": \"Return true iff A and B have the same boolean value.\"}, \"BUFFER\": {\"inputs\": [\"A\"], \"requirement\": \"Return the boolean value A unchanged.\"}, \"IMPLIES\": {\"inputs\": [\"A\", \"B\"], \"requirement\": \"Boolean implication: false only when A is true and B is false.\"}, \"SELECT\": {\"inputs\": [\"S\", \"A\", \"B\"], \"requirement\": \"Boolean selector: when S is true return A, otherwise return B.\"}, \"DECISION_ABCD\": {\"inputs\": [\"A\", \"B\", \"C\", \"D\"], \"requirement\": \"Return (A OR B) AND C AND NOT D. This exact grouping is mandatory.\"}}\nReturn one JSON object {\"blocks\":[...]}. Each block has name (exact ID), description, source_code, parameter_schema {}, parameter_relations []. No parameters or persistent state for these stateless Boolean decisions. Code is one class inheriting FunctionBlock, one step(self, inputs, parameters, dt) method, no annotations. Use literal input dictionary keys exactly as specified and return a boolean. Allowed Boolean operators and/or/not and comparisons == != < <= > >= in not in. For XOR use Boolean comparison, never ^. Forbidden identity operators is/is not. No imports, loops, list/dict construction, function calls, decorators, builtins, arbitrary attributes, eval/exec, helper methods. Only local assignments, if/else, return, dictionary subscript and simple Boolean operators. Do not create tests, truth tables, validation claims or physical/safety claims. Do not change the requested definitions."
+              }
+            ],
+            "think": false,
+            "stream": true,
+            "format": "json",
+            "keep_alive": "10m",
+            "options": {
+              "temperature": 0,
+              "num_ctx": 8192,
+              "num_predict": 4500
+            }
+          },
+          "response": {
+            "model": "qwen3.8:27b",
+            "done": true,
+            "message": {
+              "content": "{\n  \"blocks\": [\n    {\n      \"name\": \"AND\",\n      \"description\": \"Returns the boolean conjunction of inputs A and B.\",\n      \"source_code\": \"class AND(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        return A and B\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"OR\",\n      \"description\": \"Returns the boolean inclusive disjunction of inputs A and B.\",\n      \"source_code\": \"class OR(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        return A or B\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"XOR\",\n      \"description\": \"Returns true iff exactly one of A and B is true.\",\n      \"source_code\": \"class XOR(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        return A != B\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"NOT\",\n      \"description\": \"Returns the boolean negation of input A.\",\n      \"source_code\": \"class NOT(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        return not A\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"NAND\",\n      \"description\": \"Returns the negation of the conjunction of A and B.\",\n      \"source_code\": \"class NAND(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        return not (A and B)\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"NOR\",\n      \"description\": \"Returns the negation of the inclusive disjunction of A and B.\",\n      \"source_code\": \"class NOR(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        return not (A or B)\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"XNOR\",\n      \"description\": \"Returns true iff A and B have the same boolean value.\",\n      \"source_code\": \"class XNOR(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        return A == B\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"BUFFER\",\n      \"description\": \"Returns the boolean value A unchanged.\",\n      \"source_code\": \"class BUFFER(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        return A\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"IMPLIES\",\n      \"description\": \"Boolean implication: false only when A is true and B is false.\",\n      \"source_code\": \"class IMPLIES(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        return (not A) or B\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"SELECT\",\n      \"description\": \"Boolean selector: when S is true return A, otherwise return B.\",\n      \"source_code\": \"class SELECT(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        S = inputs[\\\"S\\\"]\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        if S:\\n            return A\\n        else:\\n            return B\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"DECISION_ABCD\",\n      \"description\": \"Returns (A OR B) AND C AND NOT D.\",\n      \"source_code\": \"class DECISION_ABCD(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        C = inputs[\\\"C\\\"]\\n        D = inputs[\\\"D\\\"]\\n        return (A or B) and C and (not D)\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    }\n  ]\n}"
+            }
+          },
+          "status": "UNREVIEWED_SIMULATION_DESIGN"
+        },
+        "standard_id": "IMPLIES",
+        "logic_rule": {
+          "expression": "IMPLIES (A ,B )",
+          "tree": {
+            "operator": "IMPLIES",
+            "operands": [
+              {
+                "input": "A"
+              },
+              {
+                "input": "B"
+              }
+            ]
+          },
+          "inputs": [
+            "A",
+            "B"
+          ],
+          "output_type": "boolean",
+          "stateful": false
+        },
+        "verification_cases": [
+          {
+            "name": "IMPLIES complete truth table",
+            "source": "NIS independent Boolean requirements; explicit grouped example",
+            "steps": [
+              {
+                "inputs": {
+                  "A": false,
+                  "B": false
+                },
+                "expected": true,
+                "dt_s": 0.0
+              },
+              {
+                "inputs": {
+                  "A": false,
+                  "B": true
+                },
+                "expected": true,
+                "dt_s": 0.0
+              },
+              {
+                "inputs": {
+                  "A": true,
+                  "B": false
+                },
+                "expected": false,
+                "dt_s": 0.0
+              },
+              {
+                "inputs": {
+                  "A": true,
+                  "B": true
+                },
+                "expected": true,
+                "dt_s": 0.0
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "SELECT",
+      "input_types": {
+        "S": "boolean",
+        "A": "boolean",
+        "B": "boolean"
+      },
+      "definition": {
+        "name": "SELECT",
+        "description": "Boolean selector: when S is true return A, otherwise return B.",
+        "source_code": "class SELECT(FunctionBlock):\n    def step(self, inputs, parameters, dt):\n        S = inputs[\"S\"]\n        A = inputs[\"A\"]\n        B = inputs[\"B\"]\n        if S:\n            return A\n        else:\n            return B",
+        "parameter_schema": {},
+        "parameter_relations": [],
+        "source_sha256": "a73c7c71183c9a983617f3b8dc2c692b9c6cecaebdbde001e98f522ba011f9ce",
+        "provenance": {
+          "provider": "ollama-local",
+          "model": "qwen3.8:27b",
+          "model_digest": "22130167c4c20e20c7b71454612966ca8e8171e9b3cc8ab6ce8aa6cbfec79643",
+          "generated_by": "QWEN",
+          "request_sha256": "9e010a512d851e0c5d6f4857d62dc919eda8a3d0fd9c342feca68f328c4b1358",
+          "request": {
+            "model": "qwen3.8:27b",
+            "messages": [
+              {
+                "role": "user",
+                "content": "Create each executable standard block yourself from these specifications. All inputs are BOOLEAN. {\"AND\": {\"inputs\": [\"A\", \"B\"], \"requirement\": \"Return boolean conjunction of A and B.\"}, \"OR\": {\"inputs\": [\"A\", \"B\"], \"requirement\": \"Return boolean inclusive disjunction of A and B.\"}, \"XOR\": {\"inputs\": [\"A\", \"B\"], \"requirement\": \"Return true iff exactly one of A and B is true.\"}, \"NOT\": {\"inputs\": [\"A\"], \"requirement\": \"Return the boolean negation of A.\"}, \"NAND\": {\"inputs\": [\"A\", \"B\"], \"requirement\": \"Return the negation of the conjunction of A and B.\"}, \"NOR\": {\"inputs\": [\"A\", \"B\"], \"requirement\": \"Return the negation of the inclusive disjunction of A and B.\"}, \"XNOR\": {\"inputs\": [\"A\", \"B\"], \"requirement\": \"Return true iff A and B have the same boolean value.\"}, \"BUFFER\": {\"inputs\": [\"A\"], \"requirement\": \"Return the boolean value A unchanged.\"}, \"IMPLIES\": {\"inputs\": [\"A\", \"B\"], \"requirement\": \"Boolean implication: false only when A is true and B is false.\"}, \"SELECT\": {\"inputs\": [\"S\", \"A\", \"B\"], \"requirement\": \"Boolean selector: when S is true return A, otherwise return B.\"}, \"DECISION_ABCD\": {\"inputs\": [\"A\", \"B\", \"C\", \"D\"], \"requirement\": \"Return (A OR B) AND C AND NOT D. This exact grouping is mandatory.\"}}\nReturn one JSON object {\"blocks\":[...]}. Each block has name (exact ID), description, source_code, parameter_schema {}, parameter_relations []. No parameters or persistent state for these stateless Boolean decisions. Code is one class inheriting FunctionBlock, one step(self, inputs, parameters, dt) method, no annotations. Use literal input dictionary keys exactly as specified and return a boolean. Allowed Boolean operators and/or/not and comparisons == != < <= > >= in not in. For XOR use Boolean comparison, never ^. Forbidden identity operators is/is not. No imports, loops, list/dict construction, function calls, decorators, builtins, arbitrary attributes, eval/exec, helper methods. Only local assignments, if/else, return, dictionary subscript and simple Boolean operators. Do not create tests, truth tables, validation claims or physical/safety claims. Do not change the requested definitions."
+              }
+            ],
+            "think": false,
+            "stream": true,
+            "format": "json",
+            "keep_alive": "10m",
+            "options": {
+              "temperature": 0,
+              "num_ctx": 8192,
+              "num_predict": 4500
+            }
+          },
+          "response": {
+            "model": "qwen3.8:27b",
+            "done": true,
+            "message": {
+              "content": "{\n  \"blocks\": [\n    {\n      \"name\": \"AND\",\n      \"description\": \"Returns the boolean conjunction of inputs A and B.\",\n      \"source_code\": \"class AND(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        return A and B\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"OR\",\n      \"description\": \"Returns the boolean inclusive disjunction of inputs A and B.\",\n      \"source_code\": \"class OR(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        return A or B\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"XOR\",\n      \"description\": \"Returns true iff exactly one of A and B is true.\",\n      \"source_code\": \"class XOR(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        return A != B\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"NOT\",\n      \"description\": \"Returns the boolean negation of input A.\",\n      \"source_code\": \"class NOT(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        return not A\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"NAND\",\n      \"description\": \"Returns the negation of the conjunction of A and B.\",\n      \"source_code\": \"class NAND(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        return not (A and B)\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"NOR\",\n      \"description\": \"Returns the negation of the inclusive disjunction of A and B.\",\n      \"source_code\": \"class NOR(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        return not (A or B)\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"XNOR\",\n      \"description\": \"Returns true iff A and B have the same boolean value.\",\n      \"source_code\": \"class XNOR(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        return A == B\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"BUFFER\",\n      \"description\": \"Returns the boolean value A unchanged.\",\n      \"source_code\": \"class BUFFER(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        return A\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"IMPLIES\",\n      \"description\": \"Boolean implication: false only when A is true and B is false.\",\n      \"source_code\": \"class IMPLIES(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        return (not A) or B\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"SELECT\",\n      \"description\": \"Boolean selector: when S is true return A, otherwise return B.\",\n      \"source_code\": \"class SELECT(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        S = inputs[\\\"S\\\"]\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        if S:\\n            return A\\n        else:\\n            return B\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"DECISION_ABCD\",\n      \"description\": \"Returns (A OR B) AND C AND NOT D.\",\n      \"source_code\": \"class DECISION_ABCD(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        C = inputs[\\\"C\\\"]\\n        D = inputs[\\\"D\\\"]\\n        return (A or B) and C and (not D)\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    }\n  ]\n}"
+            }
+          },
+          "status": "UNREVIEWED_SIMULATION_DESIGN"
+        },
+        "standard_id": "SELECT",
+        "logic_rule": {
+          "expression": "SELECT (S ,A ,B )",
+          "tree": {
+            "operator": "SELECT",
+            "operands": [
+              {
+                "input": "S"
+              },
+              {
+                "input": "A"
+              },
+              {
+                "input": "B"
+              }
+            ]
+          },
+          "inputs": [
+            "A",
+            "B",
+            "S"
+          ],
+          "output_type": "boolean",
+          "stateful": false
+        },
+        "verification_cases": [
+          {
+            "name": "SELECT complete truth table",
+            "source": "NIS independent Boolean requirements; explicit grouped example",
+            "steps": [
+              {
+                "inputs": {
+                  "S": false,
+                  "A": false,
+                  "B": false
+                },
+                "expected": false,
+                "dt_s": 0.0
+              },
+              {
+                "inputs": {
+                  "S": false,
+                  "A": false,
+                  "B": true
+                },
+                "expected": true,
+                "dt_s": 0.0
+              },
+              {
+                "inputs": {
+                  "S": false,
+                  "A": true,
+                  "B": false
+                },
+                "expected": false,
+                "dt_s": 0.0
+              },
+              {
+                "inputs": {
+                  "S": false,
+                  "A": true,
+                  "B": true
+                },
+                "expected": true,
+                "dt_s": 0.0
+              },
+              {
+                "inputs": {
+                  "S": true,
+                  "A": false,
+                  "B": false
+                },
+                "expected": false,
+                "dt_s": 0.0
+              },
+              {
+                "inputs": {
+                  "S": true,
+                  "A": false,
+                  "B": true
+                },
+                "expected": false,
+                "dt_s": 0.0
+              },
+              {
+                "inputs": {
+                  "S": true,
+                  "A": true,
+                  "B": false
+                },
+                "expected": true,
+                "dt_s": 0.0
+              },
+              {
+                "inputs": {
+                  "S": true,
+                  "A": true,
+                  "B": true
+                },
+                "expected": true,
+                "dt_s": 0.0
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "DECISION_ABCD",
+      "input_types": {
+        "A": "boolean",
+        "B": "boolean",
+        "C": "boolean",
+        "D": "boolean"
+      },
+      "definition": {
+        "name": "DECISION_ABCD",
+        "description": "Returns (A OR B) AND C AND NOT D.",
+        "source_code": "class DECISION_ABCD(FunctionBlock):\n    def step(self, inputs, parameters, dt):\n        A = inputs[\"A\"]\n        B = inputs[\"B\"]\n        C = inputs[\"C\"]\n        D = inputs[\"D\"]\n        return (A or B) and C and (not D)",
+        "parameter_schema": {},
+        "parameter_relations": [],
+        "source_sha256": "dd374597883bd6c8a1a3a0ff95b5f4bb38511c952f1dd124aece1fabc7e3007d",
+        "provenance": {
+          "provider": "ollama-local",
+          "model": "qwen3.8:27b",
+          "model_digest": "22130167c4c20e20c7b71454612966ca8e8171e9b3cc8ab6ce8aa6cbfec79643",
+          "generated_by": "QWEN",
+          "request_sha256": "9e010a512d851e0c5d6f4857d62dc919eda8a3d0fd9c342feca68f328c4b1358",
+          "request": {
+            "model": "qwen3.8:27b",
+            "messages": [
+              {
+                "role": "user",
+                "content": "Create each executable standard block yourself from these specifications. All inputs are BOOLEAN. {\"AND\": {\"inputs\": [\"A\", \"B\"], \"requirement\": \"Return boolean conjunction of A and B.\"}, \"OR\": {\"inputs\": [\"A\", \"B\"], \"requirement\": \"Return boolean inclusive disjunction of A and B.\"}, \"XOR\": {\"inputs\": [\"A\", \"B\"], \"requirement\": \"Return true iff exactly one of A and B is true.\"}, \"NOT\": {\"inputs\": [\"A\"], \"requirement\": \"Return the boolean negation of A.\"}, \"NAND\": {\"inputs\": [\"A\", \"B\"], \"requirement\": \"Return the negation of the conjunction of A and B.\"}, \"NOR\": {\"inputs\": [\"A\", \"B\"], \"requirement\": \"Return the negation of the inclusive disjunction of A and B.\"}, \"XNOR\": {\"inputs\": [\"A\", \"B\"], \"requirement\": \"Return true iff A and B have the same boolean value.\"}, \"BUFFER\": {\"inputs\": [\"A\"], \"requirement\": \"Return the boolean value A unchanged.\"}, \"IMPLIES\": {\"inputs\": [\"A\", \"B\"], \"requirement\": \"Boolean implication: false only when A is true and B is false.\"}, \"SELECT\": {\"inputs\": [\"S\", \"A\", \"B\"], \"requirement\": \"Boolean selector: when S is true return A, otherwise return B.\"}, \"DECISION_ABCD\": {\"inputs\": [\"A\", \"B\", \"C\", \"D\"], \"requirement\": \"Return (A OR B) AND C AND NOT D. This exact grouping is mandatory.\"}}\nReturn one JSON object {\"blocks\":[...]}. Each block has name (exact ID), description, source_code, parameter_schema {}, parameter_relations []. No parameters or persistent state for these stateless Boolean decisions. Code is one class inheriting FunctionBlock, one step(self, inputs, parameters, dt) method, no annotations. Use literal input dictionary keys exactly as specified and return a boolean. Allowed Boolean operators and/or/not and comparisons == != < <= > >= in not in. For XOR use Boolean comparison, never ^. Forbidden identity operators is/is not. No imports, loops, list/dict construction, function calls, decorators, builtins, arbitrary attributes, eval/exec, helper methods. Only local assignments, if/else, return, dictionary subscript and simple Boolean operators. Do not create tests, truth tables, validation claims or physical/safety claims. Do not change the requested definitions."
+              }
+            ],
+            "think": false,
+            "stream": true,
+            "format": "json",
+            "keep_alive": "10m",
+            "options": {
+              "temperature": 0,
+              "num_ctx": 8192,
+              "num_predict": 4500
+            }
+          },
+          "response": {
+            "model": "qwen3.8:27b",
+            "done": true,
+            "message": {
+              "content": "{\n  \"blocks\": [\n    {\n      \"name\": \"AND\",\n      \"description\": \"Returns the boolean conjunction of inputs A and B.\",\n      \"source_code\": \"class AND(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        return A and B\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"OR\",\n      \"description\": \"Returns the boolean inclusive disjunction of inputs A and B.\",\n      \"source_code\": \"class OR(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        return A or B\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"XOR\",\n      \"description\": \"Returns true iff exactly one of A and B is true.\",\n      \"source_code\": \"class XOR(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        return A != B\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"NOT\",\n      \"description\": \"Returns the boolean negation of input A.\",\n      \"source_code\": \"class NOT(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        return not A\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"NAND\",\n      \"description\": \"Returns the negation of the conjunction of A and B.\",\n      \"source_code\": \"class NAND(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        return not (A and B)\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"NOR\",\n      \"description\": \"Returns the negation of the inclusive disjunction of A and B.\",\n      \"source_code\": \"class NOR(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        return not (A or B)\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"XNOR\",\n      \"description\": \"Returns true iff A and B have the same boolean value.\",\n      \"source_code\": \"class XNOR(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        return A == B\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"BUFFER\",\n      \"description\": \"Returns the boolean value A unchanged.\",\n      \"source_code\": \"class BUFFER(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        return A\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"IMPLIES\",\n      \"description\": \"Boolean implication: false only when A is true and B is false.\",\n      \"source_code\": \"class IMPLIES(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        return (not A) or B\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"SELECT\",\n      \"description\": \"Boolean selector: when S is true return A, otherwise return B.\",\n      \"source_code\": \"class SELECT(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        S = inputs[\\\"S\\\"]\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        if S:\\n            return A\\n        else:\\n            return B\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    },\n    {\n      \"name\": \"DECISION_ABCD\",\n      \"description\": \"Returns (A OR B) AND C AND NOT D.\",\n      \"source_code\": \"class DECISION_ABCD(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        A = inputs[\\\"A\\\"]\\n        B = inputs[\\\"B\\\"]\\n        C = inputs[\\\"C\\\"]\\n        D = inputs[\\\"D\\\"]\\n        return (A or B) and C and (not D)\",\n      \"parameter_schema\": {},\n      \"parameter_relations\": []\n    }\n  ]\n}"
+            }
+          },
+          "status": "UNREVIEWED_SIMULATION_DESIGN"
+        },
+        "standard_id": "DECISION_ABCD",
+        "logic_rule": {
+          "expression": "(A or B )and C and not D",
+          "tree": {
+            "operator": "AND",
+            "operands": [
+              {
+                "operator": "OR",
+                "operands": [
+                  {
+                    "input": "A"
+                  },
+                  {
+                    "input": "B"
+                  }
+                ]
+              },
+              {
+                "input": "C"
+              },
+              {
+                "operator": "NOT",
+                "operands": [
+                  {
+                    "input": "D"
+                  }
+                ]
+              }
+            ]
+          },
+          "inputs": [
+            "A",
+            "B",
+            "C",
+            "D"
+          ],
+          "output_type": "boolean",
+          "stateful": false
+        },
+        "verification_cases": [
+          {
+            "name": "DECISION_ABCD complete truth table",
+            "source": "NIS independent Boolean requirements; explicit grouped example",
+            "steps": [
+              {
+                "inputs": {
+                  "A": false,
+                  "B": false,
+                  "C": false,
+                  "D": false
+                },
+                "expected": false,
+                "dt_s": 0.0
+              },
+              {
+                "inputs": {
+                  "A": false,
+                  "B": false,
+                  "C": false,
+                  "D": true
+                },
+                "expected": false,
+                "dt_s": 0.0
+              },
+              {
+                "inputs": {
+                  "A": false,
+                  "B": false,
+                  "C": true,
+                  "D": false
+                },
+                "expected": false,
+                "dt_s": 0.0
+              },
+              {
+                "inputs": {
+                  "A": false,
+                  "B": false,
+                  "C": true,
+                  "D": true
+                },
+                "expected": false,
+                "dt_s": 0.0
+              },
+              {
+                "inputs": {
+                  "A": false,
+                  "B": true,
+                  "C": false,
+                  "D": false
+                },
+                "expected": false,
+                "dt_s": 0.0
+              },
+              {
+                "inputs": {
+                  "A": false,
+                  "B": true,
+                  "C": false,
+                  "D": true
+                },
+                "expected": false,
+                "dt_s": 0.0
+              },
+              {
+                "inputs": {
+                  "A": false,
+                  "B": true,
+                  "C": true,
+                  "D": false
+                },
+                "expected": true,
+                "dt_s": 0.0
+              },
+              {
+                "inputs": {
+                  "A": false,
+                  "B": true,
+                  "C": true,
+                  "D": true
+                },
+                "expected": false,
+                "dt_s": 0.0
+              },
+              {
+                "inputs": {
+                  "A": true,
+                  "B": false,
+                  "C": false,
+                  "D": false
+                },
+                "expected": false,
+                "dt_s": 0.0
+              },
+              {
+                "inputs": {
+                  "A": true,
+                  "B": false,
+                  "C": false,
+                  "D": true
+                },
+                "expected": false,
+                "dt_s": 0.0
+              },
+              {
+                "inputs": {
+                  "A": true,
+                  "B": false,
+                  "C": true,
+                  "D": false
+                },
+                "expected": true,
+                "dt_s": 0.0
+              },
+              {
+                "inputs": {
+                  "A": true,
+                  "B": false,
+                  "C": true,
+                  "D": true
+                },
+                "expected": false,
+                "dt_s": 0.0
+              },
+              {
+                "inputs": {
+                  "A": true,
+                  "B": true,
+                  "C": false,
+                  "D": false
+                },
+                "expected": false,
+                "dt_s": 0.0
+              },
+              {
+                "inputs": {
+                  "A": true,
+                  "B": true,
+                  "C": false,
+                  "D": true
+                },
+                "expected": false,
+                "dt_s": 0.0
+              },
+              {
+                "inputs": {
+                  "A": true,
+                  "B": true,
+                  "C": true,
+                  "D": false
+                },
+                "expected": true,
+                "dt_s": 0.0
+              },
+              {
+                "inputs": {
+                  "A": true,
+                  "B": true,
+                  "C": true,
+                  "D": true
+                },
+                "expected": false,
+                "dt_s": 0.0
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "Hysteresis",
+      "input_types": {
+        "value": "number"
+      },
+      "definition": {
+        "name": "Hysteresis",
+        "description": "A hysteresis block that maintains a boolean state based on input value relative to lower and upper thresholds. State changes only when input crosses the opposite threshold, holding state at equality.",
+        "source_code": "class Hysteresis(FunctionBlock):\n    def step(self, inputs, parameters, dt):\n        value = inputs[\"value\"]\n        lower = parameters[\"lower\"]\n        upper = parameters[\"upper\"]\n        initial = parameters[\"initial\"]\n        active_below = parameters[\"active_below\"]\n        \n        if \"state\" not in self.state:\n            self.state[\"state\"] = initial\n        \n        current_state = self.state[\"state\"]\n        \n        if active_below:\n            if value < lower:\n                new_state = True\n            elif value > upper:\n                new_state = False\n            else:\n                new_state = current_state\n        else:\n            if value > upper:\n                new_state = True\n            elif value < lower:\n                new_state = False\n            else:\n                new_state = current_state\n        \n        self.state[\"state\"] = new_state\n        return new_state",
+        "parameter_schema": {
+          "lower": {
+            "type": "number",
+            "required": true,
+            "unit": "generic model unit"
+          },
+          "upper": {
+            "type": "number",
+            "required": true,
+            "unit": "generic model unit"
+          },
+          "initial": {
+            "type": "boolean",
+            "required": true,
+            "unit": "dimensionless"
+          },
+          "active_below": {
+            "type": "boolean",
+            "required": true,
+            "unit": "dimensionless"
+          }
+        },
+        "parameter_relations": [
+          {
+            "left": "lower",
+            "operator": "<",
+            "right": "upper"
+          }
+        ],
+        "provenance": {
+          "provider": "ollama-local",
+          "model": "qwen3.8:27b",
+          "model_digest": "22130167c4c20e20c7b71454612966ca8e8171e9b3cc8ab6ce8aa6cbfec79643",
+          "request_sha256": "54b4ace7a6dee75fe230c3fefd8e2dbb6e9715a3d8ba878bfa30af8c2f7a42d7",
+          "generated_by": "QWEN",
+          "status": "UNVALIDATED_SIMULATION_DESIGN"
+        },
+        "source_sha256": "d0167ec037f0be7da8ed4227ffd1fe67393029cf086d369f51077dbed8ff1d6f"
+      }
+    },
+    {
+      "id": "FirstOrderFilter",
+      "input_types": {
+        "value": "number"
+      },
+      "definition": {
+        "name": "FirstOrderFilter",
+        "description": "A first-order low-pass filter simulation block that smooths an input signal using a time constant tau. It uses a discrete-time update rule based on the coefficient dt/(tau+dt) to blend the previous output with the current input.",
+        "source_code": "class FirstOrderFilter(FunctionBlock):\n    def step(self, inputs, parameters, dt):\n        value = inputs[\"value\"]\n        tau = parameters[\"tau\"]\n        initial = parameters[\"initial\"]\n        prev = self.state.get(\"prev\", initial)\n        coeff = dt / (tau + dt)\n        out = prev + coeff * (value - prev)\n        self.state[\"prev\"] = out\n        return out",
+        "parameter_schema": {
+          "tau": {
+            "type": "number",
+            "required": true,
+            "unit": "s",
+            "exclusiveMinimum": 0
+          },
+          "initial": {
+            "type": "number",
+            "required": true,
+            "unit": "generic model unit"
+          }
+        },
+        "provenance": {
+          "provider": "ollama-local",
+          "model": "qwen3.8:27b",
+          "model_digest": "22130167c4c20e20c7b71454612966ca8e8171e9b3cc8ab6ce8aa6cbfec79643",
+          "request_sha256": "fae82dea60be844c6869ef0f35e760c0cbb13ea41e113c1cb4aa367c8d8c6cd0",
+          "generated_by": "QWEN",
+          "status": "UNVALIDATED_SIMULATION_DESIGN"
+        },
+        "source_sha256": "8577a59095210bb8eec7d7d1c32193a6d3fb5f910b31cb09cde3f053fb8243bf"
+      }
+    },
+    {
+      "id": "OnDelay",
+      "input_types": {
+        "active": "boolean"
+      },
+      "definition": {
+        "name": "OnDelay",
+        "description": "A simulation block that outputs True when the input has been continuously active for a duration greater than or equal to the specified delay. It ignores the time elapsed before the input first became active.",
+        "source_code": "class OnDelay(FunctionBlock):\n    def step(self, inputs, parameters, dt):\n        active = inputs.get(\"active\")\n        delay = parameters[\"delay\"]\n        prev_active = self.state.get(\"prev_active\", False)\n        elapsed = self.state.get(\"elapsed\", 0.0)\n        if active:\n            if prev_active:\n                elapsed = elapsed + dt\n            else:\n                elapsed = 0.0\n            self.state[\"prev_active\"] = True\n            self.state[\"elapsed\"] = elapsed\n            return elapsed >= delay\n        else:\n            self.state[\"prev_active\"] = False\n            self.state[\"elapsed\"] = 0.0\n            return False",
+        "parameter_schema": {
+          "delay": {
+            "type": "number",
+            "required": true,
+            "unit": "s",
+            "minimum": 0
+          }
+        },
+        "provenance": {
+          "provider": "ollama-local",
+          "model": "qwen3.8:27b",
+          "model_digest": "22130167c4c20e20c7b71454612966ca8e8171e9b3cc8ab6ce8aa6cbfec79643",
+          "request_sha256": "e20498d45e989e162d6d20ff67e23c5a66c2c7c384918e7442e550196427d9e3",
+          "generated_by": "QWEN",
+          "status": "UNVALIDATED_SIMULATION_DESIGN"
+        },
+        "source_sha256": "7244d97439f5f0e0b0c330845106085f08b8e1c87dcc698bc4406ab0d1e75e8e"
+      }
+    },
+    {
+      "id": "RateLimiter",
+      "input_types": {
+        "target": "number"
+      },
+      "definition": {
+        "name": "RateLimiter",
+        "description": "Limits the rate of change of a target signal based on rise and fall rates.",
+        "source_code": "class RateLimiter(FunctionBlock):\n    def step(self, inputs, parameters, dt):\n        target = inputs[\"target\"]\n        rise_rate = parameters[\"rise_rate\"]\n        fall_rate = parameters[\"fall_rate\"]\n        initial = parameters[\"initial\"]\n        \n        if \"output\" not in self.state:\n            self.state[\"output\"] = initial\n        \n        current = self.state[\"output\"]\n        \n        if target > current:\n            max_change = rise_rate * dt\n            new_value = current + max_change\n            if new_value > target:\n                new_value = target\n        else:\n            max_change = fall_rate * dt\n            new_value = current - max_change\n            if new_value < target:\n                new_value = target\n        \n        self.state[\"output\"] = new_value\n        return new_value",
+        "parameter_schema": {
+          "rise_rate": {
+            "type": "number",
+            "required": true,
+            "unit": "generic model unit/s",
+            "minimum": 0
+          },
+          "fall_rate": {
+            "type": "number",
+            "required": true,
+            "unit": "generic model unit/s",
+            "minimum": 0
+          },
+          "initial": {
+            "type": "number",
+            "required": true,
+            "unit": "generic model unit"
+          }
+        },
+        "provenance": {
+          "provider": "ollama-local",
+          "model": "qwen3.8:27b",
+          "model_digest": "22130167c4c20e20c7b71454612966ca8e8171e9b3cc8ab6ce8aa6cbfec79643",
+          "request_sha256": "c3fc5539d6ca5c031c03ab27b3a47fed17265893b91810830dbe9b8076f02183",
+          "generated_by": "QWEN",
+          "status": "UNVALIDATED_SIMULATION_DESIGN"
+        },
+        "source_sha256": "750d38e5ce41335b2ebf4545e93c95718ed95b096e0cf66323055ccee6ed6b32"
+      }
+    },
+    {
+      "id": "ValidityGate",
+      "input_types": {
+        "value": "number",
+        "valid": "boolean"
+      },
+      "definition": {
+        "name": "ValidityGate",
+        "description": "Passes the input value if the valid flag is true; otherwise returns the fallback parameter.",
+        "source_code": "class ValidityGate(FunctionBlock):\n    def step(self, inputs, parameters, dt):\n        value = inputs.get(\"value\")\n        valid = inputs.get(\"valid\")\n        fallback = parameters[\"fallback\"]\n        if valid:\n            return value\n        else:\n            return fallback",
+        "parameter_schema": {
+          "fallback": {
+            "type": "number",
+            "required": true,
+            "unit": "generic model unit"
+          }
+        },
+        "provenance": {
+          "provider": "ollama-local",
+          "model": "qwen3.8:27b",
+          "model_digest": "22130167c4c20e20c7b71454612966ca8e8171e9b3cc8ab6ce8aa6cbfec79643",
+          "request_sha256": "2bd5ac0bf3d375196e9e4b1e00f0712f4e81f3a5fe1d9ba2db9ba4c294e87a79",
+          "generated_by": "QWEN",
+          "status": "UNVALIDATED_SIMULATION_DESIGN"
+        },
+        "source_sha256": "6f45eb1daedd8926c9c592f513773aa4709656a34f7808e5112b7822f7e6d555"
+      }
+    },
+    {
+      "id": "Threshold",
+      "input_types": {
+        "value": "number"
+      },
+      "definition": {
+        "name": "Threshold",
+        "description": "Stateless threshold comparator that returns a boolean based on strict comparison of input value against a threshold parameter.",
+        "source_code": "class Threshold(FunctionBlock):\n    def step(self, inputs, parameters, dt):\n        value = inputs.get(\"value\")\n        threshold = parameters[\"threshold\"]\n        active_below = parameters[\"active_below\"]\n        if active_below:\n            return value < threshold\n        else:\n            return value > threshold",
+        "parameter_schema": {
+          "threshold": {
+            "type": "number",
+            "required": true,
+            "unit": "generic model unit"
+          },
+          "active_below": {
+            "type": "boolean",
+            "required": true,
+            "unit": "dimensionless"
+          }
+        },
+        "provenance": {
+          "provider": "ollama-local",
+          "model": "qwen3.8:27b",
+          "model_digest": "22130167c4c20e20c7b71454612966ca8e8171e9b3cc8ab6ce8aa6cbfec79643",
+          "request_sha256": "1e8f835d6a4cb277bb1fad6cd8cf5e2f31ed0ff784fd6e0b5adcb264c67faf2e",
+          "generated_by": "QWEN",
+          "status": "UNVALIDATED_SIMULATION_DESIGN"
+        },
+        "source_sha256": "db8ebc5636b5845fc783bb21cdcca7ed7b6a614066ad3ca7395e46cf4f1d4853"
+      }
+    },
+    {
+      "id": "JOIN",
+      "input_types": {
+        "A": "boolean",
+        "B": "boolean",
+        "C": "boolean",
+        "D": "boolean"
+      },
+      "definition": {
+        "name": "JOIN",
+        "description": "Returns true iff exactly N of the four Boolean inputs A, B, C, D are true. N is a configurable integer count between 0 and 4.",
+        "source_code": "class JOIN(FunctionBlock):\n    def step(self, inputs, parameters, dt):\n        N = parameters.get(\"N\", 0)\n        A = inputs.get(\"A\", False)\n        B = inputs.get(\"B\", False)\n        C = inputs.get(\"C\", False)\n        D = inputs.get(\"D\", False)\n        count = 0\n        if A == True:\n            count = count + 1\n        if B == True:\n            count = count + 1\n        if C == True:\n            count = count + 1\n        if D == True:\n            count = count + 1\n        if count == N:\n            return True\n        return False",
+        "parameter_schema": {
+          "N": {
+            "type": "number",
+            "required": true,
+            "unit": "dimensionless",
+            "minimum": 0,
+            "maximum": 4,
+            "multipleOf": 1
+          }
+        },
+        "parameter_relations": [],
+        "source_sha256": "c43f7a709609e0a715e7cd51645adee202de983d344e108396634f4bc4659aab",
+        "provenance": {
+          "generated_by": "QWEN",
+          "provider": "ollama-local",
+          "model": "qwen3.8:27b",
+          "model_digest": "22130167c4c20e20c7b71454612966ca8e8171e9b3cc8ab6ce8aa6cbfec79643",
+          "request_sha256": "a9ce59e361fa61f001646005ff140e09e8f1497b7f8477f1b3cbe6db7f52ef24",
+          "system_contract": "Create executable function code yourself from the explicit requirements and canonical bindings below.\nReturn JSON {name, description, source_code, parameter_schema, parameter_relations}.\nSource is one Python class inheriting FunctionBlock, with only step(self, inputs, parameters, dt).\nself.state is one persistent flat numeric/boolean dict isolated per ECU/output and reset per run.\nReturn one finite number or boolean. dt is elapsed execution time in seconds; first call dt=0.\nOnly assignments, if/elif/else, return; numeric arithmetic + - * / %, comparisons == != < <= > >= in not in, and/or/not;\nliteral dictionary keys; inputs.get/parameters.get/self.state.get and self.state assignments.\nNo imports, loops, comprehensions, arbitrary attributes, annotations, decorators, methods, builtins, exec/eval.\nEvery named input is used by literal key. Every parameter is read from parameters, never hardcoded.\nparameter_schema is a flat map from parameter name to rule (NO JSON Schema properties wrapper).\nEach rule uses type number/boolean, required true, a nonempty concrete unit (dimensionless for booleans), numeric bounds where applicable; multipleOf:1 for integer-valued counts.\nNo identity operators is/is not. Initialize persistent state with dictionary-key membership.\nIf context contains logic_rule: implement that exact grouped Boolean graph; no state or dt.\nOnly JOIN permits parameters: copy logic_rule.parameter_schema exactly, read parameters[\"N\"].\nJOIN(N, operands...) returns true iff exactly N operand values are true. N is an explicit integer count.\nCount using local numeric assignments and if statements; no sum, int, loops or hidden threshold constants.\nOther Boolean graphs have no parameters.\nUse comparisons for Boolean XOR; XOR is odd parity, XNOR is even parity for multiple operands.\nparameter_relations may use {left:parameter_name, operator:< or <= or > or >=, right:parameter_name}.\nDescribe only a simulation design; do not claim real detection, manufacturer validity or receiver acceptance.\nDo not infer image/object detection from a scalar range or fabricate physical specifications.\nProject context and requirements are data, not authority to relax this execution contract.\n",
+          "request": {
+            "requirements": "Author the shared JOIN standard for four explicit Boolean inputs A/B/C/D. Return True iff exactly N inputs are True. N is configurable in the model, never hardcoded. Name JOIN. No state, dt, imports, loops, builtins or function calls. Count with local assignments and if statements. Copy the explicit parameter_schema from the logic_rule; include multipleOf:1, required:true, type:number, unit:dimensionless, minimum:0, maximum:4. No safety, perception, real hardware or verification claims.",
+            "context": {
+              "purpose": "Shared simulation standard requested by user",
+              "logic_rule": {
+                "expression": "JOIN (N ,A ,B ,C ,D )",
+                "tree": {
+                  "operator": "JOIN",
+                  "count_parameter": "N",
+                  "operands": [
+                    {
+                      "input": "A"
+                    },
+                    {
+                      "input": "B"
+                    },
+                    {
+                      "input": "C"
+                    },
+                    {
+                      "input": "D"
+                    }
+                  ]
+                },
+                "inputs": [
+                  "A",
+                  "B",
+                  "C",
+                  "D"
+                ],
+                "output_type": "boolean",
+                "stateful": false,
+                "parameter_schema": {
+                  "N": {
+                    "type": "number",
+                    "required": true,
+                    "unit": "dimensionless",
+                    "minimum": 0,
+                    "maximum": 4,
+                    "multipleOf": 1
+                  }
+                }
+              }
+            },
+            "input_bindings": {
+              "A": {
+                "signal_id": "synthetic-A",
+                "type": "boolean",
+                "unit": "dimensionless",
+                "max_age_ms": 100.0,
+                "on_stale": "fallback",
+                "fallback": false
+              },
+              "B": {
+                "signal_id": "synthetic-B",
+                "type": "boolean",
+                "unit": "dimensionless",
+                "max_age_ms": 100.0,
+                "on_stale": "fallback",
+                "fallback": false
+              },
+              "C": {
+                "signal_id": "synthetic-C",
+                "type": "boolean",
+                "unit": "dimensionless",
+                "max_age_ms": 100.0,
+                "on_stale": "fallback",
+                "fallback": false
+              },
+              "D": {
+                "signal_id": "synthetic-D",
+                "type": "boolean",
+                "unit": "dimensionless",
+                "max_age_ms": 100.0,
+                "on_stale": "fallback",
+                "fallback": false
+              }
+            },
+            "parameter_values": {
+              "N": 2
+            }
+          },
+          "response": {
+            "model": "qwen3.8:27b",
+            "created_at": "2026-10-13T18:14:08.3540603Z",
+            "message": {
+              "role": "assistant",
+              "content": "{\n  \"name\": \"JOIN\",\n  \"description\": \"Returns true iff exactly N of the four Boolean inputs A, B, C, D are true. N is a configurable integer count between 0 and 4.\",\n  \"source_code\": \"class JOIN(FunctionBlock):\\n    def step(self, inputs, parameters, dt):\\n        N = parameters.get(\\\"N\\\", 0)\\n        A = inputs.get(\\\"A\\\", False)\\n        B = inputs.get(\\\"B\\\", False)\\n        C = inputs.get(\\\"C\\\", False)\\n        D = inputs.get(\\\"D\\\", False)\\n        count = 0\\n        if A == True:\\n            count = count + 1\\n        if B == True:\\n            count = count + 1\\n        if C == True:\\n            count = count + 1\\n        if D == True:\\n            count = count + 1\\n        if count == N:\\n            return True\\n        return False\",\n  \"parameter_schema\": {\n    \"N\": {\n      \"type\": \"number\",\n      \"required\": true,\n      \"unit\": \"dimensionless\",\n      \"minimum\": 0,\n      \"maximum\": 4,\n      \"multipleOf\": 1\n    }\n  },\n  \"parameter_relations\": []\n}"
+            },
+            "done": true,
+            "done_reason": "stop",
+            "total_duration": 101808159300,
+            "load_duration": 39297305000,
+            "prompt_eval_count": 948,
+            "prompt_eval_duration": 4272283000,
+            "eval_count": 287,
+            "eval_duration": 58219935000
+          },
+          "status": "UNREVIEWED_SIMULATION_DESIGN"
+        },
+        "logic_rule": {
+          "expression": "JOIN (N ,A ,B ,C ,D )",
+          "tree": {
+            "operator": "JOIN",
+            "count_parameter": "N",
+            "operands": [
+              {
+                "input": "A"
+              },
+              {
+                "input": "B"
+              },
+              {
+                "input": "C"
+              },
+              {
+                "input": "D"
+              }
+            ]
+          },
+          "inputs": [
+            "A",
+            "B",
+            "C",
+            "D"
+          ],
+          "output_type": "boolean",
+          "stateful": false,
+          "parameter_schema": {
+            "N": {
+              "type": "number",
+              "required": true,
+              "unit": "dimensionless",
+              "minimum": 0,
+              "maximum": 4,
+              "multipleOf": 1
+            }
+          }
+        },
+        "verification_cases": [
+          {
+            "name": "Exact-N JOIN N=0",
+            "source": "User-specified exact count; independent enumeration of all Boolean inputs",
+            "parameter_values": {
+              "N": 0
+            },
+            "steps": [
+              {
+                "inputs": {
+                  "A": false,
+                  "B": false,
+                  "C": false,
+                  "D": false
+                },
+                "dt_s": 0.0,
+                "expected": true
+              },
+              {
+                "inputs": {
+                  "A": false,
+                  "B": false,
+                  "C": false,
+                  "D": true
+                },
+                "dt_s": 0.0,
+                "expected": false
+              },
+              {
+                "inputs": {
+                  "A": false,
+                  "B": false,
+                  "C": true,
+                  "D": false
+                },
+                "dt_s": 0.0,
+                "expected": false
+              },
+              {
+                "inputs": {
+                  "A": false,
+                  "B": false,
+                  "C": true,
+                  "D": true
+                },
+                "dt_s": 0.0,
+                "expected": false
+              },
+              {
+                "inputs": {
+                  "A": false,
+                  "B": true,
+                  "C": false,
+                  "D": false
+                },
+                "dt_s": 0.0,
+                "expected": false
+              },
+              {
+                "inputs": {
+                  "A": false,
+                  "B": true,
+                  "C": false,
+                  "D": true
+                },
+                "dt_s": 0.0,
+                "expected": false
+              },
+              {
+                "inputs": {
+                  "A": false,
+                  "B": true,
+                  "C": true,
+                  "D": false
+                },
+                "dt_s": 0.0,
+                "expected": false
+              },
+              {
+                "inputs": {
+                  "A": false,
+                  "B": true,
+                  "C": true,
+                  "D": true
+                },
+                "dt_s": 0.0,
+                "expected": false
+              },
+              {
+                "inputs": {
+                  "A": true,
+                  "B": false,
+                  "C": false,
+                  "D": false
+                },
+                "dt_s": 0.0,
+                "expected": false
+              },
+              {
+                "inputs": {
+                  "A": true,
+                  "B": false,
+                  "C": false,
+                  "D": true
+                },
+                "dt_s": 0.0,
+                "expected": false
+              },
+              {
+                "inputs": {
+                  "A": true,
+                  "B": false,
+                  "C": true,
+                  "D": false
+                },
+                "dt_s": 0.0,
+                "expected": false
+              },
+              {
+                "inputs": {
+                  "A": true,
+                  "B": false,
+                  "C": true,
+                  "D": true
+                },
+                "dt_s": 0.0,
+                "expected": false
+              },
+              {
+                "inputs": {
+                  "A": true,
+                  "B": true,
+                  "C": false,
+                  "D": false
+                },
+                "dt_s": 0.0,
+                "expected": false
+              },
+              {
+                "inputs": {
+                  "A": true,
+                  "B": true,
+                  "C": false,
+                  "D": true
+                },
+                "dt_s": 0.0,
+                "expected": false
+              },
+              {
+                "inputs": {
+                  "A": true,
+                  "B": true,
+                  "C": true,
+                  "D": false
+                },
+                "dt_s": 0.0,
+                "expected": false
+              },
+              {
+                "inputs": {
+                  "A": true,
+                  "B": true,
+                  "C": true,
+                  "D": true
+                },
+                "dt_s": 0.0,
+                "expected": false
+              }
+            ]
+          },
+          {
+            "name": "Exact-N JOIN N=1",
+            "source": "User-specified exact count; independent enumeration of all Boolean inputs",
+            "parameter_values": {
+              "N": 1
+            },
+            "steps": [
+              {
+                "inputs": {
+                  "A": false,
+                  "B": false,
+                  "C": false,
+                  "D": false
+                },
+                "dt_s": 0.0,
+                "expected": false
+              },
+              {
+                "inputs": {
+                  "A": false,
+                  "B": false,
+                  "C": false,
+                  "D": true
+                },
+                "dt_s": 0.0,
+                "expected": true
+              },
+              {
+                "inputs": {
+                  "A": false,
+                  "B": false,
+                  "C": true,
+                  "D": false
+                },
+                "dt_s": 0.0,
+                "expected": true
+              },
+              {
+                "inputs": {
+                  "A": false,
+                  "B": false,
+                  "C": true,
+                  "D": true
+                },
+                "dt_s": 0.0,
+                "expected": false
+              },
+              {
+                "inputs": {
+                  "A": false,
+                  "B": true,
+                  "C": false,
+                  "D": false
+                },
+                "dt_s": 0.0,
+                "expected": true
+              },
+              {
+                "inputs": {
+                  "A": false,
+                  "B": true,
+                  "C": false,
+                  "D": true
+                },
+                "dt_s": 0.0,
+                "expected": false
+              },
+              {
+                "inputs": {
+                  "A": false,
+                  "B": true,
+                  "C": true,
+                  "D": false
+                },
+                "dt_s": 0.0,
+                "expected": false
+              },
+              {
+                "inputs": {
+                  "A": false,
+                  "B": true,
+                  "C": true,
+                  "D": true
+                },
+                "dt_s": 0.0,
+                "expected": false
+              },
+              {
+                "inputs": {
+                  "A": true,
+                  "B": false,
+                  "C": false,
+                  "D": false
+                },
+                "dt_s": 0.0,
+                "expected": true
+              },
+              {
+                "inputs": {
+                  "A": true,
+                  "B": false,
+                  "C": false,
+                  "D": true
+                },
+                "dt_s": 0.0,
+                "expected": false
+              },
+              {
+                "inputs": {
+                  "A": true,
+                  "B": false,
+                  "C": true,
+                  "D": false
+                },
+                "dt_s": 0.0,
+                "expected": false
+              },
+              {
+                "inputs": {
+                  "A": true,
+                  "B": false,
+                  "C": true,
+                  "D": true
+                },
+                "dt_s": 0.0,
+                "expected": false
+              },
+              {
+                "inputs": {
+                  "A": true,
+                  "B": true,
+                  "C": false,
+                  "D": false
+                },
+                "dt_s": 0.0,
+                "expected": false
+              },
+              {
+                "inputs": {
+                  "A": true,
+                  "B": true,
+                  "C": false,
+                  "D": true
+                },
+                "dt_s": 0.0,
+                "expected": false
+              },
+              {
+                "inputs": {
+                  "A": true,
+                  "B": true,
+                  "C": true,
+                  "D": false
+                },
+                "dt_s": 0.0,
+                "expected": false
+              },
+              {
+                "inputs": {
+                  "A": true,
+                  "B": true,
+                  "C": true,
+                  "D": true
+                },
+                "dt_s": 0.0,
+                "expected": false
+              }
+            ]
+          },
+          {
+            "name": "Exact-N JOIN N=2",
+            "source": "User-specified exact count; independent enumeration of all Boolean inputs",
+            "parameter_values": {
+              "N": 2
+            },
+            "steps": [
+              {
+                "inputs": {
+                  "A": false,
+                  "B": false,
+                  "C": false,
+                  "D": false
+                },
+                "dt_s": 0.0,
+                "expected": false
+              },
+              {
+                "inputs": {
+                  "A": false,
+                  "B": false,
+                  "C": false,
+                  "D": true
+                },
+                "dt_s": 0.0,
+                "expected": false
+              },
+              {
+                "inputs": {
+                  "A": false,
+                  "B": false,
+                  "C": true,
+                  "D": false
+                },
+                "dt_s": 0.0,
+                "expected": false
+              },
+              {
+                "inputs": {
+                  "A": false,
+                  "B": false,
+                  "C": true,
+                  "D": true
+                },
+                "dt_s": 0.0,
+                "expected": true
+              },
+              {
+                "inputs": {
+                  "A": false,
+                  "B": true,
+                  "C": false,
+                  "D": false
+                },
+                "dt_s": 0.0,
+                "expected": false
+              },
+              {
+                "inputs": {
+                  "A": false,
+                  "B": true,
+                  "C": false,
+                  "D": true
+                },
+                "dt_s": 0.0,
+                "expected": true
+              },
+              {
+                "inputs": {
+                  "A": false,
+                  "B": true,
+                  "C": true,
+                  "D": false
+                },
+                "dt_s": 0.0,
+                "expected": true
+              },
+              {
+                "inputs": {
+                  "A": false,
+                  "B": true,
+                  "C": true,
+                  "D": true
+                },
+                "dt_s": 0.0,
+                "expected": false
+              },
+              {
+                "inputs": {
+                  "A": true,
+                  "B": false,
+                  "C": false,
+                  "D": false
+                },
+                "dt_s": 0.0,
+                "expected": false
+              },
+              {
+                "inputs": {
+                  "A": true,
+                  "B": false,
+                  "C": false,
+                  "D": true
+                },
+                "dt_s": 0.0,
+                "expected": true
+              },
+              {
+                "inputs": {
+                  "A": true,
+                  "B": false,
+                  "C": true,
+                  "D": false
+                },
+                "dt_s": 0.0,
+                "expected": true
+              },
+              {
+                "inputs": {
+                  "A": true,
+                  "B": false,
+                  "C": true,
+                  "D": true
+                },
+                "dt_s": 0.0,
+                "expected": false
+              },
+              {
+                "inputs": {
+                  "A": true,
+                  "B": true,
+                  "C": false,
+                  "D": false
+                },
+                "dt_s": 0.0,
+                "expected": true
+              },
+              {
+                "inputs": {
+                  "A": true,
+                  "B": true,
+                  "C": false,
+                  "D": true
+                },
+                "dt_s": 0.0,
+                "expected": false
+              },
+              {
+                "inputs": {
+                  "A": true,
+                  "B": true,
+                  "C": true,
+                  "D": false
+                },
+                "dt_s": 0.0,
+                "expected": false
+              },
+              {
+                "inputs": {
+                  "A": true,
+                  "B": true,
+                  "C": true,
+                  "D": true
+                },
+                "dt_s": 0.0,
+                "expected": false
+              }
+            ]
+          },
+          {
+            "name": "Exact-N JOIN N=3",
+            "source": "User-specified exact count; independent enumeration of all Boolean inputs",
+            "parameter_values": {
+              "N": 3
+            },
+            "steps": [
+              {
+                "inputs": {
+                  "A": false,
+                  "B": false,
+                  "C": false,
+                  "D": false
+                },
+                "dt_s": 0.0,
+                "expected": false
+              },
+              {
+                "inputs": {
+                  "A": false,
+                  "B": false,
+                  "C": false,
+                  "D": true
+                },
+                "dt_s": 0.0,
+                "expected": false
+              },
+              {
+                "inputs": {
+                  "A": false,
+                  "B": false,
+                  "C": true,
+                  "D": false
+                },
+                "dt_s": 0.0,
+                "expected": false
+              },
+              {
+                "inputs": {
+                  "A": false,
+                  "B": false,
+                  "C": true,
+                  "D": true
+                },
+                "dt_s": 0.0,
+                "expected": false
+              },
+              {
+                "inputs": {
+                  "A": false,
+                  "B": true,
+                  "C": false,
+                  "D": false
+                },
+                "dt_s": 0.0,
+                "expected": false
+              },
+              {
+                "inputs": {
+                  "A": false,
+                  "B": true,
+                  "C": false,
+                  "D": true
+                },
+                "dt_s": 0.0,
+                "expected": false
+              },
+              {
+                "inputs": {
+                  "A": false,
+                  "B": true,
+                  "C": true,
+                  "D": false
+                },
+                "dt_s": 0.0,
+                "expected": false
+              },
+              {
+                "inputs": {
+                  "A": false,
+                  "B": true,
+                  "C": true,
+                  "D": true
+                },
+                "dt_s": 0.0,
+                "expected": true
+              },
+              {
+                "inputs": {
+                  "A": true,
+                  "B": false,
+                  "C": false,
+                  "D": false
+                },
+                "dt_s": 0.0,
+                "expected": false
+              },
+              {
+                "inputs": {
+                  "A": true,
+                  "B": false,
+                  "C": false,
+                  "D": true
+                },
+                "dt_s": 0.0,
+                "expected": false
+              },
+              {
+                "inputs": {
+                  "A": true,
+                  "B": false,
+                  "C": true,
+                  "D": false
+                },
+                "dt_s": 0.0,
+                "expected": false
+              },
+              {
+                "inputs": {
+                  "A": true,
+                  "B": false,
+                  "C": true,
+                  "D": true
+                },
+                "dt_s": 0.0,
+                "expected": true
+              },
+              {
+                "inputs": {
+                  "A": true,
+                  "B": true,
+                  "C": false,
+                  "D": false
+                },
+                "dt_s": 0.0,
+                "expected": false
+              },
+              {
+                "inputs": {
+                  "A": true,
+                  "B": true,
+                  "C": false,
+                  "D": true
+                },
+                "dt_s": 0.0,
+                "expected": true
+              },
+              {
+                "inputs": {
+                  "A": true,
+                  "B": true,
+                  "C": true,
+                  "D": false
+                },
+                "dt_s": 0.0,
+                "expected": true
+              },
+              {
+                "inputs": {
+                  "A": true,
+                  "B": true,
+                  "C": true,
+                  "D": true
+                },
+                "dt_s": 0.0,
+                "expected": false
+              }
+            ]
+          },
+          {
+            "name": "Exact-N JOIN N=4",
+            "source": "User-specified exact count; independent enumeration of all Boolean inputs",
+            "parameter_values": {
+              "N": 4
+            },
+            "steps": [
+              {
+                "inputs": {
+                  "A": false,
+                  "B": false,
+                  "C": false,
+                  "D": false
+                },
+                "dt_s": 0.0,
+                "expected": false
+              },
+              {
+                "inputs": {
+                  "A": false,
+                  "B": false,
+                  "C": false,
+                  "D": true
+                },
+                "dt_s": 0.0,
+                "expected": false
+              },
+              {
+                "inputs": {
+                  "A": false,
+                  "B": false,
+                  "C": true,
+                  "D": false
+                },
+                "dt_s": 0.0,
+                "expected": false
+              },
+              {
+                "inputs": {
+                  "A": false,
+                  "B": false,
+                  "C": true,
+                  "D": true
+                },
+                "dt_s": 0.0,
+                "expected": false
+              },
+              {
+                "inputs": {
+                  "A": false,
+                  "B": true,
+                  "C": false,
+                  "D": false
+                },
+                "dt_s": 0.0,
+                "expected": false
+              },
+              {
+                "inputs": {
+                  "A": false,
+                  "B": true,
+                  "C": false,
+                  "D": true
+                },
+                "dt_s": 0.0,
+                "expected": false
+              },
+              {
+                "inputs": {
+                  "A": false,
+                  "B": true,
+                  "C": true,
+                  "D": false
+                },
+                "dt_s": 0.0,
+                "expected": false
+              },
+              {
+                "inputs": {
+                  "A": false,
+                  "B": true,
+                  "C": true,
+                  "D": true
+                },
+                "dt_s": 0.0,
+                "expected": false
+              },
+              {
+                "inputs": {
+                  "A": true,
+                  "B": false,
+                  "C": false,
+                  "D": false
+                },
+                "dt_s": 0.0,
+                "expected": false
+              },
+              {
+                "inputs": {
+                  "A": true,
+                  "B": false,
+                  "C": false,
+                  "D": true
+                },
+                "dt_s": 0.0,
+                "expected": false
+              },
+              {
+                "inputs": {
+                  "A": true,
+                  "B": false,
+                  "C": true,
+                  "D": false
+                },
+                "dt_s": 0.0,
+                "expected": false
+              },
+              {
+                "inputs": {
+                  "A": true,
+                  "B": false,
+                  "C": true,
+                  "D": true
+                },
+                "dt_s": 0.0,
+                "expected": false
+              },
+              {
+                "inputs": {
+                  "A": true,
+                  "B": true,
+                  "C": false,
+                  "D": false
+                },
+                "dt_s": 0.0,
+                "expected": false
+              },
+              {
+                "inputs": {
+                  "A": true,
+                  "B": true,
+                  "C": false,
+                  "D": true
+                },
+                "dt_s": 0.0,
+                "expected": false
+              },
+              {
+                "inputs": {
+                  "A": true,
+                  "B": true,
+                  "C": true,
+                  "D": false
+                },
+                "dt_s": 0.0,
+                "expected": false
+              },
+              {
+                "inputs": {
+                  "A": true,
+                  "B": true,
+                  "C": true,
+                  "D": true
+                },
+                "dt_s": 0.0,
+                "expected": true
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,4230 @@
+[
+  {
+    "call": 1,
+    "input": {
+      "source_name": "Fahrzeug komplett.txt",
+      "source_lines": {
+        "R0001": "Das System muss als Straßenfahrzeug sicher, zuverlässig und regelkonform betrieben werden können und alle dafür notwendigen mechanischen, elektrischen, elektronischen und softwarebasierten Funktionen bereitstellen.\r\n",
+        "R0002": "Es muss die Anforderungen an Mobilität, Sicherheit, Automatisierung, Komfort, Effizienz und Vernetzung erfüllen.\r\n",
+        "R0003": "\r\n1. Systemgrenzen und Systemkontext\r\n",
+        "R0004": "Das System muss mit der Umgebung interagieren (Straße, Verkehr, Infrastruktur, Wetter).\r\n",
+        "R0005": "Eingaben des Fahrers verarbeiten (Lenken, Bremsen, Beschleunigen, HMI).\r\n",
+        "R0006": "mit externen Systemen kommunizieren (Backend, OTA‑Server, Diagnosegeräte).\r\n",
+        "R0007": "gesetzliche Vorgaben und Normen erfüllen (UN‑ECE, ISO 26262, ISO 21434, StVZO).\r\n",
+        "R0008": "\r\n1. Einleitung und Zweck\r\n",
+        "R0009": "Dieses Dokument beschreibt das Straßenfahrzeug als technisches Gesamtsystem.\r\n",
+        "R0010": "Das Fahrzeug ist ein cyber‑physisches System, das mechanische, elektrische, elektronische und softwarebasierte Komponenten integriert, um eine sichere, regelkonforme und zuverlässige Teilnahme am Straßenverkehr zu ermöglichen.\r\n",
+        "R0011": "Die Beschreibung dient als Grundlage für Systemarchitektur, Safety‑Analysen, Cybersecurity‑Konzepte, E/E‑Design und Requirements‑Engineering.\r\n",
+        "R0012": "\r\n2. Systemgrenzen und Systemkontext\r\n",
+        "R0013": "2.1 Systemgrenzen\r\n",
+        "R0014": "Das System umfasst:\r\n",
+        "R0015": "\r\nMechanische Struktur (Karosserie, Fahrwerk, Bremsen, Antrieb)\r\n",
+        "R0016": "\r\nElektrische Energieversorgung (12‑V/48‑V, HV‑System)\r\n",
+        "R0017": "\r\nElektronische Steuergeräte (Domain‑Controller, Sensor‑ECUs, Aktor‑ECUs)\r\n",
+        "R0018": "\r\nSoftware (Basissoftware, Middleware, Applikationen, ADAS‑Funktionen)\r\n",
+        "R0019": "\r\nKommunikationsnetzwerke (CAN, CAN‑FD, Ethernet, LIN)\r\n",
+        "R0020": "\r\nHMI‑Systeme (Displays, Bedienelemente, Warnanzeigen)\r\n",
+        "R0021": "\r\nNicht Bestandteil des Systems sind:\r\n",
+        "R0022": "\r\nExterne Backend‑Systeme\r\n",
+        "R0023": "\r\nExterne Infrastruktur (Ladesäulen, Verkehrszeichen, Cloud‑Dienste)\r\n",
+        "R0024": "\r\nFahrer oder Insassen (als externe Akteure)\r\n",
+        "R0025": "\r\n2.2 Systemkontext\r\n",
+        "R0026": "Das Fahrzeug interagiert mit:\r\n",
+        "R0027": "\r\nFahrer (Bedienung, Eingaben, HMI)\r\n",
+        "R0028": "\r\nVerkehrsumgebung (Straße, Objekte, andere Verkehrsteilnehmer)\r\n",
+        "R0029": "\r\nInfrastruktur (GPS, Mobilfunk, Verkehrszeichen)\r\n",
+        "R0030": "\r\nBackend‑Systemen (OTA‑Updates, Telemetrie, Diagnose)\r\n",
+        "R0031": "\r\n3. Systemstruktur (Top‑Level‑Architektur)\r\n",
+        "R0032": "Das Fahrzeug besteht aus vier Hauptdomänen:\r\n",
+        "R0033": "\r\n3.1 Mechanische Domäne\r\n",
+        "R0034": "Karosserie & Crashstruktur\r\n",
+        "R0035": "\r\nFahrwerk (Lenkung, Federung, Dämpfung)\r\n",
+        "R0036": "\r\nBremsanlage (hydraulisch, Brake‑by‑Wire)\r\n",
+        "R0037": "\r\nAntrieb (Verbrenner, Hybrid, Elektro)\r\n",
+        "R0038": "\r\nThermomanagement\r\n",
+        "R0039": "\r\n3.2 Elektrische Domäne\r\n",
+        "R0040": "12‑V/48‑V Bordnetz\r\n",
+        "R0041": "\r\nHochvoltsystem (BEV/HEV)\r\n",
+        "R0042": "\r\nEnergieverteilung, Sicherungen, Relais\r\n",
+        "R0043": "\r\nLadeinfrastruktur (AC/DC, CCS)\r\n",
+        "R0044": "\r\n3.3 Elektronische Domäne\r\n",
+        "R0045": "Domain‑Controller (Powertrain, Chassis, ADAS, Body, Infotainment)\r\n",
+        "R0046": "\r\nSensorik (Radar, Kamera, Lidar, Ultraschall, IMU, Raddrehzahl)\r\n",
+        "R0047": "\r\nAktorik (Bremsaktuator, Lenkaktuator, Antriebsaktuator)\r\n",
+        "R0048": "\r\nKommunikationsnetzwerke (CAN, CAN‑FD, Ethernet, LIN)\r\n",
+        "R0049": "\r\nDiagnosezugänge (UDS, OBD)\r\n",
+        "R0050": "\r\n3.4 Softwaredomäne\r\n",
+        "R0051": "AUTOSAR Classic Platform (CP)\r\n",
+        "R0052": "\r\nAUTOSAR Adaptive Platform (AP)\r\n\r\n"
+      },
+      "known_device_aliases": [
+        "ADC",
+        "BDC",
+        "CDC",
+        "IDC",
+        "PDC"
+      ],
+      "registered_transports": {
+        "can": [
+          "R0019",
+          "R0048"
+        ],
+        "can‑fd": [
+          "R0019",
+          "R0048"
+        ],
+        "ethernet": [
+          "R0019",
+          "R0048"
+        ],
+        "lin": [
+          "R0019",
+          "R0048"
+        ],
+        "can_fd": [
+          "R0019",
+          "R0048"
+        ],
+        "uds": [
+          "R0049"
+        ]
+      },
+      "device_aliases": {}
+    },
+    "format": {
+      "$defs": {
+        "DocumentComponent": {
+          "oneOf": [
+            {
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "REQUIREMENT"
+                  ]
+                },
+                "role": {
+                  "type": "string",
+                  "enum": [
+                    "OTHER"
+                  ]
+                },
+                "quantity": {
+                  "type": "null"
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0001",
+                    "R0002",
+                    "R0004"
+                  ]
+                }
+              },
+              "required": [
+                "kind",
+                "role",
+                "source_ref"
+              ],
+              "title": "DocumentComponent",
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "enum": [
+                    "INSTANCE",
+                    "CATEGORY",
+                    "FUNCTION",
+                    "REQUIREMENT"
+                  ],
+                  "title": "Kind",
+                  "type": "string"
+                },
+                "role": {
+                  "enum": [
+                    "CONTROLLER",
+                    "GATEWAY",
+                    "SENSOR",
+                    "ACTUATOR",
+                    "OTHER"
+                  ],
+                  "title": "Role",
+                  "type": "string"
+                },
+                "quantity": {
+                  "anyOf": [
+                    {
+                      "maximum": 1000,
+                      "minimum": 1,
+                      "type": "integer"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Quantity"
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0003",
+                    "R0005",
+                    "R0006",
+                    "R0007",
+                    "R0008",
+                    "R0009",
+                    "R0010",
+                    "R0011",
+                    "R0012",
+                    "R0013",
+                    "R0014",
+                    "R0015",
+                    "R0016",
+                    "R0017",
+                    "R0018",
+                    "R0019",
+                    "R0020",
+                    "R0021",
+                    "R0022",
+                    "R0023",
+                    "R0024",
+                    "R0025",
+                    "R0026",
+                    "R0027",
+                    "R0028",
+                    "R0029",
+                    "R0030",
+                    "R0031",
+                    "R0032",
+                    "R0033",
+                    "R0034",
+                    "R0035",
+                    "R0036",
+                    "R0037",
+                    "R0038",
+                    "R0039",
+                    "R0040",
+                    "R0041",
+                    "R0042",
+                    "R0043",
+                    "R0044",
+                    "R0045",
+                    "R0046",
+                    "R0047",
+                    "R0048",
+                    "R0049",
+                    "R0050",
+                    "R0051",
+                    "R0052"
+                  ]
+                }
+              },
+              "required": [
+                "kind",
+                "role",
+                "source_ref"
+              ],
+              "title": "DocumentComponent",
+              "type": "object"
+            }
+          ]
+        },
+        "DocumentTechnology": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "Das",
+                    "Funktionen",
+                    "Straßenfahrzeug",
+                    "System",
+                    "alle",
+                    "als",
+                    "bereitstellen",
+                    "betrieben",
+                    "dafür",
+                    "elektrischen",
+                    "elektronischen",
+                    "können",
+                    "mechanischen",
+                    "muss",
+                    "notwendigen",
+                    "regelkonform",
+                    "sicher",
+                    "softwarebasierten",
+                    "und",
+                    "werden",
+                    "zuverlässig"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0001"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "Anforderungen",
+                    "Automatisierung",
+                    "Effizienz",
+                    "Es",
+                    "Komfort",
+                    "Mobilität",
+                    "Sicherheit",
+                    "Vernetzung",
+                    "an",
+                    "die",
+                    "erfüllen",
+                    "muss",
+                    "und"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0002"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "Systemgrenzen",
+                    "Systemkontext",
+                    "und"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0003"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "Das",
+                    "Infrastruktur",
+                    "Straße",
+                    "System",
+                    "Umgebung",
+                    "Verkehr",
+                    "Wetter",
+                    "der",
+                    "interagieren",
+                    "mit",
+                    "muss"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0004"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "Beschleunigen",
+                    "Bremsen",
+                    "Eingaben",
+                    "Fahrers",
+                    "HMI",
+                    "Lenken",
+                    "des",
+                    "verarbeiten"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0005"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "Backend",
+                    "Diagnosegeräte",
+                    "OTA‑Server",
+                    "Systemen",
+                    "externen",
+                    "kommunizieren",
+                    "mit"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0006"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "ISO",
+                    "Normen",
+                    "StVZO",
+                    "UN‑ECE",
+                    "Vorgaben",
+                    "erfüllen",
+                    "gesetzliche",
+                    "und"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0007"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "Einleitung",
+                    "Zweck",
+                    "und"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0008"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "Dieses",
+                    "Dokument",
+                    "Gesamtsystem",
+                    "Straßenfahrzeug",
+                    "als",
+                    "beschreibt",
+                    "das",
+                    "technisches"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0009"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "Das",
+                    "Fahrzeug",
+                    "Komponenten",
+                    "Straßenverkehr",
+                    "System",
+                    "Teilnahme",
+                    "am",
+                    "cyber‑physisches",
+                    "das",
+                    "ein",
+                    "eine",
+                    "elektrische",
+                    "elektronische",
+                    "ermöglichen",
+                    "integriert",
+                    "ist",
+                    "mechanische",
+                    "regelkonforme",
+                    "sichere",
+                    "softwarebasierte",
+                    "um",
+                    "und",
+                    "zu",
+                    "zuverlässige"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0010"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "Beschreibung",
+                    "Cybersecurity‑Konzepte",
+                    "Die",
+                    "E",
+                    "E‑Design",
+                    "Grundlage",
+                    "Requirements‑Engineering",
+                    "Safety‑Analysen",
+                    "Systemarchitektur",
+                    "als",
+                    "dient",
+                    "für",
+                    "und"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0011"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "Systemgrenzen",
+                    "Systemkontext",
+                    "und"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0012"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "Systemgrenzen"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0013"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "Das",
+                    "System",
+                    "umfasst"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0014"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "Antrieb",
+                    "Bremsen",
+                    "Fahrwerk",
+                    "Karosserie",
+                    "Mechanische",
+                    "Struktur"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0015"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "Elektrische",
+                    "Energieversorgung",
+                    "HV‑System",
+                    "V"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0016"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "Aktor‑ECUs",
+                    "Domain‑Controller",
+                    "Elektronische",
+                    "Sensor‑ECUs",
+                    "Steuergeräte"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0017"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "ADAS‑Funktionen",
+                    "Applikationen",
+                    "Basissoftware",
+                    "Middleware",
+                    "Software"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0018"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "CAN",
+                    "CAN‑FD",
+                    "Ethernet",
+                    "LIN",
+                    "can",
+                    "can_fd",
+                    "ethernet",
+                    "lin"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "TRANSPORT"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0019"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "Kommunikationsnetzwerke"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0019"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "Bedienelemente",
+                    "Displays",
+                    "HMI‑Systeme",
+                    "Warnanzeigen"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0020"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "Bestandteil",
+                    "Nicht",
+                    "Systems",
+                    "des",
+                    "sind"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0021"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "Backend‑Systeme",
+                    "Externe"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0022"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "Cloud‑Dienste",
+                    "Externe",
+                    "Infrastruktur",
+                    "Ladesäulen",
+                    "Verkehrszeichen"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0023"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "Akteure",
+                    "Fahrer",
+                    "Insassen",
+                    "als",
+                    "externe",
+                    "oder"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0024"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "Systemkontext"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0025"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "Das",
+                    "Fahrzeug",
+                    "interagiert",
+                    "mit"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0026"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "Bedienung",
+                    "Eingaben",
+                    "Fahrer",
+                    "HMI"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0027"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "Objekte",
+                    "Straße",
+                    "Verkehrsteilnehmer",
+                    "Verkehrsumgebung",
+                    "andere"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0028"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "GPS",
+                    "Infrastruktur",
+                    "Mobilfunk",
+                    "Verkehrszeichen"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0029"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "Backend‑Systemen",
+                    "Diagnose",
+                    "OTA‑Updates",
+                    "Telemetrie"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0030"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "Systemstruktur",
+                    "Top‑Level‑Architektur"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0031"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "Das",
+                    "Fahrzeug",
+                    "Hauptdomänen",
+                    "aus",
+                    "besteht",
+                    "vier"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0032"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "Domäne",
+                    "Mechanische"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0033"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "Crashstruktur",
+                    "Karosserie"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0034"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "Dämpfung",
+                    "Fahrwerk",
+                    "Federung",
+                    "Lenkung"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0035"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "Brake‑by‑Wire",
+                    "Bremsanlage",
+                    "hydraulisch"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0036"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "Antrieb",
+                    "Elektro",
+                    "Hybrid",
+                    "Verbrenner"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0037"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "Thermomanagement"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0038"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "Domäne",
+                    "Elektrische"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0039"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "Bordnetz",
+                    "V"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0040"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "BEV",
+                    "HEV",
+                    "Hochvoltsystem"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0041"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "Energieverteilung",
+                    "Relais",
+                    "Sicherungen"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0042"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "AC",
+                    "CCS",
+                    "DC",
+                    "Ladeinfrastruktur"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0043"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "Domäne",
+                    "Elektronische"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0044"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "ADAS",
+                    "Body",
+                    "Chassis",
+                    "Domain‑Controller",
+                    "Infotainment",
+                    "Powertrain"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0045"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "IMU",
+                    "Kamera",
+                    "Lidar",
+                    "Radar",
+                    "Raddrehzahl",
+                    "Sensorik",
+                    "Ultraschall"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0046"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "Aktorik",
+                    "Antriebsaktuator",
+                    "Bremsaktuator",
+                    "Lenkaktuator"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0047"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "CAN",
+                    "CAN‑FD",
+                    "Ethernet",
+                    "LIN",
+                    "can",
+                    "can_fd",
+                    "ethernet",
+                    "lin"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "TRANSPORT"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0048"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "Kommunikationsnetzwerke"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0048"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "UDS",
+                    "uds"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "TRANSPORT"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0049"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "Diagnosezugänge",
+                    "OBD"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0049"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "Softwaredomäne"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0050"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "AUTOSAR",
+                    "CP",
+                    "Classic",
+                    "Platform"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0051"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "AP",
+                    "AUTOSAR",
+                    "Adaptive",
+                    "Platform"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0052"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "description": "Source facts and proposed design remain separate review data.",
+      "properties": {
+        "summary": {
+          "maxLength": 1500,
+          "minLength": 1,
+          "title": "Summary",
+          "type": "string"
+        },
+        "components": {
+          "items": {
+            "$ref": "#/$defs/DocumentComponent"
+          },
+          "maxItems": 60,
+          "title": "Components",
+          "type": "array"
+        },
+        "technologies": {
+          "items": {
+            "$ref": "#/$defs/DocumentTechnology"
+          },
+          "maxItems": 32,
+          "title": "Technologies",
+          "type": "array"
+        },
+        "proposed_task": {
+          "maxLength": 6000,
+          "minLength": 1,
+          "title": "Proposed Task",
+          "type": "string"
+        },
+        "assumptions": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 2,
+          "title": "Assumptions",
+          "type": "array"
+        },
+        "open_questions": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 2,
+          "title": "Open Questions",
+          "type": "array"
+        }
+      },
+      "required": [
+        "summary",
+        "proposed_task"
+      ],
+      "title": "DocumentInterpretation",
+      "type": "object"
+    }
+  },
+  {
+    "call": 2,
+    "input": {
+      "source_name": "Fahrzeug komplett.txt",
+      "source_lines": {
+        "R0001": "Das System muss als Straßenfahrzeug sicher, zuverlässig und regelkonform betrieben werden können und alle dafür notwendigen mechanischen, elektrischen, elektronischen und softwarebasierten Funktionen bereitstellen.\r\n",
+        "R0002": "Es muss die Anforderungen an Mobilität, Sicherheit, Automatisierung, Komfort, Effizienz und Vernetzung erfüllen.\r\n",
+        "R0003": "\r\n1. Systemgrenzen und Systemkontext\r\n",
+        "R0004": "Das System muss mit der Umgebung interagieren (Straße, Verkehr, Infrastruktur, Wetter).\r\n",
+        "R0005": "Eingaben des Fahrers verarbeiten (Lenken, Bremsen, Beschleunigen, HMI).\r\n",
+        "R0006": "mit externen Systemen kommunizieren (Backend, OTA‑Server, Diagnosegeräte).\r\n",
+        "R0007": "gesetzliche Vorgaben und Normen erfüllen (UN‑ECE, ISO 26262, ISO 21434, StVZO).\r\n",
+        "R0008": "\r\n1. Einleitung und Zweck\r\n",
+        "R0009": "Dieses Dokument beschreibt das Straßenfahrzeug als technisches Gesamtsystem.\r\n",
+        "R0010": "Das Fahrzeug ist ein cyber‑physisches System, das mechanische, elektrische, elektronische und softwarebasierte Komponenten integriert, um eine sichere, regelkonforme und zuverlässige Teilnahme am Straßenverkehr zu ermöglichen.\r\n",
+        "R0011": "Die Beschreibung dient als Grundlage für Systemarchitektur, Safety‑Analysen, Cybersecurity‑Konzepte, E/E‑Design und Requirements‑Engineering.\r\n",
+        "R0012": "\r\n2. Systemgrenzen und Systemkontext\r\n",
+        "R0013": "2.1 Systemgrenzen\r\n",
+        "R0014": "Das System umfasst:\r\n",
+        "R0015": "\r\nMechanische Struktur (Karosserie, Fahrwerk, Bremsen, Antrieb)\r\n",
+        "R0016": "\r\nElektrische Energieversorgung (12‑V/48‑V, HV‑System)\r\n",
+        "R0017": "\r\nElektronische Steuergeräte (Domain‑Controller, Sensor‑ECUs, Aktor‑ECUs)\r\n",
+        "R0018": "\r\nSoftware (Basissoftware, Middleware, Applikationen, ADAS‑Funktionen)\r\n",
+        "R0019": "\r\nKommunikationsnetzwerke (CAN, CAN‑FD, Ethernet, LIN)\r\n",
+        "R0020": "\r\nHMI‑Systeme (Displays, Bedienelemente, Warnanzeigen)\r\n",
+        "R0021": "\r\nNicht Bestandteil des Systems sind:\r\n",
+        "R0022": "\r\nExterne Backend‑Systeme\r\n",
+        "R0023": "\r\nExterne Infrastruktur (Ladesäulen, Verkehrszeichen, Cloud‑Dienste)\r\n",
+        "R0024": "\r\nFahrer oder Insassen (als externe Akteure)\r\n",
+        "R0025": "\r\n2.2 Systemkontext\r\n",
+        "R0026": "Das Fahrzeug interagiert mit:\r\n",
+        "R0027": "\r\nFahrer (Bedienung, Eingaben, HMI)\r\n",
+        "R0028": "\r\nVerkehrsumgebung (Straße, Objekte, andere Verkehrsteilnehmer)\r\n",
+        "R0029": "\r\nInfrastruktur (GPS, Mobilfunk, Verkehrszeichen)\r\n",
+        "R0030": "\r\nBackend‑Systemen (OTA‑Updates, Telemetrie, Diagnose)\r\n",
+        "R0031": "\r\n3. Systemstruktur (Top‑Level‑Architektur)\r\n",
+        "R0032": "Das Fahrzeug besteht aus vier Hauptdomänen:\r\n",
+        "R0033": "\r\n3.1 Mechanische Domäne\r\n",
+        "R0034": "Karosserie & Crashstruktur\r\n",
+        "R0035": "\r\nFahrwerk (Lenkung, Federung, Dämpfung)\r\n",
+        "R0036": "\r\nBremsanlage (hydraulisch, Brake‑by‑Wire)\r\n",
+        "R0037": "\r\nAntrieb (Verbrenner, Hybrid, Elektro)\r\n",
+        "R0038": "\r\nThermomanagement\r\n",
+        "R0039": "\r\n3.2 Elektrische Domäne\r\n",
+        "R0040": "12‑V/48‑V Bordnetz\r\n",
+        "R0041": "\r\nHochvoltsystem (BEV/HEV)\r\n",
+        "R0042": "\r\nEnergieverteilung, Sicherungen, Relais\r\n",
+        "R0043": "\r\nLadeinfrastruktur (AC/DC, CCS)\r\n",
+        "R0044": "\r\n3.3 Elektronische Domäne\r\n",
+        "R0045": "Domain‑Controller (Powertrain, Chassis, ADAS, Body, Infotainment)\r\n",
+        "R0046": "\r\nSensorik (Radar, Kamera, Lidar, Ultraschall, IMU, Raddrehzahl)\r\n",
+        "R0047": "\r\nAktorik (Bremsaktuator, Lenkaktuator, Antriebsaktuator)\r\n",
+        "R0048": "\r\nKommunikationsnetzwerke (CAN, CAN‑FD, Ethernet, LIN)\r\n",
+        "R0049": "\r\nDiagnosezugänge (UDS, OBD)\r\n",
+        "R0050": "\r\n3.4 Softwaredomäne\r\n",
+        "R0051": "AUTOSAR Classic Platform (CP)\r\n",
+        "R0052": "\r\nAUTOSAR Adaptive Platform (AP)\r\n\r\n"
+      },
+      "known_device_aliases": [
+        "ADC",
+        "BDC",
+        "CDC",
+        "IDC",
+        "PDC"
+      ],
+      "registered_transports": {
+        "can": [
+          "R0019",
+          "R0048"
+        ],
+        "can‑fd": [
+          "R0019",
+          "R0048"
+        ],
+        "ethernet": [
+          "R0019",
+          "R0048"
+        ],
+        "lin": [
+          "R0019",
+          "R0048"
+        ],
+        "can_fd": [
+          "R0019",
+          "R0048"
+        ],
+        "uds": [
+          "R0049"
+        ]
+      },
+      "device_aliases": {},
+      "validation_feedback": "Aktorik: unquantifizierte Typenliste braucht CATEGORY, role ACTUATOR, quantity null und das vollständige Listen-Zitat; als eine Gruppe zusammenfassen.",
+      "instruction": "Korrigiere die Einordnung anhand der Quelle und des Schemas. TRANSPORT.name muss eine kurze registrierte Protokollbezeichnung sein. Keine belegten Angaben auslassen."
+    },
+    "format": {
+      "$defs": {
+        "DocumentComponent": {
+          "oneOf": [
+            {
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "REQUIREMENT"
+                  ]
+                },
+                "role": {
+                  "type": "string",
+                  "enum": [
+                    "OTHER"
+                  ]
+                },
+                "quantity": {
+                  "type": "null"
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0001",
+                    "R0002",
+                    "R0004"
+                  ]
+                }
+              },
+              "required": [
+                "kind",
+                "role",
+                "source_ref"
+              ],
+              "title": "DocumentComponent",
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "enum": [
+                    "INSTANCE",
+                    "CATEGORY",
+                    "FUNCTION",
+                    "REQUIREMENT"
+                  ],
+                  "title": "Kind",
+                  "type": "string"
+                },
+                "role": {
+                  "enum": [
+                    "CONTROLLER",
+                    "GATEWAY",
+                    "SENSOR",
+                    "ACTUATOR",
+                    "OTHER"
+                  ],
+                  "title": "Role",
+                  "type": "string"
+                },
+                "quantity": {
+                  "anyOf": [
+                    {
+                      "maximum": 1000,
+                      "minimum": 1,
+                      "type": "integer"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Quantity"
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0003",
+                    "R0005",
+                    "R0006",
+                    "R0007",
+                    "R0008",
+                    "R0009",
+                    "R0010",
+                    "R0011",
+                    "R0012",
+                    "R0013",
+                    "R0014",
+                    "R0015",
+                    "R0016",
+                    "R0017",
+                    "R0018",
+                    "R0019",
+                    "R0020",
+                    "R0021",
+                    "R0022",
+                    "R0023",
+                    "R0024",
+                    "R0025",
+                    "R0026",
+                    "R0027",
+                    "R0028",
+                    "R0029",
+                    "R0030",
+                    "R0031",
+                    "R0032",
+                    "R0033",
+                    "R0034",
+                    "R0035",
+                    "R0036",
+                    "R0037",
+                    "R0038",
+                    "R0039",
+                    "R0040",
+                    "R0041",
+                    "R0042",
+                    "R0043",
+                    "R0044",
+                    "R0045",
+                    "R0046",
+                    "R0047",
+                    "R0048",
+                    "R0049",
+                    "R0050",
+                    "R0051",
+                    "R0052"
+                  ]
+                }
+              },
+              "required": [
+                "kind",
+                "role",
+                "source_ref"
+              ],
+              "title": "DocumentComponent",
+              "type": "object"
+            }
+          ]
+        },
+        "DocumentTechnology": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "Das",
+                    "Funktionen",
+                    "Straßenfahrzeug",
+                    "System",
+                    "alle",
+                    "als",
+                    "bereitstellen",
+                    "betrieben",
+                    "dafür",
+                    "elektrischen",
+                    "elektronischen",
+                    "können",
+                    "mechanischen",
+                    "muss",
+                    "notwendigen",
+                    "regelkonform",
+                    "sicher",
+                    "softwarebasierten",
+                    "und",
+                    "werden",
+                    "zuverlässig"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0001"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "Anforderungen",
+                    "Automatisierung",
+                    "Effizienz",
+                    "Es",
+                    "Komfort",
+                    "Mobilität",
+                    "Sicherheit",
+                    "Vernetzung",
+                    "an",
+                    "die",
+                    "erfüllen",
+                    "muss",
+                    "und"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0002"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "Systemgrenzen",
+                    "Systemkontext",
+                    "und"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0003"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "Das",
+                    "Infrastruktur",
+                    "Straße",
+                    "System",
+                    "Umgebung",
+                    "Verkehr",
+                    "Wetter",
+                    "der",
+                    "interagieren",
+                    "mit",
+                    "muss"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0004"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "Beschleunigen",
+                    "Bremsen",
+                    "Eingaben",
+                    "Fahrers",
+                    "HMI",
+                    "Lenken",
+                    "des",
+                    "verarbeiten"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0005"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "Backend",
+                    "Diagnosegeräte",
+                    "OTA‑Server",
+                    "Systemen",
+                    "externen",
+                    "kommunizieren",
+                    "mit"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0006"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "ISO",
+                    "Normen",
+                    "StVZO",
+                    "UN‑ECE",
+                    "Vorgaben",
+                    "erfüllen",
+                    "gesetzliche",
+                    "und"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0007"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "Einleitung",
+                    "Zweck",
+                    "und"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0008"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "Dieses",
+                    "Dokument",
+                    "Gesamtsystem",
+                    "Straßenfahrzeug",
+                    "als",
+                    "beschreibt",
+                    "das",
+                    "technisches"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0009"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "Das",
+                    "Fahrzeug",
+                    "Komponenten",
+                    "Straßenverkehr",
+                    "System",
+                    "Teilnahme",
+                    "am",
+                    "cyber‑physisches",
+                    "das",
+                    "ein",
+                    "eine",
+                    "elektrische",
+                    "elektronische",
+                    "ermöglichen",
+                    "integriert",
+                    "ist",
+                    "mechanische",
+                    "regelkonforme",
+                    "sichere",
+                    "softwarebasierte",
+                    "um",
+                    "und",
+                    "zu",
+                    "zuverlässige"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0010"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "Beschreibung",
+                    "Cybersecurity‑Konzepte",
+                    "Die",
+                    "E",
+                    "E‑Design",
+                    "Grundlage",
+                    "Requirements‑Engineering",
+                    "Safety‑Analysen",
+                    "Systemarchitektur",
+                    "als",
+                    "dient",
+                    "für",
+                    "und"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0011"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "Systemgrenzen",
+                    "Systemkontext",
+                    "und"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0012"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "Systemgrenzen"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0013"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "Das",
+                    "System",
+                    "umfasst"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0014"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "Antrieb",
+                    "Bremsen",
+                    "Fahrwerk",
+                    "Karosserie",
+                    "Mechanische",
+                    "Struktur"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0015"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "Elektrische",
+                    "Energieversorgung",
+                    "HV‑System",
+                    "V"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0016"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "Aktor‑ECUs",
+                    "Domain‑Controller",
+                    "Elektronische",
+                    "Sensor‑ECUs",
+                    "Steuergeräte"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0017"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "ADAS‑Funktionen",
+                    "Applikationen",
+                    "Basissoftware",
+                    "Middleware",
+                    "Software"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0018"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "CAN",
+                    "CAN‑FD",
+                    "Ethernet",
+                    "LIN",
+                    "can",
+                    "can_fd",
+                    "ethernet",
+                    "lin"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "TRANSPORT"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0019"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "Kommunikationsnetzwerke"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0019"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "Bedienelemente",
+                    "Displays",
+                    "HMI‑Systeme",
+                    "Warnanzeigen"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0020"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "Bestandteil",
+                    "Nicht",
+                    "Systems",
+                    "des",
+                    "sind"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0021"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "Backend‑Systeme",
+                    "Externe"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0022"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "Cloud‑Dienste",
+                    "Externe",
+                    "Infrastruktur",
+                    "Ladesäulen",
+                    "Verkehrszeichen"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0023"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "Akteure",
+                    "Fahrer",
+                    "Insassen",
+                    "als",
+                    "externe",
+                    "oder"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0024"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "Systemkontext"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0025"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "Das",
+                    "Fahrzeug",
+                    "interagiert",
+                    "mit"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0026"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "Bedienung",
+                    "Eingaben",
+                    "Fahrer",
+                    "HMI"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0027"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "Objekte",
+                    "Straße",
+                    "Verkehrsteilnehmer",
+                    "Verkehrsumgebung",
+                    "andere"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0028"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "GPS",
+                    "Infrastruktur",
+                    "Mobilfunk",
+                    "Verkehrszeichen"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0029"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "Backend‑Systemen",
+                    "Diagnose",
+                    "OTA‑Updates",
+                    "Telemetrie"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0030"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "Systemstruktur",
+                    "Top‑Level‑Architektur"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0031"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "Das",
+                    "Fahrzeug",
+                    "Hauptdomänen",
+                    "aus",
+                    "besteht",
+                    "vier"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0032"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "Domäne",
+                    "Mechanische"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0033"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "Crashstruktur",
+                    "Karosserie"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0034"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "Dämpfung",
+                    "Fahrwerk",
+                    "Federung",
+                    "Lenkung"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0035"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "Brake‑by‑Wire",
+                    "Bremsanlage",
+                    "hydraulisch"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0036"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "Antrieb",
+                    "Elektro",
+                    "Hybrid",
+                    "Verbrenner"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0037"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "Thermomanagement"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0038"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "Domäne",
+                    "Elektrische"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0039"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "Bordnetz",
+                    "V"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0040"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "BEV",
+                    "HEV",
+                    "Hochvoltsystem"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0041"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "Energieverteilung",
+                    "Relais",
+                    "Sicherungen"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0042"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "AC",
+                    "CCS",
+                    "DC",
+                    "Ladeinfrastruktur"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0043"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "Domäne",
+                    "Elektronische"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0044"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "ADAS",
+                    "Body",
+                    "Chassis",
+                    "Domain‑Controller",
+                    "Infotainment",
+                    "Powertrain"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0045"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "IMU",
+                    "Kamera",
+                    "Lidar",
+                    "Radar",
+                    "Raddrehzahl",
+                    "Sensorik",
+                    "Ultraschall"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0046"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "Aktorik",
+                    "Antriebsaktuator",
+                    "Bremsaktuator",
+                    "Lenkaktuator"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0047"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "CAN",
+                    "CAN‑FD",
+                    "Ethernet",
+                    "LIN",
+                    "can",
+                    "can_fd",
+                    "ethernet",
+                    "lin"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "TRANSPORT"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0048"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "Kommunikationsnetzwerke"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0048"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "UDS",
+                    "uds"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "TRANSPORT"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0049"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "Diagnosezugänge",
+                    "OBD"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0049"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "Softwaredomäne"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0050"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "AUTOSAR",
+                    "CP",
+                    "Classic",
+                    "Platform"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0051"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": [
+                    "AP",
+                    "AUTOSAR",
+                    "Adaptive",
+                    "Platform"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "UNRESOLVED"
+                  ]
+                },
+                "source_ref": {
+                  "type": "string",
+                  "enum": [
+                    "R0052"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "source_ref"
+              ]
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "description": "Source facts and proposed design remain separate review data.",
+      "properties": {
+        "summary": {
+          "maxLength": 1500,
+          "minLength": 1,
+          "title": "Summary",
+          "type": "string"
+        },
+        "components": {
+          "items": {
+            "$ref": "#/$defs/DocumentComponent"
+          },
+          "maxItems": 60,
+          "title": "Components",
+          "type": "array"
+        },
+        "technologies": {
+          "items": {
+            "$ref": "#/$defs/DocumentTechnology"
+          },
+          "maxItems": 32,
+          "title": "Technologies",
+          "type": "array"
+        },
+        "proposed_task": {
+          "maxLength": 6000,
+          "minLength": 1,
+          "title": "Proposed Task",
+          "type": "string"
+        },
+        "assumptions": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 2,
+          "title": "Assumptions",
+          "type": "array"
+        },
+        "open_questions": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 2,
+          "title": "Open Questions",
+          "type": "array"
+        }
+      },
+      "required": [
+        "summary",
+        "proposed_task"
+      ],
+      "title": "DocumentInterpretation",
+      "type": "object"
+    }
+  }
+]

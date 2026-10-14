@@ -666,13 +666,13 @@ test('new small wizard traverses all nine stages and survives reload/restart @sm
     await expect(fresh.getByRole('heading', { name: 'Simulation abgeschlossen', exact: true })).toBeVisible();
     // A completed historical run must not block the current approved preflight.
     await openSimulationRun(fresh);
-    await expect(fresh.getByRole('button', { name: 'Start', exact: true })).toBeEnabled();
-    await fresh.getByRole('button', { name: 'Reset', exact: true }).click();
-    await fresh.getByRole('button', { name: 'Ansicht zurücksetzen', exact: true }).click();
+    await expect(fresh.getByRole('button', { name: 'Lauf starten', exact: true })).toBeEnabled();
+    await fresh.locator('.simulation-command-bar').getByRole('button', { name: 'Ansicht zurücksetzen', exact: true }).click();
+    await fresh.getByRole('alertdialog').getByRole('button', { name: 'Ansicht zurücksetzen', exact: true }).click();
     await expect(freshRunner).not.toHaveAttribute('data-job-id');
     await fresh.reload();
     await openSimulationRun(fresh);
-    await expect(fresh.getByRole('button', { name: 'Start', exact: true })).toBeEnabled();
+    await expect(fresh.getByRole('button', { name: 'Lauf starten', exact: true })).toBeEnabled();
     await expect(freshRunner).not.toHaveAttribute('data-job-id');
     await fresh.goto(`/studio/results?project=${project}&snapshot=${artifacts.snapshot}`);
     await expect(fresh.locator('.result-run-list button.active')).toHaveAttribute('data-snapshot-id', artifacts.snapshot);
@@ -682,7 +682,7 @@ test('new small wizard traverses all nine stages and survives reload/restart @sm
     await fresh.goto(`/studio/simulation?project=${project}&snapshot=${artifacts.snapshot}`);
     await expect(freshRunner).toHaveAttribute('data-job-id', artifacts.job);
     await openSimulationRun(fresh);
-    await fresh.getByRole('button', { name: 'Start', exact: true }).click();
+    await fresh.getByRole('button', { name: 'Lauf starten', exact: true }).click();
     await expect.poll(async () => {
       restartedJob = await freshRunner.getAttribute('data-job-id');
       return Boolean(restartedJob && restartedJob !== artifacts.job);

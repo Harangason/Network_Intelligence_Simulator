@@ -265,6 +265,69 @@ test('S20-B recognizes central coupling as the single gateway target', () => {
 });
 import { readFileSync } from 'node:fs';
 
+test('complete requirements document recognizes named controller chapters without turning requirements into inventory', () => {
+  const source = readFileSync(new URL('../../../../e2e/fixtures/document-intake-vehicle.txt', import.meta.url), 'utf8');
+  assert.ok(source.length > 12000);
+  const result = extractEngineeringSpecification(source);
+  assert.equal(result.domain, 'automotive');
+  assert.equal(engineeringDomainEvidence(source).domain, 'automotive');
+  const controllers = result.chains.filter(chain => chain.device_type === 'ECU');
+  assert.deepEqual(controllers.map(chain => chain.hardware_name),
+    ['Powertrain Domain', 'Chassis Domain', 'ADAS Domain', 'Body Domain', 'Infotainment Domain']);
+  assert.match(controllers[0].hardware_description, /Motor-\/Invertersteuerung/);
+  assert.match(controllers[0].hardware_description, /Ethernet/);
+  assert.equal(controllers[0].interface_type, 'Other');
+  assert.deepEqual(controllers[0].configuration.connection_candidates, ['CAN', 'Ethernet']);
+  assert.equal(result.chains.filter(chain => chain.device_type === 'ActuatorController').length, 0);
+  assert.equal(result.chains.some(chain => chain.hardware_name === 'degradieren'), false);
+  assert.equal(result.targetCounts.sensors, 0);
+  assert.equal(result.targetCounts.actuators, 0);
+  assert.equal(result.unresolvedInventoryGroups.length, 2);
+  assert.match(result.unresolvedInventoryGroups[0], /Radar.*Kamera.*Stückzahlen/);
+  assert.match(result.unresolvedInventoryGroups[1], /Bremsaktuator.*Lenkaktuator.*Stückzahlen/);
+  assert.equal(result.communicationSystems.includes('ADC'), false);
+  assert.equal(result.communicationSystemCounts.ADC, undefined);
+  assert.equal(result.communicationSystemCounts.LIN, 1);
+  assert.ok(result.communicationSystems.includes('CAN'));
+  assert.ok(result.communicationSystems.includes('CAN_FD'));
+});
+
+test('device-type overviews remain unknown while separately declared actuator instances are retained', () => {
+  const result = extractEngineeringSpecification('Robotics\nAktortypen: Lenkaktuator, Bremsaktuator\nAktor: BremseVorne\nAnschluss: PWM\nFunktion: Bremsen');
+  assert.deepEqual(result.chains.filter(chain => chain.device_type === 'ActuatorController').map(chain => chain.hardware_name), ['BremseVorne']);
+  assert.equal(result.chains.find(chain => chain.hardware_name === 'BremseVorne').interface_type, 'PWM');
+});
+
+test('plain and numbered controller headings work across industries and keep device sections scoped', () => {
+  for (const [industry, domain] of [['Building Automation', 'building_automation'], ['Robotics', 'robotics_ros'], ['Embedded Systems', 'embedded_systems']]) {
+    for (const heading of ['1.2 Climate Controller (CC)', '## 1.2 Climate Controller (CC)', 'Climate Controller (CC)']) {
+      const source = `Industrie: ${industry}\n${heading}\nAufgaben:\nTemperaturregelung\nSchnittstellen:\nModbus RTU\n\n2. Systemkontext\nEthernet zum Backend\nREQ-CC-10: CC MUSS bei Ausfall eines Sensors degradieren.`;
+      const result = extractEngineeringSpecification(source);
+      assert.equal(result.domain, domain);
+      assert.deepEqual(result.chains.map(chain => chain.hardware_name), ['Climate']);
+      assert.equal(result.chains[0].interface_type, 'ModbusRTU');
+      assert.equal(result.chains[0].hardware_description.includes('Ethernet zum Backend'), false);
+    }
+  }
+});
+
+test('controller aliases do not hide actual analogue input declarations', () => {
+  const source = '1.1 Analysis Domain Controller (ADC)\nREQ-ADC-10: ADC MUSS rechnen.\nSensor: Pressure\nAnschluss: ADC Eingang';
+  assert.ok(extractCommunicationSystems(source).includes('ADC'));
+  assert.equal(extractCommunicationSystemCounts(source).ADC, 1);
+});
+
+test('requirement-only or missing documents do not invent device identities', () => {
+  for (const source of ['', 'REQ-SAFE-14: Fusion MUSS bei Ausfall eines Sensors degradieren.', 'System must control an actuator and monitor a sensor.']) {
+    assert.equal(extractEngineeringSpecification(source).chains.length, 0);
+  }
+});
+
+test('an explicit device declaration may include its requirements on the same line', () => {
+  const result = extractEngineeringSpecification('Industrie: Embedded Systems\nSensor: HeatProbe muss Temperatur messen\nDer Algorithmus läuft auf dem Controller');
+  assert.deepEqual(result.chains.map(chain => chain.hardware_name), ['HeatProbe']);
+});
+
 test('standard status replaces a generated legacy duplicate and class two has status', () => {
   const base = extractEngineeringSpecification('Motorsteuergerät mit CAN-FD und Signal Motordrehzahl').chains[0];
   const chain = { ...base, hardware_name: 'Smart', signal_name: 'SmartStatus', device_class: 2, device_type: 'SensorController', data: { enum_values: { OK: 0, ERROR: 1 } } };

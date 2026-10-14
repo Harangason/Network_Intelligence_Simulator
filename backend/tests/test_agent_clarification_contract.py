@@ -92,3 +92,22 @@ def test_discovery_and_canonical_identity_tools_survive_selection_budget(prompt)
     assert len(selected) <= 24
     assert {'inspect_project', 'inspect_object', 'search_model', 'discover_engineering_tools',
             'ask_engineering_question'} <= {item['name'] for item in selected}
+
+
+@pytest.mark.parametrize('prompt', [
+    'Kameraverarbeitung soll Objektdaten an Fahrerassistenz liefern; alle Sensor-/Aktor-Verbindungen prüfen.',
+    'Roboter Sensorfusion: Eingänge, Stellglieder, Nachrichten, Routing, Ethernet, Simulation und Trace prüfen.',
+    'Building camera perception and actuator connections: generate functions, signals, messages and verify routing.',
+    'Drohne Lidar Sensoren Aktoren Raumcluster Hardware Signal Nachricht Routing Netz CAN Simulation Trace',
+])
+def test_functional_audit_survives_full_device_chain_tool_budget(prompt):
+    chosen = {t['name'] for t in select_tools(prompt, [{'name': name} for name in TOOLS])}
+    assert {'validate_device_communication', 'search_model', 'inspect_object',
+            'ask_engineering_question', 'discover_engineering_tools'} <= chosen
+
+
+def test_functional_audit_schema_defaults_to_reviewing_legacy_without_apply_authority():
+    from backend.nis.agent.api.tool_contract import Permission
+    tool = TOOLS['validate_device_communication']
+    assert tool.input_model().include_legacy is True
+    assert tool.permission == Permission.VALIDATE

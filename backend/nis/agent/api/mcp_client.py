@@ -1,6 +1,7 @@
 """The agent's only engineering access: a genuine negotiated MCP client."""
 from __future__ import annotations
 import asyncio
+import os
 from mcp import Client
 from backend.nis.agent.api.tool_contract import ToolResult
 
@@ -25,7 +26,13 @@ class EngineeringMCPClient:
 
     async def call(self, name: str, arguments: dict | None = None) -> ToolResult:
         try:
-            response = await self.client.call_tool(name, {"request":arguments or {}})
+            options = {}
+            if name == 'interpret_project_document':
+                # Same bounded eight-section/two-attempt budget as native intake;
+                # short domain tools keep the existing negotiated timeout.
+                section_timeout = max(90, min(int(os.environ.get('LOCAL_AI_TIMEOUT_SECONDS', '600')), 1200))
+                options['read_timeout_seconds'] = 16 * section_timeout
+            response = await self.client.call_tool(name, {"request":arguments or {}}, **options)
         except (TimeoutError, asyncio.TimeoutError):
             # A timed-out mutation may have committed. Do not retry blindly.
             return ToolResult(success=False, status="TOOL_TIMEOUT", findings=[{
